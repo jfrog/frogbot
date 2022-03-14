@@ -30,7 +30,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
-	github.com/google/go-github/v42 v42.0.0 // indirect
+	github.com/google/go-github/v41 v41.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gookit/color v1.4.2 // indirect
@@ -88,8 +88,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace github.com/jfrog/jfrog-client-go => github.com/talarian1/jfrog-client-go frogbot
+replace github.com/jfrog/jfrog-client-go => github.com/talarian1/jfrog-client-go v0.13.4-0.20220314125345-d452b045748b
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/talarian1/jfrog-cli-core frogbot
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/talarian1/jfrog-cli-core/v2 v2.0.0-20220314125938-5d1017154161
 
-replace github.com/jfrog/froggit-go => ../forks/froggit-go
+replace github.com/jfrog/froggit-go => github.com/talarian1/froggit-go v1.0.1-0.20220310151936-d79c4f6f8f24
