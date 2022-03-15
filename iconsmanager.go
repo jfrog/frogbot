@@ -1,33 +1,34 @@
 package main
 
-import "fmt"
-
-const (
-	baseSourceUrl               = "https://raw.githubusercontent.com/jfrog/frobot/master/resources/"
-	noVulnerabilityBannerSource = "noVulnerabilityBanner.png"
-	vulnerabilitiesBannerSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource      = "criticalSeverity.png"
-	highSeveritySource          = "highSeverity.png"
-	mediumSeveritySource        = "mediumSeverity.png"
-	lowSeveritySource           = "lowSeverity.png"
+import (
+	"fmt"
+	"strings"
 )
 
-func GetIconTag(iconSource string) string {
-	return fmt.Sprintf("![](%s)", baseSourceUrl+iconSource)
+type imageSource string
+
+const (
+	baseResourceUrl                         = "https://raw.githubusercontent.com/jfrog/frobot/master/resources/"
+	noVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
+	vulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
+	criticalSeveritySource      imageSource = "criticalSeverity.png"
+	highSeveritySource          imageSource = "highSeverity.png"
+	mediumSeveritySource        imageSource = "mediumSeverity.png"
+	lowSeveritySource           imageSource = "lowSeverity.png"
+)
+
+func GetIconTag(imageSource imageSource) string {
+	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
 }
 
-func GetIconSource(iconName string) (iconSource string) {
-	switch iconName {
-
+func GetIconSource(iconName string) (imageSource imageSource) {
+	switch strings.ToLower(iconName) {
 	case "critical":
 		return criticalSeveritySource
-
 	case "high":
 		return highSeveritySource
-
 	case "medium":
 		return mediumSeveritySource
-
 	case "low":
 		return lowSeveritySource
 	}
