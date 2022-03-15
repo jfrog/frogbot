@@ -1,0 +1,14 @@
+name: "Frogbot"
+description: "Scan for vulnerabilities in GitHub repositories."
+author: "JFrog"
+inputs:
+  version:
+    description: "Frogbot version"
+    default: "latest"
+    required: false
+runs:
+  using: "node16"
+  main: "action/lib/main.js"
+branding:
+  icon: "terminal"
+  color: "green"
