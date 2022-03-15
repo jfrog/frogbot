@@ -22,7 +22,8 @@ import (
 	"github.com/urfave/cli"
 )
 
-const commandHelpTemplate string = `{{.HelpName}}{{if .UsageText}}
+const (
+	commandHelpTemplate = `{{.HelpName}}{{if .UsageText}}
 Arguments:
 {{.UsageText}}
 {{end}}{{if .VisibleFlags}}
@@ -34,7 +35,7 @@ Environment Variables:
 
 `
 
-const subcommandHelpTemplate = `NAME:
+	subcommandHelpTemplate = `NAME:
    {{.HelpName}} - {{.Usage}}
 
 USAGE:
@@ -50,6 +51,17 @@ OPTIONS:
    {{end}}
 {{end}}
 `
+
+	// Env
+	jfrogUser     = "FROGBOT_JF_USER"
+	jfrogUrl      = "FROGBOT_JF_URL"
+	jfrogPassword = "FROGBOT_JF_PASSWORD"
+	jfrogToken    = "FROGBOT_JF_TOKEN"
+	gitRepoOwner  = "FROGBOT_GIT_OWNER"
+	gitToken      = "FROGBOT_GIT_TOKEN"
+	branch        = "FROGBOT_BRANCH"
+	prID          = "FROGBOT_PR"
+)
 
 func main() {
 	log.SetDefaultLogger()
@@ -196,16 +208,6 @@ func commentPullRequest(c *cli.Context) error {
 }
 
 func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, targetBranch string, pullRequestID int, err error) {
-	// Constants
-	jfrogUser := "FROGBOT_JF_USER"
-	jfrogUrl := "FROGBOT_JF_URL"
-	jfrogPassword := "FROGBOT_JF_PASSWORD"
-	jfrogToken := "FROGBOT_JF_TOKEN"
-	gitRepoOwner := "FROGBOT_GIT_OWNER"
-	gitToken := "FROGBOT_GIT_TOKEN"
-	branch := "FROGBOT_BRANCH"
-	prID := "FROGBOT_PR"
-
 	url, exists := os.LookupEnv(jfrogUrl)
 	if !exists {
 		err = fmt.Errorf("%s is missing", jfrogUrl)
@@ -326,25 +328,20 @@ func GetUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) string {
-	// DUMMY Images for tests!
-	noVulnerabilityImageTag := `<img  src="https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2021/12/29113553/jfrog-logo-2022.svg/mxw_96,f_auto">`
-	vulnerabilityImageTag := `<img  src="https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2019/11/20130210/Blog-post-GoCenter-04.jpg/mxw_1024,f_auto">`
-	//
-
 	if len(vulnerabilitiesRows) == 0 {
-		return noVulnerabilityImageTag
+		return GetIconTag(noVulnerabilityBannerSource)
 	}
-	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE |
-	| --- | --- |  --- | --- |  --- | --- | --- | --- |`
+	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE 
+	:--: | -- | -- | -- | -- | :--: | --`
 	tableContent := `
 
 	
 	`
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s \n", GetIconTag(GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
 	}
-	return vulnerabilityImageTag + tableHeder + tableContent //`| High | github.com/mholt/archiver/v3 | v3.5.1-0.20210618180617-81fac4ba96e4 | Go | | github.com/jfrog/jfrog-client-go github.com/jfrog/jfrog-cli-core/v2 | v1.8.0 |`
+	return GetIconTag(vulnerabilitiesBannerSource) + tableHeder + tableContent
 }
 
 func commentPullRequestGithub(client vcsclient.VcsClient, owner, repository, content string) error {
