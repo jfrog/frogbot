@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/codegangsta/cli"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -47,16 +46,16 @@ func execMain() error {
 	app := clitool.App{
 		Name:     "Frogbot",
 		Usage:    "See https://github.com/jfrog/frogbot for usage instructions.",
-		commands: getCommands(),
-		version:  frogbotVersion,
+		Commands: getCommands(),
+		Version:  frogbotVersion,
 	}
 
 	err := app.Run(os.Args)
 	return err
 }
 
-func getCommands() []cli.Command {
-	return []cli.Command{
+func getCommands() []*clitool.Command {
+	return []*clitool.Command{
 		{
 			Name:     "scan-pull-request",
 			HideHelp: true,
@@ -66,7 +65,7 @@ func getCommands() []cli.Command {
 	}
 }
 
-func scanPullRequest(c *cli.Context) error {
+func scanPullRequest(c *clitool.Context) error {
 	server, repoOwner, token, repo, targetBranch, pullRequestID, err := extractParamsFromEnv()
 	if err != nil {
 		return err
