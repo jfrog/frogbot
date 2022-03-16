@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/jfrog/frogbot/icons"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -223,7 +224,7 @@ func GetUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
 
 func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return GetIconTag(noVulnerabilityBannerSource)
+		return icons.GetIconTag(icons.NoVulnerabilityBannerSource)
 	}
 	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE 
 	:--: | -- | -- | -- | -- | :--: | --`
@@ -232,10 +233,10 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 	
 	`
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s \n", GetIconTag(GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s \n", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
 	}
-	return GetIconTag(vulnerabilitiesBannerSource) + tableHeder + tableContent
+	return icons.GetIconTag(icons.VulnerabilitiesBannerSource) + tableHeder + tableContent
 }
 
 func commentPullRequestGithub(client vcsclient.VcsClient, owner, repository, content string) error {

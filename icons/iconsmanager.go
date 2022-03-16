@@ -1,4 +1,4 @@
-package main
+package icons
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ type imageSource string
 
 const (
 	baseResourceUrl                         = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
-	noVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
-	vulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
+	NoVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
+	VulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
 	criticalSeveritySource      imageSource = "criticalSeverity.png"
 	highSeveritySource          imageSource = "highSeverity.png"
 	mediumSeveritySource        imageSource = "mediumSeverity.png"
