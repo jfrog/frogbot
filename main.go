@@ -27,8 +27,9 @@ const (
 	jfrogPassword = "FROGBOT_JF_PASSWORD"
 	jfrogToken    = "FROGBOT_JF_TOKEN"
 	gitRepoOwner  = "FROGBOT_GIT_OWNER"
+	gitRepo       = "FROGBOT_GIT_REPO"
 	gitToken      = "FROGBOT_GIT_TOKEN"
-	branch        = "FROGBOT_BRANCH"
+	gitBaseBranch = "FROGBOT_GIT_BASE_BRANCH"
 	prID          = "FROGBOT_PR"
 )
 
@@ -66,7 +67,7 @@ func getCommands() []*clitool.Command {
 }
 
 func scanPullRequest(c *clitool.Context) error {
-	server, repoOwner, token, repo, targetBranch, pullRequestID, err := extractParamsFromEnv()
+	server, repoOwner, token, repo, baseBranch, pullRequestID, err := extractParamsFromEnv()
 	if err != nil {
 		return err
 	}
@@ -84,7 +85,7 @@ func scanPullRequest(c *clitool.Context) error {
 	}
 	currentScan, err := runAudit(xrayScanParams, &server, wd)
 	// Audit target code
-	previousScan, err := auditTarget(client, xrayScanParams, &server, repoOwner, repo, targetBranch)
+	previousScan, err := auditTarget(client, xrayScanParams, &server, repoOwner, repo, baseBranch)
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,7 @@ func scanPullRequest(c *clitool.Context) error {
 
 }
 
-func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, targetBranch string, pullRequestID int, err error) {
+func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, baseBranch string, pullRequestID int, err error) {
 	url, exists := os.LookupEnv(jfrogUrl)
 	if !exists {
 		err = fmt.Errorf("%s is missing", jfrogUrl)
@@ -118,12 +119,16 @@ func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, 
 		err = fmt.Errorf("%s is missing", gitRepoOwner)
 		return
 	}
+	if repo, exists = os.LookupEnv(gitRepo); !exists {
+		err = fmt.Errorf("%s is missing", gitRepo)
+		return
+	}
 	if token, exists = os.LookupEnv(gitToken); !exists {
 		err = fmt.Errorf("%s is missing", gitToken)
 		return
 	}
-	if targetBranch, exists = os.LookupEnv(branch); !exists {
-		err = fmt.Errorf("%s is missing", branch)
+	if baseBranch, exists = os.LookupEnv(gitBaseBranch); !exists {
+		err = fmt.Errorf("%s is missing", gitBaseBranch)
 		return
 	}
 	pullRequestIDString, exists := os.LookupEnv(prID)
