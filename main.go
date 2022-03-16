@@ -114,7 +114,7 @@ func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, 
 			return
 		}
 		server.Url = url
-		server.XrayUrl = path.Join(url, "xray") + "/"
+		server.XrayUrl = url + "/xray/"
 		server.ArtifactoryUrl = path.Join(url, "artifactory") + "/"
 	}
 
