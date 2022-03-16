@@ -1,7 +1,6 @@
 
 name: "Frogbot"
 on:
-  # issue_comment triggers this action on each comment on pull requests
   pull_request_target:
     types: [labeled]
 jobs:
