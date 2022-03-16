@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/jfrog/frogbot/icons"
@@ -23,15 +24,17 @@ import (
 const (
 	frogbotVersion = "0.0.0"
 	// Env
-	jfrogUser     = "FROGBOT_JF_USER"
-	jfrogUrl      = "FROGBOT_JF_URL"
-	jfrogPassword = "FROGBOT_JF_PASSWORD"
-	jfrogToken    = "FROGBOT_JF_TOKEN"
-	gitRepoOwner  = "FROGBOT_GIT_OWNER"
-	gitRepo       = "FROGBOT_GIT_REPO"
-	gitToken      = "FROGBOT_GIT_TOKEN"
-	gitBaseBranch = "FROGBOT_GIT_BASE_BRANCH"
-	prID          = "FROGBOT_PR"
+	jfrogUser           = "FROGBOT_JF_USER"
+	jfrogUrl            = "FROGBOT_JF_URL"
+	jfrogXrayUrl        = "FROGBOT_JF_XRAY_URL"
+	jfrogArtifactoryUrl = "FROGBOT_JF_ARTIFACTORY_URL"
+	jfrogPassword       = "FROGBOT_JF_PASSWORD"
+	jfrogToken          = "FROGBOT_JF_TOKEN"
+	gitRepoOwner        = "FROGBOT_GIT_OWNER"
+	gitRepo             = "FROGBOT_GIT_REPO"
+	gitToken            = "FROGBOT_GIT_TOKEN"
+	gitBaseBranch       = "FROGBOT_GIT_BASE_BRANCH"
+	prID                = "FROGBOT_PR"
 )
 
 func main() {
@@ -99,41 +102,51 @@ func scanPullRequest(c *clitool.Context) error {
 }
 
 func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, baseBranch string, pullRequestID int, err error) {
-	url, exists := os.LookupEnv(jfrogUrl)
-	if !exists {
-		err = fmt.Errorf("%s is missing", jfrogUrl)
-		return
+	url := os.Getenv(jfrogUrl)
+	xrUrl := os.Getenv(jfrogXrayUrl)
+	rtUrl := os.Getenv(jfrogArtifactoryUrl)
+	if xrUrl != "" && rtUrl != "" {
+		server.XrayUrl = xrUrl
+		server.ArtifactoryUrl = rtUrl
+	} else {
+		if url == "" {
+			err = fmt.Errorf("%s or %s and %s are missing", url, xrUrl, rtUrl)
+			return
+		}
+		server.Url = url
+		server.XrayUrl = path.Join(url, "xray")
+		server.ArtifactoryUrl = path.Join(url, "artifactory")
 	}
-	server.Url = url
-	password, passwordExists := os.LookupEnv(jfrogPassword)
-	user, userExists := os.LookupEnv(jfrogUser)
-	if passwordExists && userExists {
+
+	password := os.Getenv(jfrogPassword)
+	user := os.Getenv(jfrogUser)
+	if password != "" && user != "" {
 		server.User = user
 		server.Password = password
-	} else if accessToken, exists := os.LookupEnv(jfrogToken); exists {
+	} else if accessToken := os.Getenv(jfrogToken); accessToken != "" {
 		server.AccessToken = accessToken
 	} else {
 		err = fmt.Errorf("%s and %s or %s are missing", jfrogUser, jfrogPassword, jfrogToken)
 		return
 	}
-	if repoOwner, exists = os.LookupEnv(gitRepoOwner); !exists {
+	if repoOwner = os.Getenv(gitRepoOwner); repoOwner == "" {
 		err = fmt.Errorf("%s is missing", gitRepoOwner)
 		return
 	}
-	if repo, exists = os.LookupEnv(gitRepo); !exists {
+	if repo = os.Getenv(gitRepo); repo == "" {
 		err = fmt.Errorf("%s is missing", gitRepo)
 		return
 	}
-	if token, exists = os.LookupEnv(gitToken); !exists {
+	if token = os.Getenv(gitToken); token == "" {
 		err = fmt.Errorf("%s is missing", gitToken)
 		return
 	}
-	if baseBranch, exists = os.LookupEnv(gitBaseBranch); !exists {
+	if baseBranch = os.Getenv(gitBaseBranch); baseBranch == "" {
 		err = fmt.Errorf("%s is missing", gitBaseBranch)
 		return
 	}
-	pullRequestIDString, exists := os.LookupEnv(prID)
-	if !exists {
+	pullRequestIDString := os.Getenv(prID)
+	if pullRequestIDString == "" {
 		err = fmt.Errorf("%s is missing", prID)
 		return
 	}
