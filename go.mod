@@ -3,11 +3,10 @@ module github.com/jfrog/frogbot
 go 1.17
 
 require (
-	github.com/agnivade/levenshtein v1.1.1
 	github.com/jfrog/froggit-go v1.0.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.10.1
 	github.com/jfrog/jfrog-client-go v1.10.0
-	github.com/urfave/cli v1.22.5
+	github.com/urfave/cli/v2 v2.3.0
 
 )
 

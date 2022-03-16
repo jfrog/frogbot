@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
-	"strings"
 
-	"github.com/agnivade/levenshtein"
+	"github.com/jfrog/frogbot/icons"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -19,37 +17,22 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/urfave/cli"
+	clitool "github.com/urfave/cli/v2"
 )
 
-const commandHelpTemplate string = `{{.HelpName}}{{if .UsageText}}
-Arguments:
-{{.UsageText}}
-{{end}}{{if .VisibleFlags}}
-Options:
-	{{range .VisibleFlags}}{{.}}
-	{{end}}{{end}}{{if .ArgsUsage}}
-Environment Variables:
-{{.ArgsUsage}}{{end}}
-
-`
-
-const subcommandHelpTemplate = `NAME:
-   {{.HelpName}} - {{.Usage}}
-
-USAGE:
-	{{if .Usage}}{{.Usage}}{{ "\n\t" }}{{end}}{{.HelpName}} command{{if .VisibleFlags}} [command options]{{end}} [arguments...]
-
-COMMANDS:
-   {{range .Commands}}{{join .Names ", "}}{{ "\t" }}{{.Usage}}
-   {{end}}{{if .VisibleFlags}}{{if .ArgsUsage}}
-Arguments:
-{{.ArgsUsage}}{{ "\n" }}{{end}}
-OPTIONS:
-   {{range .VisibleFlags}}{{.}}
-   {{end}}
-{{end}}
-`
+const (
+	frogbotVersion = "0.0.0"
+	// Env
+	jfrogUser     = "FROGBOT_JF_USER"
+	jfrogUrl      = "FROGBOT_JF_URL"
+	jfrogPassword = "FROGBOT_JF_PASSWORD"
+	jfrogToken    = "FROGBOT_JF_TOKEN"
+	gitRepoOwner  = "FROGBOT_GIT_OWNER"
+	gitRepo       = "FROGBOT_GIT_REPO"
+	gitToken      = "FROGBOT_GIT_TOKEN"
+	gitBaseBranch = "FROGBOT_GIT_BASE_BRANCH"
+	prID          = "FROGBOT_PR"
+)
 
 func main() {
 	log.SetDefaultLogger()
@@ -62,110 +45,30 @@ func main() {
 
 func execMain() error {
 
-	app := cli.NewApp()
-	app.Name = "frogbot"
-	app.Usage = "See https://github.com/jfrog/frogbot for usage instructions."
-	app.Version = "0.0.0"
-	args := os.Args
-	app.EnableBashCompletion = true
-	app.Commands = getCommands()
-	cli.CommandHelpTemplate = commandHelpTemplate
-	cli.AppHelpTemplate = getAppHelpTemplate()
-	cli.SubcommandHelpTemplate = subcommandHelpTemplate
-	app.CommandNotFound = func(c *cli.Context, command string) {
-		fmt.Fprintf(c.App.Writer, "'"+c.App.Name+" "+command+"' is not a jf command. See --help\n")
-		if bestSimilarity := searchSimilarCmds(c.App.Commands, command); len(bestSimilarity) > 0 {
-			text := "The most similar "
-			if len(bestSimilarity) == 1 {
-				text += "command is:\n\tjf " + bestSimilarity[0]
-			} else {
-				sort.Strings(bestSimilarity)
-				text += "commands are:\n\tjf " + strings.Join(bestSimilarity, "\n\tjf ")
-			}
-			fmt.Fprintln(c.App.Writer, text)
-		}
-		os.Exit(1)
+	app := clitool.App{
+		Name:     "Frogbot",
+		Usage:    "See https://github.com/jfrog/frogbot for usage instructions.",
+		Commands: getCommands(),
+		Version:  frogbotVersion,
 	}
-	err := app.Run(args)
+
+	err := app.Run(os.Args)
 	return err
 }
 
-// Detects typos and can identify one or more valid commands similar to the error command.
-// In Addition, if a subcommand is found with exact match, preferred it over similar commands, for example:
-// "jf bp" -> return "jf rt bp"
-func searchSimilarCmds(cmds []cli.Command, toCompare string) (bestSimilarity []string) {
-	// Set min diff between two commands.
-	minDistance := 2
-	for _, cmd := range cmds {
-		// Check if we have an exact match with the next level.
-		for _, subCmd := range cmd.Subcommands {
-			for _, subCmdName := range subCmd.Names() {
-				// Found exact match, return it.
-				distance := levenshtein.ComputeDistance(subCmdName, toCompare)
-				if distance == 0 {
-					return []string{cmd.Name + " " + subCmdName}
-				}
-			}
-		}
-		// Search similar commands with max diff of 'minDistance'.
-		for _, cmdName := range cmd.Names() {
-			distance := levenshtein.ComputeDistance(cmdName, toCompare)
-			if distance == minDistance {
-				// In the case of an alias, we don't want to show the full command name, but the alias.
-				// Therefore, we trim the end of the full name and concat the actual matched (alias/full command name)
-				bestSimilarity = append(bestSimilarity, strings.Replace(cmd.FullName(), cmd.Name, cmdName, 1))
-			}
-			if distance < minDistance {
-				// Found a cmd with a smaller distance.
-				minDistance = distance
-				bestSimilarity = []string{strings.Replace(cmd.FullName(), cmd.Name, cmdName, 1)}
-			}
-		}
-	}
-	return
-}
-
-const otherCategory = "Other"
-
-func getCommands() []cli.Command {
-	return []cli.Command{
+func getCommands() []*clitool.Command {
+	return []*clitool.Command{
 		{
-			Name:     "comment-pr",
+			Name:     "scan-pull-request",
 			HideHelp: true,
 			Hidden:   true,
-			Category: otherCategory,
-			Action:   commentPullRequest,
+			Action:   scanPullRequest,
 		},
 	}
 }
 
-func getAppHelpTemplate() string {
-	return `NAME:
-   ` + coreutils.GetCliExecutableName() + ` - {{.Usage}}
-
-USAGE:
-   {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}}{{if .Commands}} command [command options]{{end}} [arguments...]{{end}}
-   {{if .Version}}
-VERSION:
-   {{.Version}}
-   {{end}}{{if len .Authors}}
-AUTHOR(S):
-   {{range .Authors}}{{ . }}{{end}}
-   {{end}}{{if .VisibleCommands}}
-COMMANDS:{{range .VisibleCategories}}{{if .Name}}
-
-   {{.Name}}:{{end}}{{range .VisibleCommands}}
-     {{join .Names ", "}}{{ "\t" }}{{if .Description}}{{.Description}}{{else}}{{.Usage}}{{end}}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
-
-GLOBAL OPTIONS:
-   {{range .VisibleFlags}}{{.}}
-   {{end}}
-{{end}}
-`
-}
-
-func commentPullRequest(c *cli.Context) error {
-	server, repoOwner, token, repo, targetBranch, pullRequestID, err := extractParamsFromEnv()
+func scanPullRequest(c *clitool.Context) error {
+	server, repoOwner, token, repo, baseBranch, pullRequestID, err := extractParamsFromEnv()
 	if err != nil {
 		return err
 	}
@@ -183,7 +86,7 @@ func commentPullRequest(c *cli.Context) error {
 	}
 	currentScan, err := runAudit(xrayScanParams, &server, wd)
 	// Audit target code
-	previousScan, err := auditTarget(client, xrayScanParams, &server, repoOwner, repo, targetBranch)
+	previousScan, err := auditTarget(client, xrayScanParams, &server, repoOwner, repo, baseBranch)
 	if err != nil {
 		return err
 	}
@@ -195,17 +98,7 @@ func commentPullRequest(c *cli.Context) error {
 
 }
 
-func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, targetBranch string, pullRequestID int, err error) {
-	// Constants
-	jfrogUser := "FROGBOT_JF_USER"
-	jfrogUrl := "FROGBOT_JF_URL"
-	jfrogPassword := "FROGBOT_JF_PASSWORD"
-	jfrogToken := "FROGBOT_JF_TOKEN"
-	gitRepoOwner := "FROGBOT_GIT_OWNER"
-	gitToken := "FROGBOT_GIT_TOKEN"
-	branch := "FROGBOT_BRANCH"
-	prID := "FROGBOT_PR"
-
+func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, baseBranch string, pullRequestID int, err error) {
 	url, exists := os.LookupEnv(jfrogUrl)
 	if !exists {
 		err = fmt.Errorf("%s is missing", jfrogUrl)
@@ -227,12 +120,16 @@ func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, 
 		err = fmt.Errorf("%s is missing", gitRepoOwner)
 		return
 	}
+	if repo, exists = os.LookupEnv(gitRepo); !exists {
+		err = fmt.Errorf("%s is missing", gitRepo)
+		return
+	}
 	if token, exists = os.LookupEnv(gitToken); !exists {
 		err = fmt.Errorf("%s is missing", gitToken)
 		return
 	}
-	if targetBranch, exists = os.LookupEnv(branch); !exists {
-		err = fmt.Errorf("%s is missing", branch)
+	if baseBranch, exists = os.LookupEnv(gitBaseBranch); !exists {
+		err = fmt.Errorf("%s is missing", gitBaseBranch)
 		return
 	}
 	pullRequestIDString, exists := os.LookupEnv(prID)
@@ -326,25 +223,20 @@ func GetUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) string {
-	// DUMMY Images for tests!
-	noVulnerabilityImageTag := `<img  src="https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2021/12/29113553/jfrog-logo-2022.svg/mxw_96,f_auto">`
-	vulnerabilityImageTag := `<img  src="https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2019/11/20130210/Blog-post-GoCenter-04.jpg/mxw_1024,f_auto">`
-	//
-
 	if len(vulnerabilitiesRows) == 0 {
-		return noVulnerabilityImageTag
+		return icons.GetIconTag(icons.NoVulnerabilityBannerSource)
 	}
-	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE |
-	| --- | --- |  --- | --- |  --- | --- | --- | --- |`
+	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE 
+	:--: | -- | -- | -- | -- | :--: | --`
 	tableContent := `
 
 	
 	`
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s |\n", vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s \n", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
 	}
-	return vulnerabilityImageTag + tableHeder + tableContent //`| High | github.com/mholt/archiver/v3 | v3.5.1-0.20210618180617-81fac4ba96e4 | Go | | github.com/jfrog/jfrog-client-go github.com/jfrog/jfrog-cli-core/v2 | v1.8.0 |`
+	return icons.GetIconTag(icons.VulnerabilitiesBannerSource) + tableHeder + tableContent
 }
 
 func commentPullRequestGithub(client vcsclient.VcsClient, owner, repository, content string) error {
