@@ -1,12 +1,12 @@
 
-name: "Frogbot Action"
+name: "Frogbot"
 on:
   # issue_comment triggers this action on each comment on pull requests
   pull_request_target:
     types: [labeled]
 jobs:
   comment:
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
