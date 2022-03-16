@@ -3,12 +3,13 @@ name: "Frogbot Action"
 on:
   # issue_comment triggers this action on each comment on pull requests
   pull_request_target:
-    types: [opened]
+    types: [labeled]
 jobs:
   comment:
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-        - name: Install Go
+      - name: Install Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.17.x
@@ -21,7 +22,7 @@ jobs:
       - name: Build Frogbot
         run: CGO_ENABLED=0 go build -o frogbot -ldflags '-w -extldflags "-static"' main.go
 
-      - name: Scan PR
+      - name: Scan Pull Request
         env:
           FROGBOT_JF_USER: ${{ secrets.FROGBOT_JF_USER }}
           FROGBOT_JF_URL: ${{ secrets.FROGBOT_JF_URL }}
@@ -31,4 +32,4 @@ jobs:
           FROGBOT_GIT_TOKEN: ${{secrets.GITHUB_TOKEN}}
           FROGBOT_GIT_BASE_BRANCH: $GITHUB_BASE_REF
           FROGBOT_PR: ${{ github.event.number }}
-        run: ./frogbot scan-pull-request  
+        run: ./frogbot scan-pull-request
