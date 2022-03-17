@@ -184,6 +184,9 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	}
 	defer fileutils.RemoveTempDir(tempWorkdir)
 	err = client.DownloadRepository(context.Background(), owner, repo, branch, tempWorkdir)
+	if err != nil {
+		return
+	}
 	return runAudit(xrayScanParams, server, tempWorkdir)
 }
 
