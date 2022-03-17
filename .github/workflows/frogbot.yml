@@ -23,7 +23,9 @@ jobs:
       - name: Scan Pull Request
         env:
           FROGBOT_JF_USER: ${{ secrets.FROGBOT_JF_USER }}
-          FROGBOT_JF_URL: ${{ secrets.FROGBOT_JF_URL }}
+          FROGBOT_JF_URL: ${{ secrets.FROGBOT_JF_XRAY_URL }}
+          FROGBOT_JF_XRAY_URL: ${{ secrets.FROGBOT_JF_URL }}
+          FROGBOT_JF_ARTIFACTORY_URL: ${{ secrets.FROGBOT_JF_ARTIFACTORY_URL }}
           FROGBOT_JF_PASSWORD: ${{ secrets.FROGBOT_JF_PASSWORD }}
           FROGBOT_GIT_OWNER: $GITHUB_REPOSITORY_OWNER
           FROGBOT_GIT_REPO: ${{ github.repository }}
