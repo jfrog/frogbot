@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "pattern": "ecosys-frogbot/(v1/${VERSION}/*)",
+      "target": "frogbot/{1}"
+    }
+  ]
+}
