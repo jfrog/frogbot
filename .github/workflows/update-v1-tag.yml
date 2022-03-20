@@ -1,4 +1,4 @@
-name: "Update v1 tag"
+name: "Update v1 Tag"
 on:
   release:
     types: [published]

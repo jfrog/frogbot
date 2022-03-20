@@ -1,7 +1,9 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd action
-npm i
-npm prune --production
-git add node_modules
+if [ -z "$(git diff --quiet -- action)" ]; then
+    cd action
+    npm i
+    npm prune --production
+    git add node_modules
+fi

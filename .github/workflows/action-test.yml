@@ -1,4 +1,4 @@
-name: "Test"
+name: "GitHub Action Test"
 on: [push, pull_request]
 
 jobs:
