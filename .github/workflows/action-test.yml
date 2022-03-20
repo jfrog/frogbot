@@ -1,0 +1,29 @@
+name: "Test"
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: action
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+      fail-fast: false
+    steps:
+      # Checkout and install prerequisites
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: "16.x"
+
+      # Install and run tests
+      - name: Install
+        run: npm i
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm t

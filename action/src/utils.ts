@@ -1,0 +1,105 @@
+import * as core from '@actions/core';
+import { exec } from '@actions/exec';
+import * as toolCache from '@actions/tool-cache';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+export class Utils {
+    private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
+    private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
+    private static readonly VERSION_ARG: string = 'version';
+    private static readonly TOOL_NAME: string = 'frogbot';
+
+    public static async addToPath() {
+        let fileName: string = Utils.getExecutableName();
+        let version: string = core.getInput(Utils.VERSION_ARG);
+        if (version === this.LATEST_CLI_VERSION_ARG) {
+            version = Utils.LATEST_RELEASE_VERSION;
+        } else {
+            if (this.loadFromCache(version)) {
+                // Download is not needed
+                return;
+            }
+        }
+
+        // Download Frogbot
+        let url: string = Utils.getCliUrl(version, fileName);
+        core.debug('Downloading Frogbot from ' + url);
+        let downloadDir: string = await toolCache.downloadTool(url);
+
+        // Cache 'frogbot' executable
+        await this.cacheAndAddPath(downloadDir, version, fileName);
+    }
+
+    /**
+     * Execute frogbot scan-pull-request command.
+     */
+    public static async execScanPullRequest() {
+        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
+        if (res !== core.ExitCode.Success) {
+            throw new Error('Frogbot exited with exit code ' + res);
+        }
+    }
+
+    /**
+     * Try to load the Frogbot executables from cache.
+     *
+     * @param version  - Frogbot version
+     * @returns true if the CLI executable was loaded from cache and added to path
+     */
+    private static loadFromCache(version: string): boolean {
+        let execPath: string = toolCache.find(Utils.TOOL_NAME, version);
+        if (execPath) {
+            core.addPath(execPath);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Add Frogbot executable to cache and to the system path.
+     * @param downloadDir - The directory whereby the CLI was downloaded to
+     * @param version     - Frogbot version
+     * @param fileName    - 'frogbot' or 'frogbot.exe'
+     */
+    private static async cacheAndAddPath(downloadDir: string, version: string, fileName: string) {
+        let cliDir: string = await toolCache.cacheFile(downloadDir, fileName, Utils.TOOL_NAME, version);
+        if (!Utils.isWindows()) {
+            fs.chmodSync(path.join(cliDir, fileName), 0o555);
+        }
+        core.addPath(cliDir);
+    }
+
+    public static getCliUrl(version: string, fileName: string): string {
+        let architecture: string = 'frogbot-' + Utils.getArchitecture();
+        return 'https://releases.jfrog.io/artifactory/frogbot/v1/' + version + '/' + architecture + '/' + fileName;
+    }
+
+    public static getArchitecture() {
+        if (Utils.isWindows()) {
+            return 'windows-amd64';
+        }
+        if (os.platform().includes('darwin')) {
+            return 'mac-386';
+        }
+        if (os.arch().includes('arm')) {
+            return os.arch().includes('64') ? 'linux-arm64' : 'linux-arm';
+        }
+        if (os.arch().includes('ppc64le')) {
+            return 'linux-ppc64le';
+        }
+        if (os.arch().includes('ppc64')) {
+            return 'linux-ppc64';
+        }
+        return os.arch().includes('64') ? 'linux-amd64' : 'linux-386';
+    }
+
+    public static getExecutableName() {
+        return Utils.isWindows() ? 'frogbot.exe' : 'frogbot';
+    }
+
+    public static isWindows() {
+        return os.platform().startsWith('win');
+    }
+}
