@@ -18,7 +18,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Build Frogbot
-        run: CGO_ENABLED=0 go build -o frogbot -ldflags '-w -extldflags "-static"' main.go
+        run: buildscripts/build.sh
 
       - name: Scan Pull Request
         env:

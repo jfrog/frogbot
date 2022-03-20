@@ -1,8 +1,13 @@
 # FrogBot
 
+Automated dependencies scanning using JFrog Xray.
+
 ## Project Status
 
-[![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml)
+[![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
+
+
+## Usage
 
 - [Overview](#overview)
 - [Usage](#usage)
@@ -15,10 +20,6 @@
   - [Tests](#test)
 - [Code Contributions](#code-contributions)
 - [Release Notes](#release-notes)
-
-## Overview
-
-# Usage
 
 ## Using Frogbot with GitHub Actions
 
