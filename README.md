@@ -9,15 +9,16 @@ Automated dependencies scanning using JFrog Xray.
 
 ## Usage
 
-- [Overview](#overview)
-- [Usage](#usage)
+- [FrogBot](#frogbot)
+  - [Project Status](#project-status)
+  - [Usage](#usage)
   - [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
   - [Using Frogbot with GitLab CI](#using-frogbot-with-gitlab-ci)
   - [Using Frogbot with Jenkins](#using-frogbot-with-jenkins)
   - [Download Frogbot through Artifactory](#download-frogbot-through-artifactory)
 - [Building and Testing the Sources](#building-and-testing-the-sources)
   - [Build Frogbot](#build-frogbot)
-  - [Tests](#test)
+  - [Tests](#tests)
 - [Code Contributions](#code-contributions)
 - [Release Notes](#release-notes)
 

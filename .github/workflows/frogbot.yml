@@ -23,11 +23,14 @@ jobs:
       - name: Scan Pull Request
         env:
           FROGBOT_JF_USER: ${{ secrets.FROGBOT_JF_USER }}
-          FROGBOT_JF_URL: ${{ secrets.FROGBOT_JF_URL }}
+          FROGBOT_JF_URL: ${{ secrets.FROGBOT_JF_XRAY_URL }}
+          FROGBOT_JF_XRAY_URL: ${{ secrets.FROGBOT_JF_URL }}
+          FROGBOT_JF_ARTIFACTORY_URL: ${{ secrets.FROGBOT_JF_ARTIFACTORY_URL }}
           FROGBOT_JF_PASSWORD: ${{ secrets.FROGBOT_JF_PASSWORD }}
-          FROGBOT_GIT_OWNER: $GITHUB_REPOSITORY_OWNER
-          FROGBOT_GIT_REPO: ${{ github.repository }}
-          FROGBOT_GIT_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          FROGBOT_GIT_BASE_BRANCH: $GITHUB_BASE_REF
+          FROGBOT_GIT_OWNER: ${{ github.repository_owner }}
+          FROGBOT_GIT_REPO: ${{ github.event.repository.name }}
+          FROGBOT_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FROGBOT_GIT_BASE_BRANCH: ${{ github.base_ref}}
           FROGBOT_PR: ${{ github.event.number }}
+          JFROG_CLI_LOG_LEVEL: DEBUG
         run: ./frogbot scan-pull-request
