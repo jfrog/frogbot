@@ -82,21 +82,32 @@ func scanPullRequest(c *clitool.Context) error {
 
 	// Audit PR code
 	// TODO - fill contex according to env/flags
-	xrayScanParams := services.XrayGraphScanParams{}
+	xrayScanParams := services.XrayGraphScanParams{IncludeVulnerabilities: true}
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+	clientLog.Info("Auditing " + wd)
 	currentScan, err := runAudit(xrayScanParams, &server, wd)
+	if err != nil {
+		return err
+	}
 	// Audit target code
+	clientLog.Info("Auditing " + repo + " " + baseBranch)
 	previousScan, err := auditTarget(client, xrayScanParams, &server, repoOwner, repo, baseBranch)
 	if err != nil {
 		return err
 	}
 	// Get only the new issues added by this PR
-	violations := getNewViolations(previousScan[0], currentScan[0]) // TODO - handle array of scan results!
+	var vulnerabilitiesRows []xrayutils.VulnerabilityRow
+	// TODO - handle array of scan results!
+	if len(currentScan[0].Violations) > 0 {
+		vulnerabilitiesRows = getNewViolations(previousScan[0], currentScan[0])
+	} else if len(currentScan[0].Vulnerabilities) > 0 {
+		vulnerabilitiesRows = getNewVulnerabilities(previousScan[0], currentScan[0])
+	}
 	// Comment frogbot message on the PR
-	message := createPullRequestMessage(violations)
+	message := createPullRequestMessage(vulnerabilitiesRows)
 	return client.AddPullRequestComment(context.Background(), repoOwner, repo, message, pullRequestID)
 
 }
@@ -182,11 +193,14 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	if err != nil {
 		return
 	}
+	clientLog.Debug("Created temp working directory: " + tempWorkdir)
 	defer fileutils.RemoveTempDir(tempWorkdir)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", owner, repo, branch, tempWorkdir))
 	err = client.DownloadRepository(context.Background(), owner, repo, branch, tempWorkdir)
 	if err != nil {
 		return
 	}
+	clientLog.Debug("Downloaded target repository")
 	return runAudit(xrayScanParams, server, tempWorkdir)
 }
 
@@ -217,15 +231,18 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 	if err != nil {
 		return
 	}
-	for _, vulnerability := range vulnerabilitiesRows {
+	for i, vulnerability := range vulnerabilitiesRows {
+		clientLog.Debug("Prev #:" + strconv.FormatInt(int64(i), 10) + GetUniqueID(vulnerability))
 		existsVulnerabilitiesMap[GetUniqueID(vulnerability)] = vulnerability
 	}
 	vulnerabilitiesRows, err = xrayutils.CreateVulnerabilitiesRows(currentScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
-	for _, vulnerability := range vulnerabilitiesRows {
+	for i, vulnerability := range vulnerabilitiesRows {
+		clientLog.Debug("new #:" + strconv.FormatInt(int64(i), 10) + GetUniqueID(vulnerability))
 		if _, exists := existsVulnerabilitiesMap[GetUniqueID(vulnerability)]; !exists {
+			clientLog.Debug(GetUniqueID(vulnerability))
 			newVulnerabilitiesRows = append(newVulnerabilitiesRows, vulnerability)
 		}
 	}
@@ -234,7 +251,7 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 }
 
 func GetUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
-	return vulnerability.IssueId + vulnerability.Components[0].Name
+	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 
 }
 
@@ -242,14 +259,11 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 	if len(vulnerabilitiesRows) == 0 {
 		return icons.GetIconTag(icons.NoVulnerabilityBannerSource)
 	}
-	tableHeder := `| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE 
-	:--: | -- | -- | -- | -- | :--: | --`
-	tableContent := `
-
-	
-	`
+	tableHeder := "\n| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
+		":--: | -- | -- | -- | -- | :--: | --"
+	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s \n", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
 	}
 	return icons.GetIconTag(icons.VulnerabilitiesBannerSource) + tableHeder + tableContent
