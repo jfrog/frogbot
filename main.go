@@ -231,18 +231,15 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 	if err != nil {
 		return
 	}
-	for i, vulnerability := range vulnerabilitiesRows {
-		clientLog.Debug("Prev #:" + strconv.FormatInt(int64(i), 10) + GetUniqueID(vulnerability))
+	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[GetUniqueID(vulnerability)] = vulnerability
 	}
 	vulnerabilitiesRows, err = xrayutils.CreateVulnerabilitiesRows(currentScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
-	for i, vulnerability := range vulnerabilitiesRows {
-		clientLog.Debug("new #:" + strconv.FormatInt(int64(i), 10) + GetUniqueID(vulnerability))
+	for _, vulnerability := range vulnerabilitiesRows {
 		if _, exists := existsVulnerabilitiesMap[GetUniqueID(vulnerability)]; !exists {
-			clientLog.Debug(GetUniqueID(vulnerability))
 			newVulnerabilitiesRows = append(newVulnerabilitiesRows, vulnerability)
 		}
 	}
