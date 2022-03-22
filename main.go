@@ -285,7 +285,7 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 		":--: | -- | -- | -- | -- | :--: | --"
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity)), vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", icons.GetIconTag(icons.GetIconSource(vulnerability.Severity))+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
 	}
 	return icons.GetIconTag(icons.VulnerabilitiesBannerSource) + tableHeder + tableContent
