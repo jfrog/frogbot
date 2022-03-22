@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/jfrog/frogbot/icons"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -24,17 +25,20 @@ import (
 const (
 	frogbotVersion = "0.0.0"
 	// Env
-	jfrogUser           = "FROGBOT_JF_USER"
-	jfrogUrl            = "FROGBOT_JF_URL"
-	jfrogXrayUrl        = "FROGBOT_JF_XRAY_URL"
-	jfrogArtifactoryUrl = "FROGBOT_JF_ARTIFACTORY_URL"
-	jfrogPassword       = "FROGBOT_JF_PASSWORD"
-	jfrogToken          = "FROGBOT_JF_TOKEN"
-	gitRepoOwner        = "FROGBOT_GIT_OWNER"
-	gitRepo             = "FROGBOT_GIT_REPO"
-	gitToken            = "FROGBOT_GIT_TOKEN"
-	gitBaseBranch       = "FROGBOT_GIT_BASE_BRANCH"
-	prID                = "FROGBOT_PR"
+	jfrogUser           = "JF_USER"
+	jfrogUrl            = "JF_URL"
+	jfrogXrayUrl        = "JF_XRAY_URL"
+	jfrogArtifactoryUrl = "JF_ARTIFACTORY_URL"
+	jfrogPassword       = "JF_PASSWORD"
+	jfrogToken          = "JF_TOKEN"
+	jfrogWatches        = "JF_WATCHES"
+	watchesDelimiter    = ","
+	jfrogProject        = "JF_PROJECT"
+	gitRepoOwner        = "JF_GIT_OWNER"
+	gitRepo             = "JF_GIT_REPO"
+	gitToken            = "JF_GIT_TOKEN"
+	gitBaseBranch       = "JF_GIT_BASE_BRANCH"
+	gitPullRequestID    = "JF_GIT_PULL_REQUEST_ID"
 )
 
 func main() {
@@ -71,7 +75,7 @@ func getCommands() []*clitool.Command {
 }
 
 func scanPullRequest(c *clitool.Context) error {
-	server, repoOwner, token, repo, baseBranch, pullRequestID, err := extractParamsFromEnv()
+	server, repoOwner, token, repo, baseBranch, watches, project, pullRequestID, err := extractParamsFromEnv()
 	if err != nil {
 		return err
 	}
@@ -81,8 +85,7 @@ func scanPullRequest(c *clitool.Context) error {
 	}
 
 	// Audit PR code
-	// TODO - fill contex according to env/flags
-	xrayScanParams := services.XrayGraphScanParams{IncludeVulnerabilities: true}
+	xrayScanParams := createXrayScanParams(watches, project)
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -100,11 +103,12 @@ func scanPullRequest(c *clitool.Context) error {
 	}
 	// Get only the new issues added by this PR
 	var vulnerabilitiesRows []xrayutils.VulnerabilityRow
-	// TODO - handle array of scan results!
-	if len(currentScan[0].Violations) > 0 {
-		vulnerabilitiesRows = getNewViolations(previousScan[0], currentScan[0])
-	} else if len(currentScan[0].Vulnerabilities) > 0 {
-		vulnerabilitiesRows = getNewVulnerabilities(previousScan[0], currentScan[0])
+	for i := 0; i < len(currentScan); i += 1 {
+		if len(currentScan[i].Violations) > 0 {
+			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewViolations(previousScan[i], currentScan[i])...)
+		} else if len(currentScan[i].Vulnerabilities) > 0 {
+			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewVulnerabilities(previousScan[i], currentScan[i])...)
+		}
 	}
 	// Comment frogbot message on the PR
 	message := createPullRequestMessage(vulnerabilitiesRows)
@@ -112,7 +116,7 @@ func scanPullRequest(c *clitool.Context) error {
 
 }
 
-func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, baseBranch string, pullRequestID int, err error) {
+func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, repo, baseBranch, project, watches string, pullRequestID int, err error) {
 	url := os.Getenv(jfrogUrl)
 	xrUrl := os.Getenv(jfrogXrayUrl)
 	rtUrl := os.Getenv(jfrogArtifactoryUrl)
@@ -156,15 +160,36 @@ func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, 
 		err = fmt.Errorf("%s is missing", gitBaseBranch)
 		return
 	}
-	pullRequestIDString := os.Getenv(prID)
+	pullRequestIDString := os.Getenv(gitPullRequestID)
 	if pullRequestIDString == "" {
-		err = fmt.Errorf("%s is missing", prID)
+		err = fmt.Errorf("%s is missing", gitPullRequestID)
 		return
 	}
 	pullRequestID, err = strconv.Atoi(pullRequestIDString)
 	if err != nil {
 		return
 	}
+
+	// No mandatory Xray context params
+	watches = os.Getenv(jfrogWatches)
+	project = os.Getenv(jfrogProject)
+
+	return
+}
+
+func createXrayScanParams(watches, project string) (params services.XrayGraphScanParams) {
+	params.ScanType = services.Dependency
+	params.IncludeLicenses = false
+	if watches != "" {
+		params.Watches = strings.Split(watches, watchesDelimiter)
+		return
+	}
+	if project != "" {
+		params.ProjectKey = project
+		return
+	}
+	// No context was supplied, request from Xray to return all known vulnerabilities.
+	params.IncludeVulnerabilities = true
 	return
 }
 
