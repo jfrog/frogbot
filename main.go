@@ -125,7 +125,7 @@ func extractParamsFromEnv() (server coreconfig.ServerDetails, repoOwner, token, 
 		server.ArtifactoryUrl = rtUrl
 	} else {
 		if url == "" {
-			err = fmt.Errorf("%s or %s and %s are missing", url, xrUrl, rtUrl)
+			err = fmt.Errorf("%s or %s and %s are missing", jfrogUrl, jfrogXrayUrl, jfrogArtifactoryUrl)
 			return
 		}
 		server.Url = url
