@@ -8,7 +8,8 @@ import (
 type imageSource string
 
 const (
-	baseResourceUrl                         = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
+	// TODO - Change back to master branch. 
+	baseResourceUrl                         = "https://raw.githubusercontent.com/jfrog/frogbot/dev/resources/"
 	NoVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
 	VulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
 	criticalSeveritySource      imageSource = "criticalSeverity.png"
