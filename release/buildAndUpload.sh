@@ -24,7 +24,7 @@ buildAndUpload () {
   goos="$2"
   goarch="$3"
   fileExtension="$4"
-  exeName="bi$fileExtension"
+  exeName="frogbot$fileExtension"
 
   build $pkg $goos $goarch $exeName
 
@@ -43,7 +43,7 @@ verifyVersionMatching () {
     exit $exitCode
   fi
 
-  # Get the version which is after the last space. (expected output to -v for example: "plugin-name version v1.0.0")
+  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v1.0.0")
   echo "Output: $res"
   builtVersion="${res##* }"
   # Compare versions
