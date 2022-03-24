@@ -22,8 +22,9 @@ import (
 	clitool "github.com/urfave/cli/v2"
 )
 
+var frogbotVersion = "0.0.0"
+
 const (
-	frogbotVersion = "0.0.0"
 	// Env
 	jfrogUser           = "JF_USER"
 	jfrogUrl            = "JF_URL"
