@@ -235,6 +235,8 @@ github.com/jedib0t/go-pretty/v6 v6.2.2/go.mod h1:+nE9fyyHGil+PuISTCrp7avEdo6bqoM
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
 github.com/jfrog/build-info-go v1.1.0 h1:vokwJ/FV64S+6ZCCt2dDhoFhOdBVBsnKc7ug/QF3qPc=
 github.com/jfrog/build-info-go v1.1.0/go.mod h1:QyeMfNGt4W0eWazrd7j6uZVN5KTpB05nxF/MwvGnTqs=
+github.com/jfrog/froggit-go v1.1.0 h1:w/I9m5EeVm1pvqZcJRuCKLCs/Og4Ghs2sf4Gq2Vlbik=
+github.com/jfrog/froggit-go v1.1.0/go.mod h1:DmpzlfdnG3Fc5Xs+JnZxZVmv4I4igO/j7Zc61ZZDcXE=
 github.com/jfrog/gofrog v1.1.1 h1:uRjeZWidQl4FmKP4Zpj5hSKJp3gSIWW9VUwbQdVEVRU=
 github.com/jfrog/gofrog v1.1.1/go.mod h1:9YN5v4LlsCfLIXpwQnzSf1wVtgjdHM20FzuIu58RMI4=
 github.com/json-iterator/go v1.1.11/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
@@ -365,8 +367,6 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/subosito/gotenv v1.2.0 h1:Slr1R9HxAlEKefgq5jn9U+DnETlIUa6HfgEzj0g5d7s=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/talarian1/froggit-go v1.0.1-0.20220310151936-d79c4f6f8f24 h1:61D+eLGoL0mddt9K7SsXeDc6jelzQWplQcpJjHIbxV8=
-github.com/talarian1/froggit-go v1.0.1-0.20220310151936-d79c4f6f8f24/go.mod h1:9QE4xyV2ricuxBfxCSVidX1+uS4kOMRdF8YlFDRNSYk=
 github.com/talarian1/jfrog-cli-core/v2 v2.0.0-20220314125938-5d1017154161 h1:oGUm7+xTBoz48Rk/KJmYvyizSZzsuC6kzl4UDqZgqxo=
 github.com/talarian1/jfrog-cli-core/v2 v2.0.0-20220314125938-5d1017154161/go.mod h1:t3mLzQKDayRmPsp3Yn51DZwaElQSxasxzdKKYg8hoL8=
 github.com/talarian1/jfrog-client-go v0.13.4-0.20220314125345-d452b045748b h1:6W8+YBkPqN5ZfVWQIcXzEEdVbqZRiFPRsCS7J/Pvuqw=
@@ -415,8 +415,9 @@ golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPh
 golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b/go.mod h1:T9bdIzuCu7OtxOm1hfPfRQxPLYneinmdGuTeoZ9dtd4=
 golang.org/x/crypto v0.0.0-20210817164053-32db794688a5/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=
-golang.org/x/crypto v0.0.0-20211202192323-5770296d904e h1:MUP6MR3rJ7Gk9LEia0LP2ytiH6MuCfs7qYz+47jGdD8=
 golang.org/x/crypto v0.0.0-20211202192323-5770296d904e/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
+golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b h1:Qwe1rC8PSniVfAFPFJeyUkB+zcysC3RgJBAGk7eqBEU=
+golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522/go.mod h1:ZjyILWgesfNpC6sMxTJOJm9Kp84zZh5NQWvqDGG3Qr8=

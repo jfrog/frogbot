@@ -7,18 +7,18 @@ VERSION="[RELEASE]"
 if [ $# -eq 1 ]
 then
     VERSION=$1
-    echo "Downloading version $VERSION of FroGbot..."
+    echo "Downloading version $VERSION of Frogbot..."
 else
-    echo "Downloading the latest version of FroGbot..."
+    echo "Downloading the latest version of Frogbot..."
 fi
 
 if $(echo "${OSTYPE}" | grep -q msys); then
     FROGBOT_OS="windows"
-    URL="https://releases.jfrog.io/artifactory/frogbot/1/${VERSION}/frogbot-windows-amd64/frogbot.exe"
+    URL="https://releases.jfrog.io/artifactory/frogbot/v1/${VERSION}/frogbot-windows-amd64/frogbot.exe"
     FILE_NAME="frogbot.exe"
 elif $(echo "${OSTYPE}" | grep -q darwin); then
     FROGBOT_OS="mac"
-    URL="https://releases.jfrog.io/artifactory/frogbot/1/${VERSION}/frogbot-mac-386/frogbot"
+    URL="https://releases.jfrog.io/artifactory/frogbot/v1/${VERSION}/frogbot-mac-386/frogbot"
     FILE_NAME="frogbot"
 else
     FROGBOT_OS="linux"
@@ -50,7 +50,7 @@ else
             exit -1
             ;;
     esac
-    URL="https://releases.jfrog.io/artifactory/frogbot/1/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
+    URL="https://releases.jfrog.io/artifactory/frogbot/v1/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
     FILE_NAME="frogbot"
 fi
 

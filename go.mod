@@ -7,7 +7,6 @@ require (
 	github.com/jfrog/jfrog-cli-core/v2 v2.10.1
 	github.com/jfrog/jfrog-client-go v1.10.0
 	github.com/urfave/cli/v2 v2.3.0
-
 )
 
 require (
@@ -72,7 +71,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
+	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20210616045830-e2b7044e8c71 // indirect
@@ -91,4 +90,4 @@ replace github.com/jfrog/jfrog-client-go => github.com/talarian1/jfrog-client-go
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/talarian1/jfrog-cli-core/v2 v2.0.0-20220314125938-5d1017154161
 
-replace github.com/jfrog/froggit-go => github.com/talarian1/froggit-go v1.0.1-0.20220310151936-d79c4f6f8f24
+replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go v1.1.0
