@@ -69,4 +69,4 @@ buildAndUpload 'linux-ppc64le' 'linux' 'ppc64le' ''
 buildAndUpload 'mac-386' 'darwin' 'amd64' ''
 buildAndUpload 'windows-amd64' 'windows' 'amd64' '.exe'
 
-jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version"
+jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/"
