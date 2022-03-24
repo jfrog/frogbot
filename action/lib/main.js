@@ -39,7 +39,7 @@ function main() {
         try {
             core.startGroup('Frogbot');
             yield utils_1.Utils.addToPath();
-            yield utils_1.Utils.execScanPullRequest();
+            yield utils_1.Utils.execCommand();
         }
         catch (error) {
             core.setFailed(error.message);

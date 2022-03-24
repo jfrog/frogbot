@@ -2,6 +2,9 @@ name: "Frogbot"
 description: "Scan for vulnerabilities in GitHub repositories."
 author: "JFrog"
 inputs:
+  command:
+    description: "'before-scan' or 'scan-pull-request'"
+    required: true
   version:
     description: "Frogbot version"
     default: "latest"

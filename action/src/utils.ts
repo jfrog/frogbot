@@ -9,6 +9,7 @@ export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
+    private static readonly COMMAND_ARG: string = 'command';
     private static readonly TOOL_NAME: string = 'frogbot';
 
     public static async addToPath() {
@@ -35,8 +36,13 @@ export class Utils {
     /**
      * Execute frogbot scan-pull-request command.
      */
-    public static async execScanPullRequest() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
+    public static async execCommand() {
+        let command: string = core.getInput(Utils.COMMAND_ARG);
+        if (command !== 'scan-pull-request' && command !== 'before-scan') {
+            throw new Error("Command input should be 'before-scan' or 'scan-pull-request'");
+        }
+
+        let res: number = await exec(Utils.getExecutableName(), [command]);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }

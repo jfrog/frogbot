@@ -64,9 +64,13 @@ class Utils {
     /**
      * Execute frogbot scan-pull-request command.
      */
-    static execScanPullRequest() {
+    static execCommand() {
         return __awaiter(this, void 0, void 0, function* () {
-            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request']);
+            let command = core.getInput(Utils.COMMAND_ARG);
+            if (command !== 'scan-pull-request' && command !== 'before-scan') {
+                throw new Error("Command input should be 'before-scan' or 'scan-pull-request'");
+            }
+            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), [command]);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
             }
@@ -134,4 +138,5 @@ exports.Utils = Utils;
 Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
+Utils.COMMAND_ARG = 'command';
 Utils.TOOL_NAME = 'frogbot';
