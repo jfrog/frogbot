@@ -59,14 +59,14 @@ pkgPath="ecosys-frogbot/v1"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
-buildAndUpload 'linux-386' 'linux' '386' ''
-buildAndUpload 'linux-amd64' 'linux' 'amd64' ''
-buildAndUpload 'linux-s390x' 'linux' 's390x' ''
-buildAndUpload 'linux-arm64' 'linux' 'arm64' ''
-buildAndUpload 'linux-arm' 'linux' 'arm' ''
-buildAndUpload 'linux-ppc64' 'linux' 'ppc64' ''
-buildAndUpload 'linux-ppc64le' 'linux' 'ppc64le' ''
-buildAndUpload 'mac-386' 'darwin' 'amd64' ''
-buildAndUpload 'windows-amd64' 'windows' 'amd64' '.exe'
+buildAndUpload 'frogbot-linux-386' 'linux' '386' ''
+buildAndUpload 'frogbot-linux-amd64' 'linux' 'amd64' ''
+buildAndUpload 'frogbot-linux-s390x' 'linux' 's390x' ''
+buildAndUpload 'frogbot-linux-arm64' 'linux' 'arm64' ''
+buildAndUpload 'frogbot-linux-arm' 'linux' 'arm' ''
+buildAndUpload 'frogbot-linux-ppc64' 'linux' 'ppc64' ''
+buildAndUpload 'frogbot-linux-ppc64le' 'linux' 'ppc64le' ''
+buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
+buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat
