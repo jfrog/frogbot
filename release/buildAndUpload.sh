@@ -55,7 +55,7 @@ verifyVersionMatching () {
 }
 
 version="$1"
-pkgPath="frogbot/v1"
+pkgPath="ecosys-frogbot/v1"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
