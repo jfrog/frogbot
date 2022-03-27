@@ -36,13 +36,8 @@ export class Utils {
     /**
      * Execute frogbot scan-pull-request command.
      */
-    public static async execCommand() {
-        let command: string = core.getInput(Utils.COMMAND_ARG);
-        if (command !== 'scan-pull-request' && command !== 'before-scan') {
-            throw new Error("Command input should be 'before-scan' or 'scan-pull-request'");
-        }
-
-        let res: number = await exec(Utils.getExecutableName(), [command]);
+    public static async execScanPullRequest() {
+        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }

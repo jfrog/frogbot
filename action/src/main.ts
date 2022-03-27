@@ -5,7 +5,7 @@ async function main() {
     try {
         core.startGroup('Frogbot');
         await Utils.addToPath();
-        await Utils.execCommand();
+        await Utils.execScanPullRequest();
     } catch (error) {
         core.setFailed((<any>error).message);
     } finally {

@@ -1,4 +1,4 @@
-package commands
+package utils
 
 import (
 	"fmt"
@@ -86,6 +86,33 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.Equal(t, vcsutils.GitLab, vcsProvider)
 }
 
+func TestExtractInstallationCommandFromEnv(t *testing.T) {
+	defer cleanUpEnv()
+
+	params := &FrogbotParams{}
+	extractInstallationCommandFromEnv(params)
+	assert.Empty(t, params.InstallCommandName)
+	assert.Empty(t, params.InstallCommandArgs)
+
+	setEnvAndAssert(t, installCommandEnv, "a")
+	params = &FrogbotParams{}
+	extractInstallationCommandFromEnv(params)
+	assert.Equal(t, "a", params.InstallCommandName)
+	assert.Empty(t, params.InstallCommandArgs)
+
+	setEnvAndAssert(t, installCommandEnv, "a b")
+	params = &FrogbotParams{}
+	extractInstallationCommandFromEnv(params)
+	assert.Equal(t, "a", params.InstallCommandName)
+	assert.Equal(t, []string{"b"}, params.InstallCommandArgs)
+
+	setEnvAndAssert(t, installCommandEnv, "a b --flagName=flagValue")
+	params = &FrogbotParams{}
+	extractInstallationCommandFromEnv(params)
+	assert.Equal(t, "a", params.InstallCommandName)
+	assert.Equal(t, []string{"b", "--flagName=flagValue"}, params.InstallCommandArgs)
+}
+
 func setEnvAndAssert(t *testing.T, key, value string) {
 	assert.NoError(t, os.Setenv(key, value))
 }
@@ -94,7 +121,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	params, err := extractParamsFromEnv(true)
 	assert.NoError(t, err)
 
-	configServer := params.server
+	configServer := params.Server
 	if platformUrl {
 		assert.Equal(t, "http://127.0.0.1:8081/", configServer.Url)
 	}
@@ -106,18 +133,18 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	assert.Equal(t, "watch-1,watch-2", params.watches)
-	assert.Equal(t, "proj", params.project)
-	assert.Equal(t, vcsutils.GitHub, params.gitProvider)
-	assert.Equal(t, "jfrog", params.repoOwner)
-	assert.Equal(t, "frogbot", params.repo)
-	assert.Equal(t, "123456789", params.token)
-	assert.Equal(t, "master", params.baseBranch)
-	assert.Equal(t, 1, params.pullRequestID)
+	assert.Equal(t, "watch-1,watch-2", params.Watches)
+	assert.Equal(t, "proj", params.Project)
+	assert.Equal(t, vcsutils.GitHub, params.GitProvider)
+	assert.Equal(t, "jfrog", params.RepoOwner)
+	assert.Equal(t, "frogbot", params.Repo)
+	assert.Equal(t, "123456789", params.Token)
+	assert.Equal(t, "master", params.BaseBranch)
+	assert.Equal(t, 1, params.PullRequestID)
 }
 
 func cleanUpEnv() {
-	for _, key := range []string{jfrogUrlEnv, jfrogArtifactoryUrlEnv, jfrogXrayUrlEnv, jfrogUserEnv,
+	for _, key := range []string{jfrogUrlEnv, jfrogArtifactoryUrlEnv, jfrogXrayUrlEnv, jfrogUserEnv, installCommandEnv,
 		jfrogPasswordEnv, jfrogTokenEnv, jfrogWatchesEnv, jfrogProjectEnv, gitProvider, gitRepoOwnerEnv, gitRepoEnv,
 		gitTokenEnv, gitBaseBranchEnv, gitPullRequestIDEnv} {
 		if err := os.Unsetenv(key); err != nil {

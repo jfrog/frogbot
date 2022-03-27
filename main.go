@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/jfrog/frogbot/commands"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/log"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -31,9 +31,9 @@ func execMain() error {
 		Commands: getCommands(),
 		Version:  frogbotVersion,
 		ExitErrHandler: func(context *clitool.Context, err error) {
-			if errors.Is(err, &commands.DoNotScan{}) {
-				fmt.Println("Scan wasn't triggered: " + err.Error())
-				os.Exit(1)
+			if errors.Is(err, utils.ErrLabelCreated) || errors.Is(err, utils.ErrUnlabele) {
+				clientLog.Info("Scan wasn't triggered: " + err.Error())
+				os.Exit(0)
 			}
 		},
 	}
@@ -49,12 +49,6 @@ func getCommands() []*clitool.Command {
 			Aliases: []string{"spr"},
 			Hidden:  true,
 			Action:  commands.ScanPullRequest,
-		},
-		{
-			Name:    "before-scan",
-			Aliases: []string{"bs"},
-			Hidden:  true,
-			Action:  commands.BeforeScan,
 		},
 	}
 }

@@ -19,20 +19,10 @@ jobs:
       - name: Build Frogbot
         run: buildscripts/build.sh
 
-      - name: Before scan
-        env:
-          JF_GIT_PROVIDER: "github"
-          JF_GIT_OWNER: ${{ github.repository_owner }}
-          JF_GIT_REPO: ${{ github.event.repository.name }}
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JF_GIT_BASE_BRANCH: ${{ github.base_ref}}
-          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
-        run: ./frogbot before-scan
-
       - name: Scan Pull Request
         env:
           JF_USER: ${{ secrets.JF_USER }}
-          JF_URL: ${{ secrets.JF_XRAY_URL }}
+          JF_URL: ${{ secrets.JF_URL }}
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}

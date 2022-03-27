@@ -27,16 +27,3 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm t
-
-      # Run before-scan
-      - name: Run before-scan
-        with:
-          command: "before-scan"
-        uses: ./
-        env:
-          JF_GIT_PROVIDER: "github"
-          JF_GIT_OWNER: jfrog
-          JF_GIT_REPO: frogbot
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JF_GIT_BASE_BRANCH: master
-          JF_GIT_PULL_REQUEST_ID: 0
