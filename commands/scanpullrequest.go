@@ -18,7 +18,7 @@ import (
 )
 
 func ScanPullRequest(c *clitool.Context) error {
-	params, client, err := utils.GetParamsAndClient(true)
+	params, client, err := utils.GetParamsAndClient()
 	if err != nil {
 		return err
 	}

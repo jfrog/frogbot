@@ -72,8 +72,7 @@ func TestGetNewViolations(t *testing.T) {
 
 	impactedPackageOne := newViolations[0].ImpactedPackageName
 	impactedPackageTwo := newViolations[1].ImpactedPackageName
-	assert.True(t, (impactedPackageOne == "component-C" && impactedPackageTwo == "component-D") ||
-		impactedPackageOne == "component-D" && impactedPackageTwo == "component-C")
+	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
@@ -115,6 +114,5 @@ func TestGetNewVulnerabilities(t *testing.T) {
 
 	impactedPackageOne := newViolations[0].ImpactedPackageName
 	impactedPackageTwo := newViolations[1].ImpactedPackageName
-	assert.True(t, (impactedPackageOne == "component-C" && impactedPackageTwo == "component-D") ||
-		impactedPackageOne == "component-D" && impactedPackageTwo == "component-C")
+	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }

@@ -10,8 +10,8 @@ import (
 var ErrLabelCreated = fmt.Errorf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(LabelName))
 var ErrUnlabele = fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(LabelName))
 
-func GetParamsAndClient(includeJFrogEnv bool) (*FrogbotParams, vcsclient.VcsClient, error) {
-	params, err := extractParamsFromEnv(includeJFrogEnv)
+func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
+	params, err := extractParamsFromEnv()
 	if err != nil {
 		return nil, nil, err
 	}

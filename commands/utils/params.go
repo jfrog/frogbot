@@ -31,14 +31,13 @@ type gitParam struct {
 	PullRequestID int
 }
 
-func extractParamsFromEnv(includeJFrogEnv bool) (FrogbotParams, error) {
+func extractParamsFromEnv() (FrogbotParams, error) {
 	params := &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)
-	if includeJFrogEnv {
-		if err := extractJFrogParamsFromEnv(params); err != nil {
-			return *params, err
-		}
+	if err := extractJFrogParamsFromEnv(params); err != nil {
+		return *params, err
 	}
+
 	err := extractGitParamsFromEnv(params)
 	return *params, err
 }

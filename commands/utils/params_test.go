@@ -14,7 +14,7 @@ func init() {
 }
 
 func TestExtractParamsFromEnvNoUrl(t *testing.T) {
-	_, err := extractParamsFromEnv(true)
+	_, err := extractParamsFromEnv()
 	assert.Error(t, err)
 }
 
@@ -118,7 +118,7 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	params, err := extractParamsFromEnv(true)
+	params, err := extractParamsFromEnv()
 	assert.NoError(t, err)
 
 	configServer := params.Server
