@@ -67,7 +67,7 @@ func beforeScan(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 			return err
 		}
 	}
-	return utils.ErrUnlabele
+	return utils.ErrUnlabel
 }
 
 // Scan a pull request by auditing the source and the target branches.

@@ -8,7 +8,7 @@ import (
 )
 
 var ErrLabelCreated = fmt.Errorf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(LabelName))
-var ErrUnlabele = fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(LabelName))
+var ErrUnlabel = fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(LabelName))
 
 func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 	params, err := extractParamsFromEnv()

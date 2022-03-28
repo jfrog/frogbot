@@ -17,6 +17,10 @@ jobs:
         with:
           go-version: "^1.17"
 
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+
       # Run gosec
       - name: Install gosec
         run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin

@@ -11,18 +11,18 @@ import (
 )
 
 type FrogbotParams struct {
-	jfrogEnvParams
-	gitParam
+	JFrogEnvParams
+	GitParam
 	InstallCommandName string
 	InstallCommandArgs []string
 }
 
-type jfrogEnvParams struct {
+type JFrogEnvParams struct {
 	Server  coreconfig.ServerDetails
 	Project string
 	Watches string
 }
-type gitParam struct {
+type GitParam struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoOwner     string
 	Token         string

@@ -6,6 +6,9 @@ Automated dependencies scanning using JFrog Xray.
 
 [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
 
+## Contributions
+
+We welcome pull requests from the community. To help us improving this project, please read our [contribution](./CONTRIBUTING.md#guidelines) Guide.
 
 ## Usage
 
@@ -37,51 +40,6 @@ TODO
 ## Download Frogbot through Artifactory
 
 TODO
-
-# Building and Testing the Sources
-
-## Build Frogbot
-
-Make sure Go is installed by running:
-
-```
-go version
-```
-
-Clone the sources and CD to the root directory of the project:
-
-```
-git clone https://github.com/jfrog/frogbot.git
-cd frogbot
-```
-
-Build the sources as follows:
-
-On Unix based systems run:
-
-```
-./buildscripts/build.sh
-```
-
-On Windows run:
-
-```
-.\buildscripts\build.bat
-```
-
-Once completed, you'll find the bi executable at the current directory.
-
-## Tests
-
-To run the tests, execute the following command from within the root directory of the project:
-
-```sh
-go test -v ./...
-```
-
-# Code Contributions
-
-We welcome community contribution through pull requests.
 
 # Release Notes
 
