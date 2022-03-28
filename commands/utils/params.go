@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 )
@@ -29,6 +30,15 @@ type GitParam struct {
 	Repo          string
 	BaseBranch    string
 	PullRequestID int
+}
+
+func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
+	params, err := extractParamsFromEnv()
+	if err != nil {
+		return nil, nil, err
+	}
+	client, err := vcsclient.NewClientBuilder(params.GitProvider).Token(params.Token).Build()
+	return &params, client, err
 }
 
 func extractParamsFromEnv() (FrogbotParams, error) {
