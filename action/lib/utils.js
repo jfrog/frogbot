@@ -134,4 +134,5 @@ exports.Utils = Utils;
 Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
+Utils.COMMAND_ARG = 'command';
 Utils.TOOL_NAME = 'frogbot';

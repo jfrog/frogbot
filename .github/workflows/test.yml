@@ -10,12 +10,27 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
+      # Configure prerequisites
       - uses: actions/checkout@v2
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
           go-version: "^1.17"
+
+      # Run gosec
+      - name: Install gosec
+        run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+        if: runner.os == 'Linux'
+      - name: Run gosec
+        run: gosec ./...
+        if: runner.os == 'Linux'
+
+      # Lint
       - name: Lint
         run: go vet ./...
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1.1.0
+
+      # Run tests
       - name: Tests
         run: go test -v -race -timeout 0 -cover ./...

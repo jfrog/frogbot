@@ -9,6 +9,7 @@ export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
+    private static readonly COMMAND_ARG: string = 'command';
     private static readonly TOOL_NAME: string = 'frogbot';
 
     public static async addToPath() {
