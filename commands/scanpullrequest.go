@@ -160,19 +160,20 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 			return []services.ScanResponse{}, nil
 		}
 	}
-	return audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
+	results, _, err := audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
+	return results, err
 }
 
 func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []xrayutils.VulnerabilityRow) {
 	existsViolationsMap := make(map[string]xrayutils.VulnerabilityRow)
-	violationsRows, _, err := xrayutils.CreateViolationsRows(previousScan.Violations, false, false)
+	violationsRows, _, err := xrayutils.PrepareViolationsTable(previousScan.Violations, false, false)
 	if err != nil {
 		return
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
-	violationsRows, _, err = xrayutils.CreateViolationsRows(currentScan.Violations, false, false)
+	violationsRows, _, err = xrayutils.PrepareViolationsTable(currentScan.Violations, false, false)
 	if err != nil {
 		return
 	}
@@ -186,14 +187,14 @@ func getNewViolations(previousScan, currentScan services.ScanResponse) (newViola
 
 func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []xrayutils.VulnerabilityRow) {
 	existsVulnerabilitiesMap := make(map[string]xrayutils.VulnerabilityRow)
-	vulnerabilitiesRows, err := xrayutils.CreateVulnerabilitiesRows(previousScan.Vulnerabilities, false, false)
+	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilitiesTable(previousScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
 	}
-	vulnerabilitiesRows, err = xrayutils.CreateVulnerabilitiesRows(currentScan.Vulnerabilities, false, false)
+	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilitiesTable(currentScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
