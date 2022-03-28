@@ -31,7 +31,7 @@ func execMain() error {
 		Commands: getCommands(),
 		Version:  frogbotVersion,
 		ExitErrHandler: func(context *clitool.Context, err error) {
-			if errors.Is(err, utils.ErrLabelCreated) || errors.Is(err, utils.ErrUnlabele) {
+			if errors.Is(err, utils.ErrLabelCreated) || errors.Is(err, utils.ErrUnlabel) {
 				clientLog.Info("Scan wasn't triggered: " + err.Error())
 				os.Exit(0)
 			}

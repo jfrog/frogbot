@@ -1,11 +1,18 @@
 package commands
 
 import (
+	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/commands/testdata"
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 )
+
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
 
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
@@ -115,4 +122,73 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	impactedPackageOne := newViolations[0].ImpactedPackageName
 	impactedPackageTwo := newViolations[1].ImpactedPackageName
 	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
+}
+
+var params = &utils.FrogbotParams{
+	GitParam: utils.GitParam{
+		RepoOwner:     "repo-owner",
+		Repo:          "repo-name",
+		PullRequestID: 5,
+	},
+}
+
+func TestBeforeScan(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Label is expected to exist in pull request
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelDescription),
+	}, nil)
+	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{string(utils.LabelName)}, nil)
+	client.EXPECT().UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), 5).Return(nil)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.NoError(t, err, utils.ErrUnlabel)
+}
+
+func TestBeforeScanLabelNotExist(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Label is expected to not exists
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(nil, nil)
+	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelColor),
+	}).Return(nil)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.ErrorIs(t, err, utils.ErrLabelCreated)
+}
+
+func TestBeforeScanUnlabeled(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Pull request is expected to be unlabeled
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelDescription),
+	}, nil)
+	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, nil)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.ErrorIs(t, err, utils.ErrUnlabel)
+}
+
+func mockVcsClient(t *testing.T) (*testdata.MockVcsClient, func()) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	return testdata.NewMockVcsClient(mockCtrl), mockCtrl.Finish
 }
