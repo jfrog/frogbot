@@ -8,13 +8,13 @@ import (
 func GetSeverityTag(iconName string) string {
 	switch strings.ToLower(iconName) {
 	case "critical":
-		getIconTag(criticalSeveritySource)
+		return getIconTag(criticalSeveritySource)
 	case "high":
-		getIconTag(highSeveritySource)
+		return getIconTag(highSeveritySource)
 	case "medium":
-		getIconTag(mediumSeveritySource)
+		return getIconTag(mediumSeveritySource)
 	case "low":
-		getIconTag(lowSeveritySource)
+		return getIconTag(lowSeveritySource)
 	}
 	return ""
 }
