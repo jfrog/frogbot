@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -13,9 +14,14 @@ func init() {
 	cleanUpEnv()
 }
 
-func TestExtractParamsFromEnvNoUrl(t *testing.T) {
+func TestExtractParamsFromEnvError(t *testing.T) {
+	defer cleanUpEnv()
 	_, _, err := GetParamsAndClient()
-	assert.Error(t, err)
+	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
+
+	setEnvAndAssert(t, jfrogUrlEnv, "http://127.0.0.1:8081")
+	_, _, err = GetParamsAndClient()
+	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_TOKEN environment variables are missing")
 }
 
 func TestExtractParamsFromEnvPlatform(t *testing.T) {
@@ -111,6 +117,39 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 	extractInstallationCommandFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Equal(t, []string{"b", "--flagName=flagValue"}, params.InstallCommandArgs)
+}
+
+func TestExtractGitParamsFromEnvErrors(t *testing.T) {
+	defer cleanUpEnv()
+	params := &FrogbotParams{}
+
+	err := extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github' or 'gitlab'")
+
+	setEnvAndAssert(t, gitProvider, "github")
+	err = extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
+
+	setEnvAndAssert(t, gitRepoOwnerEnv, "jfrog")
+	err = extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
+
+	setEnvAndAssert(t, gitRepoEnv, "frogit")
+	err = extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
+
+	setEnvAndAssert(t, gitTokenEnv, "123456")
+	err = extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "'JF_GIT_BASE_BRANCH' environment variable is missing")
+
+	setEnvAndAssert(t, gitBaseBranchEnv, "master")
+	err = extractGitParamsFromEnv(params)
+	assert.EqualError(t, err, "'JF_GIT_PULL_REQUEST_ID' environment variable is missing")
+
+	setEnvAndAssert(t, gitPullRequestIDEnv, "illegal-id")
+	err = extractGitParamsFromEnv(params)
+	_, ok := err.(*strconv.NumError)
+	assert.True(t, ok)
 }
 
 func setEnvAndAssert(t *testing.T, key, value string) {

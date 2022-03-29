@@ -8,6 +8,14 @@ import (
 var ErrLabelCreated = fmt.Errorf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(LabelName))
 var ErrUnlabel = fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(LabelName))
 
+type errMissingEnv struct {
+	variableName string
+}
+
+func (m *errMissingEnv) Error() string {
+	return fmt.Sprintf("'%s' environment variable is missing", m.variableName)
+}
+
 func Chdir(dir string) (func(), error) {
 	wd, err := os.Getwd()
 	if err != nil {

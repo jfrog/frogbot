@@ -5,7 +5,7 @@ type vcsProvider string
 type frogbotLabel string
 
 const (
-	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/dev/resources/"
+	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Images
 	NoVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
