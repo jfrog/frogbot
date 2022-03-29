@@ -1,10 +1,10 @@
-# Guidelines
+# 📖 Guidelines
 
 - If the existing tests do not already cover your changes, please add tests.
 - Pull requests should be created on the _dev_ branch.
 - Please run `go fmt ./...` for formatting the code before submitting the pull request.
 
-# Building and Testing the Sources
+# ⚒️ Building and Testing the Sources
 
 ## Build Frogbot
 
