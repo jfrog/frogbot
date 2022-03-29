@@ -23,11 +23,23 @@ func ScanPullRequest(c *clitool.Context) error {
 		return err
 	}
 
-	if err = beforeScan(params, client); err != nil {
-		return err
+	if c.Bool("use-labels") {
+		if err = beforeScan(params, client); err != nil {
+			return err
+		}
 	}
 
 	return scanPullRequest(params, client)
+}
+
+func GetScanPullRequestFlags() []clitool.Flag {
+	return []clitool.Flag{
+		&clitool.BoolFlag{
+			Name:    "use-labels",
+			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot' label to a pull request.",
+			EnvVars: []string{"JF_USE_LABELS"},
+		},
+	}
 }
 
 // Run before scan, to make sure the Xray scan will be run only after adding the frogbot label.
