@@ -55,7 +55,7 @@ pipelines:
             - curl -fL https://install-cli.jfrog.io | sh
             - jf c rm --quiet
             - jf c add internal --url=$int_entplus_deployer_url --user=$int_entplus_deployer_user --password=$int_entplus_deployer_apikey
-            - jf goc --repo-resolve ecosys-go-remote
+            - jf goc --repo-resolve ecosys-go-virtual
 
             # Audit
             - jf audit --fail=false
