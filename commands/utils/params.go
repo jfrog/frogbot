@@ -90,22 +90,22 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 		return err
 	}
 	if params.RepoOwner = os.Getenv(gitRepoOwnerEnv); params.RepoOwner == "" {
-		return fmt.Errorf("%s is missing", gitRepoOwnerEnv)
+		return &errMissingEnv{gitRepoOwnerEnv}
 	}
 	if params.Repo = os.Getenv(gitRepoEnv); params.Repo == "" {
-		return fmt.Errorf("%s is missing", gitRepoEnv)
+		return &errMissingEnv{gitRepoEnv}
 	}
 	if params.Token = os.Getenv(gitTokenEnv); params.Token == "" {
-		return fmt.Errorf("%s is missing", gitTokenEnv)
+		return &errMissingEnv{gitTokenEnv}
 	}
 	if params.BaseBranch = os.Getenv(gitBaseBranchEnv); params.BaseBranch == "" {
-		return fmt.Errorf("%s is missing", gitBaseBranchEnv)
+		return &errMissingEnv{gitBaseBranchEnv}
 	}
 	if pullRequestIDString := os.Getenv(gitPullRequestIDEnv); pullRequestIDString != "" {
 		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		return err
 	}
-	return fmt.Errorf("%s is missing", gitPullRequestIDEnv)
+	return &errMissingEnv{gitPullRequestIDEnv}
 }
 
 func extractInstallationCommandFromEnv(params *FrogbotParams) {
@@ -118,7 +118,6 @@ func extractInstallationCommandFromEnv(params *FrogbotParams) {
 		params.InstallCommandArgs = parts[1:]
 	}
 	params.InstallCommandName = parts[0]
-
 }
 
 func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
