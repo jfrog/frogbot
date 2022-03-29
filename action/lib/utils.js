@@ -35,6 +35,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Utils = void 0;
 const core = __importStar(require("@actions/core"));
 const exec_1 = require("@actions/exec");
+const github = __importStar(require("@actions/github"));
 const toolCache = __importStar(require("@actions/tool-cache"));
 const fs = __importStar(require("fs"));
 const os = __importStar(require("os"));
@@ -60,6 +61,16 @@ class Utils {
             // Cache 'frogbot' executable
             yield this.cacheAndAddPath(downloadDir, version, fileName);
         });
+    }
+    static setFrogbotEnv() {
+        core.exportVariable('JF_GIT_PROVIDER', 'github');
+        core.exportVariable('JF_GIT_OWNER', github.context.repo.owner);
+        let owner = github.context.repo.repo;
+        if (owner) {
+            core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
+        }
+        core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
+        core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
     }
     /**
      * Execute frogbot scan-pull-request command.
@@ -134,5 +145,4 @@ exports.Utils = Utils;
 Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
-Utils.COMMAND_ARG = 'command';
 Utils.TOOL_NAME = 'frogbot';
