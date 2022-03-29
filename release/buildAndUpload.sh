@@ -13,7 +13,7 @@ build () {
   chmod +x $exeName
 
   # Run verification after building plugin for the correct platform of this image.
-  if [[ "$pkg" = "linux-386" ]]; then
+  if [[ "$pkg" = "frogbot-linux-386" ]]; then
     verifyVersionMatching
   fi
 }
