@@ -24,7 +24,7 @@ const (
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
 
-	installCommandEnv = "JF_INSTALL_COMMAND"
+	installCommandEnv = "JF_INSTALL_DEPS_CMD"
 
 	// JFrog platform environment varialbes
 	jfrogUserEnv           = "JF_USER"
