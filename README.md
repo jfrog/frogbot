@@ -1,4 +1,4 @@
-# FrogBot
+# Frogbot
 
 ## Project Status
 
@@ -19,22 +19,56 @@ We welcome pull requests from the community. To help us improving this project, 
 
 ## Usage
 
-- [FrogBot](#frogbot)
-  - [Project Status](#project-status)
-  - [Usage](#usage)
-  - [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
-  - [Using Frogbot with GitLab CI](#using-frogbot-with-gitlab-ci)
-  - [Using Frogbot with Jenkins](#using-frogbot-with-jenkins)
-  - [Download Frogbot through Artifactory](#download-frogbot-through-artifactory)
-- [Building and Testing the Sources](#building-and-testing-the-sources)
-  - [Build Frogbot](#build-frogbot)
-  - [Tests](#tests)
-- [Code Contributions](#code-contributions)
-- [Release Notes](#release-notes)
+- [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
+- [Using Frogbot with GitLab CI](#using-frogbot-with-gitlab-ci)
+- [Using Frogbot with Jenkins](#using-frogbot-with-jenkins)
+- [Download Frogbot through Artifactory](#download-frogbot-through-artifactory)
 
 ## Using Frogbot with GitHub Actions
 
-TODO
+```yml
+name: "Frogbot"
+on:
+  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot" label if needed.
+  # After "🐸 frogbot" label was added to a pull request, Frogbot scans the pull request.
+  pull_request_target:
+    types: [opened, labeled]
+jobs:
+  scan-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # Install prerequisites - "setup-go", "setup-node", "setup-python", etc.
+      # ...
+
+      - uses: jfrog/frogbot@v1
+        env:
+          # [Mandatory] JFrog platform URL
+          JF_URL: ${{ secrets.JF_URL }}
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided] JFrog access token with 'read' permissions on Xray service
+          JF_ACCESS_TOKEN: ${{ secrets.JF_USER }}
+
+          # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform username
+          JF_USER: ${{ secrets.JF_USER }}
+          # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform password
+          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+
+          # [Manadatory] The GitHub token automatically generated for the job
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # [Optional] Xray Watches. Learn more about watches here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional] JFrog project. Learn more about projects here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          JF_PROJECT: <project-key>
+
+          # [Optional] The command that installs the dependencies. For example - "npm i", "nuget restore", "dotnet restore", "pip install", etc.
+          JF_INSTALL_DEPS_CMD: <your-install-command>
+```
 
 ## Using Frogbot with GitLab CI
 
