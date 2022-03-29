@@ -22,9 +22,9 @@ After a new pull request is created, one of the maintainers can add the "Frogbot
 
 ### Using Frogbot with GitHub Actions
 
-For a super quick start, we created GitHub Actions templates under [templates/github-action](templates/github-actions/).
+For a super quick start, we created [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates) under [templates/github-action](templates/github-actions/).
 
-Here's a structure of a recommanded frogbot.yml file:
+Here's a recommanded structure of a `frogbot.yml` workflow file:
 
 ```yml
 name: "Frogbot"
