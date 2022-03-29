@@ -61,7 +61,7 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 		params.Server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if url == "" {
-			return fmt.Errorf("%s or %s and %s are missing", jfrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
+			return fmt.Errorf("%s or %s and %s environment variables are missing", jfrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
 		params.Server.Url = url + "/"
 		params.Server.XrayUrl = url + "/xray/"
@@ -76,7 +76,7 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 	} else if accessToken := os.Getenv(jfrogTokenEnv); accessToken != "" {
 		params.Server.AccessToken = accessToken
 	} else {
-		return fmt.Errorf("%s and %s or %s are missing", jfrogUserEnv, jfrogPasswordEnv, jfrogTokenEnv)
+		return fmt.Errorf("%s and %s or %s environment variables are missing", jfrogUserEnv, jfrogPasswordEnv, jfrogTokenEnv)
 	}
 	// Non mandatory Xray context params
 	params.Watches = os.Getenv(jfrogWatchesEnv)

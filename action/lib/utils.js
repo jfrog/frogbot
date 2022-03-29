@@ -77,7 +77,7 @@ class Utils {
      */
     static execScanPullRequest() {
         return __awaiter(this, void 0, void 0, function* () {
-            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request']);
+            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request', '--use-labels']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
             }
