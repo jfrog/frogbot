@@ -1,5 +1,6 @@
 import os from 'os';
 import { Utils } from '../src/utils';
+
 jest.mock('os');
 
 describe('Frogbot Action Tests', () => {
@@ -27,5 +28,13 @@ describe('Frogbot Action Tests', () => {
             let cliUrl: string = Utils.getCliUrl('1.2.3', fileName);
             expect(cliUrl).toBe(expectedUrl);
         });
+    });
+
+    it('Repository env tests', () => {
+        process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+        process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+        Utils.setFrogbotEnv();
+        expect(process.env['JF_GIT_PROVIDER']).toBe('github');
+        expect(process.env['JF_GIT_OWNER']).toBe('jfrog');
     });
 });

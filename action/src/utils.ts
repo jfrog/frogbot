@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import { exec } from '@actions/exec';
+import * as github from '@actions/github';
 import * as toolCache from '@actions/tool-cache';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -9,7 +10,6 @@ export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
-    private static readonly COMMAND_ARG: string = 'command';
     private static readonly TOOL_NAME: string = 'frogbot';
 
     public static async addToPath() {
@@ -31,6 +31,17 @@ export class Utils {
 
         // Cache 'frogbot' executable
         await this.cacheAndAddPath(downloadDir, version, fileName);
+    }
+
+    public static setFrogbotEnv() {
+        core.exportVariable('JF_GIT_PROVIDER', 'github');
+        core.exportVariable('JF_GIT_OWNER', github.context.repo.owner);
+        let owner: string | undefined = github.context.repo.repo;
+        if (owner) {
+            core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
+        }
+        core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
+        core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
     }
 
     /**
