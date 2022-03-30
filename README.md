@@ -18,7 +18,6 @@ After a new pull request is created, one of the maintainers can add the "Frogbot
 - [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
 - [Using Frogbot with GitLab CI](#using-frogbot-with-gitlab-ci)
 - [Using Frogbot with Jenkins](#using-frogbot-with-jenkins)
-- [Download Frogbot through Artifactory](#download-frogbot-through-artifactory)
 
 ### Using Frogbot with GitHub Actions
 
@@ -50,7 +49,7 @@ jobs:
           JF_URL: ${{ secrets.JF_URL }}
 
           # [Mandatory if JF_USER and JF_PASSWORD are not provided] JFrog access token with 'read' permissions on Xray service
-          JF_ACCESS_TOKEN: ${{ secrets.JF_USER }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
           # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform username
           JF_USER: ${{ secrets.JF_USER }}
@@ -75,13 +74,45 @@ jobs:
 
 TODO
 
-### Using Frogbot with Jenkins
+### Download Frogbot Manually
 
-TODO
+Download Frogbot using the following command:
 
-### Download Frogbot through Artifactory
+```bash
+curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
+```
 
-TODO
+<details>
+<summary>Download Frogbot through Artifactory</summary>
+
+If your agent has no internet access, you can configure the pipeline to download Frogbot and from a JFrog Artifactory instance, which is configured to proxy the download repositories.
+
+1. Create a remote repository in Artifactory for downloading Frogbot. Name the repository frogbot and set its URL to https://releases.jfrog.io/artifactory/frogbot/v1/
+2. Depends on your agent's architecture and operating system, download Frogbot using curl:
+
+```bash
+curl -fLg "https://ecosysjfrog.jfrog.io/artifactory/frogbot/[RELEASE]/<arch>/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
+```
+
+##### Available architechtures:
+
+- frogbot-linux-386
+- frogbot-linux-amd64
+- frogbot-linux-arm
+- frogbot-linux-arm64
+- frogbot-linux-ppc64
+- frogbot-linux-ppc64le
+- frogbot-linux-s390x
+- frogbot-mac-386
+- frogbot-windows-amd64
+
+For example:
+
+```bash
+curl -fLg "https://ecosysjfrog.jfrog.io/artifactory/frogbot/[RELEASE]/frogbot-linux-386/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
+```
+
+</details>
 
 ## 📝 Release Notes
 
