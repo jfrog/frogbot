@@ -17,7 +17,6 @@ After a new pull request is created, one of the maintainers can add the "Frogbot
 
 - [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
 - [Using Frogbot with GitLab CI](#using-frogbot-with-gitlab-ci)
-- [Using Frogbot with Jenkins](#using-frogbot-with-jenkins)
 
 ### Using Frogbot with GitHub Actions
 
