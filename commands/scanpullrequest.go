@@ -230,8 +230,16 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 		":--: | -- | -- | -- | -- | :--: | --"
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
+		var componentName, componentVersion, cve string
+		if len(vulnerability.Components) > 0 {
+			componentName = vulnerability.Components[0].Name
+			componentVersion = vulnerability.Components[0].Version
+		}
+		if len(vulnerability.Cves) > 0 {
+			cve = vulnerability.Cves[0].Id
+		}
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(vulnerability.Severity)+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
-			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, vulnerability.Components[0].Name, vulnerability.Components[0].Version, vulnerability.Cves[0].Id)
+			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, componentName, componentVersion, cve)
 	}
 	return utils.GetVulnerabilitiesBanner() + tableHeder + tableContent
 }
