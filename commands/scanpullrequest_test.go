@@ -361,7 +361,6 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Severity:               "High",
 			ImpactedPackageName:    "github.com/mholt/archiver/v3",
 			ImpactedPackageVersion: "v3.5.1",
-			FixedVersions:          "",
 			Components: []xrayutils.ComponentRow{
 				{
 					Name:    "github.com/mholt/archiver/v3",
@@ -369,9 +368,6 @@ func TestCreatePullRequestMessage(t *testing.T) {
 				},
 			},
 			Cves: []xrayutils.CveRow{
-				{
-					Id: "",
-				},
 			},
 		},
 		{
