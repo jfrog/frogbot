@@ -98,7 +98,14 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		return err
 	}
 	clientLog.Info("Xray scan completed")
-	// Get only the new issues added by this PR
+
+	// Comment frogbot message on the PR
+	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan))
+	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+}
+
+// Create vulnerabilities rows. The rows should contain only the new issues added by this PR
+func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse) []xrayutils.VulnerabilityRow {
 	var vulnerabilitiesRows []xrayutils.VulnerabilityRow
 	for i := 0; i < len(currentScan); i += 1 {
 		if len(currentScan[i].Violations) > 0 {
@@ -107,9 +114,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewVulnerabilities(previousScan[i], currentScan[i])...)
 		}
 	}
-	// Comment frogbot message on the PR
-	message := createPullRequestMessage(vulnerabilitiesRows)
-	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+	return vulnerabilitiesRows
 }
 
 func createXrayScanParams(watches, project string) (params services.XrayGraphScanParams) {
@@ -161,19 +166,27 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 		return []services.ScanResponse{}, err
 	}
 	defer restoreDir()
-	if params.InstallCommandName != "" {
-		clientLog.Info("Executing '"+params.InstallCommandName+"'", params.InstallCommandArgs, "at ", workDir)
-		//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-		if err = exec.Command(params.InstallCommandName, params.InstallCommandArgs...).Run(); err != nil {
-			if failOnInstallationErrors {
-				return []services.ScanResponse{}, err
-			}
-			clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
-			return []services.ScanResponse{}, nil
-		}
+	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
+		return []services.ScanResponse{}, err
 	}
 	results, _, err := audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
 	return results, err
+}
+
+func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) error {
+	if params.InstallCommandName == "" {
+		return nil
+	}
+	clientLog.Info("Executing '"+params.InstallCommandName+"'", params.InstallCommandArgs, "at ", workDir)
+	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
+	if err := exec.Command(params.InstallCommandName, params.InstallCommandArgs...).Run(); err != nil {
+		if failOnInstallationErrors {
+			return err
+		}
+		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
+		return nil
+	}
+	return nil
 }
 
 func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []xrayutils.VulnerabilityRow) {

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,7 +42,7 @@ func TestCreateXrayScanParams(t *testing.T) {
 	assert.False(t, params.IncludeLicenses)
 }
 
-func TestGetNewViolations(t *testing.T) {
+func TestCreateVulnerabilitiesRows(t *testing.T) {
 	// Previous scan with only one violation - XRAY-1
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{{
@@ -73,20 +74,20 @@ func TestGetNewViolations(t *testing.T) {
 		},
 	}
 
-	// Run getNewViolations and make sure that only the XRAY-2 violation exists in the results
-	newViolations := getNewViolations(previousScan, currentScan)
-	assert.Len(t, newViolations, 2)
-	assert.Equal(t, "XRAY-2", newViolations[0].IssueId)
-	assert.Equal(t, "low", newViolations[0].Severity)
-	assert.Equal(t, "XRAY-2", newViolations[1].IssueId)
-	assert.Equal(t, "low", newViolations[1].Severity)
+	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 violation exists in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 2)
+	assert.Equal(t, "XRAY-2", rows[0].IssueId)
+	assert.Equal(t, "low", rows[0].Severity)
+	assert.Equal(t, "XRAY-2", rows[1].IssueId)
+	assert.Equal(t, "low", rows[1].Severity)
 
-	impactedPackageOne := newViolations[0].ImpactedPackageName
-	impactedPackageTwo := newViolations[1].ImpactedPackageName
+	impactedPackageOne := rows[0].ImpactedPackageName
+	impactedPackageTwo := rows[1].ImpactedPackageName
 	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }
 
-func TestGetNewViolationsCaseNoPrevViolations(t *testing.T) {
+func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	// Previous scan with no violation
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{},
@@ -112,15 +113,15 @@ func TestGetNewViolationsCaseNoPrevViolations(t *testing.T) {
 		},
 	}
 
-	// Run getNewViolations and expect both XRAY-1 and XRAY-2 violation in the results
-	newViolations := getNewViolations(previousScan, currentScan)
-	assert.Len(t, newViolations, 2)
-	assert.Equal(t, "XRAY-1", newViolations[0].IssueId)
-	assert.Equal(t, "high", newViolations[0].Severity)
-	assert.Equal(t, "component-A", newViolations[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", newViolations[1].IssueId)
-	assert.Equal(t, "low", newViolations[1].Severity)
-	assert.Equal(t, "component-C", newViolations[1].ImpactedPackageName)
+	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 violation in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 2)
+	assert.Equal(t, "XRAY-1", rows[0].IssueId)
+	assert.Equal(t, "high", rows[0].Severity)
+	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
+	assert.Equal(t, "XRAY-2", rows[1].IssueId)
+	assert.Equal(t, "low", rows[1].Severity)
+	assert.Equal(t, "component-C", rows[1].ImpactedPackageName)
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
@@ -149,9 +150,9 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 		Violations: []services.Violation{},
 	}
 
-	// Run getNewViolations and expect no violations in the results
-	newViolations := getNewViolations(previousScan, currentScan)
-	assert.Len(t, newViolations, 0)
+	// Run createVulnerabilitiesRows and expect no violations in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 0)
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
@@ -183,16 +184,16 @@ func TestGetNewVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run getNewVulnerabilities and make sure that only the XRAY-2 vulnerability exists in the results
-	newViolations := getNewVulnerabilities(previousScan, currentScan)
-	assert.Len(t, newViolations, 2)
-	assert.Equal(t, "XRAY-2", newViolations[0].IssueId)
-	assert.Equal(t, "low", newViolations[0].Severity)
-	assert.Equal(t, "XRAY-2", newViolations[1].IssueId)
-	assert.Equal(t, "low", newViolations[1].Severity)
+	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 vulnerability exists in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 2)
+	assert.Equal(t, "XRAY-2", rows[0].IssueId)
+	assert.Equal(t, "low", rows[0].Severity)
+	assert.Equal(t, "XRAY-2", rows[1].IssueId)
+	assert.Equal(t, "low", rows[1].Severity)
 
-	impactedPackageOne := newViolations[0].ImpactedPackageName
-	impactedPackageTwo := newViolations[1].ImpactedPackageName
+	impactedPackageOne := rows[0].ImpactedPackageName
+	impactedPackageTwo := rows[1].ImpactedPackageName
 	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }
 
@@ -220,15 +221,15 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run getNewVulnerabilities and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	newViolations := getNewVulnerabilities(previousScan, currentScan)
-	assert.Len(t, newViolations, 2)
-	assert.Equal(t, "XRAY-1", newViolations[0].IssueId)
-	assert.Equal(t, "high", newViolations[0].Severity)
-	assert.Equal(t, "component-A", newViolations[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", newViolations[1].IssueId)
-	assert.Equal(t, "low", newViolations[1].Severity)
-	assert.Equal(t, "component-B", newViolations[1].ImpactedPackageName)
+	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 2)
+	assert.Equal(t, "XRAY-1", rows[0].IssueId)
+	assert.Equal(t, "high", rows[0].Severity)
+	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
+	assert.Equal(t, "XRAY-2", rows[1].IssueId)
+	assert.Equal(t, "low", rows[1].Severity)
+	assert.Equal(t, "component-B", rows[1].ImpactedPackageName)
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
@@ -255,9 +256,9 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 		Vulnerabilities: []services.Vulnerability{},
 	}
 
-	// Run getNewVulnerabilities and expect no vulnerability in the results
-	newViolations := getNewVulnerabilities(previousScan, currentScan)
-	assert.Len(t, newViolations, 0)
+	// Run createVulnerabilitiesRows and expect no vulnerability in the results
+	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	assert.Len(t, rows, 0)
 }
 
 var params = &utils.FrogbotParams{
@@ -265,6 +266,7 @@ var params = &utils.FrogbotParams{
 		RepoOwner:     "repo-owner",
 		Repo:          "repo-name",
 		PullRequestID: 5,
+		BaseBranch:    "master",
 	},
 }
 
@@ -284,7 +286,21 @@ func TestBeforeScan(t *testing.T) {
 
 	// Run beforeScan
 	err := beforeScan(params, client)
-	assert.NoError(t, err, utils.ErrUnlabel)
+	assert.NoError(t, err)
+}
+
+func TestBeforeScanGetLabelErr(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Get label is expected to return an error
+	expectedError := errors.New("Couldn't get label")
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{}, expectedError)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestBeforeScanLabelNotExist(t *testing.T) {
@@ -305,6 +321,25 @@ func TestBeforeScanLabelNotExist(t *testing.T) {
 	assert.ErrorIs(t, err, utils.ErrLabelCreated)
 }
 
+func TestBeforeScanCreateLabelErr(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Create label is expected to return error
+	expectedError := errors.New("Couldn't create label")
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(nil, nil)
+	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelColor),
+	}).Return(expectedError)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.ErrorIs(t, err, expectedError)
+}
+
 func TestBeforeScanUnlabeled(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
@@ -323,6 +358,30 @@ func TestBeforeScanUnlabeled(t *testing.T) {
 	assert.ErrorIs(t, err, utils.ErrUnlabel)
 }
 
+func TestBeforeScanCreateListLabelsErr(t *testing.T) {
+	// Init mock
+	client, finish := mockVcsClient(t)
+	defer finish()
+
+	// Create label is expected to return error
+	expectedError := errors.New("Couldn't list labels")
+	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelDescription),
+	}, nil)
+	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
+		Name:        string(utils.LabelName),
+		Description: string(utils.LabelDescription),
+		Color:       string(utils.LabelColor),
+	}).Return(nil)
+	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, expectedError)
+
+	// Run beforeScan
+	err := beforeScan(params, client)
+	assert.ErrorIs(t, err, expectedError)
+}
+
 func mockVcsClient(t *testing.T) (*testdata.MockVcsClient, func()) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -337,7 +396,6 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	assert.NoError(t, err)
 	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
 	assert.Equal(t, expectedMessage, message)
-
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
@@ -387,4 +445,27 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	assert.NoError(t, err)
 	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
 	assert.Equal(t, expectedMessage, message)
+}
+
+func TestRunInstallIfNeeded(t *testing.T) {
+	params := &utils.FrogbotParams{}
+	assert.NoError(t, runInstallIfNeeded(params, "", true))
+
+	params = &utils.FrogbotParams{
+		InstallCommandName: "echo",
+		InstallCommandArgs: []string{"Hello"},
+	}
+	assert.NoError(t, runInstallIfNeeded(params, "", true))
+
+	params = &utils.FrogbotParams{
+		InstallCommandName: "not-existed",
+		InstallCommandArgs: []string{"1", "2"},
+	}
+	assert.NoError(t, runInstallIfNeeded(params, "", false))
+
+	params = &utils.FrogbotParams{
+		InstallCommandName: "not-existed",
+		InstallCommandArgs: []string{"1", "2"},
+	}
+	assert.Error(t, runInstallIfNeeded(params, "", true))
 }
