@@ -54,16 +54,17 @@ jobs:
 
           # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform username
           JF_USER: ${{ secrets.JF_USER }}
+
           # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform password
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
-          # [Mandatory] The GitHub token automatically generated for the job
+          # [Mandatory] The GitHub token is automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # [Optional] Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
           JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-          # [Optional] JFrog project. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # [Optional] JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
           JF_PROJECT: <project-key>
 
           # [Optional] The command that installs the dependencies. For example - "npm i", "nuget restore", "dotnet restore", "pip install", etc.
