@@ -351,11 +351,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 					Version: "v0.21.0",
 				},
 			},
-			Cves: []xrayutils.CveRow{
-				{
-					Id: "CVE-2022-24450",
-				},
-			},
+			Cves: []xrayutils.CveRow{{Id: "CVE-2022-24450"}},
 		},
 		{
 			Severity:               "High",
@@ -367,8 +363,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 					Version: "v3.5.1",
 				},
 			},
-			Cves: []xrayutils.CveRow{
-			},
+			Cves: []xrayutils.CveRow{},
 		},
 		{
 			Severity:               "Medium",
@@ -381,11 +376,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 					Version: "v0.21.0",
 				},
 			},
-			Cves: []xrayutils.CveRow{
-				{
-					Id: "CVE-2022-26652",
-				},
-			},
+			Cves: []xrayutils.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
 	message := createPullRequestMessage(vulnerabilities)
