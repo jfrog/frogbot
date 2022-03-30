@@ -1,7 +1,7 @@
 name: "Frogbot"
 on:
-  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot" label if needed.
-  # After "🐸 frogbot" label was added to a pull request, Frogbot scans the pull request.
+  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot scan pr" label if needed.
+  # After "🐸 frogbot scan pr" label was added to a pull request, Frogbot scans the pull request.
   pull_request_target:
     types: [labeled, opened]
 jobs:

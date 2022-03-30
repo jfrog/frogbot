@@ -36,13 +36,13 @@ func GetScanPullRequestFlags() []clitool.Flag {
 	return []clitool.Flag{
 		&clitool.BoolFlag{
 			Name:    "use-labels",
-			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot' label to a pull request.",
+			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot scan pr' label to a pull request.",
 			EnvVars: []string{"JF_USE_LABELS"},
 		},
 	}
 }
 
-// Run before scan, to make sure the Xray scan will be run only after adding the frogbot label.
+// Run before scan, to make sure the Xray scan will be run only after adding the 'frogbot scan pr' label.
 // If label is missing - create the label and do nothing
 // If pr isn't labeled - do nothing
 // If pr is labeled - remove label and allow running Xray scan (return nil)
@@ -237,10 +237,8 @@ func getUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
 
 func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return utils.GetNoVulnerabilitiesBanner()
+		return utils.GetBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
 	}
-	tableHeder := "\n| SEVERITY | IMPACTED PACKAGE | IMPACTED PACKAGE  VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
-		":--: | -- | -- | -- | -- | :--: | --"
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
 		var componentName, componentVersion, cve string
@@ -254,5 +252,5 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(vulnerability.Severity)+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, componentName, componentVersion, cve)
 	}
-	return utils.GetVulnerabilitiesBanner() + tableHeder + tableContent
+	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeder + tableContent
 }

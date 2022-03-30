@@ -15,6 +15,6 @@ func TestGetSeverityTag(t *testing.T) {
 }
 
 func TestGetVulnerabilitiesBanners(t *testing.T) {
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)", GetNoVulnerabilitiesBanner())
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)", GetVulnerabilitiesBanner())
+	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#frogbot)", GetBanner(NoVulnerabilityBannerSource))
+	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#frogbot)", GetBanner(VulnerabilitiesBannerSource))
 }

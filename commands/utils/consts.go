@@ -20,7 +20,7 @@ const (
 	gitLab vcsProvider = "gitlab"
 
 	// Frogbot label
-	LabelName        frogbotLabel = "🐸 frogbot"
+	LabelName        frogbotLabel = "🐸 frogbot scan pr"
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
 
@@ -45,4 +45,9 @@ const (
 	gitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	gitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	WatchesDelimiter    = ","
+
+	// Comment
+	TableHeder = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
+		":--: | -- | -- | -- | -- | :--: | --"
+	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
 )

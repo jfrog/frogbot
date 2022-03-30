@@ -13,6 +13,13 @@ Frogbot is a Git bot that scans your pull requests with JFrog Xray for security 
 
 After a new pull request is created, one of the maintainers can add the "Frogbot scan" label to the pull request. Frogbot will then be triggered and the pull request will be scanned. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that existed in the code prior to the pull request created will not be added to the report.
 
+After the pull request scanning completed, Frogbot will automatically add a comment to the pull request.
+If no vulnerabilities were added in the pull request:
+[![No Vuln](./resources/noVulnerabilityBanner.png)](#-how-does-it-work)
+
+If one or more vulnerabilities were added in the pull request:
+[![Vuln found](./resources/vulnExample.png)](#-how-does-it-work)
+
 ## 🖥️ Usage
 
 - [Using Frogbot with GitHub Actions](#using-frogbot-with-github-actions)
@@ -22,13 +29,20 @@ After a new pull request is created, one of the maintainers can add the "Frogbot
 
 For a super quick start, we created [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates) under [templates/github-action](templates/github-actions/).
 
+#### How does it work?
+
+1. User opens a pull request
+1. If missing, Frogbot creates a label `🐸 frogbot scan pr` in the repository
+1. Maintainer reviewes the pull request and assigns `🐸 frogbot scan pr`
+1. Frogbot gets triggered by the label, unlabels it, and executes the pull request scanning
+
 Here's a recommanded structure of a `frogbot.yml` workflow file:
 
 ```yml
 name: "Frogbot"
 on:
-  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot" label if needed.
-  # After "🐸 frogbot" label was added to a pull request, Frogbot scans the pull request.
+  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot scan pr" label if needed.
+  # After "🐸 frogbot scan pr" label was added to a pull request, Frogbot scans the pull request.
   pull_request_target:
     types: [opened, labeled]
 jobs:
