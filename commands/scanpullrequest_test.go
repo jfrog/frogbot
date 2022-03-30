@@ -222,8 +222,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	// Run getNewVulnerabilities and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	newViolations := getNewVulnerabilities(previousScan, currentScan)
 	assert.Len(t, newViolations, 2)
-	assert.Equal(t, "XRAY-2", newViolations[0].IssueId)
-	assert.Equal(t, "low", newViolations[0].Severity)
+	assert.Equal(t, "XRAY-1", newViolations[0].IssueId)
+	assert.Equal(t, "high", newViolations[0].Severity)
 	assert.Equal(t, "component-A", newViolations[0].ImpactedPackageName)
 	assert.Equal(t, "XRAY-2", newViolations[1].IssueId)
 	assert.Equal(t, "low", newViolations[1].Severity)
