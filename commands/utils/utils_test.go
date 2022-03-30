@@ -24,3 +24,15 @@ func TestChdir(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, originCwd, cwd)
 }
+
+func TestChdirErr(t *testing.T) {
+	originCwd, err := os.Getwd()
+	assert.NoError(t, err)
+
+	_, err = Chdir("not-existed")
+	assert.Error(t, err)
+
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, originCwd, cwd)
+}
