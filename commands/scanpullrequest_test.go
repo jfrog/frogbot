@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -332,9 +333,10 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []xrayutils.VulnerabilityRow{}
 	message := createPullRequestMessage(vulnerabilities)
 
-	expectedMessage, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
+	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
-	assert.Equal(t, string(expectedMessage), message)
+	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
+	assert.Equal(t, expectedMessage, message)
 
 }
 
@@ -381,8 +383,8 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	message := createPullRequestMessage(vulnerabilities)
 
-	expectedMessage, err := os.ReadFile(filepath.Join("testdata", "messages", "dummyvulnerabilities.md"))
+	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "dummyvulnerabilities.md"))
 	assert.NoError(t, err)
-	assert.Equal(t, string(expectedMessage), message)
-
+	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
+	assert.Equal(t, expectedMessage, message)
 }
