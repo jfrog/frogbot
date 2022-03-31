@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-func GetSeverityTag(iconName string) string {
-	switch strings.ToLower(iconName) {
+type IconName string
+
+func GetSeverityTag(iconName IconName) string {
+	switch strings.ToLower(string(iconName)) {
 	case "critical":
 		return getIconTag(criticalSeveritySource)
 	case "high":

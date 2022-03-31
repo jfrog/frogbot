@@ -32,8 +32,8 @@ For a super quick start, we created [GitHub Actions templates](templates/github-
 #### How does it work?
 
 1. User opens a pull request
-1. If missing, Frogbot creates a label `🐸 frogbot scan pr` in the repository
-1. Maintainer reviewes the pull request and assigns `🐸 frogbot scan pr`
+1. If missing, Frogbot creates a label `🐸 frogbot scan` in the repository
+1. Maintainer reviewes the pull request and assigns `🐸 frogbot scan`
 1. Frogbot gets triggered by the label, unlabels it, and executes the pull request scanning
 
 Here's a recommanded structure of a `frogbot.yml` workflow file:
@@ -41,8 +41,8 @@ Here's a recommanded structure of a `frogbot.yml` workflow file:
 ```yml
 name: "Frogbot"
 on:
-  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot scan pr" label if needed.
-  # After "🐸 frogbot scan pr" label was added to a pull request, Frogbot scans the pull request.
+  # After a pull request opened, Frogbot automatically creates the "🐸 frogbot scan" label if needed.
+  # After "🐸 frogbot scan" label was added to a pull request, Frogbot scans the pull request.
   pull_request_target:
     types: [opened, labeled]
 jobs:

@@ -24,7 +24,7 @@ func ScanPullRequest(c *clitool.Context) error {
 	}
 
 	if c.Bool("use-labels") {
-		if err = beforeScan(params, client); err != nil {
+		if shouldScan, err := handleFrogbotLabel(params, client); err != nil || !shouldScan {
 			return err
 		}
 	}
@@ -36,7 +36,7 @@ func GetScanPullRequestFlags() []clitool.Flag {
 	return []clitool.Flag{
 		&clitool.BoolFlag{
 			Name:    "use-labels",
-			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot scan pr' label to a pull request.",
+			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot scan' label to a pull request.",
 			EnvVars: []string{"JF_USE_LABELS"},
 		},
 	}
@@ -48,10 +48,10 @@ func GetScanPullRequestFlags() []clitool.Flag {
 // If pr is labeled - remove label and allow running Xray scan (return nil)
 // params - Frogbot parameters retreived from the environment variables
 // client - The VCS client
-func beforeScan(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient) (bool, error) {
 	labelInfo, err := client.GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName))
 	if err != nil {
-		return err
+		return false, err
 	}
 	if labelInfo == nil {
 		clientLog.Info("Creating label " + string(utils.LabelName))
@@ -61,29 +61,32 @@ func beforeScan(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 			Color:       string(utils.LabelColor),
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
-		return utils.ErrLabelCreated
+		clientLog.Info(fmt.Sprintf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(utils.LabelName)))
+		return false, nil
 	}
 
 	labels, err := client.ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID)
 	if err != nil {
-		return err
+		return false, err
 	}
-	clientLog.Debug("The following labels found in the pull request: ", labels)
+	clientLog.Debug("The following labels were found in the pull request: ", labels)
 	for _, label := range labels {
-		if label == string(utils.LabelName) {
-			clientLog.Info("Unlabeling '"+utils.LabelName+"' from pull request", params.PullRequestID)
-			err = client.UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), params.PullRequestID)
-			// Trigger scan or return err
-			return err
+		if label != string(utils.LabelName) {
+			continue
 		}
+		clientLog.Info("Unlabeling '"+utils.LabelName+"' from pull request", params.PullRequestID)
+		err := client.UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), params.PullRequestID)
+		return err == nil, err
 	}
-	return utils.ErrUnlabel
+	clientLog.Info(fmt.Sprintf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName)))
+	return false, nil
 }
 
-// Scan a pull request by auditing the source and the target branches.
-// If errors were added in the source branch, print them in a comment.
+// Scan a pull request by as follows:
+// a. Audit the depedencies of the source and the target branches.
+// b. Compare the vulenrabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
@@ -249,7 +252,7 @@ func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) 
 		if len(vulnerability.Cves) > 0 {
 			cve = vulnerability.Cves[0].Id
 		}
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(vulnerability.Severity)+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity))+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, componentName, componentVersion, cve)
 	}
 	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeder + tableContent
