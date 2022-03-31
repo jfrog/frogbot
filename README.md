@@ -43,9 +43,9 @@ For a super quick start, we created [GitHub Actions templates](templates/github-
 
 #### How does it work?
 
-1. User opens a pull request
+1. User opens a Pull Request
 1. If missing, Frogbot creates a label `🐸 frogbot scan` in the repository
-1. Maintainer reviews the pull request and assigns `🐸 frogbot scan`
+1. A maintainer reviews the Pull Request and assigns `🐸 frogbot scan`
 1. Frogbot gets triggered by the label, unlabels it, and executes the pull request scanning
 
 Here's a recommended structure of a `frogbot.yml` workflow file:
@@ -96,8 +96,11 @@ jobs:
 ```
 
 ### Using Frogbot with GitLab CI
-1. Add the following job to your `.gitlab-ci.yml`.
-1. After a new pull request is created, one of the maintainers can run the manual frogbot-scan job.
+#### How does it work?
+1. User opens a Merge Request
+1. A maintainer reviews the Merge Request and runs the manual frogbot-scan job
+
+Here's a recommended structure of frogbot-scan job in a `.gitlab-ci.yml`:
 ```yml
 frogbot-scan:
   rules:
