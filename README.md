@@ -96,12 +96,10 @@ jobs:
 ```
 
 ### Using Frogbot with GitLab CI
-Add the following job to your `.gitlab-ci.yml`.
-Add the scan stage to the `stages` section.
-After a new pull request is created, one of the maintainers can run the manual frogbot-scan job.
+1. Add the following job to your `.gitlab-ci.yml`.
+1. After a new pull request is created, one of the maintainers can run the manual frogbot-scan job.
 ```yml
 frogbot-scan:
-  stage: scan
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   when: manual
