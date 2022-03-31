@@ -270,7 +270,7 @@ var params = &utils.FrogbotParams{
 	},
 }
 
-func TestBeforeScan(t *testing.T) {
+func TestHandleFrogbotLabel(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -284,12 +284,13 @@ func TestBeforeScan(t *testing.T) {
 	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{string(utils.LabelName)}, nil)
 	client.EXPECT().UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), 5).Return(nil)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
 	assert.NoError(t, err)
+	assert.True(t, shouldScan)
 }
 
-func TestBeforeScanGetLabelErr(t *testing.T) {
+func TestHandleFrogbotLabelGetLabelErr(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -298,12 +299,13 @@ func TestBeforeScanGetLabelErr(t *testing.T) {
 	expectedError := errors.New("Couldn't get label")
 	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{}, expectedError)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
 	assert.ErrorIs(t, err, expectedError)
+	assert.False(t, shouldScan)
 }
 
-func TestBeforeScanLabelNotExist(t *testing.T) {
+func TestHandleFrogbotLabelLabelNotExist(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -316,12 +318,13 @@ func TestBeforeScanLabelNotExist(t *testing.T) {
 		Color:       string(utils.LabelColor),
 	}).Return(nil)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
-	assert.ErrorIs(t, err, utils.ErrLabelCreated)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
+	assert.NoError(t, err)
+	assert.False(t, shouldScan)
 }
 
-func TestBeforeScanCreateLabelErr(t *testing.T) {
+func TestHandleFrogbotLabelCreateLabelErr(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -335,12 +338,13 @@ func TestBeforeScanCreateLabelErr(t *testing.T) {
 		Color:       string(utils.LabelColor),
 	}).Return(expectedError)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
 	assert.ErrorIs(t, err, expectedError)
+	assert.False(t, shouldScan)
 }
 
-func TestBeforeScanUnlabeled(t *testing.T) {
+func TestHandleFrogbotLabelUnlabeled(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -353,12 +357,13 @@ func TestBeforeScanUnlabeled(t *testing.T) {
 	}, nil)
 	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, nil)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
-	assert.ErrorIs(t, err, utils.ErrUnlabel)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
+	assert.NoError(t, err)
+	assert.False(t, shouldScan)
 }
 
-func TestBeforeScanCreateListLabelsErr(t *testing.T) {
+func TestHandleFrogbotLabelCreateListLabelsErr(t *testing.T) {
 	// Init mock
 	client, finish := mockVcsClient(t)
 	defer finish()
@@ -377,9 +382,10 @@ func TestBeforeScanCreateListLabelsErr(t *testing.T) {
 	}).Return(nil)
 	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, expectedError)
 
-	// Run beforeScan
-	err := beforeScan(params, client)
+	// Run handleFrogbotLabel
+	shouldScan, err := handleFrogbotLabel(params, client)
 	assert.ErrorIs(t, err, expectedError)
+	assert.False(t, shouldScan)
 }
 
 func mockVcsClient(t *testing.T) (*testdata.MockVcsClient, func()) {

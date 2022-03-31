@@ -20,7 +20,7 @@ const (
 	gitLab vcsProvider = "gitlab"
 
 	// Frogbot label
-	LabelName        frogbotLabel = "🐸 frogbot scan pr"
+	LabelName        frogbotLabel = "🐸 frogbot scan"
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
 

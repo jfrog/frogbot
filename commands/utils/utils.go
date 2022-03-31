@@ -5,9 +5,6 @@ import (
 	"os"
 )
 
-var ErrLabelCreated = fmt.Errorf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(LabelName))
-var ErrUnlabel = fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(LabelName))
-
 type errMissingEnv struct {
 	variableName string
 }

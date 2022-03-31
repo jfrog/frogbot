@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	"os"
 
 	"github.com/jfrog/frogbot/commands"
-	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/log"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -30,12 +28,6 @@ func execMain() error {
 		Usage:    "See https://github.com/jfrog/frogbot for usage instructions.",
 		Commands: getCommands(),
 		Version:  frogbotVersion,
-		ExitErrHandler: func(context *clitool.Context, err error) {
-			if errors.Is(err, utils.ErrLabelCreated) || errors.Is(err, utils.ErrUnlabel) {
-				clientLog.Info("Scan wasn't triggered: " + err.Error())
-				os.Exit(0)
-			}
-		},
 	}
 
 	err := app.Run(os.Args)

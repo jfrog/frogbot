@@ -23,6 +23,7 @@ type JFrogEnvParams struct {
 	Project string
 	Watches string
 }
+
 type GitParam struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoOwner     string
