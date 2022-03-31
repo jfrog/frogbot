@@ -104,7 +104,7 @@ If your agent has no internet access, you can configure the pipeline to download
 2. Depends on your agent's architecture and operating system, download Frogbot using curl:
 
 ```bash
-curl -fLg "https://ecosysjfrog.jfrog.io/artifactory/frogbot/[RELEASE]/<arch>/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
+curl -fLg "https://acme.jfrog.io/artifactory/frogbot/[RELEASE]/<arch>/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
 ```
 
 ##### Available architechtures:
@@ -122,7 +122,7 @@ curl -fLg "https://ecosysjfrog.jfrog.io/artifactory/frogbot/[RELEASE]/<arch>/fro
 For example:
 
 ```bash
-curl -fLg "https://ecosysjfrog.jfrog.io/artifactory/frogbot/[RELEASE]/frogbot-linux-386/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
+curl -fLg "https://acme.jfrog.io/artifactory/frogbot/[RELEASE]/frogbot-linux-386/frogbot" -H "Authorization: Bearer $JF_ACCESS_TOKEN" -o frogbot
 ```
 
 </details>
