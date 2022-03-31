@@ -43,12 +43,12 @@ For a super quick start, we created [GitHub Actions templates](templates/github-
 
 #### How does it work?
 
-1. User opens a pull request
+1. User opens a Pull Request
 1. If missing, Frogbot creates a label `🐸 frogbot scan` in the repository
-1. Maintainer reviewes the pull request and assigns `🐸 frogbot scan`
+1. A maintainer reviews the Pull Request and assigns `🐸 frogbot scan`
 1. Frogbot gets triggered by the label, unlabels it, and executes the pull request scanning
 
-Here's a recommanded structure of a `frogbot.yml` workflow file:
+Here's a recommended structure of a `frogbot.yml` workflow file:
 
 ```yml
 name: "Frogbot"
@@ -96,9 +96,41 @@ jobs:
 ```
 
 ### Using Frogbot with GitLab CI
+#### How does it work?
+1. User opens a Merge Request
+1. A maintainer reviews the Merge Request and runs the manual frogbot-scan job
 
-TODO
+Here's a recommended structure of frogbot-scan job in a `.gitlab-ci.yml`:
+```yml
+frogbot-scan:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  when: manual
+  variables:
+    # [Mandatory] JFrog platform URL
+    JF_URL: $JF_URL
 
+   # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog user and password with 'read' permissions on Xray service
+    JF_USER: $JF_USER
+    JF_PASSWORD: $JF_PASSWORD
+
+    # [Optional] The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+    JF_INSTALL_DEPS_CMD: ""
+
+    # [Mandatory] GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
+    JF_GIT_TOKEN: $USER_TOKEN
+
+    # Predefined gitlab variables
+    JF_GIT_PROVIDER: gitlab
+    JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
+    JF_GIT_REPO: $CI_PROJECT_NAME
+    JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
+  script:
+    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
+    - ./frogbot scan-pull-request
+```
+ [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI)
 ### Download Frogbot Manually
 
 Download Frogbot using the following command:
