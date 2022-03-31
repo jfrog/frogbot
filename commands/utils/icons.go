@@ -19,12 +19,8 @@ func GetSeverityTag(iconName string) string {
 	return ""
 }
 
-func GetNoVulnerabilitiesBanner() string {
-	return getIconTag(NoVulnerabilityBannerSource)
-}
-
-func GetVulnerabilitiesBanner() string {
-	return getIconTag(VulnerabilitiesBannerSource)
+func GetBanner(banner imageSource) string {
+	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#frogbot)"
 }
 
 func getIconTag(imageSource imageSource) string {
