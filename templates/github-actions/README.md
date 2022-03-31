@@ -1,7 +1,7 @@
 # GitHub Actions Templates
 
 Use these templates to immediately start scanning your pull requests in your GitHub repository.
-To use the templates in this directory, put the relevant `.yml` file under `.github/workflow` in the root of the repository.
+To use the templates in this directory, put the relevant `.yml` file under `.github/workflow` directory in the root of your repository.
 
 The following templates are available:
 
