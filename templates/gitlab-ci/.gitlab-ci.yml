@@ -1,12 +1,9 @@
 # Frogbot
-workflow:
-
-
 stages:
   - scan
 
 
-frogbot-scan-pr: # This job runs in the scan stage.
+frogbot-scan:
   stage: scan
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -19,9 +16,13 @@ frogbot-scan-pr: # This job runs in the scan stage.
     JF_USER: $JF_USER
     JF_PASSWORD: $JF_PASSWORD
 
-    # [Optional] The command that installs the dependencies
-    JF_INSTALL_DEPS_CMD: npm i 
-    JF_GIT_TOKEN: $TOKEN
+    # [Optional] The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+    JF_INSTALL_DEPS_CMD: ""
+
+    # [Mandatory] GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
+    JF_GIT_TOKEN: $USER_TOKEN
+
+    # Predefined gitlab variables
     JF_GIT_PROVIDER: gitlab
     JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
     JF_GIT_REPO: $CI_PROJECT_NAME
@@ -30,4 +31,3 @@ frogbot-scan-pr: # This job runs in the scan stage.
   script:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot scan-pull-request
-
