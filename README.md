@@ -18,13 +18,13 @@ After a new pull request is created, one of the maintainers can add the "Frogbot
 ### 👍 No issues
 
 If no vulnerabilities were found, Frogbot will automatically add the following comment to the pull request:
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#frogbot)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
 ### 👎 Issues were found
 
 If vulnerabilities were found, Frogbot will mention them in a comment to the pull request. For example:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#frogbot)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
 |                                            SEVERITY                                             | IMPACTED PACKAGE                         | VERSION | FIXED VERSIONS | COMPONENT                                | COMPONENT VERSION | CVE            |
 | :---------------------------------------------------------------------------------------------: | ---------------------------------------- | ------- | -------------- | ---------------------------------------- | :---------------: | -------------- |
@@ -39,7 +39,7 @@ If vulnerabilities were found, Frogbot will mention them in a comment to the pul
 
 ### Using Frogbot with GitHub Actions
 
-For a super quick start, we created [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates) under [templates/github-action](templates/github-actions/).
+For a quick start, please refer to our [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates).
 
 #### How does it work?
 
@@ -96,11 +96,14 @@ jobs:
 ```
 
 ### Using Frogbot with GitLab CI
+
 #### How does it work?
+
 1. User opens a Merge Request
 1. A maintainer reviews the Merge Request and runs the manual frogbot-scan job
 
 Here's a recommended structure of frogbot-scan job in a `.gitlab-ci.yml`:
+
 ```yml
 frogbot-scan:
   rules:
@@ -110,7 +113,7 @@ frogbot-scan:
     # [Mandatory] JFrog platform URL
     JF_URL: $JF_URL
 
-   # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog user and password with 'read' permissions on Xray service
+    # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog user and password with 'read' permissions on Xray service
     JF_USER: $JF_USER
     JF_PASSWORD: $JF_PASSWORD
 
@@ -130,7 +133,9 @@ frogbot-scan:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot scan-pull-request
 ```
- [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI)
+
+[![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI)
+
 ### Download Frogbot Manually
 
 Download Frogbot using the following command:
@@ -171,10 +176,6 @@ curl -fLg "https://acme.jfrog.io/artifactory/frogbot/[RELEASE]/frogbot-linux-386
 
 </details>
 
-## 📝 Release Notes
-
-The release notes are available [here](RELEASE.md#release-notes).
-
 ## 💻 Contributions
 
-We welcome pull requests from the community. To help us improving this project, please read our [contribution](./CONTRIBUTING.md#-guidelines) Guide.
+We welcome pull requests from the community. To help us improving this project, please read our [contribution](./CONTRIBUTING.md#-guidelines) guide.

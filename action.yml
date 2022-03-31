@@ -1,5 +1,5 @@
 name: "Frogbot"
-description: "Scan for vulnerabilities in GitHub repositories."
+description: "Scan your pull requests with JFrog Xray for security vulnerabilities."
 author: "JFrog"
 inputs:
   version:
