@@ -1,4 +1,4 @@
-name: "Frogbot"
+name: "JFrog Frogbot"
 description: "Scan your pull requests with JFrog Xray for security vulnerabilities."
 author: "JFrog"
 inputs:
