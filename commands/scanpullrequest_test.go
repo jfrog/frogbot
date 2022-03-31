@@ -281,7 +281,7 @@ func TestHandleFrogbotLabel(t *testing.T) {
 		Description: string(utils.LabelDescription),
 		Color:       string(utils.LabelDescription),
 	}, nil)
-	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{string(utils.LabelName)}, nil)
+	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{"label-1", string(utils.LabelName)}, nil)
 	client.EXPECT().UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), 5).Return(nil)
 
 	// Run handleFrogbotLabel
@@ -355,7 +355,7 @@ func TestHandleFrogbotLabelUnlabeled(t *testing.T) {
 		Description: string(utils.LabelDescription),
 		Color:       string(utils.LabelDescription),
 	}, nil)
-	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, nil)
+	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{"label-1"}, nil)
 
 	// Run handleFrogbotLabel
 	shouldScan, err := handleFrogbotLabel(params, client)
