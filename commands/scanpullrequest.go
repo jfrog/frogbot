@@ -191,14 +191,14 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 
 func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []xrayutils.VulnerabilityRow) {
 	existsViolationsMap := make(map[string]xrayutils.VulnerabilityRow)
-	violationsRows, _, err := xrayutils.PrepareViolationsTable(previousScan.Violations, false, false)
+	violationsRows, _, _, err := xrayutils.PrepareViolationsTable(previousScan.Violations, false, false)
 	if err != nil {
 		return
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
-	violationsRows, _, err = xrayutils.PrepareViolationsTable(currentScan.Violations, false, false)
+	violationsRows, _, _, err = xrayutils.PrepareViolationsTable(currentScan.Violations, false, false)
 	if err != nil {
 		return
 	}
