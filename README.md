@@ -50,6 +50,7 @@ Need a FREE JFrog environment in the cloud, which Frogbot can scan pull requests
 * Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 * Create a FREE JFrog environment in the cloud for you.
 After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in git.
+
 **On MacOS and Linux using cUrl**
 ```
 curl -fL https://getcli.jfrog.io?setup | sh
@@ -62,7 +63,7 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 ### Install Frogbot using GitHub Actions
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as secrets in GitHub with the following names - *JF_URL*, *JF_USER* and *JF_PASSWORD*. You can also use *JF_ACCESS_TOKEN* instead of *JF_USER* and *JF_PASSWORD*.
-3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates) to create a file named `frogbot.yml`.
+3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
 4. Push the `frogbot.yml` file to the `.github/workflow` directory at the root of your GitHub repository.
 
 ### Install Frogbot using GitLab CI
