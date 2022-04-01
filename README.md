@@ -63,7 +63,7 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 ### Install Frogbot using GitHub Actions
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as secrets in GitHub with the following names - *JF_URL*, *JF_USER* and *JF_PASSWORD*. You can also use *JF_ACCESS_TOKEN* instead of *JF_USER* and *JF_PASSWORD*.
-3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#github-actions-templates#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
+3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
 4. Push the `frogbot.yml` file to the `.github/workflow` directory at the root of your GitHub repository.
 
 ### Install Frogbot using GitLab CI
