@@ -4,7 +4,17 @@
 [![Coverage Status](https://coveralls.io/repos/github/jfrog/frogbot/badge.svg?branch=dev)](https://coveralls.io/github/jfrog/frogbot?branch=dev)
 
 ## 🤖 What is Frogbot?
-Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no vulnerabilities are found, Frogbot will also add a comment, confirming this. Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
+Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no vulnerabilities are found, Frogbot will also add a comment, confirming this. 
+Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
+Projects that use one of the following tools to download their dependencies are currently supported.
+* Npm
+* Maven
+* Gradle
+* Go
+* Pip
+* Pipenv
+* Nuget
+* Dotnet
 
 ## 🕵 How does it work?
 ### General
