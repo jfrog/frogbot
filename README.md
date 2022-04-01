@@ -1,12 +1,10 @@
 # Frogbot
-
 ## Project Status
-
 [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/jfrog/frogbot/badge.svg?branch=dev)](https://coveralls.io/github/jfrog/frogbot?branch=dev)
 
 ## 🤖 What is Frogbot?
-Frogbot is a Git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no vulnerabilities are found, Frogbot will also add a comment, confirming this. Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
+Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no vulnerabilities are found, Frogbot will also add a comment, confirming this. Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
 
 ## 🕵 How does it work?
 ### General
@@ -43,13 +41,13 @@ If vulnerabilities were found, Frogbot will add them in a comment on the pull re
 
 ## 🖥️ Installing and Using Frogbot
 ### General
-1. Frogbot requires a JFrog environment to scan pull requests with. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](set-up-a-free-jfrog-environment-in-the-cloud). You'll later save its connection details (URLm username and password) as secrets in git.
+1. Frogbot requires a JFrog environment to scan pull requests with. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save its connection details (URLm username and password) as secrets in git.
 2. Setting up Frogbot on a GitHub repository? [Install Frogbot using GitHub Actions](#install-frogbot-using-github-actions)
 3. Setting up Frogbot on a GitLab repository? [Install Frogbot using GitLab CI](#install-frogbot-using-gitlab-ci)
 
 ### Set Up a FREE JFrog Environment in the Cloud
 Need a FREE JFrog environment in the cloud, which Frogbot can scan pull requests with? Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands will do the following:
-* Install JFrog CLI on your machine.
+* Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 * Create a FREE JFrog environment in the cloud for you.
 After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in git.
 **On MacOS and Linux using cUrl**
