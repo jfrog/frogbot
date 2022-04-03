@@ -22,7 +22,7 @@ After a new pull request is created, a maintainer of the git repository can trig
 
 ### On GitHub
 1. A developer opens a pull request
-2. If missing, Frogbot creates the `🐸 frogbot scan` laben in the repository
+2. If missing, Frogbot creates the `🐸 frogbot scan` label in the repository
 3. A maintainer of the repository assigns the `🐸 frogbot scan` label on this pull request
 4. Frogbot gets triggered by the label, scans the pull request, adds a comment with the scan results and removes the label from the pull request
 5. Frogbot can be triggered again following new commits, by adding the label to the pull request again
@@ -51,7 +51,7 @@ If vulnerabilities were found, Frogbot will add them in a comment on the pull re
 
 ## 🖥️ Installing and Using Frogbot
 ### General
-1. Frogbot requires a JFrog environment to scan pull requests with. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save its connection details (URLm username and password) as secrets in git.
+1. Frogbot requires a JFrog environment to scan pull requests with. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save its connection details (URL, username and password) as secrets in git.
 2. Setting up Frogbot on a GitHub repository? [Install Frogbot using GitHub Actions](#install-frogbot-using-github-actions)
 3. Setting up Frogbot on a GitLab repository? [Install Frogbot using GitLab CI](#install-frogbot-using-gitlab-ci)
 
@@ -79,7 +79,7 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 ### Install Frogbot using GitLab CI
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as secrets in GitLab with the following names - *JF_URL*, *JF_USER* and *JF_PASSWORD*. You can also use *JF_ACCESS_TOKEN* instead of *JF_USER* and *JF_PASSWORD*.
-4. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repositorym using the below structure.
+4. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repository using the below structure.
 
 **Important**
 
