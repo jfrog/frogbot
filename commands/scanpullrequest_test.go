@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -359,8 +360,8 @@ func TestHandleFrogbotLabelUnlabeled(t *testing.T) {
 
 	// Run handleFrogbotLabel
 	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.NoError(t, err)
 	assert.False(t, shouldScan)
+	assert.EqualError(t, err, fmt.Sprintf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName)))
 }
 
 func TestHandleFrogbotLabelCreateListLabelsErr(t *testing.T) {

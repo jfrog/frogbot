@@ -46,7 +46,7 @@ func GetScanPullRequestFlags() []clitool.Flag {
 // If label is missing - create the label and do nothing
 // If pr isn't labeled - do nothing
 // If pr is labeled - remove label and allow running Xray scan (return nil)
-// params - Frogbot parameters retreived from the environment variables
+// params - Frogbot parameters retrieved from the environment variables
 // client - The VCS client
 func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient) (bool, error) {
 	labelInfo, err := client.GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName))
@@ -80,8 +80,7 @@ func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient)
 		err := client.UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), params.PullRequestID)
 		return err == nil, err
 	}
-	clientLog.Info(fmt.Sprintf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName)))
-	return false, nil
+	return false, fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName))
 }
 
 // Scan a pull request by as follows:
