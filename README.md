@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/jfrog/frogbot/badge.svg?branch=dev)](https://coveralls.io/github/jfrog/frogbot?branch=dev)
 
 ## 🤖 What is Frogbot?
-Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no vulnerabilities are found, Frogbot will also add a comment, confirming this. 
+Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this. 
 Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
 Projects that use one of the following tools to download their dependencies are currently supported.
 * Npm
@@ -36,7 +36,7 @@ After a new pull request is created, a maintainer of the git repository can trig
  
 ## Pull Request Comments
 ### 👍 No issues
-If no vulnerabilities were found, Frogbot will automatically add the following comment to the pull request:
+If no new vulnerabilities were found, Frogbot will automatically add the following comment to the pull request:
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
 ### 👎 Issues were found
@@ -105,10 +105,6 @@ frogbot-scan:
     JF_USER: $JF_USER
     JF_PASSWORD: $JF_PASSWORD
 
-    # [Mandatory if JF_USER and JF_PASSWORD are not provided] 
-    # JFrog access token with 'read' permissions for Xray
-    JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
-
     # [Mandatory] 
     # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
@@ -119,6 +115,20 @@ frogbot-scan:
     JF_GIT_REPO: $CI_PROJECT_NAME
     JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
+
+    # Uncomment the below options if you'd like to use them. 
+
+    # [Mandatory if JF_USER and JF_PASSWORD are not provided] 
+    # JFrog access token with 'read' permissions for Xray
+    # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
+
+    # [Optional] 
+    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+    # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+    # [Optional] 
+    # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+    # JF_PROJECT: <project-key>
   script:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot scan-pull-request
