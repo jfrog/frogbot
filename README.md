@@ -22,7 +22,7 @@ After a new pull request is created, a maintainer of the git repository can trig
 
 ### On GitHub
 1. A developer opens a pull request
-2. If missing, Frogbot creates the `🐸 frogbot scan` laben in the repository
+2. If missing, Frogbot creates the `🐸 frogbot scan` label in the repository
 3. A maintainer of the repository assigns the `🐸 frogbot scan` label on this pull request
 4. Frogbot gets triggered by the label, scans the pull request, adds a comment with the scan results and removes the label from the pull request
 5. Frogbot can be triggered again following new commits, by adding the label to the pull request again
