@@ -45,7 +45,10 @@ Before running the tests, generate mocks by running the following command from w
 go generate ./...
 ```
 
-To run the tests, execute the following command:
+To run the tests, follow these steps:
+
+1. Set the `JF_URL` & `JF_ACCESS_TOKEN` with your JFrog platform credentials.
+2. execute the following command:
 
 ```sh
 go test -v ./...

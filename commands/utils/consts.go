@@ -16,15 +16,15 @@ const (
 	lowSeveritySource           imageSource = "lowSeverity.png"
 
 	// VCS providers params
-	gitHub vcsProvider = "github"
-	gitLab vcsProvider = "gitlab"
+	GitHub vcsProvider = "github"
+	GitLab vcsProvider = "gitlab"
 
 	// Frogbot label
 	LabelName        frogbotLabel = "🐸 frogbot scan"
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
 
-	installCommandEnv = "JF_INSTALL_DEPS_CMD"
+	InstallCommandEnv = "JF_INSTALL_DEPS_CMD"
 
 	// JFrog platform environment varialbes
 	jfrogUserEnv           = "JF_USER"
@@ -37,13 +37,14 @@ const (
 	jfrogProjectEnv        = "JF_PROJECT"
 
 	// Git environment variables
-	gitProvider     = "JF_GIT_PROVIDER"
-	gitRepoOwnerEnv = "JF_GIT_OWNER"
-	gitRepoEnv      = "JF_GIT_REPO"
+	GitProvider     = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv = "JF_GIT_OWNER"
+	GitRepoEnv      = "JF_GIT_REPO"
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	gitTokenEnv         = "JF_GIT_TOKEN"
-	gitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
-	gitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
+	GitTokenEnv         = "JF_GIT_TOKEN"
+	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
+	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
+	GitApiEndpoint      = "JF_GIT_API_ENDPOINT"
 	WatchesDelimiter    = ","
 
 	// Comment

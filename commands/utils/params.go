@@ -30,6 +30,7 @@ type GitParam struct {
 	Token         string
 	Repo          string
 	BaseBranch    string
+	ApiEndpoint   string
 	PullRequestID int
 }
 
@@ -38,7 +39,7 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	client, err := vcsclient.NewClientBuilder(params.GitProvider).Token(params.Token).Build()
+	client, err := vcsclient.NewClientBuilder(params.GitProvider).ApiEndpoint(params.ApiEndpoint).Token(params.Token).Build()
 	return &params, client, err
 }
 
@@ -87,30 +88,31 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 
 func extractGitParamsFromEnv(params *FrogbotParams) error {
 	var err error
+	params.ApiEndpoint = os.Getenv(GitApiEndpoint)
 	if params.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return err
 	}
-	if params.RepoOwner = os.Getenv(gitRepoOwnerEnv); params.RepoOwner == "" {
-		return &errMissingEnv{gitRepoOwnerEnv}
+	if params.RepoOwner = os.Getenv(GitRepoOwnerEnv); params.RepoOwner == "" {
+		return &errMissingEnv{GitRepoOwnerEnv}
 	}
-	if params.Repo = os.Getenv(gitRepoEnv); params.Repo == "" {
-		return &errMissingEnv{gitRepoEnv}
+	if params.Repo = os.Getenv(GitRepoEnv); params.Repo == "" {
+		return &errMissingEnv{GitRepoEnv}
 	}
-	if params.Token = os.Getenv(gitTokenEnv); params.Token == "" {
-		return &errMissingEnv{gitTokenEnv}
+	if params.Token = os.Getenv(GitTokenEnv); params.Token == "" {
+		return &errMissingEnv{GitTokenEnv}
 	}
-	if params.BaseBranch = os.Getenv(gitBaseBranchEnv); params.BaseBranch == "" {
-		return &errMissingEnv{gitBaseBranchEnv}
+	if params.BaseBranch = os.Getenv(GitBaseBranchEnv); params.BaseBranch == "" {
+		return &errMissingEnv{GitBaseBranchEnv}
 	}
-	if pullRequestIDString := os.Getenv(gitPullRequestIDEnv); pullRequestIDString != "" {
+	if pullRequestIDString := os.Getenv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		return err
 	}
-	return &errMissingEnv{gitPullRequestIDEnv}
+	return &errMissingEnv{GitPullRequestIDEnv}
 }
 
 func extractInstallationCommandFromEnv(params *FrogbotParams) {
-	installCommand := strings.TrimSpace(os.Getenv(installCommandEnv))
+	installCommand := strings.TrimSpace(os.Getenv(InstallCommandEnv))
 	if installCommand == "" {
 		return
 	}
@@ -122,13 +124,13 @@ func extractInstallationCommandFromEnv(params *FrogbotParams) {
 }
 
 func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
-	vcsProvider := strings.ToLower(os.Getenv(gitProvider))
+	vcsProvider := strings.ToLower(os.Getenv(GitProvider))
 	switch vcsProvider {
-	case string(gitHub):
+	case string(GitHub):
 		return vcsutils.GitHub, nil
-	case string(gitLab):
+	case string(GitLab):
 		return vcsutils.GitLab, nil
 	}
 
-	return 0, fmt.Errorf("%s should be one of: '%s' or '%s'", gitProvider, gitHub, gitLab)
+	return 0, fmt.Errorf("%s should be one of: '%s' or '%s'", GitProvider, GitHub, GitLab)
 }
