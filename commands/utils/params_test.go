@@ -21,7 +21,7 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 
 	setEnvAndAssert(t, jfrogUrlEnv, "http://127.0.0.1:8081")
 	_, _, err = GetParamsAndClient()
-	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_TOKEN environment variables are missing")
+	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
 func TestExtractParamsFromEnvPlatform(t *testing.T) {
