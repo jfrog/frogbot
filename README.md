@@ -130,8 +130,13 @@ frogbot-scan:
     # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
     # JF_PROJECT: <project-key>
   script:
+    # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot scan-pull-request
+
+    # For Windows runner:
+    # iwr https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+    # .\frogbot.exe scan-pull-request
 ```
 
 ## 💻 Contributions
