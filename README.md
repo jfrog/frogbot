@@ -18,7 +18,7 @@ Projects that use one of the following tools to download their dependencies are 
 
 ## 🕵 How does it work?
 ### General
-After a new pull request is created, a maintainer of the git repository can trigger Frogbot to scan the pull request. The scan is triggered from the git UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new and existed in the code prior to the pull request creation will not be added to the report.
+After a new pull request is created, a maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. For security reasons, Frogbot is not triggered automatically. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation will not be added to the report.
 
 ### On GitHub
 1. A developer opens a pull request
