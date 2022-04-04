@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -10,109 +9,123 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	cleanUpEnv()
-}
-
 func TestExtractParamsFromEnvError(t *testing.T) {
-	defer cleanUpEnv()
+	unsetEnv := SetEnvAndAssert(t, map[string]string{
+		jfrogUrlEnv:      "",
+		jfrogUserEnv:     "",
+		jfrogPasswordEnv: "",
+		jfrogTokenEnv:    "",
+	})
+	defer unsetEnv()
 	_, _, err := GetParamsAndClient()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
-	setEnvAndAssert(t, jfrogUrlEnv, "http://127.0.0.1:8081")
+	SetEnvAndAssert(t, map[string]string{jfrogUrlEnv: "http://127.0.0.1:8081"})
 	_, _, err = GetParamsAndClient()
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
 func TestExtractParamsFromEnvPlatform(t *testing.T) {
-	defer cleanUpEnv()
-	setEnvAndAssert(t, jfrogUrlEnv, "http://127.0.0.1:8081")
-	setEnvAndAssert(t, jfrogUserEnv, "admin")
-	setEnvAndAssert(t, jfrogPasswordEnv, "password")
-	setEnvAndAssert(t, jfrogWatchesEnv, "watch-1,watch-2")
-	setEnvAndAssert(t, jfrogProjectEnv, "proj")
-	setEnvAndAssert(t, gitProvider, "github")
-	setEnvAndAssert(t, gitRepoOwnerEnv, "jfrog")
-	setEnvAndAssert(t, gitRepoEnv, "frogbot")
-	setEnvAndAssert(t, gitTokenEnv, "123456789")
-	setEnvAndAssert(t, gitBaseBranchEnv, "master")
-	setEnvAndAssert(t, gitPullRequestIDEnv, "1")
+	unsetEnv := SetEnvAndAssert(t, map[string]string{
+		jfrogUrlEnv:         "http://127.0.0.1:8081",
+		jfrogUserEnv:        "admin",
+		jfrogPasswordEnv:    "password",
+		jfrogWatchesEnv:     "watch-1,watch-2",
+		jfrogProjectEnv:     "proj",
+		GitProvider:         string(GitHub),
+		GitRepoOwnerEnv:     "jfrog",
+		GitRepoEnv:          "frogbot",
+		GitTokenEnv:         "123456789",
+		GitBaseBranchEnv:    "master",
+		GitPullRequestIDEnv: "1",
+	})
+	defer unsetEnv()
 
 	extractAndAssertParamsFromEnv(t, true, true)
 }
 
 func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
-	defer cleanUpEnv()
-	setEnvAndAssert(t, jfrogArtifactoryUrlEnv, "http://127.0.0.1:8081/artifactory")
-	setEnvAndAssert(t, jfrogXrayUrlEnv, "http://127.0.0.1:8081/xray")
-	setEnvAndAssert(t, jfrogUserEnv, "admin")
-	setEnvAndAssert(t, jfrogPasswordEnv, "password")
-	setEnvAndAssert(t, jfrogWatchesEnv, "watch-1,watch-2")
-	setEnvAndAssert(t, jfrogProjectEnv, "proj")
-	setEnvAndAssert(t, gitProvider, "github")
-	setEnvAndAssert(t, gitRepoOwnerEnv, "jfrog")
-	setEnvAndAssert(t, gitRepoEnv, "frogbot")
-	setEnvAndAssert(t, gitTokenEnv, "123456789")
-	setEnvAndAssert(t, gitBaseBranchEnv, "master")
-	setEnvAndAssert(t, gitPullRequestIDEnv, "1")
-
+	unsetEnv := SetEnvAndAssert(t, map[string]string{
+		jfrogUrlEnv:            "",
+		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
+		jfrogUserEnv:           "admin",
+		jfrogPasswordEnv:       "password",
+		jfrogWatchesEnv:        "watch-1,watch-2",
+		jfrogProjectEnv:        "proj",
+		GitProvider:            string(GitHub),
+		GitRepoOwnerEnv:        "jfrog",
+		GitRepoEnv:             "frogbot",
+		GitTokenEnv:            "123456789",
+		GitBaseBranchEnv:       "master",
+		GitPullRequestIDEnv:    "1",
+	})
+	defer unsetEnv()
 	extractAndAssertParamsFromEnv(t, false, true)
 }
 
 func TestExtractParamsFromEnvToken(t *testing.T) {
-	defer cleanUpEnv()
-	setEnvAndAssert(t, jfrogUrlEnv, "http://127.0.0.1:8081")
-	setEnvAndAssert(t, jfrogTokenEnv, "token")
-	setEnvAndAssert(t, jfrogWatchesEnv, "watch-1,watch-2")
-	setEnvAndAssert(t, jfrogProjectEnv, "proj")
-	setEnvAndAssert(t, gitProvider, "github")
-	setEnvAndAssert(t, gitRepoOwnerEnv, "jfrog")
-	setEnvAndAssert(t, gitRepoEnv, "frogbot")
-	setEnvAndAssert(t, gitTokenEnv, "123456789")
-	setEnvAndAssert(t, gitBaseBranchEnv, "master")
-	setEnvAndAssert(t, gitPullRequestIDEnv, "1")
+	unsetEnv := SetEnvAndAssert(t, map[string]string{
+		jfrogUrlEnv:         "http://127.0.0.1:8081",
+		jfrogUserEnv:        "",
+		jfrogPasswordEnv:    "",
+		jfrogTokenEnv:       "token",
+		jfrogWatchesEnv:     "watch-1,watch-2",
+		jfrogProjectEnv:     "proj",
+		GitProvider:         string(GitHub),
+		GitRepoOwnerEnv:     "jfrog",
+		GitRepoEnv:          "frogbot",
+		GitTokenEnv:         "123456789",
+		GitBaseBranchEnv:    "master",
+		GitPullRequestIDEnv: "1",
+	})
+
+	defer unsetEnv()
 
 	extractAndAssertParamsFromEnv(t, true, false)
 }
 
 func TestExtractVcsProviderFromEnv(t *testing.T) {
-	defer cleanUpEnv()
-
 	_, err := extractVcsProviderFromEnv()
 	assert.Error(t, err)
+	defer func() {
+		assert.NoError(t, os.Unsetenv(GitProvider))
+	}()
 
-	setEnvAndAssert(t, gitProvider, string(gitHub))
+	_ = SetEnvAndAssert(t, map[string]string{GitProvider: string(GitHub)})
 	vcsProvider, err := extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.GitHub, vcsProvider)
 
-	setEnvAndAssert(t, gitProvider, string(gitLab))
+	_ = SetEnvAndAssert(t, map[string]string{GitProvider: string(GitLab)})
 	vcsProvider, err = extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.GitLab, vcsProvider)
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
-	defer cleanUpEnv()
+	defer func() {
+		assert.NoError(t, os.Unsetenv(InstallCommandEnv))
+	}()
 
 	params := &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)
 	assert.Empty(t, params.InstallCommandName)
 	assert.Empty(t, params.InstallCommandArgs)
 
-	setEnvAndAssert(t, installCommandEnv, "a")
+	_ = SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
 	params = &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Empty(t, params.InstallCommandArgs)
 
-	setEnvAndAssert(t, installCommandEnv, "a b")
+	_ = SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
 	params = &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Equal(t, []string{"b"}, params.InstallCommandArgs)
 
-	setEnvAndAssert(t, installCommandEnv, "a b --flagName=flagValue")
+	_ = SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
 	params = &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
@@ -120,40 +133,41 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 }
 
 func TestExtractGitParamsFromEnvErrors(t *testing.T) {
-	defer cleanUpEnv()
 	params := &FrogbotParams{}
 
 	err := extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github' or 'gitlab'")
 
-	setEnvAndAssert(t, gitProvider, "github")
+	unsetEnv1 := SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
+	defer unsetEnv1()
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
-	setEnvAndAssert(t, gitRepoOwnerEnv, "jfrog")
+	unsetEnv2 := SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
+	defer unsetEnv2()
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 
-	setEnvAndAssert(t, gitRepoEnv, "frogit")
+	unsetEnv3 := SetEnvAndAssert(t, map[string]string{GitRepoEnv: "frogit"})
+	defer unsetEnv3()
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	setEnvAndAssert(t, gitTokenEnv, "123456")
+	unsetEnv4 := SetEnvAndAssert(t, map[string]string{GitTokenEnv: "123456"})
+	defer unsetEnv4()
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_BASE_BRANCH' environment variable is missing")
 
-	setEnvAndAssert(t, gitBaseBranchEnv, "master")
+	unsetEnv5 := SetEnvAndAssert(t, map[string]string{GitBaseBranchEnv: "master"})
+	defer unsetEnv5()
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_PULL_REQUEST_ID' environment variable is missing")
 
-	setEnvAndAssert(t, gitPullRequestIDEnv, "illegal-id")
+	unsetEnv6 := SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id"})
+	defer unsetEnv6()
 	err = extractGitParamsFromEnv(params)
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
-}
-
-func setEnvAndAssert(t *testing.T, key, value string) {
-	assert.NoError(t, os.Setenv(key, value))
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
@@ -180,14 +194,4 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	assert.Equal(t, "123456789", params.Token)
 	assert.Equal(t, "master", params.BaseBranch)
 	assert.Equal(t, 1, params.PullRequestID)
-}
-
-func cleanUpEnv() {
-	for _, key := range []string{jfrogUrlEnv, jfrogArtifactoryUrlEnv, jfrogXrayUrlEnv, jfrogUserEnv, installCommandEnv,
-		jfrogPasswordEnv, jfrogTokenEnv, jfrogWatchesEnv, jfrogProjectEnv, gitProvider, gitRepoOwnerEnv, gitRepoEnv,
-		gitTokenEnv, gitBaseBranchEnv, gitPullRequestIDEnv} {
-		if err := os.Unsetenv(key); err != nil {
-			fmt.Println("couldn't unset env " + key)
-		}
-	}
 }

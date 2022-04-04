@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,8 +17,10 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
+	clitool "github.com/urfave/cli/v2"
 )
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
@@ -475,4 +480,75 @@ func TestRunInstallIfNeeded(t *testing.T) {
 		InstallCommandArgs: []string{"1", "2"},
 	}
 	assert.Error(t, runInstallIfNeeded(params, "", true))
+}
+
+func TestScanPullRequest(t *testing.T) {
+	// Copy test-proj to a temporary directory
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
+	assert.NoError(t, err)
+
+	// Change dir to the temp directory
+	cbk, err := utils.Chdir(filepath.Join(tmpDir, "test-proj"))
+	assert.NoError(t, err)
+	defer cbk()
+
+	// Create mock GitLab server
+	server := httptest.NewServer(createGitLabHandler(t))
+	defer server.Close()
+
+	// Set required environment variables
+	unsetEnv := utils.SetEnvAndAssert(t, map[string]string{
+		utils.GitProvider:         string(utils.GitLab),
+		utils.GitApiEndpoint:      server.URL,
+		utils.GitRepoOwnerEnv:     "jfrog",
+		utils.GitRepoEnv:          "test-proj",
+		utils.GitTokenEnv:         "123456",
+		utils.GitBaseBranchEnv:    "master",
+		utils.GitPullRequestIDEnv: "1",
+		utils.InstallCommandEnv:   "npm i",
+	})
+	defer unsetEnv()
+
+	// Run "frogbot spr"
+	app := clitool.App{Commands: GetCommands()}
+	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
+}
+
+// Create HTTP handler to mock GitLab server
+func createGitLabHandler(t *testing.T) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Return 200 on ping
+		if r.RequestURI == "/api/v4/" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Return test-proj.tar.gz when using DownloadRepository
+		if r.RequestURI == "/api/v4/projects/jfrog%2Ftest-proj/repository/archive.tar.gz?sha=master" {
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", "test-proj.tar.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+		}
+
+		// Return 200 when using the REST that creates the comment
+		if r.RequestURI == "/api/v4/projects/jfrog%2Ftest-proj/merge_requests/1/notes" {
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(r.Body)
+
+			expectedReponse, err := os.ReadFile(filepath.Join("..", "expectedReponse.json"))
+			assert.NoError(t, err)
+			assert.Equal(t, string(expectedReponse), buf.String())
+
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		}
+	}
 }
