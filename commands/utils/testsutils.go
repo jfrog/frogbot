@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,17 +10,16 @@ import (
 
 // Receive an environment variables key-values map, set and assert the enviromnet variables.
 // Return a callback that sets the previous values.
-func SetEnvAndAssert(t *testing.T, env map[string]string) func() {
-	var previousValues = make(map[string]string)
+func SetEnvAndAssert(t *testing.T, env map[string]string) {
 	for key, val := range env {
-		previousValues[key] = os.Getenv(key)
 		setEnvAndAssert(t, key, val)
 	}
+}
 
-	return func() {
-		for key := range env {
-			setEnvAndAssert(t, key, previousValues[key])
-		}
+// Make sure the environment variables does not contain any Frogbot variables
+func AssertSanitizedEnv(t *testing.T) {
+	for _, env := range os.Environ() {
+		assert.False(t, strings.HasPrefix(env, "JF_"))
 	}
 }
 

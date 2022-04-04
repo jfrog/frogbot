@@ -27,12 +27,12 @@ const (
 	InstallCommandEnv = "JF_INSTALL_DEPS_CMD"
 
 	// JFrog platform environment varialbes
-	jfrogUserEnv           = "JF_USER"
-	jfrogUrlEnv            = "JF_URL"
+	JFrogUserEnv           = "JF_USER"
+	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
-	jfrogPasswordEnv       = "JF_PASSWORD"
-	jfrogTokenEnv          = "JF_ACCESS_TOKEN"
+	JFrogPasswordEnv       = "JF_PASSWORD"
+	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 	jfrogWatchesEnv        = "JF_WATCHES"
 	jfrogProjectEnv        = "JF_PROJECT"
 
