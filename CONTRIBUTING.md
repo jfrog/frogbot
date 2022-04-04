@@ -47,7 +47,7 @@ go generate ./...
 
 To run the tests, follow these steps:
 
-1. Set the `JF_URL` & `JF_ACCESS_TOKEN` with your JFrog platform credentials.
+1. Set the `JF_URL` & `JF_ACCESS_TOKEN` environment variables with your JFrog platform credentials.
 2. execute the following command:
 
 ```sh

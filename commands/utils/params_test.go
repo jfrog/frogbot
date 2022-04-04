@@ -89,7 +89,9 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 func TestExtractVcsProviderFromEnv(t *testing.T) {
 	_, err := extractVcsProviderFromEnv()
 	assert.Error(t, err)
-	defer os.Unsetenv(GitProvider)
+	defer func() {
+		assert.NoError(t, os.Unsetenv(GitProvider))
+	}()
 
 	_ = testdata.SetEnvAndAssert(t, map[string]string{GitProvider: string(GitHub)})
 	vcsProvider, err := extractVcsProviderFromEnv()
@@ -103,7 +105,9 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
-	defer os.Unsetenv(InstallCommandEnv)
+	defer func() {
+		assert.NoError(t, os.Unsetenv(InstallCommandEnv))
+	}()
 
 	params := &FrogbotParams{}
 	extractInstallationCommandFromEnv(params)

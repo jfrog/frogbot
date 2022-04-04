@@ -486,7 +486,9 @@ func TestScanPullRequest(t *testing.T) {
 	// Copy test-proj to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	defer fileutils.RemoveTempDir(tmpDir)
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
 	assert.NoError(t, err)
 

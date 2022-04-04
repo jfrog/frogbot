@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Receive an environment variables key-values map, set and assert the enviromnet variables.
+// Return a map that set the previous values.
 func SetEnvAndAssert(t *testing.T, env map[string]string) func() {
 	var previousValues = make(map[string]string)
 	for key, val := range env {
@@ -24,4 +26,3 @@ func SetEnvAndAssert(t *testing.T, env map[string]string) func() {
 func setEnvAndAssert(t *testing.T, key, value string) {
 	assert.NoError(t, os.Setenv(key, value))
 }
-
