@@ -1,4 +1,4 @@
-package testdata
+package utils
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 )
 
 // Receive an environment variables key-values map, set and assert the enviromnet variables.
-// Return a map that set the previous values.
+// Return a callback that sets the previous values.
 func SetEnvAndAssert(t *testing.T, env map[string]string) func() {
 	var previousValues = make(map[string]string)
 	for key, val := range env {
@@ -17,7 +17,7 @@ func SetEnvAndAssert(t *testing.T, env map[string]string) func() {
 	}
 
 	return func() {
-		for key, _ := range env {
+		for key := range env {
 			setEnvAndAssert(t, key, previousValues[key])
 		}
 	}

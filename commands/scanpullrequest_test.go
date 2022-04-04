@@ -502,7 +502,7 @@ func TestScanPullRequest(t *testing.T) {
 	defer server.Close()
 
 	// Set required environment variables
-	unsetEnv := testdata.SetEnvAndAssert(t, map[string]string{
+	unsetEnv := utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitLab),
 		utils.GitApiEndpoint:      server.URL,
 		utils.GitRepoOwnerEnv:     "jfrog",
