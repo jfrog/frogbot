@@ -483,6 +483,9 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
+	restoreEnv := verifyEnv(t)
+	defer restoreEnv()
+
 	// Copy test-proj to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -502,7 +505,7 @@ func TestScanPullRequest(t *testing.T) {
 	defer server.Close()
 
 	// Set required environment variables
-	unsetEnv := utils.SetEnvAndAssert(t, map[string]string{
+	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitLab),
 		utils.GitApiEndpoint:      server.URL,
 		utils.GitRepoOwnerEnv:     "jfrog",
@@ -512,11 +515,33 @@ func TestScanPullRequest(t *testing.T) {
 		utils.GitPullRequestIDEnv: "1",
 		utils.InstallCommandEnv:   "npm i",
 	})
-	defer unsetEnv()
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
+	utils.AssertSanitizedEnv(t)
+}
+
+func TestScanPullRequestError(t *testing.T) {
+	app := clitool.App{Commands: GetCommands()}
+	assert.Error(t, app.Run([]string{"frogbot", "spr"}))
+}
+
+func TestUseLabelsError(t *testing.T) {
+	_ = verifyEnv(t)
+	// Set required environment variables
+	utils.SetEnvAndAssert(t, map[string]string{
+		utils.GitProvider:         string(utils.GitHub),
+		utils.GitRepoOwnerEnv:     "jfrog",
+		utils.GitApiEndpoint:      "https://httpbin.org/status/404",
+		utils.GitRepoEnv:          "test-proj",
+		utils.GitTokenEnv:         "123456",
+		utils.GitBaseBranchEnv:    "master",
+		utils.GitPullRequestIDEnv: "1",
+	})
+	app := clitool.App{Commands: GetCommands()}
+	assert.ErrorContains(t, app.Run([]string{"frogbot", "spr", "--use-labels"}), "404")
+	utils.AssertSanitizedEnv(t)
 }
 
 // Create HTTP handler to mock GitLab server
@@ -550,5 +575,28 @@ func createGitLabHandler(t *testing.T) http.HandlerFunc {
 			_, err = w.Write([]byte("{}"))
 			assert.NoError(t, err)
 		}
+	}
+}
+
+// Check connection details with JFrog instance.
+// Return a callback method that restores the credentials after the test is done.
+func verifyEnv(t *testing.T) func() {
+	url := os.Getenv(utils.JFrogUrlEnv)
+	username := os.Getenv(utils.JFrogUserEnv)
+	password := os.Getenv(utils.JFrogPasswordEnv)
+	token := os.Getenv(utils.JFrogTokenEnv)
+	if url == "" {
+		assert.FailNow(t, fmt.Sprintf("'%s' is not set", utils.JFrogUrlEnv))
+	}
+	if token == "" && (username == "" || password == "") {
+		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", utils.JFrogTokenEnv, utils.JFrogUserEnv, utils.JFrogPasswordEnv))
+	}
+	return func() {
+		utils.SetEnvAndAssert(t, map[string]string{
+			utils.JFrogUrlEnv:      url,
+			utils.JFrogTokenEnv:    token,
+			utils.JFrogUserEnv:     username,
+			utils.JFrogPasswordEnv: password,
+		})
 	}
 }

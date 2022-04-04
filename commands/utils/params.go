@@ -50,12 +50,15 @@ func extractParamsFromEnv() (FrogbotParams, error) {
 		return *params, err
 	}
 
-	err := extractGitParamsFromEnv(params)
-	return *params, err
+	if err := extractGitParamsFromEnv(params); err != nil {
+		return *params, err
+	}
+
+	return *params, sanitizeEnv()
 }
 
 func extractJFrogParamsFromEnv(params *FrogbotParams) error {
-	url := strings.TrimSuffix(os.Getenv(jfrogUrlEnv), "/")
+	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
 	xrUrl := strings.TrimSuffix(os.Getenv(jfrogXrayUrlEnv), "/")
 	rtUrl := strings.TrimSuffix(os.Getenv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
@@ -63,22 +66,22 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 		params.Server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if url == "" {
-			return fmt.Errorf("%s or %s and %s environment variables are missing", jfrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
+			return fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
 		params.Server.Url = url + "/"
 		params.Server.XrayUrl = url + "/xray/"
 		params.Server.ArtifactoryUrl = url + "/artifactory/"
 	}
 
-	password := os.Getenv(jfrogPasswordEnv)
-	user := os.Getenv(jfrogUserEnv)
+	password := os.Getenv(JFrogPasswordEnv)
+	user := os.Getenv(JFrogUserEnv)
 	if password != "" && user != "" {
 		params.Server.User = user
 		params.Server.Password = password
-	} else if accessToken := os.Getenv(jfrogTokenEnv); accessToken != "" {
+	} else if accessToken := os.Getenv(JFrogTokenEnv); accessToken != "" {
 		params.Server.AccessToken = accessToken
 	} else {
-		return fmt.Errorf("%s and %s or %s environment variables are missing", jfrogUserEnv, jfrogPasswordEnv, jfrogTokenEnv)
+		return fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
 	// Non mandatory Xray context params
 	params.Watches = os.Getenv(jfrogWatchesEnv)
@@ -133,4 +136,17 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	}
 
 	return 0, fmt.Errorf("%s should be one of: '%s' or '%s'", GitProvider, GitHub, GitLab)
+}
+
+func sanitizeEnv() error {
+	for _, env := range os.Environ() {
+		if !strings.HasPrefix(env, "JF_") {
+			continue
+		}
+		envSplit := strings.Split(env, "=")
+		if err := os.Unsetenv(envSplit[0]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
