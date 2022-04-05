@@ -101,25 +101,25 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 	}()
 
 	params := &FrogbotParams{}
-	extractInstallationCommandFromEnv(params)
+	extractGeneralParamsFromEnv(params)
 	assert.Empty(t, params.InstallCommandName)
 	assert.Empty(t, params.InstallCommandArgs)
 
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
 	params = &FrogbotParams{}
-	extractInstallationCommandFromEnv(params)
+	extractGeneralParamsFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Empty(t, params.InstallCommandArgs)
 
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
 	params = &FrogbotParams{}
-	extractInstallationCommandFromEnv(params)
+	extractGeneralParamsFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Equal(t, []string{"b"}, params.InstallCommandArgs)
 
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
 	params = &FrogbotParams{}
-	extractInstallationCommandFromEnv(params)
+	extractGeneralParamsFromEnv(params)
 	assert.Equal(t, "a", params.InstallCommandName)
 	assert.Equal(t, []string{"b", "--flagName=flagValue"}, params.InstallCommandArgs)
 }

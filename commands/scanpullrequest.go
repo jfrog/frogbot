@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
@@ -139,6 +140,9 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 	wd, err := os.Getwd()
 	if err != nil {
 		return []services.ScanResponse{}, err
+	}
+	if params.WorkingDirectory != "" {
+		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
 	clientLog.Info("Auditing " + wd)
 	return runInstallAndAudit(xrayScanParams, params, wd, true)

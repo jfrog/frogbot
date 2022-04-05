@@ -483,43 +483,67 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
+	testScanPullRequest(t, false)
+}
+
+func TestScanPullRequestSubdir(t *testing.T) {
+	testScanPullRequest(t, true)
+}
+
+func testScanPullRequest(t *testing.T, useWorkingDirectory bool) {
 	restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
-	// Copy test-proj to a temporary directory
-	tmpDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
-	assert.NoError(t, err)
-
-	// Change dir to the temp directory
-	cbk, err := utils.Chdir(filepath.Join(tmpDir, "test-proj"))
-	assert.NoError(t, err)
-	defer cbk()
+	workingDirectory, rootDir, cleanUp := prepareTestEnvironment(t, useWorkingDirectory)
+	defer cleanUp()
 
 	// Create mock GitLab server
-	server := httptest.NewServer(createGitLabHandler(t))
+	server := httptest.NewServer(createGitLabHandler(t, rootDir))
 	defer server.Close()
 
 	// Set required environment variables
 	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitLab),
-		utils.GitApiEndpoint:      server.URL,
+		utils.GitApiEndpointEnv:   server.URL,
 		utils.GitRepoOwnerEnv:     "jfrog",
 		utils.GitRepoEnv:          "test-proj",
 		utils.GitTokenEnv:         "123456",
 		utils.GitBaseBranchEnv:    "master",
 		utils.GitPullRequestIDEnv: "1",
 		utils.InstallCommandEnv:   "npm i",
+		utils.WorkingDirectoryEnv: workingDirectory,
 	})
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
 	utils.AssertSanitizedEnv(t)
+}
+
+// Prepare test environment for the integration tests
+// useWorkingDirectory - If true, the root is the temp directory and the working directory is test-proj.
+// 	                     Otherwise - the root is tempDir/test-proj and the working directory is empty
+// Return the working directory and a cleanup function
+func prepareTestEnvironment(t *testing.T, useWorkingDirectory bool) (string, string, func()) {
+	// Copy test-proj to a temporary directory
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
+	assert.NoError(t, err)
+
+	var workingDirectory string
+	var rootDir = tmpDir
+	if useWorkingDirectory {
+		workingDirectory = "test-proj"
+	} else {
+		rootDir = filepath.Join(rootDir, "test-proj")
+	}
+	restoreDir, err := utils.Chdir(rootDir)
+	assert.NoError(t, err)
+	return workingDirectory, tmpDir, func() {
+		restoreDir()
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}
 }
 
 func TestScanPullRequestError(t *testing.T) {
@@ -533,7 +557,7 @@ func TestUseLabelsError(t *testing.T) {
 	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitHub),
 		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitApiEndpoint:      "https://httpbin.org/status/404",
+		utils.GitApiEndpointEnv:   "https://httpbin.org/status/404",
 		utils.GitRepoEnv:          "test-proj",
 		utils.GitTokenEnv:         "123456",
 		utils.GitBaseBranchEnv:    "master",
@@ -545,7 +569,7 @@ func TestUseLabelsError(t *testing.T) {
 }
 
 // Create HTTP handler to mock GitLab server
-func createGitLabHandler(t *testing.T) http.HandlerFunc {
+func createGitLabHandler(t *testing.T, rootDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Return 200 on ping
 		if r.RequestURI == "/api/v4/" {
@@ -556,7 +580,7 @@ func createGitLabHandler(t *testing.T) http.HandlerFunc {
 		// Return test-proj.tar.gz when using DownloadRepository
 		if r.RequestURI == "/api/v4/projects/jfrog%2Ftest-proj/repository/archive.tar.gz?sha=master" {
 			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", "test-proj.tar.gz"))
+			repoFile, err := os.ReadFile(filepath.Join(rootDir, "test-proj.tar.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
@@ -567,7 +591,7 @@ func createGitLabHandler(t *testing.T) http.HandlerFunc {
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(r.Body)
 
-			expectedReponse, err := os.ReadFile(filepath.Join("..", "expectedReponse.json"))
+			expectedReponse, err := os.ReadFile(filepath.Join(rootDir, "expectedReponse.json"))
 			assert.NoError(t, err)
 			assert.Equal(t, string(expectedReponse), buf.String())
 
