@@ -63,8 +63,8 @@ func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient)
 		if err != nil {
 			return false, err
 		}
-		clientLog.Info(fmt.Sprintf("label '%s' was created. Please label this pull request to trigger an Xray scan", string(utils.LabelName)))
-		return false, nil
+		clientLog.Debug(fmt.Sprintf("Label '%s' was created.", string(utils.LabelName)))
+		return false, fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName))
 	}
 
 	labels, err := client.ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID)
