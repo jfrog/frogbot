@@ -151,19 +151,22 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
 	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
-	tempWorkdir, err := fileutils.CreateTempDir()
+	wd, err := fileutils.CreateTempDir()
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Created temp working directory: " + tempWorkdir)
-	defer fileutils.RemoveTempDir(tempWorkdir)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, tempWorkdir))
-	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, tempWorkdir)
+	clientLog.Debug("Created temp working directory: " + wd)
+	defer fileutils.RemoveTempDir(wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
+	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
 		return
 	}
 	clientLog.Debug("Downloaded target repository")
-	return runInstallAndAudit(xrayScanParams, params, tempWorkdir, false)
+	if params.WorkingDirectory != "" {
+		wd = filepath.Join(wd, params.WorkingDirectory)
+	}
+	return runInstallAndAudit(xrayScanParams, params, wd, false)
 }
 
 func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) ([]services.ScanResponse, error) {
