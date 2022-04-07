@@ -32,7 +32,8 @@ func Chdir(dir string) (cbk func(), err error) {
 func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageReportSent chan<- error) {
 	var err error
 	defer func() {
-		// Signal usage report finished
+		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
+		// It is however important to the application to not exit before the reporting is finished. That is, in case the reporting takes longer than the action.
 		usageReportSent <- err
 	}()
 	if serverDetails.ArtifactoryUrl == "" {

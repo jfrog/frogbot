@@ -581,7 +581,8 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 		// Return 200 when using the REST that creates the comment
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) {
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(r.Body)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
 
 			expectedReponse, err := os.ReadFile(filepath.Join("..", "expectedReponse.json"))
 			assert.NoError(t, err)

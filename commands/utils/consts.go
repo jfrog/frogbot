@@ -53,6 +53,6 @@ const (
 		":--: | -- | -- | -- | -- | :--: | --"
 	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
 
-	// Usage report
+	// Product ID for usage reporting
 	productId = "frogbot"
 )

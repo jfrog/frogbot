@@ -50,8 +50,7 @@ func TestReportUsage(t *testing.T) {
 	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
 	channel := make(chan error)
 	go ReportUsage(commandName, serverDetails, channel)
-	err := <-channel
-	assert.NoError(t, err)
+	assert.NoError(t, <-channel)
 }
 
 func TestReportUsageError(t *testing.T) {
@@ -76,12 +75,13 @@ func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 		if r.RequestURI == "/api/system/usage" {
 			// Check request
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(r.Body)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
 			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
 
 			// Send response OK
 			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("{}"))
+			_, err = w.Write([]byte("{}"))
 			assert.NoError(t, err)
 		}
 	}
