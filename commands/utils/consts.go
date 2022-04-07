@@ -24,7 +24,8 @@ const (
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
 
-	InstallCommandEnv = "JF_INSTALL_DEPS_CMD"
+	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
+	WorkingDirectoryEnv = "JF_WORKING_DIR"
 
 	// JFrog platform environment varialbes
 	JFrogUserEnv           = "JF_USER"
@@ -44,7 +45,7 @@ const (
 	GitTokenEnv         = "JF_GIT_TOKEN"
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
-	GitApiEndpoint      = "JF_GIT_API_ENDPOINT"
+	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 	WatchesDelimiter    = ","
 
 	// Comment

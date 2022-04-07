@@ -483,43 +483,59 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
+	testScanPullRequest(t, "", "test-proj")
+}
+
+func TestScanPullRequestSubdir(t *testing.T) {
+	testScanPullRequest(t, "subdir", "test-proj-subdir")
+}
+
+func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
 	restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
-	// Copy test-proj to a temporary directory
-	tmpDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
-	assert.NoError(t, err)
-
-	// Change dir to the temp directory
-	cbk, err := utils.Chdir(filepath.Join(tmpDir, "test-proj"))
-	assert.NoError(t, err)
-	defer cbk()
+	cleanUp := prepareTestEnvironment(t, projectName)
+	defer cleanUp()
 
 	// Create mock GitLab server
-	server := httptest.NewServer(createGitLabHandler(t))
+	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
 	// Set required environment variables
 	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitLab),
-		utils.GitApiEndpoint:      server.URL,
+		utils.GitApiEndpointEnv:   server.URL,
 		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitRepoEnv:          "test-proj",
+		utils.GitRepoEnv:          projectName,
 		utils.GitTokenEnv:         "123456",
 		utils.GitBaseBranchEnv:    "master",
 		utils.GitPullRequestIDEnv: "1",
 		utils.InstallCommandEnv:   "npm i",
+		utils.WorkingDirectoryEnv: workingDirectory,
 	})
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
 	utils.AssertSanitizedEnv(t)
+}
+
+// Prepare test environment for the integration tests
+// projectName - 'test-proj' or 'test-proj-subdir'
+// Return a cleanup function
+func prepareTestEnvironment(t *testing.T, projectName string) func() {
+	// Copy project to a temporary directory
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
+	assert.NoError(t, err)
+
+	restoreDir, err := utils.Chdir(filepath.Join(tmpDir, projectName))
+	assert.NoError(t, err)
+	return func() {
+		restoreDir()
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}
 }
 
 func TestScanPullRequestError(t *testing.T) {
@@ -533,7 +549,7 @@ func TestUseLabelsError(t *testing.T) {
 	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitHub),
 		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitApiEndpoint:      "https://httpbin.org/status/404",
+		utils.GitApiEndpointEnv:   "https://httpbin.org/status/404",
 		utils.GitRepoEnv:          "test-proj",
 		utils.GitTokenEnv:         "123456",
 		utils.GitBaseBranchEnv:    "master",
@@ -545,7 +561,7 @@ func TestUseLabelsError(t *testing.T) {
 }
 
 // Create HTTP handler to mock GitLab server
-func createGitLabHandler(t *testing.T) http.HandlerFunc {
+func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Return 200 on ping
 		if r.RequestURI == "/api/v4/" {
@@ -554,16 +570,16 @@ func createGitLabHandler(t *testing.T) http.HandlerFunc {
 		}
 
 		// Return test-proj.tar.gz when using DownloadRepository
-		if r.RequestURI == "/api/v4/projects/jfrog%2Ftest-proj/repository/archive.tar.gz?sha=master" {
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=master", "%2F"+projectName) {
 			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", "test-proj.tar.gz"))
+			repoFile, err := os.ReadFile(filepath.Join("..", projectName+".tar.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 		}
 
 		// Return 200 when using the REST that creates the comment
-		if r.RequestURI == "/api/v4/projects/jfrog%2Ftest-proj/merge_requests/1/notes" {
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) {
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(r.Body)
 

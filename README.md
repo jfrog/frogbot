@@ -144,6 +144,10 @@ frogbot-scan:
     # JFrog access token with 'read' permissions for Xray
     # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
+    # [Optional, default: "."]
+    # Relative path to the project in the git repository
+    # JF_WORKING_DIR: path/to/project/dir
+
     # [Optional]
     # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
     # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>

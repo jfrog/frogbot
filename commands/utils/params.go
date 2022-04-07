@@ -14,6 +14,7 @@ import (
 type FrogbotParams struct {
 	JFrogEnvParams
 	GitParam
+	WorkingDirectory   string
 	InstallCommandName string
 	InstallCommandArgs []string
 }
@@ -45,7 +46,7 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 
 func extractParamsFromEnv() (FrogbotParams, error) {
 	params := &FrogbotParams{}
-	extractInstallationCommandFromEnv(params)
+	extractGeneralParamsFromEnv(params)
 	if err := extractJFrogParamsFromEnv(params); err != nil {
 		return *params, err
 	}
@@ -58,9 +59,9 @@ func extractParamsFromEnv() (FrogbotParams, error) {
 }
 
 func extractJFrogParamsFromEnv(params *FrogbotParams) error {
-	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
-	xrUrl := strings.TrimSuffix(os.Getenv(jfrogXrayUrlEnv), "/")
-	rtUrl := strings.TrimSuffix(os.Getenv(jfrogArtifactoryUrlEnv), "/")
+	url := strings.TrimSuffix(getTrimmedEnv(JFrogUrlEnv), "/")
+	xrUrl := strings.TrimSuffix(getTrimmedEnv(jfrogXrayUrlEnv), "/")
+	rtUrl := strings.TrimSuffix(getTrimmedEnv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
 		params.Server.XrayUrl = xrUrl + "/"
 		params.Server.ArtifactoryUrl = rtUrl + "/"
@@ -73,49 +74,50 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 		params.Server.ArtifactoryUrl = url + "/artifactory/"
 	}
 
-	password := os.Getenv(JFrogPasswordEnv)
-	user := os.Getenv(JFrogUserEnv)
+	password := getTrimmedEnv(JFrogPasswordEnv)
+	user := getTrimmedEnv(JFrogUserEnv)
 	if password != "" && user != "" {
 		params.Server.User = user
 		params.Server.Password = password
-	} else if accessToken := os.Getenv(JFrogTokenEnv); accessToken != "" {
+	} else if accessToken := getTrimmedEnv(JFrogTokenEnv); accessToken != "" {
 		params.Server.AccessToken = accessToken
 	} else {
 		return fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
 	// Non mandatory Xray context params
-	params.Watches = os.Getenv(jfrogWatchesEnv)
-	params.Project = os.Getenv(jfrogProjectEnv)
+	_ = readParamFromEnv(jfrogWatchesEnv, &params.Watches)
+	_ = readParamFromEnv(jfrogProjectEnv, &params.Project)
 	return nil
 }
 
 func extractGitParamsFromEnv(params *FrogbotParams) error {
 	var err error
-	params.ApiEndpoint = os.Getenv(GitApiEndpoint)
+	_ = readParamFromEnv(GitApiEndpointEnv, &params.ApiEndpoint)
 	if params.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return err
 	}
-	if params.RepoOwner = os.Getenv(GitRepoOwnerEnv); params.RepoOwner == "" {
-		return &errMissingEnv{GitRepoOwnerEnv}
+	if err = readParamFromEnv(GitRepoOwnerEnv, &params.RepoOwner); err != nil {
+		return err
 	}
-	if params.Repo = os.Getenv(GitRepoEnv); params.Repo == "" {
-		return &errMissingEnv{GitRepoEnv}
+	if err = readParamFromEnv(GitRepoEnv, &params.Repo); err != nil {
+		return err
 	}
-	if params.Token = os.Getenv(GitTokenEnv); params.Token == "" {
-		return &errMissingEnv{GitTokenEnv}
+	if err = readParamFromEnv(GitTokenEnv, &params.Token); err != nil {
+		return err
 	}
-	if params.BaseBranch = os.Getenv(GitBaseBranchEnv); params.BaseBranch == "" {
-		return &errMissingEnv{GitBaseBranchEnv}
+	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
+		return err
 	}
-	if pullRequestIDString := os.Getenv(GitPullRequestIDEnv); pullRequestIDString != "" {
+	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		return err
 	}
 	return &errMissingEnv{GitPullRequestIDEnv}
 }
 
-func extractInstallationCommandFromEnv(params *FrogbotParams) {
-	installCommand := strings.TrimSpace(os.Getenv(InstallCommandEnv))
+func extractGeneralParamsFromEnv(params *FrogbotParams) {
+	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
+	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
 		return
 	}
@@ -126,8 +128,20 @@ func extractInstallationCommandFromEnv(params *FrogbotParams) {
 	params.InstallCommandName = parts[0]
 }
 
+func readParamFromEnv(envKey string, paramValue *string) error {
+	*paramValue = getTrimmedEnv(envKey)
+	if *paramValue == "" {
+		return &errMissingEnv{envKey}
+	}
+	return nil
+}
+
+func getTrimmedEnv(envKey string) string {
+	return strings.TrimSpace(os.Getenv(envKey))
+}
+
 func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
-	vcsProvider := strings.ToLower(os.Getenv(GitProvider))
+	vcsProvider := getTrimmedEnv(GitProvider)
 	switch vcsProvider {
 	case string(GitHub):
 		return vcsutils.GitHub, nil
