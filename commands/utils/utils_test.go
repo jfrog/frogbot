@@ -1,10 +1,15 @@
 package utils
 
 import (
+	"bytes"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,4 +40,49 @@ func TestChdirErr(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 	assert.Equal(t, originCwd, cwd)
+}
+
+func TestReportUsage(t *testing.T) {
+	const commandName = "test-command"
+	server := httptest.NewServer(createUsageHandler(t, commandName))
+	defer server.Close()
+
+	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
+	channel := make(chan error)
+	go ReportUsage(commandName, serverDetails, channel)
+	err := <-channel
+	assert.NoError(t, err)
+}
+
+func TestReportUsageError(t *testing.T) {
+	channel := make(chan error)
+	go ReportUsage("", &config.ServerDetails{}, channel)
+	assert.NoError(t, <-channel)
+
+	channel = make(chan error)
+	go ReportUsage("", &config.ServerDetails{ArtifactoryUrl: "http://httpbin.org/status/404"}, channel)
+	assert.Error(t, <-channel)
+}
+
+// Create HTTP handler to mock an Artifactory server suitable for report usage requests
+func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/api/system/version" {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"version":"6.9.0"}`))
+			assert.NoError(t, err)
+			return
+		}
+		if r.RequestURI == "/api/system/usage" {
+			// Check request
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(r.Body)
+			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
+
+			// Send response OK
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		}
+	}
 }

@@ -52,4 +52,7 @@ const (
 	TableHeder = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
 	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
+
+	// Usage report
+	productId = "frogbot"
 )
