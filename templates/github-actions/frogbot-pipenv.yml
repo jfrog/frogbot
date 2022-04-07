@@ -52,7 +52,7 @@ jobs:
           # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
           # [Optional, default: "."]
-          # Relative path in the repository to the project
+          # Relative path to the project in the git repository
           # JF_WORKING_DIR: path/to/project/dir
 
           # [Optional]

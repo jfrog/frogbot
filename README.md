@@ -145,7 +145,7 @@ frogbot-scan:
     # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Optional, default: "."]
-    # Relative path in the repository to the project
+    # Relative path to the project in the git repository
     # JF_WORKING_DIR: path/to/project/dir
 
     # [Optional]
