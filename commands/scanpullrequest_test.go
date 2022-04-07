@@ -16,7 +16,7 @@ import (
 	"github.com/jfrog/frogbot/commands/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
@@ -401,7 +401,7 @@ func mockVcsClient(t *testing.T) (*testdata.MockVcsClient, func()) {
 }
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
-	vulnerabilities := []xrayutils.VulnerabilityRow{}
+	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
 	message := createPullRequestMessage(vulnerabilities)
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
@@ -411,44 +411,44 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
-	vulnerabilities := []xrayutils.VulnerabilityRow{
+	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
 			Severity:               "High",
 			ImpactedPackageName:    "github.com/nats-io/nats-streaming-server",
 			ImpactedPackageVersion: "v0.21.0",
-			FixedVersions:          "[0.24.1]",
-			Components: []xrayutils.ComponentRow{
+			FixedVersions:          []string{"[0.24.1]"},
+			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/nats-io/nats-streaming-server",
 					Version: "v0.21.0",
 				},
 			},
-			Cves: []xrayutils.CveRow{{Id: "CVE-2022-24450"}},
+			Cves: []formats.CveRow{{Id: "CVE-2022-24450"}},
 		},
 		{
 			Severity:               "High",
 			ImpactedPackageName:    "github.com/mholt/archiver/v3",
 			ImpactedPackageVersion: "v3.5.1",
-			Components: []xrayutils.ComponentRow{
+			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/mholt/archiver/v3",
 					Version: "v3.5.1",
 				},
 			},
-			Cves: []xrayutils.CveRow{},
+			Cves: []formats.CveRow{},
 		},
 		{
 			Severity:               "Medium",
 			ImpactedPackageName:    "github.com/nats-io/nats-streaming-server",
 			ImpactedPackageVersion: "v0.21.0",
-			FixedVersions:          "[0.24.3]",
-			Components: []xrayutils.ComponentRow{
+			FixedVersions:          []string{"[0.24.3]"},
+			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/nats-io/nats-streaming-server",
 					Version: "v0.21.0",
 				},
 			},
-			Cves: []xrayutils.CveRow{{Id: "CVE-2022-26652"}},
+			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
 	message := createPullRequestMessage(vulnerabilities)
