@@ -95,7 +95,7 @@ func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient)
 }
 
 // Scan a pull request by as follows:
-// a. Audit the depedencies of the source and the target branches.
+// a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulenrabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Audit PR code
