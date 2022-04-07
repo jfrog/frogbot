@@ -3,6 +3,11 @@ package utils
 import (
 	"fmt"
 	"os"
+
+	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-client-go/artifactory/usage"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type errMissingEnv struct {
@@ -22,4 +27,27 @@ func Chdir(dir string) (cbk func(), err error) {
 		return nil, err
 	}
 	return func() { err = os.Chdir(wd) }, err
+}
+
+func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageReportSent chan<- error) {
+	var err error
+	defer func() {
+		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
+		// It is however important to the application to not exit before the reporting is finished. That is, in case the reporting takes longer than the action.
+		usageReportSent <- err
+	}()
+	if serverDetails.ArtifactoryUrl == "" {
+		return
+	}
+	clientLog.Debug(usage.ReportUsagePrefix + "Sending info...")
+	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
+	if err != nil {
+		clientLog.Debug(usage.ReportUsagePrefix + err.Error())
+		return
+	}
+	err = usage.SendReportUsage(productId, commandName, serviceManager)
+	if err != nil {
+		clientLog.Debug(err.Error())
+		return
+	}
 }
