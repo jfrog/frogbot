@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
@@ -118,8 +119,8 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse) []xrayutils.VulnerabilityRow {
-	var vulnerabilitiesRows []xrayutils.VulnerabilityRow
+func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
 		if len(currentScan[i].Violations) > 0 {
 			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewViolations(previousScan[i], currentScan[i])...)
@@ -208,16 +209,16 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 	return nil
 }
 
-func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []xrayutils.VulnerabilityRow) {
-	existsViolationsMap := make(map[string]xrayutils.VulnerabilityRow)
-	violationsRows, _, _, err := xrayutils.PrepareViolationsTable(previousScan.Violations, false, false)
+func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []formats.VulnerabilityOrViolationRow) {
+	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
+	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, false, false)
 	if err != nil {
 		return
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
-	violationsRows, _, _, err = xrayutils.PrepareViolationsTable(currentScan.Violations, false, false)
+	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, false, false)
 	if err != nil {
 		return
 	}
@@ -229,16 +230,16 @@ func getNewViolations(previousScan, currentScan services.ScanResponse) (newViola
 	return
 }
 
-func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []xrayutils.VulnerabilityRow) {
-	existsVulnerabilitiesMap := make(map[string]xrayutils.VulnerabilityRow)
-	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilitiesTable(previousScan.Vulnerabilities, false, false)
+func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
+	existsVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
+	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
 	}
-	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilitiesTable(currentScan.Vulnerabilities, false, false)
+	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, false, false)
 	if err != nil {
 		return
 	}
@@ -250,11 +251,11 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 	return
 }
 
-func getUniqueID(vulnerability xrayutils.VulnerabilityRow) string {
+func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []xrayutils.VulnerabilityRow) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
 	if len(vulnerabilitiesRows) == 0 {
 		return utils.GetBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
 	}
