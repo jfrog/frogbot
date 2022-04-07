@@ -269,8 +269,9 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 		if len(vulnerability.Cves) > 0 {
 			cve = vulnerability.Cves[0].Id
 		}
+		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity))+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
-			vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions, componentName, componentVersion, cve)
+			vulnerability.ImpactedPackageVersion, fixedVersionString, componentName, componentVersion, cve)
 	}
 	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeder + tableContent
 }
