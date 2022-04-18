@@ -13,8 +13,8 @@
 
 ## 🤖 What is Frogbot?
 
-Frogbot is a git bot that scans your pull requests with [JFrog Xray](https://jfrog.com/xray/) for security vulnerabilities. Frogbot adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
-Currently GitHub and GitLab are supported. Bitbucket will be supported soon.
+Frogbot is a Git bot that scans your pull requests for security vulnerabilities using [JFrog Xray](https://jfrog.com/xray/) . Frogbot adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
+Please note that GitHub and GitLab are currently supported and Bitbucket will be supported soon.
 Projects that use one of the following tools to download their dependencies are currently supported.
 
 - Npm
@@ -29,36 +29,36 @@ Projects that use one of the following tools to download their dependencies are 
 ## 🕵️‍♀️ How does it work?
 
 ### General
+For security reasons, Frogbot is not triggered automatically. 
+After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
 
-After a new pull request is created, a maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. For security reasons, Frogbot is not triggered automatically. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation will not be added to the report.
+### Running Frogbot on GitHub
 
-### On GitHub
+1. A developer opens a pull request.
+2. If missing, Frogbot creates the `🐸 frogbot scan` label in the repository.
+3. A maintainer of the repository assigns the `🐸 frogbot scan` label on the pull request.
+4. Frogbot is triggered by the label, scans the pull request, adds a comment with the scan results, and removes the label from the pull request.
+5. Frogbot can be triggered again following new commits, by adding the label to the pull request again.
 
-1. A developer opens a pull request
-2. If missing, Frogbot creates the `🐸 frogbot scan` label in the repository
-3. A maintainer of the repository assigns the `🐸 frogbot scan` label on this pull request
-4. Frogbot gets triggered by the label, scans the pull request, adds a comment with the scan results and removes the label from the pull request
-5. Frogbot can be triggered again following new commits, by adding the label to the pull request again
+### Running Frogbot on GitLab
 
-### On GitLab
-
-1. A developer opens a merge request
-2. A maintainer of the repository triggers the manual frogbot-scan job
-3. Frogbot gets triggered by the job, scans the merge request and adds a comment with the scan results
-4. Frogbot can be triggered again following new commits, by trigerring the frogbot-scan job again
-   [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI)
+1. A developer opens a merge request.
+2. A maintainer of the repository triggers the manual **frogbot-scan** job.
+3. Frogbot is triggered by the job, scans the merge request, and adds a comment with the scan results.
+4. Frogbot can be triggered again following new commits, by triggering the **frogbot-scan** job again
+   [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI).
 
 ## Pull Request Comments
 
 ### 👍 No issues
 
-If no new vulnerabilities were found, Frogbot will automatically add the following comment to the pull request:
+If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
 ### 👎 Issues were found
 
-If new vulnerabilities were found, Frogbot will add them in a comment on the pull request. For example:
+If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
@@ -72,17 +72,20 @@ If new vulnerabilities were found, Frogbot will add them in a comment on the pul
 
 ### General
 
-1. Frogbot requires a JFrog environment to scan pull requests with. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save its connection details (URL, username and password) as secrets in git.
+1. Frogbot requires a JFrog environment to scan pull requests. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save the connection details (URL, username, and password) as secrets in Git.
 2. Setting up Frogbot on a GitHub repository? [Install Frogbot using GitHub Actions](#install-frogbot-using-github-actions)
 3. Setting up Frogbot on a GitLab repository? [Install Frogbot using GitLab CI](#install-frogbot-using-gitlab-ci)
 
-### Set Up a FREE JFrog Environment in the Cloud
+### Set up a FREE JFrog Environment in the Cloud
 
-Need a FREE JFrog environment in the cloud, which Frogbot can scan pull requests with? Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands will do the following:
+Need a FREE JFrog environment in the cloud, so Frogbot can scan your pull requests? 
 
-- Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
-- Create a FREE JFrog environment in the cloud for you.
-  After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in git.
+Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands will do the following:
+
+1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
+2. Create a FREE JFrog environment in the cloud for you. 
+
+After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in Git.
 
 **On MacOS and Linux using cUrl**
 
@@ -96,23 +99,23 @@ curl -fL https://getcli.jfrog.io?setup | sh
 powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
 ```
 
-### Install Frogbot using GitHub Actions
+### Install Frogbot Using GitHub Actions
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as secrets in GitHub with the following names - _JF_URL_, _JF_USER_ and _JF_PASSWORD_. You can also use _JF_ACCESS_TOKEN_ instead of _JF_USER_ and _JF_PASSWORD_.
+2. Save the JFrog connection details as secrets in GitHub with the following names - _JF_URL_, _JF_USER_ and _JF_PASSWORD_ (You can also use _JF_ACCESS_TOKEN_ instead of _JF_USER_ and _JF_PASSWORD_).
 3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
-4. Push the `frogbot.yml` file to the `.github/workflows` directory at the root of your GitHub repository.
+4. Push the `frogbot.yml` file to the `.github/workflows` directory in the root of your GitHub repository.
 
-### Install Frogbot using GitLab CI
+### Install Frogbot Using GitLab CI
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as secrets in GitLab with the following names - _JF_URL_, _JF_USER_ and _JF_PASSWORD_. You can also use _JF_ACCESS_TOKEN_ instead of _JF_USER_ and _JF_PASSWORD_.
+2. Save the JFrog connection details as secrets in GitLab with the following names: _JF_URL_, _JF_USER_ and _JF_PASSWORD_ (You can also use _JF_ACCESS_TOKEN_ instead of _JF_USER_ and _JF_PASSWORD_).
 3. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repository using the below structure.
 
-**Important**
+**Important Guidelines**
 
-- If the project uses npm, pip, pipenv, nuget or dotnet to download its depedencies, make sure to set the command that downloads your project depedencies as the value of the _JF_INSTALL_DEPS_CMD_ variable. For example, `npm i` or `nuget restore`
-- Make sure that either _JF_USER_ and _JF_PASSWORD_ or _JF_ACCESS_TOKEN_ are set, but not both.
+- For npm, pip, pipenv, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- Make sure that either **_JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
 
 ```yml
 frogbot-scan:
@@ -172,5 +175,4 @@ frogbot-scan:
 ```
 
 ## 💻 Contributions
-
-We welcome pull requests from the community. To help us improve this project, please read our [contribution](./CONTRIBUTING.md#-guidelines) guide.
+We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
