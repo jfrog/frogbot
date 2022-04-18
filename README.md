@@ -110,12 +110,12 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as secrets in GitLab with the following names: _JF_URL_, _JF_USER_ and _JF_PASSWORD_ (You can also use _JF_ACCESS_TOKEN_ instead of _JF_USER_ and _JF_PASSWORD_).
-3. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file to your GitLab repository using the below structure.
+3. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repository using the below structure.
 
 **Important Guidelines**
 
-- For npm, pip, pipenv, nuget or dotnet: To download the depedencies, make sure to set the command in a way that it downloads your project dependencies as the value of the **_JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
-- Make sure that **_JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
+- For npm, pip, pipenv, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- Make sure that either **_JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
 
 ```yml
 frogbot-scan:
