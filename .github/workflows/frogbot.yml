@@ -21,13 +21,10 @@ jobs:
       - uses: jfrog/frogbot@dev
         env:
           # [Mandatory] JFrog platform URL
-          JF_URL: ${{ secrets.JF_URL }}
-          
-          # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform username
-          JF_USER: ${{ secrets.JF_USER }}
+          JF_URL: ${{ secrets.FROGBOT_URL }}
 
-          # [Mandatory if JF_ACCESS_TOKEN is not provided] JFrog platform password
-          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided] 
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
           
           # [Manadatory] The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
