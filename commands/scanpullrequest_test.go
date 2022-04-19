@@ -584,9 +584,9 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
 
-			expectedReponse, err := os.ReadFile(filepath.Join("..", "expectedReponse.json"))
+			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedResponse.json"))
 			assert.NoError(t, err)
-			assert.Equal(t, string(expectedReponse), buf.String())
+			assert.Equal(t, string(expectedResponse), buf.String())
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
