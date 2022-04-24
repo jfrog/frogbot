@@ -1,10 +1,8 @@
 <div align="center">
    
-# Frogbot   
+# Frogbot
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
-
-
 
 [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/jfrog/frogbot/badge.svg?branch=dev)](https://coveralls.io/github/jfrog/frogbot?branch=dev) [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
@@ -29,7 +27,8 @@ Projects that use one of the following tools to download their dependencies are 
 ## 🕵️‍♀️ How does it work?
 
 ### General
-For security reasons, Frogbot is not triggered automatically. 
+
+For security reasons, Frogbot is not triggered automatically.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
 
 ### Running Frogbot on GitHub
@@ -78,12 +77,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 ### Set up a FREE JFrog Environment in the Cloud
 
-Need a FREE JFrog environment in the cloud, so Frogbot can scan your pull requests? 
+Need a FREE JFrog environment in the cloud, so Frogbot can scan your pull requests?
 
 Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands will do the following:
 
 1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
-2. Create a FREE JFrog environment in the cloud for you. 
+2. Create a FREE JFrog environment in the cloud for you.
 
 After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in Git.
 
@@ -115,7 +114,7 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 **Important Guidelines**
 
 - For npm, pip, pipenv, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
-- Make sure that either **_JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
+- Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
 
 ```yml
 frogbot-scan:
@@ -130,9 +129,6 @@ frogbot-scan:
     # [Mandatory]
     # JFrog platform URL
     JF_URL: $JF_URL
-    
-    # Gitlab platfrom URL
-    JF_GIT_API_ENDPOINT: $GITLAB_URL
 
     # [Mandatory if JF_ACCESS_TOKEN is not provided]
     # JFrog user and password with 'read' permissions for Xray
@@ -143,7 +139,7 @@ frogbot-scan:
     # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
 
-    # Predefined gitlab variables. There's no need to set them
+    # Predefined GitLab variables. There's no need to set them.
     JF_GIT_PROVIDER: gitlab
     JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
     JF_GIT_REPO: $CI_PROJECT_NAME
@@ -151,6 +147,10 @@ frogbot-scan:
     JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
 
     # Uncomment the below options if you'd like to use them.
+
+    # [Optional, default: https://gitlab.com]
+    # API endpoint to GitLab
+    # JF_GIT_API_ENDPOINT: https://gitlab.example.com
 
     # [Mandatory if JF_USER and JF_PASSWORD are not provided]
     # JFrog access token with 'read' permissions for Xray
@@ -178,4 +178,5 @@ frogbot-scan:
 ```
 
 ## 💻 Contributions
+
 We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
