@@ -130,6 +130,9 @@ frogbot-scan:
     # [Mandatory]
     # JFrog platform URL
     JF_URL: $JF_URL
+    
+    # Gitlab platfrom URL
+    JF_GIT_API_ENDPOINT: $GITLAB_URL
 
     # [Mandatory if JF_ACCESS_TOKEN is not provided]
     # JFrog user and password with 'read' permissions for Xray
