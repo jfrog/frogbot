@@ -18,7 +18,7 @@ jobs:
       # Un-label the 'safe to test' label
       - name: Un-label 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: runner.os == 'Linux' && ${{github.event_name != 'push' }}
+        if: runner.os == 'Linux' && ${{ github.event_name != 'push' }}
         with:
           labels: 'safe to test'
 
@@ -71,6 +71,7 @@ jobs:
   # Build and run frogbot current changes for visual sanity check.  
   sanity:
     needs: tests
+    if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -87,16 +88,10 @@ jobs:
         run: buildscripts/build.sh
       - name: Scan
         env:
-          # [Mandatory] JFrog platform URL
           JF_URL: ${{ secrets.FROGBOT_URL }}
-
-          # [Mandatory if JF_USER and JF_PASSWORD are not provided] 
           JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
-          
-          # [Manadatory] The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          JF_GIT_BASE_BRANCH: ${{ github.base_ref}}
+          JF_GIT_BASE_BRANCH: ${{ github.base_ref }}
           JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
