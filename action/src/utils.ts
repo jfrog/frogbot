@@ -15,8 +15,10 @@ export class Utils {
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
         let version: string = core.getInput(Utils.VERSION_ARG);
+        let major: string = version.split('.')[0];
         if (version === this.LATEST_CLI_VERSION_ARG) {
             version = Utils.LATEST_RELEASE_VERSION;
+            major = '2';
         } else {
             if (this.loadFromCache(version)) {
                 // Download is not needed
@@ -25,7 +27,7 @@ export class Utils {
         }
 
         // Download Frogbot
-        let url: string = Utils.getCliUrl(version, fileName);
+        let url: string = Utils.getCliUrl(major, version, fileName);
         core.debug('Downloading Frogbot from ' + url);
         let downloadDir: string = await toolCache.downloadTool(url);
 
@@ -48,7 +50,7 @@ export class Utils {
      * Execute frogbot scan-pull-request command.
      */
     public static async execScanPullRequest() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request', '--use-labels']);
+        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }
@@ -83,9 +85,9 @@ export class Utils {
         core.addPath(cliDir);
     }
 
-    public static getCliUrl(version: string, fileName: string): string {
+    public static getCliUrl(major: string, version: string, fileName: string): string {
         let architecture: string = 'frogbot-' + Utils.getArchitecture();
-        return 'https://releases.jfrog.io/artifactory/frogbot/v1/' + version + '/' + architecture + '/' + fileName;
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
     }
 
     public static getArchitecture() {

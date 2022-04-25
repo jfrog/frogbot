@@ -43,7 +43,7 @@ verifyVersionMatching () {
     exit $exitCode
   fi
 
-  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v1.0.0")
+  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v2.0.0")
   echo "Output: $res"
   builtVersion="${res##* }"
   # Compare versions
@@ -55,7 +55,7 @@ verifyVersionMatching () {
 }
 
 version="$1"
-pkgPath="ecosys-frogbot/v1"
+pkgPath="ecosys-frogbot/v2"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
