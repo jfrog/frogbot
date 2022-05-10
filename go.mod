@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jfrog/froggit-go v1.1.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.13.5
-	github.com/jfrog/jfrog-client-go v1.12.4
+	github.com/jfrog/jfrog-client-go v1.12.5
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli/v2 v2.4.0
 )
@@ -86,4 +86,9 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+)
+
+replace (
+	github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.13.7-0.20220510172240-19307a6545bc
+	github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.12.6-0.20220510170226-c08e1e4f23b7
 )
