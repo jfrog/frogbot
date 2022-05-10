@@ -34,10 +34,12 @@ After you create a new pull request, the maintainer of the git repository can tr
 ### Running Frogbot on GitHub
 
 1. A developer opens a pull request.
-2. If missing, Frogbot creates the `🐸 frogbot scan` label in the repository.
-3. A maintainer of the repository assigns the `🐸 frogbot scan` label on the pull request.
-4. Frogbot is triggered by the label, scans the pull request, adds a comment with the scan results, and removes the label from the pull request.
-5. Frogbot can be triggered again following new commits, by adding the label to the pull request again.
+2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
+
+[![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
+
+3. A Maintainer reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
+4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
 ### Running Frogbot on GitLab
 
@@ -101,7 +103,13 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 ### Install Frogbot Using GitHub Actions
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as secrets in GitHub with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
+2. Create a new "frogbot" [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
+
+   1. Add people or public teams as reviewers. The chosen reviewers are authorized to trigger Frogbot scan on pull requests.
+   2. Save the JFrog connection details as secrets in the environment with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
+
+   ![](images/github-environment.png)
+
 3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
 4. Push the `frogbot.yml` file to the `.github/workflows` directory in the root of your GitHub repository.
 
@@ -169,11 +177,11 @@ frogbot-scan:
     # JF_PROJECT: <project-key>
   script:
     # For Linux / MacOS runner:
-    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/getFrogbot.sh" | sh
+    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot scan-pull-request
 
     # For Windows runner:
-    # iwr https://releases.jfrog.io/artifactory/frogbot/v1/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
     # .\frogbot.exe scan-pull-request
 ```
 
