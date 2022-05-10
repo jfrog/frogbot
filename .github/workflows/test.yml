@@ -20,7 +20,7 @@ jobs:
         uses: actions-ecosystem/action-remove-labels@v1
         if: runner.os == 'Linux' && ${{ github.event_name != 'push' }}
         with:
-          labels: 'safe to test'
+          labels: "safe to test"
 
       # Configure prerequisites
       - uses: actions/checkout@v2
@@ -34,10 +34,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: "16"
-
-      # Generate mocks
-      - name: Generate mocks
-        run: go generate ./...
 
       # Run gosec
       - name: Install gosec
@@ -68,7 +64,7 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: runner.os == 'Linux'
-  # Build and run frogbot current changes for visual sanity check.  
+  # Build and run frogbot current changes for visual sanity check.
   sanity:
     needs: tests
     if: ${{ github.event_name != 'push' }}
@@ -95,5 +91,5 @@ jobs:
           JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
-          JF_GIT_REPO: ${{ github.event.repository.name }} 
+          JF_GIT_REPO: ${{ github.event.repository.name }}
         run: ./frogbot scan-pull-request
