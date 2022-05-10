@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/jfrog/froggit-go v1.1.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.13.5
-	github.com/jfrog/jfrog-client-go v1.12.4
+	github.com/jfrog/jfrog-client-go v1.12.5
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli/v2 v2.4.0
 )
