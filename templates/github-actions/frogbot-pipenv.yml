@@ -5,8 +5,8 @@ on:
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
-    # Frogbot will be running after a maintainer of the "frogbot" environment in the GitHub repository approves the scan.
-    # For security reasons, using an environment is mandatory for public repositories.
+    # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
+    # "frogbot" GitHub environment can approve the pull request to be scanned.
     environment: frogbot
     steps:
       - uses: actions/checkout@v2
