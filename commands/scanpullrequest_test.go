@@ -18,8 +18,6 @@ import (
 	clitool "github.com/urfave/cli/v2"
 )
 
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
-
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
 	params := createXrayScanParams("", "")
