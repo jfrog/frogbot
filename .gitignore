@@ -2,3 +2,6 @@ __tests__/runner/*
 frogbot
 frogbot.exe
 coverage
+.idea
+.vscode
+*.iml
