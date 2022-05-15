@@ -84,7 +84,7 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 	} else {
 		return fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
-	// Non mandatory Xray context params
+	// Non-mandatory Xray context params
 	_ = readParamFromEnv(jfrogWatchesEnv, &params.Watches)
 	_ = readParamFromEnv(jfrogProjectEnv, &params.Project)
 	return nil

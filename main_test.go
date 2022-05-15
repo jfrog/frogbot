@@ -20,7 +20,7 @@ func TestVersion(t *testing.T) {
 	os.Args = []string{"frogbot", "--version"}
 	main()
 
-	w.Close()
+	assert.NoError(t, w.Close())
 	out, err := io.ReadAll(r)
 	assert.NoError(t, err)
 	assert.Equal(t, "Frogbot version 0.0.0", strings.TrimSpace(string(out)))
