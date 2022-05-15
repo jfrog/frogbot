@@ -18,7 +18,7 @@ func (m *errMissingEnv) Error() string {
 	return fmt.Sprintf("'%s' environment variable is missing", m.variableName)
 }
 
-func Chdir(dir string) (cbk func(), err error) {
+func Chdir(dir string) (cbk func() error, err error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func Chdir(dir string) (cbk func(), err error) {
 	if err = os.Chdir(dir); err != nil {
 		return nil, err
 	}
-	return func() { err = os.Chdir(wd) }, err
+	return func() error { return os.Chdir(wd) }, err
 }
 
 func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageReportSent chan<- error) {

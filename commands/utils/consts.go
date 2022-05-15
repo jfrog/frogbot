@@ -27,7 +27,7 @@ const (
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"
 
-	// JFrog platform environment varialbes
+	// JFrog platform environment variables
 	JFrogUserEnv           = "JF_USER"
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
@@ -49,7 +49,7 @@ const (
 	WatchesDelimiter    = ","
 
 	// Comment
-	TableHeder = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
+	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
 	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
 

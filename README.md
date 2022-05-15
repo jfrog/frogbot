@@ -86,9 +86,9 @@ Just run one of the following commands in your terminal, to set up an environmen
 1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 2. Create a FREE JFrog environment in the cloud for you.
 
-After the set up is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in Git.
+After the setup is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in Git.
 
-**On MacOS and Linux using cUrl**
+**On macOS and Linux using cUrl**
 
 ```
 curl -fL https://getcli.jfrog.io?setup | sh

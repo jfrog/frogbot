@@ -393,7 +393,7 @@ func prepareTestEnvironment(t *testing.T, projectName string) func() {
 	restoreDir, err := utils.Chdir(filepath.Join(tmpDir, projectName))
 	assert.NoError(t, err)
 	return func() {
-		restoreDir()
+		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 }
