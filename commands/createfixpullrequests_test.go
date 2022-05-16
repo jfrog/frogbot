@@ -11,18 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMic(t *testing.T) {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	// Do scan commit
-	scanResults, err := scanCommit(params)
-	if assert.NoError(t, err) {
-		// Fix and create PRs
-		err = fixImpactedPackagesAndCreatePRs(params, client, scanResults)
-		assert.NoError(t, err)
-	}
-}
-
 func TestScanCommitCreateFixPRs(t *testing.T) {
 	testScanCommitCreateFixPRs(t, "", "go-proj")
 }
