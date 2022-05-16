@@ -3,6 +3,7 @@ module github.com/jfrog/frogbot
 go 1.17
 
 require (
+	github.com/coreos/go-semver v0.3.1-0.20220328174955-167f5da54033
 	github.com/jfrog/froggit-go v1.1.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.13.5
 	github.com/jfrog/jfrog-client-go v1.12.5
