@@ -145,6 +145,11 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
 		var output []byte
 		output, err = npmInstallCmd.CombinedOutput()
+		////////////////////
+		clientLog.Info("#############")
+		clientLog.Info(output)
+		clientLog.Info("#############")
+		////////////////////
 		if err != nil {
 			err = fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
 			return
