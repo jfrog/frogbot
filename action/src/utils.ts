@@ -50,7 +50,7 @@ export class Utils {
      * Execute frogbot scan-pull-request command.
      */
     public static async execScanPullRequest() {
-        let res: number = await exec(Utils.getExecutableName(), ['create-fix-pull-requests']);/////////////
+        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }
@@ -87,8 +87,7 @@ export class Utils {
 
     public static getCliUrl(major: string, version: string, fileName: string): string {
         let architecture: string = 'frogbot-' + Utils.getArchitecture();
-        ///////////////////
-        return `https://asafgabai.jfrog.io/artifactory/asaf-local/frogbot/frogbot`;
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
     }
 
     public static getArchitecture() {

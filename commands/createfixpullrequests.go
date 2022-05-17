@@ -122,12 +122,6 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return
 	}
 
-	////////////////////
-	clientLog.Info("#############1")
-	clientLog.Info(fixVersionInfo.packageType)
-	clientLog.Info("#############")
-	////////////////////
-
 	switch fixVersionInfo.packageType {
 	// todo: get package types from core
 	case "Go":
@@ -143,7 +137,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 			return
 		}
-	case "Npm":
+	case "npm":
 		packageFullName := impactedPackage + "@" + fixVersionInfo.fixVersion
 		npmInstallCmd := exec.Command("npm", "install", packageFullName)
 		npmInstallCmd.Dir = tempDirPath
@@ -151,11 +145,6 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
 		var output []byte
 		output, err = npmInstallCmd.CombinedOutput()
-		////////////////////
-		clientLog.Info("#############")
-		clientLog.Info(output)
-		clientLog.Info("#############")
-		////////////////////
 		if err != nil {
 			err = fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
 			return
