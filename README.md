@@ -9,6 +9,19 @@
 
 </div>
 
+## Table of contents
+
+- [What is Frogbot?](#what-is-frogbot)
+- [How does it work?](#how-does-it-work)
+  - [General](#general)
+  - [GitHub](#github)
+  - [GitLub](#gitlub)
+  - [Pull Request Comments](#pull-request-comments)
+- [Installing and Using Frogbot](#installing-and-using-frogbot)
+- [Contributions](#contributions)
+
+<div id="what-is-frogbot"></div>
+
 ## 🤖 What is Frogbot?
 
 Frogbot is a Git bot that scans your pull requests for security vulnerabilities using [JFrog Xray](https://jfrog.com/xray/) . Frogbot adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
@@ -24,6 +37,8 @@ Projects that use one of the following tools to download their dependencies are 
 - Nuget
 - Dotnet
 
+<div id="how-does-it-work"></div>
+
 ## 🕵️‍♀️ How does it work?
 
 ### General
@@ -31,7 +46,7 @@ Projects that use one of the following tools to download their dependencies are 
 For security reasons, Frogbot is not triggered automatically.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
 
-### Running Frogbot on GitHub
+### GitHub
 
 1. A developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
@@ -41,7 +56,7 @@ After you create a new pull request, the maintainer of the git repository can tr
 3. A Maintainer reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
-### Running Frogbot on GitLab
+### GitLub
 
 1. A developer opens a merge request.
 2. A maintainer of the repository triggers the manual **frogbot-scan** job.
@@ -49,15 +64,15 @@ After you create a new pull request, the maintainer of the git repository can tr
 4. Frogbot can be triggered again following new commits, by triggering the **frogbot-scan** job again
    [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI).
 
-## Pull Request Comments
+### Pull Request Comments
 
-### 👍 No issues
+#### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
-### 👎 Issues were found
+#### 👎 Issues were found
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
@@ -68,6 +83,8 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.1]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-24450 |
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |      v3.5.1       |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
+
+<div id="installing-and-using-frogbot"></div>
 
 ## 🖥️ Installing and Using Frogbot
 
@@ -184,6 +201,8 @@ frogbot-scan:
     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
     # .\frogbot.exe scan-pull-request
 ```
+
+<div id="contributions"></div>
 
 ## 💻 Contributions
 
