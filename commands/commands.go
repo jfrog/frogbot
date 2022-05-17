@@ -9,7 +9,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action:  ScanPullRequest,
-			Flags:   GetScanPullRequestFlags(),
+			Flags:   []clitool.Flag{},
 		},
 	}
 }

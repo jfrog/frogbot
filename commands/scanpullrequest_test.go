@@ -2,8 +2,6 @@ package commands
 
 import (
 	"bytes"
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,18 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/commands/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
 )
-
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
 
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
@@ -267,139 +260,6 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	assert.Len(t, rows, 0)
 }
 
-var params = &utils.FrogbotParams{
-	GitParam: utils.GitParam{
-		RepoOwner:     "repo-owner",
-		Repo:          "repo-name",
-		PullRequestID: 5,
-		BaseBranch:    "master",
-	},
-}
-
-func TestHandleFrogbotLabel(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Label is expected to exist in pull request
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelDescription),
-	}, nil)
-	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{"label-1", string(utils.LabelName)}, nil)
-	client.EXPECT().UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), 5).Return(nil)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.NoError(t, err)
-	assert.True(t, shouldScan)
-}
-
-func TestHandleFrogbotLabelGetLabelErr(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Get label is expected to return an error
-	expectedError := errors.New("Couldn't get label")
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{}, expectedError)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.ErrorIs(t, err, expectedError)
-	assert.False(t, shouldScan)
-}
-
-func TestHandleFrogbotLabelLabelNotExist(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Label is expected to not exists
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(nil, nil)
-	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelColor),
-	}).Return(nil)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.False(t, shouldScan)
-	assert.EqualError(t, err, fmt.Sprintf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName)))
-}
-
-func TestHandleFrogbotLabelCreateLabelErr(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Create label is expected to return error
-	expectedError := errors.New("Couldn't create label")
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(nil, nil)
-	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelColor),
-	}).Return(expectedError)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.ErrorIs(t, err, expectedError)
-	assert.False(t, shouldScan)
-}
-
-func TestHandleFrogbotLabelUnlabeled(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Pull request is expected to be unlabeled
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelDescription),
-	}, nil)
-	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{"label-1"}, nil)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.False(t, shouldScan)
-	assert.EqualError(t, err, fmt.Sprintf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName)))
-}
-
-func TestHandleFrogbotLabelCreateListLabelsErr(t *testing.T) {
-	// Init mock
-	client, finish := mockVcsClient(t)
-	defer finish()
-
-	// Create label is expected to return error
-	expectedError := errors.New("Couldn't list labels")
-	client.EXPECT().GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName)).Return(&vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelDescription),
-	}, nil)
-	client.EXPECT().CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
-		Name:        string(utils.LabelName),
-		Description: string(utils.LabelDescription),
-		Color:       string(utils.LabelColor),
-	}).Return(nil)
-	client.EXPECT().ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID).Return([]string{}, expectedError)
-
-	// Run handleFrogbotLabel
-	shouldScan, err := handleFrogbotLabel(params, client)
-	assert.ErrorIs(t, err, expectedError)
-	assert.False(t, shouldScan)
-}
-
-func mockVcsClient(t *testing.T) (*testdata.MockVcsClient, func()) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	return testdata.NewMockVcsClient(mockCtrl), mockCtrl.Finish
-}
-
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
 	message := createPullRequestMessage(vulnerabilities)
@@ -533,7 +393,7 @@ func prepareTestEnvironment(t *testing.T, projectName string) func() {
 	restoreDir, err := utils.Chdir(filepath.Join(tmpDir, projectName))
 	assert.NoError(t, err)
 	return func() {
-		restoreDir()
+		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 }
@@ -541,23 +401,6 @@ func prepareTestEnvironment(t *testing.T, projectName string) func() {
 func TestScanPullRequestError(t *testing.T) {
 	app := clitool.App{Commands: GetCommands()}
 	assert.Error(t, app.Run([]string{"frogbot", "spr"}))
-}
-
-func TestUseLabelsError(t *testing.T) {
-	_ = verifyEnv(t)
-	// Set required environment variables
-	utils.SetEnvAndAssert(t, map[string]string{
-		utils.GitProvider:         string(utils.GitHub),
-		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitApiEndpointEnv:   "https://httpbin.org/status/404",
-		utils.GitRepoEnv:          "test-proj",
-		utils.GitTokenEnv:         "123456",
-		utils.GitBaseBranchEnv:    "master",
-		utils.GitPullRequestIDEnv: "1",
-	})
-	app := clitool.App{Commands: GetCommands()}
-	assert.ErrorContains(t, app.Run([]string{"frogbot", "spr", "--use-labels"}), "404")
-	utils.AssertSanitizedEnv(t)
 }
 
 // Create HTTP handler to mock GitLab server
@@ -584,9 +427,9 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
 
-			expectedReponse, err := os.ReadFile(filepath.Join("..", "expectedReponse.json"))
+			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedResponse.json"))
 			assert.NoError(t, err)
-			assert.Equal(t, string(expectedReponse), buf.String())
+			assert.Equal(t, string(expectedResponse), buf.String())
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))

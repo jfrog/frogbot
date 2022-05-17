@@ -29,13 +29,6 @@ func ScanPullRequest(c *clitool.Context) error {
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
 
-	// If true, create or remove label
-	if c.Bool("use-labels") {
-		if shouldScan, err := handleFrogbotLabel(params, client); err != nil || !shouldScan {
-			return err
-		}
-	}
-
 	// Do scan pull request
 	err = scanPullRequest(params, client)
 
@@ -44,60 +37,9 @@ func ScanPullRequest(c *clitool.Context) error {
 	return err
 }
 
-func GetScanPullRequestFlags() []clitool.Flag {
-	return []clitool.Flag{
-		&clitool.BoolFlag{
-			Name:    "use-labels",
-			Usage:   "Set to true if scan-pull-request is triggered by adding '🐸 frogbot scan' label to a pull request.",
-			EnvVars: []string{"JF_USE_LABELS"},
-		},
-	}
-}
-
-// Run before scan, to make sure the Xray scan will be run only after adding the 'frogbot scan pr' label.
-// If label is missing - create the label and do nothing
-// If pr isn't labeled - do nothing
-// If pr is labeled - remove label and allow running Xray scan (return nil)
-// params - Frogbot parameters retrieved from the environment variables
-// client - The VCS client
-func handleFrogbotLabel(params *utils.FrogbotParams, client vcsclient.VcsClient) (bool, error) {
-	labelInfo, err := client.GetLabel(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName))
-	if err != nil {
-		return false, err
-	}
-	if labelInfo == nil {
-		clientLog.Info("Creating label " + string(utils.LabelName))
-		err = client.CreateLabel(context.Background(), params.RepoOwner, params.Repo, vcsclient.LabelInfo{
-			Name:        string(utils.LabelName),
-			Description: string(utils.LabelDescription),
-			Color:       string(utils.LabelColor),
-		})
-		if err != nil {
-			return false, err
-		}
-		clientLog.Debug(fmt.Sprintf("Label '%s' was created.", string(utils.LabelName)))
-		return false, fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName))
-	}
-
-	labels, err := client.ListPullRequestLabels(context.Background(), params.RepoOwner, params.Repo, params.PullRequestID)
-	if err != nil {
-		return false, err
-	}
-	clientLog.Debug("The following labels were found in the pull request: ", labels)
-	for _, label := range labels {
-		if label != string(utils.LabelName) {
-			continue
-		}
-		clientLog.Info("Unlabeling '"+utils.LabelName+"' from pull request", params.PullRequestID)
-		err := client.UnlabelPullRequest(context.Background(), params.RepoOwner, params.Repo, string(utils.LabelName), params.PullRequestID)
-		return err == nil, err
-	}
-	return false, fmt.Errorf("please add the '%s' label to trigger an Xray scan", string(utils.LabelName))
-}
-
 // Scan a pull request by as follows:
 // a. Audit the dependencies of the source and the target branches.
-// b. Compare the vulenrabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
+// b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
@@ -167,7 +109,12 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 		return
 	}
 	clientLog.Debug("Created temp working directory: " + wd)
-	defer fileutils.RemoveTempDir(wd)
+	defer func() {
+		e := fileutils.RemoveTempDir(wd)
+		if err == nil {
+			err = e
+		}
+	}()
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
@@ -180,17 +127,22 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	return runInstallAndAudit(xrayScanParams, params, wd, false)
 }
 
-func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) ([]services.ScanResponse, error) {
+func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) (results []services.ScanResponse, err error) {
 	restoreDir, err := utils.Chdir(workDir)
 	if err != nil {
-		return []services.ScanResponse{}, err
+		return
 	}
-	defer restoreDir()
+	defer func() {
+		e := restoreDir()
+		if err == nil {
+			err = e
+		}
+	}()
 	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
-		return []services.ScanResponse{}, err
+		return
 	}
-	results, _, err := audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
-	return results, err
+	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
+	return
 }
 
 func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) error {
@@ -270,8 +222,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 			cve = vulnerability.Cves[0].Id
 		}
 		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity))+" "+vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s<br>%8s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity)), vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, fixedVersionString, componentName, componentVersion, cve)
 	}
-	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeder + tableContent
+	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
 }
