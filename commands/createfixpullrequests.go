@@ -122,6 +122,12 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return
 	}
 
+	////////////////////
+	clientLog.Info("#############1")
+	clientLog.Info(fixVersionInfo.packageType)
+	clientLog.Info("#############")
+	////////////////////
+
 	switch fixVersionInfo.packageType {
 	// todo: get package types from core
 	case "Go":
