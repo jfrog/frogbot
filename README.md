@@ -15,7 +15,7 @@
 - [How does it work?](#how-does-it-work)
   - [General](#general)
   - [GitHub](#github)
-  - [GitLub](#gitlub)
+  - [GitLab](#gitlab)
   - [Pull Request Comments](#pull-request-comments)
 - [Installing and Using Frogbot](#installing-and-using-frogbot)
 - [Contributions](#contributions)
@@ -56,13 +56,13 @@ After you create a new pull request, the maintainer of the git repository can tr
 3. A Maintainer reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
-### GitLub
+### GitLab
 
 1. A developer opens a merge request.
 2. A maintainer of the repository triggers the manual **frogbot-scan** job.
 3. Frogbot is triggered by the job, scans the merge request, and adds a comment with the scan results.
-4. Frogbot can be triggered again following new commits, by triggering the **frogbot-scan** job again
-   [![GitLab CI Run Button](./images/gitlab-run-button.png)](#-Using-Frogbot-with-GitLab-CI).
+4. Frogbot can be triggered again following new commits, by triggering the **frogbot-scan** job again.
+   [![GitLab CI Run Button](./images/gitlab-run-button.png)]
 
 ### Pull Request Comments
 
