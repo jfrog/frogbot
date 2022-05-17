@@ -87,7 +87,8 @@ export class Utils {
 
     public static getCliUrl(major: string, version: string, fileName: string): string {
         let architecture: string = 'frogbot-' + Utils.getArchitecture();
-        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+        ///////////////////
+        return `https://asafgabai.jfrog.io/artifactory/asaf-local/frogbot/frogbot`;
     }
 
     public static getArchitecture() {
