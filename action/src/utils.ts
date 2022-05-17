@@ -50,7 +50,7 @@ export class Utils {
      * Execute frogbot scan-pull-request command.
      */
     public static async execScanPullRequest() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
+        let res: number = await exec(Utils.getExecutableName(), ['create-fix-pull-requests']);/////////////
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }
