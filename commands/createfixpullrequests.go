@@ -137,6 +137,18 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 			return
 		}
+	case "Npm":
+		packageFullName := impactedPackage + "@" + fixVersionInfo.fixVersion
+		npmInstallCmd := exec.Command("npm", "install", packageFullName)
+		npmInstallCmd.Dir = tempDirPath
+
+		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
+		var output []byte
+		output, err = npmInstallCmd.CombinedOutput()
+		if err != nil {
+			err = fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
+			return
+		}
 	default:
 	}
 
