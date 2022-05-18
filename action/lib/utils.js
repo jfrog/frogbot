@@ -74,12 +74,26 @@ class Utils {
         core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
     }
+    static getGitEventName() {
+        return github.context.eventName;
+    }
     /**
      * Execute frogbot scan-pull-request command.
      */
     static execScanPullRequest() {
         return __awaiter(this, void 0, void 0, function* () {
             let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request']);
+            if (res !== core.ExitCode.Success) {
+                throw new Error('Frogbot exited with exit code ' + res);
+            }
+        });
+    }
+    /**
+     * Execute frogbot create-fix-pull-requests command.
+     */
+    static execCreateFixPullRequests() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['create-fix-pull-requests']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
             }

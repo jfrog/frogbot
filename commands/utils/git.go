@@ -54,5 +54,5 @@ func (m *gitManager) Push(remote, branch string) (string, string, error) {
 }
 
 func (m *gitManager) PushOrigin(branch string) (string, string, error) {
-	return m.manager.ExecGit("push", "sverdlov93", branch)
+	return m.manager.ExecGit("push", "origin", branch)
 }

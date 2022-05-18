@@ -67,7 +67,6 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 			return err
 		}
 	}
-	//return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 	return nil
 }
 

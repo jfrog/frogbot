@@ -39,8 +39,16 @@ function main() {
         try {
             core.startGroup('Frogbot');
             utils_1.Utils.setFrogbotEnv();
+            const eventName = utils_1.Utils.getGitEventName();
             yield utils_1.Utils.addToPath();
-            yield utils_1.Utils.execScanPullRequest();
+            switch (eventName) {
+                case "pull_request":
+                    yield utils_1.Utils.execScanPullRequest();
+                    break;
+                case "push":
+                    yield utils_1.Utils.execCreateFixPullRequests();
+                    break;
+            }
         }
         catch (error) {
             core.setFailed(error.message);
