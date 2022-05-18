@@ -41,10 +41,18 @@ func (m *gitManager) Commit(commitMessage string) (string, string, error) {
 	return m.manager.ExecGit("commit", "-m", commitMessage)
 }
 
+func (m *gitManager) AddCommit(commitMessage string) (output string, errString string, err error) {
+	output, errString, err = m.AddAll()
+	if err != nil {
+		return
+	}
+	return m.manager.ExecGit("commit", "-m", commitMessage)
+}
+
 func (m *gitManager) Push(remote, branch string) (string, string, error) {
 	return m.manager.ExecGit("push", remote, branch)
 }
 
 func (m *gitManager) PushOrigin(branch string) (string, string, error) {
-	return m.manager.ExecGit("push", "origin", branch)
+	return m.manager.ExecGit("push", "sverdlov93", branch)
 }

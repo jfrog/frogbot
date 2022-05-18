@@ -125,7 +125,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	default:
 	}
 	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
-	_, _, err = gitManager.Commit(commitString)
+	_, _, err = gitManager.AddCommit(commitString)
 	if err != nil {
 		return err
 	}

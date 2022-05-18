@@ -1,43 +1,37 @@
 package commands
 
 import (
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	gouid "github.com/sassoftware/go-rpmutils"
+	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
-	"net/http/httptest"
 	"path/filepath"
 	"testing"
-
-	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestScanCommitCreateFixPRs(t *testing.T) {
-	testScanCommitCreateFixPRs(t, "", "go-proj")
+func TestCreateFixPullRequests(t *testing.T) {
+	testCreateFixPullRequests(t, "", "go-proj")
 }
 
-func testScanCommitCreateFixPRs(t *testing.T, workingDirectory, projectName string) {
+func testCreateFixPullRequests(t *testing.T, workingDirectory, projectName string) {
 	restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
 	cleanUp := prepareScanCommitTestEnvironment(t, projectName)
 	defer cleanUp()
 
-	// Create mock GitLab server
-	server := httptest.NewServer(createGitLabHandler(t, projectName))
-	defer server.Close()
-
 	// Set required environment variables
 	utils.SetEnvAndAssert(t, map[string]string{
 		utils.GitProvider:         string(utils.GitHub),
-		utils.GitApiEndpointEnv:   server.URL,
-		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitRepoEnv:          projectName,
-		utils.GitTokenEnv:         "123456",
-		utils.GitBaseBranchEnv:    "master",
+		utils.GitRepoOwnerEnv:     "sverdlov93",
+		utils.GitRepoEnv:          "frogbot",
+		utils.GitBaseBranchEnv:    "create-fix-prs",
 		utils.GitPullRequestIDEnv: "1",
-		//utils.InstallCommandEnv:   "npm i",
 		utils.WorkingDirectoryEnv: workingDirectory,
 	})
+	v := gouid.ARCH
+	v = v
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	assert.NoError(t, app.Run([]string{"frogbot", "create-fix-pull-requests"}))
@@ -51,10 +45,10 @@ func prepareScanCommitTestEnvironment(t *testing.T, projectName string) func() {
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	err = fileutils.CopyDir(filepath.Join("testdata", "scancommitcreatefixprs"), tmpDir, true, []string{})
+	err = fileutils.CopyDir(filepath.Join(".."), tmpDir, true, []string{})
 	assert.NoError(t, err)
 
-	restoreDir, err := utils.Chdir(filepath.Join(tmpDir, projectName))
+	restoreDir, err := utils.Chdir(filepath.Join(tmpDir))
 	assert.NoError(t, err)
 	return func() {
 		assert.NoError(t, restoreDir())
