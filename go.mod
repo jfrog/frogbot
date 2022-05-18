@@ -92,5 +92,5 @@ require (
 
 replace (
 	github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.13.7-0.20220510172240-19307a6545bc
-	github.com/jfrog/jfrog-client-go => /Users/michaelsv/dev/workspaces/cli/jfrog-client-go
+	github.com/jfrog/jfrog-client-go => github.com/sverdlov93/jfrog-client-go v1.0.2-0.20220518165322-2383c1e63194
 )
