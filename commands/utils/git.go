@@ -20,6 +20,15 @@ func (m *gitManager) Checkout(branch string) (string, string, error) {
 	return m.manager.ExecGit("checkout", branch)
 }
 
+func (m *gitManager) CreateBranchAndCheckout(branch string) (output string, errString string, err error) {
+	output, errString, err = m.CreateBranch(branch)
+	if err != nil {
+		return
+	}
+	output, errString, err = m.Checkout(branch)
+	return
+}
+
 func (m *gitManager) Add(fileName string) (string, string, error) {
 	return m.manager.ExecGit("add", fileName)
 }
@@ -34,4 +43,8 @@ func (m *gitManager) Commit(commitMessage string) (string, string, error) {
 
 func (m *gitManager) Push(remote, branch string) (string, string, error) {
 	return m.manager.ExecGit("push", remote, branch)
+}
+
+func (m *gitManager) PushOrigin(branch string) (string, string, error) {
+	return m.manager.ExecGit("push", "origin", branch)
 }
