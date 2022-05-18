@@ -5,4 +5,4 @@ coverage
 .idea
 .vscode
 *.iml
-node_modules/
+node_modules
