@@ -119,7 +119,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		fixedImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
 		clientLog.Debug(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
 		var output []byte
-		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput()
+		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
 		if err != nil {
 			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 			return
