@@ -143,7 +143,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return err
 	}
 	clientLog.Info(fmt.Sprintf("Pushing fix branch: %s.", fixBranchName))
-	err = gitManager.PushOrigin(fixBranchName)
+	err = gitManager.PushOrigin(params.Token, fixBranchName)
 	if err != nil {
 		return err
 	}

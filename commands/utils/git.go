@@ -64,6 +64,6 @@ func (gm *gitManager) Push(remote, branch string) error {
 	return parseGitError(gm.manager.ExecGit("push", remote, branch))
 }
 
-func (gm *gitManager) PushOrigin(branch string) error {
-	return gm.Push("origin", branch)
+func (gm *gitManager) PushOrigin(token, branch string) error {
+	return parseGitError(gm.manager.ExecGit("push", "https://"+token+"@github.com/sverdlov93/frogbot.git", branch))
 }
