@@ -99,7 +99,6 @@ func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixV
 }
 
 func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
-
 	gitManager := utils.NewGitManager(".")
 	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	clientLog.Info(fmt.Sprintf("Creating new branch: %s.", fixBranchName))
@@ -132,6 +131,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	if err != nil {
 		return err
 	}
+	clientLog.Info(fmt.Sprintf("Pushing fix branch: %s.", fixBranchName))
 	err = gitManager.PushOrigin(fixBranchName)
 	if err != nil {
 		return err
