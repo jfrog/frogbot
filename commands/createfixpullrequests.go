@@ -59,7 +59,9 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 	if err != nil {
 		return err
 	}
+	clientLog.Info(fmt.Sprintf("Found %d impacted packages with fix versions", len(fixVersionsMap)))
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
+		clientLog.Info(fmt.Sprintf("Fixing %s with %s version.", impactedPackage, fixVersionInfo.fixVersion))
 		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client)
 		// todo: ignore error?
 		if err != nil {
@@ -97,14 +99,16 @@ func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixV
 }
 
 func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
-	gitManager := utils.NewGitManager("..")
+
+	gitManager := utils.NewGitManager(".")
 	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
-	_, _, err = gitManager.CreateBranchAndCheckout(fixBranchName)
+	clientLog.Info(fmt.Sprintf("Creating new branch: %s.", fixBranchName))
+	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_, _, e := gitManager.Checkout(params.BaseBranch)
+		e := gitManager.Checkout(params.BaseBranch)
 		if err == nil {
 			err = e
 		}
@@ -114,7 +118,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	// todo: place each type on different file
 	case "Go":
 		fixedImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
-		clientLog.Debug(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
+		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
 		var output []byte
 		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
 		if err != nil {
@@ -124,11 +128,11 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	default:
 	}
 	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
-	_, _, err = gitManager.AddCommit(commitString)
+	err = gitManager.AddAllAndCommit(commitString)
 	if err != nil {
 		return err
 	}
-	_, _, err = gitManager.PushOrigin(fixBranchName)
+	err = gitManager.PushOrigin(fixBranchName)
 	if err != nil {
 		return err
 	}
