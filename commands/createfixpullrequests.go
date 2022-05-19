@@ -62,11 +62,11 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 	clientLog.Info(fmt.Sprintf("Found %d impacted packages with fix versions", len(fixVersionsMap)))
 
 	gitManager := utils.NewGitManager(".")
-	err = gitManager.Config("user.email", "eco-system+frogbot@jfrog.com")
+	err = gitManager.Config("user.email", "sverdlov93@gmail.com")
 	if err != nil {
 		return err
 	}
-	err = gitManager.Config("user.name", "JFrog-Frogbot")
+	err = gitManager.Config("user.name", "sverdlov93")
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	if err != nil {
 		return err
 	}
-	clientLog.Info(fmt.Sprintf("Pushing fix branch: %s.", params.Token[len(params.Token)-2:]))
+	clientLog.Info(fmt.Sprintf("Pushing fix branch: %s.", fixBranchName))
 	err = gitManager.PushOrigin(params.Token, fixBranchName)
 	if err != nil {
 		return err
