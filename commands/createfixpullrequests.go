@@ -1,12 +1,12 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/coreos/go-semver/semver"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	clitool "github.com/urfave/cli/v2"
@@ -60,15 +60,13 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 	if err != nil {
 		return err
 	}
-
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
-		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo)
+		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client)
 		// todo: ignore error?
 		if err != nil {
 			return err
 		}
 	}
-	//return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 	return nil
 }
 
@@ -99,40 +97,29 @@ func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixV
 	return fixVersionsMap, nil
 }
 
-func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo) (err error) {
-	wd, err := os.Getwd()
+func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
+	w, err := os.Getwd()
+	w = w
+	gitManager := utils.NewGitManager("..")
+	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
+	_, _, err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
-
-	tempDirPath, err := fileutils.CreateTempDir()
-	if err != nil {
-		return err
-	}
-	clientLog.Debug("Created temp working directory: " + tempDirPath)
 	defer func() {
-		e := fileutils.RemoveTempDir(tempDirPath)
+		_, _, e := gitManager.Checkout(params.BaseBranch)
 		if err == nil {
 			err = e
 		}
 	}()
-
-	err = fileutils.CopyDir(wd, tempDirPath, true, nil)
-	if err != nil {
-		return
-	}
-
 	switch fixVersionInfo.packageType {
 	// todo: get package types from core
+	// todo: place each type on different file
 	case "Go":
-		// todo: place each type on different file
-		fixImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
-		goGetCmd := exec.Command("go", "get", fixImpactPackage)
-		goGetCmd.Dir = tempDirPath
-
-		clientLog.Debug(fmt.Sprintf("Running 'go get %s'", fixImpactPackage))
+		fixedImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
+		clientLog.Debug(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
 		var output []byte
-		output, err = goGetCmd.CombinedOutput()
+		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
 		if err != nil {
 			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 			return
@@ -151,7 +138,16 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		}
 	default:
 	}
-
+	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
+	_, _, err = gitManager.AddCommit(commitString)
+	if err != nil {
+		return err
+	}
+	_, _, err = gitManager.PushOrigin(fixBranchName)
+	if err != nil {
+		return err
+	}
+	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, "PR body")
 	return
 }
 
