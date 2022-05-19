@@ -35,6 +35,14 @@ jobs:
         with:
           node-version: "16"
 
+      - name: Go Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       # Run gosec
       - name: Install gosec
         run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
@@ -118,6 +126,7 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
+          JF_GIT_EVENT_NAME: ${{ github.event_name }}
           JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
