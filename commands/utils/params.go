@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -111,13 +112,13 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
 		return err
 	}
-	//if eventName := getTrimmedEnv(GitEventName); eventName != "push" {
-	//	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-	//		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
-	//		return err
-	//	}
-	//	return &errMissingEnv{GitPullRequestIDEnv}
-	//}
+	if eventName := getTrimmedEnv(GitEventName); eventName == "" {
+		if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
+			params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
+			return err
+		}
+		return &errMissingEnv{GitPullRequestIDEnv}
+	}
 	return nil
 }
 
