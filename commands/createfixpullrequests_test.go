@@ -3,14 +3,13 @@ package commands
 import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	rpmutils "github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 )
 
 func TestCreateFixPullRequests(t *testing.T) {
-	//testCreateFixPullRequests(t, "", "go-proj")
+	testCreateFixPullRequests(t, "", "go-proj")
 }
 
 func testCreateFixPullRequests(t *testing.T, workingDirectory, projectName string) {
@@ -20,21 +19,21 @@ func testCreateFixPullRequests(t *testing.T, workingDirectory, projectName strin
 	cleanUp := prepareScanCommitTestEnvironment(t, projectName)
 	defer cleanUp()
 
-	// Set required environment variables
-	utils.SetEnvAndAssert(t, map[string]string{
-		utils.GitProvider:         string(utils.GitHub),
-		utils.GitRepoOwnerEnv:     "sverdlov93",
-		utils.GitRepoEnv:          "frogbot",
-		utils.GitBaseBranchEnv:    "create-fix-prs",
-		utils.GitPullRequestIDEnv: "1",
-		utils.WorkingDirectoryEnv: workingDirectory,
-	})
-	// add vulnerable code
-	rpmutils.Vercmp("", "")
-	// Run "frogbot spr"
-	//app := clitool.App{Commands: GetCommands()}
-	//assert.NoError(t, app.Run([]string{"frogbot", "create-fix-pull-requests"}))
-	utils.AssertSanitizedEnv(t)
+	// // Set required environment variables
+	// utils.SetEnvAndAssert(t, map[string]string{
+	// 	utils.GitProvider:         string(utils.GitHub),
+	// 	utils.GitRepoOwnerEnv:     "sverdlov93",
+	// 	utils.GitRepoEnv:          "frogbot",
+	// 	utils.GitBaseBranchEnv:    "create-fix-prs",
+	// 	utils.GitPullRequestIDEnv: "1",
+	// 	utils.WorkingDirectoryEnv: workingDirectory,
+	// })
+	// // add vulnerable code
+	// rpmutils.Vercmp("", "")
+	// // Run "frogbot spr"
+	// //app := clitool.App{Commands: GetCommands()}
+	// //assert.NoError(t, app.Run([]string{"frogbot", "create-fix-pull-requests"}))
+	// utils.AssertSanitizedEnv(t)
 }
 
 // Prepare test environment for the integration tests
