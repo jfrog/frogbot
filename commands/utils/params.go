@@ -112,10 +112,7 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
 		return err
 	}
-	if err = readParamFromEnv(GitEventName, &params.EventName); err != nil {
-		return err
-	}
-	if params.EventName != "push" {
+	if eventName := getTrimmedEnv(GitEventName); eventName != "push" {
 		if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 			params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 			return err
