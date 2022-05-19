@@ -45,11 +45,11 @@ func (gm *gitManager) AddAll() error {
 }
 
 func (gm *gitManager) Commit(commitMessage string) error {
-	err := parseGitError(gm.manager.ExecGit("commit", "--author", "JFrog-Frogbot <eco-system+frogbot@jfrog.com>"))
-	if err != nil {
-		return err
-	}
 	return parseGitError(gm.manager.ExecGit("commit", "-m", commitMessage))
+}
+
+func (gm *gitManager) Config(key, value string) error {
+	return parseGitError(gm.manager.ExecGit("config", key, value))
 }
 
 func (gm *gitManager) AddAllAndCommit(commitMessage string) error {

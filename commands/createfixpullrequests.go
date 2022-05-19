@@ -60,6 +60,11 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 		return err
 	}
 	clientLog.Info(fmt.Sprintf("Found %d impacted packages with fix versions", len(fixVersionsMap)))
+
+	gitManager := utils.NewGitManager(".")
+	gitManager.Config("user.email", "eco-system+frogbot@jfrog.com")
+	gitManager.Config("user.name", "JFrog-Frogbot")
+
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info(fmt.Sprintf("Fixing %s with %s version.", impactedPackage, fixVersionInfo.fixVersion))
 		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client)
