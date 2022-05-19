@@ -10,7 +10,6 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	clitool "github.com/urfave/cli/v2"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -98,8 +97,6 @@ func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixV
 }
 
 func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
-	w, err := os.Getwd()
-	w = w
 	gitManager := utils.NewGitManager("..")
 	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	_, _, err = gitManager.CreateBranchAndCheckout(fixBranchName)

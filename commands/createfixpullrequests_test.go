@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	gouid "github.com/sassoftware/go-rpmutils"
+	rpmutils "github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
 	"path/filepath"
@@ -30,8 +30,8 @@ func testCreateFixPullRequests(t *testing.T, workingDirectory, projectName strin
 		utils.GitPullRequestIDEnv: "1",
 		utils.WorkingDirectoryEnv: workingDirectory,
 	})
-	v := gouid.ARCH
-	v = v
+	// add vulnerable code
+	rpmutils.Vercmp("", "")
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	assert.NoError(t, app.Run([]string{"frogbot", "create-fix-pull-requests"}))
