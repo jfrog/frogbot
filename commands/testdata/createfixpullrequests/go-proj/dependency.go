@@ -2,8 +2,8 @@ package dependency
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
-	"rsc.io/quote"
+	"golang.org/x/crypto/ssh" //#nosec
+	"rsc.io/quote"            //#nosec
 )
 
 func PrintHello(ssha ssh.AuthMethod) {
