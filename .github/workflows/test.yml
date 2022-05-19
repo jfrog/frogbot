@@ -97,7 +97,7 @@ jobs:
 
   # Build and run frogbot current changes for visual sanity check.
   sanityPR:
-    needs: sanity
+    needs: tests
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
