@@ -45,7 +45,7 @@ func (gm *gitManager) AddAll() error {
 }
 
 func (gm *gitManager) Commit(commitMessage string) error {
-	return parseGitError(gm.manager.ExecGit("commit", "-m", commitMessage))
+	return parseGitError(gm.manager.ExecGit("commit", "--author", "JFrog-Frogbot <eco-system+frogbot@jfrog.com>", "-m", commitMessage))
 }
 
 func (gm *gitManager) AddAllAndCommit(commitMessage string) error {
