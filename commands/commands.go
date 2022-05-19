@@ -18,5 +18,12 @@ func GetCommands() []*clitool.Command {
 			Action:  CreateFixPullRequests,
 			Flags:   []clitool.Flag{},
 		},
+		{
+			Name:    "scan-pull-requests",
+			Aliases: []string{"sprs"},
+			Usage:   "Scans all repo open pull requests with JFrog Xray for security vulnerabilities.",
+			Action:  ScanPullRequests,
+			Flags:   []clitool.Flag{},
+		},
 	}
 }

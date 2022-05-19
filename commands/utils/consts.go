@@ -1,19 +1,22 @@
 package utils
 
-type imageSource string
+type IconName string
+type ImageSource string
 type vcsProvider string
 type frogbotLabel string
+type GetTitleFunc func(ImageSource) string
+type GetSeverityTagFunc func(IconName) string
 
 const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Images
-	NoVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
-	VulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource      imageSource = "criticalSeverity.png"
-	highSeveritySource          imageSource = "highSeverity.png"
-	mediumSeveritySource        imageSource = "mediumSeverity.png"
-	lowSeveritySource           imageSource = "lowSeverity.png"
+	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"
+	VulnerabilitiesBannerSource ImageSource = "vulnerabilitiesBanner.png"
+	criticalSeveritySource      ImageSource = "criticalSeverity.png"
+	highSeveritySource          ImageSource = "highSeverity.png"
+	mediumSeveritySource        ImageSource = "mediumSeverity.png"
+	lowSeveritySource           ImageSource = "lowSeverity.png"
 
 	// VCS providers params
 	GitHub vcsProvider = "github"
@@ -23,6 +26,9 @@ const (
 	LabelName        frogbotLabel = "🐸 frogbot scan"
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
+
+	// Frogbot comments
+	RescanRequestComment = "frogbot scan"
 
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"

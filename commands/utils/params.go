@@ -17,6 +17,7 @@ type FrogbotParams struct {
 	WorkingDirectory   string
 	InstallCommandName string
 	InstallCommandArgs []string
+	SimplifiedOutput   bool
 }
 
 type JFrogEnvParams struct {

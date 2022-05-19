@@ -262,7 +262,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities)
+	message := createPullRequestMessage(vulnerabilities, utils.GetBanner, utils.GetSeverityTag)
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -311,7 +311,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
-	message := createPullRequestMessage(vulnerabilities)
+	message := createPullRequestMessage(vulnerabilities, utils.GetBanner, utils.GetSeverityTag)
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "dummyvulnerabilities.md"))
 	assert.NoError(t, err)

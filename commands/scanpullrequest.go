@@ -56,7 +56,16 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	clientLog.Info("Xray scan completed")
 
 	// Comment frogbot message on the PR
-	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan))
+	var getTitleFunc utils.GetTitleFunc
+	var getSeverityTagFunc utils.GetSeverityTagFunc
+	if params.SimplifiedOutput {
+		getTitleFunc = utils.GetSimplifiedTitle
+		getSeverityTagFunc = func(in utils.IconName) string { return "" }
+	} else {
+		getTitleFunc = utils.GetBanner
+		getSeverityTagFunc = utils.GetSeverityTag
+	}
+	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan), getTitleFunc, getSeverityTagFunc)
 	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 }
 
@@ -104,27 +113,36 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
 	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
-	wd, err := fileutils.CreateTempDir()
-	if err != nil {
+	wd, err := downloadRepoToTempDir(client, params)
+	if err == nil {
 		return
 	}
-	clientLog.Debug("Created temp working directory: " + wd)
+	// cleanup
 	defer func() {
 		e := fileutils.RemoveTempDir(wd)
 		if err == nil {
 			err = e
 		}
 	}()
+	return runInstallAndAudit(xrayScanParams, params, wd, false)
+}
+
+func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotParams) (wd string, err error) {
+	wd, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	clientLog.Debug("Created temp working directory: " + wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Downloaded target repository")
+	clientLog.Debug("Downloading repository compleated")
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
-	return runInstallAndAudit(xrayScanParams, params, wd, false)
+	return
 }
 
 func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) (results []services.ScanResponse, err error) {
@@ -207,9 +225,9 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return utils.GetBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
+		return getBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
 	}
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
@@ -222,8 +240,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 			cve = vulnerability.Cves[0].Id
 		}
 		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
-		tableContent += fmt.Sprintf("\n| %s<br>%8s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity)), vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s%8s | %s | %s | %s | %s | %s | %s ", getSeverityTag(utils.IconName(vulnerability.Severity)), vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, fixedVersionString, componentName, componentVersion, cve)
 	}
-	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
+	return getBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
 }
