@@ -4,8 +4,7 @@ import { Utils } from './utils';
 async function main() {
     try {
         core.startGroup('Frogbot');
-        Utils.setFrogbotEnv();
-        const eventName : string =  Utils.getGitEventName();
+        const eventName : string = Utils.setFrogbotEnv();
         await Utils.addToPath();
         switch (eventName) {
             case "pull_request":
