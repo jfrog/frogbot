@@ -41,6 +41,13 @@ func ScanPullRequest(c *clitool.Context) error {
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	// Validait scan params
+	if params.BaseBranch == "" {
+		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
+	}
+	if params.PullRequestID == 0 {
+		return &utils.ErrMissingEnv{VariableName: utils.GitPullRequestIDEnv}
+	}
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
 	currentScan, err := auditSource(xrayScanParams, params)
@@ -114,7 +121,7 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
 	wd, err := downloadRepoToTempDir(client, params)
-	if err == nil {
+	if err != nil {
 		return
 	}
 	// cleanup

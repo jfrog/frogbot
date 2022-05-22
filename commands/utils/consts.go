@@ -19,8 +19,9 @@ const (
 	lowSeveritySource           ImageSource = "lowSeverity.png"
 
 	// VCS providers params
-	GitHub vcsProvider = "github"
-	GitLab vcsProvider = "gitlab"
+	GitHub          vcsProvider = "github"
+	GitLab          vcsProvider = "gitlab"
+	BitbucketServer vcsProvider = "bitbucket server"
 
 	// Frogbot label
 	LabelName        frogbotLabel = "🐸 frogbot scan"
@@ -58,7 +59,7 @@ const (
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
-	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
+	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)\n"
 
 	// Product ID for usage reporting
 	productId = "frogbot"
