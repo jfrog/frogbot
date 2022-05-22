@@ -71,10 +71,10 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 		return err
 	}
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
-		clientLog.Info("Fixing ", impactedPackage, " with ", fixVersionInfo.fixVersion)
+		clientLog.Info("Fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
 		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client)
 		if err != nil {
-			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, ". with error:", err.Error())
+			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
 	}
 	return nil
@@ -111,12 +111,12 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	gitManager := utils.NewGitManager(".")
 	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	exists, err := gitManager.BranchExistsOnRemote("origin", fixBranchName)
-	if exists {
-		clientLog.Info("Branch -", fixBranchName, "already exists on remote.")
-		return
-	}
 	if err != nil {
 		return err
+	}
+	if exists {
+		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
+		return
 	}
 	clientLog.Info(fmt.Sprintf("Running git branch & checkout: %s.", fixBranchName))
 	err = gitManager.CreateBranchAndCheckout(fixBranchName)
