@@ -25,17 +25,23 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 }
 
 func (gm *GitManager) CreateBranch(branchName string) error {
-	return gm.repository.CreateBranch(&config.Branch{Name: branchName, Remote: gm.remoteName, Merge: ToRefName(branchName)})
+	branchConfig := &config.Branch{
+		Name:   branchName,
+		Remote: gm.remoteName,
+		Merge:  plumbing.NewBranchReferenceName(branchName),
+	}
+	return gm.repository.CreateBranch(branchConfig)
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
+	checkoutConfig := &git.CheckoutOptions{
+		Branch: plumbing.NewBranchReferenceName(branchName),
+	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
 		return err
 	}
-	return worktree.Checkout(&git.CheckoutOptions{
-		Branch: ToRefName(branchName),
-	})
+	return worktree.Checkout(checkoutConfig)
 }
 
 func (gm *GitManager) AddAll() error {
@@ -71,7 +77,7 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
-	refName := ToRefName(branchName)
+	refName := plumbing.NewBranchReferenceName(branchName)
 	for _, ref := range refList {
 		if refName.String() == ref.Name().String() {
 			return true, nil
@@ -93,8 +99,4 @@ func (gm *GitManager) Push(token string) error {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
 	}
 	return errorutils.CheckError(err)
-}
-
-func ToRefName(branchName string) plumbing.ReferenceName {
-	return plumbing.ReferenceName("refs/heads/" + branchName)
 }
