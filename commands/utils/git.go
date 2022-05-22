@@ -24,11 +24,19 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
-	return gm.createAndCheckout(branchName, false)
+	err := gm.createAndCheckout(branchName, false)
+	if err != nil {
+		err = fmt.Errorf("git checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
 func (gm *GitManager) CreateAndCheckout(branchName string) error {
-	return gm.createAndCheckout(branchName, true)
+	err := gm.createAndCheckout(branchName, true)
+	if err != nil {
+		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
 func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
@@ -48,7 +56,11 @@ func (gm *GitManager) AddAll() error {
 	if err != nil {
 		return err
 	}
-	return worktree.AddWithOptions(&git.AddOptions{All: true})
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
+	return err
 }
 
 func (gm *GitManager) Commit(commitMessage string) error {
@@ -67,6 +79,9 @@ func (gm *GitManager) Commit(commitMessage string) error {
 		return err
 	}
 	_, err = gm.repository.CommitObject(commit)
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
 	return err
 }
 
