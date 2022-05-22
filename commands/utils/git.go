@@ -8,7 +8,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
-	"strings"
 	"time"
 )
 
@@ -26,7 +25,7 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 }
 
 func (gm *GitManager) CreateBranch(branchName string) error {
-	return gm.repository.CreateBranch(&config.Branch{Name: branchName, Remote: gm.remoteName})
+	return gm.repository.CreateBranch(&config.Branch{Name: branchName, Remote: gm.remoteName, Merge: ToRefName(branchName)})
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -35,7 +34,7 @@ func (gm *GitManager) Checkout(branchName string) error {
 		return err
 	}
 	return worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + branchName),
+		Branch: ToRefName(branchName),
 	})
 }
 
@@ -72,14 +71,9 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
-	refPrefix := "refs/heads/"
+	refName := ToRefName(branchName)
 	for _, ref := range refList {
-		refName := ref.Name().String()
-		if !strings.HasPrefix(refName, refPrefix) {
-			continue
-		}
-		branch := refName[len(refPrefix):]
-		if branchName == branch {
+		if refName.String() == ref.Name().String() {
 			return true, nil
 		}
 	}
@@ -99,4 +93,8 @@ func (gm *GitManager) Push(token string) error {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
 	}
 	return errorutils.CheckError(err)
+}
+
+func ToRefName(branchName string) plumbing.ReferenceName {
+	return plumbing.ReferenceName("refs/heads/" + branchName)
 }

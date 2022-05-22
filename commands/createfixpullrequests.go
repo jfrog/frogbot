@@ -112,11 +112,12 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
 		return
 	}
-	clientLog.Info(fmt.Sprintf("Running git branch & checkout: %s.", fixBranchName))
+	clientLog.Info("Creating branch:", fixBranchName)
 	err = gitManager.CreateBranch(fixBranchName)
 	if err != nil {
 		return err
 	}
+	clientLog.Info("Running git checkout to:", fixBranchName)
 	err = gitManager.Checkout(fixBranchName)
 	if err != nil {
 		return err
