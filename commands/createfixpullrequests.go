@@ -118,46 +118,21 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return err
 	}
 	defer func() {
+		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
 		e := gitManager.Checkout(params.BaseBranch)
 		if err == nil {
 			err = e
 		}
 	}()
 
-	switch fixVersionInfo.packageType {
-	// todo: get package types from core
-	// todo: place each type on different file
-	case "Go":
-		fixedImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
-		var output []byte
-		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
-			return
-		}
-	case "npm":
-		packageFullName := impactedPackage + "@" + fixVersionInfo.fixVersion
-		npmInstallCmd := exec.Command("npm", "install", packageFullName)
-		npmInstallCmd.Dir = tempDirPath
-
-		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
-		var output []byte
-		output, err = npmInstallCmd.CombinedOutput()
-		if err != nil {
-			err = fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
-			return
-		}
-	default:
-	}
-
-	clientLog.Info(fmt.Sprintf("Running git add all & commit: %s.", fixBranchName))
-	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
-	err = gitManager.AddAll()
+	err = updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
 	}
-	err = gitManager.Commit(commitString)
+
+	clientLog.Info("Running git add all and commit")
+	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
+	err = gitManager.AddAllAndCommit(commitString)
 	if err != nil {
 		return err
 	}
@@ -169,6 +144,34 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	clientLog.Info("Creating Pull Request for:", fixBranchName)
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, "PR body")
 	return
+}
+
+func updatePackageToFixedVersion(packageType, impactedPackage, fixVersion string) error {
+	switch packageType {
+	case "Go":
+		fixedImpactPackage := impactedPackage + "@v" + fixVersion
+		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
+		var output []byte
+		output, err := exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
+		}
+	case "npm":
+		packageFullName := impactedPackage + "@" + fixVersion
+		npmInstallCmd := exec.Command("npm", "install", packageFullName)
+		//npmInstallCmd.Dir = tempDirPath//////////////
+
+		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
+		var output []byte
+		output, err = npmInstallCmd.CombinedOutput()
+		if err != nil {
+			err = fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
+			return
+		}
+	default:
+		return fmt.Errorf("package type: %s is currently not supported", packageType)
+	}
+	return nil
 }
 
 ///      1.0         --> 1.0 ≤ x

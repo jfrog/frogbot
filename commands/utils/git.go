@@ -24,11 +24,19 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
-	return gm.createAndCheckout(branchName, false)
+	err := gm.createAndCheckout(branchName, false)
+	if err != nil {
+		err = fmt.Errorf("git checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
 func (gm *GitManager) CreateAndCheckout(branchName string) error {
-	return gm.createAndCheckout(branchName, true)
+	err := gm.createAndCheckout(branchName, true)
+	if err != nil {
+		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
 func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
@@ -43,20 +51,32 @@ func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
 	return worktree.Checkout(checkoutConfig)
 }
 
-func (gm *GitManager) AddAll() error {
-	worktree, err := gm.repository.Worktree()
+func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	err := gm.addAll()
 	if err != nil {
 		return err
 	}
-	return worktree.AddWithOptions(&git.AddOptions{All: true})
+	return gm.commit(commitMessage)
 }
 
-func (gm *GitManager) Commit(commitMessage string) error {
+func (gm *GitManager) addAll() error {
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
 		return err
 	}
-	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
+	return err
+}
+
+func (gm *GitManager) commit(commitMessage string) error {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "JFrog-Frogbot",
 			Email: "eco-system+frogbot@jfrog.com",
@@ -64,9 +84,8 @@ func (gm *GitManager) Commit(commitMessage string) error {
 		},
 	})
 	if err != nil {
-		return err
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
 	}
-	_, err = gm.repository.CommitObject(commit)
 	return err
 }
 
