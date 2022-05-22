@@ -118,33 +118,25 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return err
 	}
 	defer func() {
+		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
 		e := gitManager.Checkout(params.BaseBranch)
 		if err == nil {
 			err = e
 		}
 	}()
 
-	switch fixVersionInfo.packageType {
-	// todo: get package types from core
-	// todo: place each type on different file
-	case "Go":
-		fixedImpactPackage := impactedPackage + "@v" + fixVersionInfo.fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
-		var output []byte
-		output, err = exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			err = fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
-			return
-		}
-	default:
+	err = updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
+	if err != nil {
+		return err
 	}
 
-	clientLog.Info(fmt.Sprintf("Running git add all & commit: %s.", fixBranchName))
-	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
+	clientLog.Info("Running git add all")
 	err = gitManager.AddAll()
 	if err != nil {
 		return err
 	}
+	clientLog.Info("Running git commit")
+	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
 	err = gitManager.Commit(commitString)
 	if err != nil {
 		return err
@@ -157,6 +149,22 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	clientLog.Info("Creating Pull Request for:", fixBranchName)
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, "PR body")
 	return
+}
+
+func updatePackageToFixedVersion(packageType, impactedPackage, fixVersion string) error {
+	switch packageType {
+	case "Go":
+		fixedImpactPackage := impactedPackage + "@v" + fixVersion
+		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
+		var output []byte
+		output, err := exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
+		}
+	default:
+		return fmt.Errorf("package type: %s is currently not supported", packageType)
+	}
+	return nil
 }
 
 ///      1.0         --> 1.0 ≤ x
