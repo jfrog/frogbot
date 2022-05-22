@@ -64,6 +64,9 @@ func (gm *GitManager) Commit(commitMessage string) error {
 			When:  time.Now(),
 		},
 	})
+	if err != nil {
+		return err
+	}
 	_, err = gm.repository.CommitObject(commit)
 	return err
 }
