@@ -51,7 +51,15 @@ func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
 	return worktree.Checkout(checkoutConfig)
 }
 
-func (gm *GitManager) AddAll() error {
+func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	err := gm.addAll()
+	if err != nil {
+		return err
+	}
+	return gm.commit(commitMessage)
+}
+
+func (gm *GitManager) addAll() error {
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
 		return err
@@ -63,22 +71,18 @@ func (gm *GitManager) AddAll() error {
 	return err
 }
 
-func (gm *GitManager) Commit(commitMessage string) error {
+func (gm *GitManager) commit(commitMessage string) error {
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
 		return err
 	}
-	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
+	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "JFrog-Frogbot",
 			Email: "eco-system+frogbot@jfrog.com",
 			When:  time.Now(),
 		},
 	})
-	if err != nil {
-		return err
-	}
-	_, err = gm.repository.CommitObject(commit)
 	if err != nil {
 		err = fmt.Errorf("git commit failed with error: %s", err.Error())
 	}

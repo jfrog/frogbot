@@ -130,14 +130,9 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return err
 	}
 
-	clientLog.Info("Running git add all")
-	err = gitManager.AddAll()
-	if err != nil {
-		return err
-	}
-	clientLog.Info("Running git commit")
+	clientLog.Info("Running git add all and commit")
 	commitString := fmt.Sprintf("[frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
-	err = gitManager.Commit(commitString)
+	err = gitManager.AddAllAndCommit(commitString)
 	if err != nil {
 		return err
 	}
