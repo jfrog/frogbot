@@ -16,40 +16,28 @@ import (
 
 func CreateFixPullRequests(c *clitool.Context) error {
 	// Get params and VCS client
-	//params, client, err := utils.GetParamsAndClient()
-	//if err != nil {
-	//	return err
-	//}
-	//// Send usage report
-	//usageReportSent := make(chan error)
-	//go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
-	//
-	gitManager, err := utils.NewGitManager(".", "origin")
+	params, client, err := utils.GetParamsAndClient()
+	if err != nil {
+		return err
+	}
+	// Send usage report
+	usageReportSent := make(chan error)
+	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
+
+	// Do scan commit
+	scanResults, err := scanCommit(params)
 	if err != nil {
 		return err
 	}
 
-	fixBranchName := "test11111"
-	clientLog.Info("Creating branch:", fixBranchName)
-	err = gitManager.CreateAndCheckout(fixBranchName)
+	// Fix and create PRs
+	err = fixImpactedPackagesAndCreatePRs(params, client, scanResults)
 	if err != nil {
 		return err
 	}
 
-	//// Do scan commit
-	//scanResults, err := scanCommit(params)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// Fix and create PRs
-	//err = fixImpactedPackagesAndCreatePRs(params, client, scanResults)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// Wait for usage report
-	//<-usageReportSent
+	// Wait for usage report
+	<-usageReportSent
 	return err
 }
 
