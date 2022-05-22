@@ -59,7 +59,7 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Found ", len(fixVersionsMap), " impacted packages with fix versions")
+	clientLog.Info("Found", len(fixVersionsMap), "impacted packages with fix versions")
 
 	gitManager := utils.NewGitManager(".")
 	err = gitManager.Config("user.email", "sverdlov93@gmail.com")
@@ -74,7 +74,7 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 		clientLog.Info("Fixing ", impactedPackage, " with ", fixVersionInfo.fixVersion)
 		err = fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client)
 		if err != nil {
-			clientLog.Error("failed while trying to fix and create PR for: ", impactedPackage, " with version: ", fixVersionInfo.fixVersion, ". with error: ", err.Error())
+			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, ". with error:", err.Error())
 		}
 	}
 	return nil
@@ -141,11 +141,12 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 	if err != nil {
 		return err
 	}
-	clientLog.Info(fmt.Sprintf("Pushing fix branch: %s.", fixBranchName))
+	clientLog.Info("Pushing fix branch:", fixBranchName)
 	err = gitManager.Push(params.Token)
 	if err != nil {
 		return err
 	}
+	clientLog.Info("Creating Pull Request for:", fixBranchName)
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, "PR body")
 	return
 }
