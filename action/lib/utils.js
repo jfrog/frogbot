@@ -73,8 +73,7 @@ class Utils {
         }
         core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
-    }
-    static getGitEventName() {
+        core.exportVariable('JF_GIT_EVENT_NAME', github.context.eventName);
         return github.context.eventName;
     }
     /**

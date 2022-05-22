@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jfrog/jfrog-client-go/utils"
 )
 
@@ -12,47 +13,57 @@ func NewGitManager(dotGitPath string) *gitManager {
 	return &gitManager{manager: *utils.NewGitManager(dotGitPath)}
 }
 
-func (m *gitManager) CreateBranch(branch string) (string, string, error) {
-	return m.manager.ExecGit("branch", branch)
-}
-
-func (m *gitManager) Checkout(branch string) (string, string, error) {
-	return m.manager.ExecGit("checkout", branch)
-}
-
-func (m *gitManager) CreateBranchAndCheckout(branch string) (output string, errString string, err error) {
-	output, errString, err = m.CreateBranch(branch)
+func parseGitError(output string, errString string, err error) error {
 	if err != nil {
-		return
+		return fmt.Errorf("failed Running Git command: %s. %s - %s", err.Error(), output, errString)
 	}
-	output, errString, err = m.Checkout(branch)
-	return
+	return nil
 }
 
-func (m *gitManager) Add(fileName string) (string, string, error) {
-	return m.manager.ExecGit("add", fileName)
+func (gm *gitManager) CreateBranch(branch string) error {
+	return parseGitError(gm.manager.ExecGit("branch", branch))
 }
 
-func (m *gitManager) AddAll() (string, string, error) {
-	return m.manager.ExecGit("add", "-A")
+func (gm *gitManager) Checkout(branch string) error {
+	return parseGitError(gm.manager.ExecGit("checkout", branch))
 }
 
-func (m *gitManager) Commit(commitMessage string) (string, string, error) {
-	return m.manager.ExecGit("commit", "-m", commitMessage)
-}
-
-func (m *gitManager) AddCommit(commitMessage string) (output string, errString string, err error) {
-	output, errString, err = m.AddAll()
+func (gm *gitManager) CreateBranchAndCheckout(branch string) error {
+	err := gm.CreateBranch(branch)
 	if err != nil {
-		return
+		return err
 	}
-	return m.manager.ExecGit("commit", "-m", commitMessage)
+	return gm.Checkout(branch)
 }
 
-func (m *gitManager) Push(remote, branch string) (string, string, error) {
-	return m.manager.ExecGit("push", remote, branch)
+func (gm *gitManager) Add(fileName string) error {
+	return parseGitError(gm.manager.ExecGit("add", fileName))
 }
 
-func (m *gitManager) PushOrigin(branch string) (string, string, error) {
-	return m.manager.ExecGit("push", "origin", branch)
+func (gm *gitManager) AddAll() error {
+	return parseGitError(gm.manager.ExecGit("add", "-A"))
+}
+
+func (gm *gitManager) Commit(commitMessage string) error {
+	return parseGitError(gm.manager.ExecGit("commit", "-m", commitMessage))
+}
+
+func (gm *gitManager) Config(key, value string) error {
+	return parseGitError(gm.manager.ExecGit("config", key, value))
+}
+
+func (gm *gitManager) AddAllAndCommit(commitMessage string) error {
+	err := gm.AddAll()
+	if err != nil {
+		return err
+	}
+	return gm.Commit(commitMessage)
+}
+
+func (gm *gitManager) Push(remote, branch string) error {
+	return parseGitError(gm.manager.ExecGit("push", remote, branch))
+}
+
+func (gm *gitManager) PushOrigin(token, branch string) error {
+	return parseGitError(gm.manager.ExecGit("push", "https://"+token+"@github.com/sverdlov93/frogbot.git", branch))
 }
