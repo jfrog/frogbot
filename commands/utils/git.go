@@ -61,5 +61,5 @@ func (gm *gitManager) AddAllAndCommit(commitMessage string) error {
 }
 
 func (gm *gitManager) Push(token string) error {
-	return gm.manager.Push("sverdlov93", token)
+	return gm.manager.Push(token)
 }
