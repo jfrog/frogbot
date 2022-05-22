@@ -60,10 +60,10 @@ func (gm *gitManager) AddAllAndCommit(commitMessage string) error {
 	return gm.Commit(commitMessage)
 }
 
-func (gm *gitManager) Push(remote, branch string) error {
-	return parseGitError(gm.manager.ExecGit("push", remote, branch))
-}
-
-func (gm *gitManager) PushOrigin(token, branch string) error {
+func (gm *gitManager) Push(token, branch string) error {
+	err := gm.manager.Push("sverdlov93", token)
+	if err != nil {
+		return err
+	}
 	return parseGitError(gm.manager.ExecGit("push", "https://"+token+"@github.com/sverdlov93/frogbot.git", branch))
 }
