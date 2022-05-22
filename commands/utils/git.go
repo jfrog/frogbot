@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -24,17 +23,17 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 	return &GitManager{repository: repository, remoteName: remoteName}, nil
 }
 
-func (gm *GitManager) CreateBranch(branchName string) error {
-	branchConfig := &config.Branch{
-		Name:   branchName,
-		Remote: gm.remoteName,
-		Merge:  plumbing.NewBranchReferenceName(branchName),
-	}
-	return gm.repository.CreateBranch(branchConfig)
+func (gm *GitManager) Checkout(branchName string) error {
+	return gm.createAndCheckout(branchName, false)
 }
 
-func (gm *GitManager) Checkout(branchName string) error {
+func (gm *GitManager) CreateAndCheckout(branchName string) error {
+	return gm.createAndCheckout(branchName, true)
+}
+
+func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
 	checkoutConfig := &git.CheckoutOptions{
+		Create: create,
 		Branch: plumbing.NewBranchReferenceName(branchName),
 	}
 	worktree, err := gm.repository.Worktree()
