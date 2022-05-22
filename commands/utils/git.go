@@ -61,5 +61,9 @@ func (gm *gitManager) AddAllAndCommit(commitMessage string) error {
 }
 
 func (gm *gitManager) Push(token string) error {
-	return gm.manager.Push(token)
+	return gm.manager.Push("origin", token)
+}
+
+func (gm *gitManager) BranchExistsOnRemote(remoteName, branchName string) (bool, error) {
+	return gm.manager.BranchExistsOnRemote(remoteName, branchName)
 }
