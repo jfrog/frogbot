@@ -58,8 +58,8 @@ func (gm *GitManager) Commit(commitMessage string) error {
 	}
 	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "sverdlov93",
-			Email: "sverdlov93@gmail.com",
+			Name:  "JFrog-Frogbot",
+			Email: "eco-system+frogbot@jfrog.com",
 			When:  time.Now(),
 		},
 	})
