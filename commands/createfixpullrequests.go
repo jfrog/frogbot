@@ -20,7 +20,7 @@ type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
 }
 
-func (cfp *CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	cfp.params = params
 	cfp.client = client
 

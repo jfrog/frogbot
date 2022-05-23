@@ -26,7 +26,7 @@ require (
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/gfleury/go-bitbucket-v1 v0.0.0-20210826163055-dff2223adeac // indirect
+	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
@@ -89,4 +89,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.14.1-0.20220523074458-2d371308ecd1
+replace (
+	github.com/jfrog/froggit-go => github.com/jfrog/froggit-go v1.1.2-0.20220523162336-ec1251782e9a
+	github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.14.1-0.20220523151503-7b5b7986251f
+)
