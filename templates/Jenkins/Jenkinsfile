@@ -9,7 +9,7 @@ pipeline {
     }
 
     environment {
-        // [Mandatory only for project which npm, pip, pipenv, nuget and dotnet]
+        // [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
         // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
         JF_INSTALL_DEPS_CMD= ""
 

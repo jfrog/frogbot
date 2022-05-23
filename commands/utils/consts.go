@@ -4,7 +4,11 @@ type IconName string
 type ImageSource string
 type vcsProvider string
 type frogbotLabel string
+
+// GetGetTitleFunc, a func to determine the title of Frogbot comment
 type GetTitleFunc func(ImageSource) string
+
+// GetGetTitleFunc, a func to determine the table's severity tag in the Frogbot comment
 type GetSeverityTagFunc func(IconName) string
 
 const (
@@ -29,7 +33,7 @@ const (
 	LabelColor       frogbotLabel = "4AB548"
 
 	// Frogbot comments
-	RescanRequestComment = "frogbot scan"
+	RescanRequestComment = "rescan"
 
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"
@@ -59,7 +63,7 @@ const (
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
-	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)\n"
+	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
 	// Product ID for usage reporting
 	productId = "frogbot"

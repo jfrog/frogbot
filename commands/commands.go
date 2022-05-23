@@ -21,7 +21,7 @@ func GetCommands() []*clitool.Command {
 		{
 			Name:    "scan-pull-requests",
 			Aliases: []string{"sprs"},
-			Usage:   "Scans all repo open pull requests with JFrog Xray for security vulnerabilities.",
+			Usage:   "Scans all the open pull requests in the repo with JFrog Xray for security vulnerabilities.",
 			Action:  ScanPullRequests,
 			Flags:   []clitool.Flag{},
 		},

@@ -7,7 +7,6 @@ import (
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clitool "github.com/urfave/cli/v2"
 )
 
@@ -29,9 +28,9 @@ func ScanPullRequests(c *clitool.Context) error {
 	return err
 }
 
-// Scan pull requests by as follows:
+// Scan pull requests as follows:
 // a. Retrive all open pull requests
-// b. Find the ones that should be scanned ( new pr or one with re-scan comment)
+// b. Find the ones that should be scanned (new PRs or PRs with a 're-scan' comment)
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
@@ -45,7 +44,7 @@ func scanPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) e
 			return err
 		}
 		if shouldScan {
-			// download the pull request source ("from") branch
+			// Download the pull request source ("from") branch
 			prScanParams := &utils.FrogbotParams{
 				JFrogEnvParams: params.JFrogEnvParams,
 				GitParam: utils.GitParam{
@@ -57,13 +56,13 @@ func scanPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) e
 					BaseBranch:  pr.Source.Name,
 				},
 			}
-			wd, err := downloadRepoToTempDir(client, prScanParams)
+			wd, cleanup, err := downloadRepoToTempDir(client, prScanParams)
 			if err != nil {
 				return err
 			}
-			//clean up
+			// Cleanup
 			defer func() {
-				e := fileutils.RemoveTempDir(wd)
+				e := cleanup()
 				if err == nil {
 					err = e
 				}
@@ -115,23 +114,23 @@ func shouldScanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClie
 	})
 
 	for _, comment := range pullRequestsComments {
-		// if found re-scan request
-		if isReScanComment(comment.Content) {
+		// If this a 're-scan' request comment
+		if isFrogbotRescanComment(comment.Content) {
 			return true, nil
 		}
-		// if found frogbot comment and not re-scan request, do not scan this pull request.
-		if isFrogbotComment(comment.Content) {
+		// if this is a Frogbot 'scan results' comment and not 're-scan' request comment, do not scan this pull request.
+		if isFrogbotResultComment(comment.Content) {
 			return false, nil
 		}
 	}
-	// A new pull request - should be scanned
+	// This is a new pull request and it therefore should be scanned.
 	return true, nil
 }
 
-func isReScanComment(comment string) bool {
+func isFrogbotRescanComment(comment string) bool {
 	return strings.ToLower(strings.TrimSpace(comment)) == utils.RescanRequestComment
 }
 
-func isFrogbotComment(comment string) bool {
+func isFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource))
 }

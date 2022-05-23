@@ -63,17 +63,16 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	clientLog.Info("Xray scan completed")
 
 	// Comment frogbot message on the PR
-	var getTitleFunc utils.GetTitleFunc
-	var getSeverityTagFunc utils.GetSeverityTagFunc
-	if params.SimplifiedOutput {
-		getTitleFunc = utils.GetSimplifiedTitle
-		getSeverityTagFunc = func(in utils.IconName) string { return "" }
-	} else {
-		getTitleFunc = utils.GetBanner
-		getSeverityTagFunc = utils.GetSeverityTag
-	}
+	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
 	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan), getTitleFunc, getSeverityTagFunc)
 	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+}
+
+func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
+	if simplifiedOutput {
+		return utils.GetSimplifiedTitle, utils.GetEmojiSeverityTag
+	}
+	return utils.GetBanner, utils.GetSeverityTag
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
@@ -120,13 +119,13 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
 	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
-	wd, err := downloadRepoToTempDir(client, params)
+	wd, cleanup, err := downloadRepoToTempDir(client, params)
 	if err != nil {
 		return
 	}
-	// cleanup
+	// Cleanup
 	defer func() {
-		e := fileutils.RemoveTempDir(wd)
+		e := cleanup()
 		if err == nil {
 			err = e
 		}
@@ -134,10 +133,14 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	return runInstallAndAudit(xrayScanParams, params, wd, false)
 }
 
-func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotParams) (wd string, err error) {
+func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotParams) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
+	}
+	cleanup = func() error {
+		e := fileutils.RemoveTempDir(wd)
+		return e
 	}
 	clientLog.Debug("Created temp working directory: " + wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))

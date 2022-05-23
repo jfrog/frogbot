@@ -35,3 +35,17 @@ func GetSimplifiedTitle(is ImageSource) string {
 	}
 	return ""
 }
+
+func GetEmojiSeverityTag(severity IconName) string {
+	switch strings.ToLower(string(severity)) {
+	case "critical":
+		return "💀 "
+	case "high":
+		return "🔥 "
+	case "medium":
+		return "🎃 "
+	case "low":
+		return "👻 "
+	}
+	return ""
+}
