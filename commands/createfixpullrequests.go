@@ -24,8 +24,8 @@ func CreateFixPullRequests(c *clitool.Context) error {
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
 
-	// Do scan commit
-	scanResults, err := scanCommit(params)
+	// Do scan current branch
+	scanResults, err := scan(params)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func CreateFixPullRequests(c *clitool.Context) error {
 }
 
 // Audit the dependencies of the current commit.
-func scanCommit(params *utils.FrogbotParams) ([]services.ScanResponse, error) {
+func scan(params *utils.FrogbotParams) ([]services.ScanResponse, error) {
 	// Audit commit code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
 	scanResults, err := auditSource(xrayScanParams, params)
@@ -53,13 +53,12 @@ func scanCommit(params *utils.FrogbotParams) ([]services.ScanResponse, error) {
 	return scanResults, nil
 }
 
-// Audit the dependencies of the current branch.
 func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) error {
 	fixVersionsMap, err := createFixVersionsMap(scanResults)
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Found", len(fixVersionsMap), "impacted packages with fix versions")
+	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 
 	gitManager, err := utils.NewGitManager(".", "origin")
 	if err != nil {
@@ -75,13 +74,11 @@ func fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclie
 	return nil
 }
 
-// Create vulnerabilities rows. The rows should contain only the new issues added by this PR
+// Create fixVersionMap - a map between impacted packages and their fix version
 func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixVersionInfo, error) {
 	fixVersionsMap := map[string]*FixVersionInfo{}
 	for _, scanResult := range scanResults {
-		if len(scanResult.Violations) > 0 {
-			// todo!
-		} else if len(scanResult.Vulnerabilities) > 0 {
+		if len(scanResult.Vulnerabilities) > 0 {
 			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, false, false)
 			if err != nil {
 				return nil, err
@@ -91,9 +88,11 @@ func createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixV
 					fixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
+						// Fix version for current impacted package already exists, so we need to select between the existing fix version and the current.
 						fixVersionInfo.UpdateFixVersion(fixVersion)
 					} else {
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, vulnerability.ImpactedPackageType)
+						// First appearance of a version that fixes the current impacted package
+						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, PackageType(vulnerability.ImpactedPackageType))
 					}
 				}
 			}
@@ -113,11 +112,12 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return
 	}
 	clientLog.Info("Creating branch:", fixBranchName)
-	err = gitManager.CreateAndCheckout(fixBranchName)
+	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 	defer func() {
+		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
 		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
 		e := gitManager.Checkout(params.BaseBranch)
 		if err == nil {
@@ -142,11 +142,11 @@ func fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersi
 		return err
 	}
 	clientLog.Info("Creating Pull Request for:", fixBranchName)
-	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, "PR body")
+	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, commitString)
 	return
 }
 
-func updatePackageToFixedVersion(packageType, impactedPackage, fixVersion string) error {
+func updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
 	switch packageType {
 	case "Go":
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
@@ -157,7 +157,7 @@ func updatePackageToFixedVersion(packageType, impactedPackage, fixVersion string
 			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 		}
 	default:
-		return fmt.Errorf("package type: %s is currently not supported", packageType)
+		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 	return nil
 }
@@ -179,12 +179,14 @@ func parseVersionChangeString(fixVersion string) string {
 	return latestVersion
 }
 
+type PackageType string
+
 type FixVersionInfo struct {
 	fixVersion  string
-	packageType string
+	packageType PackageType
 }
 
-func NewFixVersionInfo(newFixVersion, packageType string) *FixVersionInfo {
+func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersionInfo {
 	return &FixVersionInfo{newFixVersion, packageType}
 }
 

@@ -67,7 +67,7 @@ jobs:
         if: runner.os == 'Linux'
 
   # Build and run frogbot current changes for visual sanity check.
-  sanity:
+  sanity-pull-request:
     needs: tests
     if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
@@ -97,7 +97,8 @@ jobs:
         run: ./frogbot scan-pull-request
 
   # Build and run frogbot current changes for visual sanity check.
-  sanityPR:
+  sanity-push:
+    needs: tests
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:

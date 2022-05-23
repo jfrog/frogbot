@@ -93,7 +93,9 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 func extractGitParamsFromEnv(params *FrogbotParams) error {
 	var err error
 
+	// Non-mandatory Git Api Endpoint
 	_ = readParamFromEnv(GitApiEndpointEnv, &params.ApiEndpoint)
+
 	if params.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return err
 	}
@@ -112,7 +114,7 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
 		return err
 	}
-	if eventName := getTrimmedEnv(GitEventName); eventName == "" {
+	if eventName := getTrimmedEnv(GitEventName); eventName != "push" {
 		if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 			params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 			return err
