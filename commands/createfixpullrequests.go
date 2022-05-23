@@ -14,14 +14,10 @@ import (
 	"strings"
 )
 
-type createFixPullRequestsCmd struct {
+type CreateFixPullRequestsCmd struct {
 	params                *utils.FrogbotParams
 	client                vcsclient.VcsClient
 	mavenDepToPropertyMap map[string][]string
-}
-
-func newCreateFixPullRequestsCmd(params *utils.FrogbotParams, client vcsclient.VcsClient) *createFixPullRequestsCmd {
-	return &createFixPullRequestsCmd{params: params, client: client}
 }
 
 func CreateFixPullRequests(c *clitool.Context) error {
@@ -34,15 +30,18 @@ func CreateFixPullRequests(c *clitool.Context) error {
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
 
-	cmd := newCreateFixPullRequestsCmd(params, client)
-	err = cmd.createFixPullRequests()
+	cmd := &CreateFixPullRequestsCmd{}
+	err = cmd.Run(params, client)
 
 	// Wait for usage report
 	<-usageReportSent
 	return err
 }
 
-func (cfp *createFixPullRequestsCmd) createFixPullRequests() error {
+func (cfp *CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	cfp.params = params
+	cfp.client = client
+
 	// Do scan current branch
 	scanResults, err := cfp.scan()
 	if err != nil {
@@ -54,7 +53,7 @@ func (cfp *createFixPullRequestsCmd) createFixPullRequests() error {
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *createFixPullRequestsCmd) scan() ([]services.ScanResponse, error) {
+func (cfp *CreateFixPullRequestsCmd) scan() ([]services.ScanResponse, error) {
 	// Audit commit code
 	xrayScanParams := createXrayScanParams(cfp.params.Watches, cfp.params.Project)
 	scanResults, err := auditSource(xrayScanParams, cfp.params)
@@ -65,7 +64,7 @@ func (cfp *createFixPullRequestsCmd) scan() ([]services.ScanResponse, error) {
 	return scanResults, nil
 }
 
-func (cfp *createFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults []services.ScanResponse) error {
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults []services.ScanResponse) error {
 	fixVersionsMap, err := cfp.createFixVersionsMap(scanResults)
 	if err != nil {
 		return err
@@ -87,7 +86,7 @@ func (cfp *createFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 // Create fixVersionMap - a map between impacted packages and their fix version
-func (cfp *createFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixVersionInfo, error) {
+func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixVersionInfo, error) {
 	fixVersionsMap := map[string]*FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
@@ -126,7 +125,7 @@ func (cfp *createFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	return fixVersionsMap, nil
 }
 
-func (cfp *createFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, gitManager *utils.GitManager) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, gitManager *utils.GitManager) (err error) {
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
 	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, fixedPackageName, fixVersionInfo.fixVersion)
@@ -183,7 +182,7 @@ func (cfp *createFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *createFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
 	switch packageType {
 	case "Go":
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
