@@ -7,7 +7,7 @@ require (
 	github.com/jfrog/froggit-go v1.1.1
 	github.com/jfrog/gofrog v1.1.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.13.5
-	github.com/jfrog/jfrog-client-go v1.12.5
+	github.com/jfrog/jfrog-client-go v1.13.0
 	github.com/sassoftware/go-rpmutils v0.1.0
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli/v2 v2.4.0
@@ -89,8 +89,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace (
-	github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.13.7-0.20220510172240-19307a6545bc
-	///////////////change the replace below!
-	github.com/jfrog/jfrog-client-go => github.com/sverdlov93/jfrog-client-go v1.0.2-0.20220522123128-7fde888fbd18
-)
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.14.1-0.20220523074458-2d371308ecd1

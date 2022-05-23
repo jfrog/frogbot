@@ -54,7 +54,7 @@ func (cfp *createFixPullRequestsCmd) createFixPullRequests() error {
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *createFixPullRequestsCmd) scanCommit() ([]services.ScanResponse, error) {
+func (cfp *createFixPullRequestsCmd) scan() ([]services.ScanResponse, error) {
 	// Audit commit code
 	xrayScanParams := createXrayScanParams(cfp.params.Watches, cfp.params.Project)
 	scanResults, err := auditSource(xrayScanParams, cfp.params)
@@ -117,7 +117,7 @@ func (cfp *createFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 						fixVersionInfo.UpdateFixVersion(fixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, vulnerability.ImpactedPackageType)
+						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, PackageType(vulnerability.ImpactedPackageType))
 					}
 				}
 			}
@@ -178,13 +178,12 @@ func (cfp *createFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 	clientLog.Info("Creating Pull Request for:", fixBranchName)
-	/////////////////change PR body to: <same as title>\n\nWhat is Frogbot? (link - copy from Frogbot - talk with Tal)
-	err = cfp.client.CreatePullRequest(context.Background(), cfp.params.RepoOwner, cfp.params.Repo, fixBranchName, cfp.params.BaseBranch, commitString, commitString)
+	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
+	err = cfp.client.CreatePullRequest(context.Background(), cfp.params.RepoOwner, cfp.params.Repo, fixBranchName, cfp.params.BaseBranch, commitString, prBody)
 	return
 }
 
 func (cfp *createFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
-	///////////////use core type!!
 	switch packageType {
 	case "Go":
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
