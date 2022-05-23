@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
-
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 )
@@ -130,7 +129,6 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 		params.InstallCommandArgs = parts[1:]
 	}
 	params.InstallCommandName = parts[0]
-
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {

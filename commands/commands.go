@@ -43,7 +43,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"cfpr"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(CreatePullRequestCmd{}, ctx.Command.Name)
+				return Exec(CreateFixPullRequestsCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
