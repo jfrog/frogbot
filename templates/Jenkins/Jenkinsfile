@@ -1,0 +1,81 @@
+// Run every 5 minutes 
+CRON_SETTINGS = '''*/5 * * * *'''
+
+pipeline {
+    agent any
+
+    triggers {
+        cron(CRON_SETTINGS)
+    }
+
+    environment {
+        // [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
+        // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+        JF_INSTALL_DEPS_CMD= ""
+
+        // [Mandatory]
+        // JFrog platform URL
+        JF_URL= credentials("JF_URL")
+
+        // [Mandatory if JF_ACCESS_TOKEN is not provided]
+        // JFrog user and password with 'read' permissions for Xray
+        JF_USER= credentials("JF_USER")
+        JF_PASSWORD= credentials("JF_PASSWORD")
+
+        // [Mandatory]
+        // Bitbucket accesses token with the following permissions 
+        JF_GIT_TOKEN= credentials("BITBUCKET_TOKEN")
+        JF_GIT_PROVIDER= "bitbucket"
+
+        // [Mandatory]
+        // Bitbucket project namesapce
+        JF_GIT_OWNER= ""
+
+        // [Mandatory]
+        // Bitbucket repository name
+        JF_GIT_REPO= ""
+
+        // [Mandatory]
+        // API endpoint to Bitbucket server
+        JF_GIT_API_ENDPOINT= ""
+
+        // Uncomment the below options if you'd like to use them.
+
+        // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+        // JFrog access token with 'read' permissions for Xray
+        // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+
+        // [Optional, default: "."]
+        // Relative path to the project in the git repository
+        // JF_WORKING_DIR= path/to/project/dir
+
+        // [Optional]
+        // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+        // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
+
+        // [Optional]
+        // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+        // JF_PROJECT= <project-key>
+    }
+
+    stages {
+        stage ('Download Frogbot') {
+            steps {
+                //For Linux / MacOS runner:
+                sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+
+                //For Windows runner:
+                // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+            }
+        }
+
+        stage ('Scan Pull Requests') {
+            steps {
+                sh "./frogbot scan-pull-requests"
+
+                //For Windows runner:
+                // powershell """.\frogbot.exe scan-pull-requests"""
+            }
+        }
+    }
+}

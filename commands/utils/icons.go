@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-type IconName string
-
 func GetSeverityTag(iconName IconName) string {
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
@@ -21,10 +19,33 @@ func GetSeverityTag(iconName IconName) string {
 	return ""
 }
 
-func GetBanner(banner imageSource) string {
+func GetBanner(banner ImageSource) string {
 	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#frogbot)"
 }
 
-func getIconTag(imageSource imageSource) string {
-	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
+func getIconTag(imageSource ImageSource) string {
+	return fmt.Sprintf("![](%s)<br>", baseResourceUrl+imageSource)
+}
+
+func GetSimplifiedTitle(is ImageSource) string {
+	if is == NoVulnerabilityBannerSource {
+		return "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
+	} else if is == VulnerabilitiesBannerSource {
+		return "🐸 Frogbot scanned this pull request and found the issues blow: \n"
+	}
+	return ""
+}
+
+func GetEmojiSeverityTag(severity IconName) string {
+	switch strings.ToLower(string(severity)) {
+	case "critical":
+		return "💀 "
+	case "high":
+		return "🔥 "
+	case "medium":
+		return "🎃 "
+	case "low":
+		return "👻 "
+	}
+	return ""
 }
