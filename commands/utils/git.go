@@ -121,3 +121,17 @@ func (gm *GitManager) Push(token string) error {
 	}
 	return errorutils.CheckError(err)
 }
+
+// IsClean returns true if all the files are in Unmodified status.
+func (gm *GitManager) IsClean() (bool, error) {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return false, err
+	}
+	status, err := worktree.Status()
+	if err != nil {
+		return false, err
+	}
+
+	return status.IsClean(), nil
+}
