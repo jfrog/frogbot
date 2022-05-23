@@ -131,7 +131,7 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	}()
 
 	err := extractGitParamsFromEnv(params)
-	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github' or 'gitlab'")
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github' or 'gitlab' or 'bitbucket server'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
 	err = extractGitParamsFromEnv(params)
