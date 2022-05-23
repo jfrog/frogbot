@@ -16,25 +16,17 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	clitool "github.com/urfave/cli/v2"
 )
 
-func ScanPullRequest(c *clitool.Context) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	if err != nil {
-		return err
-	}
-	// Send usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
+type ScanPullRequestCmd struct {
+}
 
-	// Do scan pull request
-	err = scanPullRequest(params, client)
+func (spc ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	return scanPullRequest(params, client)
+}
 
-	// Wait for usage report
-	<-usageReportSent
-	return err
+func (spc ScanPullRequestCmd) Name() string {
+	return "scan-pull-request"
 }
 
 // Scan a pull request by as follows:

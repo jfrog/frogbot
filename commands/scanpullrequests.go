@@ -7,25 +7,17 @@ import (
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	clitool "github.com/urfave/cli/v2"
 )
 
-func ScanPullRequests(c *clitool.Context) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	if err != nil {
-		return err
-	}
-	// Send usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
+type ScanPullRequestsCmd struct {
+}
 
-	// Do scan pull requests
-	err = scanPullRequests(params, client)
+func (spc ScanPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	return scanPullRequest(params, client)
+}
 
-	// Wait for usage report
-	<-usageReportSent
-	return err
+func (spc ScanPullRequestsCmd) Name() string {
+	return "scan-pull-requests"
 }
 
 // Scan pull requests as follows:
