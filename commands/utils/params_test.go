@@ -145,7 +145,7 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id"})
+	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456"})
 	err = extractGitParamsFromEnv(params)
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
