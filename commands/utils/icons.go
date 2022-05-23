@@ -20,7 +20,7 @@ func GetSeverityTag(iconName IconName) string {
 }
 
 func GetBanner(banner ImageSource) string {
-	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#frogbot)"
+	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
 }
 
 func getIconTag(imageSource ImageSource) string {
