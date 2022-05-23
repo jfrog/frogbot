@@ -8,23 +8,23 @@ import (
 func GetSeverityTag(iconName IconName) string {
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
-		return getIconTag(criticalSeveritySource)
+		return getIconTag(criticalSeveritySource) + "<br>"
 	case "high":
-		return getIconTag(highSeveritySource)
+		return getIconTag(highSeveritySource) + "<br>"
 	case "medium":
-		return getIconTag(mediumSeveritySource)
+		return getIconTag(mediumSeveritySource) + "<br>"
 	case "low":
-		return getIconTag(lowSeveritySource)
+		return getIconTag(lowSeveritySource) + "<br>"
 	}
 	return ""
 }
 
 func GetBanner(banner ImageSource) string {
-	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#frogbot)"
+	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
 }
 
 func getIconTag(imageSource ImageSource) string {
-	return fmt.Sprintf("![](%s)<br>", baseResourceUrl+imageSource)
+	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
 }
 
 func GetSimplifiedTitle(is ImageSource) string {
