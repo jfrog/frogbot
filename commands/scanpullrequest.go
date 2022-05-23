@@ -16,31 +16,26 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	clitool "github.com/urfave/cli/v2"
 )
 
-func ScanPullRequest(c *clitool.Context) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	if err != nil {
-		return err
-	}
-	// Send usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
+type ScanPullRequestCmd struct {
+}
 
-	// Do scan pull request
-	err = scanPullRequest(params, client)
-
-	// Wait for usage report
-	<-usageReportSent
-	return err
+func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	return scanPullRequest(params, client)
 }
 
 // Scan a pull request by as follows:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	// Validait scan params
+	if params.BaseBranch == "" {
+		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
+	}
+	if params.PullRequestID == 0 {
+		return &utils.ErrMissingEnv{VariableName: utils.GitPullRequestIDEnv}
+	}
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
 	currentScan, err := auditSource(xrayScanParams, params)
@@ -56,8 +51,16 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	clientLog.Info("Xray scan completed")
 
 	// Comment frogbot message on the PR
-	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan))
+	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
+	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan), getTitleFunc, getSeverityTagFunc)
 	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+}
+
+func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
+	if simplifiedOutput {
+		return utils.GetSimplifiedTitle, utils.GetEmojiSeverityTag
+	}
+	return utils.GetBanner, utils.GetSeverityTag
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
@@ -104,27 +107,40 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
 	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
-	wd, err := fileutils.CreateTempDir()
+	wd, cleanup, err := downloadRepoToTempDir(client, params)
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Created temp working directory: " + wd)
+	// Cleanup
 	defer func() {
-		e := fileutils.RemoveTempDir(wd)
+		e := cleanup()
 		if err == nil {
 			err = e
 		}
 	}()
+	return runInstallAndAudit(xrayScanParams, params, wd, false)
+}
+
+func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotParams) (wd string, cleanup func() error, err error) {
+	wd, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	cleanup = func() error {
+		e := fileutils.RemoveTempDir(wd)
+		return e
+	}
+	clientLog.Debug("Created temp working directory: " + wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Downloaded target repository")
+	clientLog.Debug("Downloading repository compleated")
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
-	return runInstallAndAudit(xrayScanParams, params, wd, false)
+	return
 }
 
 func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) (results []services.ScanResponse, err error) {
@@ -207,9 +223,9 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return utils.GetBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
+		return getBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
 	}
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
@@ -222,8 +238,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 			cve = vulnerability.Cves[0].Id
 		}
 		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
-		tableContent += fmt.Sprintf("\n| %s<br>%8s | %s | %s | %s | %s | %s | %s ", utils.GetSeverityTag(utils.IconName(vulnerability.Severity)), vulnerability.Severity, vulnerability.ImpactedPackageName,
+		tableContent += fmt.Sprintf("\n| %s%8s | %s | %s | %s | %s | %s | %s ", getSeverityTag(utils.IconName(vulnerability.Severity)), vulnerability.Severity, vulnerability.ImpactedPackageName,
 			vulnerability.ImpactedPackageVersion, fixedVersionString, componentName, componentVersion, cve)
 	}
-	return utils.GetBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
+	return getBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
 }

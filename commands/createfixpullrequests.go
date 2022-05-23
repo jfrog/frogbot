@@ -3,39 +3,21 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	clitool "github.com/urfave/cli/v2"
-	"os/exec"
-	"strings"
 )
 
 type CreateFixPullRequestsCmd struct {
 	params                *utils.FrogbotParams
 	client                vcsclient.VcsClient
 	mavenDepToPropertyMap map[string][]string
-}
-
-func CreateFixPullRequests(c *clitool.Context) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	if err != nil {
-		return err
-	}
-	// Send usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
-
-	cmd := &CreateFixPullRequestsCmd{}
-	err = cmd.Run(params, client)
-
-	// Wait for usage report
-	<-usageReportSent
-	return err
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {

@@ -17,6 +17,7 @@ type FrogbotParams struct {
 	WorkingDirectory   string
 	InstallCommandName string
 	InstallCommandArgs []string
+	SimplifiedOutput   bool
 }
 
 type JFrogEnvParams struct {
@@ -108,18 +109,11 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitTokenEnv, &params.Token); err != nil {
 		return err
 	}
-	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
+	// Non-mandatory git branch and pr id.
+	_ = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch)
+	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
+		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		return err
-	}
-	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
-		return err
-	}
-	if eventName := getTrimmedEnv(GitEventName); eventName != "push" {
-		if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-			params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
-			return err
-		}
-		return &errMissingEnv{GitPullRequestIDEnv}
 	}
 	return nil
 }
@@ -140,7 +134,7 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
-		return &errMissingEnv{envKey}
+		return &ErrMissingEnv{envKey}
 	}
 	return nil
 }
@@ -156,9 +150,11 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 		return vcsutils.GitHub, nil
 	case string(GitLab):
 		return vcsutils.GitLab, nil
+	case string(BitbucketServer):
+		return vcsutils.BitbucketServer, nil
 	}
 
-	return 0, fmt.Errorf("%s should be one of: '%s' or '%s'", GitProvider, GitHub, GitLab)
+	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)
 }
 
 func sanitizeEnv() error {
