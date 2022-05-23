@@ -9,11 +9,9 @@ import (
 type FrogbotCommand interface {
 	// Runs the command
 	Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error
-	// The command name for the usage report.
-	Name() string
 }
 
-func Exec(command FrogbotCommand) error {
+func Exec(command FrogbotCommand, name string) error {
 	// Get params and VCS client
 	params, client, err := utils.GetParamsAndClient()
 	if err != nil {
@@ -21,7 +19,7 @@ func Exec(command FrogbotCommand) error {
 	}
 	// Send usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(command.Name(), &params.Server, usageReportSent)
+	go utils.ReportUsage(name, &params.Server, usageReportSent)
 	// Invoke the command interface
 	err = command.Run(params, client)
 	// Waits for the signal from the report usage to be done.
@@ -36,7 +34,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanPullRequestCmd{})
+				return Exec(ScanPullRequestCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -45,7 +43,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"cfpr"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(CreatePullRequestCmd{})
+				return Exec(CreatePullRequestCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -54,7 +52,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"sprs"},
 			Usage:   "Scans all the open pull requests in the repo with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanPullRequestsCmd{})
+				return Exec(ScanAllPullRequestsCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},

@@ -9,15 +9,11 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 )
 
-type ScanPullRequestsCmd struct {
+type ScanAllPullRequestsCmd struct {
 }
 
-func (spc ScanPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func (cmd ScanAllPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	return scanPullRequest(params, client)
-}
-
-func (spc ScanPullRequestsCmd) Name() string {
-	return "scan-pull-requests"
 }
 
 // Scan pull requests as follows:
@@ -25,7 +21,7 @@ func (spc ScanPullRequestsCmd) Name() string {
 // b. Find the ones that should be scanned (new PRs or PRs with a 're-scan' comment)
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-func scanPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func ScanAllPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	openPullRequests, err := client.ListOpenPullRequests(context.Background(), params.RepoOwner, params.Repo)
 	if err != nil {
 		return err

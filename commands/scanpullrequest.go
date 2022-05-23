@@ -21,12 +21,8 @@ import (
 type ScanPullRequestCmd struct {
 }
 
-func (spc ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	return scanPullRequest(params, client)
-}
-
-func (spc ScanPullRequestCmd) Name() string {
-	return "scan-pull-request"
 }
 
 // Scan a pull request by as follows:

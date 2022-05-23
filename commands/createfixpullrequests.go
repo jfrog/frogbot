@@ -27,10 +27,6 @@ func (cmd CreatePullRequestCmd) Run(params *utils.FrogbotParams, client vcsclien
 	return fixImpactedPackagesAndCreatePRs(params, client, scanResults)
 }
 
-func (cmd CreatePullRequestCmd) Name() string {
-	return "create-fix-pull-requests"
-}
-
 // Audit the dependencies of the current commit.
 func scan(params *utils.FrogbotParams) ([]services.ScanResponse, error) {
 	// Audit commit code
