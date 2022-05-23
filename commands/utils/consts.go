@@ -57,7 +57,6 @@ const (
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
-	GitEventName        = "JF_GIT_EVENT_NAME"
 	WatchesDelimiter    = ","
 
 	// Comment
