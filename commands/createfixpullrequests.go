@@ -3,42 +3,28 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/coreos/go-semver/semver"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	clitool "github.com/urfave/cli/v2"
-	"os/exec"
-	"strings"
 )
 
-func CreateFixPullRequests(c *clitool.Context) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
-	if err != nil {
-		return err
-	}
-	// Send usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(c.Command.Name, &params.Server, usageReportSent)
+type CreatePullRequestCmd struct {
+}
 
+func (cmd CreatePullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Do scan current branch
 	scanResults, err := scan(params)
 	if err != nil {
 		return err
 	}
-
 	// Fix and create PRs
-	err = fixImpactedPackagesAndCreatePRs(params, client, scanResults)
-	if err != nil {
-		return err
-	}
-
-	// Wait for usage report
-	<-usageReportSent
-	return err
+	return fixImpactedPackagesAndCreatePRs(params, client, scanResults)
 }
 
 // Audit the dependencies of the current commit.

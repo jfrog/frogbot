@@ -147,7 +147,7 @@ frogbot-scan:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   when: manual
   variables:
-    # [Mandatory only for project which npm, pip, pipenv, nuget and dotnet]
+    # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
     JF_INSTALL_DEPS_CMD: ""
 

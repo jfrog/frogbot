@@ -7,6 +7,7 @@ on:
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
+    environment: frogbot
     steps:
       - name: Install Go
         uses: actions/setup-go@v3
@@ -20,11 +21,14 @@ jobs:
 
       - uses: jfrog/frogbot@dev
         env:
-          # [Mandatory] JFrog platform URL
+          # [Mandatory]
+          # JFrog platform URL
           JF_URL: ${{ secrets.FROGBOT_URL }}
 
-          # [Mandatory if JF_USER and JF_PASSWORD are not provided] 
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions on Xray service
           JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
           
-          # [Mandatory] The GitHub token automatically generated for the job
+          # [Mandatory]
+          # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}

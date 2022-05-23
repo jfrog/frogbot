@@ -1,28 +1,39 @@
 package utils
 
-type imageSource string
+type IconName string
+type ImageSource string
 type vcsProvider string
 type frogbotLabel string
+
+// GetGetTitleFunc, a func to determine the title of Frogbot comment
+type GetTitleFunc func(ImageSource) string
+
+// GetGetTitleFunc, a func to determine the table's severity tag in the Frogbot comment
+type GetSeverityTagFunc func(IconName) string
 
 const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Images
-	NoVulnerabilityBannerSource imageSource = "noVulnerabilityBanner.png"
-	VulnerabilitiesBannerSource imageSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource      imageSource = "criticalSeverity.png"
-	highSeveritySource          imageSource = "highSeverity.png"
-	mediumSeveritySource        imageSource = "mediumSeverity.png"
-	lowSeveritySource           imageSource = "lowSeverity.png"
+	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"
+	VulnerabilitiesBannerSource ImageSource = "vulnerabilitiesBanner.png"
+	criticalSeveritySource      ImageSource = "criticalSeverity.png"
+	highSeveritySource          ImageSource = "highSeverity.png"
+	mediumSeveritySource        ImageSource = "mediumSeverity.png"
+	lowSeveritySource           ImageSource = "lowSeverity.png"
 
 	// VCS providers params
-	GitHub vcsProvider = "github"
-	GitLab vcsProvider = "gitlab"
+	GitHub          vcsProvider = "github"
+	GitLab          vcsProvider = "gitlab"
+	BitbucketServer vcsProvider = "bitbucket server"
 
 	// Frogbot label
 	LabelName        frogbotLabel = "🐸 frogbot scan"
 	LabelDescription frogbotLabel = "triggers frogbot scan"
 	LabelColor       frogbotLabel = "4AB548"
+
+	// Frogbot comments
+	RescanRequestComment = "rescan"
 
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"
@@ -46,12 +57,13 @@ const (
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
+	GitEventName        = "JF_GIT_EVENT_NAME"
 	WatchesDelimiter    = ","
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
-	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#frogbot)"
+	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
 	// Product ID for usage reporting
 	productId = "frogbot"
