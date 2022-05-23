@@ -43,8 +43,8 @@ func CreateFixPullRequests(c *clitool.Context) error {
 }
 
 func (cfp *createFixPullRequestsCmd) createFixPullRequests() error {
-	// Do scan commit
-	scanResults, err := cfp.scanCommit()
+	// Do scan current branch
+	scanResults, err := cfp.scan()
 	if err != nil {
 		return err
 	}
@@ -65,13 +65,12 @@ func (cfp *createFixPullRequestsCmd) scanCommit() ([]services.ScanResponse, erro
 	return scanResults, nil
 }
 
-// Audit the dependencies of the current branch.
 func (cfp *createFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults []services.ScanResponse) error {
 	fixVersionsMap, err := cfp.createFixVersionsMap(scanResults)
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Found", len(fixVersionsMap), "impacted packages with fix versions")
+	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 
 	gitManager, err := utils.NewGitManager(".", "origin")
 	if err != nil {
@@ -87,13 +86,11 @@ func (cfp *createFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 	return nil
 }
 
-// Create vulnerabilities rows. The rows should contain only the new issues added by this PR
+// Create fixVersionMap - a map between impacted packages and their fix version
 func (cfp *createFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse) (map[string]*FixVersionInfo, error) {
 	fixVersionsMap := map[string]*FixVersionInfo{}
 	for _, scanResult := range scanResults {
-		if len(scanResult.Violations) > 0 {
-			// todo!
-		} else if len(scanResult.Vulnerabilities) > 0 {
+		if len(scanResult.Vulnerabilities) > 0 {
 			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, false, false)
 			if err != nil {
 				return nil, err
@@ -116,8 +113,10 @@ func (cfp *createFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 					fixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
+						// Fix version for current impacted package already exists, so we need to select between the existing fix version and the current.
 						fixVersionInfo.UpdateFixVersion(fixVersion)
 					} else {
+						// First appearance of a version that fixes the current impacted package
 						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, vulnerability.ImpactedPackageType)
 					}
 				}
@@ -140,11 +139,12 @@ func (cfp *createFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return
 	}
 	clientLog.Info("Creating branch:", fixBranchName)
-	err = gitManager.CreateAndCheckout(fixBranchName)
+	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 	defer func() {
+		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
 		clientLog.Info("Running git checkout to base branch:", cfp.params.BaseBranch)
 		e := gitManager.Checkout(cfp.params.BaseBranch)
 		if err == nil {
@@ -178,11 +178,13 @@ func (cfp *createFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 	clientLog.Info("Creating Pull Request for:", fixBranchName)
-	err = cfp.client.CreatePullRequest(context.Background(), cfp.params.RepoOwner, cfp.params.Repo, fixBranchName, cfp.params.BaseBranch, commitString, "PR body")
+	/////////////////change PR body to: <same as title>\n\nWhat is Frogbot? (link - copy from Frogbot - talk with Tal)
+	err = cfp.client.CreatePullRequest(context.Background(), cfp.params.RepoOwner, cfp.params.Repo, fixBranchName, cfp.params.BaseBranch, commitString, commitString)
 	return
 }
 
-func (cfp *createFixPullRequestsCmd) updatePackageToFixedVersion(packageType, impactedPackage, fixVersion string) error {
+func (cfp *createFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
+	///////////////use core type!!
 	switch packageType {
 	case "Go":
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
@@ -222,7 +224,7 @@ func (cfp *createFixPullRequestsCmd) updatePackageToFixedVersion(packageType, im
 			}
 		}
 	default:
-		return fmt.Errorf("package type: %s is currently not supported", packageType)
+		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 	return nil
 }
@@ -244,12 +246,14 @@ func parseVersionChangeString(fixVersion string) string {
 	return latestVersion
 }
 
+type PackageType string
+
 type FixVersionInfo struct {
 	fixVersion  string
-	packageType string
+	packageType PackageType
 }
 
-func NewFixVersionInfo(newFixVersion, packageType string) *FixVersionInfo {
+func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersionInfo {
 	return &FixVersionInfo{newFixVersion, packageType}
 }
 

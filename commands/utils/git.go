@@ -17,29 +17,29 @@ type GitManager struct {
 
 func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
-	if errorutils.CheckError(err) != nil {
+	if err != nil {
 		return nil, err
 	}
 	return &GitManager{repository: repository, remoteName: remoteName}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
-	err := gm.createAndCheckout(branchName, false)
+	err := gm.createBranchAndCheckout(branchName, false)
 	if err != nil {
 		err = fmt.Errorf("git checkout failed with error: %s", err.Error())
 	}
 	return err
 }
 
-func (gm *GitManager) CreateAndCheckout(branchName string) error {
-	err := gm.createAndCheckout(branchName, true)
+func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
+	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
 		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
 	return err
 }
 
-func (gm *GitManager) createAndCheckout(branchName string, create bool) error {
+func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
 		Branch: plumbing.NewBranchReferenceName(branchName),
@@ -119,7 +119,7 @@ func (gm *GitManager) Push(token string) error {
 	if err != nil {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
 	}
-	return errorutils.CheckError(err)
+	return err
 }
 
 // IsClean returns true if all the files are in Unmodified status.
