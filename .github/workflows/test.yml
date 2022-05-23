@@ -15,13 +15,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
-      # Un-label the 'safe to test' label
-      - name: Un-label 'safe to test'
-        uses: actions-ecosystem/action-remove-labels@v1
-        if: runner.os == 'Linux' && ${{ github.event_name != 'push' }}
-        with:
-          labels: "safe to test"
-
       # Configure prerequisites
       - uses: actions/checkout@v3
         with:
@@ -34,6 +27,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+
+      - name: Go Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       # Run gosec
       - name: Install gosec
@@ -64,8 +65,9 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: runner.os == 'Linux'
+
   # Build and run frogbot current changes for visual sanity check.
-  sanity:
+  sanity-pull-request:
     needs: tests
     if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
@@ -93,3 +95,33 @@ jobs:
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
         run: ./frogbot scan-pull-request
+
+  # Build and run frogbot current changes for visual sanity check.
+  sanity-push:
+    needs: tests
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17.x
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Frogbot
+        run: buildscripts/build.sh
+
+      - name: Create Fix Pull Requests
+        env:
+          JF_URL: ${{ secrets.FROGBOT_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
+          JF_GIT_TOKEN: ${{ secrets.JF_GIT_TOKEN }}
+          JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
+          JF_GIT_EVENT_NAME: ${{ github.event_name }}
+          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
+          JF_GIT_PROVIDER: "github"
+          JF_GIT_OWNER: ${{ github.repository_owner }}
+          JF_GIT_REPO: ${{ github.event.repository.name }}
+        run: ./frogbot create-fix-pull-requests

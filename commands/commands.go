@@ -11,5 +11,12 @@ func GetCommands() []*clitool.Command {
 			Action:  ScanPullRequest,
 			Flags:   []clitool.Flag{},
 		},
+		{
+			Name:    "create-fix-pull-requests",
+			Aliases: []string{"cfpr"},
+			Usage:   "Scan the current branch and create pull requests with fixes if needed",
+			Action:  CreateFixPullRequests,
+			Flags:   []clitool.Flag{},
+		},
 	}
 }

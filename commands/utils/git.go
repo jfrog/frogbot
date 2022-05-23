@@ -1,37 +1,123 @@
 package utils
 
 import (
-	"github.com/jfrog/jfrog-client-go/utils"
+	"fmt"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/jfrog/jfrog-client-go/utils/errorutils"
+	"time"
 )
 
-type gitManager struct {
-	manager utils.GitManager
+type GitManager struct {
+	repository *git.Repository
+	remoteName string
 }
 
-func NewGitManager(dotGitPath string) *gitManager {
-	return &gitManager{manager: *utils.NewGitManager(dotGitPath)}
+func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
+	repository, err := git.PlainOpen(projectPath)
+	if err != nil {
+		return nil, err
+	}
+	return &GitManager{repository: repository, remoteName: remoteName}, nil
 }
 
-func (m *gitManager) CreateBranch(branch string) (string, string, error) {
-	return m.manager.ExecGit("branch", branch)
+func (gm *GitManager) Checkout(branchName string) error {
+	err := gm.createBranchAndCheckout(branchName, false)
+	if err != nil {
+		err = fmt.Errorf("git checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
-func (m *gitManager) Checkout(branch string) (string, string, error) {
-	return m.manager.ExecGit("checkout", branch)
+func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
+	err := gm.createBranchAndCheckout(branchName, true)
+	if err != nil {
+		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+	}
+	return err
 }
 
-func (m *gitManager) Add(fileName string) (string, string, error) {
-	return m.manager.ExecGit("add", fileName)
+func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
+	checkoutConfig := &git.CheckoutOptions{
+		Create: create,
+		Branch: plumbing.NewBranchReferenceName(branchName),
+	}
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(checkoutConfig)
 }
 
-func (m *gitManager) AddAll() (string, string, error) {
-	return m.manager.ExecGit("add", "-A")
+func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	err := gm.addAll()
+	if err != nil {
+		return err
+	}
+	return gm.commit(commitMessage)
 }
 
-func (m *gitManager) Commit(commitMessage string) (string, string, error) {
-	return m.manager.ExecGit("commit", "-m", commitMessage)
+func (gm *GitManager) addAll() error {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
+	return err
 }
 
-func (m *gitManager) Push(remote, branch string) (string, string, error) {
-	return m.manager.ExecGit("push", remote, branch)
+func (gm *GitManager) commit(commitMessage string) error {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "JFrog-Frogbot",
+			Email: "eco-system+frogbot@jfrog.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
+	return err
+}
+
+func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
+	remote, err := gm.repository.Remote(gm.remoteName)
+	if err != nil {
+		return false, errorutils.CheckError(err)
+	}
+	refList, err := remote.List(&git.ListOptions{})
+	if err != nil {
+		return false, errorutils.CheckError(err)
+	}
+	refName := plumbing.NewBranchReferenceName(branchName)
+	for _, ref := range refList {
+		if refName.String() == ref.Name().String() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (gm *GitManager) Push(token string) error {
+	// Pushing to remote
+	err := gm.repository.Push(&git.PushOptions{
+		RemoteName: gm.remoteName,
+		Auth: &http.BasicAuth{
+			Username: "username", // The username can be anything except an empty string
+			Password: token,
+		},
+	})
+	if err != nil {
+		err = fmt.Errorf("git push failed with error: %s", err.Error())
+	}
+	return err
 }

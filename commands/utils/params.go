@@ -2,11 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsclient"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 )
@@ -92,7 +92,10 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 
 func extractGitParamsFromEnv(params *FrogbotParams) error {
 	var err error
+
+	// Non-mandatory Git Api Endpoint
 	_ = readParamFromEnv(GitApiEndpointEnv, &params.ApiEndpoint)
+
 	if params.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return err
 	}
@@ -108,11 +111,17 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
 		return err
 	}
-	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
+	if err = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch); err != nil {
 		return err
 	}
-	return &errMissingEnv{GitPullRequestIDEnv}
+	if eventName := getTrimmedEnv(GitEventName); eventName != "push" {
+		if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
+			params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
+			return err
+		}
+		return &errMissingEnv{GitPullRequestIDEnv}
+	}
+	return nil
 }
 
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
