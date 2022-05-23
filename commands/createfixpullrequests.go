@@ -74,7 +74,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 			}
 			for _, vulnerability := range vulnerabilities {
 				if vulnerability.FixedVersions != nil && len(vulnerability.FixedVersions) > 0 {
-					fixVulnerability, err := cfp.fixVulnerability(params, vulnerability)
+					fixVulnerability, err := cfp.shouldFixVulnerability(params, vulnerability)
 					if err != nil {
 						return nil, err
 					}
@@ -97,7 +97,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 	return fixVersionsMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixVulnerability(params *utils.FrogbotParams, vulnerability formats.VulnerabilityOrViolationRow) (bool, error) {
+func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.FrogbotParams, vulnerability formats.VulnerabilityOrViolationRow) (bool, error) {
 	// In Maven, fix only direct dependencies
 	if vulnerability.ImpactedPackageType == "Maven" {
 		if cfp.mavenDepToPropertyMap == nil {

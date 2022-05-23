@@ -44,6 +44,9 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 		modulePath := strings.TrimPrefix(strings.TrimSuffix(moduleStr, "</module>"), "<module>")
 		modulePath = strings.TrimSpace(modulePath)
 		err = GetVersionProperties(filepath.Join(projectPath, modulePath), depToPropertyMap)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
