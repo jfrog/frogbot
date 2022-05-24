@@ -17,7 +17,7 @@ func (cmd ScanAllPullRequestsCmd) Run(params *utils.FrogbotParams, client vcscli
 }
 
 // Scan pull requests as follows:
-// a. Retrive all open pull requests
+// a. Retrieve all open pull requests
 // b. Find the ones that should be scanned (new PRs or PRs with a 're-scan' comment)
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
@@ -111,7 +111,7 @@ func shouldScanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClie
 			return false, nil
 		}
 	}
-	// This is a new pull request and it therefore should be scanned.
+	// This is a new pull request, and it therefore should be scanned.
 	return true, nil
 }
 

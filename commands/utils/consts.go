@@ -3,7 +3,6 @@ package utils
 type IconName string
 type ImageSource string
 type vcsProvider string
-type frogbotLabel string
 
 // GetGetTitleFunc, a func to determine the title of Frogbot comment
 type GetTitleFunc func(ImageSource) string
@@ -26,11 +25,6 @@ const (
 	GitHub          vcsProvider = "github"
 	GitLab          vcsProvider = "gitlab"
 	BitbucketServer vcsProvider = "bitbucket server"
-
-	// Frogbot label
-	LabelName        frogbotLabel = "🐸 frogbot scan"
-	LabelDescription frogbotLabel = "triggers frogbot scan"
-	LabelColor       frogbotLabel = "4AB548"
 
 	// Frogbot comments
 	RescanRequestComment = "rescan"
