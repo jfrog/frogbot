@@ -28,7 +28,7 @@ pipeline {
         JF_GIT_PROVIDER= "bitbucket"
 
         // [Mandatory]
-        // Bitbucket project namesapce
+        // Bitbucket project namespace
         JF_GIT_OWNER= ""
 
         // [Mandatory]
