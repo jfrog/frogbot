@@ -131,7 +131,7 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	}()
 
 	err := extractGitParamsFromEnv(params)
-	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github' or 'gitlab'")
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucket server'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
 	err = extractGitParamsFromEnv(params)
@@ -145,15 +145,7 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	err = extractGitParamsFromEnv(params)
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "123456"})
-	err = extractGitParamsFromEnv(params)
-	assert.EqualError(t, err, "'JF_GIT_BASE_BRANCH' environment variable is missing")
-
-	SetEnvAndAssert(t, map[string]string{GitBaseBranchEnv: "master"})
-	err = extractGitParamsFromEnv(params)
-	assert.EqualError(t, err, "'JF_GIT_PULL_REQUEST_ID' environment variable is missing")
-
-	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id"})
+	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456"})
 	err = extractGitParamsFromEnv(params)
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
