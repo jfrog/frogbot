@@ -7,13 +7,14 @@ import (
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type ScanAllPullRequestsCmd struct {
 }
 
 func (cmd ScanAllPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	return scanPullRequest(params, client)
+	return scanAllPullRequests(params, client)
 }
 
 // Scan pull requests as follows:
@@ -21,74 +22,27 @@ func (cmd ScanAllPullRequestsCmd) Run(params *utils.FrogbotParams, client vcscli
 // b. Find the ones that should be scanned (new PRs or PRs with a 're-scan' comment)
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-func ScanAllPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func scanAllPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
 	openPullRequests, err := client.ListOpenPullRequests(context.Background(), params.RepoOwner, params.Repo)
 	if err != nil {
 		return err
 	}
 	for _, pr := range openPullRequests {
-		shouldScan, err := shouldScanPullRequest(params, client, int(pr.ID))
-		if err != nil {
-			return err
+		shouldScan, e := shouldScanPullRequest(params, client, int(pr.ID))
+		if e != nil {
+			err = e
+			clientLog.Error(e)
 		}
 		if shouldScan {
-			// Download the pull request source ("from") branch
-			prScanParams := &utils.FrogbotParams{
-				JFrogEnvParams: params.JFrogEnvParams,
-				GitParam: utils.GitParam{
-					GitProvider: params.GitProvider,
-					Token:       params.Token,
-					ApiEndpoint: params.ApiEndpoint,
-					RepoOwner:   params.RepoOwner,
-					Repo:        pr.Source.Repository,
-					BaseBranch:  pr.Source.Name,
-				},
-			}
-			wd, cleanup, err := downloadRepoToTempDir(client, prScanParams)
-			if err != nil {
-				return err
-			}
-			// Cleanup
-			defer func() {
-				e := cleanup()
-				if err == nil {
-					err = e
-				}
-			}()
-			restoreDir, err := utils.Chdir(wd)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				e := restoreDir()
-				if err == nil {
-					err = e
-				}
-			}()
-			// The target branch (to) will be downloaded as part of the Frogbot scan execution
-			prScanParams = &utils.FrogbotParams{
-				JFrogEnvParams: params.JFrogEnvParams,
-				GitParam: utils.GitParam{
-					GitProvider:   params.GitProvider,
-					Token:         params.Token,
-					ApiEndpoint:   params.ApiEndpoint,
-					RepoOwner:     params.RepoOwner,
-					Repo:          pr.Target.Repository,
-					BaseBranch:    pr.Target.Name,
-					PullRequestID: int(pr.ID),
-				},
-				SimplifiedOutput:   true,
-				InstallCommandName: params.InstallCommandName,
-				InstallCommandArgs: params.InstallCommandArgs,
-			}
-			err = scanPullRequest(prScanParams, client)
-			if err != nil {
-				return err
+			e = downloadAndScanPullRequest(pr, params, client)
+			// If error, log it and continue to the next PR.
+			if e != nil {
+				err = e
+				clientLog.Error(e)
 			}
 		}
 	}
-
-	return nil
+	return err
 }
 
 func shouldScanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {
@@ -121,4 +75,57 @@ func isFrogbotRescanComment(comment string) bool {
 
 func isFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource))
+}
+
+func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	// Download the pull request source ("from") branch
+	frogbotParams := &utils.FrogbotParams{
+		JFrogEnvParams: params.JFrogEnvParams,
+		GitParam: utils.GitParam{
+			GitProvider: params.GitProvider,
+			Token:       params.Token,
+			ApiEndpoint: params.ApiEndpoint,
+			RepoOwner:   params.RepoOwner,
+			Repo:        pr.Source.Repository,
+			BaseBranch:  pr.Source.Name,
+		},
+	}
+	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams)
+	if err != nil {
+		return err
+	}
+	// Cleanup
+	defer func() {
+		e := cleanup()
+		if err == nil {
+			err = e
+		}
+	}()
+	restoreDir, err := utils.Chdir(wd)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		e := restoreDir()
+		if err == nil {
+			err = e
+		}
+	}()
+	// The target branch (to) will be downloaded as part of the Frogbot scanPullRequest execution
+	frogbotParams = &utils.FrogbotParams{
+		JFrogEnvParams: params.JFrogEnvParams,
+		GitParam: utils.GitParam{
+			GitProvider:   params.GitProvider,
+			Token:         params.Token,
+			ApiEndpoint:   params.ApiEndpoint,
+			RepoOwner:     params.RepoOwner,
+			Repo:          pr.Target.Repository,
+			BaseBranch:    pr.Target.Name,
+			PullRequestID: int(pr.ID),
+		},
+		SimplifiedOutput:   true,
+		InstallCommandName: params.InstallCommandName,
+		InstallCommandArgs: params.InstallCommandArgs,
+	}
+	return scanPullRequest(frogbotParams, client)
 }
