@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/jfrog/froggit-go v1.2.0
+	github.com/golang/mock v1.6.0
 	github.com/jfrog/gofrog v1.1.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.15.0
 	github.com/jfrog/jfrog-client-go v1.13.1
