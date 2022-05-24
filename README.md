@@ -145,6 +145,12 @@ powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://r
 frogbot-scan:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: manual
+      variables:
+        FROGBOT_CMD: "scan-pull-request"
+    - if: $CI_COMMIT_BRANCH == "main"
+      variables:
+        FROGBOT_CMD: "create-fix-pull-requests"
   when: manual
   variables:
     # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
@@ -195,11 +201,11 @@ frogbot-scan:
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-    - ./frogbot scan-pull-request
+    - ./frogbot ${FROGBOT_CMD}
 
     # For Windows runner:
     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe scan-pull-request
+    # .\frogbot.exe ${FROGBOT_CMD}
 ```
 
 <div id="contributions"></div>
