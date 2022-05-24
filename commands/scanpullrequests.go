@@ -79,7 +79,7 @@ func isFrogbotResultComment(comment string) bool {
 
 func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Download the pull request source ("from") branch
-	prScanParams := &utils.FrogbotParams{
+	frogbotParams := &utils.FrogbotParams{
 		JFrogEnvParams: params.JFrogEnvParams,
 		GitParam: utils.GitParam{
 			GitProvider: params.GitProvider,
@@ -90,7 +90,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 			BaseBranch:  pr.Source.Name,
 		},
 	}
-	wd, cleanup, err := downloadRepoToTempDir(client, prScanParams)
+	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 		}
 	}()
 	// The target branch (to) will be downloaded as part of the Frogbot scanPullRequest execution
-	prScanParams = &utils.FrogbotParams{
+	frogbotParams = &utils.FrogbotParams{
 		JFrogEnvParams: params.JFrogEnvParams,
 		GitParam: utils.GitParam{
 			GitProvider:   params.GitProvider,
@@ -127,5 +127,5 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 		InstallCommandName: params.InstallCommandName,
 		InstallCommandArgs: params.InstallCommandArgs,
 	}
-	return scanPullRequest(prScanParams, client)
+	return scanPullRequest(frogbotParams, client)
 }
