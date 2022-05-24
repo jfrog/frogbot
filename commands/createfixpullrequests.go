@@ -192,20 +192,20 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		properties := cfp.mavenDepToPropertyMap[impactedPackage]
 
 		// Update the package version. This command updates it only if the version is not a reference to a property.
-		updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"} // #nosec G204
+		updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 		updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 		clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-		updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput()
+		updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
 		}
 
 		// Update properties that represent this package's version.
 		for _, property := range properties {
-			updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"} // #nosec G204
+			updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 			updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 			clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-			updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput()
+			updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
 			if err != nil {
 				return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
 			}
