@@ -2,6 +2,9 @@ name: "Frogbot"
 on:
   pull_request_target:
     types: [opened, synchronize]
+  push:
+    branches:
+      - 'main'
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest

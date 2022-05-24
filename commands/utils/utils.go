@@ -10,12 +10,12 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-type errMissingEnv struct {
-	variableName string
+type ErrMissingEnv struct {
+	VariableName string
 }
 
-func (m *errMissingEnv) Error() string {
-	return fmt.Sprintf("'%s' environment variable is missing", m.variableName)
+func (m *ErrMissingEnv) Error() string {
+	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
 }
 
 func Chdir(dir string) (cbk func() error, err error) {

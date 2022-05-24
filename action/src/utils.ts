@@ -44,6 +44,7 @@ export class Utils {
         }
         core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
+        return github.context.eventName
     }
 
     /**
@@ -51,6 +52,16 @@ export class Utils {
      */
     public static async execScanPullRequest() {
         let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
+        if (res !== core.ExitCode.Success) {
+            throw new Error('Frogbot exited with exit code ' + res);
+        }
+    }
+
+    /**
+     * Execute frogbot create-fix-pull-requests command.
+     */
+    public static async execCreateFixPullRequests() {
+        let res: number = await exec(Utils.getExecutableName(), ['create-fix-pull-requests']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }
