@@ -29,7 +29,7 @@ func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Validait scan params
+	// Validate scan params
 	if params.BaseBranch == "" {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
@@ -136,7 +136,7 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotPara
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Downloading repository compleated")
+	clientLog.Debug("Downloading repository completed")
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
