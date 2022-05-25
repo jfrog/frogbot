@@ -42,11 +42,14 @@ function main() {
             yield utils_1.Utils.addToPath();
             switch (eventName) {
                 case "pull_request":
+                case "pull_request_target":
                     yield utils_1.Utils.execScanPullRequest();
                     break;
                 case "push":
                     yield utils_1.Utils.execCreateFixPullRequests();
                     break;
+                default:
+                    core.setFailed(eventName + " event is not supported by Frogbot");
             }
         }
         catch (error) {
