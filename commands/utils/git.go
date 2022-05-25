@@ -26,7 +26,7 @@ func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
 func (gm *GitManager) Checkout(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, false)
 	if err != nil {
-		err = fmt.Errorf("git checkout failed with error: %s", err.Error())
+		err = fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
 	}
 	return err
 }
@@ -40,9 +40,11 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 }
 
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
+	// branchName can be short name (master) or full name (refs/heads/master)
+	shortBranchName := plumbing.ReferenceName(branchName).Short()
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
-		Branch: plumbing.NewBranchReferenceName(branchName),
+		Branch: plumbing.NewBranchReferenceName(shortBranchName),
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
