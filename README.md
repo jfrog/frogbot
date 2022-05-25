@@ -38,7 +38,7 @@ Projects that use one of the following tools to download their dependencies are 
 - Nuget
 - Dotnet
 
-### 🕵️‍♀️ How does pull requests scanning?
+### 🕵️‍♀️ How does pull requests scanning work?
 #### GitHub
 For security reasons, Frogbot is not triggered automatically.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
@@ -64,9 +64,9 @@ After you create a new pull request, the maintainer of the git repository can tr
 #### Bitbucket Server
 After you create a new pull request, Frogbot will automatically scan it. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
 
-1. A developer opens a merge request.
-3. Frogbot is triggered and scans the pull request, and adds a comment with the scan results.
-4. Frogbot can be triggered again following new commits, by adding a comment with the `frogbot scan` text.
+1. A developer opens a pull request.
+2. Frogbot is triggered and scans the pull request, and adds a comment with the scan results.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
 #### Pull request comments
 ##### 👍 No issues
@@ -86,10 +86,10 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
 ## Pull requests opening
-Frogbot scans your Git repository and automatically opens pull requests for uograding vulnerable dependecies to a version with a fix.
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and Bitbucket will be supported soon. Projects that use one of the following tools to download their dependencies are currently supported.
 
-- Npm
+- npm
 - Maven
 - Go
 
@@ -132,7 +132,7 @@ Here's how you install it:
 2. Create a new "frogbot" [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
 
    1. Add people or public teams as reviewers. The chosen reviewers are authorized to trigger Frogbot scan on pull requests.
-   2. Save the JFrog connection details as secrets in the environment with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
+   2. Save the JFrog connection details as secrets in the environment with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**)
 
    ![](images/github-environment.png)
 
@@ -144,7 +144,7 @@ Frogbot is installed on GitLab repositories using GitLab CI.
 Here's how you install it:
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as secrets in GitLab with the following names: JF_UR_, JF_USER and JF_PASSWORD (You can also use JF_ACCESS_TOKEN instead of JF_USER and JF_PASSWORD).
+2. Save the JFrog connection details as secrets in GitLab with the following names: **JF_URL**, **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 3. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repository using the below structure.
 
 **Important Guidelines**
@@ -224,8 +224,8 @@ Frogbot is installed on Bitbucket Server repositories using Jenkins.
 Here's how you install it:
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: JF_URL, JF_USER and JF_PASSWORD (You can also use JF_ACCESS_TOKEN instead of JF_USER and JF_PASSWORD).
-3. Save your Bitbuc Bitbucket access token as a Credential in Jenkins with the BITBUCKET_TOKEN Credential ID.
+2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**, **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
+3. Save your Bitbucket access token as a Credential in Jenkins with the BITBUCKET_TOKEN Credential ID.
 4. Create a Pipeline job in Jenkins with the below Jenkinsfile content.
 5. In the Jenkinsfile, set the values of all the mandatory variables.
 6. In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
@@ -234,6 +234,7 @@ Here's how you install it:
 
 - For npm, pip, pipenv, nuget or dotnet: Make sure to set inside the Jenkinsfile the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
+- Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
 ```groovy
 // Run the job every 5 minutes 
