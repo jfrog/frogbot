@@ -59,6 +59,13 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
+		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
+		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
+		err = gitManager.Checkout(params.BaseBranch)
+		if err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -131,14 +138,6 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return err
 	}
-	defer func() {
-		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
-		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
-		e := gitManager.Checkout(params.BaseBranch)
-		if err == nil {
-			err = e
-		}
-	}()
 
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
