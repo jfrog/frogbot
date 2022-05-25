@@ -40,9 +40,11 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 }
 
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
+	// branchName can be short name (master) or full name (refs/heads/master)
+	shortBranchName := plumbing.ReferenceName(branchName).Short()
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
-		Branch: plumbing.NewBranchReferenceName(branchName),
+		Branch: plumbing.NewBranchReferenceName(shortBranchName),
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
