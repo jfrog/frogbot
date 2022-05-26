@@ -33,9 +33,6 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	if params.BaseBranch == "" {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
-	if params.PullRequestID == 0 {
-		return &utils.ErrMissingEnv{VariableName: utils.GitPullRequestIDEnv}
-	}
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
 	currentScan, err := auditSource(xrayScanParams, params)
