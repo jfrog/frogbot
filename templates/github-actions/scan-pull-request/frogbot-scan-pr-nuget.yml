@@ -2,6 +2,8 @@ name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
+permissions:
+  pull-requests: write
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
