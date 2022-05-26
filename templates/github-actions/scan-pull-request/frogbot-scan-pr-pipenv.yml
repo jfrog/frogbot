@@ -1,4 +1,4 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
@@ -14,15 +14,17 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - uses: actions/setup-dotnet@v2
+      - uses: actions/setup-python@v3
         with:
-          dotnet-version: "3.1.x"
+          python-version: "3.x"
+      - name: Install pipenv
+        run: pipx install pipenv
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Mandatory]
+          # [Optional]
           # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "dotnet restore"
+          JF_INSTALL_DEPS_CMD: "pipenv install"
 
           # [Mandatory]
           # JFrog platform URL
@@ -50,13 +52,13 @@ jobs:
           # JFrog access token with 'read' permissions on Xray service
           # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-          # [Optional, default: "."]
-          # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/project/dir
-
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
           # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
 
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects

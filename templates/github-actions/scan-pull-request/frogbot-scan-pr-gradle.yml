@@ -1,10 +1,7 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
-  push:
-    branches:
-      - 'main'
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -22,6 +19,8 @@ jobs:
         with:
           java-version: "11"
           distribution: "temurin"
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
 
       - uses: jfrog/frogbot@v2
         env:
@@ -53,7 +52,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/pom.xml/dir
+          # JF_WORKING_DIR: path/to/build.gradle/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches

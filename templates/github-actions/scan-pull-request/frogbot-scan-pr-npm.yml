@@ -1,4 +1,4 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
@@ -14,15 +14,16 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - uses: nuget/setup-nuget@v1
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
         with:
-          nuget-version: "5.x"
+          node-version: "16.x"
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Optional]
+          # [Mandatory]
           # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "nuget restore"
+          JF_INSTALL_DEPS_CMD: "npm i"
 
           # [Mandatory]
           # JFrog platform URL
@@ -52,7 +53,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/project/dir
+          # JF_WORKING_DIR: path/to/package.json/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
