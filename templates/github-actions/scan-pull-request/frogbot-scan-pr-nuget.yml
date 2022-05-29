@@ -1,10 +1,9 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
-  push:
-    branches:
-      - 'main'
+permissions:
+  pull-requests: write
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -17,13 +16,16 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - name: Setup Go
-        uses: actions/setup-go@v2
+      - uses: nuget/setup-nuget@v1
         with:
-          go-version: 1.17.x
+          nuget-version: "5.x"
 
       - uses: jfrog/frogbot@v2
         env:
+          # [Optional]
+          # The command that installs the dependencies
+          JF_INSTALL_DEPS_CMD: "nuget restore"
+
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
@@ -52,7 +54,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/go.mod/dir
+          # JF_WORKING_DIR: path/to/project/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches

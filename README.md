@@ -124,20 +124,25 @@ curl -fL https://getcli.jfrog.io?setup | sh
 powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
 ```
 
-### Setting up Frogbot on GitHUb repositories
+### Setting up Frogbot on GitHub repositories
 Frogbot is installed on GitHub repositories using GitHub Actions. 
 Here's how you install it:
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Create a new "frogbot" [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
+2. At your GitHub repository settings, save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**)
+   
+   ![](images/github-repository-secrets.png)
 
-   1. Add people or public teams as reviewers. The chosen reviewers are authorized to trigger Frogbot scan on pull requests.
-   2. Save the JFrog connection details as secrets in the environment with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**)
+3. Make sure GitHub Actions has permissions to create pull requests.
+
+   ![](images/github-pr-permissions.png)
+
+4. Create a new "frogbot" [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) and add people or public teams as reviewers. The chosen reviewers are authorized to trigger Frogbot scan on pull requests.
 
    ![](images/github-environment.png)
 
-3. Use one of these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to create a file named `frogbot.yml`.
-4. Push the `frogbot.yml` file to the `.github/workflows` directory in the root of your GitHub repository.
+5. Use these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
+6. Push the workflow files to the `.github/workflows` directory in the root of your GitHub repository.
 
 ### Setting up Frogbot on GitLab repositories
 Frogbot is installed on GitLab repositories using GitLab CI.
@@ -159,7 +164,10 @@ frogbot-scan:
       when: manual
       variables:
         FROGBOT_CMD: "scan-pull-request"
-    - if: $CI_COMMIT_BRANCH == "main"
+      # Creating fix pull requests will be triggered by any push to the default branch.
+      # You can change it to any other branch you want, for example:
+      # if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
   when: manual

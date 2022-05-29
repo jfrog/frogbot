@@ -1,29 +1,29 @@
-name: "Frogbot"
+name: "Frogbot Fix"
 on:
-  pull_request_target:
-    types: [opened, synchronize]
+  push:
+    # Creating fix pull requests will be triggered by any push to one of the these branches.
+    # You can add or replace to any branch you want to open fix pull requests for.
+    branches:
+      - "main"
+      - "master"
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
-  scan-pull-request:
+  create-fix-pull-requests:
     runs-on: ubuntu-latest
-    # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
-    # "frogbot" GitHub environment can approve the pull request to be scanned.
-    environment: frogbot
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - uses: actions/setup-dotnet@v2
+      - name: Set up Java
+        uses: actions/setup-java@v3
         with:
-          dotnet-version: "3.1.x"
+          java-version: "11"
+          distribution: "temurin"
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Mandatory]
-          # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "dotnet restore"
-
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
@@ -52,7 +52,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/project/dir
+          # JF_WORKING_DIR: path/to/pom.xml/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches

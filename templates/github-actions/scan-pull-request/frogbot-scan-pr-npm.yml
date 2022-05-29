@@ -1,7 +1,9 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
+permissions:
+  pull-requests: write
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -14,16 +16,17 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - name: Set up Java
-        uses: actions/setup-java@v3
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
         with:
-          java-version: "11"
-          distribution: "temurin"
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+          node-version: "16.x"
 
       - uses: jfrog/frogbot@v2
         env:
+          # [Mandatory]
+          # The command that installs the dependencies
+          JF_INSTALL_DEPS_CMD: "npm i"
+
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
@@ -52,7 +55,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/build.gradle/dir
+          # JF_WORKING_DIR: path/to/package.json/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches

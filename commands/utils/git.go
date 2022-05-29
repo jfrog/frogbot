@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
@@ -66,6 +67,14 @@ func (gm *GitManager) addAll() error {
 	if err != nil {
 		return err
 	}
+
+	// AddWithOptions doesn't exclude files in .gitignore, so we add their contents as exclusions explicitly.
+	ignorePatterns, err := gitignore.ReadPatterns(worktree.Filesystem, nil)
+	if err != nil {
+		return err
+	}
+	worktree.Excludes = append(worktree.Excludes, ignorePatterns...)
+
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
 		err = fmt.Errorf("git commit failed with error: %s", err.Error())
