@@ -93,6 +93,11 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	vcsProvider, err = extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.GitLab, vcsProvider)
+
+	SetEnvAndAssert(t, map[string]string{GitProvider: string(BitbucketServer)})
+	vcsProvider, err = extractVcsProviderFromEnv()
+	assert.NoError(t, err)
+	assert.Equal(t, vcsutils.BitbucketServer, vcsProvider)
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {

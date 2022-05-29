@@ -1,6 +1,7 @@
 __tests__/runner/*
 frogbot
 frogbot.exe
+*mock*
 coverage
 .idea
 .vscode

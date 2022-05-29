@@ -351,7 +351,7 @@ func TestScanPullRequestSubdir(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
-	restoreEnv := verifyEnv(t)
+	_, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
 	cleanUp := prepareTestEnvironment(t, projectName)
@@ -440,8 +440,8 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) func() {
-	url := os.Getenv(utils.JFrogUrlEnv)
+func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
+	url := strings.TrimSuffix(os.Getenv(utils.JFrogUrlEnv), "/")
 	username := os.Getenv(utils.JFrogUserEnv)
 	password := os.Getenv(utils.JFrogPasswordEnv)
 	token := os.Getenv(utils.JFrogTokenEnv)
@@ -451,7 +451,13 @@ func verifyEnv(t *testing.T) func() {
 	if token == "" && (username == "" || password == "") {
 		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", utils.JFrogTokenEnv, utils.JFrogUserEnv, utils.JFrogPasswordEnv))
 	}
-	return func() {
+	params.Server.Url = url
+	params.Server.XrayUrl = url + "/xray/"
+	params.Server.ArtifactoryUrl = url + "/artifactory/"
+	params.Server.User = username
+	params.Server.Password = password
+	params.Server.AccessToken = token
+	restoreFunc = func() {
 		utils.SetEnvAndAssert(t, map[string]string{
 			utils.JFrogUrlEnv:      url,
 			utils.JFrogTokenEnv:    token,
@@ -459,4 +465,5 @@ func verifyEnv(t *testing.T) func() {
 			utils.JFrogPasswordEnv: password,
 		})
 	}
+	return
 }
