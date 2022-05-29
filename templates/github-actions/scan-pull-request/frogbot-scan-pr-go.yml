@@ -1,7 +1,9 @@
-name: "Frogbot"
+name: "Frogbot Scan PR"
 on:
   pull_request_target:
     types: [opened, synchronize]
+permissions:
+  pull-requests: write
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -14,18 +16,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - uses: actions/setup-python@v3
+      - name: Setup Go
+        uses: actions/setup-go@v2
         with:
-          python-version: "3.x"
-      - name: Install pipenv
-        run: pipx install pipenv
+          go-version: 1.17.x
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Optional]
-          # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "pipenv install"
-
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
@@ -52,13 +49,13 @@ jobs:
           # JFrog access token with 'read' permissions on Xray service
           # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/go.mod/dir
+
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
           # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
-
-          # [Optional, default: "."]
-          # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/project/dir
 
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects

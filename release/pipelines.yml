@@ -57,6 +57,9 @@ pipelines:
             - jf c add internal --url=$int_entplus_deployer_url --user=$int_entplus_deployer_user --password=$int_entplus_deployer_apikey
             - jf goc --repo-resolve ecosys-go-virtual
 
+            # Generate mocks
+            - go generate ./...
+            
             # Audit
             - jf audit --fail=false
 
