@@ -6,8 +6,8 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/jfrog/froggit-go v1.2.0
 	github.com/jfrog/gofrog v1.1.1
-	github.com/jfrog/jfrog-cli-core/v2 v2.14.1
-	github.com/jfrog/jfrog-client-go v1.13.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.15.0
+	github.com/jfrog/jfrog-client-go v1.13.1
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli/v2 v2.4.0
 )
