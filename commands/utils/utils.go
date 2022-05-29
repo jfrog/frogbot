@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto"
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -50,4 +52,15 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 		clientLog.Debug(err.Error())
 		return
 	}
+}
+
+func Md5Hash(values ...string) (string, error) {
+	hash := crypto.MD5.New()
+	for _, ob := range values {
+		_, err := fmt.Fprint(hash, ob)
+		if err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

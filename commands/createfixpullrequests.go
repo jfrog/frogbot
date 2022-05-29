@@ -3,16 +3,15 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"os/exec"
-	"strings"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os/exec"
+	"strings"
 )
 
 type CreateFixPullRequestsCmd struct {
@@ -122,9 +121,12 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.Frogbo
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
-	// Package names in Maven usually contain colons, which are not allowed in a branch name
-	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	fixBranchName := fmt.Sprintf("%s-%s-%s-%s", "frogbot", fixVersionInfo.packageType, fixedPackageName, fixVersionInfo.fixVersion)
+	uniqueString, err := utils.Md5Hash("frogbot", params.BaseBranch, impactedPackage, fixVersionInfo.fixVersion)
+	if err != nil {
+		return err
+	}
+	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
+	fixBranchName := fmt.Sprintf("%s-%s-%s", "frogbot", impactedPackage, uniqueString)
 	exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
 	if err != nil {
 		return err

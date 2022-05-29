@@ -86,3 +86,36 @@ func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 		}
 	}
 }
+
+func TestMd5Hash(t *testing.T) {
+	tests := []struct {
+		values       []string
+		expectedHash string
+	}{
+		{[]string{"frogbot", "dev", "gopkg.in/yaml.v3", "3.0.0"},
+			"d61bde82dc594e5ccc5a042fe224bf7c"},
+
+		{[]string{"frogbot", "master", "gopkg.in/yaml.v3", "3.0.0"},
+			"41405528994061bd108e3bbd4c039a03"},
+
+		{[]string{"frogbot", "master", "gopkg.in/yaml.v3", "4.0.0"},
+			"54d9e69ea1cba0c009445ad94778c083"},
+
+		{[]string{"frogbot", "master", "go", "1.17"},
+			"cedc1e5462e504fc992318d24e343e48"},
+
+		{[]string{"frogbot", "master", "go", "17.1"},
+			"67c768266553d80deb21fe6e2e9ec652"},
+
+		{[]string{"frogbot", "frogbot-Go-golang.org/x/crypto-0.0.0-20220314234659-1baeb1ce4c0b", "golang.org/x/crypto", "0.0.0-20220314234659-1baeb1ce4c0b"},
+			"a7f1c0ffb51035f860521ce11ac38288"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expectedHash, func(t *testing.T) {
+			hash, err := Md5Hash(test.values...)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedHash, hash)
+		})
+	}
+}
