@@ -121,12 +121,11 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.Frogbo
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, params *utils.FrogbotParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
-	uniqueString, err := utils.Md5Hash("frogbot", params.BaseBranch, impactedPackage, fixVersionInfo.fixVersion)
+	fixBranchName, err := generateFixBranchName(params.BaseBranch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
 	}
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	fixBranchName := fmt.Sprintf("%s-%s-%s", "frogbot", impactedPackage, uniqueString)
+
 	exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
 	if err != nil {
 		return err
@@ -215,6 +214,17 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 	return nil
+}
+
+func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {
+	uniqueString, err := utils.Md5Hash("frogbot", baseBranch, impactedPackage, fixVersion)
+	if err != nil {
+		return "", err
+	}
+	// Package names in Maven usually contain colons, which are not allowed in a branch name
+	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
+	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
+	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
 ///      1.0         --> 1.0 ≤ x

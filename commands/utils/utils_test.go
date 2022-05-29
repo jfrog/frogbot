@@ -109,6 +109,12 @@ func TestMd5Hash(t *testing.T) {
 
 		{[]string{"frogbot", "frogbot-Go-golang.org/x/crypto-0.0.0-20220314234659-1baeb1ce4c0b", "golang.org/x/crypto", "0.0.0-20220314234659-1baeb1ce4c0b"},
 			"a7f1c0ffb51035f860521ce11ac38288"},
+
+		{[]string{"frogbot"},
+			"99990025ad24adf5d780bbed740a2868"},
+
+		{[]string{""},
+			"d41d8cd98f00b204e9800998ecf8427e"},
 	}
 
 	for _, test := range tests {
