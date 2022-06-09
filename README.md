@@ -393,11 +393,6 @@ pipelines:
 
             # Uncomment the below options if you'd like to use them.
 
-            # [Mandatory if JF_ACCESS_TOKEN is not provided]
-            # JFrog user and password with 'read' permissions for Xray
-            #JF_USER: credentials("JF_USER")
-            #JF_PASSWORD: credentials("JF_PASSWORD")
-
             # [Optional, default: "."]
             # Relative path to the project in the git repository
             # JF_WORKING_DIR: path/to/project/dir
