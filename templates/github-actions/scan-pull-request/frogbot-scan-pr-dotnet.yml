@@ -27,7 +27,7 @@ jobs:
           JF_INSTALL_DEPS_CMD: "dotnet restore"
 
           # [Mandatory]
-          # JFrog platform URL
+          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
 
           # [Mandatory if JF_ACCESS_TOKEN is not provided]
