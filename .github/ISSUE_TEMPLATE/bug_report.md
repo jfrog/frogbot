@@ -23,7 +23,7 @@ If applicable, add screenshots to help explain your problem.
 - Frogbot version:
 - Operating system:
 - JFrog Artifactory version:
-- JFrog Xray version:
+- JFrog Xray version (version 3.29.0 or above is required):
 
 **Additional context**
 Add any other context about the problem here.

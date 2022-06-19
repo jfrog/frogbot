@@ -25,7 +25,7 @@ Frogbot is a Git bot that does the following:
 
 ## Pull requests scanning
 ### General 
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
+Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 or above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 For pull requests scanning, please note that **GitHub**, **GitLab** and **Bitbucket Server** are supported.
 Projects that use one of the following tools to download their dependencies are currently supported.
 
@@ -177,7 +177,7 @@ frogbot-scan:
     JF_INSTALL_DEPS_CMD: ""
 
     # [Mandatory]
-    # JFrog platform URL
+    # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
     JF_URL: $JF_URL
 
     # [Mandatory if JF_ACCESS_TOKEN is not provided]
@@ -261,7 +261,7 @@ pipeline {
         JF_INSTALL_DEPS_CMD= ""
 
         // [Mandatory]
-        // JFrog platform URL
+        // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
         JF_URL= credentials("JF_URL")
 
         // [Mandatory if JF_ACCESS_TOKEN is not provided]
