@@ -41,7 +41,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	if params.IncludeAllScan == "TRUE" {
-		clientLog.Debug("Include all vulnerabilites scan is on")
+		clientLog.Info("Include all vulnerabilites scan is on")
 		vulnerabilitiesRows = createAllVulnerabilitiesRows(currentScan)
 	} else {
 		// Audit target code
@@ -79,7 +79,6 @@ func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse
 	return vulnerabilitiesRows
 }
 
-// Create vulnerabilities rows. The rows should contain All the issues that was added by this PR
 func createAllVulnerabilitiesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
