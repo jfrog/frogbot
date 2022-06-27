@@ -53,6 +53,9 @@ const (
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 	WatchesDelimiter    = ","
 
+	//Functionality Environment Variables
+	IncludeAllScanEnv = "JF_INCLUDE_ALL_SCAN"
+
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"

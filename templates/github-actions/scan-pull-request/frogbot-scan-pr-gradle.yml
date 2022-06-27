@@ -53,13 +53,17 @@ jobs:
           # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
           # [Optional, default: "."]
-          # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/build.gradle/dir
+            # Relative path to the project in the git repository
+            # JF_WORKING_DIR: path/to/build.gradle/dir
 
-          # [Optional]
-          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-          # [Optional]
-          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-          # JF_PROJECT: <project-key>
+            # [Optional]
+            # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+            # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Show all vulnerabilities
+          # JF_INCLUDE_ALL_SCAN: "TRUE"
