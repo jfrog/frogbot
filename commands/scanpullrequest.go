@@ -79,7 +79,6 @@ func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse
 	return vulnerabilitiesRows
 }
 
-// Create vulnerabilities rows. The rows should contain All the issues that was added by this PR
 func createAllVulnerabilitiesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
