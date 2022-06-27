@@ -16,6 +16,7 @@ type FrogbotParams struct {
 	GitParam
 	WorkingDirectory   string
 	InstallCommandName string
+	IncludeAllScan     string
 	InstallCommandArgs []string
 	SimplifiedOutput   bool
 }
@@ -120,6 +121,7 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
+	params.IncludeAllScan = getTrimmedEnv(IncludeAllScanEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
 		return
