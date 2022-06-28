@@ -127,4 +127,5 @@ jobs:
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
+          JF_INCLUDE_ALL_SCAN: "TRUE"
         run: ./frogbot create-fix-pull-requests
