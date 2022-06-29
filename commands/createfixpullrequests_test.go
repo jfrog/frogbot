@@ -1,14 +1,12 @@
 package commands
 
 import (
-	"github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestCreateFixPullRequests(t *testing.T) {
 	testCreateFixPullRequests(t, "", "go-proj")
-	rpmutils.Vercmp("", "")
 }
 
 ///      1.0         --> 1.0 ≤ x
