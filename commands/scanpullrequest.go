@@ -176,14 +176,14 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 
 func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []formats.VulnerabilityOrViolationRow) {
 	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, false, false)
+	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, false)
 	if err != nil {
 		return
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
-	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, false, false)
+	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, false)
 	if err != nil {
 		return
 	}
@@ -197,14 +197,14 @@ func getNewViolations(previousScan, currentScan services.ScanResponse) (newViola
 
 func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
 	existsVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, false, false)
+	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, false)
 	if err != nil {
 		return
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
 	}
-	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, false, false)
+	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, false)
 	if err != nil {
 		return
 	}
