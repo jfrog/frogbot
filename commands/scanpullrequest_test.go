@@ -154,6 +154,45 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	assert.Len(t, rows, 0)
 }
 
+func TestGetAllVulnerabilities(t *testing.T) {
+	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
+	currentScan := services.ScanResponse{
+		Vulnerabilities: []services.Vulnerability{
+			{
+				IssueId:    "XRAY-1",
+				Summary:    "summary-1",
+				Severity:   "high",
+				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+			},
+			{
+				IssueId:    "XRAY-2",
+				Summary:    "summary-2",
+				Severity:   "low",
+				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+			},
+		},
+	}
+
+	// Run createAllVulnerabilitiesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
+	rows := createAllVulnerabilitiesRows([]services.ScanResponse{currentScan})
+	assert.Len(t, rows, 4)
+	assert.Equal(t, "XRAY-1", rows[0].IssueId)
+	assert.Equal(t, "high", rows[0].Severity)
+	assert.Equal(t, "XRAY-1", rows[1].IssueId)
+	assert.Equal(t, "high", rows[1].Severity)
+	assert.Equal(t, "XRAY-2", rows[2].IssueId)
+	assert.Equal(t, "low", rows[2].Severity)
+	assert.Equal(t, "XRAY-2", rows[3].IssueId)
+	assert.Equal(t, "low", rows[3].Severity)
+
+	impactedPackageOne := rows[0].ImpactedPackageName
+	impactedPackageTwo := rows[1].ImpactedPackageName
+	assert.ElementsMatch(t, []string{"component-A", "component-B"}, []string{impactedPackageOne, impactedPackageTwo})
+	impactedPackageThree := rows[2].ImpactedPackageName
+	impactedPackageFour := rows[3].ImpactedPackageName
+	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageThree, impactedPackageFour})
+}
+
 func TestGetNewVulnerabilities(t *testing.T) {
 	// Previous scan with only one vulnerability - XRAY-1
 	previousScan := services.ScanResponse{
