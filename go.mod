@@ -10,7 +10,7 @@ require (
 	github.com/jfrog/jfrog-cli-core/v2 v2.15.2
 	github.com/jfrog/jfrog-client-go v1.14.0
 	github.com/stretchr/testify v1.7.2
-	github.com/urfave/cli/v2 v2.4.0סד
+	github.com/urfave/cli/v2 v2.4.0
 	github.com/nats-io/nats-streaming-server v0.21.0
 )
 
