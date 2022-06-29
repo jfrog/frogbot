@@ -368,20 +368,20 @@ pipelines:
 
             # [Mandatory]
             # JFrog platform URL
-            JF_URL: int_jfrogPlatform_url
+            JF_URL: $int_jfrogPlatform_url
 
             # [Mandatory if JF_USER and JF_PASSWORD are not provided]
             # JFrog access token with 'read' permissions for Xray
-            JF_ACCESS_TOKEN: int_jfrogPlatform_accessToken
+            JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
 
             # [Mandatory]
             # Bitbucket accesses token with the following permissions 
-            JF_GIT_TOKEN: int_bitbucket_token
+            JF_GIT_TOKEN: $int_bitbucket_token
             JF_GIT_PROVIDER: "bitbucketServer"
 
             # [Mandatory]
             # API endpoint to Bitbucket server
-            JF_GIT_API_ENDPOINT: int_bitbucket_url
+            JF_GIT_API_ENDPOINT: $int_bitbucket_url
 
             # [Mandatory]
             # Bitbucket project namespace
