@@ -150,7 +150,7 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 		return vcsutils.GitHub, nil
 	case string(GitLab):
 		return vcsutils.GitLab, nil
-	case string(BitbucketServer):
+	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
 	}
 
