@@ -8,8 +8,6 @@ import (
 
 func TestCreateFixPullRequests(t *testing.T) {
 	testCreateFixPullRequests(t, "", "go-proj")
-	rpmutils.Vercmp("", "")
-
 }
 
 ///      1.0         --> 1.0 ≤ x
