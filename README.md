@@ -72,12 +72,13 @@ After you create a new pull request, Frogbot will automatically scan it. The sca
 ##### 👍 No issues
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
+[![](resources/noVulnerabilityBanner.png)](#-no-issues)
 
 ##### 👎 Issues were found
+
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
+[![](/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
 |                                            SEVERITY                                             | IMPACTED PACKAGE                         | VERSION | FIXED VERSIONS | COMPONENT                                | COMPONENT VERSION | CVE            |
 | :---------------------------------------------------------------------------------------------: | ---------------------------------------- | ------- | -------------- | ---------------------------------------- | :---------------: | -------------- |
