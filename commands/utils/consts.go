@@ -54,7 +54,7 @@ const (
 	WatchesDelimiter    = ","
 
 	//Functionality Environment Variables
-	IncludeAllScanEnv = "JF_INCLUDE_ALL_SCAN"
+	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +

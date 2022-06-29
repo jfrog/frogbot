@@ -40,16 +40,16 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		return err
 	}
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	if params.IncludeAllScan == "TRUE" {
+	if params.IncludeAllVulnerabilities == "TRUE" {
 		clientLog.Info("Include all vulnerabilities scan is on")
-		vulnerabilitiesRows = createAllVulnerabilitiesRows(currentScan)
+		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {
 		// Audit target code
 		previousScan, err := auditTarget(client, xrayScanParams, params)
 		if err != nil {
 			return err
 		}
-		vulnerabilitiesRows = createVulnerabilitiesRows(previousScan, currentScan)
+		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
 	}
 	clientLog.Info("Xray scan completed")
 
@@ -67,7 +67,7 @@ func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSe
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
 		if len(currentScan[i].Violations) > 0 {
@@ -79,8 +79,8 @@ func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse
 	return vulnerabilitiesRows
 }
 
-// Create vulnerabilities rows. The rows should contain All the issues that was added by this PR
-func createAllVulnerabilitiesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+// Create vulnerabilities rows. The rows should contain All the issues that were found in this PR
+func createAllIssuesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
 		if len(currentScan[i].Violations) > 0 {

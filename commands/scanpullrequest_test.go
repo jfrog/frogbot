@@ -73,8 +73,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 violation exists in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
 	assert.Equal(t, "low", rows[0].Severity)
@@ -112,8 +112,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-1", rows[0].IssueId)
 	assert.Equal(t, "high", rows[0].Severity)
@@ -149,8 +149,8 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 		Violations: []services.Violation{},
 	}
 
-	// Run createVulnerabilitiesRows and expect no violations in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect no violations in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 0)
 }
 
@@ -173,8 +173,8 @@ func TestGetAllVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run createAllVulnerabilitiesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows := createAllVulnerabilitiesRows([]services.ScanResponse{currentScan})
+	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
+	rows := createAllIssuesRows([]services.ScanResponse{currentScan})
 	assert.Len(t, rows, 4)
 	assert.Equal(t, "XRAY-1", rows[0].IssueId)
 	assert.Equal(t, "high", rows[0].Severity)
@@ -222,8 +222,8 @@ func TestGetNewVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
 	assert.Equal(t, "low", rows[0].Severity)
@@ -259,8 +259,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-1", rows[0].IssueId)
 	assert.Equal(t, "high", rows[0].Severity)
@@ -294,8 +294,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 		Vulnerabilities: []services.Vulnerability{},
 	}
 
-	// Run createVulnerabilitiesRows and expect no vulnerability in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect no vulnerability in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 0)
 }
 
