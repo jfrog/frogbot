@@ -7,10 +7,11 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/froggit-go v1.2.0
 	github.com/jfrog/gofrog v1.1.2
-	github.com/jfrog/jfrog-cli-core/v2 v2.16.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.15.2
 	github.com/jfrog/jfrog-client-go v1.14.0
 	github.com/stretchr/testify v1.7.2
-	github.com/urfave/cli/v2 v2.10.2
+	github.com/urfave/cli/v2 v2.4.0סד
+	github.com/nats-io/nats-streaming-server v0.21.0
 )
 
 require (
@@ -73,7 +74,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
