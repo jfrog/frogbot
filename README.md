@@ -75,7 +75,6 @@ If no new vulnerabilities are found, Frogbot automatically adds the following co
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
 ##### 👎 Issues were found
-
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
