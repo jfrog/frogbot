@@ -272,7 +272,7 @@ pipeline {
         // [Mandatory]
         // Bitbucket accesses token with the following permissions 
         JF_GIT_TOKEN= credentials("BITBUCKET_TOKEN")
-        JF_GIT_PROVIDER= "bitbucket"
+        JF_GIT_PROVIDER= "bitbucketServer"
 
         // [Mandatory]
         // Bitbucket project namespace

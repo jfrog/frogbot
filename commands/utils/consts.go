@@ -24,7 +24,7 @@ const (
 	// VCS providers params
 	GitHub          vcsProvider = "github"
 	GitLab          vcsProvider = "gitlab"
-	BitbucketServer vcsProvider = "bitbucket server"
+	BitbucketServer vcsProvider = "bitbucketServer"
 
 	// Frogbot comments
 	RescanRequestComment = "rescan"
