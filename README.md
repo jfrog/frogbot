@@ -244,7 +244,7 @@ frogbot-scan:
 ```
 
 ### Setting up Frogbot on Bitbucket Server repositories
-Frogbot is installed on Bitbucket Server repositories JFrog Pipelines or Jenkins.
+Frogbot is installed on Bitbucket Server repositories using JFrog Pipelines or Jenkins.
 #### Using JFrog Pipelines
 Here's how you install it using JFrog Pipelines:
 
