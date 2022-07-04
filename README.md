@@ -44,9 +44,8 @@ For security reasons, Frogbot is not triggered automatically.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
 from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
 Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
-report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is used.
-JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
-request.
+report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 1. A developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
@@ -62,9 +61,8 @@ For security reasons, Frogbot is not triggered automatically.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
 from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
 Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
-report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is used.
-JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
-request.
+report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 1. A developer opens a merge request.
 2. A maintainer of the repository triggers the manual **frogbot-scan** job.
@@ -76,10 +74,8 @@ request.
 
 After you create a new pull request, Frogbot will automatically scan it. The scan output will include only new
 vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull
-request creation, will not be included in the report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is
-used.
-JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
-request.
+request creation, will not be included in the report. In order to include all of the vulnerabilities in the report,
+including older ones that weren't added by this PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 1. A developer opens a pull request.
 2. Frogbot is triggered and scans the pull request, and adds a comment with the scan results.
