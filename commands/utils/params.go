@@ -126,7 +126,7 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	includeAllIssues := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
 	params.IncludeAllVulnerabilities, err = strconv.ParseBool(includeAllIssues)
 	if err != nil {
-		log.Info("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
+		log.Info("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues, "error is: ", err)
 		params.IncludeAllVulnerabilities = false
 	}
 	installCommand := getTrimmedEnv(InstallCommandEnv)
