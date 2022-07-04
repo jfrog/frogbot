@@ -16,7 +16,7 @@ type FrogbotParams struct {
 	GitParam
 	WorkingDirectory          string
 	InstallCommandName        string
-	IncludeAllVulnerabilities string
+	IncludeAllVulnerabilities bool
 	InstallCommandArgs        []string
 	SimplifiedOutput          bool
 }
@@ -121,7 +121,12 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
-	params.IncludeAllVulnerabilities = getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
+	toIncludeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
+	if strings.ToUpper(toIncludeAllVulnerabilities) == "TRUE" {
+		params.IncludeAllVulnerabilities = true
+	} else {
+		params.IncludeAllVulnerabilities = false
+	}
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
 		return
