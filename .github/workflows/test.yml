@@ -98,7 +98,7 @@ jobs:
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
-          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE" // OPTIONAL
+          JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
         run: ./frogbot scan-pull-request
 
   # Build and run frogbot current changes for visual sanity check.
