@@ -41,8 +41,7 @@ Projects that use one of the following tools to download their dependencies are 
 ### 🕵️‍♀️ How does pull requests scanning work?
 #### GitHub
 For security reasons, Frogbot is not triggered automatically.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
-from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
+After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
 Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
@@ -220,33 +219,124 @@ frogbot-scan:
     # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Optional, default: "."]
-     # Relative path to the project in the git repository
-     # JF_WORKING_DIR: path/to/project/dir
+    # Relative path to the project in the git repository
+    # JF_WORKING_DIR: path/to/project/dir
 
-     # [Optional]
-     # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-     # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+    # [Optional]
+    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+    # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-     # [Optional]
-     # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-     # JF_PROJECT: <project-key>
+    # [Optional]
+    # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+    # JF_PROJECT: <project-key>
 
-     # [Optional, default: "FALSE"]
-     # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-     # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+    # [Optional, default: "FALSE"]
+    # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+    # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
   script:
-     # For Linux / MacOS runner:
-     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-     - ./frogbot ${FROGBOT_CMD}
+    # For Linux / MacOS runner:
+    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+    - ./frogbot ${FROGBOT_CMD}
 
-     # For Windows runner:
-     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-     # .\frogbot.exe ${FROGBOT_CMD}
+    # For Windows runner:
+    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+    # .\frogbot.exe ${FROGBOT_CMD}
 ```
 
 ### Setting up Frogbot on Bitbucket Server repositories
-Frogbot is installed on Bitbucket Server repositories using Jenkins.
-Here's how you install it:
+Frogbot is installed on Bitbucket Server repositories JFrog Pipelines or Jenkins.
+#### Using JFrog Pipelines
+Here's how you install it using JFrog Pipelines:
+
+1. Make sure you have the connection details of your JFrog environment.
+2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration) named **jfrogPlatform**.
+3. Save your Bitbucket access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with the **token** as key and the Bitbucket access token as value.
+4. Create a Pipelines job with the below pipelines.yml content.
+5. In the pipelines.yml, make sure to set values for all the mandatory variables.
+6. In the pipelines.yml, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
+
+**Important Guidelines**
+
+- For npm, pip, pipenv, nuget or dotnet: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
+
+```yml
+resources:
+  - name: cron_trigger
+    type: CronTrigger
+    configuration:
+      interval: '*/5 * * * *'     # Every 5 minutes
+
+ 
+pipelines:
+  - name: Frogbot
+    steps:
+      - name: Frogbot_Scan
+        type: Bash # For Windows runner: PowerShell
+        configuration:
+          integrations:
+            - name: jfrogPlatform
+            - name: bitbucket
+          inputResources:
+            - name: cron_trigger
+          environmentVariables:
+            # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
+            # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+            JF_INSTALL_DEPS_CMD: ""
+
+            # [Mandatory]
+            # JFrog platform URL
+            JF_URL: $int_jfrogPlatform_url
+
+            # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+            # JFrog access token with 'read' permissions for Xray
+            JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+
+            # [Mandatory]
+            # Bitbucket accesses token with the following permissions 
+            JF_GIT_TOKEN: $int_bitbucket_token
+            JF_GIT_PROVIDER: "bitbucketServer"
+
+            # [Mandatory]
+            # API endpoint to Bitbucket server
+            JF_GIT_API_ENDPOINT: $int_bitbucket_url
+
+            # [Mandatory]
+            # Bitbucket project namespace
+            JF_GIT_OWNER: ""
+
+            # [Mandatory]
+            # Bitbucket repository name
+            JF_GIT_REPO: ""
+
+            # Uncomment the below options if you'd like to use them.
+
+            # [Optional, default: "."]
+             # Relative path to the project in the git repository
+             # JF_WORKING_DIR: path/to/project/dir
+
+             # [Optional]
+             # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+             # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+             # [Optional]
+             # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+             # JF_PROJECT: <project-key>
+
+             # [Optional, default: "FALSE"]
+             # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+             # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+        execution:
+           onExecute:
+              - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+              - ./frogbot scan-pull-requests
+              # For Windows runner:
+              # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+              # - .\frogbot.exe scan-pull-requests
+```
+
+#### Using Jenkins
+Here's how you install it using Jenkins:
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**, **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
@@ -289,7 +379,7 @@ pipeline {
         // [Mandatory]
         // Bitbucket accesses token with the following permissions 
         JF_GIT_TOKEN= credentials("BITBUCKET_TOKEN")
-        JF_GIT_PROVIDER= "bitbucket"
+        JF_GIT_PROVIDER= "bitbucketServer"
 
         // [Mandatory]
         // Bitbucket project namespace
@@ -310,20 +400,20 @@ pipeline {
         // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
 
         // [Optional, default: "."]
-       // Relative path to the project in the git repository
-       // JF_WORKING_DIR= path/to/project/dir
+        // Relative path to the project in the git repository
+        // JF_WORKING_DIR= path/to/project/dir
 
-       // [Optional]
-       // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-       // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
+        // [Optional]
+        // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+        // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
 
-       // [Optional]
-       // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-       // JF_PROJECT= <project-key>
+        // [Optional]
+        // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+        // JF_PROJECT= <project-key>
 
-       // [Optional, default: "FALSE"]
-       // Displays all existing vulnerabilities, including the ones that were added by the pull request.
-       // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
+        // [Optional, default: "FALSE"]
+        // Displays all existing vulnerabilities, including the ones that were added by the pull request.
+        // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
     }
 
    stages {
