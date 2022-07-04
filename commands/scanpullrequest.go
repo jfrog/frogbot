@@ -40,7 +40,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		return err
 	}
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	if params.IncludeAllVulnerabilities == true {
+	if params.IncludeAllVulnerabilities {
 		clientLog.Info("Include all vulnerabilities scan is on")
 		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {

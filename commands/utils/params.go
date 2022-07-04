@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -122,8 +123,10 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
 	var err error
-	params.IncludeAllVulnerabilities, err = strconv.ParseBool(getTrimmedEnv(IncludeAllVulnerabilitiesEnv))
+	includeAllIssues := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
+	params.IncludeAllVulnerabilities, err = strconv.ParseBool(includeAllIssues)
 	if err != nil {
+		log.Info("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
 		params.IncludeAllVulnerabilities = false
 	}
 	installCommand := getTrimmedEnv(InstallCommandEnv)
