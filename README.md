@@ -41,7 +41,12 @@ Projects that use one of the following tools to download their dependencies are 
 ### 🕵️‍♀️ How does pull requests scanning work?
 #### GitHub
 For security reasons, Frogbot is not triggered automatically.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
+After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
+from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
+Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
+report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is used.
+JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
+request.
 
 1. A developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
@@ -52,8 +57,14 @@ After you create a new pull request, the maintainer of the git repository can tr
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
 #### GitLab
+
 For security reasons, Frogbot is not triggered automatically.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
+After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
+from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
+Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
+report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is used.
+JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
+request.
 
 1. A developer opens a merge request.
 2. A maintainer of the repository triggers the manual **frogbot-scan** job.
@@ -62,7 +73,13 @@ After you create a new pull request, the maintainer of the git repository can tr
    [![GitLab CI Run Button](./images/gitlab-run-button.png)]
 
 #### Bitbucket Server
-After you create a new pull request, Frogbot will automatically scan it. The scan output will include only new vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the report.
+
+After you create a new pull request, Frogbot will automatically scan it. The scan output will include only new
+vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull
+request creation, will not be included in the report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is
+used.
+JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
+request.
 
 1. A developer opens a pull request.
 2. Frogbot is triggered and scans the pull request, and adds a comment with the scan results.
@@ -207,24 +224,28 @@ frogbot-scan:
     # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Optional, default: "."]
-    # Relative path to the project in the git repository
-    # JF_WORKING_DIR: path/to/project/dir
+     # Relative path to the project in the git repository
+     # JF_WORKING_DIR: path/to/project/dir
 
-    # [Optional]
-    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-    # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+     # [Optional]
+     # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+     # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-    # [Optional]
-    # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-    # JF_PROJECT: <project-key>
+     # [Optional]
+     # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+     # JF_PROJECT: <project-key>
+
+     # [Optional, default: "FALSE"]
+     # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+     # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
   script:
-    # For Linux / MacOS runner:
-    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-    - ./frogbot ${FROGBOT_CMD}
+     # For Linux / MacOS runner:
+     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+     - ./frogbot ${FROGBOT_CMD}
 
-    # For Windows runner:
-    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe ${FROGBOT_CMD}
+     # For Windows runner:
+     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+     # .\frogbot.exe ${FROGBOT_CMD}
 ```
 
 ### Setting up Frogbot on Bitbucket Server repositories
@@ -293,26 +314,30 @@ pipeline {
         // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
 
         // [Optional, default: "."]
-        // Relative path to the project in the git repository
-        // JF_WORKING_DIR= path/to/project/dir
+       // Relative path to the project in the git repository
+       // JF_WORKING_DIR= path/to/project/dir
 
-        // [Optional]
-        // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-        // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
+       // [Optional]
+       // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+       // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
 
-        // [Optional]
-        // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-        // JF_PROJECT= <project-key>
+       // [Optional]
+       // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+       // JF_PROJECT= <project-key>
+
+       // [Optional, default: "FALSE"]
+       // Displays all existing vulnerabilities, including the ones that were added by the pull request.
+       // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
     }
 
-    stages {
-        stage ('Download Frogbot') {
-            steps {
-                // For Linux / MacOS runner:
-                sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+   stages {
+      stage('Download Frogbot') {
+         steps {
+            // For Linux / MacOS runner:
+            sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
 
-                // For Windows runner:
-                // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+            // For Windows runner:
+            // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
             }
         }
 
