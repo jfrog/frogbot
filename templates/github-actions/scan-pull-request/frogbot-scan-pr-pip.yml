@@ -63,3 +63,7 @@ jobs:
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
           # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Show all issues that were found in the PR
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
