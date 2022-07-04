@@ -122,7 +122,7 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
 	var err error
-	params.IncludeAllVulnerabilities, err = strconv.ParseBool(IncludeAllVulnerabilitiesEnv)
+	params.IncludeAllVulnerabilities, err = strconv.ParseBool(getTrimmedEnv(IncludeAllVulnerabilitiesEnv))
 	if err != nil {
 		params.IncludeAllVulnerabilities = false
 	}
