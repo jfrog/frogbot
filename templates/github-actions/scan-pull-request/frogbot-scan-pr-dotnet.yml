@@ -65,5 +65,5 @@ jobs:
           # JF_PROJECT: <project-key>
 
           # [Optional, default: "FALSE"]
-          # Show all vulnerabilities
-          # JF_INCLUDE_ALL_SCAN: "TRUE"
+          # Show all issues that were found in the PR
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
