@@ -223,28 +223,28 @@ frogbot-scan:
     # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Optional, default: "."]
-     # Relative path to the project in the git repository
-     # JF_WORKING_DIR: path/to/project/dir
+    # Relative path to the project in the git repository
+    # JF_WORKING_DIR: path/to/project/dir
 
-     # [Optional]
-     # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-     # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+    # [Optional]
+    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+    # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-     # [Optional]
-     # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-     # JF_PROJECT: <project-key>
+    # [Optional]
+    # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+    # JF_PROJECT: <project-key>
 
-     # [Optional, default: "FALSE"]
-     # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-     # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+    # [Optional, default: "FALSE"]
+    # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+    # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
   script:
-     # For Linux / MacOS runner:
-     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-     - ./frogbot ${FROGBOT_CMD}
+    # For Linux / MacOS runner:
+    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+    - ./frogbot ${FROGBOT_CMD}
 
-     # For Windows runner:
-     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-     # .\frogbot.exe ${FROGBOT_CMD}
+    # For Windows runner:
+    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+    # .\frogbot.exe ${FROGBOT_CMD}
 ```
 
 ### Setting up Frogbot on Bitbucket Server repositories
@@ -400,20 +400,20 @@ pipeline {
         // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
 
         // [Optional, default: "."]
-       // Relative path to the project in the git repository
-       // JF_WORKING_DIR= path/to/project/dir
+        // Relative path to the project in the git repository
+        // JF_WORKING_DIR= path/to/project/dir
 
-       // [Optional]
-       // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-       // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
+        // [Optional]
+        // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+        // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
 
-       // [Optional]
-       // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-       // JF_PROJECT= <project-key>
+        // [Optional]
+        // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+        // JF_PROJECT= <project-key>
 
-       // [Optional, default: "FALSE"]
-       // Displays all existing vulnerabilities, including the ones that were added by the pull request.
-       // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
+        // [Optional, default: "FALSE"]
+        // Displays all existing vulnerabilities, including the ones that were added by the pull request.
+        // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
     }
 
    stages {
