@@ -41,8 +41,7 @@ Projects that use one of the following tools to download their dependencies are 
 ### 🕵️‍♀️ How does pull requests scanning work?
 #### GitHub
 For security reasons, Frogbot is not triggered automatically.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
-from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
+After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
 Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
 report, unless the JF_INCLUDE_ALL_VULNERABILITIES environment variable is used.
 JF_INCLUDE_ALL_VULNERABILITIES displays all existing vulnerabilities, including the ones that were added by the pull
