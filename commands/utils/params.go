@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -14,11 +15,11 @@ import (
 type FrogbotParams struct {
 	JFrogEnvParams
 	GitParam
-	WorkingDirectory   string
-	InstallCommandName string
-	IncludeAllScan     string
-	InstallCommandArgs []string
-	SimplifiedOutput   bool
+	WorkingDirectory          string
+	InstallCommandName        string
+	IncludeAllVulnerabilities bool
+	InstallCommandArgs        []string
+	SimplifiedOutput          bool
 }
 
 type JFrogEnvParams struct {
@@ -121,7 +122,13 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
-	params.IncludeAllScan = getTrimmedEnv(IncludeAllScanEnv)
+	var err error
+	includeAllIssues := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
+	params.IncludeAllVulnerabilities, err = strconv.ParseBool(includeAllIssues)
+	if err != nil {
+		log.Info("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
+		params.IncludeAllVulnerabilities = false
+	}
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
 		return
@@ -152,7 +159,8 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 		return vcsutils.GitHub, nil
 	case string(GitLab):
 		return vcsutils.GitLab, nil
-	case string(BitbucketServer):
+	// For backward compatibility, we are accepting also "bitbucket server"
+	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
 	}
 
