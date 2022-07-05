@@ -1,0 +1,15 @@
+{
+  "name": "Frogbot Scan",
+  "description": "Scan your pull requests with JFrog Frogbot. A comment will be added on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.",
+  "iconName": "frogbot",
+  "categories": [
+    "Code Scanning",
+    "Go Module",
+    "Maven POM",
+    "NPM Config",
+    "Gradle",
+    "C#",
+    "Python"
+  ],
+  "owner": "JFrog"
+}
