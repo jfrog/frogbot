@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/gofrog v1.1.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.15.2
 	github.com/jfrog/jfrog-client-go v1.14.0
-	github.com/sassoftware/go-rpmutils v0.1.0
+	github.com/sassoftware/go-rpmutils v0.1.1
 	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli/v2 v2.4.0
 )
