@@ -42,15 +42,16 @@
         "@actions/tool-cache": "~1.7.1"
     },
     "devDependencies": {
-        "@types/jest": "^27.5.0",
-        "@typescript-eslint/eslint-plugin": "^5.15.0",
-        "@typescript-eslint/parser": "^5.15.0",
-        "eslint": "^8.11.0",
-        "eslint-config-prettier": "^8.5.0",
-        "husky": "^7.0.4",
-        "jest": "^28.1.0",
-        "prettier": "^2.5.1",
-        "ts-jest": "^28.0.2",
-        "typescript": "^4.6.2"
+      "@types/jest": "^27.5.0",
+      "@types/node": "^18.0.3",
+      "@typescript-eslint/eslint-plugin": "^5.15.0",
+      "@typescript-eslint/parser": "^5.15.0",
+      "eslint": "^8.11.0",
+      "eslint-config-prettier": "^8.5.0",
+      "husky": "^7.0.4",
+      "jest": "^28.1.0",
+      "prettier": "^2.5.1",
+      "ts-jest": "^28.0.2",
+      "typescript": "^4.6.2"
     }
 }
