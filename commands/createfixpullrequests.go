@@ -19,10 +19,15 @@ type CreateFixPullRequestsCmd struct {
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Do scan current branch
+	//Do scan current branch
 	scanResults, err := cfp.scan(params)
 	if err != nil {
 		return err
+	}
+
+	err = utils.UploadScanToGitProvider(scanResults, params, client)
+	if err != nil {
+		clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
 	}
 
 	// Fix and create PRs

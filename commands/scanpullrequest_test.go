@@ -73,8 +73,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 violation exists in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
 	assert.Equal(t, "low", rows[0].Severity)
@@ -112,8 +112,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-1", rows[0].IssueId)
 	assert.Equal(t, "high", rows[0].Severity)
@@ -149,9 +149,48 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 		Violations: []services.Violation{},
 	}
 
-	// Run createVulnerabilitiesRows and expect no violations in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect no violations in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 0)
+}
+
+func TestGetAllVulnerabilities(t *testing.T) {
+	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
+	currentScan := services.ScanResponse{
+		Vulnerabilities: []services.Vulnerability{
+			{
+				IssueId:    "XRAY-1",
+				Summary:    "summary-1",
+				Severity:   "high",
+				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+			},
+			{
+				IssueId:    "XRAY-2",
+				Summary:    "summary-2",
+				Severity:   "low",
+				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+			},
+		},
+	}
+
+	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
+	rows := createAllIssuesRows([]services.ScanResponse{currentScan})
+	assert.Len(t, rows, 4)
+	assert.Equal(t, "XRAY-1", rows[0].IssueId)
+	assert.Equal(t, "high", rows[0].Severity)
+	assert.Equal(t, "XRAY-1", rows[1].IssueId)
+	assert.Equal(t, "high", rows[1].Severity)
+	assert.Equal(t, "XRAY-2", rows[2].IssueId)
+	assert.Equal(t, "low", rows[2].Severity)
+	assert.Equal(t, "XRAY-2", rows[3].IssueId)
+	assert.Equal(t, "low", rows[3].Severity)
+
+	impactedPackageOne := rows[0].ImpactedPackageName
+	impactedPackageTwo := rows[1].ImpactedPackageName
+	assert.ElementsMatch(t, []string{"component-A", "component-B"}, []string{impactedPackageOne, impactedPackageTwo})
+	impactedPackageThree := rows[2].ImpactedPackageName
+	impactedPackageFour := rows[3].ImpactedPackageName
+	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageThree, impactedPackageFour})
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
@@ -183,8 +222,8 @@ func TestGetNewVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
 	assert.Equal(t, "low", rows[0].Severity)
@@ -220,8 +259,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 		},
 	}
 
-	// Run createVulnerabilitiesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-1", rows[0].IssueId)
 	assert.Equal(t, "high", rows[0].Severity)
@@ -255,8 +294,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 		Vulnerabilities: []services.Vulnerability{},
 	}
 
-	// Run createVulnerabilitiesRows and expect no vulnerability in the results
-	rows := createVulnerabilitiesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	// Run createNewIssuesRows and expect no vulnerability in the results
+	rows := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
 	assert.Len(t, rows, 0)
 }
 
