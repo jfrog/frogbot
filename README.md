@@ -182,7 +182,6 @@ frogbot-scan:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
-  when: manual
   variables:
     # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
