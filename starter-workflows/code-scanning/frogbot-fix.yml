@@ -2,13 +2,14 @@
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
 # documentation.
+# Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
 
 name: "Frogbot Fix"
 on:
   push:
     branches:
-      # Creating fix pull requests will be triggered by any push to one of the these branches.
-      # You can add or replace to any branch you want to open fix pull requests for.
+      # The scanning and creation of pull requests with fixes are triggered by pushing code to one of the these branches.
+      # You can edit the list of branches you wish to open fix pull requests on.
       - "main"
       - "master"
 permissions:

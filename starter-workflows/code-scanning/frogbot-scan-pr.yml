@@ -2,8 +2,8 @@
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
 # documentation.
-
-name: "Frogbot Scan"
+# Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
+name: "Frogbot Scan Pull Requests"
 on:
   pull_request_target:
     types: [opened, synchronize]
@@ -71,11 +71,11 @@ jobs:
 
           # Uncomment the below options if you'd like to use them.
 
-          # [Mandatory if using npm]
+          # [Mandatory when using npm]
           # The command that installs the dependencies
           # JF_INSTALL_DEPS_CMD: "npm i"
 
-          # [Mandatory if using .NET]
+          # [Mandatory when using .NET]
           # The command that installs the dependencies
           # JF_INSTALL_DEPS_CMD: "dotnet restore"
 
@@ -101,7 +101,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/go.mod/dir
+          # JF_WORKING_DIR: path/to/working/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
