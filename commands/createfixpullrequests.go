@@ -19,7 +19,7 @@ type CreateFixPullRequestsCmd struct {
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Do scan current branch
+	//Do scan current branch
 	scanResults, err := cfp.scan(params)
 	if err != nil {
 		return err
