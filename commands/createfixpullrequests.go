@@ -6,6 +6,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
@@ -178,7 +179,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
 	switch packageType {
-	case "Go":
+	case coreutils.Go:
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
 		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
 		var output []byte
@@ -186,14 +187,14 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		if err != nil {
 			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
 		}
-	case "npm":
+	case coreutils.Npm:
 		packageFullName := impactedPackage + "@" + fixVersion
 		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
 		output, err := exec.Command("npm", "install", packageFullName).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
 		}
-	case "Maven":
+	case coreutils.Maven:
 		properties := cfp.mavenDepToPropertyMap[impactedPackage]
 
 		// Update the package version. This command updates it only if the version is not a reference to a property.
@@ -214,6 +215,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			if err != nil {
 				return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
 			}
+		}
+	case coreutils.Yarn:
+		packageFullName := impactedPackage + "@" + fixVersion
+		clientLog.Info(fmt.Sprintf("Running 'yarn up %s'", packageFullName))
+		output, err := exec.Command("yarn", "up", packageFullName).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
