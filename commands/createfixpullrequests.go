@@ -235,10 +235,10 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		startIndex := strings.Index(file, impactedPackage)
 		var buffer bytes.Buffer
 		for i := startIndex; i < len(file); i++ {
-			buffer.WriteByte(file[i])
 			if file[i] == '\'' {
 				break
 			}
+			buffer.WriteByte(file[i])
 		}
 		clientLog.Info(buffer.String())
 		fixedFile := strings.Replace(file, impactedPackage, packageFullName, 1)
