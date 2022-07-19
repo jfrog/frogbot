@@ -225,15 +225,14 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
 	case coreutils.Pip:
+		packageFullName := impactedPackage + ">=" + fixVersion
 		data, err := os.ReadFile("setup.py")
 		if err != nil {
 			return err
 		}
 		file := string(data)
-		if strings.Contains(file, impactedPackage) {
-			clientLog.Info("try")
-		}
-		//packageFullName := impactedPackage + ">=" + fixVersion
+		fixedFile := strings.Replace(file, impactedPackage, packageFullName, 1)
+		clientLog.Debug(fixedFile)
 		//clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
 		//output, err := exec.Command("pip", "install", packageFullName).CombinedOutput() // #nosec G204
 		//if err != nil {
