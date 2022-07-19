@@ -225,10 +225,10 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		}
 	case coreutils.Pip:
 		packageFullName := impactedPackage + "==" + fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
-		output, err := exec.Command("pip", "install", packageFullName).CombinedOutput() // #nosec G204
+		clientLog.Info(fmt.Sprintf("Running 'pip3 install %s'", packageFullName))
+		output, err := exec.Command("pip3", "install", packageFullName).CombinedOutput() // #nosec G204
 		if err != nil {
-			return fmt.Errorf("pip install command failed: %s\n%s", err.Error(), output)
+			return fmt.Errorf("pip3 install command failed: %s\n%s", err.Error(), output)
 		}
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
