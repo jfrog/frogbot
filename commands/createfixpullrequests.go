@@ -231,6 +231,15 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			return err
 		}
 		file := string(data)
+		startIndex := strings.Index(file, impactedPackage)
+		var endIndex int
+		for i := startIndex; i < len(file); i++ {
+			if file[i] == '\'' {
+				endIndex = i
+				break
+			}
+		}
+		endIndex = endIndex
 		fixedFile := strings.Replace(file, impactedPackage, packageFullName, 1)
 		clientLog.Debug(fixedFile)
 		//clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
