@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
@@ -232,14 +233,14 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		}
 		file := string(data)
 		startIndex := strings.Index(file, impactedPackage)
-		var endIndex int
+		var buffer bytes.Buffer
 		for i := startIndex; i < len(file); i++ {
+			buffer.WriteByte(file[i])
 			if file[i] == '\'' {
-				endIndex = i
 				break
 			}
 		}
-		endIndex = endIndex
+		clientLog.Info(buffer.String())
 		fixedFile := strings.Replace(file, impactedPackage, packageFullName, 1)
 		clientLog.Debug(fixedFile)
 		//clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
