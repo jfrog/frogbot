@@ -223,6 +223,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		if err != nil {
 			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
+	case coreutils.Pip:
+		packageFullName := impactedPackage + "==" + fixVersion
+		clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
+		output, err := exec.Command("pip", "install", packageFullName).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("pip install command failed: %s\n%s", err.Error(), output)
+		}
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
