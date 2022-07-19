@@ -11,6 +11,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -224,11 +225,11 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
 	case coreutils.Pip:
-		output, err := exec.Command("cat", "setup.py | grep install_requires | sed 's/.*\\[\\([^]]*\\)].*/\\1/'").CombinedOutput()
+		file, err := os.ReadFile("setup.py")
 		if err != nil {
 			return err
 		}
-		clientLog.Debug(string(output))
+		clientLog.Info(string(file))
 		//packageFullName := impactedPackage + "==" + fixVersion
 		//clientLog.Info(fmt.Sprintf("Running 'pip3 install %s'", packageFullName))
 		//output, err := exec.Command("pip3", "install", packageFullName).CombinedOutput() // #nosec G204
