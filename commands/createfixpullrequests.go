@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
@@ -14,6 +13,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -143,10 +143,10 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return
 	}
 	clientLog.Info("Creating branch:", fixBranchName)
-	err = gitManager.CreateBranchAndCheckout(fixBranchName)
-	if err != nil {
-		return err
-	}
+	//err = gitManager.CreateBranchAndCheckout(fixBranchName)
+	//if err != nil {
+	//	return err
+	//}
 
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
@@ -227,22 +227,20 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		}
 	case coreutils.Pip:
 		packageFullName := impactedPackage + ">=" + fixVersion
-		data, err := os.ReadFile("setup.py")
+		data, err := os.ReadFile("requirements.txt")
 		if err != nil {
 			return err
 		}
 		file := string(data)
-		startIndex := strings.Index(file, impactedPackage)
-		var buffer bytes.Buffer
-		for i := startIndex; i < len(file); i++ {
-			if file[i] == '\'' {
-				break
-			}
-			buffer.WriteByte(file[i])
+		re := regexp.MustCompile(impactedPackage + ".([^\\s]+)")
+		fixed := strings.Trim(re.FindString(file), "\\'")
+		clientLog.Debug(string(fixed))
+		fixedFile := strings.Replace(file, fixed, packageFullName, 1)
+
+		err = os.WriteFile("setup.py", []byte(fixedFile), 0666)
+		if err != nil {
+			return err
 		}
-		clientLog.Info(buffer.String())
-		fixedFile := strings.Replace(file, impactedPackage, packageFullName, 1)
-		clientLog.Debug(fixedFile)
 		//clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
 		//output, err := exec.Command("pip", "install", packageFullName).CombinedOutput() // #nosec G204
 		//if err != nil {
