@@ -148,7 +148,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	//	return err
 	//}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion, requirementsFile string) error {
 	switch packageType {
 	case coreutils.Go:
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
@@ -227,25 +227,21 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		}
 	case coreutils.Pip:
 		packageFullName := impactedPackage + ">=" + fixVersion
-		data, err := os.ReadFile("requirements.txt")
+		if requirementsFile == "" {
+			requirementsFile = "setup.py"
+		}
+		data, err := os.ReadFile(requirementsFile)
 		if err != nil {
 			return err
 		}
 		file := string(data)
-		re := regexp.MustCompile(impactedPackage + ".([^\\s]+)")
-		fixed := strings.Trim(re.FindString(file), "\\'")
-		clientLog.Debug(string(fixed))
-		fixedFile := strings.Replace(file, fixed, packageFullName, 1)
-
-		err = os.WriteFile("setup.py", []byte(fixedFile), 0666)
+		re := regexp.MustCompile(impactedPackage + ".[^\\s]+.\\d")
+		toReplace := re.FindString(file)
+		fixedFile := strings.Replace(file, toReplace, packageFullName, 1)
+		err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
 		if err != nil {
 			return err
 		}
-		//clientLog.Info(fmt.Sprintf("Running 'pip install %s'", packageFullName))
-		//output, err := exec.Command("pip", "install", packageFullName).CombinedOutput() // #nosec G204
-		//if err != nil {
-		//	return fmt.Errorf("pip install command failed: %s\n%s", err.Error(), output)
-		//}
 
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
