@@ -28,10 +28,10 @@ func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsc
 		return err
 	}
 
-	err = utils.UploadScanToGitProvider(scanResults, params, client)
-	if err != nil {
-		clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
-	}
+	//err = utils.UploadScanToGitProvider(scanResults, params, client)
+	//if err != nil {
+	//	clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
+	//}
 
 	// Fix and create PRs
 	return cfp.fixImpactedPackagesAndCreatePRs(params, client, scanResults)
@@ -134,19 +134,19 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 
-	exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
-	if err != nil {
-		return err
-	}
-	if exists {
-		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
-		return
-	}
-	clientLog.Info("Creating branch:", fixBranchName)
-	err = gitManager.CreateBranchAndCheckout(fixBranchName)
-	if err != nil {
-		return err
-	}
+	//exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
+	//if err != nil {
+	//	return err
+	//}
+	//if exists {
+	//	clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
+	//	return
+	//}
+	//clientLog.Info("Creating branch:", fixBranchName)
+	//err = gitManager.CreateBranchAndCheckout(fixBranchName)
+	//if err != nil {
+	//	return err
+	//}
 
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
 	if err != nil {
@@ -225,7 +225,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
 	case coreutils.Pip:
-		fixedPackage := impactedPackage + ">=" + fixVersion
+		fixedPackage := impactedPackage + "==" + fixVersion
 		if requirementsFile == "" {
 			requirementsFile = "setup.py"
 		}
@@ -240,6 +240,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 		err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
 		if err != nil {
 			return err
+		}
+	case coreutils.Pipenv:
+		fixedPackage := impactedPackage + "==" + fixVersion
+		clientLog.Debug(fmt.Sprintf("Running 'pipenv install %s'", fixedPackage))
+		output, err := exec.Command("pipenv", "install", fixedPackage).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("pipenv install command failed: %s\n%s", err.Error(), output)
 		}
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
