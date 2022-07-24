@@ -28,10 +28,10 @@ func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsc
 		return err
 	}
 
-	//err = utils.UploadScanToGitProvider(scanResults, params, client)
-	//if err != nil {
-	//	clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
-	//}
+	err = utils.UploadScanToGitProvider(scanResults, params, client)
+	if err != nil {
+		clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
+	}
 
 	// Fix and create PRs
 	return cfp.fixImpactedPackagesAndCreatePRs(params, client, scanResults)
@@ -56,7 +56,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	}
 	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 
-	gitManager, err := utils.NewGitManager("/Users/omerz/Desktop/dev/frogbot", "test")
+	gitManager, err := utils.NewGitManager(".", "origin")
 	if err != nil {
 		return err
 	}
@@ -180,77 +180,89 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 }
 
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion, requirementsFile string) error {
+	var err error
 	switch packageType {
 	case coreutils.Go:
-		fixedImpactPackage := impactedPackage + "@v" + fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
-		output, err := exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
-		}
+		commandArgs := []string{"get"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Go, impactedPackage, fixVersion, "@v")
 	case coreutils.Npm:
-		packageFullName := impactedPackage + "@" + fixVersion
-		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
-		output, err := exec.Command("npm", "install", packageFullName).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
-		}
+		commandArgs := []string{"install"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Npm, impactedPackage, fixVersion, "@")
 	case coreutils.Maven:
-		properties := cfp.mavenDepToPropertyMap[impactedPackage]
-
-		// Update the package version. This command updates it only if the version is not a reference to a property.
-		updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
-		updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
-		clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-		updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
-		}
-
-		// Update properties that represent this package's version.
-		for _, property := range properties {
-			updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
-			updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
-			clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-			updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
-			if err != nil {
-				return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
-			}
-		}
+		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
 	case coreutils.Yarn:
-		fixedPackage := impactedPackage + "@" + fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'yarn up %s'", fixedPackage))
-		output, err := exec.Command("yarn", "up", fixedPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
-		}
+		commandArgs := []string{"up"}
+		err = fixPackageVersionGeneric(commandArgs, strings.ToLower(coreutils.Yarn), impactedPackage, fixVersion, "@")
 	case coreutils.Pip:
-		fixedPackage := impactedPackage + "==" + fixVersion
-		if requirementsFile == "" {
-			requirementsFile = "setup.py"
-		}
-		data, err := os.ReadFile(requirementsFile)
-		if err != nil {
-			return err
-		}
-		file := string(data)
-		re := regexp.MustCompile("(?i)" + impactedPackage + "(.[^\\s]+.?\\d)?")
-		packageToReplace := re.FindString(file)
-		fixedFile := strings.Replace(file, packageToReplace, fixedPackage, 1)
-		err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
-		if err != nil {
-			return err
-		}
+		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
 	case coreutils.Pipenv:
-		fixedPackage := impactedPackage + "==" + fixVersion
-		clientLog.Debug(fmt.Sprintf("Running 'pipenv install %s'", fixedPackage))
-		output, err := exec.Command("pipenv", "install", fixedPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("pipenv install command failed: %s\n%s", err.Error(), output)
-		}
+		commandArgs := []string{"install"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Pipenv, impactedPackage, fixVersion, "==")
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
+
+	return err
+}
+
+// The majority of package managers already support upgrading specific package versions and update the dependency files automatically
+// In other cases, we had to handle the upgrade process
+func fixPackageVersionGeneric(commandArgs []string, commandName, impactedPackage, fixVersion, operator string) error {
+	fixedPackage := impactedPackage + operator + fixVersion
+	commandArgs = append(commandArgs, fixedPackage)
+	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
+	clientLog.Debug(fmt.Sprintf("Running '%s'", fullCommand))
+	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
+	if err != nil {
+		return fmt.Errorf("%s install command failed: %s\n%s", commandName, err.Error(), output)
+	}
+
+	return nil
+}
+
+func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixVersion string) error {
+	properties := cfp.mavenDepToPropertyMap[impactedPackage]
+	// Update the package version. This command updates it only if the version is not a reference to a property.
+	updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
+	clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
+	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
+	if err != nil {
+		return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
+	}
+
+	// Update properties that represent this package's version.
+	for _, property := range properties {
+		updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
+		clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
+		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
+		}
+	}
+
+	return nil
+}
+
+func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) error {
+	fixedPackage := impactedPackage + "==" + fixVersion
+	if requirementsFile == "" {
+		requirementsFile = "setup.py"
+	}
+	data, err := os.ReadFile(requirementsFile)
+	if err != nil {
+		return err
+	}
+	currentFile := string(data)
+	re := regexp.MustCompile("(?i)" + impactedPackage + "(.[^\\s]+.?\\d)?")
+	packageToReplace := re.FindString(currentFile)
+	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
+	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

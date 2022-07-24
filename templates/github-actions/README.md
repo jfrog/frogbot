@@ -12,7 +12,7 @@ Make sure to [set up 'frogbot' environment and secrets](../../README.md#install-
 
 ## The Available Templates
 ### Pull Requests Scanning
-Create a file named `frogbot-scan-pull-requests.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will allow Frogbot to scan pull requests for security vulnerabilities after the pull requests are created and before they are merged.
+Create a currentFile named `frogbot-scan-pull-requests.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will allow Frogbot to scan pull requests for security vulnerabilities after the pull requests are created and before they are merged.
 - [Maven](scan-pull-request/frogbot-scan-pr-maven.yml)
 - [Gradle](scan-pull-request/frogbot-scan-pr-gradle.yml)
 - [npm](scan-pull-request/frogbot-scan-pr-npm.yml)
@@ -22,7 +22,7 @@ Create a file named `frogbot-scan-pull-requests.yml` with the content of one of 
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 ### Pull Requests Opening
-Create a file named `frogbot-open-pull-requests.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
+Create a currentFile named `frogbot-open-pull-requests.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 - [Maven](create-fix-pull-requests/frogbot-fix-maven.yml)
 - [npm](create-fix-pull-requests/frogbot-fix-npm.yml)
 - [Go](create-fix-pull-requests/frogbot-fix-go.yml)
