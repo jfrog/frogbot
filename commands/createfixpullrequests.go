@@ -28,10 +28,10 @@ func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsc
 		return err
 	}
 
-	//err = utils.UploadScanToGitProvider(scanResults, params, client)
-	//if err != nil {
-	//	clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
-	//}
+	err = utils.UploadScanToGitProvider(scanResults, params, client)
+	if err != nil {
+		clientLog.Debug("Unexpected error occurred while generating the sarif file from the scan result: " + err.Error())
+	}
 
 	// Fix and create PRs
 	return cfp.fixImpactedPackagesAndCreatePRs(params, client, scanResults)
@@ -143,10 +143,10 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return
 	}
 	clientLog.Info("Creating branch:", fixBranchName)
-	//err = gitManager.CreateBranchAndCheckout(fixBranchName)
-	//if err != nil {
-	//	return err
-	//}
+	err = gitManager.CreateBranchAndCheckout(fixBranchName)
+	if err != nil {
+		return err
+	}
 
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
 	if err != nil {
@@ -184,7 +184,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 	case coreutils.Go:
 		fixedImpactPackage := impactedPackage + "@v" + fixVersion
 		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
-		var output []byte
 		output, err := exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
@@ -219,14 +218,14 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			}
 		}
 	case coreutils.Yarn:
-		packageFullName := impactedPackage + "@" + fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'yarn up %s'", packageFullName))
-		output, err := exec.Command("yarn", "up", packageFullName).CombinedOutput() // #nosec G204
+		fixedPackage := impactedPackage + "@" + fixVersion
+		clientLog.Info(fmt.Sprintf("Running 'yarn up %s'", fixedPackage))
+		output, err := exec.Command("yarn", "up", fixedPackage).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("yarn up command failed: %s\n%s", err.Error(), output)
 		}
 	case coreutils.Pip:
-		packageFullName := impactedPackage + ">=" + fixVersion
+		fixedPackage := impactedPackage + ">=" + fixVersion
 		if requirementsFile == "" {
 			requirementsFile = "setup.py"
 		}
@@ -235,14 +234,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 			return err
 		}
 		file := string(data)
-		re := regexp.MustCompile(impactedPackage + ".[^\\s]+.\\d")
-		toReplace := re.FindString(file)
-		fixedFile := strings.Replace(file, toReplace, packageFullName, 1)
+		re := regexp.MustCompile("(?i)" + impactedPackage + "(.[^\\s]+.?\\d)?")
+		packageToReplace := re.FindString(file)
+		fixedFile := strings.Replace(file, packageToReplace, fixedPackage, 1)
 		err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
 		if err != nil {
 			return err
 		}
-
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
