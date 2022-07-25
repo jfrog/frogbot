@@ -3,6 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
@@ -10,8 +13,6 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"os/exec"
-	"strings"
 )
 
 type CreateFixPullRequestsCmd struct {
@@ -170,7 +171,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Creating Pull Request for:", fixBranchName)
+	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", params.BaseBranch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, prBody)
 	return
