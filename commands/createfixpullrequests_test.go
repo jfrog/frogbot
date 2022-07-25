@@ -7,7 +7,6 @@ import (
 
 func TestCreateFixPullRequests(t *testing.T) {
 	testCreateFixPullRequests(t, "", "go-proj")
-	// add vulnerable dependency
 }
 
 ///      1.0         --> 1.0 ≤ x
