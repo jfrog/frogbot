@@ -46,7 +46,7 @@ func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error 
 		URL:           repoURL,
 		Auth:          createBasicAuth(gitToken),
 		RemoteName:    gm.remoteName,
-		ReferenceName: getBranch(branchName),
+		ReferenceName: getFullBranchName(branchName),
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
@@ -68,7 +68,7 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
-		Branch: getBranch(branchName),
+		Branch: getFullBranchName(branchName),
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
@@ -174,7 +174,8 @@ func createBasicAuth(token string) *http.BasicAuth {
 	}
 }
 
-func getBranch(branchName string) plumbing.ReferenceName {
-	// branchName can be short name (master) or full name (refs/heads/master)
+// getFullBranchName returns the full branch name ( for example: refs/heads/master)
+// The input branchName can be short name (master) or full name (refs/heads/master)
+func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }

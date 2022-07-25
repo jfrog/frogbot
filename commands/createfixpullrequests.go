@@ -50,7 +50,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	}
 	// Nothing to fix, return
 	if len(fixVersionsMap) == 0 {
-		clientLog.Info("Didn't found vulnerable dependencies with fix versions")
+		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions")
 		return nil
 	}
 	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
@@ -66,7 +66,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 			err = e
 		}
 	}()
-	clientLog.Debug("Created temp working directory: ", wd)
+	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
 	gitManager, err := utils.NewGitManager(".", "origin")
@@ -91,6 +91,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 
 	// Fix all impacted packages
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
+		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
 		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client, gitManager)
 		if err != nil {
