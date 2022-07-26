@@ -1,14 +1,17 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
-	"time"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type GitManager struct {
@@ -32,6 +35,32 @@ func (gm *GitManager) Checkout(branchName string) error {
 	return err
 }
 
+func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error {
+	// Gets the remote repo url from the current .git dir
+	gitRemote, err := gm.repository.Remote(gm.remoteName)
+	if err != nil {
+		return fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
+	}
+	if len(gitRemote.Config().URLs) < 1 {
+		return errors.New("failed to find git remote URL")
+	}
+	repoURL := gitRemote.Config().URLs[0]
+
+	cloneOptions := &git.CloneOptions{
+		URL:           repoURL,
+		Auth:          createBasicAuth(gitToken),
+		RemoteName:    gm.remoteName,
+		ReferenceName: getFullBranchName(branchName),
+	}
+	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
+	if err != nil {
+		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, repoURL, err.Error())
+	}
+	gm.repository = repo
+	clientLog.Debug(fmt.Sprintf("Project cloned from %s to %s", repoURL, destinationPath))
+	return nil
+}
+
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
@@ -41,11 +70,9 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 }
 
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
-	// branchName can be short name (master) or full name (refs/heads/master)
-	shortBranchName := plumbing.ReferenceName(branchName).Short()
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
-		Branch: plumbing.NewBranchReferenceName(shortBranchName),
+		Branch: getFullBranchName(branchName),
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
@@ -122,10 +149,7 @@ func (gm *GitManager) Push(token string) error {
 	// Pushing to remote
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
-		Auth: &http.BasicAuth{
-			Username: "username", // The username can be anything except an empty string
-			Password: token,
-		},
+		Auth:       createBasicAuth(token),
 	})
 	if err != nil {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
@@ -145,4 +169,18 @@ func (gm *GitManager) IsClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+
+func createBasicAuth(token string) *http.BasicAuth {
+	return &http.BasicAuth{
+		// The username can be anything except for an empty string
+		Username: "username",
+		Password: token,
+	}
+}
+
+// getFullBranchName returns the full branch name (for example: refs/heads/master)
+// The input branchName can be a short name (master) or a full name (refs/heads/master)
+func getFullBranchName(branchName string) plumbing.ReferenceName {
+	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
