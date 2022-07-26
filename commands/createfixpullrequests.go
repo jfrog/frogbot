@@ -77,7 +77,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	if err != nil {
 		return err
 	}
-	// Cd to the temp working directory
+	// 'CD' into the temp working directory
 	restoreDir, err := utils.Chdir(wd)
 	if err != nil {
 		return

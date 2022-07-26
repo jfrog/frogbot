@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,10 +36,13 @@ func (gm *GitManager) Checkout(branchName string) error {
 }
 
 func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error {
-	// Gets the remote repo url from current .git dir
+	// Gets the remote repo url from the current .git dir
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
-	if err != nil || len(gitRemote.Config().URLs) < 1 {
+	if err != nil {
 		return fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
+	}
+	if len(gitRemote.Config().URLs) < 1 {
+		return errors.New("failed to find git remote URL")
 	}
 	repoURL := gitRemote.Config().URLs[0]
 
@@ -53,7 +57,7 @@ func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error 
 		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, repoURL, err.Error())
 	}
 	gm.repository = repo
-	clientLog.Debug(fmt.Sprintf("project cloned from %s to %s", repoURL, destinationPath))
+	clientLog.Debug(fmt.Sprintf("Project cloned from %s to %s", repoURL, destinationPath))
 	return nil
 }
 
@@ -169,13 +173,14 @@ func (gm *GitManager) IsClean() (bool, error) {
 
 func createBasicAuth(token string) *http.BasicAuth {
 	return &http.BasicAuth{
-		Username: "username", // The username can be anything except an empty string
+		// The username can be anything except for an empty string
+		Username: "username",
 		Password: token,
 	}
 }
 
-// getFullBranchName returns the full branch name ( for example: refs/heads/master)
-// The input branchName can be short name (master) or full name (refs/heads/master)
+// getFullBranchName returns the full branch name (for example: refs/heads/master)
+// The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
