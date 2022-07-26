@@ -1,6 +1,6 @@
 {
-  "name": "Frogbot Create Fix Pull Requests",
-  "description": "Automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix, using JFrog Xray for the scanning.",
+  "name": "Frogbot Scan and Fix",
+  "description": "Automatically creates pull requests with fixes for vulnerable project dependencies. Uses JFrog Xray to scan the project. Included as part of JFrog's free subscription.",
   "iconName": "frogbot",
   "categories": [
     "Code Scanning",

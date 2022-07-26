@@ -1,6 +1,6 @@
 {
   "name": "Frogbot Scan Pull Requests",
-  "description": "Scan your pull requests with JFrog Frogbot. A comment will be added on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.",
+  "description": "Automatically scans new pull requests for security vulnerabilities. Uses JFrog Xray to scan the project. Included as part of JFrog's free subscription.",
   "iconName": "frogbot",
   "categories": [
     "Code Scanning",
