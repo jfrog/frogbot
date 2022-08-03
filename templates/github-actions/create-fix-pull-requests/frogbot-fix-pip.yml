@@ -23,10 +23,6 @@ jobs:
           cache: 'pip'
       - uses: jfrog/frogbot@v2
         env:
-          # [Optional]
-          # The file used to install dependencies, if not used - 'setup.py' will be the default
-          JF_REQUIREMENTS_FILE: "requirements.txt"
-
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
@@ -44,6 +40,10 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # Uncomment the below options if you'd like to use them.
+
+          # [Optional]
+          # The file used to install dependencies, if not used - 'setup.py' will be the default
+          # JF_REQUIREMENTS_FILE: "requirements.txt"
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub

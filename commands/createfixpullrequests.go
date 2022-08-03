@@ -258,6 +258,9 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 	currentFile := string(data)
 	re := regexp.MustCompile("(?i)" + impactedPackage + "(.[^\\s]+.?\\d)?")
 	packageToReplace := re.FindString(currentFile)
+	if packageToReplace == "" {
+		return fmt.Errorf("impacted package %s not found", packageToReplace)
+	}
 	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
 	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
 	if err != nil {
