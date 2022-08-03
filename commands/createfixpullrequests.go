@@ -3,15 +3,17 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"os/exec"
-	"strings"
 )
 
 type CreateFixPullRequestsCmd struct {
@@ -41,19 +43,56 @@ func (cfp *CreateFixPullRequestsCmd) scan(params *utils.FrogbotParams) ([]servic
 	return scanResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) error {
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *utils.FrogbotParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
 	fixVersionsMap, err := cfp.createFixVersionsMap(params, scanResults)
 	if err != nil {
 		return err
 	}
+	// Nothing to fix, return
+	if len(fixVersionsMap) == 0 {
+		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions")
+		return nil
+	}
 	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 
+	// Create temp working directory
+	wd, err := fileutils.CreateTempDir()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		e := fileutils.RemoveTempDir(wd)
+		if err == nil {
+			err = e
+		}
+	}()
+	clientLog.Debug("Created temp working directory:", wd)
+
+	// Clone the content of the repo to the new working directory
 	gitManager, err := utils.NewGitManager(".", "origin")
 	if err != nil {
 		return err
 	}
+	err = gitManager.Clone(params.Token, wd, params.BaseBranch)
+	if err != nil {
+		return err
+	}
+	// 'CD' into the temp working directory
+	restoreDir, err := utils.Chdir(wd)
+	if err != nil {
+		return
+	}
+	defer func() {
+		e := restoreDir()
+		if err == nil {
+			err = e
+		}
+	}()
+
+	// Fix all impacted packages
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
-		clientLog.Info("Fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
+		clientLog.Info("-----------------------------------------------------------------")
+		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
 		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client, gitManager)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
@@ -165,7 +204,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Creating Pull Request for:", fixBranchName)
+	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", params.BaseBranch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, prBody)
 	return

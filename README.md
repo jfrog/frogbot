@@ -176,13 +176,14 @@ frogbot-scan:
       when: manual
       variables:
         FROGBOT_CMD: "scan-pull-request"
+        JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
       # Creating fix pull requests will be triggered by any push to the default branch.
       # You can change it to any other branch you want, for example:
       # if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
-  when: manual
+        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
     # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
@@ -205,7 +206,6 @@ frogbot-scan:
     JF_GIT_PROVIDER: gitlab
     JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
     JF_GIT_REPO: $CI_PROJECT_NAME
-    JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
 
     # Uncomment the below options if you'd like to use them.
