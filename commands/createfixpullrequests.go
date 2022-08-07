@@ -69,11 +69,11 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	gitManager, err := utils.NewGitManager(".", "origin")
+	gitManager, err := utils.NewGitManager(".", "origin", params.Token)
 	if err != nil {
 		return err
 	}
-	err = gitManager.Clone(params.Token, wd, params.BaseBranch)
+	err = gitManager.Clone(wd, params.BaseBranch)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 	clientLog.Info("Pushing fix branch:", fixBranchName)
-	err = gitManager.Push(params.Token)
+	err = gitManager.Push()
 	if err != nil {
 		return err
 	}
