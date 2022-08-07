@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/gofrog/version"
 	"os/exec"
 	"strings"
 
@@ -295,7 +296,8 @@ func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersio
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
-	if fvi.fixVersion == "" || fvi.fixVersion < newFixVersion {
+	// fvi.fixVersion < newFixVersion => fvi.fixVersion = newFixVersion
+	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
 }
