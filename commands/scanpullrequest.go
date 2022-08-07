@@ -39,17 +39,23 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	if err != nil {
 		return err
 	}
-
-	// Audit target code
-	previousScan, err := auditTarget(client, xrayScanParams, params)
-	if err != nil {
-		return err
+	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
+	if params.IncludeAllVulnerabilities {
+		clientLog.Info("Include all vulnerabilities scan is on")
+		vulnerabilitiesRows = createAllIssuesRows(currentScan)
+	} else {
+		// Audit target code
+		previousScan, err := auditTarget(client, xrayScanParams, params)
+		if err != nil {
+			return err
+		}
+		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
 	}
 	clientLog.Info("Xray scan completed")
 
 	// Comment frogbot message on the PR
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
-	message := createPullRequestMessage(createVulnerabilitiesRows(previousScan, currentScan), getTitleFunc, getSeverityTagFunc)
+	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
 	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 }
 
@@ -61,13 +67,28 @@ func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSe
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createVulnerabilitiesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
 		if len(currentScan[i].Violations) > 0 {
 			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewViolations(previousScan[i], currentScan[i])...)
 		} else if len(currentScan[i].Vulnerabilities) > 0 {
 			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewVulnerabilities(previousScan[i], currentScan[i])...)
+		}
+	}
+	return vulnerabilitiesRows
+}
+
+// Create vulnerabilities rows. The rows should contain All the issues that were found in this PR
+func createAllIssuesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
+	for i := 0; i < len(currentScan); i += 1 {
+		if len(currentScan[i].Violations) > 0 {
+			violationsRows, _, _, _ := xrayutils.PrepareViolations(currentScan[i].Violations, false)
+			vulnerabilitiesRows = append(vulnerabilitiesRows, violationsRows...)
+		} else if len(currentScan[i].Vulnerabilities) > 0 {
+			vulnerabilities, _ := xrayutils.PrepareVulnerabilities(currentScan[i].Vulnerabilities, false)
+			vulnerabilitiesRows = append(vulnerabilitiesRows, vulnerabilities...)
 		}
 	}
 	return vulnerabilitiesRows
@@ -154,7 +175,7 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
 		return
 	}
-	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{})
+	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, []string{}, nil)
 	return
 }
 

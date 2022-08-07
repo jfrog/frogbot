@@ -22,10 +22,6 @@ jobs:
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Optional]
-          # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "pip install"
-
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
@@ -63,3 +59,7 @@ jobs:
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
           # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
