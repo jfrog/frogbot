@@ -296,7 +296,7 @@ func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersio
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
-	// Update fvi.fixVersion as the maximum version if found a new version that greater than the previous max
+	// Update fvi.fixVersion as the maximum version if found a new version that is greater than the previous maximum version.
 	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
