@@ -68,14 +68,14 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	//gitManager, err := utils.NewGitManager(".", "origin")
-	//if err != nil {
-	//	return err
-	//}
-	//err = gitManager.Clone(params.Token, wd, params.BaseBranch)
-	//if err != nil {
-	//	return err
-	//}
+	gitManager, err := utils.NewGitManager(".", "origin")
+	if err != nil {
+		return err
+	}
+	err = gitManager.Clone(params.Token, wd, params.BaseBranch)
+	if err != nil {
+		return err
+	}
 	// 'CD' into the temp working directory
 	restoreDir, err := utils.Chdir(wd)
 	if err != nil {
@@ -92,14 +92,13 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(params *uti
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
-		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client, nil)
-		//err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client, gitManager)
+		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, params, client, gitManager)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
 		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
 		clientLog.Info("Running git checkout to base branch:", params.BaseBranch)
-		//err = gitManager.Checkout(params.BaseBranch)
+		err = gitManager.Checkout(params.BaseBranch)
 		if err != nil {
 			return err
 		}
@@ -126,6 +125,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 					if !fixVulnerability {
 						continue
 					}
+					// FixedVersions array is sorted, and we have to make only the minimal changes to avoid a breakage
 					fixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
@@ -165,45 +165,45 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 
-	//exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
-	//if err != nil {
-	//	return err
-	//}
-	//if exists {
-	//	clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
-	//	return
-	//}
-	//clientLog.Info("Creating branch:", fixBranchName)
-	//err = gitManager.CreateBranchAndCheckout(fixBranchName)
-	//if err != nil {
-	//	return err
-	//}
+	exists, err := gitManager.BranchExistsOnRemote(fixBranchName)
+	if err != nil {
+		return err
+	}
+	if exists {
+		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
+		return
+	}
+	clientLog.Info("Creating branch:", fixBranchName)
+	err = gitManager.CreateBranchAndCheckout(fixBranchName)
+	if err != nil {
+		return err
+	}
 
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
 	}
 
-	//clientLog.Info("Checking if there are changes to commit")
-	//isClean, err := gitManager.IsClean()
-	//if err != nil {
-	//	return err
-	//}
-	//if isClean {
-	//	return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
-	//}
+	clientLog.Info("Checking if there are changes to commit")
+	isClean, err := gitManager.IsClean()
+	if err != nil {
+		return err
+	}
+	if isClean {
+		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
+	}
 
 	clientLog.Info("Running git add all and commit")
 	commitString := fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
-	//err = gitManager.AddAllAndCommit(commitString)
-	//if err != nil {
-	//	return err
-	//}
-	//clientLog.Info("Pushing fix branch:", fixBranchName)
-	//err = gitManager.Push(params.Token)
-	//if err != nil {
-	//	return err
-	//}
+	err = gitManager.AddAllAndCommit(commitString)
+	if err != nil {
+		return err
+	}
+	clientLog.Info("Pushing fix branch:", fixBranchName)
+	err = gitManager.Push(params.Token)
+	if err != nil {
+		return err
+	}
 	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", params.BaseBranch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
 	err = client.CreatePullRequest(context.Background(), params.RepoOwner, params.Repo, fixBranchName, params.BaseBranch, commitString, prBody)

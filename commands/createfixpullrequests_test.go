@@ -38,6 +38,21 @@ func TestParseVersionChangeString(t *testing.T) {
 	}
 }
 
+func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
+	fixVersionInfo := FixVersionInfo{
+		fixVersion:  "1.0.0",
+		packageType: "",
+	}
+	tests := []string{"1.0.8", "1.0.9", "1.0.7", "1.0.3"}
+	for _, test := range tests {
+		t.Run(test, func(t *testing.T) {
+			fixVersionInfo.UpdateFixVersion(test)
+		})
+	}
+
+	assert.Equal(t, "1.0.9", fixVersionInfo.fixVersion)
+}
+
 func TestGenerateFixBranchName(t *testing.T) {
 	tests := []struct {
 		baseBranch      string
