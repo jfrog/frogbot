@@ -127,14 +127,14 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 						continue
 					}
 					// FixedVersions array is sorted, and we have to take only the minimal fix version to avoid a breakage
-					fixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
+					vulnFixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
-						// Fix version for current impacted package already exists, so we need to select between the existing fix version and the current.
-						fixVersionInfo.UpdateFixVersion(fixVersion)
+						// More than one vulnerability can exist on the same impacted package. Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
+						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, PackageType(vulnerability.ImpactedPackageType))
+						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, PackageType(vulnerability.ImpactedPackageType))
 					}
 				}
 			}
