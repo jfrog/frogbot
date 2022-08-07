@@ -126,7 +126,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 					if !fixVulnerability {
 						continue
 					}
-					// FixedVersions array is sorted, and we have to take only the minimal fix version to avoid a breakage
+					// Get the minimal fix version that fixes the current vulnerability. vulnerability.FixedVersions array is sorted, so we take the first index.
 					vulnFixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
@@ -296,7 +296,7 @@ func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersio
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
-	// fvi.fixVersion < newFixVersion => fvi.fixVersion = newFixVersion
+	// Update fvi.fixVersion as the maximum version if found a new version that greater than the previous max
 	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
