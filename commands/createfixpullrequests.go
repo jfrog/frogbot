@@ -130,7 +130,8 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 					vulnFixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
-						// More than one vulnerability can exist on the same impacted package. Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
+						// More than one vulnerability can exist on the same impacted package.
+						// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
 						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
