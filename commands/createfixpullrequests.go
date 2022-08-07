@@ -3,12 +3,12 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/gofrog/version"
 	"os/exec"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -126,14 +126,16 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 					if !fixVulnerability {
 						continue
 					}
-					fixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
+					// Get the minimal fix version that fixes the current vulnerability. vulnerability.FixedVersions array is sorted, so we take the first index.
+					vulnFixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
-						// Fix version for current impacted package already exists, so we need to select between the existing fix version and the current.
-						fixVersionInfo.UpdateFixVersion(fixVersion)
+						// More than one vulnerability can exist on the same impacted package.
+						// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
+						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(fixVersion, PackageType(vulnerability.ImpactedPackageType))
+						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, PackageType(vulnerability.ImpactedPackageType))
 					}
 				}
 			}
@@ -295,7 +297,8 @@ func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersio
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
-	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).AtLeast(newFixVersion) {
+	// Update fvi.fixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
 }
