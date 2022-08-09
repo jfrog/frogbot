@@ -35,6 +35,25 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersion: getPipFixPackageVersionFunc()},
 }
 
+var requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
+
+type pipPackageRegexTest struct {
+	packageName         string
+	expectedRequirement string
+}
+
+var pipPackagesRegexTests = []pipPackageRegexTest{
+	{"oslo.config", "oslo.config>=1.12.1,<1.13"},
+	{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
+	{"paramiko", "paramiko==2.7.2"},
+	{"passlib", "passlib<=1.7.4"},
+	{"prance", "prance>=0.9.0"},
+	{"prompt-toolkit", "prompt-toolkit~=1.0.15"},
+	{"pyinotify", "pyinotify>0.9.6"},
+	{"pyjwt", "PyJWT>1.7.1"},
+	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
+}
+
 func getGenericFixPackageVersionFunc() FixGenericPackagesTestFunc {
 	return func(test packageFixTest) error {
 		return fixPackageVersionGeneric(test.commandArgs, test.technology, test.impactedPackaged, test.fixVersion, test.operator)
@@ -128,12 +147,10 @@ func TestGenerateFixBranchName(t *testing.T) {
 	}
 }
 
-func TestPythonPackageRegex(t *testing.T) {
-	requirementsFile := "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1"
-	packages := []string{"oslo.config", "oslo.utils", "paramiko", "passlib", "prance", "prompt-toolkit", "pyinotify", "pyjwt"}
-	for _, pack := range packages {
-		re := regexp.MustCompile(pythonPackageRegexPrefix + pack + pythonPackageRegexSuffix)
-		test := re.FindString(requirementsFile)
-		assert.NotEqual(t, "", test)
+func TestPipPackageRegex(t *testing.T) {
+	for _, pack := range pipPackagesRegexTests {
+		re := regexp.MustCompile(pythonPackageRegexPrefix + pack.packageName + pythonPackageRegexSuffix)
+		found := re.FindString(requirementsFile)
+		assert.Equal(t, pack.expectedRequirement, found)
 	}
 }

@@ -22,8 +22,8 @@ import (
 // case insensitive
 var pythonPackageRegexPrefix = "(?i)"
 
-// Match all possible operators and versions
-var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*[\\.|\\d]*\\d(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*[\\.|\\d]*\\d)?"
+// Match all possible operators and versions syntax
+var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
 type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
