@@ -3,9 +3,9 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"os"
-	"github.com/jfrog/gofrog/version"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -18,6 +18,12 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
+
+// case insensitive
+var pythonPackageRegexPrefix = "(?i)"
+
+// Match all possible operators and versions
+var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*[\\.|\\d]*\\d(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*[\\.|\\d]*\\d)?"
 
 type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
@@ -287,6 +293,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 }
 
 func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) error {
+	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + fixVersion
 	if requirementsFile == "" {
 		requirementsFile = "setup.py"
@@ -296,10 +303,11 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 		return err
 	}
 	currentFile := string(data)
-	re := regexp.MustCompile("(?i)" + impactedPackage + "(.[^\\s]+.?\\d)?")
+	// This regex will match the impactedPackage with it's pinned version e.g PyJWT==1.7.1
+	re := regexp.MustCompile(pythonPackageRegexPrefix + impactedPackage + pythonPackageRegexSuffix)
 	packageToReplace := re.FindString(currentFile)
 	if packageToReplace == "" {
-		return fmt.Errorf("impacted package %s not found", packageToReplace)
+		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
 	}
 	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
 	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
