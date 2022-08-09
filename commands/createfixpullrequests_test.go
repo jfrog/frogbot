@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -124,5 +125,15 @@ func TestGenerateFixBranchName(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
+	}
+}
+
+func TestPythonPackageRegex(t *testing.T) {
+	requirementsFile := "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1"
+	packages := []string{"oslo.config", "oslo.utils", "paramiko", "passlib", "prance", "prompt-toolkit", "pyinotify", "pyjwt"}
+	for _, pack := range packages {
+		re := regexp.MustCompile(pythonPackageRegexPrefix + pack + pythonPackageRegexSuffix)
+		test := re.FindString(requirementsFile)
+		assert.NotEqual(t, "", test)
 	}
 }
