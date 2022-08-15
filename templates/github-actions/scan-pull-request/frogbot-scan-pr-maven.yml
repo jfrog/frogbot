@@ -1,4 +1,4 @@
-name: "Frogbot Scan PR"
+name: "Frogbot Scan Pull Requests"
 on:
   pull_request_target:
     types: [opened, synchronize]

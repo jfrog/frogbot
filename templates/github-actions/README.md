@@ -23,6 +23,6 @@ Create a file named `frogbot-scan-pull-requests.yml` with the content of one of 
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 ### Pull Requests Opening
 Create a file named `frogbot-open-pull-requests.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
-- [Maven](create-fix-pull-requests/frogbot-fix-maven.yml)
-- [npm](create-fix-pull-requests/frogbot-fix-npm.yml)
-- [Go](create-fix-pull-requests/frogbot-fix-go.yml)
+- [Maven](create-fix-pull-requests/frogbot-scan-and-fix-maven.yml)
+- [npm](create-fix-pull-requests/frogbot-scan-and-fix-npm.yml)
+- [Go](create-fix-pull-requests/frogbot-scan-and-fix-go.yml)
