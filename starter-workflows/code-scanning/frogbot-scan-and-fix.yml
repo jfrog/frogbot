@@ -7,7 +7,7 @@
 # Uses JFrog Xray to scan the project.
 # Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
 
-name: "Frogbot Fix"
+name: "Frogbot Scan and Fix"
 on:
   push:
     branches:
