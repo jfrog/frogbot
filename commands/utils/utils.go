@@ -72,12 +72,12 @@ func Md5Hash(values ...string) (string, error) {
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
 func UploadScanToGitProvider(scanResults []services.ScanResponse, params *FrogbotParams, client vcsclient.VcsClient) error {
-	// Don't do anything if scanResults is empty
-	if xrayutils.IsEmptyScanResponse(scanResults) {
-		return nil
-	}
 	if params.GitProvider.String() != vcsutils.GitHub.String() {
 		clientLog.Info("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+		return nil
+	}
+	// Don't do anything if scanResults is empty
+	if xrayutils.IsEmptyScanResponse(scanResults) {
 		return nil
 	}
 	includeVulnerabilities := params.Project == "" && params.Watches == ""
