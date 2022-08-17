@@ -17,14 +17,16 @@ import (
 type GitManager struct {
 	repository *git.Repository
 	remoteName string
+	auth       *http.BasicAuth
 }
 
-func NewGitManager(projectPath, remoteName string) (*GitManager, error) {
+func NewGitManager(projectPath, remoteName, token string) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{repository: repository, remoteName: remoteName}, nil
+	basicAuth := createBasicAuth(token)
+	return &GitManager{repository: repository, remoteName: remoteName, auth: basicAuth}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -35,7 +37,7 @@ func (gm *GitManager) Checkout(branchName string) error {
 	return err
 }
 
-func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error {
+func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	// Gets the remote repo url from the current .git dir
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
@@ -48,7 +50,7 @@ func (gm *GitManager) Clone(gitToken, destinationPath, branchName string) error 
 
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
-		Auth:          createBasicAuth(gitToken),
+		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
 		ReferenceName: getFullBranchName(branchName),
 	}
@@ -132,7 +134,7 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
-	refList, err := remote.List(&git.ListOptions{})
+	refList, err := remote.List(&git.ListOptions{Auth: gm.auth})
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
@@ -145,11 +147,11 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 	return false, nil
 }
 
-func (gm *GitManager) Push(token string) error {
+func (gm *GitManager) Push() error {
 	// Pushing to remote
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
-		Auth:       createBasicAuth(token),
+		Auth:       gm.auth,
 	})
 	if err != nil {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
