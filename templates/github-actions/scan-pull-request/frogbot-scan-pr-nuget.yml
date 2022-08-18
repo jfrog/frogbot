@@ -4,6 +4,7 @@ on:
     types: [opened, synchronize]
 permissions:
   pull-requests: write
+  contents: read
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
