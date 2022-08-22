@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/sassoftware/go-rpmutils"
+	"github.com/google/uuid"
 )
 
 func main() {
 	fmt.Println("test")
-	_ = rpmutils.ARCH
+	uuid.New()
 }

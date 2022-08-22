@@ -11,9 +11,7 @@ import (
 	"testing"
 )
 
-type FixMavenPackagesTestFunc func(test packageFixTest) error
-type FixGenericPackagesTestFunc func(test packageFixTest) error
-type FixPipPackagesTestFunc func(test packageFixTest) error
+type FixPackagesTestFunc func(test packageFixTest) error
 
 type packageFixTest struct {
 	commandArgs       []string
@@ -27,7 +25,7 @@ type packageFixTest struct {
 
 var packageFixTests = []packageFixTest{
 	{commandArgs: []string{"install"}, technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{commandArgs: []string{"get"}, technology: coreutils.Go, impactedPackaged: "github.com/sassoftware/go-rpmutils", fixVersion: "0.1.1", operator: "@v", packageDescriptor: "go.mod", fixPackageVersion: getGenericFixPackageVersionFunc()},
+	{commandArgs: []string{"get"}, technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", operator: "@v", packageDescriptor: "go.mod", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{commandArgs: []string{"up"}, technology: strings.ToLower(coreutils.Yarn), impactedPackaged: "minimist", fixVersion: "1.2.6", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{commandArgs: []string{"install"}, technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", operator: "==", packageDescriptor: "Pipfile", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersion: getMavenFixPackageVersionFunc()},
@@ -54,13 +52,13 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
 }
 
-func getGenericFixPackageVersionFunc() FixGenericPackagesTestFunc {
+func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
 	return func(test packageFixTest) error {
 		return fixPackageVersionGeneric(test.commandArgs, test.technology, test.impactedPackaged, test.fixVersion, test.operator)
 	}
 }
 
-func getMavenFixPackageVersionFunc() FixMavenPackagesTestFunc {
+func getMavenFixPackageVersionFunc() FixPackagesTestFunc {
 	return func(test packageFixTest) error {
 		mavenDepToPropertyMap := map[string][]string{
 			test.impactedPackaged: {"junit:junit", "3.8.1"},
@@ -72,7 +70,7 @@ func getMavenFixPackageVersionFunc() FixMavenPackagesTestFunc {
 	}
 }
 
-func getPipFixPackageVersionFunc() FixPipPackagesTestFunc {
+func getPipFixPackageVersionFunc() FixPackagesTestFunc {
 	return func(test packageFixTest) error {
 		return fixPackageVersionPip(test.impactedPackaged, test.fixVersion, test.packageDescriptor)
 	}

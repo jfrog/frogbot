@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -304,7 +305,7 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 	if requirementsFile == "" {
 		requirementsFile = "setup.py"
 	}
-	data, err := os.ReadFile(requirementsFile)
+	data, err := os.ReadFile(filepath.Clean(requirementsFile))
 	if err != nil {
 		return err
 	}
@@ -316,7 +317,7 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
 	}
 	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
-	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0666)
+	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0600)
 	if err != nil {
 		return err
 	}
