@@ -39,6 +39,12 @@ Once completed, you'll find the frogbot executable at the current directory.
 
 ## Tests
 
+Before running the tests, generate mocks by running the following command from within the root directory of the project:
+
+```sh
+go generate ./...
+```
+
 To run the tests, follow these steps:
 
 1. Set the `JF_URL` & `JF_ACCESS_TOKEN` environment variables with your JFrog platform credentials.

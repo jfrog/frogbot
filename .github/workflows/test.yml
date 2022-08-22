@@ -35,6 +35,9 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
 
       # Run gosec
       - name: Install gosec
@@ -95,32 +98,3 @@ jobs:
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
         run: ./frogbot scan-pull-request
-
-  # Build and run frogbot current changes for visual sanity check.
-  sanity-push:
-    needs: tests
-    if: ${{ github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.17.x
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Build Frogbot
-        run: buildscripts/build.sh
-
-      - name: Create Fix Pull Requests
-        env:
-          JF_URL: ${{ secrets.FROGBOT_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
-          JF_GIT_TOKEN: ${{ secrets.JF_GIT_TOKEN }}
-          JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
-          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
-          JF_GIT_PROVIDER: "github"
-          JF_GIT_OWNER: ${{ github.repository_owner }}
-          JF_GIT_REPO: ${{ github.event.repository.name }}
-        run: ./frogbot create-fix-pull-requests

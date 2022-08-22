@@ -1,9 +1,9 @@
 __tests__/runner/*
 frogbot
 frogbot.exe
+*mock*
 coverage
 .idea
 .vscode
 *.iml
-node_modules
 .DS_Store
