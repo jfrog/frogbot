@@ -45,6 +45,7 @@ jobs:
       - name: Install pipenv
         run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
       - run: pipenv install
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
