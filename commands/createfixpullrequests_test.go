@@ -77,6 +77,8 @@ func getPipFixPackageVersionFunc() FixPackagesTestFunc {
 }
 
 func TestFixPackageVersion(t *testing.T) {
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
 	testdataDir, err := filepath.Abs(filepath.Join("testdata/projects"))
 	assert.NoError(t, err)
 	for _, test := range packageFixTests {
@@ -93,6 +95,7 @@ func TestFixPackageVersion(t *testing.T) {
 			assert.Contains(t, string(file), test.fixVersion)
 		})
 	}
+	assert.NoError(t, os.Chdir(currentDir))
 }
 
 ///      1.0         --> 1.0 ≤ x

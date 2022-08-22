@@ -28,8 +28,6 @@ jobs:
         with:
           node-version: "16"
 
-      - name: Install yarn
-        run: npm install -g yarn
 
       - name: Go Cache
         uses: actions/cache@v3
@@ -47,7 +45,6 @@ jobs:
       - name: Install pipenv
         run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
       - run: pipenv install
-
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
