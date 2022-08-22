@@ -21,8 +21,14 @@ type CreateFixPullRequestsCmd struct {
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Do scan current branch
+	// Scan the current Branch
 	scanResults, err := cfp.scan(params)
+	if err != nil {
+		return err
+	}
+
+	// Upload scan results to the relevant Git provider code scanning UI
+	err = utils.UploadScanToGitProvider(scanResults, params, client)
 	if err != nil {
 		return err
 	}
