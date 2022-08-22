@@ -92,6 +92,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+exclude github.com/leekchan/accounting v1.0.0
+
 //replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.14.1-0.20220621123826-1e21b88b991f
 
 //replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.16.1-0.20220621124242-4fe813879da6
