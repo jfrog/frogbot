@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/mock v1.6.0
+	github.com/jfrog/build-info-go v1.4.0
 	github.com/jfrog/froggit-go v1.3.0
 	github.com/jfrog/gofrog v1.2.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.19.1
@@ -43,7 +44,6 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jedib0t/go-pretty/v6 v6.3.5 // indirect
-	github.com/jfrog/build-info-go v1.4.0 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.6 // indirect
