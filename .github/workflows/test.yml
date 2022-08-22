@@ -36,13 +36,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Setup Python
+      - name: Setup Python3
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
-          cache: "pipenv"
-      - name: Install pipenv
-        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+          python-version: "3.x"
+
+      - name: Setup Pipenv
+        run: pip3 install pipenv
 
       # Generate mocks
       - name: Generate mocks
