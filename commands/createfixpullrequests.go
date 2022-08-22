@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -304,6 +305,14 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 	fixedPackage := impactedPackage + "==" + fixVersion
 	if requirementsFile == "" {
 		requirementsFile = "setup.py"
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	fullPath := filepath.Join(wd, requirementsFile)
+	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
+		return errors.New("wrong requirements file input")
 	}
 	data, err := os.ReadFile(filepath.Clean(requirementsFile))
 	if err != nil {
