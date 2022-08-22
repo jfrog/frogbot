@@ -1,15 +1,20 @@
 package utils
 
 import (
+	"context"
 	"crypto"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"os"
-
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
 )
 
 type ErrMissingEnv struct {
@@ -63,4 +68,27 @@ func Md5Hash(values ...string) (string, error) {
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
+func UploadScanToGitProvider(scanResults []services.ScanResponse, params *FrogbotParams, client vcsclient.VcsClient) error {
+	if params.GitProvider.String() != vcsutils.GitHub.String() {
+		clientLog.Debug("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+		return nil
+	}
+	// Don't do anything if scanResults is empty
+	if xrayutils.IsEmptyScanResponse(scanResults) {
+		return nil
+	}
+	includeVulnerabilities := params.Project == "" && params.Watches == ""
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
+	if err != nil {
+		return err
+	}
+	_, err = client.UploadCodeScanning(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, scan)
+	if err != nil {
+		return errors.New("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+	}
+
+	return nil
 }

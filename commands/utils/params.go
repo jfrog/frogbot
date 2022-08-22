@@ -19,6 +19,7 @@ type FrogbotParams struct {
 	InstallCommandName        string
 	IncludeAllVulnerabilities bool
 	InstallCommandArgs        []string
+	RequirementsFile          string
 	SimplifiedOutput          bool
 }
 
@@ -126,9 +127,10 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	includeAllIssues := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
 	params.IncludeAllVulnerabilities, err = strconv.ParseBool(includeAllIssues)
 	if err != nil {
-		log.Info("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
+		log.Debug("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
 		params.IncludeAllVulnerabilities = false
 	}
+	params.RequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
 		return
