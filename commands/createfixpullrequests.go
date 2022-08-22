@@ -19,7 +19,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
-// case insensitive
+// Package names are case-insensitive with this prefix
 var pythonPackageRegexPrefix = "(?i)"
 
 // Match all possible operators and versions syntax
@@ -253,8 +253,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType Pac
 	return err
 }
 
-// The majority of package managers already support upgrading specific package versions and update the dependency files automatically
+// The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
 // In other cases, we had to handle the upgrade process
+// commandArgs - Package manager upgrade command
+// commandName - Name of the package manager
+// impactedPackage - Vulnerable package to upgrade
+// fixVersion - The version that fixes the vulnerable package
+// operator - The operator between the impactedPackage to the fixVersion
 func fixPackageVersionGeneric(commandArgs []string, commandName, impactedPackage, fixVersion, operator string) error {
 	fixedPackage := impactedPackage + operator + fixVersion
 	commandArgs = append(commandArgs, fixedPackage)
