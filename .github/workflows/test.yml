@@ -35,6 +35,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -43,6 +44,9 @@ jobs:
       - name: Install pipenv
         run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
       - run: pipenv install
+
+      - name: Install Yarn
+        uses: Borales/actions-yarn@v3
 
       # Generate mocks
       - name: Generate mocks
