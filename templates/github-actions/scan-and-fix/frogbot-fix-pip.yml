@@ -13,20 +13,16 @@ jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Install prerequisites
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          node-version: "16.x"
-
+          python-version: '3.9'
+          cache: 'pip'
       - uses: jfrog/frogbot@v2
         env:
-          # [Mandatory]
-          # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "npm i"
-
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
@@ -44,6 +40,10 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # Uncomment the below options if you'd like to use them.
+
+          # [Optional]
+          # The file used to install dependencies, if not used - 'setup.py' will be the default
+          # JF_REQUIREMENTS_FILE: "requirements.txt"
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub

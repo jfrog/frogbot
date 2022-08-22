@@ -98,8 +98,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
 ## Pull requests opening
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and Bitbucket will be supported soon. Projects that use one of the following tools to download their dependencies are currently supported.
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
+version with a fix.
+Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that
+are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and
+Bitbucket will be supported soon. Projects that use one of the following tools to download their dependencies are
+currently supported.
 
 - npm
 - Maven
@@ -109,15 +113,20 @@ Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scannin
 
 ## 🖥️ Installing and using Frogbot
 ### General
-1. Frogbot requires a JFrog environment to scan pull requests. Don't have a JFrog environment? No problem - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save the connection details (URL, username, and password) as secrets in Git.
+
+1. Frogbot requires a JFrog environment to scan pull requests. Don't have a JFrog environment? No problem
+   - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save
+   the connection details (URL, username, and password) as secrets in Git.
 2. [Setting up Frogbot on GitHub repositories](#setting-up-frogbot-on-github-repositories)
 3. [Setting up Frogbot on GitLab repositories](#setting-up-frogbot-on-gitlab-repositories)
 4. [Setting up Frogbot on Bitbucket Server repositories](#setting-up-frogbot-on-bitbucket-server-repositories)
 
 ### Set up a FREE JFrog Environment in the cloud
+
 Need a FREE JFrog environment in the cloud, so Frogbot can scan your pull requests?
 
-Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands will do the following:
+Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands
+will do the following:
 
 1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 2. Create a FREE JFrog environment in the cloud for you.
@@ -176,13 +185,14 @@ frogbot-scan:
       when: manual
       variables:
         FROGBOT_CMD: "scan-pull-request"
+        JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
       # Creating fix pull requests will be triggered by any push to the default branch.
       # You can change it to any other branch you want, for example:
       # if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
-  when: manual
+        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
     # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
@@ -205,7 +215,6 @@ frogbot-scan:
     JF_GIT_PROVIDER: gitlab
     JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
     JF_GIT_REPO: $CI_PROJECT_NAME
-    JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
     JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
 
     # Uncomment the below options if you'd like to use them.

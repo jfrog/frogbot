@@ -13,15 +13,17 @@ jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Install prerequisites
-      - name: Set up Java
-        uses: actions/setup-java@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          java-version: "11"
-          distribution: "temurin"
-
+          python-version: '3.9'
+          cache: 'pipenv'
+      - name: Install pipenv
+        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+      - run: pipenv install
       - uses: jfrog/frogbot@v2
         env:
           # [Mandatory]
@@ -52,7 +54,7 @@ jobs:
 
           # [Optional, default: "."]
           # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/pom.xml/dir
+          # JF_WORKING_DIR: path/to/package.json/dir
 
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches

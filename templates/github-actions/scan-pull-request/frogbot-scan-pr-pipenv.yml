@@ -1,9 +1,10 @@
-name: "Frogbot Scan PR"
+name: "Frogbot Scan Pull Request"
 on:
   pull_request_target:
     types: [opened, synchronize]
 permissions:
   pull-requests: write
+  contents: read
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -24,10 +25,6 @@ jobs:
 
       - uses: jfrog/frogbot@v2
         env:
-          # [Optional]
-          # The command that installs the dependencies
-          JF_INSTALL_DEPS_CMD: "pipenv install"
-
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}

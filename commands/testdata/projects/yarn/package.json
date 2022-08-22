@@ -1,0 +1,10 @@
+{
+  "name": "test_yarn_project",
+  "version": "2",
+  "main": "index.js",
+  "license": "MIT",
+  "packageManager": "yarn@3.2.2",
+  "dependencies": {
+    "minimist": "1.2.5"
+  }
+}
