@@ -23,10 +23,11 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "~1.17"
-      - name: Install npm
+      - name: Install npm and yarn
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+        run: npm install -g yarn && yarn set version stable
 
       - name: Go Cache
         uses: actions/cache@v3
@@ -44,9 +45,6 @@ jobs:
       - name: Install pipenv
         run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
       - run: pipenv install
-
-      - name: Install Yarn
-        uses: Borales/actions-yarn@v3
 
       # Generate mocks
       - name: Generate mocks
