@@ -70,13 +70,15 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
 func UploadScanToGitProvider(scanResults []services.ScanResponse, params *FrogbotParams, client vcsclient.VcsClient) error {
+	if params.GitProvider.String() != vcsutils.GitHub.String() {
+		clientLog.Debug("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+		return nil
+	}
 	// Don't do anything if scanResults is empty
 	if xrayutils.IsEmptyScanResponse(scanResults) {
 		return nil
-	}
-	if params.GitProvider.String() != vcsutils.GitHub.String() {
-		return errors.New("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
 	}
 	includeVulnerabilities := params.Project == "" && params.Watches == ""
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
@@ -85,9 +87,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, params *Frogbo
 	}
 	_, err = client.UploadCodeScanning(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, scan)
 	if err != nil {
-		// The upload might fail if the git provider does not support code scanning
-		// therefore 'UploadCodeScanning' is not implemented for this git provider
-		clientLog.Debug("Scanning analysis upload failed for Git provider: " + params.GitProvider.String() + " with the following error: \n" + err.Error())
+		return errors.New("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
 	}
 
 	return nil

@@ -7,12 +7,13 @@
 # Uses JFrog Xray to scan the project.
 # Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
 
-name: "Frogbot Scan"
+name: "Frogbot Scan Pull Request"
 on:
   pull_request_target:
     types: [ opened, synchronize ]
 permissions:
   pull-requests: write
+  contents: read
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
