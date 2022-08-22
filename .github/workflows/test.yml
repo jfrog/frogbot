@@ -27,9 +27,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
-          
+
       - name: Install yarn
-        run: npm install -g yarn && yarn set version stable
+        run: npm install -g yarn && yarn set version berry
 
       - name: Go Cache
         uses: actions/cache@v3
