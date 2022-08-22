@@ -23,10 +23,12 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "~1.17"
-      - name: Install npm and yarn
+      - name: Install npm
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+          
+      - name: Install yarn
         run: npm install -g yarn && yarn set version stable
 
       - name: Go Cache
