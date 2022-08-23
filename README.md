@@ -11,25 +11,24 @@
 
 ## Table of contents
 - [What is Frogbot?](#what-is-frogbot)
-- [Pull requests scanning](#pull-requests-scanning)
-- [Pull requests opening](#pull-requests-opening)
+- [Scanning pull requests after they are opened](#scanning-pull-requests-after-they-are-opened)
+- [Scanning repositories after pull requests are merged](#scanning-repositories-after-pull-requests-are-merged)
 - [Installing and using Frogbot](#installing-and-using-frogbot)
 - [Contributions](#contributions)
 
 <div id="what-is-frogbot"></div>
 
 ## 🤖 What is Frogbot?
-Frogbot is a Git bot that does the following:
-1. Scans pull requests for security vulnerabilities.
-2. Opens pull requests with fixes for security vulnerabilities.  
+Frogbot is a Git bot that scans your pull requests after they are opened and also scans your Git repositories right after pull requests are merged.
 
-## Pull requests scanning
+## Scanning pull requests after they are opened
 ### General 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 or above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 For pull requests scanning, please note that **GitHub**, **GitLab** and **Bitbucket Server** are supported.
 Projects that use one of the following tools to download their dependencies are currently supported.
 
 - Npm
+- Yarn
 - Maven
 - Gradle
 - Go
@@ -97,36 +96,33 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |      v3.5.1       |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
-## Pull requests opening
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
-version with a fix.
+## Scanning repositories after pull requests are merged
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix. 
+
+For Gihub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which can be viewed through the GitHub UI.
+
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that
 are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and
 Bitbucket will be supported soon. Projects that use one of the following tools to download their dependencies are
 currently supported.
 
-- npm
+- Npm
+- Yarn
 - Maven
 - Go
+- Pip
+- Pipenv
 
 <div id="installing-and-using-frogbot"></div>
 
 ## 🖥️ Installing and using Frogbot
-### General
+<details>
+  <summary>Setting up a FREE JFrog Environment in the cloud</summary>
 
-1. Frogbot requires a JFrog environment to scan pull requests. Don't have a JFrog environment? No problem
-   - [Set Up a FREE JFrog Environment in the Cloud](#set-up-a-free-jfrog-environment-in-the-cloud). You'll later save
-   the connection details (URL, username, and password) as secrets in Git.
-2. [Setting up Frogbot on GitHub repositories](#setting-up-frogbot-on-github-repositories)
-3. [Setting up Frogbot on GitLab repositories](#setting-up-frogbot-on-gitlab-repositories)
-4. [Setting up Frogbot on Bitbucket Server repositories](#setting-up-frogbot-on-bitbucket-server-repositories)
+Frogbot requires a JFrog environment to scan your projects with. If you don't have an environment, we can set up one in the cloud for you doe free.
+Just run one of the following commands in your terminal, to set up an environment in less than a minute. 
 
-### Set up a FREE JFrog Environment in the cloud
-
-Need a FREE JFrog environment in the cloud, so Frogbot can scan your pull requests?
-
-Just run one of the following commands in your terminal, to set up an environment in less than a minute. The commands
-will do the following:
+The commands will do the following:
 
 1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 2. Create a FREE JFrog environment in the cloud for you.
@@ -144,8 +140,11 @@ curl -fL https://getcli.jfrog.io?setup | sh
 ```
 powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
 ```
+</details>
 
-### Setting up Frogbot on GitHub repositories
+<details>
+  <summary>Setting up Frogbot on GitHub repositories</summary>
+
 Frogbot is installed on GitHub repositories using GitHub Actions. 
 Here's how you install it:
 
@@ -165,7 +164,11 @@ Here's how you install it:
 5. Use these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
 6. Push the workflow files to the `.github/workflows` directory in the root of your GitHub repository.
 
-### Setting up Frogbot on GitLab repositories
+</details>
+
+<details>
+  <summary>Setting up Frogbot on GitLab repositories</summary>
+
 Frogbot is installed on GitLab repositories using GitLab CI.
 Here's how you install it:
 
@@ -251,8 +254,11 @@ frogbot-scan:
     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
     # .\frogbot.exe ${FROGBOT_CMD}
 ```
+</details>
 
-### Setting up Frogbot on Bitbucket Server repositories
+<details>
+  <summary>Setting up Frogbot on Bitbucket Server repositories</summary>
+    
 Frogbot is installed on Bitbucket Server repositories using JFrog Pipelines or Jenkins.
 #### Using JFrog Pipelines
 Here's how you install it using JFrog Pipelines:
@@ -447,6 +453,7 @@ pipeline {
     }
 }
 ```
+</details>
 
 <div id="contributions"></div>
 
