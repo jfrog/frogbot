@@ -232,7 +232,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion, requirementsFile string) error {
 	var err error
 	switch packageType {
-	case coreutils.Go:
+	case coreutils.Go, "Go":
 		commandArgs := []string{"get"}
 		err = fixPackageVersionGeneric(commandArgs, coreutils.Go, impactedPackage, fixVersion, "@v")
 	case coreutils.Npm:
