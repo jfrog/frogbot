@@ -193,9 +193,9 @@ frogbot-scan:
       variables:
         FROGBOT_CMD: "scan-pull-request"
         JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-        # Creating fix pull requests will be triggered by any push to the default branch.
-        # You can change it to any other branch you want, for example:
-        # if: $CI_COMMIT_BRANCH == "dev"
+      # Creating fix pull requests will be triggered by any push to the default branch.
+      # You can change it to any other branch you want, for example:
+      # if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
@@ -289,32 +289,32 @@ resources:
     configuration:
       interval: '*/5 * * * *'     # Every 5 minutes
 
- 
+
 pipelines:
-   - name: Frogbot
-     steps:
-        - name: Frogbot_Scan
-          type: Bash # For Windows runner: PowerShell
-          configuration:
-             integrations:
-                - name: jfrogPlatform
-                - name: bitbucket
-             inputResources:
-                - name: cron_trigger
-                environmentVariables:
-                   # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
-                   # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-                   JF_INSTALL_DEPS_CMD: ""
+  - name: Frogbot
+    steps:
+      - name: Frogbot_Scan
+        type: Bash # For Windows runner: PowerShell
+        configuration:
+          integrations:
+            - name: jfrogPlatform
+            - name: bitbucket
+          inputResources:
+            - name: cron_trigger
+          environmentVariables:
+            # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+            # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+            JF_INSTALL_DEPS_CMD: ""
 
-                   # [Mandatory]
-                   # JFrog platform URL
-                   JF_URL: $int_jfrogPlatform_url
+            # [Mandatory]
+            # JFrog platform URL
+            JF_URL: $int_jfrogPlatform_url
 
-                   # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                   # JFrog access token with 'read' permissions for Xray
-                   JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+            # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+            # JFrog access token with 'read' permissions for Xray
+            JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
 
-                   # [Mandatory]
+            # [Mandatory]
             # Bitbucket accesses token with the following permissions 
             JF_GIT_TOKEN: $int_bitbucket_token
             JF_GIT_PROVIDER: "bitbucketServer"
