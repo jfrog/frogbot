@@ -1,4 +1,4 @@
-name: "Frogbot Fix"
+name: "Frogbot Scan and Fix"
 on:
   push:
     # Creating fix pull requests will be triggered by any push to one of the these branches.
@@ -13,19 +13,20 @@ jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       # Install prerequisites
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
         with:
-          python-version: '3.9'
-          cache: 'pipenv'
-      - name: Install pipenv
-        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
-      - run: pipenv install
+          node-version: "16.x"
+
       - uses: jfrog/frogbot@v2
         env:
+          # [Mandatory]
+          # The command that installs the dependencies
+          JF_INSTALL_DEPS_CMD: "yarn install"
+
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
