@@ -187,32 +187,32 @@ Here's how you install it:
 
 ```yml
 frogbot-scan:
-   rules:
-      - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: manual
-        variables:
-           FROGBOT_CMD: "scan-pull-request"
-           JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-         # Creating fix pull requests will be triggered by any push to the default branch.
-         # You can change it to any other branch you want, for example:
-         # if: $CI_COMMIT_BRANCH == "dev"
-      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-        variables:
-           FROGBOT_CMD: "create-fix-pull-requests"
-           JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
-   variables:
-      # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
-      # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-      JF_INSTALL_DEPS_CMD: ""
+      variables:
+        FROGBOT_CMD: "scan-pull-request"
+        JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+        # Creating fix pull requests will be triggered by any push to the default branch.
+        # You can change it to any other branch you want, for example:
+        # if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        FROGBOT_CMD: "create-fix-pull-requests"
+        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
+  variables:
+    # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+    # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+    JF_INSTALL_DEPS_CMD: ""
 
-      # [Mandatory]
-      # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-      JF_URL: $JF_URL
+    # [Mandatory]
+    # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+    JF_URL: $JF_URL
 
-      # [Mandatory if JF_ACCESS_TOKEN is not provided]
-      # JFrog user and password with 'read' permissions for Xray
-      JF_USER: $JF_USER
-      JF_PASSWORD: $JF_PASSWORD
+    # [Mandatory if JF_ACCESS_TOKEN is not provided]
+    # JFrog user and password with 'read' permissions for Xray
+    JF_USER: $JF_USER
+    JF_PASSWORD: $JF_PASSWORD
 
     # [Mandatory]
     # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
