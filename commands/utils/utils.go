@@ -89,7 +89,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, params *Frogbo
 	}
 	_, err = client.UploadCodeScanning(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, scan)
 	if err != nil {
-		return errors.New("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+		return errors.New("Upload Code Scanning failed:" + err.Error())
 	}
 
 	return nil
