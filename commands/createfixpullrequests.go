@@ -2,9 +2,14 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
@@ -16,13 +21,25 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
+// Package names are case-insensitive with this prefix
+var pythonPackageRegexPrefix = "(?i)"
+
+// Match all possible operators and versions syntax
+var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
+
 type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Do scan current branch
+	// Scan the current Branch
 	scanResults, err := cfp.scan(params)
+	if err != nil {
+		return err
+	}
+
+	// Upload scan results to the relevant Git provider code scanning UI
+	err = utils.UploadScanToGitProvider(scanResults, params, client)
 	if err != nil {
 		return err
 	}
@@ -181,7 +198,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
 	if err != nil {
 		return err
 	}
@@ -212,48 +229,108 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion string) error {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion, requirementsFile string) error {
+	var err error
 	switch packageType {
-	case "Go":
-		fixedImpactPackage := impactedPackage + "@v" + fixVersion
-		clientLog.Info(fmt.Sprintf("Running 'go get %s'", fixedImpactPackage))
-		var output []byte
-		output, err := exec.Command("go", "get", fixedImpactPackage).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("go get command failed: %s - %s", err.Error(), output)
-		}
-	case "npm":
-		packageFullName := impactedPackage + "@" + fixVersion
-		clientLog.Debug(fmt.Sprintf("Running 'npm install %s'", packageFullName))
-		output, err := exec.Command("npm", "install", packageFullName).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("npm install command failed: %s\n%s", err.Error(), output)
-		}
-	case "Maven":
-		properties := cfp.mavenDepToPropertyMap[impactedPackage]
-
-		// Update the package version. This command updates it only if the version is not a reference to a property.
-		updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
-		updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
-		clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-		updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
-		if err != nil {
-			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
-		}
-
-		// Update properties that represent this package's version.
-		for _, property := range properties {
-			updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
-			updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
-			clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-			updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
-			if err != nil {
-				return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
-			}
-		}
+	case coreutils.Go:
+		commandArgs := []string{"get"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Go, impactedPackage, fixVersion, "@v")
+	case coreutils.Npm:
+		commandArgs := []string{"install"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Npm, impactedPackage, fixVersion, "@")
+	case coreutils.Maven:
+		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
+	case coreutils.Yarn:
+		commandArgs := []string{"up"}
+		err = fixPackageVersionGeneric(commandArgs, strings.ToLower(coreutils.Yarn), impactedPackage, fixVersion, "@")
+	case coreutils.Pip:
+		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
+	case coreutils.Pipenv:
+		commandArgs := []string{"install"}
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Pipenv, impactedPackage, fixVersion, "==")
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
+
+	return err
+}
+
+// The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
+// In other cases, we had to handle the upgrade process
+// commandArgs - Package manager upgrade command
+// commandName - Name of the package manager
+// impactedPackage - Vulnerable package to upgrade
+// fixVersion - The version that fixes the vulnerable package
+// operator - The operator between the impactedPackage to the fixVersion
+func fixPackageVersionGeneric(commandArgs []string, commandName, impactedPackage, fixVersion, operator string) error {
+	fixedPackage := impactedPackage + operator + fixVersion
+	commandArgs = append(commandArgs, fixedPackage)
+	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
+	clientLog.Debug(fmt.Sprintf("Running '%s'", fullCommand))
+	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
+	if err != nil {
+		return fmt.Errorf("%s install command failed: %s\n%s", commandName, err.Error(), output)
+	}
+
+	return nil
+}
+
+func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixVersion string) error {
+	properties := cfp.mavenDepToPropertyMap[impactedPackage]
+	// Update the package version. This command updates it only if the version is not a reference to a property.
+	updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
+	clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
+	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
+	if err != nil {
+		return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
+	}
+
+	// Update properties that represent this package's version.
+	for _, property := range properties {
+		updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
+		clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
+		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
+		if err != nil {
+			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
+		}
+	}
+
+	return nil
+}
+
+func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) error {
+	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
+	fixedPackage := impactedPackage + "==" + fixVersion
+	if requirementsFile == "" {
+		requirementsFile = "setup.py"
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	fullPath := filepath.Join(wd, requirementsFile)
+	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
+		return errors.New("wrong requirements file input")
+	}
+	data, err := os.ReadFile(filepath.Clean(requirementsFile))
+	if err != nil {
+		return err
+	}
+	currentFile := string(data)
+	// This regex will match the impactedPackage with it's pinned version e.g. PyJWT==1.7.1
+	re := regexp.MustCompile(pythonPackageRegexPrefix + impactedPackage + pythonPackageRegexSuffix)
+	packageToReplace := re.FindString(currentFile)
+	if packageToReplace == "" {
+		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
+	}
+	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
+	err = os.WriteFile(requirementsFile, []byte(fixedFile), 0600)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -35,7 +35,15 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
- 
+
+      - name: Setup Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Setup Pipenv
+        run: pip3 install pipenv
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...

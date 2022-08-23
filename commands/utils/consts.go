@@ -30,6 +30,7 @@ const (
 	RescanRequestComment = "rescan"
 
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
+	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"
 
 	// JFrog platform environment variables
