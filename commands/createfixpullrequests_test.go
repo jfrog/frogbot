@@ -3,6 +3,7 @@ package commands
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/sassoftware/go-rpmutils"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -53,6 +54,9 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 }
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
+	rpm := rpmutils.URL
+	rpm = rpm
+
 	return func(test packageFixTest) error {
 		return fixPackageVersionGeneric(test.commandArgs, test.technology, test.impactedPackaged, test.fixVersion, test.operator)
 	}
