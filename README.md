@@ -28,7 +28,7 @@ For pull requests scanning, please note that **GitHub**, **GitLab** and **Bitbuc
 Projects that use one of the following tools to download their dependencies are currently supported.
 
 - Npm
-- Yarn
+- Yarn 2
 - Maven
 - Gradle
 - Go
@@ -181,37 +181,38 @@ Here's how you install it:
 
 **Important Guidelines**
 
-- For npm, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- For npm, yarn 2, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as
+  the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
 
 ```yml
 frogbot-scan:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+   rules:
+      - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: manual
-      variables:
-        FROGBOT_CMD: "scan-pull-request"
-        JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      # Creating fix pull requests will be triggered by any push to the default branch.
-      # You can change it to any other branch you want, for example:
-      # if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      variables:
-        FROGBOT_CMD: "create-fix-pull-requests"
-        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
-  variables:
-    # [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
-    # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-    JF_INSTALL_DEPS_CMD: ""
+        variables:
+           FROGBOT_CMD: "scan-pull-request"
+           JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+         # Creating fix pull requests will be triggered by any push to the default branch.
+         # You can change it to any other branch you want, for example:
+         # if: $CI_COMMIT_BRANCH == "dev"
+      - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+        variables:
+           FROGBOT_CMD: "create-fix-pull-requests"
+           JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
+   variables:
+      # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+      # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+      JF_INSTALL_DEPS_CMD: ""
 
-    # [Mandatory]
-    # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-    JF_URL: $JF_URL
+      # [Mandatory]
+      # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+      JF_URL: $JF_URL
 
-    # [Mandatory if JF_ACCESS_TOKEN is not provided]
-    # JFrog user and password with 'read' permissions for Xray
-    JF_USER: $JF_USER
-    JF_PASSWORD: $JF_PASSWORD
+      # [Mandatory if JF_ACCESS_TOKEN is not provided]
+      # JFrog user and password with 'read' permissions for Xray
+      JF_USER: $JF_USER
+      JF_PASSWORD: $JF_PASSWORD
 
     # [Mandatory]
     # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
@@ -275,8 +276,11 @@ Here's how you install it using JFrog Pipelines:
 
 **Important Guidelines**
 
-- For npm, nuget or dotnet: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
-- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
+- For npm, yarn 2, nuget or dotnet: Make sure to set inside the pipelines.yml the command in a way that it downloads
+  your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
+  or `nuget restore`
+- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines
+  agent.
 
 ```yml
 resources:
@@ -287,30 +291,30 @@ resources:
 
  
 pipelines:
-  - name: Frogbot
-    steps:
-      - name: Frogbot_Scan
-        type: Bash # For Windows runner: PowerShell
-        configuration:
-          integrations:
-            - name: jfrogPlatform
-            - name: bitbucket
-          inputResources:
-            - name: cron_trigger
-          environmentVariables:
-            # [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
-            # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-            JF_INSTALL_DEPS_CMD: ""
+   - name: Frogbot
+     steps:
+        - name: Frogbot_Scan
+          type: Bash # For Windows runner: PowerShell
+          configuration:
+             integrations:
+                - name: jfrogPlatform
+                - name: bitbucket
+             inputResources:
+                - name: cron_trigger
+                environmentVariables:
+                   # [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+                   # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+                   JF_INSTALL_DEPS_CMD: ""
 
-            # [Mandatory]
-            # JFrog platform URL
-            JF_URL: $int_jfrogPlatform_url
+                   # [Mandatory]
+                   # JFrog platform URL
+                   JF_URL: $int_jfrogPlatform_url
 
-            # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-            # JFrog access token with 'read' permissions for Xray
-            JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+                   # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+                   # JFrog access token with 'read' permissions for Xray
+                   JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
 
-            # [Mandatory]
+                   # [Mandatory]
             # Bitbucket accesses token with the following permissions 
             JF_GIT_TOKEN: $int_bitbucket_token
             JF_GIT_PROVIDER: "bitbucketServer"
@@ -365,7 +369,8 @@ Here's how you install it using Jenkins:
 
 **Important Guidelines**
 
-- For npm, nuget or dotnet: Make sure to set inside the Jenkinsfile the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- For npm, yarn 2, nuget or dotnet: Make sure to set inside the Jenkinsfile the command in a way that it downloads your
+  project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
@@ -374,25 +379,25 @@ Here's how you install it using Jenkins:
 CRON_SETTINGS = '''*/5 * * * *'''
 
 pipeline {
-    agent any
+   agent any
 
-    triggers {
-        cron(CRON_SETTINGS)
-    }
+   triggers {
+      cron(CRON_SETTINGS)
+   }
 
-    environment {
-        // [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
-        // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-        JF_INSTALL_DEPS_CMD= ""
+   environment {
+      // [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+      // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+      JF_INSTALL_DEPS_CMD = ""
 
-        // [Mandatory]
-        // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-        JF_URL= credentials("JF_URL")
+      // [Mandatory]
+      // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+      JF_URL = credentials("JF_URL")
 
-        // [Mandatory if JF_ACCESS_TOKEN is not provided]
-        // JFrog user and password with 'read' permissions for Xray
-        JF_USER= credentials("JF_USER")
-        JF_PASSWORD= credentials("JF_PASSWORD")
+      // [Mandatory if JF_ACCESS_TOKEN is not provided]
+      // JFrog user and password with 'read' permissions for Xray
+      JF_USER = credentials("JF_USER")
+      JF_PASSWORD = credentials("JF_PASSWORD")
 
         // [Mandatory]
         // Bitbucket accesses token with the following permissions 
