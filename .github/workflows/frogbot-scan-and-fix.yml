@@ -27,4 +27,4 @@ jobs:
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
-        run: ./frogbot create-fix-pull-request
+        run: ./frogbot create-fix-pull-requests
