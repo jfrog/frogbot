@@ -97,9 +97,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
 ## Scanning repositories after pull requests are merged
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix. 
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
+version with a fix.
 
-For Gihub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which can be viewed through the GitHub UI.
+For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which can be viewed through the GitHub UI:
+
+![](./images/github-code-scanning.png)
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that
 are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and
@@ -107,7 +110,7 @@ Bitbucket will be supported soon. Projects that use one of the following tools t
 currently supported.
 
 - Npm
-- Yarn
+- Yarn 2
 - Maven
 - Go
 - Pip
@@ -378,7 +381,7 @@ pipeline {
     }
 
     environment {
-        // [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
+        // [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
         // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
         JF_INSTALL_DEPS_CMD= ""
 
