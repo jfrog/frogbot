@@ -386,29 +386,29 @@ pipeline {
    }
 
    environment {
-      // [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
-      // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-      JF_INSTALL_DEPS_CMD = ""
+       // [Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+       // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+       JF_INSTALL_DEPS_CMD = ""
 
-      // [Mandatory]
-      // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-      JF_URL = credentials("JF_URL")
+       // [Mandatory]
+       // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+       JF_URL = credentials("JF_URL")
 
-      // [Mandatory if JF_ACCESS_TOKEN is not provided]
-      // JFrog user and password with 'read' permissions for Xray
-      JF_USER = credentials("JF_USER")
-      JF_PASSWORD = credentials("JF_PASSWORD")
+       // [Mandatory if JF_ACCESS_TOKEN is not provided]
+       // JFrog user and password with 'read' permissions for Xray
+       JF_USER = credentials("JF_USER")
+       JF_PASSWORD = credentials("JF_PASSWORD")
 
-        // [Mandatory]
-        // Bitbucket accesses token with the following permissions 
-        JF_GIT_TOKEN= credentials("BITBUCKET_TOKEN")
-        JF_GIT_PROVIDER= "bitbucketServer"
+       // [Mandatory]
+       // Bitbucket accesses token with the following permissions 
+       JF_GIT_TOKEN = credentials("BITBUCKET_TOKEN")
+       JF_GIT_PROVIDER = "bitbucketServer"
 
-        // [Mandatory]
-        // Bitbucket project namespace
-        JF_GIT_OWNER= ""
+       // [Mandatory]
+       // Bitbucket project namespace
+       JF_GIT_OWNER = ""
 
-        // [Mandatory]
+       // [Mandatory]
         // Bitbucket repository name
         JF_GIT_REPO= ""
 
