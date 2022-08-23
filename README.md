@@ -181,7 +181,7 @@ Here's how you install it:
 
 **Important Guidelines**
 
-- For npm, pip, pipenv, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- For npm, nuget or dotnet: Make sure to set the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
 
 ```yml
@@ -200,7 +200,7 @@ frogbot-scan:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
-    # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
+    # [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
     JF_INSTALL_DEPS_CMD: ""
 
@@ -275,7 +275,7 @@ Here's how you install it using JFrog Pipelines:
 
 **Important Guidelines**
 
-- For npm, pip, pipenv, nuget or dotnet: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- For npm, nuget or dotnet: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
 
 ```yml
@@ -298,7 +298,7 @@ pipelines:
           inputResources:
             - name: cron_trigger
           environmentVariables:
-            # [Mandatory only for projects which use npm, pip, pipenv, nuget and dotnet to download their dependencies]
+            # [Mandatory only for projects which use npm, nuget and dotnet to download their dependencies]
             # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
             JF_INSTALL_DEPS_CMD: ""
 
@@ -365,7 +365,7 @@ Here's how you install it using Jenkins:
 
 **Important Guidelines**
 
-- For npm, pip, pipenv, nuget or dotnet: Make sure to set inside the Jenkinsfile the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- For npm, nuget or dotnet: Make sure to set inside the Jenkinsfile the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
