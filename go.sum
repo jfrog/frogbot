@@ -210,10 +210,10 @@ github.com/jedib0t/go-pretty/v6 v6.3.5/go.mod h1:MgmISkTWDSFu0xOqiZ0mKNntMQ2mDgO
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
 github.com/jfrog/build-info-go v1.4.2-0.20220825155547-eff444e96d62 h1:pLrlADTfWvOWBXeTf9eEwEt5y9FDc+2mfbKvrsX/mo4=
 github.com/jfrog/build-info-go v1.4.2-0.20220825155547-eff444e96d62/go.mod h1:Z9h/tnAFZUN5NZqBKwLoaErQZiVWFjNPKYyDovB5W7M=
-github.com/jfrog/froggit-go v1.3.1 h1:Ey5EiyDWka9mqiwPTtYdJ01Gg7K/t97diYMnDZfxv7Y=
-github.com/jfrog/froggit-go v1.3.1/go.mod h1:QPE1t+DTKgp7TxLQ1ZftDQVzkCHXAyYQskLGAKQe8yM=
-github.com/jfrog/gofrog v1.2.0 h1:vlVwEL5ppuwOjBHUphxxuHUAv4QC3vwF3FDI9aDrbqM=
-github.com/jfrog/gofrog v1.2.0/go.mod h1:IXM6bw5sI6hMdhamlCYQpB1W17S0D1dwvBtzhaIarNU=
+github.com/jfrog/froggit-go v1.3.2 h1:fkzsI13vQkZZ2eZiN1Pyq+ZNxlJ4lLF/jZ/MuUx8uk0=
+github.com/jfrog/froggit-go v1.3.2/go.mod h1:QPE1t+DTKgp7TxLQ1ZftDQVzkCHXAyYQskLGAKQe8yM=
+github.com/jfrog/gofrog v1.2.1 h1:3pIcyPfKcA9SIinE1UiC4+8OLg+UinHH/dfsOZH3qXg=
+github.com/jfrog/gofrog v1.2.1/go.mod h1:lbkGXX/DHKdomaSV34eiOC3pAr1HRNa9ffOYh7U7b1U=
 github.com/jfrog/jfrog-cli-core/v2 v2.20.4-0.20220828090351-543d61b4613a h1:S2zHhfroAD4qLwB6e6rU0Jrj8tjS/u+wMaqXvli1CJE=
 github.com/jfrog/jfrog-cli-core/v2 v2.20.4-0.20220828090351-543d61b4613a/go.mod h1:EW3JklC7KN2sbTEo4iqmPNeXb9KfX654Rh3+FfA39hk=
 github.com/jfrog/jfrog-client-go v1.21.1-0.20220828084111-cd35f8c35e93 h1:whBO+VW4dyiEucKOcfSls17v1GuAC4T9T0KgqqKiSuQ=
@@ -276,7 +276,6 @@ github.com/pelletier/go-toml/v2 v2.0.1 h1:8e3L2cCQzLFi2CR4g7vGFuFxX7Jl1kKX8gW+iV
 github.com/pelletier/go-toml/v2 v2.0.1/go.mod h1:r9LEWfGN8R5k0VXJ+0BkIe7MYkRdwZOjgMj2KwnJFUo=
 github.com/pierrec/lz4/v4 v4.1.2 h1:qvY3YFXRQE/XB8MlLzJH7mSzBs74eA2gg52YTk6jUPM=
 github.com/pierrec/lz4/v4 v4.1.2/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
-github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -323,8 +322,8 @@ github.com/subosito/gotenv v1.3.0/go.mod h1:YzJjq/33h7nrwdY+iHMhEOEEbW0ovIz0tB6t
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.9 h1:RsKRIA2MO8x56wkkcd3LbtcE/uMszhb6DpRf+3uwa3I=
 github.com/ulikunitz/xz v0.5.9/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/urfave/cli/v2 v2.10.2 h1:x3p8awjp/2arX+Nl/G2040AZpOCHS/eMJJ1/a+mye4Y=
-github.com/urfave/cli/v2 v2.10.2/go.mod h1:f8iq5LtQ/bLxafbdBSLPPNsgaW0l/2fYYEHhAyPlwvo=
+github.com/urfave/cli/v2 v2.11.2 h1:FVfNg4m3vbjbBpLYxW//WjxUoHvJ9TlppXcqY9Q9ZfA=
+github.com/urfave/cli/v2 v2.11.2/go.mod h1:f8iq5LtQ/bLxafbdBSLPPNsgaW0l/2fYYEHhAyPlwvo=
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/xanzy/go-gitlab v0.52.2 h1:gkgg1z4ON70sphibtD86Bfmt1qV3mZ0pU0CBBCFAEvQ=
