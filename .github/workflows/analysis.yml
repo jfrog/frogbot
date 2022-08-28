@@ -10,6 +10,11 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.18.x
+
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+
       - name: Static Code Analysis
         uses: dominikh/staticcheck-action@v1
         with:
