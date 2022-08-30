@@ -62,7 +62,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	// Fail the Frogbot task if a security issue was found
 	if len(vulnerabilitiesRows) > 0 {
-		err = fmt.Errorf("Frogbot has found at least one security issue.")
+		err = fmt.Errorf("at least one security issue has been found by Frogbot")
 	}
 	return err
 }
