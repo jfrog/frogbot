@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,6 +17,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+)
+
+const (
+	securityIssueFoundErr = "at least one security issue has been found by Frogbot"
 )
 
 type ScanPullRequestCmd struct {
@@ -62,7 +67,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	// Fail the Frogbot task if a security issue was found
 	if len(vulnerabilitiesRows) > 0 {
-		err = fmt.Errorf("at least one security issue has been found by Frogbot")
+		err = errors.New(securityIssueFoundErr)
 	}
 	return err
 }

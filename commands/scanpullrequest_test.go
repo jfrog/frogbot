@@ -382,14 +382,18 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj")
+	testScanPullRequest(t, "", "test-proj", true)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, "subdir", "test-proj-subdir")
+	testScanPullRequest(t, "subdir", "test-proj-subdir", true)
 }
 
-func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
+func TestScanPullRequestNoIssues(t *testing.T) {
+	testScanPullRequest(t, "", "clean-test-proj", false)
+}
+
+func testScanPullRequest(t *testing.T, workingDirectory, projectName string, shouldFoundSecurityIssues bool) {
 	_, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
@@ -415,7 +419,12 @@ func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
-	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
+	err := app.Run([]string{"frogbot", "spr"})
+	if !shouldFoundSecurityIssues {
+		assert.NoError(t, err)
+	} else {
+		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
+	}
 	utils.AssertSanitizedEnv(t)
 }
 
