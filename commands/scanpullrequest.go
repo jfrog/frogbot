@@ -56,7 +56,15 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	// Comment frogbot message on the PR
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
 	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
-	return client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+	err = client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+	if err != nil {
+		return err
+	}
+	// Fail the Frogbot task if a security issue was found
+	if len(vulnerabilitiesRows) > 0 {
+		err = fmt.Errorf("Frogbot has found at least one security issue.")
+	}
+	return err
 }
 
 func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
