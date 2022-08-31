@@ -27,9 +27,6 @@ type ScanPullRequestCmd struct {
 }
 
 func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	// Extract specific commands params from env
-	utils.ExtractScanPullRequestParamsFromEnv(params)
-	// Execute command logic
 	return scanPullRequest(params, client)
 }
 

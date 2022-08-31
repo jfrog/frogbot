@@ -56,6 +56,7 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 func extractParamsFromEnv() (FrogbotParams, error) {
 	params := &FrogbotParams{}
 	extractGeneralParamsFromEnv(params)
+	extractScanPullRequestParamsFromEnv(params)
 
 	if err := extractJFrogParamsFromEnv(params); err != nil {
 		return *params, err
@@ -141,7 +142,7 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.InstallCommandName = parts[0]
 }
 
-func ExtractScanPullRequestParamsFromEnv(params *FrogbotParams) {
+func extractScanPullRequestParamsFromEnv(params *FrogbotParams) {
 	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
 	includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
 	if err != nil {
