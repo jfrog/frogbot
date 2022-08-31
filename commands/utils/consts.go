@@ -56,6 +56,7 @@ const (
 
 	//Functionality Environment Variables
 	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
+	FailOnSecurityIssuesEnv      = "JF_FAIL"
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +

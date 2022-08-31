@@ -27,6 +27,9 @@ type ScanPullRequestCmd struct {
 }
 
 func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+	// Extract specific commands params from env
+	utils.ExtractScanPullRequestParamsFromEnv(params)
+	// Execute command logic
 	return scanPullRequest(params, client)
 }
 
@@ -66,7 +69,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		return err
 	}
 	// Fail the Frogbot task if a security issue was found
-	if len(vulnerabilitiesRows) > 0 {
+	if params.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err

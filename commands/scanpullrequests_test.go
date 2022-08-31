@@ -16,7 +16,7 @@ import (
 )
 
 var params = &utils.FrogbotParams{
-	GitParam: utils.GitParam{
+	GitParams: utils.GitParams{
 		RepoOwner:  "repo-owner",
 		Repo:       "repo-name",
 		BaseBranch: "master",
@@ -95,7 +95,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	defer restoreEnv()
 	params := &utils.FrogbotParams{
 		JFrogEnvParams:     jfrogParams,
-		GitParam:           params.GitParam,
+		GitParams:          params.GitParams,
 		InstallCommandName: "npm",
 		InstallCommandArgs: []string{"i"},
 	}

@@ -382,18 +382,22 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj", true)
+	testScanPullRequest(t, "", "test-proj", "", true)
+}
+
+func TestScanPullRequestNoFail(t *testing.T) {
+	testScanPullRequest(t, "", "test-proj", "false", false)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, "subdir", "test-proj-subdir", true)
+	testScanPullRequest(t, "subdir", "test-proj-subdir", "", true)
 }
 
 func TestScanPullRequestNoIssues(t *testing.T) {
-	testScanPullRequest(t, "", "clean-test-proj", false)
+	testScanPullRequest(t, "", "clean-test-proj", "", false)
 }
 
-func testScanPullRequest(t *testing.T, workingDirectory, projectName string, shouldFoundSecurityIssues bool) {
+func testScanPullRequest(t *testing.T, workingDirectory, projectName, failOnSecurityIssues string, expectFailError bool) {
 	_, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
@@ -406,24 +410,25 @@ func testScanPullRequest(t *testing.T, workingDirectory, projectName string, sho
 
 	// Set required environment variables
 	utils.SetEnvAndAssert(t, map[string]string{
-		utils.GitProvider:         string(utils.GitLab),
-		utils.GitApiEndpointEnv:   server.URL,
-		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitRepoEnv:          projectName,
-		utils.GitTokenEnv:         "123456",
-		utils.GitBaseBranchEnv:    "master",
-		utils.GitPullRequestIDEnv: "1",
-		utils.InstallCommandEnv:   "npm i",
-		utils.WorkingDirectoryEnv: workingDirectory,
+		utils.GitProvider:             string(utils.GitLab),
+		utils.GitApiEndpointEnv:       server.URL,
+		utils.GitRepoOwnerEnv:         "jfrog",
+		utils.GitRepoEnv:              projectName,
+		utils.GitTokenEnv:             "123456",
+		utils.GitBaseBranchEnv:        "master",
+		utils.GitPullRequestIDEnv:     "1",
+		utils.InstallCommandEnv:       "npm i",
+		utils.WorkingDirectoryEnv:     workingDirectory,
+		utils.FailOnSecurityIssuesEnv: failOnSecurityIssues,
 	})
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
 	err := app.Run([]string{"frogbot", "spr"})
-	if !shouldFoundSecurityIssues {
-		assert.NoError(t, err)
-	} else {
+	if expectFailError {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
+	} else {
+		assert.NoError(t, err)
 	}
 	utils.AssertSanitizedEnv(t)
 }

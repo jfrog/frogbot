@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"strconv"
 	"strings"
@@ -10,17 +9,23 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type FrogbotParams struct {
 	JFrogEnvParams
-	GitParam
-	WorkingDirectory          string
-	InstallCommandName        string
+	GitParams
+	ScanPullRequestParams
+	WorkingDirectory   string
+	InstallCommandName string
+	InstallCommandArgs []string
+	RequirementsFile   string
+}
+
+type ScanPullRequestParams struct {
 	IncludeAllVulnerabilities bool
-	InstallCommandArgs        []string
-	RequirementsFile          string
 	SimplifiedOutput          bool
+	FailOnSecurityIssues      bool
 }
 
 type JFrogEnvParams struct {
@@ -29,7 +34,7 @@ type JFrogEnvParams struct {
 	Watches string
 }
 
-type GitParam struct {
+type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoOwner     string
 	Token         string
@@ -51,6 +56,7 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 func extractParamsFromEnv() (FrogbotParams, error) {
 	params := &FrogbotParams{}
 	extractGeneralParamsFromEnv(params)
+
 	if err := extractJFrogParamsFromEnv(params); err != nil {
 		return *params, err
 	}
@@ -123,13 +129,6 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 
 func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
-	var err error
-	includeAllIssues := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
-	params.IncludeAllVulnerabilities, err = strconv.ParseBool(includeAllIssues)
-	if err != nil {
-		log.Debug("JF_INCLUDE_ALL_VULNERABILITIES is off, the value is: ", includeAllIssues)
-		params.IncludeAllVulnerabilities = false
-	}
 	params.RequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	if installCommand == "" {
@@ -140,6 +139,25 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 		params.InstallCommandArgs = parts[1:]
 	}
 	params.InstallCommandName = parts[0]
+}
+
+func ExtractScanPullRequestParamsFromEnv(params *FrogbotParams) {
+	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
+	includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
+	if err != nil {
+		clientLog.Debug(fmt.Sprintf("%s is off, the value: %s is illegal. Boolean value is expected. ", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities))
+	} else {
+		params.IncludeAllVulnerabilities = includeAllVulnerabilitiesValue
+	}
+	failOnSecurityIssues := getTrimmedEnv(FailOnSecurityIssuesEnv)
+	failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
+	if err != nil {
+		clientLog.Debug(fmt.Sprintf("%s is set to true, the value: %s is illegal. Boolean value is expected. ", FailOnSecurityIssuesEnv, failOnSecurityIssues))
+		params.FailOnSecurityIssues = true
+	} else {
+		params.FailOnSecurityIssues = failOnSecurityIssuesValue
+	}
+
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
