@@ -11,7 +11,7 @@
 
 ## Table of contents
 - [What is Frogbot?](#what-is-frogbot)
-- [Scanning pull requests after they are opened](#scanning-pull-requests-after-they-are-opened)
+- [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
 - [Scanning repositories after pull requests are merged](#scanning-repositories-after-pull-requests-are-merged)
 - [Installing and using Frogbot](#installing-and-using-frogbot)
 - [Contributions](#contributions)
@@ -19,29 +19,34 @@
 <div id="what-is-frogbot"></div>
 
 ## 🤖 What is Frogbot?
-Frogbot is a Git bot that scans your pull requests after they are opened and also scans your Git repositories right after pull requests are merged.
+Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories when merging requests.
 
-## Scanning pull requests after they are opened
+## Scan pull requests when they are opened
 ### General 
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 or above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
-For pull requests scanning, please note that **GitHub**, **GitLab** and **Bitbucket Server** are supported.
-Projects that use one of the following tools to download their dependencies are currently supported.
+Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
-- Npm
-- Yarn 2
-- Maven
-- Gradle
+Supported platforms:
+- Bitbucket Server
+- GitHub
+- GitLab
+
+Supported package management tools:
 - Go
+- Gradle
+- Maven
+- .NET
+- npm
+- NuGet
 - Pip
 - Pipenv
-- Nuget
-- Dotnet
+- Yarn 2
 
-### 🕵️‍♀️ How does pull requests scanning work?
+### 🕵️‍♀️ How does Pull Request scanning work?
 #### GitHub
-For security reasons, Frogbot is not triggered automatically.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
-Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
+After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI. 
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in the
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
@@ -55,10 +60,10 @@ PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 #### GitLab
 
-For security reasons, Frogbot is not triggered automatically.
+For security reasons, Frogbot cannot be automatically triggered.
 After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
 from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
-Vulnerabilities that aren't new, and existed in the code prior to the pull request creation, will not be included in the
+Vulnerabilities that existed in the code prior to the pull request creation, will not be included in the
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
