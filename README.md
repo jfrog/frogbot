@@ -50,7 +50,8 @@ Vulnerabilities that aren't new, and existed in the code before the pull request
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
-1. A developer opens a pull request.
+The Frogbot GitHub scan workflow is:
+1. The developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
 
 [![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
@@ -67,10 +68,11 @@ Vulnerabilities that existed in the code prior to the pull request creation, wil
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
-1. A developer opens a merge request.
-2. A maintainer of the repository triggers the manual **frogbot-scan** job.
+The Frogbot GitLab flow is as follows: 
+1. The developer opens a merge request.
+2. The maintainer of the repository triggers the manual *frogbot-scan* job.
 3. Frogbot is triggered by the job, scans the merge request, and adds a comment with the scan results.
-4. Frogbot can be triggered again following new commits, by triggering the **frogbot-scan** job again.
+4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
    [![GitLab CI Run Button](./images/gitlab-run-button.png)]
 
 #### Bitbucket Server
