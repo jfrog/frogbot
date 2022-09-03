@@ -1,4 +1,4 @@
-name: "Frogbot Fix"
+name: "Frogbot Scan and Fix"
 on:
   push:
     # Creating fix pull requests will be triggered by any push to one of the these branches.
@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  security-events: write
 jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest

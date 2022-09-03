@@ -1,28 +1,33 @@
-name: "Frogbot Fix"
+name: "Frogbot Scan Pull Request"
 on:
-  push:
-    # Creating fix pull requests will be triggered by any push to one of the these branches.
-    # You can add or replace to any branch you want to open fix pull requests for.
-    branches:
-      - "main"
-      - "master"
+  pull_request_target:
+    types: [ opened, synchronize ]
 permissions:
-  contents: write
   pull-requests: write
+  contents: read
 jobs:
-  create-fix-pull-requests:
+  scan-pull-request:
     runs-on: ubuntu-latest
+    # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
+    # "frogbot" GitHub environment can approve the pull request to be scanned.
+    environment: frogbot
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
         with:
-          python-version: '3.9'
-          cache: 'pip'
+          node-version: "16.x"
+
       - uses: jfrog/frogbot@v2
         env:
+          # [Mandatory]
+          # The command that installs the dependencies
+          JF_INSTALL_DEPS_CMD: "yarn install"
+
           # [Mandatory]
           # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.JF_URL }}
@@ -40,10 +45,6 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # Uncomment the below options if you'd like to use them.
-
-          # [Optional]
-          # The file used to install dependencies, if not used - 'setup.py' will be the default
-          # JF_REQUIREMENTS_FILE: "requirements.txt"
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
@@ -64,3 +65,7 @@ jobs:
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
           # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
