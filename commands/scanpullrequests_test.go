@@ -129,7 +129,7 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, localPath string) er
 	// In order to mimic the "real" repository download the tests project have to be in the same dir:
 	// First test-proj-with-vulnerability(that contains a "test-proj" dir) will be copied to a temp (random) dir.
 	// This project will be used in the source auditing phase - mimic a PR with a new vulnerable dependency.
-	// Seconde "download" will ocurre inside the first temp dir, therefore the "test-proj" will be found and will
+	// Seconde "download" will occur inside the first temp dir, therefore the "test-proj" will be found and will
 	// be copied to the second (random) temp dir and will be used in the target auditing phase.
 	err := fileutils.CopyDir(filepath.Join(testProject), localPath, true, []string{})
 	if err != nil {

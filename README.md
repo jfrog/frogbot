@@ -266,6 +266,10 @@ frogbot-scan:
     # [Optional, default: "FALSE"]
     # Displays all existing vulnerabilities, including the ones that were added by the pull request.
     # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+    # [Optional, default: "TRUE"]
+    # Fails the Frogbot task if any security issue was found.
+    # JF_FAIL: "FALSE"
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -364,6 +368,10 @@ pipelines:
              # [Optional, default: "FALSE"]
              # Displays all existing vulnerabilities, including the ones that were added by the pull request.
              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+             # [Optional, default: "TRUE"]
+             # Fails the Frogbot task if any security issue was found.
+             # JF_FAIL: "FALSE"
         execution:
            onExecute:
               - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -452,6 +460,10 @@ pipeline {
         // [Optional, default: "FALSE"]
         // Displays all existing vulnerabilities, including the ones that were added by the pull request.
         // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
+
+        // [Optional, default: "TRUE"]
+        // Fails the Frogbot task if any security issue was found.
+        // JF_FAIL= "FALSE"
     }
 
    stages {

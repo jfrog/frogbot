@@ -9,7 +9,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type FrogbotParams struct {
@@ -56,7 +55,10 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 func extractParamsFromEnv() (FrogbotParams, error) {
 	params := &FrogbotParams{}
 	extractGeneralParamsFromEnv(params)
-	extractScanPullRequestParamsFromEnv(params)
+
+	if err := extractScanPullRequestParamsFromEnv(params); err != nil {
+		return *params, err
+	}
 
 	if err := extractJFrogParamsFromEnv(params); err != nil {
 		return *params, err
@@ -142,23 +144,26 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 	params.InstallCommandName = parts[0]
 }
 
-func extractScanPullRequestParamsFromEnv(params *FrogbotParams) {
+func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
 	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
-	includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
-	if err != nil {
-		clientLog.Debug(fmt.Sprintf("%s is off, the value: %s is illegal. Boolean value is expected. ", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities))
-	} else {
+	if includeAllVulnerabilities != "" {
+		includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
+		if err != nil {
+			return fmt.Errorf("%s default value is FALSE, the value: %q is illegal. Boolean value is expected", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities)
+		}
 		params.IncludeAllVulnerabilities = includeAllVulnerabilitiesValue
 	}
 	failOnSecurityIssues := getTrimmedEnv(FailOnSecurityIssuesEnv)
-	failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
-	if err != nil {
-		clientLog.Debug(fmt.Sprintf("%s is set to true, the value: %s is illegal. Boolean value is expected. ", FailOnSecurityIssuesEnv, failOnSecurityIssues))
-		params.FailOnSecurityIssues = true
-	} else {
+	if failOnSecurityIssues != "" {
+		failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
+		if err != nil {
+			return fmt.Errorf("%s default value is TRUE, the value: %q is illegal. Boolean value is expected", FailOnSecurityIssuesEnv, failOnSecurityIssues)
+		}
 		params.FailOnSecurityIssues = failOnSecurityIssuesValue
+	} else {
+		params.FailOnSecurityIssues = true
 	}
-
+	return nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
