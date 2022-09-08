@@ -93,9 +93,16 @@ func TestFixPackageVersion(t *testing.T) {
 	for _, test := range packageFixTests {
 		// Create temp technology project
 		projectPath := filepath.Join(testdataDir, test.technology.ToString())
+		files, err := ioutil.ReadDir(projectPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, f := range files {
+			fmt.Println(f.Name())
+		}
 		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 		defer cleanup()
-		files, err := ioutil.ReadDir(tmpProjectPath)
+		files, err = ioutil.ReadDir(tmpProjectPath)
 		if err != nil {
 			log.Fatal(err)
 		}
