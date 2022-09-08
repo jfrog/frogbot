@@ -152,7 +152,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, PackageType(vulnerability.ImpactedPackageType))
+						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
 			}
@@ -163,7 +163,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 
 func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.FrogbotParams, vulnerability formats.VulnerabilityOrViolationRow) (bool, error) {
 	// In Maven, fix only direct dependencies
-	if vulnerability.ImpactedPackageType == "Maven" {
+	if vulnerability.Technology == coreutils.Maven {
 		if cfp.mavenDepToPropertyMap == nil {
 			cfp.mavenDepToPropertyMap = make(map[string][]string)
 			err := utils.GetVersionProperties(params.WorkingDirectory, cfp.mavenDepToPropertyMap)
@@ -229,25 +229,25 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType PackageType, impactedPackage, fixVersion, requirementsFile string) error {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile string) error {
 	var err error
 	switch packageType {
-	case coreutils.Go, "Go":
+	case coreutils.Go:
 		commandArgs := []string{"get"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Go, impactedPackage, fixVersion, "@v")
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Go.GetExecCommandName(), impactedPackage, fixVersion, "@v")
 	case coreutils.Npm:
 		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Npm, impactedPackage, fixVersion, "@")
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Npm.GetExecCommandName(), impactedPackage, fixVersion, "@")
 	case coreutils.Maven:
 		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
 	case coreutils.Yarn:
 		commandArgs := []string{"up"}
-		err = fixPackageVersionGeneric(commandArgs, strings.ToLower(coreutils.Yarn), impactedPackage, fixVersion, "@")
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Yarn.GetExecCommandName(), impactedPackage, fixVersion, "@")
 	case coreutils.Pip:
 		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
 	case coreutils.Pipenv:
 		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Pipenv, impactedPackage, fixVersion, "==")
+		err = fixPackageVersionGeneric(commandArgs, coreutils.Pipenv.GetExecCommandName(), impactedPackage, fixVersion, "==")
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
@@ -281,7 +281,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 	updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
+	updateVersionOutput, err := exec.Command(coreutils.Maven.GetExecCommandName(), updateVersionArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
 		return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
 	}
@@ -291,7 +291,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 		updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
+		updatePropertyOutput, err := exec.Command(coreutils.Maven.GetExecCommandName(), updatePropertyArgs...).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
 		}
@@ -362,14 +362,12 @@ func parseVersionChangeString(fixVersion string) string {
 	return latestVersion
 }
 
-type PackageType string
-
 type FixVersionInfo struct {
 	fixVersion  string
-	packageType PackageType
+	packageType coreutils.Technology
 }
 
-func NewFixVersionInfo(newFixVersion string, packageType PackageType) *FixVersionInfo {
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology) *FixVersionInfo {
 	return &FixVersionInfo{newFixVersion, packageType}
 }
 

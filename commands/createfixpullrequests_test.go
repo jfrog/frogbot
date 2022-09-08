@@ -2,12 +2,13 @@ package commands
 
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ type FixPackagesTestFunc func(test packageFixTest) error
 
 type packageFixTest struct {
 	commandArgs       []string
-	technology        string
+	technology        coreutils.Technology
 	impactedPackaged  string
 	fixVersion        string
 	operator          string
@@ -26,7 +27,7 @@ type packageFixTest struct {
 var packageFixTests = []packageFixTest{
 	{commandArgs: []string{"install"}, technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{commandArgs: []string{"get"}, technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", operator: "@v", packageDescriptor: "go.mod", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{commandArgs: []string{"up"}, technology: strings.ToLower(coreutils.Yarn), impactedPackaged: "minimist", fixVersion: "1.2.6", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
+	{commandArgs: []string{"up"}, technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{commandArgs: []string{"install"}, technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", operator: "==", packageDescriptor: "Pipfile", fixPackageVersion: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersion: getMavenFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersion: getPipFixPackageVersionFunc()},
@@ -52,9 +53,17 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
 }
 
+var packageTypes = []coreutils.Technology{
+	coreutils.Go,
+	coreutils.Maven,
+	coreutils.Npm,
+	coreutils.Yarn,
+	coreutils.Pip, coreutils.Pipenv,
+}
+
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
 	return func(test packageFixTest) error {
-		return fixPackageVersionGeneric(test.commandArgs, test.technology, test.impactedPackaged, test.fixVersion, test.operator)
+		return fixPackageVersionGeneric(test.commandArgs, test.technology.GetExecCommandName(), test.impactedPackaged, test.fixVersion, test.operator)
 	}
 }
 
@@ -77,17 +86,14 @@ func getPipFixPackageVersionFunc() FixPackagesTestFunc {
 }
 
 func TestFixPackageVersion(t *testing.T) {
-	currentDir, err := os.Getwd()
-	assert.NoError(t, err)
-	testdataDir, err := filepath.Abs(filepath.Join("testdata/projects"))
-	assert.NoError(t, err)
+	currentDir, testdataDir := getTestDataDir(t)
 	for _, test := range packageFixTests {
 		// Create temp technology project
-		projectPath := filepath.Join(testdataDir, test.technology)
+		projectPath := filepath.Join(testdataDir, test.technology.ToString())
 		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 		defer cleanup()
 		assert.NoError(t, os.Chdir(tmpProjectPath))
-		t.Run(test.technology, func(t *testing.T) {
+		t.Run(test.technology.ToString(), func(t *testing.T) {
 			// Fix impacted package for each technology
 			assert.NoError(t, test.fixPackageVersion(test))
 			file, err := os.ReadFile(test.packageDescriptor)
@@ -96,6 +102,14 @@ func TestFixPackageVersion(t *testing.T) {
 		})
 	}
 	assert.NoError(t, os.Chdir(currentDir))
+}
+
+func getTestDataDir(t *testing.T) (string, string) {
+	currentDir, err := os.Getwd()
+	assert.NoError(t, err)
+	testdataDir, err := filepath.Abs(filepath.Join("testdata/projects"))
+	assert.NoError(t, err)
+	return currentDir, testdataDir
 }
 
 ///      1.0         --> 1.0 ≤ x
@@ -153,5 +167,32 @@ func TestPipPackageRegex(t *testing.T) {
 		re := regexp.MustCompile(pythonPackageRegexPrefix + pack.packageName + pythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
 		assert.Equal(t, pack.expectedRequirement, found)
+	}
+}
+
+func TestPackageTypeFromScan(t *testing.T) {
+	params, restoreEnv := verifyEnv(t)
+	defer restoreEnv()
+	var testScan CreateFixPullRequestsCmd
+	var frogbotParams = utils.FrogbotParams{
+		JFrogEnvParams: params,
+	}
+	for _, pkgType := range packageTypes {
+		// Create temp technology project
+		projectPath := filepath.Join("testdata/projects", pkgType.ToString())
+		t.Run(pkgType.ToString(), func(t *testing.T) {
+			frogbotParams.WorkingDirectory = projectPath
+			scanResponse, err := testScan.scan(&frogbotParams)
+			assert.NoError(t, err)
+			verifyTechnologyNaming(t, scanResponse, pkgType)
+		})
+	}
+}
+
+func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
+	for _, resp := range scanResponse {
+		for _, vulnerability := range resp.Vulnerabilities {
+			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)
+		}
 	}
 }
