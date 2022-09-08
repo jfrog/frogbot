@@ -1,14 +1,11 @@
 package commands
 
 import (
-	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -93,22 +90,8 @@ func TestFixPackageVersion(t *testing.T) {
 	for _, test := range packageFixTests {
 		// Create temp technology project
 		projectPath := filepath.Join(testdataDir, test.technology.ToString())
-		files, err := ioutil.ReadDir(projectPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, f := range files {
-			fmt.Println(f.Name())
-		}
 		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 		defer cleanup()
-		files, err = ioutil.ReadDir(tmpProjectPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, f := range files {
-			fmt.Println(f.Name())
-		}
 		assert.NoError(t, os.Chdir(tmpProjectPath))
 		t.Run(test.technology.ToString(), func(t *testing.T) {
 			// Fix impacted package for each technology
@@ -196,7 +179,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	}
 	for _, pkgType := range packageTypes {
 		// Create temp technology project
-		projectPath := filepath.Join("testdata/projects", pkgType.ToString())
+		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
 		t.Run(pkgType.ToString(), func(t *testing.T) {
 			frogbotParams.WorkingDirectory = projectPath
 			scanResponse, err := testScan.scan(&frogbotParams)
