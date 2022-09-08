@@ -2,9 +2,9 @@ package commands
 
 import (
 	"fmt"
-	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -93,7 +93,14 @@ func TestFixPackageVersion(t *testing.T) {
 	for _, test := range packageFixTests {
 		// Create temp technology project
 		projectPath := filepath.Join(testdataDir, test.technology.ToString())
-		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+		fmt.Println(projectPath)
+		//tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+		tmpProjectPath, err := fileutils.CreateTempDir()
+		assert.NoError(t, err)
+		assert.NoError(t, fileutils.CopyDir(projectPath, tmpProjectPath, true, nil))
+		cleanup := func() {
+			assert.NoError(t, fileutils.RemoveTempDir(tmpProjectPath))
+		}
 		defer cleanup()
 		files, err := ioutil.ReadDir(tmpProjectPath)
 		if err != nil {
