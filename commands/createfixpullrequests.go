@@ -288,7 +288,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 
 	// Update properties that represent this package's version.
 	for _, property := range properties {
-		updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+		updatePropertyArgs := []string{"-B", "versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
 		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
