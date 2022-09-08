@@ -281,7 +281,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 	updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	updateVersionOutput, err := exec.Command(coreutils.Maven.GetExecCommandName(), updateVersionArgs...).CombinedOutput() // #nosec G204
+	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
 		return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
 	}
@@ -291,7 +291,7 @@ func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixV
 		updatePropertyArgs := []string{"versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		clientLog.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-		updatePropertyOutput, err := exec.Command(coreutils.Maven.GetExecCommandName(), updatePropertyArgs...).CombinedOutput() // #nosec G204
+		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
 		if err != nil {
 			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
 		}
