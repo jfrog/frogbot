@@ -278,7 +278,7 @@ func fixPackageVersionGeneric(commandArgs []string, commandName, impactedPackage
 func fixPackageVersionMaven(cfp *CreateFixPullRequestsCmd, impactedPackage, fixVersion string) error {
 	properties := cfp.mavenDepToPropertyMap[impactedPackage]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
-	updateVersionArgs := []string{"versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
+	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersion, "-DgenerateBackupPoms=false"}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	clientLog.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
 	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
