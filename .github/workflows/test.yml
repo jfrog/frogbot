@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }}
+        if: ${{github.event_name != 'push' }} && runner.os == 'Linux'
         with:
           labels: 'safe to test'
           
