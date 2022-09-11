@@ -71,22 +71,28 @@ PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 The Frogbot GitLab flow is as follows: 
 1. The developer opens a merge request.
 2. The maintainer of the repository triggers the manual *frogbot-scan* job.
-3. Frogbot is triggered by the job, scans the merge request, and adds a comment with the scan results.
+3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
-   [![GitLab CI Run Button](./images/gitlab-run-button.png)]
+[GitLab CI Run Button](./images/gitlab-run-button.png)
 
 #### Bitbucket Server
 
-After you create a new pull request, Frogbot will automatically scan it. The scan output will include only new
-vulnerabilities added by the pull request. Vulnerabilities that aren't new, and existed in the code prior to the pull
-request creation, will not be included in the report. In order to include all of the vulnerabilities in the report,
-including older ones that weren't added by this PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+After you create a new pull request, Frogbot will automatically scan it.
 
-1. A developer opens a pull request.
-2. Frogbot is triggered and scans the pull request, and adds a comment with the scan results.
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in the
+report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+
+The Frogbot scan Bitbucket Server workflow:
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
-#### Pull request comments
+#### Scan results
+
+Frogbot adds the scan results to the pull request in the following format:
+
 ##### 👍 No issues
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
@@ -104,24 +110,27 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
 ## Scanning repositories after pull requests are merged
+
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
 version with a fix.
 
-For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which can be viewed through the GitHub UI:
+> **_NOTE:_** This feature is currently supported for GitHub and GitLab only.
+
+For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
 
 ![](./images/github-code-scanning.png)
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that
-are pushed to the repository. For pull requests opening, please note that GitHub and GitLab are currently supported and
-Bitbucket will be supported soon. Projects that use one of the following tools to download their dependencies are
-currently supported.
+are pushed to the repository.
 
-- Npm
-- Yarn 2
-- Maven
+Supported package management tools:
+
 - Go
+- Maven
+- npm
 - Pip
 - Pipenv
+- Yarn 2
 
 <div id="installing-and-using-frogbot"></div>
 
