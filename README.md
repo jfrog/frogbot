@@ -181,25 +181,24 @@ To install Frogbot on GitHub repositories using GitHub Actions:
    ![](images/github-environment.png)
 
 5. Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
-6. Push the workflow files to the `.github/workflows` directory in the root of your GitHub repository.
+6. Push the workflow files to the **.github/workflows** directory in the root of your GitHub repository.
 
 </details>
 
 <details>
   <summary>Setting up Frogbot on GitLab repositories</summary>
 
-Frogbot is installed on GitLab repositories using GitLab CI.
-Here's how you install it:
+To install Frogbot on GitLab repositories using GitLab CI:
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Save the JFrog connection details as secrets in GitLab with the following names: **JF_URL**, **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
-3. Add a job named `frogbot-scan` to your `.gitlab-ci.yml` file in your GitLab repository using the below structure.
+2. Go to your GitLub repository settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** 
+> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**
+3. Add a job named **frogbot-scan** to your **.gitlab-ci.yml** file in your GitLab repository using the code block below.
 
-**Important Guidelines**
-
+**Important**
 - For npm, yarn 2, NuGet or .NET: Make sure to set the command in a way that it downloads your project dependencies as
   the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
-- Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, but not both.
+- Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, **but not both**.
 
 ```yml
 frogbot-scan:
@@ -281,17 +280,16 @@ frogbot-scan:
     
 Frogbot is installed on Bitbucket Server repositories using JFrog Pipelines or Jenkins.
 #### Using JFrog Pipelines
-Here's how you install it using JFrog Pipelines:
+To install Frogbot using JFrog Pipelines:
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration) named **jfrogPlatform**.
-3. Save your Bitbucket access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with the **token** as key and the Bitbucket access token as value.
+3. Save your Bitbucket access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with the token as the key and the Bitbucket access token as the value.
 4. Create a Pipelines job with the below pipelines.yml content.
-5. In the pipelines.yml, make sure to set values for all the mandatory variables.
-6. In the pipelines.yml, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
+5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
+6. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
 
-**Important Guidelines**
-
+**Important**
 - For npm, yarn 2, NuGet or .NET: Make sure to set inside the pipelines.yml the command in a way that it downloads
   your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
   or `nuget restore`
@@ -374,7 +372,7 @@ pipelines:
 ```
 
 #### Using Jenkins
-Here's how you install it using Jenkins:
+To install Frogbot using Jenkins:
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**, **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL** and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
@@ -383,8 +381,7 @@ Here's how you install it using Jenkins:
 5. In the Jenkinsfile, set the values of all the mandatory variables.
 6. In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
 
-**Important Guidelines**
-
+**Important**
 - For npm, yarn 2, NuGet or .NET: Make sure to set inside the Jenkinsfile the command in a way that it downloads your
   project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
