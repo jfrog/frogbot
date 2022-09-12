@@ -52,7 +52,7 @@ PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitHub scan workflow is:
 1. The developer opens a pull request.
-2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named _frogbot_ is pending for the maintainer's approval: 
+2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
 
 [![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
 
@@ -136,51 +136,51 @@ Supported package management tools:
 
 ## 🖥️ Installing and using Frogbot
 <details>
-  <summary>Setting up a FREE JFrog Environment in the cloud</summary>
+  <summary>Setting up a FREE JFrog Environment in the Cloud</summary>
 
-Frogbot requires a JFrog environment to scan your projects with. If you don't have an environment, we can set up one in the cloud for you doe free.
-Just run one of the following commands in your terminal, to set up an environment in less than a minute. 
+Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
 
 The commands will do the following:
 
 1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
 2. Create a FREE JFrog environment in the cloud for you.
 
-After the setup is complete, you'll receive an email with your JFrog environment connection details, which you can then store as secrets in Git.
-
-**On macOS and Linux using cUrl**
+**For macOS and Linux, use curl**
 
 ```
 curl -fL https://getcli.jfrog.io?setup | sh
 ```
 
-**On Windows using PowerShell**
+**For Windows, use PowerShell**
 
 ```
 powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
 ```
+
+After the setup is complete, you'll receive an email with your JFrog environment connection details, which can be stored as secrets in Git.
 </details>
 
 <details>
   <summary>Setting up Frogbot on GitHub repositories</summary>
 
-Frogbot is installed on GitHub repositories using GitHub Actions. 
-Here's how you install it:
+To install Frogbot on GitHub repositories using GitHub Actions: 
 
 1. Make sure you have the connection details of your JFrog environment.
-2. At your GitHub repository settings, save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**)
+2. Go to your GitHub repository settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** 
+
+> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**
    
    ![](images/github-repository-secrets.png)
 
-3. Make sure GitHub Actions has permissions to create pull requests.
+3. Check the Allow GitHub Actions to create and approve pull requests check box. 
 
    ![](images/github-pr-permissions.png)
 
-4. Create a new "frogbot" [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) and add people or public teams as reviewers. The chosen reviewers are authorized to trigger Frogbot scan on pull requests.
+4. Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) called **frogbot** and add people or public teams as reviewers. The chosen reviewers can trigger Frogbot scans on pull requests.
 
    ![](images/github-environment.png)
 
-5. Use these [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
+5. Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
 6. Push the workflow files to the `.github/workflows` directory in the root of your GitHub repository.
 
 </details>
