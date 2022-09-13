@@ -41,6 +41,10 @@ jobs:
 
           # Uncomment the below options if you'd like to use them.
 
+          # [Optional]
+          # The file used to install dependencies, if not used - 'setup.py' will be the default
+          # JF_REQUIREMENTS_FILE: "requirements.txt"
+
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
           # JF_GIT_API_ENDPOINT: https://github.example.com
