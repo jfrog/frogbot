@@ -62,11 +62,13 @@ The Frogbot GitHub scan workflow is:
 #### GitLab
 
 For security reasons, Frogbot cannot be automatically triggered.
-After you create a new pull request, the maintainer of the git repository can trigger Frogbot to scan the pull request
-from the pull request UI. The scan output will include only new vulnerabilities added by the pull request.
-Vulnerabilities that existed in the code prior to the pull request creation, will not be included in the
+After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request
+from the merge request UI. 
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
+Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in the
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitLab flow is as follows: 
 1. The developer opens a merge request.
