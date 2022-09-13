@@ -41,6 +41,10 @@ jobs:
 
           # Uncomment the below options if you'd like to use them.
 
+          # [Optional]
+          # The requirements file that used to install the dependencies. ( pip install -r <JF_REQUIREMENTS_FILE> )
+          # JF_REQUIREMENTS_FILE: "requirements.txt"
+
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
           # JF_GIT_API_ENDPOINT: https://github.example.com
