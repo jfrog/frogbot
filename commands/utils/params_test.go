@@ -178,10 +178,10 @@ func TestExtractScanPullRequestParamsFromEnv(t *testing.T) {
 	// Test invalid values
 	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "99"})
 	err = extractScanPullRequestParamsFromEnv(params)
-	assert.EqualError(t, err, "JF_INCLUDE_ALL_VULNERABILITIES default value is FALSE, the value: \"99\" is illegal. Boolean value is expected")
+	assert.EqualError(t, err, "The value of the JF_INCLUDE_ALL_VULNERABILITIES environment is expected to be either TRUE or FALSE. The value received however is \"99\".")
 	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "true", FailOnSecurityIssuesEnv: "no"})
 	err = extractScanPullRequestParamsFromEnv(params)
-	assert.EqualError(t, err, "JF_FAIL default value is TRUE, the value: \"no\" is illegal. Boolean value is expected")
+	assert.EqualError(t, err, "The value of the JF_FAIL environment is expected to be either TRUE or FALSE. The value received however is \"no\".")
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {

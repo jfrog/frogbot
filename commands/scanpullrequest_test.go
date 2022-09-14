@@ -473,7 +473,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 		}
-		// clean-test-proj should not contain any vulnerabilities so assertion is not needed.
+		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("{}"))

@@ -71,5 +71,5 @@ jobs:
           # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
           
           # [Optional, default: "TRUE"]
-          # Fails the Frogbot task if any security issue was found.
+          # Fails the Frogbot task if any security issue is found.
           # JF_FAIL: "FALSE"

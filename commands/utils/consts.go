@@ -54,7 +54,7 @@ const (
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 	WatchesDelimiter    = ","
 
-	//Functionality Environment Variables
+	// Environment variables to control Frogbot's functionality.
 	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
 	FailOnSecurityIssuesEnv      = "JF_FAIL"
 

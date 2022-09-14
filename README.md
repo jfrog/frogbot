@@ -268,7 +268,7 @@ frogbot-scan:
     # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
     # [Optional, default: "TRUE"]
-    # Fails the Frogbot task if any security issue was found.
+    # Fails the Frogbot task if any security issue is found.
     # JF_FAIL: "FALSE"
   script:
     # For Linux / MacOS runner:
@@ -370,7 +370,7 @@ pipelines:
              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
              # [Optional, default: "TRUE"]
-             # Fails the Frogbot task if any security issue was found.
+             # Fails the Frogbot task if any security issue is found.
              # JF_FAIL: "FALSE"
         execution:
            onExecute:
@@ -462,7 +462,7 @@ pipeline {
         // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
 
         // [Optional, default: "TRUE"]
-        // Fails the Frogbot task if any security issue was found.
+        // Fails the Frogbot task if any security issue is found.
         // JF_FAIL= "FALSE"
     }
 

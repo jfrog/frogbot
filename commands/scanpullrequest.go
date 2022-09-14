@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "at least one security issue has been found by Frogbot\n If you wish to suppress this kind of errors, set JF_FAIL=false"
+	securityIssueFoundErr = "issues were detected by Frogbot.\n You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE."
 )
 
 type ScanPullRequestCmd struct {
@@ -30,9 +30,10 @@ func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.
 	return scanPullRequest(params, client)
 }
 
-// Scan a pull request by as follows:
+// By default, JF_INCLUDE_ALL_VULNERABILITIES is set to false and the scan goes as follow:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
+// Otherwise only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Validate scan params
 	if params.BaseBranch == "" {
@@ -46,7 +47,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	if params.IncludeAllVulnerabilities {
-		clientLog.Info("Include all vulnerabilities scan is on")
+		clientLog.Info("Frogbot is configured to show all vulnerabilities")
 		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {
 		// Audit target code
@@ -58,14 +59,14 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	clientLog.Info("Xray scan completed")
 
-	// Comment frogbot message on the PR
+	// Frogbot adds a comment on the PR.
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
 	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
 	err = client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 	if err != nil {
 		return err
 	}
-	// Fail the Frogbot task if a security issue was found
+	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if params.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
