@@ -149,7 +149,7 @@ func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
 	if includeAllVulnerabilities != "" {
 		includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
 		if err != nil {
-			return fmt.Errorf("The value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s.", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities)
+			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities)
 		}
 		params.IncludeAllVulnerabilities = includeAllVulnerabilitiesValue
 	}
@@ -157,7 +157,7 @@ func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
 	if failOnSecurityIssues != "" {
 		failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
 		if err != nil {
-			return fmt.Errorf("The value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s.", FailOnSecurityIssuesEnv, failOnSecurityIssues)
+			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", FailOnSecurityIssuesEnv, failOnSecurityIssues)
 		}
 		params.FailOnSecurityIssues = failOnSecurityIssuesValue
 	} else {
