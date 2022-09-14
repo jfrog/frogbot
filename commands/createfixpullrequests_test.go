@@ -58,7 +58,8 @@ var packageTypes = []coreutils.Technology{
 	coreutils.Maven,
 	coreutils.Npm,
 	coreutils.Yarn,
-	coreutils.Pip, coreutils.Pipenv,
+	coreutils.Pip,
+	coreutils.Pipenv,
 }
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
