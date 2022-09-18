@@ -156,6 +156,34 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestExtractScanPullRequestParamsFromEnv(t *testing.T) {
+	params := &FrogbotParams{}
+	defer func() {
+		assert.NoError(t, sanitizeEnv())
+	}()
+
+	// Test default values
+	err := extractScanPullRequestParamsFromEnv(params)
+	assert.NoError(t, err)
+	assert.Equal(t, false, params.IncludeAllVulnerabilities)
+	assert.Equal(t, true, params.FailOnSecurityIssues)
+
+	// Test value extraction
+	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "TRUE", FailOnSecurityIssuesEnv: "FALSE"})
+	err = extractScanPullRequestParamsFromEnv(params)
+	assert.NoError(t, err)
+	assert.Equal(t, true, params.IncludeAllVulnerabilities)
+	assert.Equal(t, false, params.FailOnSecurityIssues)
+
+	// Test invalid values
+	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "99"})
+	err = extractScanPullRequestParamsFromEnv(params)
+	assert.EqualError(t, err, "the value of the JF_INCLUDE_ALL_VULNERABILITIES environment is expected to be either TRUE or FALSE. The value received however is 99")
+	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "true", FailOnSecurityIssuesEnv: "no"})
+	err = extractScanPullRequestParamsFromEnv(params)
+	assert.EqualError(t, err, "the value of the JF_FAIL environment is expected to be either TRUE or FALSE. The value received however is no")
+}
+
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	params, _, err := GetParamsAndClient()
 	assert.NoError(t, err)
