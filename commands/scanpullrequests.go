@@ -81,7 +81,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 	// Download the pull request source ("from") branch
 	frogbotParams := &utils.FrogbotParams{
 		JFrogEnvParams: params.JFrogEnvParams,
-		GitParam: utils.GitParam{
+		GitParams: utils.GitParams{
 			GitProvider: params.GitProvider,
 			Token:       params.Token,
 			ApiEndpoint: params.ApiEndpoint,
@@ -89,6 +89,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 			Repo:        pr.Source.Repository,
 			BaseBranch:  pr.Source.Name,
 		},
+		WorkingDirectory: params.WorkingDirectory,
 	}
 	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams)
 	if err != nil {
@@ -114,7 +115,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 	// The target branch (to) will be downloaded as part of the Frogbot scanPullRequest execution
 	frogbotParams = &utils.FrogbotParams{
 		JFrogEnvParams: params.JFrogEnvParams,
-		GitParam: utils.GitParam{
+		GitParams: utils.GitParams{
 			GitProvider:   params.GitProvider,
 			Token:         params.Token,
 			ApiEndpoint:   params.ApiEndpoint,
@@ -123,9 +124,15 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 			BaseBranch:    pr.Target.Name,
 			PullRequestID: int(pr.ID),
 		},
-		SimplifiedOutput:   true,
+		ScanPullRequestParams: utils.ScanPullRequestParams{
+			IncludeAllVulnerabilities: params.IncludeAllVulnerabilities,
+			FailOnSecurityIssues:      params.FailOnSecurityIssues,
+			SimplifiedOutput:          true,
+		},
 		InstallCommandName: params.InstallCommandName,
 		InstallCommandArgs: params.InstallCommandArgs,
+		WorkingDirectory:   params.WorkingDirectory,
+		RequirementsFile:   params.RequirementsFile,
 	}
 	return scanPullRequest(frogbotParams, client)
 }
