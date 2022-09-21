@@ -5,16 +5,17 @@ go 1.18
 require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.5.2
+	github.com/jfrog/build-info-go v1.6.0
 	github.com/jfrog/froggit-go v1.3.2
 	github.com/jfrog/gofrog v1.2.1
-	github.com/jfrog/jfrog-cli-core/v2 v2.20.8
-	github.com/jfrog/jfrog-client-go v1.23.2
+	github.com/jfrog/jfrog-cli-core/v2 v2.21.1
+	github.com/jfrog/jfrog-client-go v1.23.3
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.2
 )
 
 require (
+	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20220819155348-b76dceea2ffa // indirect
