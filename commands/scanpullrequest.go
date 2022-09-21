@@ -197,7 +197,7 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 	if params.InstallCommandName == "" {
 		return nil
 	}
-	clientLog.Info("Executing '"+params.InstallCommandName+"'", params.InstallCommandArgs, "at ", workDir)
+	clientLog.Info(fmt.Sprintf("Executing '%s %s' at %s", params.InstallCommandName, strings.Join(params.InstallCommandArgs, " "), workDir))
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
 	if err := exec.Command(params.InstallCommandName, params.InstallCommandArgs...).Run(); err != nil {
 		if failOnInstallationErrors {
