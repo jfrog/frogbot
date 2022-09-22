@@ -165,7 +165,7 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotPara
 		return e
 	}
 	clientLog.Debug("Created temp working directory: " + wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s from branch:<%s>", params.RepoOwner, params.Repo, params.BaseBranch))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
 		return
