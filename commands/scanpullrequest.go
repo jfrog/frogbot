@@ -135,6 +135,7 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
+	clientLog.Info("Working directory:", wd)
 	return runInstallAndAudit(xrayScanParams, params, wd, true)
 }
 
