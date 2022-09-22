@@ -41,6 +41,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
+	clientLog.Info("Auditing pull request")
 	currentScan, err := auditSource(xrayScanParams, params)
 	if err != nil {
 		return err
@@ -50,7 +51,9 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		clientLog.Info("Frogbot is configured to show all vulnerabilities")
 		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {
-		// Audit target code
+		// Audit base branch
+		clientLog.Output()
+		clientLog.Info("Auditing base branch: " + params.Repo + " " + params.BaseBranch)
 		previousScan, err := auditTarget(client, xrayScanParams, params)
 		if err != nil {
 			return err
@@ -132,12 +135,10 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
-	clientLog.Info("Auditing " + wd)
 	return runInstallAndAudit(xrayScanParams, params, wd, true)
 }
 
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
-	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
 	wd, cleanup, err := downloadRepoToTempDir(client, params)
 	if err != nil {
