@@ -382,14 +382,22 @@ func TestRunInstallIfNeeded(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj")
+	testScanPullRequest(t, "", "test-proj", "", true)
+}
+
+func TestScanPullRequestNoFail(t *testing.T) {
+	testScanPullRequest(t, "", "test-proj", "false", false)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, "subdir", "test-proj-subdir")
+	testScanPullRequest(t, "subdir", "test-proj-subdir", "", true)
 }
 
-func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
+func TestScanPullRequestNoIssues(t *testing.T) {
+	testScanPullRequest(t, "", "clean-test-proj", "", false)
+}
+
+func testScanPullRequest(t *testing.T, workingDirectory, projectName, failOnSecurityIssues string, expectFailError bool) {
 	_, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
@@ -402,20 +410,26 @@ func testScanPullRequest(t *testing.T, workingDirectory, projectName string) {
 
 	// Set required environment variables
 	utils.SetEnvAndAssert(t, map[string]string{
-		utils.GitProvider:         string(utils.GitLab),
-		utils.GitApiEndpointEnv:   server.URL,
-		utils.GitRepoOwnerEnv:     "jfrog",
-		utils.GitRepoEnv:          projectName,
-		utils.GitTokenEnv:         "123456",
-		utils.GitBaseBranchEnv:    "master",
-		utils.GitPullRequestIDEnv: "1",
-		utils.InstallCommandEnv:   "npm i",
-		utils.WorkingDirectoryEnv: workingDirectory,
+		utils.GitProvider:             string(utils.GitLab),
+		utils.GitApiEndpointEnv:       server.URL,
+		utils.GitRepoOwnerEnv:         "jfrog",
+		utils.GitRepoEnv:              projectName,
+		utils.GitTokenEnv:             "123456",
+		utils.GitBaseBranchEnv:        "master",
+		utils.GitPullRequestIDEnv:     "1",
+		utils.InstallCommandEnv:       "npm i",
+		utils.WorkingDirectoryEnv:     workingDirectory,
+		utils.FailOnSecurityIssuesEnv: failOnSecurityIssues,
 	})
 
 	// Run "frogbot spr"
 	app := clitool.App{Commands: GetCommands()}
-	assert.NoError(t, app.Run([]string{"frogbot", "spr"}))
+	err := app.Run([]string{"frogbot", "spr"})
+	if expectFailError {
+		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
+	} else {
+		assert.NoError(t, err)
+	}
 	utils.AssertSanitizedEnv(t)
 }
 
@@ -458,6 +472,13 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
+		}
+		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("{}"))
+			assert.NoError(t, err)
+			return
 		}
 
 		// Return 200 when using the REST that creates the comment
