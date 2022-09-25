@@ -20,6 +20,7 @@
 
 ## 🤖 What is Frogbot?
 Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories following new commits.
+<a href="https://www.youtube.com/watch?v=aw-AAxtAVwY"><img scr="./images/frogbot-screencast.png"></a>
 
 ## Scan pull requests when they are opened
 ### General 
