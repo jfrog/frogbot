@@ -42,7 +42,9 @@ Supported package management tools:
 - Yarn 2
 
 ### 🕵️‍♀️ How does Pull Request scanning work?
-#### GitHub
+<details>
+  <summary>GitHub</summary>
+
 After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI. 
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
@@ -59,7 +61,10 @@ The Frogbot GitHub scan workflow is:
 3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
-#### GitLab
+</details>
+
+<details>
+  <summary>GitLab</summary>
 
 After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI. 
 
@@ -75,7 +80,10 @@ The Frogbot GitLab flow is as follows:
 4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
 [GitLab CI Run Button](./images/gitlab-run-button.png)
 
-#### Bitbucket Server
+</details>
+
+<details>
+  <summary>Bitbucket Server</summary>
 
 After you create a new pull request, Frogbot will automatically scan it.
 
@@ -89,16 +97,18 @@ The Frogbot scan on Bitbucket Server workflow:
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
-#### Scan results
+</details>
+
+### Scan results
 
 Frogbot adds the scan results to the pull request in the following format:
 
-##### 👍 No issues
+#### 👍 No issues
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
-##### 👎 Issues were found
+#### 👎 Issues were found
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
@@ -131,6 +141,8 @@ Supported package management tools:
 - Pip
 - Pipenv
 - Yarn 2
+
+</details>
 
 <div id="installing-and-using-frogbot"></div>
 
@@ -486,7 +498,6 @@ pipeline {
     }
 }
 ```
-</details>
 
 <div id="contributions"></div>
 
