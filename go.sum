@@ -218,8 +218,10 @@ github.com/jfrog/froggit-go v1.3.2 h1:fkzsI13vQkZZ2eZiN1Pyq+ZNxlJ4lLF/jZ/MuUx8uk
 github.com/jfrog/froggit-go v1.3.2/go.mod h1:QPE1t+DTKgp7TxLQ1ZftDQVzkCHXAyYQskLGAKQe8yM=
 github.com/jfrog/gofrog v1.2.1 h1:3pIcyPfKcA9SIinE1UiC4+8OLg+UinHH/dfsOZH3qXg=
 github.com/jfrog/gofrog v1.2.1/go.mod h1:lbkGXX/DHKdomaSV34eiOC3pAr1HRNa9ffOYh7U7b1U=
-github.com/jfrog/jfrog-client-go v1.23.3 h1:1chFB/8zpsrvxzjevLi4nFsmKRHMX5ghJM1/d5+hOjI=
-github.com/jfrog/jfrog-client-go v1.23.3/go.mod h1:j7E3oQ0rfP6EzfYOv3eyJ4rVtPzbw6wpnNT4hh1qhQM=
+github.com/jfrog/jfrog-cli-core/v2 v2.21.2 h1:eAqfCFIWg3vnxozmcxISqtIs89AP88fBzg3WKhy1Oqo=
+github.com/jfrog/jfrog-cli-core/v2 v2.21.2/go.mod h1:qvjACZR76GPIQpuEkNm5LNjtxwMDwfkSKxUHG82QqOc=
+github.com/jfrog/jfrog-client-go v1.23.4 h1:gEkTfv19BLkNymXOahKNUMOeqINuFn7vXrT/Mp+RFQ0=
+github.com/jfrog/jfrog-client-go v1.23.4/go.mod h1:DXnYD4QXud0IpFI0xkgVe3X8ncsKL/29GcABdb6B8yY=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
@@ -323,8 +325,6 @@ github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PK
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/subosito/gotenv v1.3.0 h1:mjC+YW8QpAdXibNi+vNWgzmgBH4+5l5dCXv8cNysBLI=
 github.com/subosito/gotenv v1.3.0/go.mod h1:YzJjq/33h7nrwdY+iHMhEOEEbW0ovIz0tB6t6PwAXzs=
-github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20220922160945-26b95dc0f921 h1:rvomziNZGx4i8xLUNwM9wcByp9fCSLriH2viZhFx12g=
-github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20220922160945-26b95dc0f921/go.mod h1:fLSQ2a8q4RaenVJ7goh+EBZYGTdbbdS7y5eltrkXdZU=
 github.com/ulikunitz/xz v0.5.8/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.9 h1:RsKRIA2MO8x56wkkcd3LbtcE/uMszhb6DpRf+3uwa3I=
 github.com/ulikunitz/xz v0.5.9/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
@@ -335,8 +335,8 @@ github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgq
 github.com/xanzy/go-gitlab v0.52.2 h1:gkgg1z4ON70sphibtD86Bfmt1qV3mZ0pU0CBBCFAEvQ=
 github.com/xanzy/go-gitlab v0.52.2/go.mod h1:Q+hQhV508bDPoBijv7YjK/Lvlb4PhVhJdKqXVQrUoAE=
 github.com/xanzy/ssh-agent v0.3.0/go.mod h1:3s9xbODqPuuhK9JV1R321M/FlMZSBvE5aY6eAcqrDh0=
-github.com/xanzy/ssh-agent v0.3.2 h1:eKj4SX2Fe7mui28ZgnFW5fmTz1EIr7ugo5s6wDxdHBM=
-github.com/xanzy/ssh-agent v0.3.2/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
+github.com/xanzy/ssh-agent v0.3.3-0.20220920102508-0fa644ba07f4 h1:3kHD8uZqiYes9JHdd3FzuyUbG10g9Bp9EOfqkSHIhg4=
+github.com/xanzy/ssh-agent v0.3.3-0.20220920102508-0fa644ba07f4/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 h1:nIPpBwaJSVYIxUFsDv3M8ofmx9yWTog9BfvIu0q41lo=
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
 github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 h1:QldyIu/L63oPpyvQmHgvgickp1Yw510KJOqX7H24mg8=

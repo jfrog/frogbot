@@ -60,14 +60,14 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		}
 		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
 	}
-	clientLog.Info("Xray scan completed")
+	clientLog.Info("JFrog Xray scan completed")
 
 	// Frogbot adds a comment on the PR.
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
 	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
 	err = client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 	if err != nil {
-		return err
+		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if params.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {

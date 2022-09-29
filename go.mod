@@ -8,8 +8,8 @@ require (
 	github.com/jfrog/build-info-go v1.6.0
 	github.com/jfrog/froggit-go v1.3.2
 	github.com/jfrog/gofrog v1.2.1
-	github.com/jfrog/jfrog-cli-core/v2 v2.21.1
-	github.com/jfrog/jfrog-client-go v1.23.3
+	github.com/jfrog/jfrog-cli-core/v2 v2.21.2
+	github.com/jfrog/jfrog-client-go v1.23.4
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.2
 )
@@ -75,7 +75,7 @@ require (
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xanzy/go-gitlab v0.52.2 // indirect
-	github.com/xanzy/ssh-agent v0.3.2 // indirect
+	github.com/xanzy/ssh-agent v0.3.3-0.20220920102508-0fa644ba07f4 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
@@ -97,6 +97,6 @@ require (
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.21.1-0.20220828160454-7c617b0d1582
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20220922160945-26b95dc0f921
+// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20220922160945-26b95dc0f921
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.4.2-0.20220825155547-eff444e96d62
