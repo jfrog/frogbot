@@ -67,7 +67,7 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: textarea
     id: frogbot-yaml
     attributes:
       label: JFrog Frogbot configuration yaml file
