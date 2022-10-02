@@ -20,14 +20,12 @@ body:
           - **Node**: 13.14.0
           - **npm**: 7.6.3
       value: |
-          - OS:
-          - Node:
-          - npm:
-     render: markdown
+        - OS:
+        - Node:
+        - npm:
+      render: markdown
     validations:
-      required: false    
-      
-
+      required: false
 
   - type: textarea
     id: current
