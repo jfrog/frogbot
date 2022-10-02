@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "Security issues were detected by Frogbot. (You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE)"
+	securityIssueFoundErr = "security issues were detected by Frogbot. (You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE)"
 )
 
 type ScanPullRequestCmd struct {
