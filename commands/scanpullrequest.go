@@ -52,8 +52,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {
 		// Audit base branch
-		clientLog.Output()
-		clientLog.Info("Auditing base branch: " + params.Repo + " " + params.BaseBranch)
+		clientLog.Info("\nAuditing base branch:", params.Repo, params.BaseBranch)
 		previousScan, err := auditTarget(client, xrayScanParams, params)
 		if err != nil {
 			return err
@@ -164,7 +163,7 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotPara
 		e := fileutils.RemoveTempDir(wd)
 		return e
 	}
-	clientLog.Debug("Created temp working directory: " + wd)
+	clientLog.Debug("Created temp working directory:", wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s from branch:<%s>", params.RepoOwner, params.Repo, params.BaseBranch))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
