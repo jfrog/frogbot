@@ -12,14 +12,16 @@
 ## Table of contents
 - [What is Frogbot?](#what-is-frogbot)
 - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
-- [Scanning repositories after pull requests are merged](#scanning-repositories-after-pull-requests-are-merged)
+- [Scanning repositories following new commits](#scanning-repositories-following-new-commits)
 - [Installing and using Frogbot](#installing-and-using-frogbot)
 - [Contributions](#contributions)
 
 <div id="what-is-frogbot"></div>
 
 ## 🤖 What is Frogbot?
-Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories when merging requests.
+Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories following new commits.
+
+<a href="https://www.youtube.com/watch?v=aw-AAxtAVwY"><img width="30%" src="./images/frogbot-screencast.png"></a>
 
 ## Scan pull requests when they are opened
 ### General 
@@ -42,7 +44,9 @@ Supported package management tools:
 - Yarn 2
 
 ### 🕵️‍♀️ How does Pull Request scanning work?
-#### GitHub
+<details>
+  <summary>GitHub</summary>
+
 After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI. 
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
@@ -56,14 +60,15 @@ The Frogbot GitHub scan workflow is:
 
 [![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
 
-3. A Maintainer reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
+3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
-#### GitLab
+</details>
 
-For security reasons, Frogbot cannot be automatically triggered.
-After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request
-from the merge request UI. 
+<details>
+  <summary>GitLab</summary>
+
+After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI. 
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
 Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in the
@@ -72,12 +77,15 @@ merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitLab flow is as follows: 
 1. The developer opens a merge request.
-2. The maintainer of the repository triggers the manual *frogbot-scan* job.
+2. The maintainer of the repository reviews the merge request and approves the scan by trigerring the manual *frogbot-scan* job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
 [GitLab CI Run Button](./images/gitlab-run-button.png)
 
-#### Bitbucket Server
+</details>
+
+<details>
+  <summary>Bitbucket Server</summary>
 
 After you create a new pull request, Frogbot will automatically scan it.
 
@@ -86,21 +94,23 @@ Vulnerabilities that aren't new, and existed in the code before the pull request
 report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
-The Frogbot scan Bitbucket Server workflow:
+The Frogbot scan on Bitbucket Server workflow:
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
-#### Scan results
+</details>
+
+### Scan results
 
 Frogbot adds the scan results to the pull request in the following format:
 
-##### 👍 No issues
+#### 👍 No issues
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
-##### 👎 Issues were found
+#### 👎 Issues were found
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
@@ -111,7 +121,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |      v3.5.1       |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
-## Scanning repositories after pull requests are merged
+## Scanning repositories following new commits
 
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
 version with a fix.
@@ -133,6 +143,8 @@ Supported package management tools:
 - Pip
 - Pipenv
 - Yarn 2
+
+</details>
 
 <div id="installing-and-using-frogbot"></div>
 
@@ -488,7 +500,6 @@ pipeline {
     }
 }
 ```
-</details>
 
 <div id="contributions"></div>
 
