@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE"
+	securityIssueFoundErr = "security issues were detected by Frogbot. (You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE)"
 )
 
 type ScanPullRequestCmd struct {
@@ -33,7 +33,7 @@ func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.
 // By default, JF_INCLUDE_ALL_VULNERABILITIES is set to false and the scan goes as follow:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-// Otherwise only the source branch is scanned and all found vulnerabilities are being displayed.
+// Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Validate scan params
 	if params.BaseBranch == "" {
@@ -41,6 +41,7 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	}
 	// Audit PR code
 	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
+	clientLog.Info("Auditing pull request")
 	currentScan, err := auditSource(xrayScanParams, params)
 	if err != nil {
 		return err
@@ -50,21 +51,22 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		clientLog.Info("Frogbot is configured to show all vulnerabilities")
 		vulnerabilitiesRows = createAllIssuesRows(currentScan)
 	} else {
-		// Audit target code
+		// Audit base branch
+		clientLog.Info("\nAuditing base branch:", params.Repo, params.BaseBranch)
 		previousScan, err := auditTarget(client, xrayScanParams, params)
 		if err != nil {
 			return err
 		}
 		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
 	}
-	clientLog.Info("Xray scan completed")
+	clientLog.Info("JFrog Xray scan completed")
 
 	// Frogbot adds a comment on the PR.
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
 	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
 	err = client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
 	if err != nil {
-		return err
+		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if params.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
@@ -132,12 +134,11 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.Frog
 	if params.WorkingDirectory != "" {
 		wd = filepath.Join(wd, params.WorkingDirectory)
 	}
-	clientLog.Info("Auditing " + wd)
+	clientLog.Info("Working directory:", wd)
 	return runInstallAndAudit(xrayScanParams, params, wd, true)
 }
 
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
-	clientLog.Info("Auditing " + params.Repo + " " + params.BaseBranch)
 	// First download the target repo to temp dir
 	wd, cleanup, err := downloadRepoToTempDir(client, params)
 	if err != nil {
@@ -162,8 +163,8 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotPara
 		e := fileutils.RemoveTempDir(wd)
 		return e
 	}
-	clientLog.Debug("Created temp working directory: " + wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", params.RepoOwner, params.Repo, params.BaseBranch, wd))
+	clientLog.Debug("Created temp working directory:", wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s from branch:<%s>", params.RepoOwner, params.Repo, params.BaseBranch))
 	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
 	if err != nil {
 		return
