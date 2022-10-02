@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE"
+	securityIssueFoundErr = "Security issues were detected by Frogbot. (You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE)"
 )
 
 type ScanPullRequestCmd struct {
@@ -33,7 +33,7 @@ func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.
 // By default, JF_INCLUDE_ALL_VULNERABILITIES is set to false and the scan goes as follow:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-// Otherwise only the source branch is scanned and all found vulnerabilities are being displayed.
+// Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
 	// Validate scan params
 	if params.BaseBranch == "" {
