@@ -200,12 +200,13 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 	}
 	clientLog.Info(fmt.Sprintf("Executing '%s %s' at %s", params.InstallCommandName, strings.Join(params.InstallCommandArgs, " "), workDir))
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-	if err := exec.Command(params.InstallCommandName, params.InstallCommandArgs...).Run(); err != nil {
+	output, err := exec.Command(params.InstallCommandName, params.InstallCommandArgs...).CombinedOutput() // #nosec G204
+	if err != nil {
+		err = fmt.Errorf("'%s %s' command failed: %s - %s", params.InstallCommandName, strings.Join(params.InstallCommandArgs, " "), err.Error(), output)
 		if failOnInstallationErrors {
 			return err
 		}
 		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
-		return nil
 	}
 	return nil
 }
