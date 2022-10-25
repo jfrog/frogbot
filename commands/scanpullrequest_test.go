@@ -414,9 +414,9 @@ func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
 	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", false)
 }
 
-func TestScanPullRequestEmptyConfig(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj-pip", false)
-}
+//func TestScanPullRequestEmptyConfig(t *testing.T) {
+//	testScanPullRequest(t, "", "test-proj-pip", false)
+//}
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
 	params, restoreEnv := verifyEnv(t)

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -168,10 +169,6 @@ func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *core
 		return nil, nil, nil, err
 	}
 
-	if len(*configData) == 0 {
-		// Case config was empty. use default values.
-		configData = &FrogbotConfigAggregator{{}}
-	}
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
 		gitParams.RepoName = config.RepoName
@@ -207,8 +204,7 @@ func extractEnvParams() (JFrogEnvParams, GitParams, error) {
 
 func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, error) {
 	if configFilePath == "" {
-		// Case no config file path provided. use config with default values.
-		return &FrogbotConfigAggregator{{}}, nil
+		return nil, errors.New("configuration file was not provided")
 	}
 	filePath, err := filepath.Abs(configFilePath)
 	if err != nil {
