@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false."
+	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false"
 	rootDir               = "."
 )
 
