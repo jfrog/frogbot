@@ -92,11 +92,11 @@ func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSe
 func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) ([]formats.VulnerabilityOrViolationRow, error) {
 	prevScanResultsModules := make(map[string]services.ScanResponse)
 	for _, scanResultsModule := range previousScan {
-		prevScanResultsModules[scanResultsModule.ScanId] = scanResultsModule
+		prevScanResultsModules[scanResultsModule.ScannedComponentId] = scanResultsModule
 	}
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
-		previousScanModule, ok := prevScanResultsModules[currentScan[i].ScanId]
+		previousScanModule, ok := prevScanResultsModules[currentScan[i].ScannedComponentId]
 		// If this isn't a new module compare this scan to the previous scan of this module
 		if ok {
 			if len(currentScan[i].Violations) > 0 {
