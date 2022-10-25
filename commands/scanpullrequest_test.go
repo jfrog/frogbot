@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	utils2 "github.com/jfrog/jfrog-client-go/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -544,7 +545,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponse.json"))
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, string(expectedResponse), buf.String())
+			assert.Equal(t, utils2.IndentJson(expectedResponse), utils2.IndentJson(buf.Bytes()))
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
