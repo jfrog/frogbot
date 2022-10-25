@@ -48,7 +48,7 @@ type GitParams struct {
 	PullRequestID int
 }
 
-func GetParamsAndClient(configFilePath string) (*FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
+func GetParamsAndClient(configFilePath string) (FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
 	configAggregator, server, gitParams, err := extractFrogbotConfig(configFilePath)
 	if err != nil {
 		return nil, nil, nil, err
@@ -156,7 +156,7 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractFrogbotConfig(configFilePath string) (*FrogbotConfigAggregator, *coreconfig.ServerDetails, *GitParams, error) {
+func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *coreconfig.ServerDetails, *GitParams, error) {
 	configData, err := OpenAndParseConfigFile(configFilePath)
 	if err != nil {
 		return nil, nil, nil, err
@@ -185,7 +185,7 @@ func extractFrogbotConfig(configFilePath string) (*FrogbotConfigAggregator, *cor
 		})
 	}
 
-	return &configAggregator, &jfrogEnvParams.Server, &gitParams, nil
+	return configAggregator, &jfrogEnvParams.Server, &gitParams, nil
 }
 
 func extractEnvParams() (JFrogEnvParams, GitParams, error) {

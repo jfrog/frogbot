@@ -431,7 +431,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(&configAggregator, client)
+	err := scanPullRequest.Run(configAggregator, client)
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
 	} else {

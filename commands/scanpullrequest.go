@@ -30,8 +30,8 @@ type ScanPullRequestCmd struct {
 
 // ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
-func (cmd ScanPullRequestCmd) Run(configAggregator *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	return scanPullRequest(&(*configAggregator)[0], client)
+func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+	return scanPullRequest(&(configAggregator)[0], client)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follow:
@@ -50,7 +50,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.ProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for _, project := range repoConfig.Projects {
-		currentScan, err := auditSource(xrayScanParams, &project, &repoConfig.Server)
+		currentScan, err := auditSource(xrayScanParams, project, &repoConfig.Server)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 			vulnerabilitiesRows = append(vulnerabilitiesRows, createAllIssuesRows(currentScan)...)
 		} else {
 			// Audit target code
-			previousScan, err := auditTarget(client, xrayScanParams, &project, &repoConfig.GitParams, &repoConfig.Server)
+			previousScan, err := auditTarget(client, xrayScanParams, project, &repoConfig.GitParams, &repoConfig.Server)
 			if err != nil {
 				return err
 			}
@@ -134,13 +134,13 @@ func createXrayScanParams(watches []string, project string) (params services.Xra
 	return
 }
 
-func auditSource(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails) ([]services.ScanResponse, error) {
+func auditSource(xrayScanParams services.XrayGraphScanParams, project utils.Project, server *coreconfig.ServerDetails) ([]services.ScanResponse, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return []services.ScanResponse{}, err
 	}
-	fullPathWds := getFullPathWorkingDirs(project, wd)
-	return runInstallAndAudit(xrayScanParams, project, server, true, fullPathWds...)
+	fullPathWds := getFullPathWorkingDirs(&project, wd)
+	return runInstallAndAudit(xrayScanParams, &project, server, true, fullPathWds...)
 }
 
 func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
@@ -159,7 +159,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project *utils.Project, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
+func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
 	clientLog.Info("Auditing " + git.RepoName + " " + git.BaseBranch)
 	wd, cleanup, err := downloadRepoToTempDir(client, git)
@@ -173,8 +173,8 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 			err = e
 		}
 	}()
-	fullPathWds := getFullPathWorkingDirs(project, wd)
-	return runInstallAndAudit(xrayScanParams, project, server, false, fullPathWds...)
+	fullPathWds := getFullPathWorkingDirs(&project, wd)
+	return runInstallAndAudit(xrayScanParams, &project, server, false, fullPathWds...)
 }
 
 func downloadRepoToTempDir(client vcsclient.VcsClient, git *utils.GitParams) (wd string, cleanup func() error, err error) {

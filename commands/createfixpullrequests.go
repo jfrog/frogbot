@@ -32,15 +32,15 @@ type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
 }
 
-func (cfp CreateFixPullRequestsCmd) Run(configAggregator *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	// Scan the current Branch
-	repoConfig := &(*configAggregator)[0]
+	repoConfig := &(configAggregator)[0]
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
 	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.ProjectKey)
 	for _, project := range repoConfig.Projects {
-		scanResults, err := cfp.scan(&project, &repoConfig.Server, xrayScanParams)
+		scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator *utils.FrogbotConfigAgg
 		}
 
 		// Fix and create PRs
-		err = cfp.fixImpactedPackagesAndCreatePRs(&project, &repoConfig.GitParams, client, scanResults)
+		err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, client, scanResults)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator *utils.FrogbotConfigAgg
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *CreateFixPullRequestsCmd) scan(project *utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams) ([]services.ScanResponse, error) {
+func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams) ([]services.ScanResponse, error) {
 	// Audit commit code
 	scanResults, err := auditSource(xrayScanParams, project, server)
 	if err != nil {
@@ -72,8 +72,8 @@ func (cfp *CreateFixPullRequestsCmd) scan(project *utils.Project, server *coreco
 	return scanResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project *utils.Project, repoGitParams *utils.GitParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
-	fixVersionsMap, err := cfp.createFixVersionsMap(project, scanResults)
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
+	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project *ut
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
-		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, project, repoGitParams, client, gitManager)
+		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, repoGitParams, client, gitManager)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}

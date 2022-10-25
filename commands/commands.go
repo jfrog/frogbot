@@ -12,7 +12,7 @@ const configRelativePath = "config/frogbot-config.yaml"
 
 type FrogbotCommand interface {
 	// Runs the command
-	Run(config *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
+	Run(config utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
 }
 
 func Exec(command FrogbotCommand, name string) error {
