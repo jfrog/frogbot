@@ -13,9 +13,9 @@ import (
 type ScanAllPullRequestsCmd struct {
 }
 
-func (cmd ScanAllPullRequestsCmd) Run(configAggregator *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	for _, config := range *configAggregator {
-		err := scanAllPullRequests(&config, client)
+func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+	for _, config := range configAggregator {
+		err := scanAllPullRequests(config, client)
 		if err != nil {
 			return err
 		}
@@ -29,7 +29,7 @@ func (cmd ScanAllPullRequestsCmd) Run(configAggregator *utils.FrogbotConfigAggre
 // b. Find the ones that should be scanned (new PRs or PRs with a 're-scan' comment)
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-func scanAllPullRequests(repo *utils.FrogbotRepoConfig, client vcsclient.VcsClient) (err error) {
+func scanAllPullRequests(repo utils.FrogbotRepoConfig, client vcsclient.VcsClient) (err error) {
 	openPullRequests, err := client.ListOpenPullRequests(context.Background(), repo.RepoOwner, repo.RepoName)
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func scanAllPullRequests(repo *utils.FrogbotRepoConfig, client vcsclient.VcsClie
 	return err
 }
 
-func shouldScanPullRequest(repo *utils.FrogbotRepoConfig, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {
+func shouldScanPullRequest(repo utils.FrogbotRepoConfig, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {
 	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repo.RepoOwner, repo.RepoName, prID)
 	if err != nil {
 		return
@@ -84,7 +84,7 @@ func isFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource))
 }
 
-func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	// Download the pull request source ("from") branch
 	frogbotParams := &utils.FrogbotRepoConfig{
 		JFrogEnvParams: repo.JFrogEnvParams,

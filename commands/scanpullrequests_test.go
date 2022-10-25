@@ -37,7 +37,7 @@ func TestShouldScanPullRequestNewPR(t *testing.T) {
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, nil)
 	// Run handleFrogbotLabel
-	shouldScan, err := shouldScanPullRequest(params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*params, client, prID)
 	assert.NoError(t, err)
 	assert.True(t, shouldScan)
 }
@@ -50,7 +50,7 @@ func TestShouldScanPullRequestReScan(t *testing.T) {
 		{Content: utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*params, client, prID)
 	assert.NoError(t, err)
 	assert.True(t, shouldScan)
 }
@@ -64,7 +64,7 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*params, client, prID)
 	assert.NoError(t, err)
 	assert.False(t, shouldScan)
 }
@@ -76,7 +76,7 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*params, client, prID)
 	assert.NoError(t, err)
 	assert.False(t, shouldScan)
 }
@@ -91,7 +91,7 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 	client := mockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
-	shouldScan, err := shouldScanPullRequest(params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*params, client, prID)
 	assert.Error(t, err)
 	assert.False(t, shouldScan)
 }
@@ -99,7 +99,7 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	jfrogParams, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
-	configAggregator := &utils.FrogbotConfigAggregator{
+	configAggregator := utils.FrogbotConfigAggregator{
 		{
 			JFrogEnvParams: jfrogParams,
 			GitParams:      params.GitParams,
@@ -152,7 +152,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(&paramsAggregator, client)
+	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := "🐸 Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 💀 Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
