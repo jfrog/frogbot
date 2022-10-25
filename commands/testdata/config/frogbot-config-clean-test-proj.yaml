@@ -1,4 +1,5 @@
-- projects:
+- repoName: clean-test-proj
+  projects:
     - installCommandName: npm
       installCommandArgs:
         - i

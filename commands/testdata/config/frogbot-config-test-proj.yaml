@@ -1,4 +1,5 @@
-- failOnSecurityIssues: false
+- repoName: test-proj
+  failOnSecurityIssues: false
   projects:
     - workingDir:
         - .

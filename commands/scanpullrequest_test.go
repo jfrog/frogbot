@@ -466,6 +466,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, projectName string,
 	assert.NoError(t, err)
 	var configAggregator utils.FrogbotConfigAggregator
 	for _, config := range *configData {
+		gitParams.RepoName = config.RepoName
 		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
 			JFrogEnvParams:            params,
 			GitParams:                 gitParams,
@@ -474,6 +475,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, projectName string,
 			SimplifiedOutput:          config.SimplifiedOutput,
 			Projects:                  config.Projects,
 			Watches:                   config.Watches,
+			RepoName:                  config.RepoName,
 		})
 	}
 

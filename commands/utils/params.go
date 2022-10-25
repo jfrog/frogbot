@@ -22,8 +22,8 @@ type FrogbotRepoConfig struct {
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
-	RepoName                  string    `yaml:"repoName"`
 	ProjectKey                string    `yaml:"projectKey,omitempty"`
+	RepoName                  string    `yaml:"repoName"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
 }

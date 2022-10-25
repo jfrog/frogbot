@@ -1,8 +1,10 @@
-- includeAllVulnerabilities: false
-  failOnSecurityIssues: false
-  watches: [ ]
-  project: ''
+- repoName: test_npm
   projects:
-    - installCommandName: ''
-      installCommandArgs: [ ]
-      workingDir: [ ]
+    - installCommandName: npm
+      installCommandArgs:
+        - i
+- repoName: test_yarn
+  projects:
+    - installCommandName: yarn
+      installCommandArgs:
+        - install

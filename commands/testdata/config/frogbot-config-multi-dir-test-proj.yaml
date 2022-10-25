@@ -1,4 +1,5 @@
-- projects:
+- repoName: multi-dir-test-proj
+  projects:
     - installCommandName: npm
       installCommandArgs:
         - i

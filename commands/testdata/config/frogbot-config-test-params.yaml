@@ -1,4 +1,5 @@
-- includeAllVulnerabilities: true
+- repoName: test-params
+  includeAllVulnerabilities: true
   failOnSecurityIssues: true
   watches:
     - watch-1
