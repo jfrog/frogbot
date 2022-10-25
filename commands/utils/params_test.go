@@ -140,7 +140,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	}()
 	config, _, _, err := GetParamsAndClient(paramsTestConfig)
 	assert.NoError(t, err)
-	for _, repo := range *config {
+	for _, repo := range config {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.ProjectKey)
@@ -159,7 +159,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	params, server, _, err := GetParamsAndClient(paramsTestConfig)
+	config, server, _, err := GetParamsAndClient(paramsTestConfig)
 	assert.NoError(t, err)
 	AssertSanitizedEnv(t)
 
@@ -175,12 +175,12 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, config := range *params {
-		assert.Equal(t, vcsutils.GitHub, config.GitProvider)
-		assert.Equal(t, "jfrog", config.RepoOwner)
-		assert.Equal(t, "frogbot", config.RepoName)
-		assert.Equal(t, "123456789", config.Token)
-		assert.Equal(t, "master", config.BaseBranch)
-		assert.Equal(t, 1, config.PullRequestID)
+	for _, configParams := range config {
+		assert.Equal(t, vcsutils.GitHub, configParams.GitProvider)
+		assert.Equal(t, "jfrog", configParams.RepoOwner)
+		assert.Equal(t, "frogbot", configParams.RepoName)
+		assert.Equal(t, "123456789", configParams.Token)
+		assert.Equal(t, "master", configParams.BaseBranch)
+		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
