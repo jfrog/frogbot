@@ -136,6 +136,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 		},
 		Projects:   repo.Projects,
 		ProjectKey: repo.ProjectKey,
+		RepoName:   pr.Target.Repository,
 	}
 	return scanPullRequest(frogbotParams, client)
 }

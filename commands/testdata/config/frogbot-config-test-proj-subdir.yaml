@@ -1,5 +1,4 @@
-- repo: test_npm_subdir
-  failOnSecurityIssues: false
+- failOnSecurityIssues: false
   projects:
     - workingDir:
         - subdir

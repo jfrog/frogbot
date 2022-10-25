@@ -1,5 +1,4 @@
-- repo: test_multi_dirs
-  projects:
+- projects:
     - installCommandName: npm
       installCommandArgs:
         - i

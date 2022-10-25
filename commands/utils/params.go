@@ -22,6 +22,7 @@ type FrogbotRepoConfig struct {
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
+	RepoName                  string    `yaml:"repoName"`
 	ProjectKey                string    `yaml:"projectKey,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
@@ -40,9 +41,9 @@ type JFrogEnvParams struct {
 
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
+	RepoName      string
 	RepoOwner     string
 	Token         string
-	RepoName      string
 	BaseBranch    string
 	ApiEndpoint   string
 	PullRequestID int
@@ -102,9 +103,9 @@ func extractGitParamsFromEnv() (GitParams, error) {
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
 		return GitParams{}, err
 	}
-	if err = readParamFromEnv(GitRepoEnv, &gitParams.RepoName); err != nil {
-		return GitParams{}, err
-	}
+	//if err = readParamFromEnv(GitRepoEnv, &gitParams.RepoName); err != nil {
+	//	return GitParams{}, err
+	//}
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return GitParams{}, err
 	}
@@ -173,6 +174,7 @@ func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *core
 	}
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
+		gitParams.RepoName = config.RepoName
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			JFrogEnvParams:            jfrogEnvParams,
 			GitParams:                 gitParams,
@@ -182,6 +184,7 @@ func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *core
 			Projects:                  config.Projects,
 			Watches:                   config.Watches,
 			ProjectKey:                config.ProjectKey,
+			RepoName:                  config.RepoName,
 		})
 	}
 

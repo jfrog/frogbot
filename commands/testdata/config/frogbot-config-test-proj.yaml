@@ -1,5 +1,4 @@
-- repo: test_npm
-  failOnSecurityIssues: false
+- failOnSecurityIssues: false
   projects:
     - workingDir:
         - .
