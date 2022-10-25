@@ -71,21 +71,21 @@ func Md5Hash(values ...string) (string, error) {
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, params *FrogbotParams, client vcsclient.VcsClient) error {
-	if params.GitProvider.String() != vcsutils.GitHub.String() {
-		clientLog.Debug("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, client vcsclient.VcsClient) error {
+	if repo.GitProvider.String() != vcsutils.GitHub.String() {
+		clientLog.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
 	// Don't do anything if scanResults is empty
 	if xrayutils.IsEmptyScanResponse(scanResults) {
 		return nil
 	}
-	includeVulnerabilities := params.Project == "" && params.Watches == ""
+	includeVulnerabilities := repo.ProjectKey == "" && len(repo.Watches) == 0
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, repo.BaseBranch, scan)
 	if err != nil {
 		return errors.New("upload code scanning failed with: " + err.Error())
 	}

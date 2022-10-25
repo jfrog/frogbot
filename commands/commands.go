@@ -2,30 +2,31 @@ package commands
 
 import (
 	"fmt"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	clitool "github.com/urfave/cli/v2"
 )
 
+const configRelativePath = "config/frogbot-config.yaml"
+
 type FrogbotCommand interface {
 	// Runs the command
-	Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error
+	Run(config *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
 }
 
 func Exec(command FrogbotCommand, name string) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
+	// Get config, server and VCS client
+	configAggregator, server, client, err := utils.GetParamsAndClient(configRelativePath)
 	if err != nil {
 		return err
 	}
 	// Send usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, &params.Server, usageReportSent)
+	go utils.ReportUsage(name, server, usageReportSent)
 	// Invoke the command interface
 	clientLog.Info(fmt.Sprintf("Running Frogbot %q command ", name))
-	err = command.Run(params, client)
+	err = command.Run(configAggregator, client)
 	// Waits for the signal from the report usage to be done.
 	<-usageReportSent
 	if err == nil {

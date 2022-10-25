@@ -1,0 +1,8 @@
+- repo: test_npm
+  failOnSecurityIssues: false
+  projects:
+    - workingDir:
+        - .
+      installCommandName: npm
+      installCommandArgs:
+        - i

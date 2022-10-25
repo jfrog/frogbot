@@ -1,0 +1,13 @@
+- includeAllVulnerabilities: true
+  failOnSecurityIssues: true
+  watches:
+    - watch-1
+    - watch-2
+  projectKey: proj
+  projects:
+    - installCommandName: npm
+      installCommandArgs:
+        - i
+      workingDir:
+        - a/b
+        - b/c

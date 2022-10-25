@@ -1,0 +1,5 @@
+- repo: test_npm
+  projects:
+    - installCommandName: npm
+      installCommandArgs:
+        - i

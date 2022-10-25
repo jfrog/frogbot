@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,56 +21,63 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "security issues were detected by Frogbot. (You can avoid marking the Frogbot scan as failed by setting JF_FAIL to FALSE)"
+	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false."
+	rootDir               = "."
 )
 
 type ScanPullRequestCmd struct {
 }
 
-func (cmd ScanPullRequestCmd) Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
-	return scanPullRequest(params, client)
+// ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
+// Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
+func (cmd ScanPullRequestCmd) Run(configAggregator *utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+	return scanPullRequest(&(*configAggregator)[0], client)
 }
 
-// By default, JF_INCLUDE_ALL_VULNERABILITIES is set to false and the scan goes as follow:
+// By default, includeAllVulnerabilities is set to false and the scan goes as follow:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) error {
+func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+	if len(repoConfig.Projects) == 0 {
+		repoConfig.Projects = []utils.Project{{}}
+	}
 	// Validate scan params
-	if params.BaseBranch == "" {
+	if repoConfig.BaseBranch == "" {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
 	// Audit PR code
-	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
-	clientLog.Info("Auditing pull request")
-	currentScan, err := auditSource(xrayScanParams, params)
-	if err != nil {
-		return err
-	}
+	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.ProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	if params.IncludeAllVulnerabilities {
-		clientLog.Info("Frogbot is configured to show all vulnerabilities")
-		vulnerabilitiesRows = createAllIssuesRows(currentScan)
-	} else {
-		// Audit base branch
-		clientLog.Info("\nAuditing base branch:", params.Repo, params.BaseBranch)
-		previousScan, err := auditTarget(client, xrayScanParams, params)
+	for _, project := range repoConfig.Projects {
+		currentScan, err := auditSource(xrayScanParams, &project, &repoConfig.Server)
 		if err != nil {
 			return err
 		}
-		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
+		if repoConfig.IncludeAllVulnerabilities {
+			clientLog.Info("Frogbot is configured to show all vulnerabilities")
+			vulnerabilitiesRows = append(vulnerabilitiesRows, createAllIssuesRows(currentScan)...)
+		} else {
+			// Audit target code
+			previousScan, err := auditTarget(client, xrayScanParams, &project, &repoConfig.GitParams, &repoConfig.Server)
+			if err != nil {
+				return err
+			}
+			vulnerabilitiesRows = append(vulnerabilitiesRows, createNewIssuesRows(previousScan, currentScan)...)
+		}
 	}
-	clientLog.Info("JFrog Xray scan completed")
+
+	clientLog.Info("Xray scan completed")
 
 	// Frogbot adds a comment on the PR.
-	getTitleFunc, getSeverityTagFunc := getCommentFunctions(params.SimplifiedOutput)
+	getTitleFunc, getSeverityTagFunc := getCommentFunctions(repoConfig.SimplifiedOutput)
 	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
-	err = client.AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, message, params.PullRequestID)
+	err := client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID)
 	if err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if params.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+	if repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
@@ -110,11 +118,11 @@ func createAllIssuesRows(currentScan []services.ScanResponse) []formats.Vulnerab
 	return vulnerabilitiesRows
 }
 
-func createXrayScanParams(watches, project string) (params services.XrayGraphScanParams) {
+func createXrayScanParams(watches []string, project string) (params services.XrayGraphScanParams) {
 	params.ScanType = services.Dependency
 	params.IncludeLicenses = false
-	if watches != "" {
-		params.Watches = strings.Split(watches, utils.WatchesDelimiter)
+	if len(watches) > 0 {
+		params.Watches = watches
 		return
 	}
 	if project != "" {
@@ -126,21 +134,35 @@ func createXrayScanParams(watches, project string) (params services.XrayGraphSca
 	return
 }
 
-func auditSource(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) ([]services.ScanResponse, error) {
+func auditSource(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails) ([]services.ScanResponse, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return []services.ScanResponse{}, err
 	}
-	if params.WorkingDirectory != "" {
-		wd = filepath.Join(wd, params.WorkingDirectory)
-	}
-	clientLog.Info("Working directory:", wd)
-	return runInstallAndAudit(xrayScanParams, params, wd, true)
+	fullPathWds := getFullPathWorkingDirs(project, wd)
+	return runInstallAndAudit(xrayScanParams, project, server, true, fullPathWds...)
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams) (res []services.ScanResponse, err error) {
+func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
+	var fullPathWds []string
+	if len(project.WorkingDir) != 0 {
+		for _, workDir := range project.WorkingDir {
+			if workDir == rootDir {
+				fullPathWds = append(fullPathWds, baseWd)
+				continue
+			}
+			fullPathWds = append(fullPathWds, filepath.Join(baseWd, workDir))
+		}
+	} else {
+		fullPathWds = append(fullPathWds, baseWd)
+	}
+	return fullPathWds
+}
+
+func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project *utils.Project, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
-	wd, cleanup, err := downloadRepoToTempDir(client, params)
+	clientLog.Info("Auditing " + git.RepoName + " " + git.BaseBranch)
+	wd, cleanup, err := downloadRepoToTempDir(client, git)
 	if err != nil {
 		return
 	}
@@ -151,10 +173,11 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 			err = e
 		}
 	}()
-	return runInstallAndAudit(xrayScanParams, params, wd, false)
+	fullPathWds := getFullPathWorkingDirs(project, wd)
+	return runInstallAndAudit(xrayScanParams, project, server, false, fullPathWds...)
 }
 
-func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotParams) (wd string, cleanup func() error, err error) {
+func downloadRepoToTempDir(client vcsclient.VcsClient, git *utils.GitParams) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -163,50 +186,53 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, params *utils.FrogbotPara
 		e := fileutils.RemoveTempDir(wd)
 		return e
 	}
-	clientLog.Debug("Created temp working directory:", wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s from branch:<%s>", params.RepoOwner, params.Repo, params.BaseBranch))
-	err = client.DownloadRepository(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, wd)
+	clientLog.Debug("Created temp working directory: " + wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", git.RepoOwner, git.RepoName, git.BaseBranch, wd))
+	err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, git.BaseBranch, wd)
 	if err != nil {
 		return
 	}
 	clientLog.Debug("Downloading repository completed")
-	if params.WorkingDirectory != "" {
-		wd = filepath.Join(wd, params.WorkingDirectory)
-	}
 	return
 }
 
-func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) (results []services.ScanResponse, err error) {
-	restoreDir, err := utils.Chdir(workDir)
-	if err != nil {
-		return
-	}
-	defer func() {
-		e := restoreDir()
-		if err == nil {
-			err = e
+func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails, failOnInstallationErrors bool, workDirs ...string) (results []services.ScanResponse, err error) {
+	for _, wd := range workDirs {
+		restoreDir, err := utils.Chdir(wd)
+		if err != nil {
+			e := restoreDir()
+			return nil, fmt.Errorf("%s\n%s", err, e)
 		}
-	}()
-	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
-		return
+		if err = runInstallIfNeeded(project, wd, failOnInstallationErrors); err != nil {
+			e := restoreDir()
+			return nil, fmt.Errorf("%s\n%s", err, e)
+		}
+
+		err = restoreDir()
+		if err != nil {
+			return nil, err
+		}
 	}
-	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, nil, nil, params.RequirementsFile, true, []string{}...)
-	return
+
+	results, _, err = audit.GenericAudit(xrayScanParams, server, false, false, false, nil, nil, project.RequirementsFile, true, workDirs, []string{}...)
+	if err != nil {
+		return nil, err
+	}
+	return results, err
 }
 
-func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInstallationErrors bool) error {
-	if params.InstallCommandName == "" {
+func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallationErrors bool) error {
+	if project.InstallCommandName == "" {
 		return nil
 	}
-	clientLog.Info(fmt.Sprintf("Executing '%s %s' at %s", params.InstallCommandName, strings.Join(params.InstallCommandArgs, " "), workDir))
+	clientLog.Info("Executing '"+project.InstallCommandName+"'", project.InstallCommandArgs, "at ", workDir)
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-	output, err := exec.Command(params.InstallCommandName, params.InstallCommandArgs...).CombinedOutput() // #nosec G204
-	if err != nil {
-		err = fmt.Errorf("'%s %s' command failed: %s - %s", params.InstallCommandName, strings.Join(params.InstallCommandArgs, " "), err.Error(), output)
+	if err := exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
 		if failOnInstallationErrors {
 			return err
 		}
 		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
+		return nil
 	}
 	return nil
 }

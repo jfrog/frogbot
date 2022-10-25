@@ -15,12 +15,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var params = &utils.FrogbotParams{
+var params = &utils.FrogbotRepoConfig{
 	GitParams: utils.GitParams{
 		RepoOwner:  "repo-owner",
-		Repo:       "repo-name",
+		RepoName:   "repo-name",
 		BaseBranch: "master",
 	},
+}
+
+type MockParams struct {
+	repoName         string
+	repoOwner        string
+	sourceBranchName string
+	targetBranchName string
 }
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
@@ -28,7 +35,7 @@ func TestShouldScanPullRequestNewPR(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, prID).Return([]vcsclient.CommentInfo{}, nil)
+	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, nil)
 	// Run handleFrogbotLabel
 	shouldScan, err := shouldScanPullRequest(params, client, prID)
 	assert.NoError(t, err)
@@ -39,7 +46,7 @@ func TestShouldScanPullRequestReScan(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 	}, nil)
@@ -52,7 +59,7 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
@@ -66,7 +73,7 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	shouldScan, err := shouldScanPullRequest(params, client, prID)
@@ -83,40 +90,69 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
+	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
 	shouldScan, err := shouldScanPullRequest(params, client, prID)
 	assert.Error(t, err)
 	assert.False(t, shouldScan)
+}
+
+func TestScanAllPullRequestsMultiRepo(t *testing.T) {
+	jfrogParams, restoreEnv := verifyEnv(t)
+	defer restoreEnv()
+	configAggregator := &utils.FrogbotConfigAggregator{
+		{
+			JFrogEnvParams: jfrogParams,
+			GitParams:      params.GitParams,
+			Projects: []utils.Project{{
+				InstallCommandName: "npm",
+				InstallCommandArgs: []string{"i"},
+				WorkingDir:         []string{"."},
+			}},
+		},
+		{
+			JFrogEnvParams: jfrogParams,
+			GitParams:      params.GitParams,
+		},
+	}
+	mockParams := []MockParams{
+		{params.RepoName, params.RepoOwner, "test-proj-with-vulnerability", "test-proj"},
+		{params.RepoName, params.RepoOwner, "test-proj-pip-with-vulnerability", "test-proj-pip"},
+	}
+	var frogbotMessages []string
+	client := getMockClient(t, &frogbotMessages, mockParams...)
+	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
+	err := scanAllPullRequestsCmd.Run(configAggregator, client)
+	assert.NoError(t, err)
+	assert.Len(t, frogbotMessages, 4)
+	expectedMessage := "🐸 Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 💀 Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
+	assert.Equal(t, expectedMessage, frogbotMessages[0])
+	expectedMessage = "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
+	assert.Equal(t, expectedMessage, frogbotMessages[1])
+	expectedMessage = "🐸 Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 🔥     High | pyjwt | 1.7.1 | [2.4.0] | pyjwt | 1.7.1 | CVE-2022-29217 "
+	assert.Equal(t, expectedMessage, frogbotMessages[2])
+	expectedMessage = "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
+	assert.Equal(t, expectedMessage, frogbotMessages[3])
 }
 
 func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
 	jfrogParams, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
-	params := &utils.FrogbotParams{
-		JFrogEnvParams:     jfrogParams,
-		GitParams:          params.GitParams,
-		InstallCommandName: "npm",
-		InstallCommandArgs: []string{"i"},
+	repoParams := &utils.FrogbotRepoConfig{
+		JFrogEnvParams: jfrogParams,
+		GitParams:      params.GitParams,
+		Projects: []utils.Project{{
+			InstallCommandName: "npm",
+			InstallCommandArgs: []string{"i"},
+			WorkingDir:         []string{"."},
+		}},
 	}
-	// Init mock
-	client := mockVcsClient(t)
-	sourceBranchInfo := vcsclient.BranchInfo{Name: "test-proj-with-vulnerability", Repository: params.Repo}
-	targetBranchInfo := vcsclient.BranchInfo{Name: "test-proj", Repository: params.Repo}
-	// Return 2 pull requests to scan, the first with issues the seconde "clean".
-	client.EXPECT().ListOpenPullRequests(context.Background(), params.RepoOwner, params.Repo).Return([]vcsclient.PullRequestInfo{{ID: 0, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 1, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
-	// Return empty comments slice so expect the code to scan both pull requests.
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.Repo, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
-	// Copy test project according to the given branch name, instead of download it.
-	client.EXPECT().DownloadRepository(context.Background(), params.RepoOwner, sourceBranchInfo.Repository, gomock.Any(), gomock.Any()).DoAndReturn(fakeRepoDownload).AnyTimes()
-	// Capture the result comment post
+	paramsAggregator := utils.FrogbotConfigAggregator{}
+	paramsAggregator = append(paramsAggregator, *repoParams)
 	var frogbotMessages []string
-	client.EXPECT().AddPullRequestComment(context.Background(), params.RepoOwner, params.Repo, gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _, _, content string, _ int) error {
-		frogbotMessages = append(frogbotMessages, content)
-		return nil
-	}).AnyTimes()
+	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(params, client)
+	err := scanAllPullRequestsCmd.Run(&paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := "🐸 Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 💀 Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
@@ -125,11 +161,32 @@ func TestScanAllPullRequests(t *testing.T) {
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
 }
 
+func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockParams) *testdata.MockVcsClient {
+	// Init mock
+	client := mockVcsClient(t)
+	for _, params := range mockParams {
+		sourceBranchInfo := vcsclient.BranchInfo{Name: params.sourceBranchName, Repository: params.repoName}
+		targetBranchInfo := vcsclient.BranchInfo{Name: params.targetBranchName, Repository: params.repoName}
+		// Return 2 pull requests to scan, the first with issues the second "clean".
+		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 0, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 1, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
+		// Return empty comments slice so expect the code to scan both pull requests.
+		client.EXPECT().ListPullRequestComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
+		// Copy test project according to the given branch name, instead of download it.
+		client.EXPECT().DownloadRepository(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).DoAndReturn(fakeRepoDownload).AnyTimes()
+		// Capture the result comment post
+		client.EXPECT().AddPullRequestComment(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _, _, content string, _ int) error {
+			*frogbotMessages = append(*frogbotMessages, content)
+			return nil
+		}).AnyTimes()
+	}
+	return client
+}
+
 func fakeRepoDownload(_ context.Context, _, _, testProject, localPath string) error {
 	// In order to mimic the "real" repository download the tests project have to be in the same dir:
 	// First test-proj-with-vulnerability (that includes a "test-proj" dir) will be copied to a temp (random) dir.
 	// This project will be used in the source auditing phase - mimic a PR with a new vulnerable dependency.
-	// Seconde "download" will occur inside the first temp dir. Therefore the "test-proj" will be found and will
+	// Second "download" will occur inside the first temp dir. Therefor the "test-proj" will be found and will
 	// be copied to the second (random) temp dir and will be used in the target auditing phase.
 	err := fileutils.CopyDir(filepath.Join(testProject), localPath, true, []string{})
 	if err != nil {

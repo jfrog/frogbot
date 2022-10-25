@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const paramsTestConfig = "../testdata/config/frogbot-config-test-params.yaml"
+
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "",
@@ -15,11 +17,11 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "",
 	})
-	_, _, err := GetParamsAndClient()
+	_, _, _, err := GetParamsAndClient(paramsTestConfig)
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
-	_, _, err = GetParamsAndClient()
+	_, _, _, err = GetParamsAndClient(paramsTestConfig)
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
@@ -28,8 +30,6 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
 		JFrogUserEnv:        "admin",
 		JFrogPasswordEnv:    "password",
-		jfrogWatchesEnv:     "watch-1,watch-2",
-		jfrogProjectEnv:     "proj",
 		GitProvider:         string(GitHub),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
@@ -47,8 +47,6 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:           "admin",
 		JFrogPasswordEnv:       "password",
-		jfrogWatchesEnv:        "watch-1,watch-2",
-		jfrogProjectEnv:        "proj",
 		GitProvider:            string(GitHub),
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
@@ -65,8 +63,6 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		JFrogUserEnv:        "",
 		JFrogPasswordEnv:    "",
 		JFrogTokenEnv:       "token",
-		jfrogWatchesEnv:     "watch-1,watch-2",
-		jfrogProjectEnv:     "proj",
 		GitProvider:         string(GitHub),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
@@ -81,7 +77,7 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	_, err := extractVcsProviderFromEnv()
 	assert.Error(t, err)
 	defer func() {
-		assert.NoError(t, sanitizeEnv())
+		assert.NoError(t, SanitizeEnv())
 	}()
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: string(GitHub)})
@@ -100,96 +96,74 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.Equal(t, vcsutils.BitbucketServer, vcsProvider)
 }
 
-func TestExtractInstallationCommandFromEnv(t *testing.T) {
-	defer func() {
-		assert.NoError(t, sanitizeEnv())
-	}()
-
-	params := &FrogbotParams{}
-	extractGeneralParamsFromEnv(params)
-	assert.Empty(t, params.InstallCommandName)
-	assert.Empty(t, params.InstallCommandArgs)
-
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
-	params = &FrogbotParams{}
-	extractGeneralParamsFromEnv(params)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Empty(t, params.InstallCommandArgs)
-
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
-	params = &FrogbotParams{}
-	extractGeneralParamsFromEnv(params)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Equal(t, []string{"b"}, params.InstallCommandArgs)
-
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
-	params = &FrogbotParams{}
-	extractGeneralParamsFromEnv(params)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Equal(t, []string{"b", "--flagName=flagValue"}, params.InstallCommandArgs)
-}
-
 func TestExtractGitParamsFromEnvErrors(t *testing.T) {
-	params := &FrogbotParams{}
 	defer func() {
-		assert.NoError(t, sanitizeEnv())
+		assert.NoError(t, SanitizeEnv())
 	}()
 
-	err := extractGitParamsFromEnv(params)
+	_, err := extractGitParamsFromEnv()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	err = extractGitParamsFromEnv(params)
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	err = extractGitParamsFromEnv(params)
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoEnv: "frogit"})
-	err = extractGitParamsFromEnv(params)
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456"})
-	err = extractGitParamsFromEnv(params)
+	_, err = extractGitParamsFromEnv()
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
 }
 
-func TestExtractScanPullRequestParamsFromEnv(t *testing.T) {
-	params := &FrogbotParams{}
+func TestExtractAndAssertRepoParams(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:         "http://127.0.0.1:8081",
+		JFrogUserEnv:        "",
+		JFrogPasswordEnv:    "",
+		JFrogTokenEnv:       "token",
+		GitProvider:         string(GitHub),
+		GitRepoOwnerEnv:     "jfrog",
+		GitRepoEnv:          "frogbot",
+		GitTokenEnv:         "123456789",
+		GitBaseBranchEnv:    "master",
+		GitPullRequestIDEnv: "1",
+	})
 	defer func() {
-		assert.NoError(t, sanitizeEnv())
+		assert.NoError(t, SanitizeEnv())
 	}()
-
-	// Test default values
-	err := extractScanPullRequestParamsFromEnv(params)
+	config, _, _, err := GetParamsAndClient(paramsTestConfig)
 	assert.NoError(t, err)
-	assert.Equal(t, false, params.IncludeAllVulnerabilities)
-	assert.Equal(t, true, params.FailOnSecurityIssues)
+	for _, repo := range *config {
+		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
+		assert.Equal(t, true, repo.FailOnSecurityIssues)
+		assert.Equal(t, "proj", repo.ProjectKey)
+		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
+		for _, project := range repo.Projects {
+			testExtractAndAssertProjectParams(t, project)
+		}
+	}
+}
 
-	// Test value extraction
-	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "TRUE", FailOnSecurityIssuesEnv: "FALSE"})
-	err = extractScanPullRequestParamsFromEnv(params)
-	assert.NoError(t, err)
-	assert.Equal(t, true, params.IncludeAllVulnerabilities)
-	assert.Equal(t, false, params.FailOnSecurityIssues)
-
-	// Test invalid values
-	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "99"})
-	err = extractScanPullRequestParamsFromEnv(params)
-	assert.EqualError(t, err, "the value of the JF_INCLUDE_ALL_VULNERABILITIES environment is expected to be either TRUE or FALSE. The value received however is 99")
-	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "true", FailOnSecurityIssuesEnv: "no"})
-	err = extractScanPullRequestParamsFromEnv(params)
-	assert.EqualError(t, err, "the value of the JF_FAIL environment is expected to be either TRUE or FALSE. The value received however is no")
+func testExtractAndAssertProjectParams(t *testing.T, project Project) {
+	assert.Equal(t, "npm", project.InstallCommandName)
+	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDir)
+	assert.Equal(t, "", project.RequirementsFile)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	params, _, err := GetParamsAndClient()
+	params, server, _, err := GetParamsAndClient(paramsTestConfig)
 	assert.NoError(t, err)
 	AssertSanitizedEnv(t)
 
-	configServer := params.Server
+	configServer := server
 	if platformUrl {
 		assert.Equal(t, "http://127.0.0.1:8081/", configServer.Url)
 	}
@@ -201,12 +175,12 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	assert.Equal(t, "watch-1,watch-2", params.Watches)
-	assert.Equal(t, "proj", params.Project)
-	assert.Equal(t, vcsutils.GitHub, params.GitProvider)
-	assert.Equal(t, "jfrog", params.RepoOwner)
-	assert.Equal(t, "frogbot", params.Repo)
-	assert.Equal(t, "123456789", params.Token)
-	assert.Equal(t, "master", params.BaseBranch)
-	assert.Equal(t, 1, params.PullRequestID)
+	for _, config := range *params {
+		assert.Equal(t, vcsutils.GitHub, config.GitProvider)
+		assert.Equal(t, "jfrog", config.RepoOwner)
+		assert.Equal(t, "frogbot", config.RepoName)
+		assert.Equal(t, "123456789", config.Token)
+		assert.Equal(t, "master", config.BaseBranch)
+		assert.Equal(t, 1, config.PullRequestID)
+	}
 }

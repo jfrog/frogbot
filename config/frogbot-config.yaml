@@ -1,0 +1,8 @@
+- includeAllVulnerabilities: false
+  failOnSecurityIssues: false
+  watches: [ ]
+  project: ''
+  projects:
+    - installCommandName: ''
+      installCommandArgs: [ ]
+      workingDir: [ ]

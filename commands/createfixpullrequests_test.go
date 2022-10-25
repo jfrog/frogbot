@@ -175,15 +175,16 @@ func TestPackageTypeFromScan(t *testing.T) {
 	params, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
-	var frogbotParams = utils.FrogbotParams{
+	var frogbotParams = utils.FrogbotRepoConfig{
 		JFrogEnvParams: params,
+		Projects:       []utils.Project{{}},
 	}
 	for _, pkgType := range packageTypes {
 		// Create temp technology project
 		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
 		t.Run(pkgType.ToString(), func(t *testing.T) {
-			frogbotParams.WorkingDirectory = projectPath
-			scanResponse, err := testScan.scan(&frogbotParams)
+			frogbotParams.Projects[0].WorkingDir = []string{projectPath}
+			scanResponse, err := testScan.scan(&frogbotParams.Projects[0], &frogbotParams.Server, services.XrayGraphScanParams{})
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})

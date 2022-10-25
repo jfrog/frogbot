@@ -29,10 +29,6 @@ const (
 	// Frogbot comments
 	RescanRequestComment = "rescan"
 
-	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
-	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
-	WorkingDirectoryEnv = "JF_WORKING_DIR"
-
 	// JFrog platform environment variables
 	JFrogUserEnv           = "JF_USER"
 	JFrogUrlEnv            = "JF_URL"
@@ -40,8 +36,6 @@ const (
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	jfrogWatchesEnv        = "JF_WATCHES"
-	jfrogProjectEnv        = "JF_PROJECT"
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"
@@ -52,11 +46,6 @@ const (
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
-	WatchesDelimiter    = ","
-
-	// Environment variables to control Frogbot's functionality.
-	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
-	FailOnSecurityIssuesEnv      = "JF_FAIL"
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +

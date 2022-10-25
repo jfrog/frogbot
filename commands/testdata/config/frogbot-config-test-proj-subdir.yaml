@@ -1,0 +1,8 @@
+- repo: test_npm_subdir
+  failOnSecurityIssues: false
+  projects:
+    - workingDir:
+        - subdir
+      installCommandName: npm
+      installCommandArgs:
+        - i

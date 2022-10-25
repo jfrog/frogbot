@@ -1,0 +1,11 @@
+- repo: test_multi_dirs
+  projects:
+    - installCommandName: npm
+      installCommandArgs:
+        - i
+      workingDir:
+        - sub1
+        - sub3/sub4
+    - requirementsFile: requirements.txt
+      workingDir:
+        - sub2
