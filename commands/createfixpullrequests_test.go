@@ -1,37 +1,37 @@
 package commands
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"testing"
+
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
-	"regexp"
-	"testing"
 )
 
-type FixPackagesTestFunc func(test packageFixTest) error
+type FixPackagesTestFunc func(test packageFixTest) CreateFixPullRequestsCmd
 
 type packageFixTest struct {
-	commandArgs       []string
-	technology        coreutils.Technology
-	impactedPackaged  string
-	fixVersion        string
-	operator          string
-	packageDescriptor string
-	fixPackageVersion func(test packageFixTest) error
+	technology           coreutils.Technology
+	impactedPackaged     string
+	fixVersion           string
+	packageDescriptor    string
+	fixPackageVersionCmd FixPackagesTestFunc
 }
 
 var packageFixTests = []packageFixTest{
-	{commandArgs: []string{"install"}, technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{commandArgs: []string{"get"}, technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", operator: "@v", packageDescriptor: "go.mod", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{commandArgs: []string{"up"}, technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", operator: "@", packageDescriptor: "package.json", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{commandArgs: []string{"install"}, technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", operator: "==", packageDescriptor: "Pipfile", fixPackageVersion: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersion: getMavenFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersion: getPipFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersion: getPipFixPackageVersionFunc()},
+	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
+	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 }
 
 var requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
@@ -60,29 +60,24 @@ var packageTypes = []coreutils.Technology{
 	coreutils.Yarn,
 	coreutils.Pip,
 	coreutils.Pipenv,
+	coreutils.Poetry,
 }
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
-	return func(test packageFixTest) error {
-		return fixPackageVersionGeneric(test.commandArgs, test.technology.GetExecCommandName(), test.impactedPackaged, test.fixVersion, test.operator)
+	return func(test packageFixTest) CreateFixPullRequestsCmd {
+		return CreateFixPullRequestsCmd{}
 	}
 }
 
-func getMavenFixPackageVersionFunc() FixPackagesTestFunc {
-	return func(test packageFixTest) error {
+func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequestsCmd {
+	return func(test packageFixTest) CreateFixPullRequestsCmd {
 		mavenDepToPropertyMap := map[string][]string{
 			test.impactedPackaged: {"junit:junit", "3.8.1"},
 		}
 		cfp := CreateFixPullRequestsCmd{
 			mavenDepToPropertyMap: mavenDepToPropertyMap,
 		}
-		return fixPackageVersionMaven(&cfp, test.impactedPackaged, test.fixVersion)
-	}
-}
-
-func getPipFixPackageVersionFunc() FixPackagesTestFunc {
-	return func(test packageFixTest) error {
-		return fixPackageVersionPip(test.impactedPackaged, test.fixVersion, test.packageDescriptor)
+		return cfp
 	}
 }
 
@@ -94,9 +89,11 @@ func TestFixPackageVersion(t *testing.T) {
 		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 		defer cleanup()
 		assert.NoError(t, os.Chdir(tmpProjectPath))
+
 		t.Run(test.technology.ToString(), func(t *testing.T) {
+			cfg := test.fixPackageVersionCmd(test)
 			// Fix impacted package for each technology
-			assert.NoError(t, test.fixPackageVersion(test))
+			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor))
 			file, err := os.ReadFile(test.packageDescriptor)
 			assert.NoError(t, err)
 			assert.Contains(t, string(file), test.fixVersion)
