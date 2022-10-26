@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "poetry-example"
+version = "1.2.3"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "poetry_example"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pexpect = "==4.8.0"
+pyjwt = "==1.7.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -41,6 +41,7 @@ Supported package management tools:
 - NuGet
 - Pip
 - Pipenv
+- Poetry
 - Yarn 2
 
 ### 🕵️‍♀️ How does Pull Request scanning work?
@@ -142,6 +143,7 @@ Supported package management tools:
 - npm
 - Pip
 - Pipenv
+- Poetry
 - Yarn 2
 
 </details>
