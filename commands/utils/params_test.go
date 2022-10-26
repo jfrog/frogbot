@@ -184,3 +184,16 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
+
+func TestEmptyConfigFilePath(t *testing.T) {
+	_, err := OpenAndParseConfigFile("")
+	assert.Error(t, err)
+	assert.Equal(t, emptyConfigFilePathErr, err.Error())
+}
+
+func TestValidateRepoNameExist(t *testing.T) {
+	emptyRepoNameConfig := FrogbotConfigAggregator{{}, {}}
+	err := validateRepoNameExist(emptyRepoNameConfig)
+	assert.Error(t, err)
+	assert.Equal(t, validateRepoNameExistErr, err.Error())
+}

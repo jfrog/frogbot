@@ -93,11 +93,11 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			Token:       repo.Token,
 			ApiEndpoint: repo.ApiEndpoint,
 			RepoOwner:   repo.RepoOwner,
-			RepoName:    pr.Source.Repository,
 			BaseBranch:  pr.Source.Name,
 		},
+		RepoName: pr.Source.Repository,
 	}
-	wd, cleanup, err := downloadRepoToTempDir(client, &frogbotParams.GitParams)
+	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams.RepoName, &frogbotParams.GitParams)
 	if err != nil {
 		return err
 	}
@@ -130,13 +130,12 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			Token:         repo.Token,
 			ApiEndpoint:   repo.ApiEndpoint,
 			RepoOwner:     repo.RepoOwner,
-			RepoName:      pr.Target.Repository,
 			BaseBranch:    pr.Target.Name,
 			PullRequestID: int(pr.ID),
 		},
 		Projects:   repo.Projects,
 		ProjectKey: repo.ProjectKey,
-		RepoName:   repo.RepoName,
+		RepoName:   pr.Target.Repository,
 	}
 	return scanPullRequest(frogbotParams, client)
 }

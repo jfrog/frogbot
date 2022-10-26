@@ -59,7 +59,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 			vulnerabilitiesRows = append(vulnerabilitiesRows, createAllIssuesRows(currentScan)...)
 		} else {
 			// Audit target code
-			previousScan, err := auditTarget(client, xrayScanParams, project, &repoConfig.GitParams, &repoConfig.Server)
+			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.RepoName, &repoConfig.GitParams, &repoConfig.Server)
 			if err != nil {
 				return err
 			}
@@ -159,10 +159,10 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
+func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, repoName string, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
-	clientLog.Info("Auditing " + git.RepoName + " " + git.BaseBranch)
-	wd, cleanup, err := downloadRepoToTempDir(client, git)
+	clientLog.Info("Auditing " + repoName + " " + git.BaseBranch)
+	wd, cleanup, err := downloadRepoToTempDir(client, repoName, git)
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	return runInstallAndAudit(xrayScanParams, &project, server, false, fullPathWds...)
 }
 
-func downloadRepoToTempDir(client vcsclient.VcsClient, git *utils.GitParams) (wd string, cleanup func() error, err error) {
+func downloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *utils.GitParams) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -187,8 +187,8 @@ func downloadRepoToTempDir(client vcsclient.VcsClient, git *utils.GitParams) (wd
 		return e
 	}
 	clientLog.Debug("Created temp working directory: " + wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", git.RepoOwner, git.RepoName, git.BaseBranch, wd))
-	err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, git.BaseBranch, wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", git.RepoOwner, repoName, git.BaseBranch, wd))
+	err = client.DownloadRepository(context.Background(), git.RepoOwner, repoName, git.BaseBranch, wd)
 	if err != nil {
 		return
 	}

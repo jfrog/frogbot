@@ -16,9 +16,9 @@ import (
 )
 
 var params = &utils.FrogbotRepoConfig{
+	RepoName: "repo-name",
 	GitParams: utils.GitParams{
 		RepoOwner:  "repo-owner",
-		RepoName:   "repo-name",
 		BaseBranch: "master",
 	},
 }
@@ -101,6 +101,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	defer restoreEnv()
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
+			RepoName:       params.RepoName,
 			JFrogEnvParams: jfrogParams,
 			GitParams:      params.GitParams,
 			Projects: []utils.Project{{
@@ -110,6 +111,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			}},
 		},
 		{
+			RepoName:       params.RepoName,
 			JFrogEnvParams: jfrogParams,
 			GitParams:      params.GitParams,
 		},

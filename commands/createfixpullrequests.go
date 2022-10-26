@@ -52,7 +52,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 		}
 
 		// Fix and create PRs
-		err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, client, scanResults)
+		err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, repoConfig.RepoName, client, scanResults)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *corecon
 	return scanResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, repoName string, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
 	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults)
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
-		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, repoGitParams, client, gitManager)
+		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, repoName, repoGitParams, client, gitManager)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
@@ -199,6 +199,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(
 	impactedPackage string,
 	fixVersionInfo FixVersionInfo,
 	project *utils.Project,
+	repoName string,
 	repoGitParams *utils.GitParams,
 	client vcsclient.VcsClient,
 	gitManager *utils.GitManager) (err error) {
@@ -248,7 +249,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(
 	}
 	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", repoGitParams.BaseBranch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
-	err = client.CreatePullRequest(context.Background(), repoGitParams.RepoOwner, repoGitParams.RepoName, fixBranchName, repoGitParams.BaseBranch, commitString, prBody)
+	err = client.CreatePullRequest(context.Background(), repoGitParams.RepoOwner, repoName, fixBranchName, repoGitParams.BaseBranch, commitString, prBody)
 	return
 }
 

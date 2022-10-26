@@ -414,10 +414,6 @@ func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
 	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", false)
 }
 
-//func TestScanPullRequestEmptyConfig(t *testing.T) {
-//	testScanPullRequest(t, "", "test-proj-pip", false)
-//}
-
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
 	params, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
@@ -426,7 +422,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	configAggregator, client := prepareConfigAndClient(t, configPath, projectName, failOnSecurityIssues, server, params)
+	configAggregator, client := prepareConfigAndClient(t, configPath, failOnSecurityIssues, server, params)
 	cleanUp := prepareTestEnvironment(t, projectName)
 	defer cleanUp()
 
@@ -445,12 +441,11 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	utils.AssertSanitizedEnv(t)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, projectName string, failOnSecurityIssues bool, server *httptest.Server, params utils.JFrogEnvParams) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, params utils.JFrogEnvParams) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
 	gitParams := utils.GitParams{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
 		Token:         "123456",
-		RepoName:      projectName,
 		BaseBranch:    "master",
 		ApiEndpoint:   server.URL,
 		PullRequestID: 1,
@@ -466,7 +461,6 @@ func prepareConfigAndClient(t *testing.T, configPath string, projectName string,
 	assert.NoError(t, err)
 	var configAggregator utils.FrogbotConfigAggregator
 	for _, config := range *configData {
-		gitParams.RepoName = config.RepoName
 		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
 			JFrogEnvParams:            params,
 			GitParams:                 gitParams,
@@ -485,7 +479,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, projectName string,
 }
 
 // Prepare test environment for the integration tests
-// projectName - 'test-proj' or 'test-proj-subdir'
+// projectName - the directory name under testdata/scanpullrequests
 // Return a cleanup function
 func prepareTestEnvironment(t *testing.T, projectName string) func() {
 	// Copy project to a temporary directory

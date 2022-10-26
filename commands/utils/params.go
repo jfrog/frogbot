@@ -15,6 +15,11 @@ import (
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 )
 
+const (
+	validateRepoNameExistErr = "repo name is missing. In the config file, fill out the repo name for each repository configuration"
+	emptyConfigFilePathErr   = "configuration file was not provided"
+)
+
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 type FrogbotRepoConfig struct {
@@ -24,7 +29,7 @@ type FrogbotRepoConfig struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
 	ProjectKey                string    `yaml:"projectKey,omitempty"`
-	RepoName                  string    `yaml:"repoName"`
+	RepoName                  string    `yaml:"repoName,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
 }
@@ -42,7 +47,6 @@ type JFrogEnvParams struct {
 
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
-	RepoName      string
 	RepoOwner     string
 	Token         string
 	BaseBranch    string
@@ -104,9 +108,7 @@ func extractGitParamsFromEnv() (GitParams, error) {
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
 		return GitParams{}, err
 	}
-	//if err = readParamFromEnv(GitRepoEnv, &gitParams.RepoName); err != nil {
-	//	return GitParams{}, err
-	//}
+
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return GitParams{}, err
 	}
@@ -171,7 +173,6 @@ func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *core
 
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
-		gitParams.RepoName = config.RepoName
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			JFrogEnvParams:            jfrogEnvParams,
 			GitParams:                 gitParams,
@@ -204,21 +205,33 @@ func extractEnvParams() (JFrogEnvParams, GitParams, error) {
 
 func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, error) {
 	if configFilePath == "" {
-		return nil, errors.New("configuration file was not provided")
+		return nil, errors.New(emptyConfigFilePathErr)
 	}
 	filePath, err := filepath.Abs(configFilePath)
 	if err != nil {
 		return nil, err
 	}
+
 	configFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	var config FrogbotConfigAggregator
-	err = yaml.Unmarshal(configFile, &config)
-	if err != nil {
+	if err := yaml.Unmarshal(configFile, &config); err != nil {
+		return nil, err
+	}
+	if err := validateRepoNameExist(config); err != nil {
 		return nil, err
 	}
 	return &config, nil
+}
+
+func validateRepoNameExist(config FrogbotConfigAggregator) error {
+	for _, repo := range config {
+		if repo.RepoName == "" {
+			return errors.New(validateRepoNameExistErr)
+		}
+	}
+	return nil
 }
