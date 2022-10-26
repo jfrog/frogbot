@@ -1,4 +1,4 @@
-- repoName: test-params
+- repoName: frogbot
   includeAllVulnerabilities: true
   failOnSecurityIssues: true
   watches:
