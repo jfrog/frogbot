@@ -15,16 +15,16 @@ jobs:
         with:
           go-version: 1.18.x
 
-      - name: Build Frogbot
-        run: buildscripts/build.sh
-      - name: Scan
+      - uses: jfrog/frogbot@v2
         env:
+          # [Mandatory]
+          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.FROGBOT_URL }}
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions on Xray service
           JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
+
+          # [Mandatory]
+          # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JF_GIT_BASE_BRANCH: "dev"
-          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
-          JF_GIT_PROVIDER: "github"
-          JF_GIT_OWNER: ${{ github.repository_owner }}
-          JF_GIT_REPO: ${{ github.event.repository.name }}
-        run: ./frogbot create-fix-pull-requests
