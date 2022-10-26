@@ -1,10 +1,1 @@
-- repoName: test_npm
-  projects:
-    - installCommandName: npm
-      installCommandArgs:
-        - i
-- repoName: test_yarn
-  projects:
-    - installCommandName: yarn
-      installCommandArgs:
-        - install
+- repoName: frogbot
