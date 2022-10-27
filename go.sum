@@ -217,8 +217,6 @@ github.com/jfrog/froggit-go v1.3.2 h1:fkzsI13vQkZZ2eZiN1Pyq+ZNxlJ4lLF/jZ/MuUx8uk
 github.com/jfrog/froggit-go v1.3.2/go.mod h1:QPE1t+DTKgp7TxLQ1ZftDQVzkCHXAyYQskLGAKQe8yM=
 github.com/jfrog/gofrog v1.2.4 h1:PDk/TFUz6HFvXIdoVI4UFzeoVocMVIu+YkROKHJXCOY=
 github.com/jfrog/gofrog v1.2.4/go.mod h1:lbkGXX/DHKdomaSV34eiOC3pAr1HRNa9ffOYh7U7b1U=
-github.com/jfrog/jfrog-cli-core/v2 v2.23.2 h1:LLnQqqs/VUHIOwqLOWmPy0VPnl0fLnLiQzIofy26t8c=
-github.com/jfrog/jfrog-cli-core/v2 v2.23.2/go.mod h1:N6gBo/R46S90T8pFQdUfwglhCBy6VU9tJS2An1qWJps=
 github.com/jfrog/jfrog-client-go v1.24.1 h1:jodcNhGX0HESsRQIjyvSiLeGj+MXTuLN/hFnGbpASWs=
 github.com/jfrog/jfrog-client-go v1.24.1/go.mod h1:vqlL5kCA4YK/Xyo46SjiDFFvZNzmv7HwieOAwWW3268=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
