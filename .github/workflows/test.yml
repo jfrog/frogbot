@@ -50,6 +50,9 @@ jobs:
       - name: Setup Pipenv
         run: pip3 install pipenv
 
+      - name: Setup Poetry
+        run: pip3 install poetry
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
