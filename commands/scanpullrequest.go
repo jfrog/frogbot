@@ -89,40 +89,37 @@ func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSe
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) ([]formats.VulnerabilityOrViolationRow, error) {
-	prevScanResultsModules := make(map[string]services.ScanResponse)
-	for _, scanResultsModule := range previousScan {
-		prevScanResultsModules[scanResultsModule.ScannedComponentId] = scanResultsModule
-	}
-	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	for i := 0; i < len(currentScan); i += 1 {
-		previousScanModule, ok := prevScanResultsModules[currentScan[i].ScannedComponentId]
-		// If this isn't a new module compare this scan to the previous scan of this module
-		if ok {
-			if len(currentScan[i].Violations) > 0 {
-				newViolations, err := getNewViolations(previousScanModule, currentScan[i])
-				if err != nil {
-					return vulnerabilitiesRows, err
-				}
-				vulnerabilitiesRows = append(vulnerabilitiesRows, newViolations...)
-			} else if len(currentScan[i].Vulnerabilities) > 0 {
-				newVulnerabilities, err := getNewVulnerabilities(previousScanModule, currentScan[i])
-				if err != nil {
-					return vulnerabilitiesRows, err
-				}
-				vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
-			}
-		} else {
-			// This is a new module so add all found vulnerabilities (nothing to compare with)
-			newVulnerabilitiesRows, err := getScanVulnerabilitiesRows(currentScan[i])
-			if err != nil {
-				return vulnerabilitiesRows, err
-			}
-			vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilitiesRows...)
-		}
+func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+	previousScanAggregatedResults := aggregateScanResults(previousScan)
+	currentScanAggregatedResults := aggregateScanResults(currentScan)
 
+	if len(currentScanAggregatedResults.Violations) > 0 {
+		newViolations, err := getNewViolations(previousScanAggregatedResults, currentScanAggregatedResults)
+		if err != nil {
+			return vulnerabilitiesRows, err
+		}
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newViolations...)
+	} else if len(currentScanAggregatedResults.Vulnerabilities) > 0 {
+		newVulnerabilities, err := getNewVulnerabilities(previousScanAggregatedResults, currentScanAggregatedResults)
+		if err != nil {
+			return vulnerabilitiesRows, err
+		}
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
 	}
+
 	return vulnerabilitiesRows, nil
+}
+
+func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResponse {
+	aggregateResults := services.ScanResponse{
+		Violations:      []services.Violation{},
+		Vulnerabilities: []services.Vulnerability{},
+	}
+	for _, scanResult := range scanResults {
+		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
+		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
+	}
+	return aggregateResults
 }
 
 // Create vulnerabilities rows. The rows should contain All the issues that were found in this module scan.
@@ -302,7 +299,11 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 }
 
 func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
+	parentName := ""
+	if len(vulnerability.ImpactPaths) > 1 && len(vulnerability.ImpactPaths[0]) > 1 {
+		parentName = vulnerability.ImpactPaths[0][0].Name + vulnerability.ImpactPaths[0][0].Version
+	}
+	return parentName + vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
