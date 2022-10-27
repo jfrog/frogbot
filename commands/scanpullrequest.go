@@ -299,11 +299,7 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (new
 }
 
 func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	parentName := ""
-	if len(vulnerability.ImpactPaths) > 1 && len(vulnerability.ImpactPaths[0]) > 1 {
-		parentName = vulnerability.ImpactPaths[0][0].Name + vulnerability.ImpactPaths[0][0].Version
-	}
-	return parentName + vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
+	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
