@@ -39,6 +39,7 @@ type Project struct {
 	InstallCommandArgs []string `yaml:"installCommandArgs,omitempty"`
 	RequirementsFile   string   `yaml:"requirementsFile,omitempty"`
 	WorkingDir         []string `yaml:"workingDir,omitempty"`
+	UseWrapper         bool     `yaml:"useWrapper,omitempty"`
 }
 
 type JFrogEnvParams struct {
@@ -173,6 +174,9 @@ func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *core
 
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
+		if config.RepoName == "" {
+			return nil, nil, nil, errors.New(validateRepoNameExistErr)
+		}
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			JFrogEnvParams:            jfrogEnvParams,
 			GitParams:                 gitParams,
@@ -221,17 +225,5 @@ func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, er
 	if err := yaml.Unmarshal(configFile, &config); err != nil {
 		return nil, err
 	}
-	if err := validateRepoNameExist(config); err != nil {
-		return nil, err
-	}
 	return &config, nil
-}
-
-func validateRepoNameExist(config FrogbotConfigAggregator) error {
-	for _, repo := range config {
-		if repo.RepoName == "" {
-			return errors.New(validateRepoNameExistErr)
-		}
-	}
-	return nil
 }

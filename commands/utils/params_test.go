@@ -186,10 +186,3 @@ func TestEmptyConfigFilePath(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, emptyConfigFilePathErr, err.Error())
 }
-
-func TestValidateRepoNameExist(t *testing.T) {
-	emptyRepoNameConfig := FrogbotConfigAggregator{{}, {}}
-	err := validateRepoNameExist(emptyRepoNameConfig)
-	assert.Error(t, err)
-	assert.Equal(t, validateRepoNameExistErr, err.Error())
-}
