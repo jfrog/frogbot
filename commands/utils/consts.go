@@ -57,6 +57,7 @@ const (
 	// Environment variables to control Frogbot's functionality.
 	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
 	FailOnSecurityIssuesEnv      = "JF_FAIL"
+	UseGradleWrapperEnv          = "JF_USE_WRAPPER"
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +

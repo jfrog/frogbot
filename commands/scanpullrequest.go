@@ -190,7 +190,7 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
 		return
 	}
-	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, false, false, nil, nil, params.RequirementsFile, true, []string{}...)
+	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, params.UseWrapper, false, nil, nil, params.RequirementsFile, true, nil, []string{}...)
 	return
 }
 

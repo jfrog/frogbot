@@ -25,6 +25,7 @@ type ScanPullRequestParams struct {
 	IncludeAllVulnerabilities bool
 	SimplifiedOutput          bool
 	FailOnSecurityIssues      bool
+	UseWrapper                bool
 }
 
 type JFrogEnvParams struct {
@@ -147,23 +148,42 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
 	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
 	if includeAllVulnerabilities != "" {
-		includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
+		envValue, err := parseBoolEnv(includeAllVulnerabilities, IncludeAllVulnerabilitiesEnv)
 		if err != nil {
-			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities)
+			return err
 		}
-		params.IncludeAllVulnerabilities = includeAllVulnerabilitiesValue
+		params.IncludeAllVulnerabilities = envValue
 	}
 	failOnSecurityIssues := getTrimmedEnv(FailOnSecurityIssuesEnv)
 	if failOnSecurityIssues != "" {
-		failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
+		envValue, err := parseBoolEnv(failOnSecurityIssues, FailOnSecurityIssuesEnv)
 		if err != nil {
-			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", FailOnSecurityIssuesEnv, failOnSecurityIssues)
+			return err
 		}
-		params.FailOnSecurityIssues = failOnSecurityIssuesValue
+		params.FailOnSecurityIssues = envValue
 	} else {
 		params.FailOnSecurityIssues = true
 	}
+	useWrapper := getTrimmedEnv(UseGradleWrapperEnv)
+	if useWrapper != "" {
+		envValue, err := parseBoolEnv(useWrapper, UseGradleWrapperEnv)
+		if err != nil {
+			return err
+		}
+		params.UseWrapper = envValue
+	} else {
+		// as most Gradle projects use Gradle wrapper(gradlew), we set UseWrapper to true by default.
+		params.UseWrapper = true
+	}
 	return nil
+}
+
+func parseBoolEnv(trimmedEnv, envName string) (bool, error) {
+	parsedEnv, err := strconv.ParseBool(trimmedEnv)
+	if err != nil {
+		return false, fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", envName, trimmedEnv)
+	}
+	return parsedEnv, nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
