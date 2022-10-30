@@ -2,7 +2,7 @@
   "name": "multi-dir-test-proj",
   "version": "1.0.0",
   "dependencies": {
-    "minimist": "1.2.5",
+    "minimatch": "3.0.4",
     "uglify-js": "2.2.5"
   }
 }
