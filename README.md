@@ -397,6 +397,7 @@ pipelines:
               # [Optional, default: "TRUE"]
               # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
             # JF_USE_WRAPPER: "TRUE"
+            
         execution:
           onExecute:
             - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
