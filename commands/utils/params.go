@@ -146,44 +146,38 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 }
 
 func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
-	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
-	if includeAllVulnerabilities != "" {
-		envValue, err := parseBoolEnv(includeAllVulnerabilities, IncludeAllVulnerabilitiesEnv)
-		if err != nil {
-			return err
-		}
-		params.IncludeAllVulnerabilities = envValue
+	includeAllVulnerabilities, err := getBoolEnv(IncludeAllVulnerabilitiesEnv, false)
+	if err != nil {
+		return err
 	}
-	failOnSecurityIssues := getTrimmedEnv(FailOnSecurityIssuesEnv)
-	if failOnSecurityIssues != "" {
-		envValue, err := parseBoolEnv(failOnSecurityIssues, FailOnSecurityIssuesEnv)
-		if err != nil {
-			return err
-		}
-		params.FailOnSecurityIssues = envValue
-	} else {
-		params.FailOnSecurityIssues = true
+	params.IncludeAllVulnerabilities = includeAllVulnerabilities
+
+	failOnSecurityIssues, err := getBoolEnv(FailOnSecurityIssuesEnv, true)
+	if err != nil {
+		return err
 	}
-	useWrapper := getTrimmedEnv(UseGradleWrapperEnv)
-	if useWrapper != "" {
-		envValue, err := parseBoolEnv(useWrapper, UseGradleWrapperEnv)
-		if err != nil {
-			return err
-		}
-		params.UseWrapper = envValue
-	} else {
-		// as most Gradle projects use Gradle wrapper(gradlew), we set UseWrapper to true by default.
-		params.UseWrapper = true
+	params.FailOnSecurityIssues = failOnSecurityIssues
+
+	useWrapper, err := getBoolEnv(UseWrapperEnv, true)
+	if err != nil {
+		return err
 	}
+	params.UseWrapper = useWrapper
+
 	return nil
 }
 
-func parseBoolEnv(trimmedEnv, envName string) (bool, error) {
-	parsedEnv, err := strconv.ParseBool(trimmedEnv)
-	if err != nil {
-		return false, fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", envName, trimmedEnv)
+func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
+	envValue := getTrimmedEnv(envKey)
+	if envValue != "" {
+		parsedEnv, err := strconv.ParseBool(envValue)
+		if err != nil {
+			return false, fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", envKey, envValue)
+		}
+		return parsedEnv, nil
 	}
-	return parsedEnv, nil
+
+	return defaultValue, nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {

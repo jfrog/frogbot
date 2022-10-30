@@ -45,6 +45,10 @@ jobs:
 
           # Uncomment the below options if you'd like to use them.
 
+          # [Optional, default: true]
+          # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+          # JF_USE_WRAPPER: true
+
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
           # JF_GIT_API_ENDPOINT: https://github.example.com
