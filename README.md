@@ -396,7 +396,7 @@ pipelines:
 
               # [Optional, default: "TRUE"]
               # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-            # JF_USE_WRAPPER: "TRUE"
+              # JF_USE_WRAPPER: "TRUE"
             
         execution:
           onExecute:
