@@ -56,14 +56,22 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		}
 		if repoConfig.IncludeAllVulnerabilities {
 			clientLog.Info("Frogbot is configured to show all vulnerabilities")
-			vulnerabilitiesRows = append(vulnerabilitiesRows, createAllIssuesRows(currentScan)...)
+			allIssuesRows, err := createAllIssuesRows(currentScan)
+			if err != nil {
+				return err
+			}
+			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
 		} else {
 			// Audit target code
 			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.RepoName, &repoConfig.GitParams, &repoConfig.Server)
 			if err != nil {
 				return err
 			}
-			vulnerabilitiesRows = append(vulnerabilitiesRows, createNewIssuesRows(previousScan, currentScan)...)
+			newIssuesRows, err := createNewIssuesRows(previousScan, currentScan)
+			if err != nil {
+				return err
+			}
+			vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
 		}
 	}
 
@@ -247,13 +255,14 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *ut
 	results, _, err = audit.GenericAudit(xrayScanParams,
 		server,
 		false,
-		false,
+		project.UseWrapper,
 		false,
 		nil,
 		nil,
 		project.RequirementsFile,
+		false,
 		workDirs,
-		[]string{})
+		[]string{}...)
 	if err != nil {
 		return nil, err
 	}
