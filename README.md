@@ -288,9 +288,9 @@ frogbot-scan:
     # Fails the Frogbot task if any security issue is found.
     # JF_FAIL: "FALSE"
 
-    # [Optional, default: true]
+    # [Optional, default: "TRUE"]
     # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-    # JF_USE_WRAPPER: true
+    # JF_USE_WRAPPER: "TRUE"
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -394,9 +394,9 @@ pipelines:
               # Fails the Frogbot task if any security issue is found.
               # JF_FAIL: "FALSE"
 
-              # [Optional, default: true]
-            # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-            # JF_USE_WRAPPER: true
+              # [Optional, default: "TRUE"]
+              # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+            # JF_USE_WRAPPER: "TRUE"
         execution:
           onExecute:
             - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -490,9 +490,9 @@ pipeline {
         // Fails the Frogbot task if any security issue is found.
         // JF_FAIL= "FALSE"
 
-        // [Optional, default: true]
+        // [Optional, default: "TRUE"]
         // Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-        // JF_USE_WRAPPER: true
+        // JF_USE_WRAPPER: "TRUE"
     }
 
     stages {
