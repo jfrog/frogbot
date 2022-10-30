@@ -146,23 +146,18 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 }
 
 func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
-	includeAllVulnerabilities, err := getBoolEnv(IncludeAllVulnerabilitiesEnv, false)
-	if err != nil {
+	var err error
+	if params.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
 		return err
 	}
-	params.IncludeAllVulnerabilities = includeAllVulnerabilities
 
-	failOnSecurityIssues, err := getBoolEnv(FailOnSecurityIssuesEnv, true)
-	if err != nil {
+	if params.FailOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true); err != nil {
 		return err
 	}
-	params.FailOnSecurityIssues = failOnSecurityIssues
 
-	useWrapper, err := getBoolEnv(UseWrapperEnv, true)
-	if err != nil {
+	if params.UseWrapper, err = getBoolEnv(UseWrapperEnv, true); err != nil {
 		return err
 	}
-	params.UseWrapper = useWrapper
 
 	return nil
 }
