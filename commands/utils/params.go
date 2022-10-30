@@ -155,11 +155,8 @@ func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
 		return err
 	}
 
-	if params.UseWrapper, err = getBoolEnv(UseWrapperEnv, true); err != nil {
-		return err
-	}
-
-	return nil
+	params.UseWrapper, err = getBoolEnv(UseWrapperEnv, true)
+	return err
 }
 
 func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
