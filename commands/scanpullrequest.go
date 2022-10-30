@@ -49,7 +49,10 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	if params.IncludeAllVulnerabilities {
 		clientLog.Info("Frogbot is configured to show all vulnerabilities")
-		vulnerabilitiesRows = createAllIssuesRows(currentScan)
+		vulnerabilitiesRows, err = createAllIssuesRows(currentScan)
+		if err != nil {
+			return err
+		}
 	} else {
 		// Audit base branch
 		clientLog.Info("\nAuditing base branch:", params.Repo, params.BaseBranch)
@@ -57,7 +60,10 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 		if err != nil {
 			return err
 		}
-		vulnerabilitiesRows = createNewIssuesRows(previousScan, currentScan)
+		vulnerabilitiesRows, err = createNewIssuesRows(previousScan, currentScan)
+		if err != nil {
+			return err
+		}
 	}
 	clientLog.Info("JFrog Xray scan completed")
 
@@ -83,31 +89,61 @@ func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSe
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
-	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	for i := 0; i < len(currentScan); i += 1 {
-		if len(currentScan[i].Violations) > 0 {
-			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewViolations(previousScan[i], currentScan[i])...)
-		} else if len(currentScan[i].Vulnerabilities) > 0 {
-			vulnerabilitiesRows = append(vulnerabilitiesRows, getNewVulnerabilities(previousScan[i], currentScan[i])...)
+func createNewIssuesRows(previousScan, currentScan []services.ScanResponse) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+	previousScanAggregatedResults := aggregateScanResults(previousScan)
+	currentScanAggregatedResults := aggregateScanResults(currentScan)
+
+	if len(currentScanAggregatedResults.Violations) > 0 {
+		newViolations, err := getNewViolations(previousScanAggregatedResults, currentScanAggregatedResults)
+		if err != nil {
+			return vulnerabilitiesRows, err
 		}
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newViolations...)
+	} else if len(currentScanAggregatedResults.Vulnerabilities) > 0 {
+		newVulnerabilities, err := getNewVulnerabilities(previousScanAggregatedResults, currentScanAggregatedResults)
+		if err != nil {
+			return vulnerabilitiesRows, err
+		}
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
 	}
-	return vulnerabilitiesRows
+
+	return vulnerabilitiesRows, nil
+}
+
+func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResponse {
+	aggregateResults := services.ScanResponse{
+		Violations:      []services.Violation{},
+		Vulnerabilities: []services.Vulnerability{},
+	}
+	for _, scanResult := range scanResults {
+		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
+		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
+	}
+	return aggregateResults
+}
+
+// Create vulnerabilities rows. The rows should contain All the issues that were found in this module scan.
+func getScanVulnerabilitiesRows(currentScan services.ScanResponse) ([]formats.VulnerabilityOrViolationRow, error) {
+	if len(currentScan.Violations) > 0 {
+		violationsRows, _, _, err := xrayutils.PrepareViolations(currentScan.Violations, false)
+		return violationsRows, err
+	} else if len(currentScan.Vulnerabilities) > 0 {
+		return xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, false)
+	}
+	return []formats.VulnerabilityOrViolationRow{}, nil
 }
 
 // Create vulnerabilities rows. The rows should contain All the issues that were found in this PR
-func createAllIssuesRows(currentScan []services.ScanResponse) []formats.VulnerabilityOrViolationRow {
+func createAllIssuesRows(currentScan []services.ScanResponse) ([]formats.VulnerabilityOrViolationRow, error) {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for i := 0; i < len(currentScan); i += 1 {
-		if len(currentScan[i].Violations) > 0 {
-			violationsRows, _, _, _ := xrayutils.PrepareViolations(currentScan[i].Violations, false)
-			vulnerabilitiesRows = append(vulnerabilitiesRows, violationsRows...)
-		} else if len(currentScan[i].Vulnerabilities) > 0 {
-			vulnerabilities, _ := xrayutils.PrepareVulnerabilities(currentScan[i].Vulnerabilities, false)
-			vulnerabilitiesRows = append(vulnerabilitiesRows, vulnerabilities...)
+		newVulnerabilitiesRows, err := getScanVulnerabilitiesRows(currentScan[i])
+		if err != nil {
+			return vulnerabilitiesRows, err
 		}
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilitiesRows...)
 	}
-	return vulnerabilitiesRows
+	return vulnerabilitiesRows, nil
 }
 
 func createXrayScanParams(watches, project string) (params services.XrayGraphScanParams) {
@@ -190,7 +226,16 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 	if err = runInstallIfNeeded(params, workDir, failOnInstallationErrors); err != nil {
 		return
 	}
-	results, _, err = audit.GenericAudit(xrayScanParams, &params.Server, false, params.UseWrapper, false, nil, nil, params.RequirementsFile, true, nil, []string{}...)
+	results, _, err = audit.GenericAudit(xrayScanParams,
+		&params.Server,
+		false,
+		params.UseWrapper,
+		false,
+		nil,
+		nil,
+		params.RequirementsFile,
+		true,
+		[]string{})
 	return
 }
 
@@ -211,18 +256,18 @@ func runInstallIfNeeded(params *utils.FrogbotParams, workDir string, failOnInsta
 	return nil
 }
 
-func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []formats.VulnerabilityOrViolationRow) {
+func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
 	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, false)
 	if err != nil {
-		return
+		return violationsRows, err
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
 	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, false)
 	if err != nil {
-		return
+		return newViolationsRows, err
 	}
 	for _, violation := range violationsRows {
 		if _, exists := existsViolationsMap[getUniqueID(violation)]; !exists {
@@ -232,18 +277,18 @@ func getNewViolations(previousScan, currentScan services.ScanResponse) (newViola
 	return
 }
 
-func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
+func getNewVulnerabilities(previousScan, currentScan services.ScanResponse) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
 	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, false)
 	if err != nil {
-		return
+		return newVulnerabilitiesRows, err
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
 	}
 	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, false)
 	if err != nil {
-		return
+		return newVulnerabilitiesRows, err
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		if _, exists := existsVulnerabilitiesMap[getUniqueID(vulnerability)]; !exists {

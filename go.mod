@@ -8,8 +8,8 @@ require (
 	github.com/jfrog/build-info-go v1.8.0
 	github.com/jfrog/froggit-go v1.3.2
 	github.com/jfrog/gofrog v1.2.4
-	github.com/jfrog/jfrog-cli-core/v2 v2.23.1
-	github.com/jfrog/jfrog-client-go v1.24.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.23.2
+	github.com/jfrog/jfrog-client-go v1.24.1
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.2
 )
@@ -97,6 +97,6 @@ require (
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.21.1-0.20220828160454-7c617b0d1582
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20220922160945-26b95dc0f921
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/sverdlov93/jfrog-cli-core/v2 v2.0.2-0.20221024142700-41015bd6517c
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.4.2-0.20220825155547-eff444e96d62
