@@ -5,12 +5,9 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "*"
-urllib3 = "<1.24"
-django = "1.11.16"
-Werkzeug = "<0.10"
-
-[tool.poetry.dev-dependencies]
+python = "^3.10"
+pexpect = "==4.8.0"
+pyjwt = "==1.7.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
