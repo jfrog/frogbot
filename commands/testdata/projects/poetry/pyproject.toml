@@ -1,17 +1,17 @@
 [tool.poetry]
-name = "poetry-example"
-version = "1.2.3"
+name = "poetry-project"
+version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
-readme = "README.md"
-packages = [{include = "poetry_example"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-pexpect = "==4.8.0"
-pyjwt = "==1.7.1"
+python = "*"
+urllib3 = "<1.24"
+django = "1.11.16"
+Werkzeug = "<0.10"
 
+[tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
