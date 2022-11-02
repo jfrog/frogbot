@@ -76,10 +76,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, params *Frogbo
 		clientLog.Debug("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-	// Don't do anything if scanResults is empty
-	if xrayutils.IsEmptyScanResponse(scanResults) {
-		return nil
-	}
+
 	includeVulnerabilities := params.Project == "" && params.Watches == ""
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
