@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -447,7 +448,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	utils.AssertSanitizedEnv(t)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, params utils.JFrogEnvParams) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, params coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
 	gitParams := utils.GitParams{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
@@ -468,7 +469,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	var configAggregator utils.FrogbotConfigAggregator
 	for _, config := range *configData {
 		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
-			JFrogEnvParams:            params,
+			Server:                    params,
 			GitParams:                 gitParams,
 			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
 			FailOnSecurityIssues:      failOnSecurityIssues,
@@ -559,7 +560,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
+func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func()) {
 	url := strings.TrimSuffix(os.Getenv(utils.JFrogUrlEnv), "/")
 	username := os.Getenv(utils.JFrogUserEnv)
 	password := os.Getenv(utils.JFrogPasswordEnv)
@@ -570,12 +571,12 @@ func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
 	if token == "" && (username == "" || password == "") {
 		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", utils.JFrogTokenEnv, utils.JFrogUserEnv, utils.JFrogPasswordEnv))
 	}
-	params.Server.Url = url
-	params.Server.XrayUrl = url + "/xray/"
-	params.Server.ArtifactoryUrl = url + "/artifactory/"
-	params.Server.User = username
-	params.Server.Password = password
-	params.Server.AccessToken = token
+	server.Url = url
+	server.XrayUrl = url + "/xray/"
+	server.ArtifactoryUrl = url + "/artifactory/"
+	server.User = username
+	server.Password = password
+	server.AccessToken = token
 	restoreFunc = func() {
 		utils.SetEnvAndAssert(t, map[string]string{
 			utils.JFrogUrlEnv:      url,

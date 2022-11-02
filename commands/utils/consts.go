@@ -38,9 +38,11 @@ const (
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 
 	// Git environment variables
-	GitProvider     = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv = "JF_GIT_OWNER"
-	GitRepoEnv      = "JF_GIT_REPO"
+	GitProvider          = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv      = "JF_GIT_OWNER"
+	GitRepoEnv           = "JF_GIT_REPO"
+	FrogbotConfigRepoEnv = "FROGBOT_CONFIG_REPO"
+
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv         = "JF_GIT_TOKEN"
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"

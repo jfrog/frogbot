@@ -97,13 +97,13 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 }
 
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
-	jfrogParams, restoreEnv := verifyEnv(t)
+	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
-			RepoName:       params.RepoName,
-			JFrogEnvParams: jfrogParams,
-			GitParams:      params.GitParams,
+			RepoName:  params.RepoName,
+			Server:    server,
+			GitParams: params.GitParams,
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
@@ -111,9 +111,9 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			}},
 		},
 		{
-			RepoName:       params.RepoName,
-			JFrogEnvParams: jfrogParams,
-			GitParams:      params.GitParams,
+			RepoName:  params.RepoName,
+			Server:    server,
+			GitParams: params.GitParams,
 		},
 	}
 	mockParams := []MockParams{
@@ -138,11 +138,11 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 
 func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
-	jfrogParams, restoreEnv := verifyEnv(t)
+	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	repoParams := &utils.FrogbotRepoConfig{
-		JFrogEnvParams: jfrogParams,
-		GitParams:      params.GitParams,
+		Server:    server,
+		GitParams: params.GitParams,
 		Projects: []utils.Project{{
 			InstallCommandName: "npm",
 			InstallCommandArgs: []string{"i"},
