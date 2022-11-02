@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const configParamsTestFile = "../testdata/config/frogbot-config-test-params.yaml"
+
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "",
@@ -118,23 +120,24 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogUserEnv:        "",
-		JFrogPasswordEnv:    "",
-		JFrogTokenEnv:       "token",
-		GitProvider:         string(GitHub),
-		GitRepoOwnerEnv:     "jfrog",
-		GitRepoEnv:          "frogbot",
-		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "master",
-		GitPullRequestIDEnv: "1",
+		JFrogUrlEnv:          "http://127.0.0.1:8081",
+		JFrogUserEnv:         "",
+		JFrogPasswordEnv:     "",
+		JFrogTokenEnv:        "token",
+		FrogbotConfigRepoEnv: "./commands/testdata/config/frogbot-config-test-params.yaml",
+		GitProvider:          string(GitHub),
+		GitRepoOwnerEnv:      "jfrog",
+		GitRepoEnv:           "frogbot",
+		GitTokenEnv:          "123456789",
+		GitBaseBranchEnv:     "master",
+		GitPullRequestIDEnv:  "1",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	config, _, _, err := GetParamsAndClient()
+	config, err := OpenAndParseConfigFile(configParamsTestFile)
 	assert.NoError(t, err)
-	for _, repo := range config {
+	for _, repo := range *config {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.ProjectKey)
