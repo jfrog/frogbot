@@ -33,7 +33,9 @@ type CreateFixPullRequestsCmd struct {
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	// Scan the current Branch
+	if err := utils.ValidateMultiRepoSupport(&configAggregator); err != nil {
+		return err
+	}
 	repoConfig := &(configAggregator)[0]
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
@@ -46,14 +48,12 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 		}
 
 		// Upload scan results to the relevant Git provider code scanning UI
-		err = utils.UploadScanToGitProvider(scanResults, repoConfig, client)
-		if err != nil {
+		if err = utils.UploadScanToGitProvider(scanResults, repoConfig, client); err != nil {
 			return err
 		}
 
 		// Fix and create PRs
-		err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, repoConfig.RepoName, client, scanResults)
-		if err != nil {
+		if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, repoConfig.RepoName, client, scanResults); err != nil {
 			return err
 		}
 	}

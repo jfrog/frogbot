@@ -112,3 +112,11 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *Git
 	clientLog.Debug("Downloading repository completed")
 	return
 }
+
+func ValidateMultiRepoSupport(configAggregator *FrogbotConfigAggregator) error {
+	// Multi repository configuration supported only on Bitbucket Server.
+	if len(*configAggregator) > 1 {
+		return fmt.Errorf(UnsupportedMultiRepoErr)
+	}
+	return nil
+}

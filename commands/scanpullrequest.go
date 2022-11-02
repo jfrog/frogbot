@@ -30,10 +30,13 @@ type ScanPullRequestCmd struct {
 // ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
 func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+	if err := utils.ValidateMultiRepoSupport(&configAggregator); err != nil {
+		return err
+	}
 	return scanPullRequest(&(configAggregator)[0], client)
 }
 
-// By default, includeAllVulnerabilities is set to false and the scan goes as follow:
+// By default, includeAllVulnerabilities is set to false and the scan goes as follows:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
