@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -236,6 +237,14 @@ func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, er
 	filePath, err := filepath.Abs(configFilePath)
 	if err != nil {
 		return nil, err
+	}
+	fileExist, err := fileutils.IsFileExists(filePath, false)
+	if !fileExist || err != nil {
+		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yaml.
+		if filePath, err = utils.FindFileInDirAndParents(filePath, configRelativePath); err != nil {
+			return nil, fmt.Errorf("config file wasn't found")
+		}
+		filePath = filepath.Join(filePath, configFilePath)
 	}
 
 	configFile, err := ioutil.ReadFile(filePath)
