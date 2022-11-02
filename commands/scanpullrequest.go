@@ -15,7 +15,6 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
@@ -200,7 +199,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, repoName string, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
 	clientLog.Info("Auditing " + repoName + " " + git.BaseBranch)
-	wd, cleanup, err := downloadRepoToTempDir(client, repoName, git)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, repoName, git)
 	if err != nil {
 		return
 	}
@@ -213,25 +212,6 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	}()
 	fullPathWds := getFullPathWorkingDirs(&project, wd)
 	return runInstallAndAudit(xrayScanParams, &project, server, false, fullPathWds...)
-}
-
-func downloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *utils.GitParams) (wd string, cleanup func() error, err error) {
-	wd, err = fileutils.CreateTempDir()
-	if err != nil {
-		return
-	}
-	cleanup = func() error {
-		e := fileutils.RemoveTempDir(wd)
-		return e
-	}
-	clientLog.Debug("Created temp working directory: " + wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", git.RepoOwner, repoName, git.BaseBranch, wd))
-	err = client.DownloadRepository(context.Background(), git.RepoOwner, repoName, git.BaseBranch, wd)
-	if err != nil {
-		return
-	}
-	clientLog.Debug("Downloading repository completed")
-	return
 }
 
 func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails, failOnInstallationErrors bool, workDirs ...string) (results []services.ScanResponse, err error) {

@@ -173,8 +173,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
 	var frogbotParams = utils.FrogbotRepoConfig{
-		JFrogEnvParams: params,
-		Projects:       []utils.Project{{}},
+		Server:   params,
+		Projects: []utils.Project{{}},
 	}
 	for _, pkgType := range packageTypes {
 		// Create temp technology project

@@ -87,7 +87,7 @@ func isFrogbotResultComment(comment string) bool {
 func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	// Download the pull request source ("from") branch
 	frogbotParams := &utils.FrogbotRepoConfig{
-		JFrogEnvParams: repo.JFrogEnvParams,
+		Server: repo.Server,
 		GitParams: utils.GitParams{
 			GitProvider: repo.GitProvider,
 			Token:       repo.Token,
@@ -97,7 +97,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 		},
 		RepoName: pr.Source.Repository,
 	}
-	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams.RepoName, &frogbotParams.GitParams)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, frogbotParams.RepoName, &frogbotParams.GitParams)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 		IncludeAllVulnerabilities: repo.IncludeAllVulnerabilities,
 		FailOnSecurityIssues:      repo.FailOnSecurityIssues,
 		Watches:                   repo.Watches,
-		JFrogEnvParams:            repo.JFrogEnvParams,
+		Server:                    repo.Server,
 		GitParams: utils.GitParams{
 			GitProvider:   repo.GitProvider,
 			Token:         repo.Token,

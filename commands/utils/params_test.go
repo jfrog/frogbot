@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const paramsTestConfig = "../testdata/config/frogbot-config-test-params.yaml"
-
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "",
@@ -17,11 +15,11 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "",
 	})
-	_, _, _, err := GetParamsAndClient(paramsTestConfig)
+	_, err := extractJFrogParamsFromEnv()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
-	_, _, _, err = GetParamsAndClient(paramsTestConfig)
+	_, err = extractJFrogParamsFromEnv()
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
@@ -134,7 +132,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	config, _, _, err := GetParamsAndClient(paramsTestConfig)
+	config, _, _, err := GetParamsAndClient()
 	assert.NoError(t, err)
 	for _, repo := range config {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
@@ -155,7 +153,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	config, server, _, err := GetParamsAndClient(paramsTestConfig)
+	config, server, _, err := GetParamsAndClient()
 	assert.NoError(t, err)
 	AssertSanitizedEnv(t)
 

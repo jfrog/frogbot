@@ -8,8 +8,6 @@ import (
 	clitool "github.com/urfave/cli/v2"
 )
 
-const configRelativePath = "config/frogbot-config.yaml"
-
 type FrogbotCommand interface {
 	// Runs the command
 	Run(config utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
@@ -17,7 +15,7 @@ type FrogbotCommand interface {
 
 func Exec(command FrogbotCommand, name string) error {
 	// Get config, server and VCS client
-	configAggregator, server, client, err := utils.GetParamsAndClient(configRelativePath)
+	configAggregator, server, client, err := utils.GetParamsAndClient()
 	if err != nil {
 		return err
 	}

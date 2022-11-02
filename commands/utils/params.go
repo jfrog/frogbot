@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -16,6 +17,8 @@ import (
 )
 
 const (
+	configRelativePath       = "./.jfrog/frogbot-config.yaml"
+	frogbotConfigFile        = "frogbot-config.yaml"
 	validateRepoNameExistErr = "repo name is missing. In the config file, fill out the repo name for each repository configuration"
 	emptyConfigFilePathErr   = "configuration file was not provided"
 )
@@ -23,8 +26,8 @@ const (
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 type FrogbotRepoConfig struct {
-	JFrogEnvParams
 	GitParams
+	Server                    coreconfig.ServerDetails
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
@@ -42,10 +45,6 @@ type Project struct {
 	UseWrapper         bool     `yaml:"useWrapper,omitempty"`
 }
 
-type JFrogEnvParams struct {
-	Server coreconfig.ServerDetails
-}
-
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoOwner     string
@@ -55,46 +54,101 @@ type GitParams struct {
 	PullRequestID int
 }
 
-func GetParamsAndClient(configFilePath string) (FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
-	configAggregator, server, gitParams, err := extractFrogbotConfig(configFilePath)
+func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
+	server, gitParams, err := extractEnvParams()
 	if err != nil {
 		return nil, nil, nil, err
 	}
+
 	client, err := vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return configAggregator, server, client, err
+
+	configPath, cleanup, err := getConfigRepo(client, gitParams)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if configPath == "" {
+		configPath = configRelativePath
+	}
+	configData, err := OpenAndParseConfigFile(configPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var configAggregator FrogbotConfigAggregator
+	for _, config := range *configData {
+		// Repo name is mandatory for Bitbucket Server
+		if config.RepoName == "" && gitParams.GitProvider == vcsutils.BitbucketServer {
+			return nil, nil, nil, errors.New(validateRepoNameExistErr)
+		}
+		configAggregator = append(configAggregator, FrogbotRepoConfig{
+			Server:                    server,
+			GitParams:                 gitParams,
+			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
+			FailOnSecurityIssues:      config.FailOnSecurityIssues,
+			SimplifiedOutput:          config.SimplifiedOutput,
+			Projects:                  config.Projects,
+			Watches:                   config.Watches,
+			ProjectKey:                config.ProjectKey,
+			RepoName:                  config.RepoName,
+		})
+	}
+
+	return configAggregator, &server, client, nil
 }
 
-func extractJFrogParamsFromEnv() (JFrogEnvParams, error) {
-	jfrogEnvParams := JFrogEnvParams{}
+func getConfigRepo(client vcsclient.VcsClient, gitParams GitParams) (configPath string, cleanup func() error, err error) {
+	configRepoName := getTrimmedEnv(FrogbotConfigRepoEnv)
+	if configRepoName == "" {
+		return configRepoName, nil, nil
+	}
+	wd, removeTempDir, err := DownloadRepoToTempDir(client, configRepoName, &gitParams)
+	cleanup = removeTempDir
+	if err != nil {
+		return
+	}
+	configPath = filepath.Join(wd, frogbotConfigFile)
+	configExist, err := fileutils.IsFileExists(configPath, false)
+	if !configExist {
+		err = fmt.Errorf("%s could not be found in repo %s", frogbotConfigFile, configRepoName)
+		return
+	}
+	return
+}
+
+func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
+	server := coreconfig.ServerDetails{}
 	url := strings.TrimSuffix(getTrimmedEnv(JFrogUrlEnv), "/")
 	xrUrl := strings.TrimSuffix(getTrimmedEnv(jfrogXrayUrlEnv), "/")
 	rtUrl := strings.TrimSuffix(getTrimmedEnv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
-		jfrogEnvParams.Server.XrayUrl = xrUrl + "/"
-		jfrogEnvParams.Server.ArtifactoryUrl = rtUrl + "/"
+		server.XrayUrl = xrUrl + "/"
+		server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if url == "" {
-			return jfrogEnvParams, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
+			return server, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
-		jfrogEnvParams.Server.Url = url + "/"
-		jfrogEnvParams.Server.XrayUrl = url + "/xray/"
-		jfrogEnvParams.Server.ArtifactoryUrl = url + "/artifactory/"
+		server.Url = url + "/"
+		server.XrayUrl = url + "/xray/"
+		server.ArtifactoryUrl = url + "/artifactory/"
 	}
 
 	password := getTrimmedEnv(JFrogPasswordEnv)
 	user := getTrimmedEnv(JFrogUserEnv)
 	if password != "" && user != "" {
-		jfrogEnvParams.Server.User = user
-		jfrogEnvParams.Server.Password = password
+		server.User = user
+		server.Password = password
 	} else if accessToken := getTrimmedEnv(JFrogTokenEnv); accessToken != "" {
-		jfrogEnvParams.Server.AccessToken = accessToken
+		server.AccessToken = accessToken
 	} else {
-		return JFrogEnvParams{}, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
+		return coreconfig.ServerDetails{}, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
-	return jfrogEnvParams, nil
+	return server, nil
 }
 
 func extractGitParamsFromEnv() (GitParams, error) {
@@ -161,50 +215,18 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractFrogbotConfig(configFilePath string) (FrogbotConfigAggregator, *coreconfig.ServerDetails, *GitParams, error) {
-	configData, err := OpenAndParseConfigFile(configFilePath)
+func extractEnvParams() (coreconfig.ServerDetails, GitParams, error) {
+	server, err := extractJFrogParamsFromEnv()
 	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	jfrogEnvParams, gitParams, err := extractEnvParams()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	var configAggregator FrogbotConfigAggregator
-	for _, config := range *configData {
-		if config.RepoName == "" {
-			return nil, nil, nil, errors.New(validateRepoNameExistErr)
-		}
-		configAggregator = append(configAggregator, FrogbotRepoConfig{
-			JFrogEnvParams:            jfrogEnvParams,
-			GitParams:                 gitParams,
-			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
-			FailOnSecurityIssues:      config.FailOnSecurityIssues,
-			SimplifiedOutput:          config.SimplifiedOutput,
-			Projects:                  config.Projects,
-			Watches:                   config.Watches,
-			ProjectKey:                config.ProjectKey,
-			RepoName:                  config.RepoName,
-		})
-	}
-
-	return configAggregator, &jfrogEnvParams.Server, &gitParams, nil
-}
-
-func extractEnvParams() (JFrogEnvParams, GitParams, error) {
-	jfrogEnvParams, err := extractJFrogParamsFromEnv()
-	if err != nil {
-		return JFrogEnvParams{}, GitParams{}, err
+		return coreconfig.ServerDetails{}, GitParams{}, err
 	}
 
 	gitParams, err := extractGitParamsFromEnv()
 	if err != nil {
-		return JFrogEnvParams{}, GitParams{}, err
+		return coreconfig.ServerDetails{}, GitParams{}, err
 	}
 
-	return jfrogEnvParams, gitParams, SanitizeEnv()
+	return server, gitParams, SanitizeEnv()
 }
 
 func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, error) {
