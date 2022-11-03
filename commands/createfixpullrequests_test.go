@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -181,6 +182,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 		t.Run(pkgType.ToString(), func(t *testing.T) {
 			frogbotParams.WorkingDirectory = projectPath
 			scanResponse, err := testScan.scan(&frogbotParams)
+			log.Error(err)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})
