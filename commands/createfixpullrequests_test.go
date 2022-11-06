@@ -1,6 +1,7 @@
 package commands
 
 import (
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -181,6 +182,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 		t.Run(pkgType.ToString(), func(t *testing.T) {
 			frogbotParams.WorkingDirectory = projectPath
 			scanResponse, err := testScan.scan(&frogbotParams)
+			clientLog.Info("err: %s", err)
+			clientLog.Info(scanResponse)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})
@@ -190,6 +193,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
+			clientLog.Info("Expected %s, actual %s", expectedType.ToString(), vulnerability.Technology)
 			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)
 		}
 	}
