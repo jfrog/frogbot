@@ -41,6 +41,7 @@ Supported package management tools:
 - NuGet
 - Pip
 - Pipenv
+- Poetry
 - Yarn 2
 
 ### 🕵️‍♀️ How does Pull Request scanning work?
@@ -142,6 +143,7 @@ Supported package management tools:
 - npm
 - Pip
 - Pipenv
+- Poetry
 - Yarn 2
 
 </details>
@@ -205,7 +207,7 @@ To install Frogbot on GitHub repositories using GitHub Actions:
 To install Frogbot on GitLab repositories using GitLab CI:
 
 1. Make sure you have the connection details of your JFrog environment.
-2. Go to your GitLub repository settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** 
+2. Go to your GitLab repository settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** 
 > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**
 3. Add a job named **frogbot-scan** to your **.gitlab-ci.yml** file in your GitLab repository using the code block below.
 
