@@ -229,7 +229,7 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 	results, _, err = audit.GenericAudit(xrayScanParams,
 		&params.Server,
 		false,
-		false,
+		params.UseWrapper,
 		false,
 		nil,
 		nil,

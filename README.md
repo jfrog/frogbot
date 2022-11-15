@@ -51,9 +51,10 @@ Supported package management tools:
 After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI. 
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in the
-report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitHub scan workflow is:
 1. The developer opens a pull request.
@@ -72,9 +73,10 @@ The Frogbot GitHub scan workflow is:
 After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI. 
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
-Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in the
-report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitLab flow is as follows: 
 1. The developer opens a merge request.
@@ -91,9 +93,10 @@ The Frogbot GitLab flow is as follows:
 After you create a new pull request, Frogbot will automatically scan it.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in the
-report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot scan on Bitbucket Server workflow:
 1. The developer opens a pull request.
@@ -284,6 +287,10 @@ frogbot-scan:
     # [Optional, default: "TRUE"]
     # Fails the Frogbot task if any security issue is found.
     # JF_FAIL: "FALSE"
+
+    # [Optional, default: "TRUE"]
+    # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+    # JF_USE_WRAPPER: "TRUE"
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -365,34 +372,39 @@ pipelines:
             # Bitbucket repository name
             JF_GIT_REPO: ""
 
-            # Uncomment the below options if you'd like to use them.
+              # Uncomment the below options if you'd like to use them.
 
-            # [Optional, default: "."]
-             # Relative path to the project in the git repository
-             # JF_WORKING_DIR: path/to/project/dir
+              # [Optional, default: "."]
+              # Relative path to the project in the git repository
+              # JF_WORKING_DIR: path/to/project/dir
 
-             # [Optional]
-             # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-             # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+              # [Optional]
+              # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+              # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-             # [Optional]
-             # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-             # JF_PROJECT: <project-key>
+              # [Optional]
+              # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+              # JF_PROJECT: <project-key>
 
-             # [Optional, default: "FALSE"]
-             # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-             # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+              # [Optional, default: "FALSE"]
+              # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-             # [Optional, default: "TRUE"]
-             # Fails the Frogbot task if any security issue is found.
-             # JF_FAIL: "FALSE"
+              # [Optional, default: "TRUE"]
+              # Fails the Frogbot task if any security issue is found.
+              # JF_FAIL: "FALSE"
+
+              # [Optional, default: "TRUE"]
+              # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+              # JF_USE_WRAPPER: "TRUE"
+            
         execution:
-           onExecute:
-              - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-              - ./frogbot scan-pull-requests
-              # For Windows runner:
-              # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-              # - .\frogbot.exe scan-pull-requests
+          onExecute:
+            - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            - ./frogbot scan-pull-requests
+            # For Windows runner:
+            # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+            # - .\frogbot.exe scan-pull-requests
 ```
 
 #### Using Jenkins
@@ -478,20 +490,24 @@ pipeline {
         // [Optional, default: "TRUE"]
         // Fails the Frogbot task if any security issue is found.
         // JF_FAIL= "FALSE"
+
+        // [Optional, default: "TRUE"]
+        // Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+        // JF_USE_WRAPPER: "TRUE"
     }
 
-   stages {
-      stage('Download Frogbot') {
-         steps {
-            // For Linux / MacOS runner:
-            sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+    stages {
+        stage('Download Frogbot') {
+            steps {
+                // For Linux / MacOS runner:
+                sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
 
-            // For Windows runner:
-            // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                // For Windows runner:
+                // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
             }
         }
 
-        stage ('Scan Pull Requests') {
+        stage('Scan Pull Requests') {
             steps {
                 sh "./frogbot scan-pull-requests"
 
