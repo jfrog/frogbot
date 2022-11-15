@@ -48,8 +48,9 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 		}
 
 		// Upload scan results to the relevant Git provider code scanning UI
-		if err = utils.UploadScanToGitProvider(scanResults, repoConfig, client); err != nil {
-			return err
+		err = utils.UploadScanToGitProvider(scanResults, repoConfig, client)
+		if err != nil {
+			clientLog.Warn(err)
 		}
 
 		// Fix and create PRs
