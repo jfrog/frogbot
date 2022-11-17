@@ -29,15 +29,16 @@ type ScanPullRequestParams struct {
 }
 
 type JFrogEnvParams struct {
-	Server  coreconfig.ServerDetails
-	Project string
-	Watches string
+	Server          coreconfig.ServerDetails
+	PlatformProject string
+	Watches         string
 }
 
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoOwner     string
 	Token         string
+	GitProject    string
 	Repo          string
 	BaseBranch    string
 	ApiEndpoint   string
@@ -49,7 +50,7 @@ func GetParamsAndClient() (*FrogbotParams, vcsclient.VcsClient, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	client, err := vcsclient.NewClientBuilder(params.GitProvider).ApiEndpoint(params.ApiEndpoint).Token(params.Token).Build()
+	client, err := vcsclient.NewClientBuilder(params.GitProvider).ApiEndpoint(params.ApiEndpoint).Token(params.Token).Project(params.GitProject).Build()
 	return &params, client, err
 }
 
@@ -100,7 +101,7 @@ func extractJFrogParamsFromEnv(params *FrogbotParams) error {
 	}
 	// Non-mandatory Xray context params
 	_ = readParamFromEnv(jfrogWatchesEnv, &params.Watches)
-	_ = readParamFromEnv(jfrogProjectEnv, &params.Project)
+	_ = readParamFromEnv(jfrogProjectEnv, &params.JFrogEnvParams.PlatformProject)
 	return nil
 }
 
@@ -122,12 +123,16 @@ func extractGitParamsFromEnv(params *FrogbotParams) error {
 	if err = readParamFromEnv(GitTokenEnv, &params.Token); err != nil {
 		return err
 	}
+	// Non-mandatory git project - relevant for Azure Repos.
+	_ = readParamFromEnv(GitProjectEnv, &params.GitProject)
+
 	// Non-mandatory git branch and pr id.
 	_ = readParamFromEnv(GitBaseBranchEnv, &params.BaseBranch)
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		params.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		return err
 	}
+
 	return nil
 }
 
@@ -194,6 +199,8 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	// For backward compatibility, we are accepting also "bitbucket server"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
+	case string(AzureRepos):
+		return vcsutils.AzureRepos, nil
 	}
 
 	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)

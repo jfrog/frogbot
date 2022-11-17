@@ -10,11 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -52,7 +51,7 @@ func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsc
 // Audit the dependencies of the current commit.
 func (cfp *CreateFixPullRequestsCmd) scan(params *utils.FrogbotParams) ([]services.ScanResponse, error) {
 	// Audit commit code
-	xrayScanParams := createXrayScanParams(params.Watches, params.Project)
+	xrayScanParams := createXrayScanParams(params.Watches, params.PlatformProject)
 	scanResults, err := auditSource(xrayScanParams, params)
 	if err != nil {
 		return nil, err
@@ -361,13 +360,13 @@ func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (stri
 	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x &lt; 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 &lt; x
-///      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// /      1.0         --> 1.0 ≤ x
+// /      (,1.0]      --> x ≤ 1.0
+// /      (,1.0)      --> x &lt; 1.0
+// /      [1.0]       --> x == 1.0
+// /      (1.0,)      --> 1.0 &lt; x
+// /      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
+// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]
 	if latestVersion[0] == '(' {

@@ -77,7 +77,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, params *Frogbo
 		return nil
 	}
 
-	includeVulnerabilities := params.Project == "" && params.Watches == ""
+	includeVulnerabilities := params.PlatformProject == "" && params.Watches == ""
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err

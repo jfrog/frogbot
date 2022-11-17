@@ -207,7 +207,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
 	assert.Equal(t, "watch-1,watch-2", params.Watches)
-	assert.Equal(t, "proj", params.Project)
+	assert.Equal(t, "proj", params.PlatformProject)
 	assert.Equal(t, vcsutils.GitHub, params.GitProvider)
 	assert.Equal(t, "jfrog", params.RepoOwner)
 	assert.Equal(t, "frogbot", params.Repo)
