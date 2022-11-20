@@ -124,7 +124,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		JFrogUserEnv:         "",
 		JFrogPasswordEnv:     "",
 		JFrogTokenEnv:        "token",
-		FrogbotConfigRepoEnv: "./commands/testdata/config/frogbot-config-test-params.yaml",
+		FrogbotConfigRepoEnv: "./commands/testdata/config/frogbot-config-test-params.yml",
 		GitProvider:          string(GitHub),
 		GitRepoOwnerEnv:      "jfrog",
 		GitRepoEnv:           "frogbot",

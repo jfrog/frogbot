@@ -4,7 +4,7 @@
   watches:
     - watch-1
     - watch-2
-  projectKey: proj
+  jfrogProjectKey: proj
   projects:
     - installCommandName: npm
       installCommandArgs:
