@@ -591,11 +591,11 @@ func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func(
 
 func TestGetFullPathWorkingDirs(t *testing.T) {
 	sampleProject := utils.Project{
-		WorkingDirs: []string{"a/b", "a/b/c", "c/d", ".", "c/d/e/f"},
+		WorkingDirs: []string{filepath.Join("a", "b"), filepath.Join("a", "b", "c"), ".", filepath.Join("c", "d", "e", "f")},
 	}
 	baseWd := "tempDir"
 	fullPathWds := getFullPathWorkingDirs(&sampleProject, baseWd)
-	expectedWds := []string{"tempDir/a/b", "tempDir/a/b/c", "tempDir/c/d", "tempDir", "tempDir/c/d/e/f"}
+	expectedWds := []string{"tempDir/a/b", "tempDir/a/b/c", "tempDir", "tempDir/c/d/e/f"}
 	for _, expectedWd := range expectedWds {
 		assert.Contains(t, fullPathWds, expectedWd)
 	}
