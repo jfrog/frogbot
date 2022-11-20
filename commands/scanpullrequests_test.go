@@ -107,7 +107,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
-				WorkingDir:         []string{"."},
+				WorkingDirs:        []string{"."},
 			}},
 		},
 		{
@@ -146,7 +146,7 @@ func TestScanAllPullRequests(t *testing.T) {
 		Projects: []utils.Project{{
 			InstallCommandName: "npm",
 			InstallCommandArgs: []string{"i"},
-			WorkingDir:         []string{"."},
+			WorkingDirs:        []string{"."},
 		}},
 	}
 	paramsAggregator := utils.FrogbotConfigAggregator{}

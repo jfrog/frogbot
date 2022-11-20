@@ -135,12 +135,12 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	config, err := OpenAndParseConfigFile(configParamsTestFile)
+	config, err := ReadConfig(configParamsTestFile)
 	assert.NoError(t, err)
 	for _, repo := range *config {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, repo.FailOnSecurityIssues)
-		assert.Equal(t, "proj", repo.ProjectKey)
+		assert.Equal(t, "proj", repo.JFrogProjectKey)
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
 			testExtractAndAssertProjectParams(t, project)
@@ -151,7 +151,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 	assert.Equal(t, "npm", project.InstallCommandName)
 	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
-	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDir)
+	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
 	assert.Equal(t, "", project.RequirementsFile)
 }
 
@@ -183,7 +183,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 }
 
 func TestEmptyConfigFilePath(t *testing.T) {
-	_, err := OpenAndParseConfigFile("")
+	_, err := ReadConfig("")
 	assert.Error(t, err)
 	assert.Equal(t, emptyConfigFilePathErr, err.Error())
 }

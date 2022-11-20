@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false"
+	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	rootDir               = "."
 )
 
@@ -49,7 +49,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
 	// Audit PR code
-	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.ProjectKey)
+	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for _, project := range repoConfig.Projects {
 		currentScan, err := auditSource(xrayScanParams, project, &repoConfig.Server)
@@ -185,8 +185,8 @@ func auditSource(xrayScanParams services.XrayGraphScanParams, project utils.Proj
 
 func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	var fullPathWds []string
-	if len(project.WorkingDir) != 0 {
-		for _, workDir := range project.WorkingDir {
+	if len(project.WorkingDirs) != 0 {
+		for _, workDir := range project.WorkingDirs {
 			if workDir == rootDir {
 				fullPathWds = append(fullPathWds, baseWd)
 				continue
@@ -208,7 +208,7 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	}
 	// Cleanup
 	defer func() {
-		e := cleanup()
+		e := cleanup(err)
 		if err == nil {
 			err = e
 		}
@@ -263,7 +263,6 @@ func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallati
 			return err
 		}
 		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
-		return nil
 	}
 	return nil
 }

@@ -103,7 +103,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 	}
 	// Cleanup
 	defer func() {
-		e := cleanup()
+		e := cleanup(err)
 		if err == nil {
 			err = e
 		}
@@ -133,9 +133,9 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			BaseBranch:    pr.Target.Name,
 			PullRequestID: int(pr.ID),
 		},
-		Projects:   repo.Projects,
-		ProjectKey: repo.ProjectKey,
-		RepoName:   pr.Target.Repository,
+		Projects:        repo.Projects,
+		JFrogProjectKey: repo.JFrogProjectKey,
+		RepoName:        pr.Target.Repository,
 	}
 	return scanPullRequest(frogbotParams, client)
 }
