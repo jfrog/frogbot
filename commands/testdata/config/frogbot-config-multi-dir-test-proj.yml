@@ -7,5 +7,5 @@
         - sub1
         - sub3/sub4
     - requirementsFile: requirements.txt
-      workingDir:
+      workingDirs:
         - sub2

@@ -1,7 +1,7 @@
 - repoName: test-proj
   failOnSecurityIssues: false
   projects:
-    - workingDir:
+    - workingDirs:
         - .
       installCommandName: npm
       installCommandArgs:

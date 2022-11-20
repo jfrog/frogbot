@@ -9,6 +9,6 @@
     - installCommandName: npm
       installCommandArgs:
         - i
-      workingDir:
+      workingDirs:
         - a/b
         - b/c
