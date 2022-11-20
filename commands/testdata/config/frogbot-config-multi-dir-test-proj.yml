@@ -6,6 +6,6 @@
       workingDir:
         - sub1
         - sub3/sub4
-    - requirementsFile: requirements.txt
+    - pipRequirementsFile: requirements.txt
       workingDirs:
         - sub2

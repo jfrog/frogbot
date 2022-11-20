@@ -30,7 +30,7 @@ type ScanPullRequestCmd struct {
 // ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
 func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	if err := utils.ValidateMultiRepoSupport(&configAggregator); err != nil {
+	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
 	return scanPullRequest(&(configAggregator)[0], client)
@@ -219,52 +219,39 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 
 func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails, failOnInstallationErrors bool, workDirs ...string) (results []services.ScanResponse, err error) {
 	for _, wd := range workDirs {
-		restoreDir, err := utils.Chdir(wd)
-		if err != nil {
-			e := restoreDir()
-			return nil, fmt.Errorf("%s\n%s", err, e)
-		}
 		if err = runInstallIfNeeded(project, wd, failOnInstallationErrors); err != nil {
-			e := restoreDir()
-			return nil, fmt.Errorf("%s\n%s", err, e)
-		}
-
-		err = restoreDir()
-		if err != nil {
 			return nil, err
 		}
 	}
 
-	results, _, err = audit.GenericAudit(xrayScanParams,
-		server,
-		false,
-		project.UseWrapper,
-		false,
-		nil,
-		nil,
-		project.RequirementsFile,
-		false,
-		workDirs,
-		[]string{}...)
+	results, _, err = audit.GenericAudit(xrayScanParams, server, false, project.UseWrapper, false,
+		nil, nil, project.PipRequirementsFile, false, workDirs, []string{}...)
 	if err != nil {
 		return nil, err
 	}
 	return results, err
 }
 
-func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallationErrors bool) error {
+func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallationErrors bool) (err error) {
 	if project.InstallCommandName == "" {
 		return nil
 	}
-	clientLog.Info("Executing '"+project.InstallCommandName+"'", project.InstallCommandArgs, "at ", workDir)
+	restoreDir, err := utils.Chdir(workDir)
+	defer func() {
+		restoreErr := restoreDir()
+		if err == nil {
+			err = restoreErr
+		}
+	}()
+	clientLog.Info("Executing '", project.InstallCommandName+"'", project.InstallCommandArgs, "at ", workDir)
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-	if err := exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
+	if err = exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
 		if failOnInstallationErrors {
 			return err
 		}
 		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
 	}
-	return nil
+	return
 }
 
 func getNewViolations(previousScan, currentScan services.ScanResponse) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {

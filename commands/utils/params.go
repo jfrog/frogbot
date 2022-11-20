@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,8 +16,9 @@ import (
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 )
 
+var configRelativePath = filepath.Join(".", ".jfrog", FrogbotConfigFile)
+
 const (
-	configRelativePath       = "." + string(os.PathSeparator) + ".jfrog" + string(os.PathSeparator) + FrogbotConfigFile
 	FrogbotConfigFile        = "frogbot-config.yml"
 	validateRepoNameExistErr = "repo name is missing. In the config file, fill out the repo name for each repository configuration"
 	emptyConfigFilePathErr   = "configuration file was not provided"
@@ -38,11 +39,11 @@ type FrogbotRepoConfig struct {
 }
 
 type Project struct {
-	InstallCommandName string   `yaml:"installCommandName,omitempty"`
-	InstallCommandArgs []string `yaml:"installCommandArgs,omitempty"`
-	RequirementsFile   string   `yaml:"requirementsFile,omitempty"`
-	WorkingDirs        []string `yaml:"workingDirs,omitempty"`
-	UseWrapper         bool     `yaml:"useWrapper,omitempty"`
+	InstallCommandName  string   `yaml:"installCommandName,omitempty"`
+	InstallCommandArgs  []string `yaml:"installCommandArgs,omitempty"`
+	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
+	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
+	UseWrapper          bool     `yaml:"useWrapper,omitempty"`
 }
 
 type GitParams struct {

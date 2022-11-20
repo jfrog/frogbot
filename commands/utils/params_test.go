@@ -152,7 +152,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 	assert.Equal(t, "npm", project.InstallCommandName)
 	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
-	assert.Equal(t, "", project.RequirementsFile)
+	assert.Equal(t, "", project.PipRequirementsFile)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {

@@ -33,7 +33,7 @@ type CreateFixPullRequestsCmd struct {
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	if err := utils.ValidateMultiRepoSupport(&configAggregator); err != nil {
+	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
 	repoConfig := &(configAggregator)[0]
@@ -196,14 +196,8 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 	return true, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(
-	impactedPackage string,
-	fixVersionInfo FixVersionInfo,
-	project *utils.Project,
-	repoName string,
-	repoGitParams *utils.GitParams,
-	client vcsclient.VcsClient,
-	gitManager *utils.GitManager) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, project *utils.Project,
+	repoName string, repoGitParams *utils.GitParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
 	fixBranchName, err := generateFixBranchName(repoGitParams.BaseBranch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
@@ -223,7 +217,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(
 		return err
 	}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.RequirementsFile)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.PipRequirementsFile)
 	if err != nil {
 		return err
 	}

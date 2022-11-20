@@ -100,9 +100,8 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *Git
 		return
 	}
 	cleanup = func(err error) error {
-		e := fileutils.RemoveTempDir(wd)
 		if err == nil {
-			return e
+			return fileutils.RemoveTempDir(wd)
 		}
 		return err
 	}
@@ -116,8 +115,8 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *Git
 	return
 }
 
-func ValidateMultiRepoSupport(configAggregator *FrogbotConfigAggregator) error {
-	// Multi repository configuration is supported only on Bitbucket Server.
+func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
+	// Multi repository configuration is supported only in the scanpulllrequests command on Bitbucket Server.
 	if len(*configAggregator) > 1 {
 		return errors.New(UnsupportedMultiRepoErr)
 	}
