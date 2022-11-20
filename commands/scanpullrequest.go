@@ -322,8 +322,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 	for _, vulnerability := range vulnerabilitiesRows {
 		var componentName, componentVersion, cve string
 		if len(vulnerability.Components) > 0 {
-			componentName = vulnerability.Components[0].Name
-			componentVersion = vulnerability.Components[0].Version
+			componentName = vulnerability.ImpactedPackageName
+			componentVersion = vulnerability.ImpactedPackageVersion
 		}
 		if len(vulnerability.Cves) > 0 {
 			cve = vulnerability.Cves[0].Id
