@@ -244,7 +244,7 @@ func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallati
 			err = restoreErr
 		}
 	}()
-	clientLog.Info("Executing '", project.InstallCommandName+"'", project.InstallCommandArgs, "at ", workDir)
+	clientLog.Info("Executing", "'"+project.InstallCommandName+"'", project.InstallCommandArgs, "at", workDir)
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
 	if err = exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
 		if failOnInstallationErrors {

@@ -3,7 +3,7 @@
     - installCommandName: npm
       installCommandArgs:
         - i
-      workingDir:
+      workingDirs:
         - sub1
         - sub3/sub4
     - pipRequirementsFile: requirements.txt
