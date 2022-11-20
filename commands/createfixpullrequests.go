@@ -40,7 +40,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
-	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.ProjectKey)
+	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	for _, project := range repoConfig.Projects {
 		scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
 		if err != nil {
@@ -179,7 +179,7 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 	if vulnerability.Technology == coreutils.Maven {
 		if cfp.mavenDepToPropertyMap == nil {
 			cfp.mavenDepToPropertyMap = make(map[string][]string)
-			for _, workingDir := range project.WorkingDir {
+			for _, workingDir := range project.WorkingDirs {
 				if workingDir == rootDir {
 					workingDir = ""
 				}
@@ -385,13 +385,13 @@ func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (stri
 	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x &lt; 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 &lt; x
-///      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// /      1.0         --> 1.0 ≤ x
+// /      (,1.0]      --> x ≤ 1.0
+// /      (,1.0)      --> x &lt; 1.0
+// /      [1.0]       --> x == 1.0
+// /      (1.0,)      --> 1.0 &lt; x
+// /      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
+// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]
 	if latestVersion[0] == '(' {

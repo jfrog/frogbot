@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	configRelativePath       = "./.jfrog/frogbot-config.yaml"
-	frogbotConfigFile        = "frogbot-config.yaml"
+	configRelativePath       = "." + string(os.PathSeparator) + ".jfrog" + string(os.PathSeparator) + FrogbotConfigFile
+	FrogbotConfigFile        = "frogbot-config.yml"
 	validateRepoNameExistErr = "repo name is missing. In the config file, fill out the repo name for each repository configuration"
 	emptyConfigFilePathErr   = "configuration file was not provided"
 )
@@ -31,7 +31,7 @@ type FrogbotRepoConfig struct {
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
-	ProjectKey                string    `yaml:"projectKey,omitempty"`
+	JFrogProjectKey           string    `yaml:"jfrogProjectKey,omitempty"`
 	RepoName                  string    `yaml:"repoName,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
@@ -41,7 +41,7 @@ type Project struct {
 	InstallCommandName string   `yaml:"installCommandName,omitempty"`
 	InstallCommandArgs []string `yaml:"installCommandArgs,omitempty"`
 	RequirementsFile   string   `yaml:"requirementsFile,omitempty"`
-	WorkingDir         []string `yaml:"workingDir,omitempty"`
+	WorkingDirs        []string `yaml:"workingDirs,omitempty"`
 	UseWrapper         bool     `yaml:"useWrapper,omitempty"`
 }
 
@@ -67,7 +67,7 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 
 	configPath, cleanup, err := getConfigRepo(client, gitParams)
 	if cleanup != nil {
-		defer cleanup()
+		defer cleanup(err)
 	}
 	if err != nil {
 		return nil, nil, nil, err
@@ -75,7 +75,7 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 	if configPath == "" {
 		configPath = configRelativePath
 	}
-	configData, err := OpenAndParseConfigFile(configPath)
+	configData, err := ReadConfig(configPath)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -94,7 +94,7 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 			SimplifiedOutput:          config.SimplifiedOutput,
 			Projects:                  config.Projects,
 			Watches:                   config.Watches,
-			ProjectKey:                config.ProjectKey,
+			JFrogProjectKey:           config.JFrogProjectKey,
 			RepoName:                  config.RepoName,
 		})
 	}
@@ -102,7 +102,12 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 	return configAggregator, &server, client, nil
 }
 
-func getConfigRepo(client vcsclient.VcsClient, gitParams GitParams) (configPath string, cleanup func() error, err error) {
+// getConfigRepo parses the FROGBOT_CONFIG_REPO environment variable to find the Frogbot's config file location and downloads it to a temp directory.
+// Return Values:
+// 1. configPath - The path to the temp folder in which Frogbot's config file resides.
+// 2. cleanup - This function cleans the temp directory after the function that called getConfigRepo has used it.
+// 3. err - If an error occurs, getConfigRepo will stop and return the error.
+func getConfigRepo(client vcsclient.VcsClient, gitParams GitParams) (configPath string, cleanup func(err error) error, err error) {
 	configRepoName := getTrimmedEnv(FrogbotConfigRepoEnv)
 	if configRepoName == "" {
 		return configRepoName, nil, nil
@@ -112,10 +117,10 @@ func getConfigRepo(client vcsclient.VcsClient, gitParams GitParams) (configPath 
 	if err != nil {
 		return
 	}
-	configPath = filepath.Join(wd, frogbotConfigFile)
+	configPath = filepath.Join(wd, FrogbotConfigFile)
 	configExist, err := fileutils.IsFileExists(configPath, false)
 	if !configExist {
-		err = fmt.Errorf("%s could not be found in repo %s", frogbotConfigFile, configRepoName)
+		err = fmt.Errorf("%s could not be found in repo %s", FrogbotConfigFile, configRepoName)
 		return
 	}
 	return
@@ -156,14 +161,12 @@ func extractGitParamsFromEnv() (GitParams, error) {
 	gitParams := GitParams{}
 	// Non-mandatory Git Api Endpoint
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
-
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return GitParams{}, err
 	}
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
 		return GitParams{}, err
 	}
-
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return GitParams{}, err
 	}
@@ -229,7 +232,7 @@ func extractEnvParams() (coreconfig.ServerDetails, GitParams, error) {
 	return server, gitParams, SanitizeEnv()
 }
 
-func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, error) {
+func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
 	if configFilePath == "" {
 		return nil, errors.New(emptyConfigFilePathErr)
 	}
@@ -239,9 +242,9 @@ func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, er
 	}
 	fileExist, err := fileutils.IsFileExists(filePath, false)
 	if !fileExist || err != nil {
-		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yaml.
+		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yml.
 		if filePath, err = utils.FindFileInDirAndParents(filePath, configRelativePath); err != nil {
-			return nil, fmt.Errorf("config file wasn't found")
+			return nil, fmt.Errorf("%s wasn't found", FrogbotConfigFile)
 		}
 		filePath = filepath.Join(filePath, configFilePath)
 	}

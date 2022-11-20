@@ -81,7 +81,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	if xrayutils.IsEmptyScanResponse(scanResults) {
 		return nil
 	}
-	includeVulnerabilities := repo.ProjectKey == "" && len(repo.Watches) == 0
+	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err
@@ -94,29 +94,32 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return nil
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *GitParams) (wd string, cleanup func() error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *GitParams) (wd string, cleanup func(err error) error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
 	}
-	cleanup = func() error {
+	cleanup = func(err error) error {
 		e := fileutils.RemoveTempDir(wd)
-		return e
+		if err == nil {
+			return e
+		}
+		return err
 	}
-	clientLog.Debug("Created temp working directory: " + wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch:%s to:%s", git.RepoOwner, repoName, git.BaseBranch, wd))
+	clientLog.Debug("Created temp working directory: ", wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, repoName, git.BaseBranch, wd))
 	err = client.DownloadRepository(context.Background(), git.RepoOwner, repoName, git.BaseBranch, wd)
 	if err != nil {
 		return
 	}
-	clientLog.Debug("Downloading repository completed")
+	clientLog.Debug("Repository download completed")
 	return
 }
 
 func ValidateMultiRepoSupport(configAggregator *FrogbotConfigAggregator) error {
-	// Multi repository configuration supported only on Bitbucket Server.
+	// Multi repository configuration is supported only on Bitbucket Server.
 	if len(*configAggregator) > 1 {
-		return fmt.Errorf(UnsupportedMultiRepoErr)
+		return errors.New(UnsupportedMultiRepoErr)
 	}
 	return nil
 }

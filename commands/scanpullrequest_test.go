@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	testMultiDirProjConfigPath = "testdata/config/frogbot-config-multi-dir-test-proj.yaml"
-	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yaml"
-	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yaml"
-	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yaml"
+	testMultiDirProjConfigPath = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
+	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yml"
+	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yml"
+	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yml"
 )
 
 func TestCreateXrayScanParams(t *testing.T) {
@@ -463,7 +463,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	if configPath == "" {
 		configData = &utils.FrogbotConfigAggregator{{}}
 	} else {
-		configData, err = utils.OpenAndParseConfigFile(configPath)
+		configData, err = utils.ReadConfig(configPath)
 	}
 	assert.NoError(t, err)
 	var configAggregator utils.FrogbotConfigAggregator
@@ -586,4 +586,16 @@ func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func(
 		})
 	}
 	return
+}
+
+func TestGetFullPathWorkingDirs(t *testing.T) {
+	sampleProject := utils.Project{
+		WorkingDirs: []string{"a/b", "a/b/c", "c/d", ".", "c/d/e/f"},
+	}
+	baseWd := "tempDir"
+	fullPathWds := getFullPathWorkingDirs(&sampleProject, baseWd)
+	expectedWds := []string{"tempDir/a/b", "tempDir/a/b/c", "tempDir/c/d", "tempDir", "tempDir/c/d/e/f"}
+	for _, expectedWd := range expectedWds {
+		assert.Contains(t, fullPathWds, expectedWd)
+	}
 }
