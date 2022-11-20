@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	securityIssueFoundErr = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
-	rootDir               = "."
+	securityIssueFoundErr    = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
+	rootDir                  = "."
+	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 )
 
 type ScanPullRequestCmd struct {
@@ -249,7 +250,9 @@ func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallati
 		if failOnInstallationErrors {
 			return err
 		}
-		clientLog.Info("Couldn't run the installation command on the base branch. Assuming new project in the source branch: " + err.Error())
+		clientLog.Info(installationCmdFailedErr, err.Error())
+		// failOnInstallationErrors set to 'false'
+		err = nil
 	}
 	return
 }
