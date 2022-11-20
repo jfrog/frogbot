@@ -1,15 +1,15 @@
 module github.com/jfrog/frogbot
 
-go 1.18
+go 1.19
 
 require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.8.1
+	github.com/jfrog/build-info-go v1.8.2
 	github.com/jfrog/froggit-go v1.3.2
-	github.com/jfrog/gofrog v1.2.4
-	github.com/jfrog/jfrog-cli-core/v2 v2.24.0
-	github.com/jfrog/jfrog-client-go v1.24.2
+	github.com/jfrog/gofrog v1.2.5
+	github.com/jfrog/jfrog-cli-core/v2 v2.24.3
+	github.com/jfrog/jfrog-client-go v1.24.3
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.2
 	gopkg.in/yaml.v2 v2.4.0
@@ -95,8 +95,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.21.1-0.20220828160454-7c617b0d1582
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.24.4-0.20221114105411-5e50e31c8156
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.23.2
+// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.24.3-0.20221115071928-b947d0af3242
 
-// replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.4.2-0.20220825155547-eff444e96d62
+replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.3-0.20221113123337-b9b87980d68d

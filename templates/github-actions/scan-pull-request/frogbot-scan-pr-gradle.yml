@@ -22,8 +22,9 @@ jobs:
         with:
           java-version: "11"
           distribution: "temurin"
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+      # Setup Gradle is needed only in case that Gradle wrapper isn't used.
+      # - name: Setup Gradle
+      #  uses: gradle/gradle-build-action@v2
 
       - uses: jfrog/frogbot@v2
         env:
@@ -44,6 +45,10 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # Uncomment the below options if you'd like to use them.
+
+          # [Optional, default: true]
+          # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+          # JF_USE_WRAPPER: true
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
