@@ -6,7 +6,6 @@ import (
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -247,7 +246,7 @@ func OpenAndParseConfigFile(configFilePath string) (*FrogbotConfigAggregator, er
 		filePath = filepath.Join(filePath, configFilePath)
 	}
 
-	configFile, err := ioutil.ReadFile(filePath)
+	configFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
