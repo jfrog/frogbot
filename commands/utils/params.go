@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -20,8 +21,8 @@ var configRelativePath = filepath.Join(".", ".jfrog", FrogbotConfigFile)
 
 const (
 	FrogbotConfigFile        = "frogbot-config.yml"
+	emptyConfigFilePath      = "configuration file was not provided"
 	validateRepoNameExistErr = "repo name is missing. In the config file, fill out the repo name for each repository configuration"
-	emptyConfigFilePathErr   = "configuration file was not provided"
 )
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
@@ -235,7 +236,8 @@ func extractEnvParams() (coreconfig.ServerDetails, GitParams, error) {
 
 func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
 	if configFilePath == "" {
-		return nil, errors.New(emptyConfigFilePathErr)
+		clientLog.Info(emptyConfigFilePath)
+		return nil, nil
 	}
 	filePath, err := filepath.Abs(configFilePath)
 	if err != nil {
@@ -245,7 +247,8 @@ func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
 	if !fileExist || err != nil {
 		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yml.
 		if filePath, err = utils.FindFileInDirAndParents(filePath, configRelativePath); err != nil {
-			return nil, fmt.Errorf("%s wasn't found", FrogbotConfigFile)
+			clientLog.Info(fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continue running with default settings", FrogbotConfigFile))
+			return nil, nil
 		}
 		filePath = filepath.Join(filePath, configFilePath)
 	}
