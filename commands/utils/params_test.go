@@ -185,5 +185,5 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 func TestEmptyConfigFilePath(t *testing.T) {
 	_, err := ReadConfig("")
 	assert.Error(t, err)
-	assert.Equal(t, emptyConfigFilePathErr, err.Error())
+	assert.Equal(t, emptyConfigFilePath, err.Error())
 }
