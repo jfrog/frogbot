@@ -28,6 +28,7 @@ const (
 	GitHub          vcsProvider = "github"
 	GitLab          vcsProvider = "gitlab"
 	BitbucketServer vcsProvider = "bitbucketServer"
+	AzureRepos      vcsProvider = "azureRepos"
 
 	// Frogbot comments
 	RescanRequestComment = "rescan"
@@ -44,6 +45,7 @@ const (
 	GitProvider          = "JF_GIT_PROVIDER"
 	GitRepoOwnerEnv      = "JF_GIT_OWNER"
 	GitRepoEnv           = "JF_GIT_REPO"
+	GitProjectEnv        = "JF_GIT_PROJECT"
 	FrogbotConfigRepoEnv = "FROGBOT_CONFIG_REPO"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.

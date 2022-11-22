@@ -3,6 +3,8 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -48,6 +50,9 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	repoURL := gitRemote.Config().URLs[0]
 
+	transport.UnsupportedCapabilities = []capability.Capability{
+		capability.ThinPack,
+	}
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,

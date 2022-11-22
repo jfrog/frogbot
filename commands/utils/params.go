@@ -48,6 +48,7 @@ type Project struct {
 
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
+	GitProject    string
 	RepoOwner     string
 	Token         string
 	BaseBranch    string
@@ -61,7 +62,7 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 		return nil, nil, nil, err
 	}
 
-	client, err := vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
+	client, err := vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -171,6 +172,9 @@ func extractGitParamsFromEnv() (GitParams, error) {
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return GitParams{}, err
 	}
+	if err = readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
+		return GitParams{}, err
+	}
 	// Non-mandatory git branch and pr id.
 	_ = readParamFromEnv(GitBaseBranchEnv, &gitParams.BaseBranch)
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
@@ -201,6 +205,8 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	// For backward compatibility, we are accepting also "bitbucket server"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
+	case string(AzureRepos):
+		return vcsutils.AzureRepos, nil
 	}
 
 	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)
