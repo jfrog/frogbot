@@ -31,6 +31,7 @@ Supported platforms:
 - Bitbucket Server
 - GitHub
 - GitLab
+- Azure Repos
 
 Supported package management tools:
 - Go
@@ -99,9 +100,41 @@ After you create a new pull request, Frogbot will automatically scan it.
 > PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot scan on Bitbucket Server workflow:
+
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
+
+</details>
+
+<details>
+  <summary>Azure Repos</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
+Repos -> Branches:
+<img src="img_3.png" alt="img_3.png" width="200"/>
+
+1. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
+   select `Branch Policies`:
+   ![img_6.png](img_6.png)
+
+2. Add Build Validation Policy:
+   ![img_7.png](img_7.png)
+3. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
+   ![img_10.png](img_10.png)
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+
+The Frogbot Azure Repos scan workflow is:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot is triggered again following new commits.
 
 </details>
 
@@ -110,6 +143,7 @@ The Frogbot scan on Bitbucket Server workflow:
 Frogbot adds the scan results to the pull request in the following format:
 
 #### 👍 No issues
+
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
@@ -130,7 +164,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
 version with a fix.
 
-> **_NOTE:_** This feature is currently supported for GitHub and GitLab only.
+> **_NOTE:_** This feature is currently supported for GitHub, Azure Repos and GitLab only.
 
 For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
 
@@ -423,104 +457,177 @@ To install Frogbot using Jenkins:
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
-```groovy
-// Run the job every 5 minutes 
-CRON_SETTINGS = '''*/5 * * * *'''
+<details>
+  <summary>Setting up Frogbot on Azure Repos</summary>
 
-pipeline {
-    agent any
+To install Frogbot on Azure Repos repositories:
 
-    triggers {
-        cron(CRON_SETTINGS)
-    }
+1. Make sure you have the connection details of your JFrog environment.
+2. Go to Azure DevOps Pipelines of the relevant project, and add `New pipeline`.
+3. Set `Azure Repos Git` as your code source.
+4. Select the relevant repository of which Frogbot will scan.
+5. Select 'Starter Pipeline' and use `frogbot-scan-pr.yml` and `frogbot-scan-and-fix.yml`:
 
-    environment {
-        // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-        // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-        JF_INSTALL_DEPS_CMD= ""
+#### frogbot-scan-pr.yml:
 
-        // [Mandatory]
-        // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-        JF_URL= credentials("JF_URL")
+```yaml
+trigger:
+  branches:
+    include:
+      - master
+      - dev
+      - main
 
-        // [Mandatory if JF_ACCESS_TOKEN is not provided]
-        // JFrog user and password with 'read' permissions for Xray
-        JF_USER= credentials("JF_USER")
-        JF_PASSWORD= credentials("JF_PASSWORD")
+pool:
+  vmImage: ubuntu-latest
 
-        // [Mandatory]
-        // Bitbucket accesses token with the following permissions 
-        JF_GIT_TOKEN= credentials("BITBUCKET_TOKEN")
-        JF_GIT_PROVIDER= "bitbucketServer"
+jobs:
+  - job:
+    displayName: "Frogbot Scan Pull Request"
+    steps:
+      - task: CmdLine@2
+        displayName: 'Download and Run Frogbot'
+        env:
+          # [Mandatory]
+          # Azure Repos personal access token with Code -> Read & Write permissions
+          JF_GIT_TOKEN: $(USER_TOKEN)
 
-        // [Mandatory]
-        // Bitbucket project namespace
-        JF_GIT_OWNER= ""
+          # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+          JF_INSTALL_DEPS_CMD: ""
 
-        // [Mandatory]
-        // Bitbucket repository name
-        JF_GIT_REPO= ""
+          # [Mandatory]
+          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+          JF_URL: $(JF_URL)
 
-        // [Mandatory]
-        // API endpoint to Bitbucket server
-        JF_GIT_API_ENDPOINT= ""
+          # [Mandatory if JF_ACCESS_TOKEN is not provided]
+          # JFrog user and password with 'read' permissions for Xray
+          JF_USER: $(JF_USER)
+          JF_PASSWORD: $(JF_PASSWORD)
 
-        // Uncomment the below options if you'd like to use them.
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions for Xray
+          # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
 
-        // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-        // JFrog access token with 'read' permissions for Xray
-        // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
 
-        // [Optional, default: "."]
-        // Relative path to the project in the git repository
-        // JF_WORKING_DIR= path/to/project/dir
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-        // [Optional]
-        // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-        // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
 
-        // [Optional]
-        // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-        // JF_PROJECT= <project-key>
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-        // [Optional, default: "FALSE"]
-        // Displays all existing vulnerabilities, including the ones that were added by the pull request.
-        // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
 
-        // [Optional, default: "TRUE"]
-        // Fails the Frogbot task if any security issue is found.
-        // JF_FAIL= "FALSE"
+          # Predefined Azure Pipelines variables. There's no need to set them.
+          JF_GIT_PULL_REQUEST_ID: $(System.PullRequest.PullRequestId)
+          JF_GIT_PROJECT: $(System.TeamProject)
+          JF_GIT_REPO: $(Build.Repository.Name)
+          JF_GIT_API_ENDPOINT: $(System.CollectionUri)
+          JF_GIT_BASE_BRANCH: $(System.PullRequest.TargetBranch)
+          JF_GIT_PROVIDER: 'azureRepos'
 
-        // [Optional, default: "TRUE"]
-        // Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-        // JF_USE_WRAPPER: "TRUE"
-    }
-
-    stages {
-        stage('Download Frogbot') {
-            steps {
-                // For Linux / MacOS runner:
-                sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-
-                // For Windows runner:
-                // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
-            }
-        }
-
-        stage('Scan Pull Requests') {
-            steps {
-                sh "./frogbot scan-pull-requests"
-
-                // For Windows runner:
-                // powershell """.\frogbot.exe scan-pull-requests"""
-            }
-        }
-    }
-}
+        inputs:
+          script: |
+            curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            ./frogbot spr
 ```
+
+#### frogbot-scan-and-fix.yml:
+
+```yaml
+trigger:
+  branches:
+    include:
+      - master
+      - dev
+      - main
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job:
+    displayName: "Frogbot Scan and Fix"
+    condition: and(eq(variables['Build.SourceBranchName'], $(System.PullRequest.TargetBranch)), eq(variables['Build.Reason'], 'IndividualCI'))
+    steps:
+      - task: CmdLine@2
+        displayName: 'Download and Run Frogbot'
+        env:
+          # [Mandatory]
+          # Azure Repos personal access token with Code -> Read & Write permissions
+          JF_GIT_TOKEN: $(USER_TOKEN)
+
+          # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+          JF_INSTALL_DEPS_CMD: ""
+
+          # [Mandatory]
+          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+          JF_URL: $(JF_URL)
+
+          # [Mandatory if JF_ACCESS_TOKEN is not provided]
+          # JFrog user and password with 'read' permissions for Xray
+          JF_USER: $(JF_USER)
+          JF_PASSWORD: $(JF_PASSWORD)
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions for Xray
+          # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
+
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
+          # Predefined Azure Pipelines variables. There's no need to set them.
+          JF_GIT_PROJECT: $(System.TeamProject)
+          JF_GIT_REPO: $(Build.Repository.Name)
+          JF_GIT_API_ENDPOINT: $(System.CollectionUri)
+          JF_GIT_BASE_BRANCH: $(System.PullRequest.TargetBranch)
+          JF_GIT_PROVIDER: 'azureRepos'
+
+        inputs:
+          script: |
+            curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            ./frogbot cfpr
+```
+
+> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
+> instead of **JF_USER** and **JF_PASSWORD**
+
+</details>
 
 <div id="contributions"></div>
 
 ## 💻 Contributions
 
-We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
+We welcome pull requests from the community. To help us improve this project, please read
+our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
