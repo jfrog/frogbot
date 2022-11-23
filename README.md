@@ -114,6 +114,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 
 1. For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
    Repos -> Branches:
+
    <img src="img_3.png" alt="img_3.png" width="200"/>
 
 2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
