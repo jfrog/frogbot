@@ -176,7 +176,7 @@ func extractGitParamsFromEnv() (GitParams, string, error) {
 		return GitParams{}, "", err
 	}
 	if err = readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
-		return GitParams{}, err
+		return GitParams{}, "", err
 	}
 	// Non-mandatory git branch and pr id.
 	_ = readParamFromEnv(GitBaseBranchEnv, &gitParams.BaseBranch)
