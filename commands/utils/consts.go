@@ -48,6 +48,17 @@ const (
 	GitProjectEnv        = "JF_GIT_PROJECT"
 	FrogbotConfigRepoEnv = "FROGBOT_CONFIG_REPO"
 
+	// Single repository scan environment variables - Ignored if config file is used
+	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
+	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"
+	WorkingDirectoryEnv          = "JF_WORKING_DIR"
+	jfrogWatchesEnv              = "JF_WATCHES"
+	jfrogProjectEnv              = "JF_PROJECT"
+	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
+	FailOnSecurityIssuesEnv      = "JF_FAIL"
+	UseWrapperEnv                = "JF_USE_WRAPPER"
+	WatchesDelimiter             = ","
+
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv         = "JF_GIT_TOKEN"
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
