@@ -18,12 +18,24 @@ import (
 	"os"
 )
 
+const (
+	errEmptyConfigFilePath = "configuration file was not provided"
+)
+
 type ErrMissingEnv struct {
 	VariableName string
 }
 
 func (m *ErrMissingEnv) Error() string {
 	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
+}
+
+type ErrMissingConfig struct {
+	missingReason string
+}
+
+func (e *ErrMissingConfig) Error() string {
+	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
