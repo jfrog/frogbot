@@ -486,6 +486,7 @@ pool:
 
 jobs:
   - job:
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'PullRequest'))
     displayName: "Frogbot Scan Pull Request"
     steps:
       - task: CmdLine@2
@@ -565,7 +566,7 @@ pool:
 jobs:
   - job:
     displayName: "Frogbot Scan and Fix"
-    condition: and(eq(variables['Build.SourceBranchName'], $(System.PullRequest.TargetBranch)), eq(variables['Build.Reason'], 'IndividualCI'))
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'IndividualCI'))
     steps:
       - task: CmdLine@2
         displayName: 'Download and Run Frogbot'
@@ -615,7 +616,7 @@ jobs:
           JF_GIT_PROJECT: $(System.TeamProject)
           JF_GIT_REPO: $(Build.Repository.Name)
           JF_GIT_API_ENDPOINT: $(System.CollectionUri)
-          JF_GIT_BASE_BRANCH: $(System.PullRequest.TargetBranch)
+          JF_GIT_BASE_BRANCH: $(Build.SourceBranchName)
           JF_GIT_OWNER: $(System.TeamProject)
           JF_GIT_PROVIDER: 'azureRepos'
 
