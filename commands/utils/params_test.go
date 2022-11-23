@@ -96,6 +96,11 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	vcsProvider, err = extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.BitbucketServer, vcsProvider)
+
+	SetEnvAndAssert(t, map[string]string{GitProvider: string(AzureRepos)})
+	vcsProvider, err = extractVcsProviderFromEnv()
+	assert.NoError(t, err)
+	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
 }
 
 func TestExtractGitParamsFromEnvErrors(t *testing.T) {
@@ -240,6 +245,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		WorkingDirectoryEnv:          "a/b",
 		jfrogProjectEnv:              "projectKey",
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
+		GitProjectEnv:                "testGitProject",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
 	})
@@ -273,6 +279,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, gitParams.BaseBranch, repo.BaseBranch)
 	assert.Equal(t, gitParams.PullRequestID, repo.PullRequestID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
+	assert.Equal(t, "testGitProject", repo.GitProject)
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
 	assert.Equal(t, server.User, repo.Server.User)
