@@ -96,7 +96,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
 > the
-> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
 > PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot scan on Bitbucket Server workflow:
@@ -537,6 +537,7 @@ jobs:
           JF_GIT_REPO: $(Build.Repository.Name)
           JF_GIT_API_ENDPOINT: $(System.CollectionUri)
           JF_GIT_BASE_BRANCH: $(System.PullRequest.TargetBranch)
+          JF_GIT_OWNER: $(System.TeamProject)
           JF_GIT_PROVIDER: 'azureRepos'
 
         inputs:
@@ -614,6 +615,7 @@ jobs:
           JF_GIT_REPO: $(Build.Repository.Name)
           JF_GIT_API_ENDPOINT: $(System.CollectionUri)
           JF_GIT_BASE_BRANCH: $(System.PullRequest.TargetBranch)
+          JF_GIT_OWNER: $(System.TeamProject)
           JF_GIT_PROVIDER: 'azureRepos'
 
         inputs:
