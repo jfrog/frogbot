@@ -518,6 +518,7 @@ pipeline {
     }
 }
 ```
+</details>
 
 <div id="contributions"></div>
 
