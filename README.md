@@ -111,23 +111,24 @@ The Frogbot scan on Bitbucket Server workflow:
   <summary>Azure Repos</summary>
 
 After you create a new pull request, Frogbot will automatically scan it.
-For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
-Repos -> Branches:
-<img src="img_3.png" alt="img_3.png" width="200"/>
 
-1. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
+1. For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
+   Repos -> Branches:
+   <img src="img_3.png" alt="img_3.png" width="200"/>
+
+2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
    select `Branch Policies`:
    ![img_6.png](img_6.png)
 
-2. Add Build Validation Policy:
+3. Add Build Validation Policy:
    ![img_7.png](img_7.png)
-3. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
-   ![img_10.png](img_10.png)
+4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
+   <img src="img_10.png" alt="img_10.png" width="400"/>
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
 > the
-> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
 > PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot Azure Repos scan workflow is:
@@ -457,6 +458,7 @@ To install Frogbot using Jenkins:
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
+</details>
 <details>
   <summary>Setting up Frogbot on Azure Repos</summary>
 
