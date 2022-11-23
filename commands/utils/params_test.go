@@ -248,29 +248,30 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		GitProjectEnv:                "testGitProject",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
+		GitProvider:                  string(AzureRepos),
+		GitRepoOwnerEnv:              "jfrog",
+		GitTokenEnv:                  "123456789",
+		GitBaseBranchEnv:             "master",
+		GitApiEndpointEnv:            "endpoint.com",
+		GitPullRequestIDEnv:          "1",
+		GitRepoEnv:                   "repoName",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-
-	gitParams := GitParams{
-		GitProvider:   vcsutils.GitHub,
-		RepoOwner:     "jfrog",
-		Token:         "123456789",
-		BaseBranch:    "master",
-		ApiEndpoint:   "endpoint.com",
-		PullRequestID: 1,
-	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
 		XrayUrl:        "http://127.0.0.1:8081/xray",
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server, "repoName")
+
+	gitParams, repoName, err := extractGitParamsFromEnv()
+	assert.NoError(t, err)
+	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server, repoName)
 	assert.NoError(t, err)
 	repo := (*configAggregator)[0]
-	assert.Equal(t, "repoName", repo.RepoName)
+	assert.Equal(t, repoName, repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
