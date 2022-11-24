@@ -62,17 +62,7 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 		return nil, nil, nil, err
 	}
 
-	configPath, cleanup, err := getConfigRepo(client, gitParams)
-	if cleanup != nil {
-		defer cleanup(err)
-	}
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if configPath == "" {
-		configPath = configRelativePath
-	}
-	configData, err := ReadConfig(configPath)
+	configData, err := ReadConfig(configRelativePath)
 	// If the error is due to missing configuration, try to generate an environment variable-based config aggregator.
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && missingConfigErr {
@@ -105,30 +95,6 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 	}
 
 	return configAggregator, &server, client, err
-}
-
-// getConfigRepo parses the FROGBOT_CONFIG_REPO environment variable to find the Frogbot's config file location and downloads it to a temp directory.
-// Return Values:
-// 1. configPath - The path to the temp folder in which Frogbot's config file resides.
-// 2. cleanup - This function cleans the temp directory after the function that called getConfigRepo has used it.
-// 3. err - If an error occurs, getConfigRepo will stop and return the error.
-func getConfigRepo(client vcsclient.VcsClient, gitParams GitParams) (configPath string, cleanup func(err error) error, err error) {
-	configRepoName := getTrimmedEnv(FrogbotConfigRepoEnv)
-	if configRepoName == "" {
-		return configRepoName, nil, nil
-	}
-	wd, removeTempDir, err := DownloadRepoToTempDir(client, configRepoName, &gitParams)
-	cleanup = removeTempDir
-	if err != nil {
-		return
-	}
-	configPath = filepath.Join(wd, FrogbotConfigFile)
-	configExist, err := fileutils.IsFileExists(configPath, false)
-	if !configExist {
-		err = fmt.Errorf("%s could not be found in repo %s", FrogbotConfigFile, configRepoName)
-		return
-	}
-	return
 }
 
 func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
@@ -242,9 +208,6 @@ func extractEnvParams() (coreconfig.ServerDetails, GitParams, string, error) {
 }
 
 func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
-	if configFilePath == "" {
-		return nil, &ErrMissingConfig{errEmptyConfigFilePath}
-	}
 	filePath, err := filepath.Abs(configFilePath)
 	if err != nil {
 		return nil, err

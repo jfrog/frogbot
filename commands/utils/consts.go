@@ -41,10 +41,9 @@ const (
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 
 	// Git environment variables
-	GitProvider          = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv      = "JF_GIT_OWNER"
-	GitRepoEnv           = "JF_GIT_REPO"
-	FrogbotConfigRepoEnv = "FROGBOT_CONFIG_REPO"
+	GitProvider     = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv = "JF_GIT_OWNER"
+	GitRepoEnv      = "JF_GIT_REPO"
 
 	// Single repository scan environment variables - Ignored if config file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
