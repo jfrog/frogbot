@@ -18,10 +18,6 @@ import (
 	"os"
 )
 
-const (
-	errEmptyConfigFilePath = "configuration file was not provided"
-)
-
 type ErrMissingEnv struct {
 	VariableName string
 }

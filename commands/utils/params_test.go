@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"path/filepath"
 	"strconv"
@@ -128,17 +127,16 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:          "http://127.0.0.1:8081",
-		JFrogUserEnv:         "",
-		JFrogPasswordEnv:     "",
-		JFrogTokenEnv:        "token",
-		FrogbotConfigRepoEnv: "./commands/testdata/config/frogbot-config-test-params.yml",
-		GitProvider:          string(GitHub),
-		GitRepoOwnerEnv:      "jfrog",
-		GitRepoEnv:           "frogbot",
-		GitTokenEnv:          "123456789",
-		GitBaseBranchEnv:     "master",
-		GitPullRequestIDEnv:  "1",
+		JFrogUrlEnv:         "http://127.0.0.1:8081",
+		JFrogUserEnv:        "",
+		JFrogPasswordEnv:    "",
+		JFrogTokenEnv:       "token",
+		GitProvider:         string(GitHub),
+		GitRepoOwnerEnv:     "jfrog",
+		GitRepoEnv:          "frogbot",
+		GitTokenEnv:         "123456789",
+		GitBaseBranchEnv:    "master",
+		GitPullRequestIDEnv: "1",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -188,12 +186,6 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "master", configParams.BaseBranch)
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
-}
-
-func TestEmptyConfigFilePath(t *testing.T) {
-	_, err := ReadConfig("")
-	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("config file is missing: %s", errEmptyConfigFilePath), err.Error())
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
