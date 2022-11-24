@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"path/filepath"
 	"strconv"
@@ -119,10 +120,6 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 	_, _, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "123"})
-	_, _, err = extractGitParamsFromEnv()
-	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
-
 	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456", GitRepoEnv: "JfrogRepo"})
 	_, _, err = extractGitParamsFromEnv()
 	_, ok := err.(*strconv.NumError)
@@ -196,7 +193,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 func TestEmptyConfigFilePath(t *testing.T) {
 	_, err := ReadConfig("")
 	assert.Error(t, err)
-	assert.Equal(t, emptyConfigFilePath, err.Error())
+	assert.Equal(t, fmt.Sprintf("config file is missing: %s", errEmptyConfigFilePath), err.Error())
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
