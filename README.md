@@ -500,18 +500,18 @@ pipeline {
                 // For Linux / MacOS runner:
                 sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
 
-              // For Windows runner:
-              // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                // For Windows runner:
+                // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
             }
         }
 
-      stage('Scan Pull Requests') {
-        steps {
-          sh "./frogbot scan-pull-requests"
+        stage('Scan Pull Requests') {
+            steps {
+                sh "./frogbot scan-pull-requests"
 
-          // For Windows runner:
-          // powershell """.\frogbot.exe scan-pull-requests"""
-        }
+                // For Windows runner:
+                // powershell """.\frogbot.exe scan-pull-requests"""
+            }
       }
     }
 }
