@@ -3,8 +3,8 @@
 # Please use 'scan-pull-requests' command to apply the multiple repository configurations.
 
 - repoName: "" # Repository name
-  includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. (Default: false)
-  FailOnSecurityIssues: true # Fails the Frogbot task if any security issue is found. (Default: true)
+  includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. [Default: false]
+  failOnSecurityIssues: true # Fails the Frogbot task if any security issue is found. [Default: true]
   jfrogProjectKey: "" # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
   watches: # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
     -
@@ -12,7 +12,7 @@
     - installCommandName: "" # Installation command (e.g. npm, maven, pip)
       installCommandArgs: # List of arguments to the installation command (e.g. install, i)
         -
-      workingDirs: # List of relative path to the projects directories in the git repository (Default: root directory)
+      workingDirs: # List of relative path to the projects directories in the git repository [Default: root directory]
         - .
-      pipRequirementsFile: # The requirements file name that used to install dependencies in case of pip package manager. ( pip install -r <JF_REQUIREMENTS_FILE> )
-      useWrapper: true # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle (default: true)
+      pipRequirementsFile: # The requirements file name that used to install dependencies in case of pip package manager. (pip install -r <JF_REQUIREMENTS_FILE>) [Default: pip install .]
+      useWrapper: true # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle [Default: true]
