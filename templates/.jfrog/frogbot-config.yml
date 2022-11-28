@@ -5,9 +5,9 @@
 - repoName: "" # Repository name
   includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. (Default: false)
   FailOnSecurityIssues: true # Fails the Frogbot task if any security issue is found. (Default: true)
+  jfrogProjectKey: "" # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
   watches: # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
     -
-  jfrogProjectKey: "" # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
   projects: # List of package manager related projects (e.g. npm, pip, maven projects) with their relevant working directories, installation command, etc.
     - installCommandName: "" # Installation command (e.g. npm, maven, pip)
       installCommandArgs: # List of arguments to the installation command (e.g. install, i)
