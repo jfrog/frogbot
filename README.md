@@ -599,29 +599,29 @@ pipelines:
             # GitHub repository name
             JF_GIT_REPO: ""
 
-                    # Uncomment the below options if you'd like to use them.
+            # Uncomment the below options if you'd like to use them.
 
-                    # [Optional, default: "."]
-                    # Relative path to the project in the git repository
-                    # JF_WORKING_DIR: path/to/project/dir
+            # [Optional, default: "."]
+            # Relative path to the project in the git repository
+            # JF_WORKING_DIR: path/to/project/dir
 
-                    # [Optional]
-                    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-                    # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-                    # [Optional]
-                    # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-                    # JF_PROJECT: <project-key>
+            # [Optional]
+            # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+            # JF_PROJECT: <project-key>
 
-                    # [Optional, default: "FALSE"]
-                    # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-                    # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+            # [Optional, default: "FALSE"]
+            # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+            # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-                    # [Optional, default: "TRUE"]
-                    # Fails the Frogbot task if any security issue is found.
-                    # JF_FAIL: "FALSE"
+            # [Optional, default: "TRUE"]
+            # Fails the Frogbot task if any security issue is found.
+            # JF_FAIL: "FALSE"
 
-                    # [Optional, default: "TRUE"]
+            # [Optional, default: "TRUE"]
             # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
             # JF_USE_WRAPPER: "TRUE"
 
