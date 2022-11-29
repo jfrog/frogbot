@@ -41,3 +41,18 @@ above. This will make Frogbot open pull requests with fixes for security vulnera
 - [Pip](scan-and-fix/frogbot-scan-and-fix-pip.yml)
 - [Yarn 2](scan-and-fix/frogbot-scan-and-fix-yarn.yml)
 - [Pipenv](scan-and-fix/frogbot-scan-and-fix-pipenv.yml)
+
+### Scan Open Pull Requests for Multiple Repositories
+
+Create a new repository named `Frogbot`.
+
+Make a folder named `.jfrog` under the newly created repository and add a `frogbot-config.yml` file to it, following the
+template for `frogbot-config.yml`.
+
+Create a workflow file named `frogbot-scan-pull-requests.yml` under the `.github/workflows` folder in the `Frogbot`
+repository. Depending on the tool used to download the project dependencies, uncomment the install prerequisites inside
+the workflow file.
+
+Make sure to follow the guidelines in the 'Using the Templates' section above.
+This will allow `Frogbot` to scan multiple repositories with open pull requests for security vulnerabilities after they
+are created and before they are merged.
