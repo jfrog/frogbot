@@ -2,49 +2,51 @@ name: "Frogbot Scan Pull Requests"
 on:
   schedule:
     - cron: '*/5 * * * *'
-permissions:
-  pull-requests: write
-  contents: write
 jobs:
   scan-pull-requests:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Install prerequisites
+
+      # Uncomment if you have a Go project
+      # - uses: actions/setup-go@v2
+      #   with:
+      #     go-version: 1.19.x
 
       # Uncomment if you have a Pip/Pipenv/Poetry project
       # - uses: actions/setup-python@v4
       #   with:
       #     python-version: "3.x"
 
-      # Uncomment if you have Pipenv project
+      # Uncomment if you have a Pipenv project
       # - name: Install poetry
       #   run: pip3 install poetry
 
-      # Uncomment if you have Poetry project
+      # Uncomment if you have a Poetry project
       # - name: Setup Poetry
       #   run: pip3 install poetry
 
-      # Uncomment if you have NuGet project
+      # Uncomment if you have a NuGet project
       # - uses: nuget/setup-nuget@v1
       #   with:
       #     nuget-version: "5.x"
 
-      # Uncomment if you have .NET project
+      # Uncomment if you have a .NET project
       # - uses: actions/setup-dotnet@v2
       #   with:
       #     dotnet-version: "3.1.x"
 
-      # Uncomment if you have Maven/Gradle project
+      # Uncomment if you have a Maven/Gradle project
       # - name: Set up Java
       #   uses: actions/setup-java@v3
       #   with:
       #     java-version: "11"
       #     distribution: "temurin"
 
-      # Uncomment if you have Gradle project
+      # Uncomment if you have a Gradle project
       # - name: Setup Gradle
       #   uses: gradle/gradle-build-action@v2
 

@@ -6,13 +6,14 @@ Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/m
 Make sure to [set up 'frogbot' environment and secrets](../../README.md#setting-up-frogbot-on-github-repositories) in
 your GitHub repository.
 
-## Using the Templates
+## Using the Single Repository Templates
 1. Use the templates below, depending on the tool used to download dependencies for you project, to create the workflow files.
 2. Only if the templates you're using include the `JF_INSTALL_DEPS_CMD` variable, make sure they include the correct command to download your project dependencies. For example, `npm i` or `nuget restore`. 
 3. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
-### Pull Requests Scanning
+
+### Pull Requests Scanning For a Single Repository
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of one of the following templates, depending on the
 tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section
@@ -29,7 +30,7 @@ and before they are merged.
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 
-### Pull Requests Opening
+### Pull Requests Opening For a Single Repository
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of one of the following templates, depending on the tool
 used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section
@@ -44,15 +45,22 @@ above. This will make Frogbot open pull requests with fixes for security vulnera
 
 ### Scan Open Pull Requests for Multiple Repositories
 
-Create a new repository named `Frogbot`.
+Create a new repository named `JFrog`.
 
 Make a folder named `.jfrog` under the newly created repository and add a `frogbot-config.yml` file to it, following the
 template for `frogbot-config.yml`.
 
-Create a workflow file named `frogbot-scan-pull-requests.yml` under the `.github/workflows` folder in the `Frogbot`
-repository. Depending on the tool used to download the project dependencies, uncomment the install prerequisites inside
+Create a workflow file named [frogbot-scan-pull-requests.yml](scan-pull-requests/frogbot-scan-pull-requests.yml) under
+the `.github/workflows` folder in the `JFrog`
+repository. Depending on the tool used to download the project dependencies, uncomment the installation prerequisites
+inside
 the workflow file.
 
-Make sure to follow the guidelines in the 'Using the Templates' section above.
-This will allow `Frogbot` to scan multiple repositories with open pull requests for security vulnerabilities after they
-are created and before they are merged.
+#### Create a GitHub Personal Access Token
+
+To use the [frogbot-scan-pull-requests.yml](scan-pull-requests/frogbot-scan-pull-requests.yml) workflow, you need to set
+the GH_PAT environment variable.
+Please
+follow [GitHub Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+to create one with Read and Write permissions to actions, code scanning alerts, commit statuses, pull requests, security
+events, and workflows.
