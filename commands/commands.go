@@ -54,11 +54,11 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-repos",
-			Aliases: []string{"sprs", "scan-pull-requests", "scr"},
+			Name:    "scan-pull-requests",
+			Aliases: []string{"sprs"},
 			Usage:   "Scans all the open pull requests in single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanRepositories{}, ctx.Command.Name)
+				return Exec(ScanAllPullRequestsCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
