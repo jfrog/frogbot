@@ -13,10 +13,10 @@ type ScanAndFixRepositories struct {
 
 func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
-	for _, repoConfig := range configAggregator {
-		err := downloadAndFixRepository(&repoConfig, client)
+	for repoNum := range configAggregator {
+		err := downloadAndFixRepository(&configAggregator[repoNum], client)
 		if err != nil {
-			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", repoConfig.RepoName, err.Error()))
+			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))
 		}
 	}
 
