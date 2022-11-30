@@ -2,13 +2,16 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
+
+var errPullRequestScan = "pull Request number %d in repository %s returned the following error: \n%s\n"
 
 type ScanAllPullRequestsCmd struct {
 }
@@ -34,22 +37,25 @@ func scanAllPullRequests(repo utils.FrogbotRepoConfig, client vcsclient.VcsClien
 	if err != nil {
 		return err
 	}
+	var errList strings.Builder
 	for _, pr := range openPullRequests {
 		shouldScan, e := shouldScanPullRequest(repo, client, int(pr.ID))
 		if e != nil {
-			err = e
-			clientLog.Error(e)
+			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
 		}
 		if shouldScan {
 			e = downloadAndScanPullRequest(pr, repo, client)
-			// If error, log it and continue to the next PR.
+			// If error, write it in errList and continue to the next PR.
 			if e != nil {
-				err = e
-				clientLog.Error(e)
+				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
 			}
 		}
 	}
-	return err
+
+	if errList.String() != "" {
+		err = errors.New(errList.String())
+	}
+	return
 }
 
 func shouldScanPullRequest(repo utils.FrogbotRepoConfig, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {
