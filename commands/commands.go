@@ -9,7 +9,7 @@ import (
 )
 
 type FrogbotCommand interface {
-	// Runs the command
+	// Run the command
 	Run(config utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
 }
 
@@ -54,11 +54,20 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-pull-requests",
-			Aliases: []string{"sprs"},
-			Usage:   "Scans all the open pull requests in the repo with JFrog Xray for security vulnerabilities.",
+			Name:    "scan-repos",
+			Aliases: []string{"sprs", "scan-pull-requests", "scr"},
+			Usage:   "Scans all the open pull requests in single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanAllPullRequestsCmd{}, ctx.Command.Name)
+				return Exec(ScanRepositories{}, ctx.Command.Name)
+			},
+			Flags: []clitool.Flag{},
+		},
+		{
+			Name:    "scan-and-fix-repos",
+			Aliases: []string{"safr"},
+			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities found",
+			Action: func(ctx *clitool.Context) error {
+				return Exec(ScanAndFixRepositories{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},

@@ -10,10 +10,10 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-type ScanAllPullRequestsCmd struct {
+type ScanRepositories struct {
 }
 
-func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (cmd ScanRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	for _, config := range configAggregator {
 		err := scanAllPullRequests(config, client)
 		if err != nil {

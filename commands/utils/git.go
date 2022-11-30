@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -22,12 +23,12 @@ type GitManager struct {
 	auth       *http.BasicAuth
 }
 
-func NewGitManager(projectPath, remoteName, token string) (*GitManager, error) {
+func NewGitManager(projectPath, remoteName, token, username string) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
-	basicAuth := createBasicAuth(token)
+	basicAuth := createBasicAuth(token, username)
 	return &GitManager{repository: repository, remoteName: remoteName, auth: basicAuth}, nil
 }
 
@@ -178,10 +179,15 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-func createBasicAuth(token string) *http.BasicAuth {
+func createBasicAuth(token, username string) *http.BasicAuth {
+	// The username can be anything except for an empty string
+	if username == "" {
+		username = "username"
+	}
+	// Bitbucket server username starts with ~ prefix as the project key, we need to trim it for the authentication
+	username = strings.TrimPrefix(username, "~")
 	return &http.BasicAuth{
-		// The username can be anything except for an empty string
-		Username: "username",
+		Username: username,
 		Password: token,
 	}
 }

@@ -124,7 +124,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *Git
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
-	// Multi repository configuration is supported only in the scanpulllrequests command on Bitbucket Server.
+	// Multi repository configuration is supported only in the scanrepos and scanandfixrepos commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(UnsupportedMultiRepoErr)
 	}

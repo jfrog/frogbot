@@ -122,7 +122,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	}
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
-	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
+	scanAllPullRequestsCmd := ScanRepositories{}
 	err := scanAllPullRequestsCmd.Run(configAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 4)
@@ -153,7 +153,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	paramsAggregator = append(paramsAggregator, *repoParams)
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
-	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
+	scanAllPullRequestsCmd := ScanRepositories{}
 	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)

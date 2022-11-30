@@ -36,7 +36,11 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
-	repoConfig := &(configAggregator)[0]
+
+	return cfp.scanAndFixRepository(&configAggregator[0], client)
+}
+
+func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
@@ -58,7 +62,6 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -99,7 +102,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	gitManager, err := utils.NewGitManager(".", "origin", repoGitParams.Token)
+	gitManager, err := utils.NewGitManager(".", "origin", repoGitParams.Token, repoGitParams.RepoOwner)
 	if err != nil {
 		return err
 	}
