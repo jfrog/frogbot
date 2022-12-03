@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -41,7 +42,7 @@ func (cfp CreateFixPullRequestsCmd) Run(params *utils.FrogbotParams, client vcsc
 	// Upload scan results to the relevant Git provider code scanning UI
 	err = utils.UploadScanToGitProvider(scanResults, params, client)
 	if err != nil {
-		return err
+		clientLog.Warn(err)
 	}
 
 	// Fix and create PRs
@@ -234,20 +235,22 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 	switch packageType {
 	case coreutils.Go:
 		commandArgs := []string{"get"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Go.GetExecCommandName(), impactedPackage, fixVersion, "@v")
+		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@v")
 	case coreutils.Npm:
 		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Npm.GetExecCommandName(), impactedPackage, fixVersion, "@")
+		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Maven:
 		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
 	case coreutils.Yarn:
 		commandArgs := []string{"up"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Yarn.GetExecCommandName(), impactedPackage, fixVersion, "@")
+		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Pip:
 		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
 	case coreutils.Pipenv:
 		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(commandArgs, coreutils.Pipenv.GetExecCommandName(), impactedPackage, fixVersion, "==")
+		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "==")
+	case coreutils.Poetry:
+		err = fixPackageVersionPoetry(impactedPackage, fixVersion)
 	default:
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
@@ -257,21 +260,24 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
 // In other cases, we had to handle the upgrade process
-// commandArgs - Package manager upgrade command
 // commandName - Name of the package manager
+// commandArgs - Package manager upgrade command
 // impactedPackage - Vulnerable package to upgrade
 // fixVersion - The version that fixes the vulnerable package
 // operator - The operator between the impactedPackage to the fixVersion
-func fixPackageVersionGeneric(commandArgs []string, commandName, impactedPackage, fixVersion, operator string) error {
+func fixPackageVersionGeneric(commandName string, commandArgs []string, impactedPackage, fixVersion, operator string) error {
 	fixedPackage := impactedPackage + operator + fixVersion
 	commandArgs = append(commandArgs, fixedPackage)
+	return runPackageMangerCommand(commandName, commandArgs)
+}
+
+func runPackageMangerCommand(commandName string, commandArgs []string) error {
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	clientLog.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
-		return fmt.Errorf("%s install command failed: %s\n%s", commandName, err.Error(), output)
+		return fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
 	}
-
 	return nil
 }
 
@@ -332,6 +338,16 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 	}
 
 	return nil
+}
+
+func fixPackageVersionPoetry(impactedPackage, fixVersion string) error {
+	// Install the desired fixed version
+	err := fixPackageVersionGeneric(coreutils.Poetry.GetExecCommandName(), []string{"add"}, impactedPackage, fixVersion, "==")
+	if err != nil {
+		return err
+	}
+	// Update Poetry lock file as well
+	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 }
 
 func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {

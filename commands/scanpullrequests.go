@@ -2,12 +2,13 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type ScanAllPullRequestsCmd struct {
@@ -25,24 +26,23 @@ func (cmd ScanAllPullRequestsCmd) Run(params *utils.FrogbotParams, client vcscli
 func scanAllPullRequests(params *utils.FrogbotParams, client vcsclient.VcsClient) (err error) {
 	openPullRequests, err := client.ListOpenPullRequests(context.Background(), params.RepoOwner, params.Repo)
 	if err != nil {
-		return err
+		return
 	}
+	var errorList []string
 	for _, pr := range openPullRequests {
 		shouldScan, e := shouldScanPullRequest(params, client, int(pr.ID))
-		if e != nil {
-			err = e
-			clientLog.Error(e)
-		}
-		if shouldScan {
+		if e == nil && shouldScan {
 			e = downloadAndScanPullRequest(pr, params, client)
-			// If error, log it and continue to the next PR.
-			if e != nil {
-				err = e
-				clientLog.Error(e)
-			}
+		}
+		// If error, save it and continue to the next PR.
+		if e != nil {
+			errorList = append(errorList, fmt.Sprintf("scanning pull request from '%s' to '%s' failed:\n%s", pr.Source, pr.Target, e.Error()))
 		}
 	}
-	return err
+	if len(errorList) > 0 {
+		err = errors.New(strings.Join(errorList, "\n"))
+	}
+	return
 }
 
 func shouldScanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {

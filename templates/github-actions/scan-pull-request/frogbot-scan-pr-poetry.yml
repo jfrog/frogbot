@@ -1,26 +1,27 @@
-name: "Frogbot Scan and Fix"
+name: "Frogbot Scan Pull Request"
 on:
-  push:
-    # Creating fix pull requests will be triggered by any push to one of the these branches.
-    # You can add or replace to any branch you want to open fix pull requests for.
-    branches:
-      - "main"
-      - "master"
+  pull_request_target:
+    types: [opened, synchronize]
 permissions:
-  contents: write
   pull-requests: write
-  security-events: write
+  contents: read
 jobs:
-  create-fix-pull-requests:
+  scan-pull-request:
     runs-on: ubuntu-latest
+    # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
+    # "frogbot" GitHub environment can approve the pull request to be scanned.
+    environment: frogbot
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # Install prerequisites
-      - name: Setup Go
-        uses: actions/setup-go@v2
+      - uses: actions/setup-python@v3
         with:
-          go-version: 1.19.x
+          python-version: "3.x"
+      - name: Install poetry
+        run: pipx install poetry
 
       - uses: jfrog/frogbot@v2
         env:
@@ -50,14 +51,22 @@ jobs:
           # JFrog access token with 'read' permissions on Xray service
           # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-          # [Optional, default: "."]
-          # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/go.mod/dir
-
           # [Optional]
           # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
           # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
           # [Optional]
           # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
           # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"

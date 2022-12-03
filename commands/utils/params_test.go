@@ -167,13 +167,15 @@ func TestExtractScanPullRequestParamsFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, false, params.IncludeAllVulnerabilities)
 	assert.Equal(t, true, params.FailOnSecurityIssues)
+	assert.Equal(t, true, params.UseWrapper)
 
 	// Test value extraction
-	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "TRUE", FailOnSecurityIssuesEnv: "FALSE"})
+	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "TRUE", FailOnSecurityIssuesEnv: "FALSE", UseWrapperEnv: "FALSE"})
 	err = extractScanPullRequestParamsFromEnv(params)
 	assert.NoError(t, err)
 	assert.Equal(t, true, params.IncludeAllVulnerabilities)
 	assert.Equal(t, false, params.FailOnSecurityIssues)
+	assert.Equal(t, false, params.UseWrapper)
 
 	// Test invalid values
 	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "99"})
@@ -182,6 +184,9 @@ func TestExtractScanPullRequestParamsFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "true", FailOnSecurityIssuesEnv: "no"})
 	err = extractScanPullRequestParamsFromEnv(params)
 	assert.EqualError(t, err, "the value of the JF_FAIL environment is expected to be either TRUE or FALSE. The value received however is no")
+	SetEnvAndAssert(t, map[string]string{IncludeAllVulnerabilitiesEnv: "true", FailOnSecurityIssuesEnv: "false", UseWrapperEnv: "no"})
+	err = extractScanPullRequestParamsFromEnv(params)
+	assert.EqualError(t, err, "the value of the JF_USE_WRAPPER environment is expected to be either TRUE or FALSE. The value received however is no")
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {

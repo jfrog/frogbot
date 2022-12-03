@@ -2,14 +2,14 @@ package utils
 
 import (
 	"encoding/xml"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
 func GetVersionProperties(projectPath string, depToPropertyMap map[string][]string) error {
-	contentBytes, err := ioutil.ReadFile(filepath.Join(projectPath, "pom.xml")) // #nosec G304
+	contentBytes, err := os.ReadFile(filepath.Join(projectPath, "pom.xml")) // #nosec G304
 	if err != nil {
 		return err
 	}
