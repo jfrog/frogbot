@@ -1,3 +1,4 @@
+[Go back to the main documentation page](../../README.me)
 # Installing Frogbot on Bitbucket Server repositories
 Frogbot is installed on Bitbucket Server repositories using JFrog Pipelines or Jenkins.
 

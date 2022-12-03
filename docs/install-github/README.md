@@ -1,5 +1,5 @@
+[Go back to the main documentation page](../../README.me)
 # Installing Frogbot on GitHub repositories
-
 To install Frogbot on GitHub repositories using GitHub Actions: 
 
 1. Make sure you have the connection details of your JFrog environment.

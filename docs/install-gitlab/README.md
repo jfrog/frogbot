@@ -1,3 +1,4 @@
+[Go back to the main documentation page](../../README.me)
 # Installing Frogbot on GitLab repositories
 To install Frogbot on GitLab repositories using GitLab CI:
 

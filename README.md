@@ -181,12 +181,10 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 <details>
   <summary>Step 2 - Install Frogbot</summary>
-  
-  [Installing Frogbot on GitHub repositories](docs/install-github/README.md)
 
-  [Installing Frogbot on GitLab repositories](docs/install-gitlab/README.md)
-
-  [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server/README.md)
+- [Installing Frogbot on GitHub repositories](docs/install-github/README.md)
+- [Installing Frogbot on GitLab repositories](docs/install-gitlab/README.md)
+- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server/README.md)
 </details>  
 
 <div id="contributions"></div>
