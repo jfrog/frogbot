@@ -1,4 +1,4 @@
-# Setting up Frogbot on GitHub repositories
+# Installing Frogbot on GitHub repositories
 
 To install Frogbot on GitHub repositories using GitHub Actions: 
 
