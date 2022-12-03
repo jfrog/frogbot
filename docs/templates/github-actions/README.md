@@ -1,4 +1,4 @@
-[Go back to the Github Installation documentation page](../install-github/README.md)
+[Go back to the Github Installation documentation page](../../install-github/README.md)
 # Frogbot GitHub Actions Templates
 ## General
 Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/master/README.md#frogbot) on your GitHub repository.
