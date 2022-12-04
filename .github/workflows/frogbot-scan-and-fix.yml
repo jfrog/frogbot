@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - "dev"
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
 jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
