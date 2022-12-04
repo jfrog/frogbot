@@ -4,7 +4,7 @@
 
 Frogbot is installed on GitHub Enterprise Server repositories using JFrog Pipelines or Jenkins.
 
-#### You can also use the Frogbot GitHub actions to scan your project.
+#### You can also use the [Frogbot GitHub actions](./install-github.md) to scan your project.
 
 #### Using JFrog Pipelines
 
