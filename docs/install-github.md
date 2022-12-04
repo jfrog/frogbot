@@ -1,4 +1,4 @@
-[Go back to the main documentation page](../../README.md)
+[Go back to the main documentation page](../README.md)
 # Installing Frogbot on GitHub repositories
 To install Frogbot on GitHub repositories using GitHub Actions: 
 
