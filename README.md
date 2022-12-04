@@ -31,6 +31,7 @@ Supported platforms:
 - Bitbucket Server
 - GitHub
 - GitLab
+- Azure Repos
 
 Supported package management tools:
 - Go
@@ -99,9 +100,43 @@ After you create a new pull request, Frogbot will automatically scan it.
 > PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot scan on Bitbucket Server workflow:
+
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
+
+</details>
+<details>
+  <summary>Azure Repos</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+
+1. For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
+   Repos -> Branches:
+
+   <img src="images/azure-branches.png" alt="azure-branches.png" width="200"/>
+
+2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
+   select `Branch Policies`:
+   ![azure-branch-policies.png](images/azure-branch-policies.png.png)
+
+3. Add Build Validation Policy:
+   ![azure-build-validation.png](images/azure-build-validation.png)
+4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
+
+   <img src="images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+
+The Frogbot Azure Repos scan workflow is:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot is triggered again following new commits.
 
 </details>
 
@@ -110,6 +145,7 @@ The Frogbot scan on Bitbucket Server workflow:
 Frogbot adds the scan results to the pull request in the following format:
 
 #### 👍 No issues
+
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
@@ -185,6 +221,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 - [Installing Frogbot on GitHub repositories](docs/install-github.md)
 - [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
 - [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
+- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
 </details>  
 
 <div id="contributions"></div>
