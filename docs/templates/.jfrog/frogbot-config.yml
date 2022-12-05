@@ -1,6 +1,6 @@
 # JFrog Frogbot Config file supports multiple repository configuration.
 # It is important to note that 'scan-pull-request' and 'create-fix-pull-request' only work on a single repository, thus only the first repository in the configuration file will be used.
-# Please use 'scan-pull-requests' command to apply the multiple repository configurations.
+# Please use 'scan-pull-requests' command to scan the multiple repository pull requests configurations.
 
 - includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. [Default: false] Optional.
   failOnSecurityIssues: false # Fails the Frogbot task if any security issue is found. [Default: false] Optional.
@@ -9,7 +9,7 @@
     - ""
   gitParams: # Git parameters to base the scan on
     repoName: "" # Name of the repository to scan. Mandatory.
-    branches: # List of branches to scan. Mandatory.
+    branches: # List of branches to scan. Mandatory for scan-and-fix-repos/create-fix-pull-requests commands.
       - master
   projects: # List of package manager related projects (e.g. npm, pip, maven projects) with their relevant working directories, installation command, etc.
     - installCommandName: "" # Installation command (e.g. npm, maven, yarn). Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies.

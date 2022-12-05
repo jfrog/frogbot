@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"sort"
 	"strings"
 
@@ -47,7 +48,9 @@ func scanAllPullRequests(repo utils.FrogbotRepoConfig, client vcsclient.VcsClien
 			e = downloadAndScanPullRequest(pr, repo, client)
 			// If error, write it in errList and continue to the next PR.
 			if e != nil {
-				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
+				//clientLog.Info("%d  %s %s", int(pr.ID), repo.RepoName, err.Error())
+				clientLog.Info(err.Error())
+				//errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
 			}
 		}
 	}

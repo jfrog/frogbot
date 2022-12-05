@@ -83,7 +83,9 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
 		gitParams.RepoName = config.RepoName
-		gitParams.Branches = config.Branches
+		if config.Branches != nil {
+			gitParams.Branches = config.Branches
+		}
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			Server:                    server,
 			GitParams:                 gitParams,
