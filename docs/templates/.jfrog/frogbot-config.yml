@@ -2,12 +2,15 @@
 # It is important to note that 'scan-pull-request' and 'create-fix-pull-request' only work on a single repository, thus only the first repository in the configuration file will be used.
 # Please use 'scan-pull-requests' command to apply the multiple repository configurations.
 
-- repoName: "" # Repository name. Mandatory.
-  includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. [Default: false] Optional.
+- includeAllVulnerabilities: false # Displays all existing vulnerabilities, including the ones that were added by the pull request. [Default: false] Optional.
   failOnSecurityIssues: false # Fails the Frogbot task if any security issue is found. [Default: false] Optional.
   jfrogProjectKey: "" # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects. Optional.
   watches: # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches. Optional.
     - ""
+  gitParams: # Git parameters to base the scan on
+    repoName: "" # Name of the repository to scan. Mandatory.
+    branches: # List of branches to scan. Mandatory.
+      - master
   projects: # List of package manager related projects (e.g. npm, pip, maven projects) with their relevant working directories, installation command, etc.
     - installCommandName: "" # Installation command (e.g. npm, maven, yarn). Mandatory only for projects which use npm, yarn 2, nuget and dotnet to download their dependencies.
       installCommandArgs: # List of arguments to the installation command (e.g. install, i)

@@ -103,19 +103,19 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, _, err := extractGitParamsFromEnv()
+	_, err := extractGitParamsFromEnv()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456", GitRepoEnv: "JfrogRepo"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
 }
@@ -178,7 +178,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "master", configParams.BaseBranch)
+		assert.Equal(t, "master", configParams.Branches[0])
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
@@ -240,7 +240,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		GitProvider:   vcsutils.GitHub,
 		RepoOwner:     "jfrog",
 		Token:         "123456789",
-		BaseBranch:    "master",
+		RepoName:      "repoName",
+		Branches:      []string{"master"},
 		ApiEndpoint:   "endpoint.com",
 		PullRequestID: 1,
 	}
@@ -250,7 +251,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server, "repoName")
+	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
 	repo := (*configAggregator)[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -259,7 +260,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)
-	assert.Equal(t, gitParams.BaseBranch, repo.BaseBranch)
+	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
 	assert.Equal(t, gitParams.PullRequestID, repo.PullRequestID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
