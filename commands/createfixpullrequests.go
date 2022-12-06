@@ -40,22 +40,24 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
-	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
-	for _, project := range repoConfig.Projects {
-		scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
-		if err != nil {
-			return err
-		}
+	for _, branch := range repoConfig.Branches {
+		xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
+		for _, project := range repoConfig.Projects {
+			scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
+			if err != nil {
+				return err
+			}
 
-		// Upload scan results to the relevant Git provider code scanning UI
-		err = utils.UploadScanToGitProvider(scanResults, repoConfig, client)
-		if err != nil {
-			clientLog.Warn(err)
-		}
+			// Upload scan results to the relevant Git provider code scanning UI
+			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
+			if err != nil {
+				clientLog.Warn(err)
+			}
 
-		// Fix and create PRs
-		if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, repoConfig.RepoName, client, scanResults); err != nil {
-			return err
+			// Fix and create PRs
+			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, branch, client, scanResults); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -73,7 +75,7 @@ func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *corecon
 	return scanResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, repoName string, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, branch string, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
 	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults)
 	if err != nil {
 		return err
@@ -103,7 +105,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	if err != nil {
 		return err
 	}
-	err = gitManager.Clone(wd, repoGitParams.BaseBranch)
+	err = gitManager.Clone(wd, branch)
 	if err != nil {
 		return err
 	}
@@ -123,13 +125,13 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
-		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, repoName, repoGitParams, client, gitManager)
+		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, branch, repoGitParams, client, gitManager)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
 		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
-		clientLog.Info("Running git checkout to base branch:", repoGitParams.BaseBranch)
-		err = gitManager.Checkout(repoGitParams.BaseBranch)
+		clientLog.Info("Running git checkout to base branch:", branch)
+		err = gitManager.Checkout(branch)
 		if err != nil {
 			return err
 		}
@@ -197,8 +199,8 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, project *utils.Project,
-	repoName string, repoGitParams *utils.GitParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
-	fixBranchName, err := generateFixBranchName(repoGitParams.BaseBranch, impactedPackage, fixVersionInfo.fixVersion)
+	branch string, repoGitParams *utils.GitParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
+	fixBranchName, err := generateFixBranchName(branch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
 	}
@@ -242,9 +244,9 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return err
 	}
-	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", repoGitParams.BaseBranch)
+	clientLog.Info("Creating Pull Request form:", fixBranchName, " to:", branch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
-	err = client.CreatePullRequest(context.Background(), repoGitParams.RepoOwner, repoName, fixBranchName, repoGitParams.BaseBranch, commitString, prBody)
+	err = client.CreatePullRequest(context.Background(), repoGitParams.RepoOwner, repoGitParams.RepoName, fixBranchName, branch, commitString, prBody)
 	return
 }
 

@@ -23,15 +23,14 @@ var configRelativePath = filepath.Join(".", ".jfrog", FrogbotConfigFile)
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 type FrogbotRepoConfig struct {
-	GitParams
 	Server                    coreconfig.ServerDetails
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
 	JFrogProjectKey           string    `yaml:"jfrogProjectKey,omitempty"`
-	RepoName                  string    `yaml:"repoName,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
+	GitParams                 `yaml:"gitParams,omitempty"`
 }
 
 type Project struct {
@@ -44,16 +43,17 @@ type Project struct {
 
 type GitParams struct {
 	GitProvider   vcsutils.VcsProvider
+	RepoName      string   `yaml:"repoName,omitempty"`
+	Branches      []string `yaml:"branches,omitempty"`
 	GitProject    string
 	RepoOwner     string
 	Token         string
-	BaseBranch    string
 	ApiEndpoint   string
 	PullRequestID int
 }
 
 func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
-	server, gitParams, repoName, err := extractEnvParams()
+	server, gitParams, err := extractEnvParams()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -68,10 +68,10 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && missingConfigErr {
 		// If no config file is used, the repo name must be set as a part of the envs.
-		if repoName == "" {
+		if gitParams.RepoName == "" {
 			return nil, nil, nil, &ErrMissingEnv{GitRepoEnv}
 		}
-		configData, err = generateConfigAggregatorFromEnv(&gitParams, &server, repoName)
+		configData, err = generateConfigAggregatorFromEnv(&gitParams, &server)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -82,6 +82,10 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 
 	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
+		gitParams.RepoName = config.RepoName
+		if config.Branches != nil {
+			gitParams.Branches = config.Branches
+		}
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			Server:                    server,
 			GitParams:                 gitParams,
@@ -91,7 +95,6 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 			Projects:                  config.Projects,
 			Watches:                   config.Watches,
 			JFrogProjectKey:           config.JFrogProjectKey,
-			RepoName:                  config.RepoName,
 		})
 	}
 
@@ -128,33 +131,34 @@ func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
 	return server, nil
 }
 
-func extractGitParamsFromEnv() (GitParams, string, error) {
+func extractGitParamsFromEnv() (GitParams, error) {
 	var err error
 	gitParams := GitParams{}
 	// Non-mandatory Git Api Endpoint
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
-		return GitParams{}, "", err
+		return GitParams{}, err
 	}
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
-		return GitParams{}, "", err
+		return GitParams{}, err
 	}
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
-		return GitParams{}, "", err
+		return GitParams{}, err
 	}
 
 	// Repo name validation will be checked later, this env is mandatory in case there is no config file.
-	var repoName string
-	_ = readParamFromEnv(GitRepoEnv, &repoName)
+	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
 	if err := readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
-		return GitParams{}, "", err
+		return GitParams{}, err
 	}
 	// Non-mandatory git branch and pr id.
-	_ = readParamFromEnv(GitBaseBranchEnv, &gitParams.BaseBranch)
+	var branch string
+	_ = readParamFromEnv(GitBaseBranchEnv, &branch)
+	gitParams.Branches = append(gitParams.Branches, branch)
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		gitParams.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 	}
-	return gitParams, repoName, err
+	return gitParams, err
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
@@ -199,18 +203,18 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractEnvParams() (coreconfig.ServerDetails, GitParams, string, error) {
+func extractEnvParams() (coreconfig.ServerDetails, GitParams, error) {
 	server, err := extractJFrogParamsFromEnv()
 	if err != nil {
-		return coreconfig.ServerDetails{}, GitParams{}, "", err
+		return coreconfig.ServerDetails{}, GitParams{}, err
 	}
 
-	gitParams, repoName, err := extractGitParamsFromEnv()
+	gitParams, err := extractGitParamsFromEnv()
 	if err != nil {
-		return coreconfig.ServerDetails{}, GitParams{}, "", err
+		return coreconfig.ServerDetails{}, GitParams{}, err
 	}
 
-	return server, gitParams, repoName, SanitizeEnv()
+	return server, gitParams, SanitizeEnv()
 }
 
 func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
@@ -292,12 +296,12 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 }
 
 // In case config file wasn't provided by the user, generateConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
-func generateConfigAggregatorFromEnv(gitParams *GitParams, server *coreconfig.ServerDetails, repoName string) (*FrogbotConfigAggregator, error) {
+func generateConfigAggregatorFromEnv(gitParams *GitParams, server *coreconfig.ServerDetails) (*FrogbotConfigAggregator, error) {
 	var project Project
 	if err := extractProjectParamsFromEnv(&project); err != nil {
 		return nil, err
 	}
-	repo := FrogbotRepoConfig{GitParams: *gitParams, Server: *server, RepoName: repoName}
+	repo := FrogbotRepoConfig{GitParams: *gitParams, Server: *server}
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
 		return nil, err
 	}

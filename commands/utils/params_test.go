@@ -108,19 +108,19 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, _, err := extractGitParamsFromEnv()
+	_, err := extractGitParamsFromEnv()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456", GitRepoEnv: "JfrogRepo"})
-	_, _, err = extractGitParamsFromEnv()
+	_, err = extractGitParamsFromEnv()
 	_, ok := err.(*strconv.NumError)
 	assert.True(t, ok)
 }
@@ -183,7 +183,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "master", configParams.BaseBranch)
+		assert.Equal(t, "master", configParams.Branches[0])
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
@@ -248,6 +248,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
+
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
 		XrayUrl:        "http://127.0.0.1:8081/xray",
@@ -255,18 +256,18 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		Password:       "password",
 	}
 
-	gitParams, repoName, err := extractGitParamsFromEnv()
+	gitParams, err := extractGitParamsFromEnv()
 	assert.NoError(t, err)
-	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server, repoName)
+	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
 	repo := (*configAggregator)[0]
-	assert.Equal(t, repoName, repo.RepoName)
+	assert.Equal(t, gitParams.RepoName, repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)
-	assert.Equal(t, gitParams.BaseBranch, repo.BaseBranch)
+	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
 	assert.Equal(t, gitParams.PullRequestID, repo.PullRequestID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, "testGitProject", repo.GitProject)

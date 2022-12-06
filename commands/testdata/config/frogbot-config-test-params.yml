@@ -1,4 +1,7 @@
-- repoName: frogbot
+- gitParams:
+    repoName: frogbot
+    branches:
+      - master
   includeAllVulnerabilities: true
   failOnSecurityIssues: true
   watches:

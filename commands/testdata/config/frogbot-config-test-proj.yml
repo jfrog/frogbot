@@ -1,4 +1,7 @@
-- repoName: test-proj
+- gitParams:
+    repoName: test-proj
+    branches:
+      - master
   failOnSecurityIssues: false
   projects:
     - workingDirs:

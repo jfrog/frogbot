@@ -1,4 +1,7 @@
-- repoName: multi-dir-test-proj
+- gitParams:
+    repoName: multi-dir-test-proj
+    branches:
+      - master
   projects:
     - installCommandName: npm
       installCommandArgs:
