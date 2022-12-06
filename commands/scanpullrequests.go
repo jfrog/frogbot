@@ -41,13 +41,13 @@ func scanAllPullRequests(repo utils.FrogbotRepoConfig, client vcsclient.VcsClien
 	for _, pr := range openPullRequests {
 		shouldScan, e := shouldScanPullRequest(repo, client, int(pr.ID))
 		if e != nil {
-			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
+			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
 		if shouldScan {
 			e = downloadAndScanPullRequest(pr, repo, client)
 			// If error, write it in errList and continue to the next PR.
 			if e != nil {
-				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
+				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 			}
 		}
 	}
