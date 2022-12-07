@@ -96,6 +96,7 @@ jobs:
 #### frogbot-scan-and-fix.yml:
 
 ```yaml
+# Select on which branches to trigger the pipeline
 trigger:
    branches:
       include:
