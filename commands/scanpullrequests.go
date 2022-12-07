@@ -41,13 +41,13 @@ func scanAllPullRequests(repo utils.FrogbotRepoConfig, client vcsclient.VcsClien
 	for _, pr := range openPullRequests {
 		shouldScan, e := shouldScanPullRequest(repo, client, int(pr.ID))
 		if e != nil {
-			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
+			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
 		if shouldScan {
 			e = downloadAndScanPullRequest(pr, repo, client)
 			// If error, write it in errList and continue to the next PR.
 			if e != nil {
-				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, err.Error()))
+				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 			}
 		}
 	}
@@ -99,11 +99,11 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			Token:       repo.Token,
 			ApiEndpoint: repo.ApiEndpoint,
 			RepoOwner:   repo.RepoOwner,
-			BaseBranch:  pr.Source.Name,
+			RepoName:    pr.Source.Repository,
+			Branches:    []string{pr.Source.Name},
 		},
-		RepoName: pr.Source.Repository,
 	}
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, frogbotParams.RepoName, &frogbotParams.GitParams)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, pr.Source.Name, &frogbotParams.GitParams)
 	if err != nil {
 		return err
 	}
@@ -136,12 +136,12 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			Token:         repo.Token,
 			ApiEndpoint:   repo.ApiEndpoint,
 			RepoOwner:     repo.RepoOwner,
-			BaseBranch:    pr.Target.Name,
+			Branches:      []string{pr.Target.Name},
+			RepoName:      pr.Target.Repository,
 			PullRequestID: int(pr.ID),
 		},
 		Projects:        repo.Projects,
 		JFrogProjectKey: repo.JFrogProjectKey,
-		RepoName:        pr.Target.Repository,
 	}
 	return scanPullRequest(frogbotParams, client)
 }

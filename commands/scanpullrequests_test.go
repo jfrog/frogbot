@@ -16,10 +16,10 @@ import (
 )
 
 var params = &utils.FrogbotRepoConfig{
-	RepoName: "repo-name",
 	GitParams: utils.GitParams{
-		RepoOwner:  "repo-owner",
-		BaseBranch: "master",
+		RepoOwner: "repo-owner",
+		Branches:  []string{"master"},
+		RepoName:  "repo-name",
 	},
 }
 
@@ -101,7 +101,6 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	defer restoreEnv()
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
-			RepoName:  params.RepoName,
 			Server:    server,
 			GitParams: params.GitParams,
 			Projects: []utils.Project{{
@@ -111,7 +110,6 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			}},
 		},
 		{
-			RepoName:  params.RepoName,
 			Server:    server,
 			GitParams: params.GitParams,
 		},

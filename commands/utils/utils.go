@@ -80,7 +80,7 @@ func Md5Hash(values ...string) (string, error) {
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
 	if repo.GitProvider.String() != vcsutils.GitHub.String() {
 		clientLog.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
@@ -94,15 +94,15 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, repo.BaseBranch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, scan)
 	if err != nil {
-		return errors.New("upload code scanning failed with: " + err.Error())
+		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 
-	return nil
+	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *GitParams) (wd string, cleanup func(err error) error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitParams) (wd string, cleanup func(err error) error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -114,8 +114,8 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoName string, git *Git
 		return err
 	}
 	clientLog.Debug("Created temp working directory: ", wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, repoName, git.BaseBranch, wd))
-	err = client.DownloadRepository(context.Background(), git.RepoOwner, repoName, git.BaseBranch, wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
+	err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd)
 	if err != nil {
 		return
 	}
