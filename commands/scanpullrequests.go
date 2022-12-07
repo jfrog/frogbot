@@ -109,7 +109,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 	}
 	// Cleanup
 	defer func() {
-		e := cleanup(err)
+		e := cleanup()
 		if err == nil {
 			err = e
 		}

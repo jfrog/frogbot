@@ -14,7 +14,7 @@ type ScanAndFixRepositories struct {
 func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		err := downloadAndFixRepository(&configAggregator[repoNum], client)
+		err := scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))
 		}
@@ -26,19 +26,33 @@ func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggreg
 	return nil
 }
 
-func downloadAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) (err error) {
-	var cfp CreateFixPullRequestsCmd
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, repoConfig.RepoName, &repoConfig.GitParams)
+func scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+	for _, branch := range repoConfig.Branches {
+		err := downloadAndRunScanAndFix(client, branch, repoConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func downloadAndRunScanAndFix(client vcsclient.VcsClient, branch string, repoConfig *utils.FrogbotRepoConfig) (err error) {
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repoConfig.GitParams)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		e := cleanup(err)
+		e := cleanup()
 		if err == nil {
 			err = e
 		}
 	}()
+
 	restoreDir, err := utils.Chdir(wd)
+	if err != nil {
+		return err
+	}
 	defer func() {
 		e := restoreDir()
 		if err == nil {
@@ -46,5 +60,6 @@ func downloadAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcscli
 		}
 	}()
 
-	return cfp.scanAndFixRepository(repoConfig, client)
+	var cfp CreateFixPullRequestsCmd
+	return cfp.scanAndFixRepository(repoConfig, client, branch)
 }

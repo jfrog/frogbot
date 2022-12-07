@@ -102,16 +102,13 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitParams) (wd string, cleanup func(err error) error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitParams) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
 	}
-	cleanup = func(err error) error {
-		if err == nil {
-			return fileutils.RemoveTempDir(wd)
-		}
-		return err
+	cleanup = func() error {
+		return fileutils.RemoveTempDir(wd)
 	}
 	clientLog.Debug("Created temp working directory: ", wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
@@ -124,9 +121,9 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitPa
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
-	// Multi repository configuration is supported only in the scanrepos and scanandfixrepos commands.
+	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
 	if len(*configAggregator) > 1 {
-		return errors.New(UnsupportedMultiRepoErr)
+		return errors.New(errUnsupportedMultiRepo)
 	}
 	return nil
 }

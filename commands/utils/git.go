@@ -109,12 +109,25 @@ func (gm *GitManager) addAll() error {
 		return err
 	}
 	worktree.Excludes = append(worktree.Excludes, ignorePatterns...)
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
 
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
-		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+		return fmt.Errorf("git add failed with error: %s", err.Error())
 	}
-	return err
+	// go-git add all using AddWithOptions doesn't include deleted files, that's why we need to double-check
+	for fileName, fileStatus := range status {
+		if fileStatus.Worktree == git.Deleted {
+			_, err = worktree.Add(fileName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (gm *GitManager) commit(commitMessage string) error {

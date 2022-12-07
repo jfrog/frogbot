@@ -36,32 +36,37 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
+	repoConfig := &configAggregator[0]
+	for _, branch := range repoConfig.Branches {
+		err := cfp.scanAndFixRepository(repoConfig, client, branch)
+		if err != nil {
+			return err
+		}
+	}
 
-	return cfp.scanAndFixRepository(&configAggregator[0], client)
+	return nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) error {
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
-	for _, branch := range repoConfig.Branches {
-		xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
-		for _, project := range repoConfig.Projects {
-			scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
-			if err != nil {
-				return err
-			}
+	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
+	for _, project := range repoConfig.Projects {
+		scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
+		if err != nil {
+			return err
+		}
 
-			// Upload scan results to the relevant Git provider code scanning UI
-			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
-			if err != nil {
-				clientLog.Warn(err)
-			}
+		// Upload scan results to the relevant Git provider code scanning UI
+		err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
+		if err != nil {
+			clientLog.Warn(err)
+		}
 
-			// Fix and create PRs
-			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, branch, client, scanResults); err != nil {
-				return err
-			}
+		// Fix and create PRs
+		if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, branch, client, scanResults); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -85,7 +90,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	}
 	// Nothing to fix, return
 	if len(fixVersionsMap) == 0 {
-		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions")
+		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions for", repoGitParams.RepoName)
 		return nil
 	}
 	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
