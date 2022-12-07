@@ -222,7 +222,7 @@ func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
 		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yml.
 		if filePath, err = utils.FindFileInDirAndParents(filePath, configRelativePath); err != nil {
 			return nil, &ErrMissingConfig{
-				fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continue running with environment variables", FrogbotConfigFile),
+				fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile),
 			}
 		}
 		filePath = filepath.Join(filePath, configFilePath)
