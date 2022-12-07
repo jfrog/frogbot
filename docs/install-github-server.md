@@ -63,7 +63,8 @@ pipelines:
             JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
 
             # [Mandatory]
-            # Bitbucket accesses token with the following permissions 
+            # GitHub accesses token with the following permissions:
+            # Read and Write access to code, pull requests, security events, and workflows
             JF_GIT_TOKEN: $int_github_token
             JF_GIT_PROVIDER: "github"
 
@@ -120,7 +121,7 @@ To install Frogbot using Jenkins:
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**, **
-   JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
+   JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**
    and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 3. Save your GitHub access token as a Credential in Jenkins with the GITHUB_TOKEN Credential ID.
 4. Create a Pipeline job in Jenkins with the below Jenkinsfile content.
@@ -161,7 +162,8 @@ pipeline {
         JF_PASSWORD = credentials("JF_PASSWORD")
 
         // [Mandatory]
-        // GitHub enterprise server accesses token with the following permissions 
+        // GitHub enterprise server accesses token with the following permissions:
+        // Read and Write access to code, pull requests, security events, and workflows
         JF_GIT_TOKEN = credentials("GITHUB_TOKEN")
         JF_GIT_PROVIDER = "github"
 
