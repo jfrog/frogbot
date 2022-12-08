@@ -268,7 +268,8 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	if repo.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
 		return err
 	}
-	*repo.FailOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true)
+	failOnSecurityIssues, err := getBoolEnv(FailOnSecurityIssuesEnv, true)
+	repo.FailOnSecurityIssues = &failOnSecurityIssues
 	// Non-mandatory Xray context params
 	var watches string
 	_ = readParamFromEnv(jfrogWatchesEnv, &watches)
