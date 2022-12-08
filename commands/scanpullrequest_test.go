@@ -474,7 +474,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 			Server:                    params,
 			GitParams:                 gitParams,
 			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
-			FailOnSecurityIssues:      failOnSecurityIssues,
+			FailOnSecurityIssues:      &failOnSecurityIssues,
 			SimplifiedOutput:          config.SimplifiedOutput,
 			Projects:                  config.Projects,
 			Watches:                   config.Watches,
