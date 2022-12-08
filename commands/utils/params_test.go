@@ -256,7 +256,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	repo := (*configAggregator)[0]
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
-	assert.Equal(t, false, repo.FailOnSecurityIssues)
+	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)
