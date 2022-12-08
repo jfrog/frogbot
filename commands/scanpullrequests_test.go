@@ -138,9 +138,11 @@ func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
 	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
+	falseVal := false
 	repoParams := &utils.FrogbotRepoConfig{
-		Server:    server,
-		GitParams: params.GitParams,
+		Server:               server,
+		GitParams:            params.GitParams,
+		FailOnSecurityIssues: &falseVal,
 		Projects: []utils.Project{{
 			InstallCommandName: "npm",
 			InstallCommandArgs: []string{"i"},
