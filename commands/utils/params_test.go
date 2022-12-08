@@ -140,7 +140,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
-		assert.Equal(t, true, repo.FailOnSecurityIssues)
+		assert.Equal(t, true, *repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.JFrogProjectKey)
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
