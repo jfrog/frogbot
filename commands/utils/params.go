@@ -26,7 +26,7 @@ type FrogbotRepoConfig struct {
 	Server                    coreconfig.ServerDetails
 	SimplifiedOutput          bool
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FailOnSecurityIssues      bool      `yaml:"failOnSecurityIssues,omitempty"`
+	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	JFrogProjectKey           string    `yaml:"jfrogProjectKey,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	Watches                   []string  `yaml:"watches,omitempty"`
@@ -85,6 +85,10 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 		gitParams.RepoName = config.RepoName
 		if config.Branches != nil {
 			gitParams.Branches = config.Branches
+		}
+		if config.FailOnSecurityIssues == nil {
+			trueVal := true
+			config.FailOnSecurityIssues = &trueVal
 		}
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			Server:                    server,
@@ -264,7 +268,7 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	if repo.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
 		return err
 	}
-	repo.FailOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true)
+	*repo.FailOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true)
 	// Non-mandatory Xray context params
 	var watches string
 	_ = readParamFromEnv(jfrogWatchesEnv, &watches)

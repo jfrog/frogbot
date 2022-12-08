@@ -88,7 +88,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+	if *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
