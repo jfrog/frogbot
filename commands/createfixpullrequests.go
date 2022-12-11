@@ -199,6 +199,21 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return err
 	}
 
+	if params.WorkingDirectory != "" {
+		// 'CD' into the relevant working directory
+		restoreDir, e := utils.Chdir(params.WorkingDirectory)
+		if e != nil {
+			err = e
+			return
+		}
+		defer func() {
+			e := restoreDir()
+			if err == nil {
+				err = e
+			}
+		}()
+	}
+
 	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
 	if err != nil {
 		return err
@@ -361,13 +376,13 @@ func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (stri
 	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x &lt; 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 &lt; x
-///      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// 1.0         --> 1.0 ≤ x
+// (,1.0]      --> x ≤ 1.0
+// (,1.0)      --> x &lt; 1.0
+// [1.0]       --> x == 1.0
+// (1.0,)      --> 1.0 &lt; x
+// (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
+// [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]
 	if latestVersion[0] == '(' {
