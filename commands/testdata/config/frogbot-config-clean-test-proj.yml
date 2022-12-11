@@ -1,8 +1,10 @@
-- gitParams:
-    repoName: clean-test-proj
-    branches:
-      - master
-  projects:
-    - installCommandName: npm
-      installCommandArgs:
-        - i
+- params:
+    git:
+      repoName: clean-test-proj
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommandName: npm
+          installCommandArgs:
+            - i

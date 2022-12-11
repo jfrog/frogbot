@@ -15,11 +15,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var params = &utils.FrogbotRepoConfig{
-	GitParams: utils.GitParams{
-		RepoOwner: "repo-owner",
-		Branches:  []string{"master"},
-		RepoName:  "repo-name",
+var gitParams = &utils.FrogbotRepoConfig{
+	Params: utils.Params{
+		Git: utils.Git{
+			RepoOwner: "repo-owner",
+			Branches:  []string{"master"},
+			RepoName:  "repo-name",
+		},
 	},
 }
 
@@ -35,9 +37,9 @@ func TestShouldScanPullRequestNewPR(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, nil)
+	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{}, nil)
 	// Run handleFrogbotLabel
-	shouldScan, err := shouldScanPullRequest(*params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
 	assert.True(t, shouldScan)
 }
@@ -46,11 +48,11 @@ func TestShouldScanPullRequestReScan(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(*params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
 	assert.True(t, shouldScan)
 }
@@ -59,12 +61,12 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(*params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
 	assert.False(t, shouldScan)
 }
@@ -73,10 +75,10 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{
+	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
-	shouldScan, err := shouldScanPullRequest(*params, client, prID)
+	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
 	assert.False(t, shouldScan)
 }
@@ -90,8 +92,8 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 	// Init mock
 	client := mockVcsClient(t)
 	prID := 0
-	client.EXPECT().ListPullRequestComments(context.Background(), params.RepoOwner, params.RepoName, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
-	shouldScan, err := shouldScanPullRequest(*params, client, prID)
+	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
+	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.Error(t, err)
 	assert.False(t, shouldScan)
 }
@@ -99,24 +101,30 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
-	configAggregator := utils.FrogbotConfigAggregator{
-		{
-			Server:    server,
-			GitParams: params.GitParams,
+	firstRepoParams := utils.Params{
+		Scan: utils.Scan{
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
 				WorkingDirs:        []string{"."},
+			},
 			}},
+		Git: gitParams.Git,
+	}
+	secondRepoParams := utils.Params{Git: gitParams.Git}
+	configAggregator := utils.FrogbotConfigAggregator{
+		{
+			Server: server,
+			Params: firstRepoParams,
 		},
 		{
-			Server:    server,
-			GitParams: params.GitParams,
+			Server: server,
+			Params: secondRepoParams,
 		},
 	}
 	mockParams := []MockParams{
-		{params.RepoName, params.RepoOwner, "test-proj-with-vulnerability", "test-proj"},
-		{params.RepoName, params.RepoOwner, "test-proj-pip-with-vulnerability", "test-proj-pip"},
+		{gitParams.RepoName, gitParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"},
+		{gitParams.RepoName, gitParams.RepoOwner, "test-proj-pip-with-vulnerability", "test-proj-pip"},
 	}
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
@@ -139,15 +147,20 @@ func TestScanAllPullRequests(t *testing.T) {
 	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	falseVal := false
+	params := utils.Params{
+		Scan: utils.Scan{
+			FailOnSecurityIssues: &falseVal,
+			Projects: []utils.Project{{
+				InstallCommandName: "npm",
+				InstallCommandArgs: []string{"i"},
+				WorkingDirs:        []string{"."},
+			}},
+		},
+		Git: gitParams.Git,
+	}
 	repoParams := &utils.FrogbotRepoConfig{
-		Server:               server,
-		GitParams:            params.GitParams,
-		FailOnSecurityIssues: &falseVal,
-		Projects: []utils.Project{{
-			InstallCommandName: "npm",
-			InstallCommandArgs: []string{"i"},
-			WorkingDirs:        []string{"."},
-		}},
+		Server: server,
+		Params: params,
 	}
 	paramsAggregator := utils.FrogbotConfigAggregator{}
 	paramsAggregator = append(paramsAggregator, *repoParams)

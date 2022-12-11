@@ -449,8 +449,8 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	utils.AssertSanitizedEnv(t)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, params coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
-	gitParams := utils.GitParams{
+func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+	gitParams := utils.Git{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
 		Token:         "123456",
@@ -470,14 +470,17 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	for _, config := range *configData {
 		gitParams.RepoName = config.RepoName
 		gitParams.Branches = config.Branches
+		config.FailOnSecurityIssues = &failOnSecurityIssues
+		config.Git = gitParams
+		params := utils.Params{
+			Scan:          config.Scan,
+			Git:           gitParams,
+			JFrogPlatform: config.JFrogPlatform,
+		}
 		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
-			Server:                    params,
-			GitParams:                 gitParams,
-			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
-			FailOnSecurityIssues:      &failOnSecurityIssues,
-			SimplifiedOutput:          config.SimplifiedOutput,
-			Projects:                  config.Projects,
-			Watches:                   config.Watches,
+			Server:           serverParams,
+			SimplifiedOutput: config.SimplifiedOutput,
+			Params:           params,
 		})
 	}
 

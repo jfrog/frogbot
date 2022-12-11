@@ -102,7 +102,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitParams) (wd string, cleanup func(err error) error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func(err error) error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return

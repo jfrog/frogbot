@@ -236,7 +236,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	gitParams := GitParams{
+	gitParams := Git{
 		GitProvider:   vcsutils.GitHub,
 		RepoOwner:     "jfrog",
 		Token:         "123456789",

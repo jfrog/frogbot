@@ -66,7 +66,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
 		} else {
 			// Audit target code
-			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.GitParams, &repoConfig.Server)
+			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.Git, &repoConfig.Server)
 			if err != nil {
 				return err
 			}
@@ -200,7 +200,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
+func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.Git, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
 	clientLog.Info("Auditing " + git.RepoName + " " + branch)
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, git)

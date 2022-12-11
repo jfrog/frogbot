@@ -169,12 +169,15 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
+	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
+	params := utils.Params{
+		Scan: utils.Scan{Projects: []utils.Project{{}}},
+	}
 	var frogbotParams = utils.FrogbotRepoConfig{
-		Server:   params,
-		Projects: []utils.Project{{}},
+		Server: environmentVars,
+		Params: params,
 	}
 	for _, pkgType := range packageTypes {
 		// Create temp technology project

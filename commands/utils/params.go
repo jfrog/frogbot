@@ -23,14 +23,15 @@ var configRelativePath = filepath.Join(".", ".jfrog", FrogbotConfigFile)
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 type FrogbotRepoConfig struct {
-	Server                    coreconfig.ServerDetails
-	SimplifiedOutput          bool
-	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	JFrogProjectKey           string    `yaml:"jfrogProjectKey,omitempty"`
-	Projects                  []Project `yaml:"projects,omitempty"`
-	Watches                   []string  `yaml:"watches,omitempty"`
-	GitParams                 `yaml:"gitParams,omitempty"`
+	Server           coreconfig.ServerDetails
+	SimplifiedOutput bool
+	Params           `yaml:"params,omitempty"`
+}
+
+type Params struct {
+	Scan          `yaml:"scan,omitempty"`
+	Git           `yaml:"git,omitempty"`
+	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
 }
 
 type Project struct {
@@ -41,7 +42,18 @@ type Project struct {
 	UseWrapper          bool     `yaml:"useWrapper,omitempty"`
 }
 
-type GitParams struct {
+type Scan struct {
+	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
+	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	Projects                  []Project `yaml:"projects,omitempty"`
+}
+
+type JFrogPlatform struct {
+	Watches         []string `yaml:"watches,omitempty"`
+	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
+}
+
+type Git struct {
 	GitProvider   vcsutils.VcsProvider
 	RepoName      string   `yaml:"repoName,omitempty"`
 	Branches      []string `yaml:"branches,omitempty"`
@@ -90,15 +102,11 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 			trueVal := true
 			config.FailOnSecurityIssues = &trueVal
 		}
+		config.Git = gitParams
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
-			Server:                    server,
-			GitParams:                 gitParams,
-			IncludeAllVulnerabilities: config.IncludeAllVulnerabilities,
-			FailOnSecurityIssues:      config.FailOnSecurityIssues,
-			SimplifiedOutput:          config.SimplifiedOutput,
-			Projects:                  config.Projects,
-			Watches:                   config.Watches,
-			JFrogProjectKey:           config.JFrogProjectKey,
+			SimplifiedOutput: config.SimplifiedOutput,
+			Server:           server,
+			Params:           config.Params,
 		})
 	}
 
@@ -135,19 +143,19 @@ func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
 	return server, nil
 }
 
-func extractGitParamsFromEnv() (GitParams, error) {
+func extractGitParamsFromEnv() (Git, error) {
 	var err error
-	gitParams := GitParams{}
+	gitParams := Git{}
 	// Non-mandatory Git Api Endpoint
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
-		return GitParams{}, err
+		return Git{}, err
 	}
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
-		return GitParams{}, err
+		return Git{}, err
 	}
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
-		return GitParams{}, err
+		return Git{}, err
 	}
 
 	// Repo name validation will be checked later, this env is mandatory in case there is no config file.
@@ -202,15 +210,15 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractEnvParams() (coreconfig.ServerDetails, GitParams, error) {
+func extractEnvParams() (coreconfig.ServerDetails, Git, error) {
 	server, err := extractJFrogParamsFromEnv()
 	if err != nil {
-		return coreconfig.ServerDetails{}, GitParams{}, err
+		return coreconfig.ServerDetails{}, Git{}, err
 	}
 
 	gitParams, err := extractGitParamsFromEnv()
 	if err != nil {
-		return coreconfig.ServerDetails{}, GitParams{}, err
+		return coreconfig.ServerDetails{}, Git{}, err
 	}
 
 	return server, gitParams, SanitizeEnv()
@@ -296,12 +304,13 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 }
 
 // In case config file wasn't provided by the user, generateConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
-func generateConfigAggregatorFromEnv(gitParams *GitParams, server *coreconfig.ServerDetails) (*FrogbotConfigAggregator, error) {
+func generateConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails) (*FrogbotConfigAggregator, error) {
 	var project Project
 	if err := extractProjectParamsFromEnv(&project); err != nil {
 		return nil, err
 	}
-	repo := FrogbotRepoConfig{GitParams: *gitParams, Server: *server}
+	params := Params{Git: *gitParams}
+	repo := FrogbotRepoConfig{Params: params, Server: *server}
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
 		return nil, err
 	}

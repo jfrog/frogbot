@@ -2,52 +2,57 @@
 # It is important to note that 'scan-pull-request' and 'create-fix-pull-request' only work on a single repository, thus only the first repository in the configuration file will be used.
 # Please use 'scan-pull-requests' command to scan the multiple repository pull requests configurations.
 
-# Git parameters to base the scan on
-- gitParams:
-    # [Mandatory]
-    # Name of the repository to scan.
-    repoName: repo-name
+- params:
+    # Git parameters to base the scan on
+    git:
+      # [Mandatory]
+      # Name of the repository to scan.
+      repoName: repo-name
 
-    # [Mandatory for scan-and-fix-repos/create-fix-pull-requests commands]
-    # List of branches to scan.
-    # branches:
-    #   - master
+      # [Mandatory for scan-and-fix-repos/create-fix-pull-requests commands]
+      # List of branches to scan.
+      # branches:
+      #   - master
 
-  # [Optional, Default: false]
-  # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-  # includeAllVulnerabilities: false
+    # Frogbot scanning parameters
+    scan:
+      # [Optional, Default: false]
+      # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+      # includeAllVulnerabilities: false
 
-  # [Optional, Default: true]
-  # Fails the Frogbot task if any security issue is found.
-  # failOnSecurityIssues: false
+      # [Optional, Default: true]
+      # Fails the Frogbot task if any security issue is found.
+      # failOnSecurityIssues: false
 
-  # [Optional]
-  # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
-  # jfrogProjectKey: ""
+      # List of package manager related projects (e.g. npm, pip, maven projects) with their relevant working directories, installation command, etc.
+      projects:
+      # [Mandatory for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
+      # Installation command (e.g. npm, maven, yarn).
+      # - installCommandName: ""
+      # List of arguments to the installation command (e.g. install, i)
+      # installCommandArgs:
+      #   - ""
 
-  # [Optional]
-  # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
-  # watches:
-  #  - ""
+      # [Optional, Default: root directory]
+      # List of relative path's to the projects directories in the git repository.
+      # workingDirs:
+      #   - "."
 
-  # List of package manager related projects (e.g. npm, pip, maven projects) with their relevant working directories, installation command, etc.
-  projects:
-  # [Mandatory for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
-  # Installation command (e.g. npm, maven, yarn).
-  # - installCommandName: ""
-  # List of arguments to the installation command (e.g. install, i)
-  # installCommandArgs:
-  #   - ""
+      # [Mandatory for pip only if using requirements file, Default: pip install .]
+      # The requirements file name that used to install dependencies in case of pip package manager.
+      # pipRequirementsFile: ""
 
-  # [Optional, Default: root directory]
-  # List of relative path to the projects directories in the git repository.
-  # workingDirs:
-  #   - "."
+      # [Optional, Default: true]
+      # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle.
+      # useWrapper: true
 
-  # [Mandatory for pip only if using requirements file, Default: pip install .]
-  # The requirements file name that used to install dependencies in case of pip package manager.
-  # pipRequirementsFile: ""
+    # JFrog Platform parameters
+    jfrogPlatform:
+    # [Optional]
+    # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
+    # jfrogProjectKey: ""
 
-  # [Optional, Default: true]
-  # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle.
-  # useWrapper: true
+    # [Optional]
+    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
+    # watches:
+    #  - ""
