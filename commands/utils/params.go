@@ -158,7 +158,7 @@ func extractGitParamsFromEnv() (Git, error) {
 		return Git{}, err
 	}
 
-	// Repo name validation will be checked later, this env is mandatory in case there is no config file.
+	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
 	// Non-mandatory git branch and pr id.
 	var branch string
