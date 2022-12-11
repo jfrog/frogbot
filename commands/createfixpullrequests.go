@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -213,13 +212,14 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
 		return
 	}
+
 	clientLog.Info("Creating branch:", fixBranchName)
 	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.PipRequirementsFile)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.PipRequirementsFile, project.WorkingDirs)
 	if err != nil {
 		return err
 	}
@@ -250,8 +250,23 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile string) error {
-	var err error
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile, workingDir string) (err error) {
+	if workingDir != "" {
+		// 'CD' into the relevant working directory
+		restoreDir, err := utils.Chdir(workingDir)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			e := restoreDir()
+			if err == nil {
+				err = e
+			} else if e != nil {
+				clientLog.Error(e)
+			}
+		}()
+	}
+
 	switch packageType {
 	case coreutils.Go:
 		commandArgs := []string{"get"}
@@ -275,7 +290,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 
-	return err
+	return
 }
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.

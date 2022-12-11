@@ -93,7 +93,7 @@ func TestFixPackageVersion(t *testing.T) {
 		t.Run(test.technology.ToString(), func(t *testing.T) {
 			cfg := test.fixPackageVersionCmd(test)
 			// Fix impacted package for each technology
-			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor))
+			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
 			file, err := os.ReadFile(test.packageDescriptor)
 			assert.NoError(t, err)
 			assert.Contains(t, string(file), test.fixVersion)
