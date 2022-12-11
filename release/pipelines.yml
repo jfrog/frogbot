@@ -16,7 +16,7 @@ pipelines:
           auto:
             language: go
             versions:
-              - "1.18"
+              - "1.19"
       environmentVariables:
         readOnly:
           NEXT_VERSION: 0.0.0

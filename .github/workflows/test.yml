@@ -28,7 +28,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.x
+          go-version: 1.19.x
       - name: Install npm
         uses: actions/setup-node@v3
         with:
@@ -47,11 +47,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Setup Pipenv
-        run: pip3 install pipenv
-
-      - name: Setup Poetry
-        run: pip3 install poetry
+      - name: Install python components
+        run: pip3 install pipenv virtualenv poetry
 
       # Generate mocks
       - name: Generate mocks
@@ -86,7 +83,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.x
+          go-version: 1.19.x
 
       - name: Checkout code
         uses: actions/checkout@v3

@@ -25,6 +25,7 @@ type ScanPullRequestParams struct {
 	IncludeAllVulnerabilities bool
 	SimplifiedOutput          bool
 	FailOnSecurityIssues      bool
+	UseWrapper                bool
 }
 
 type JFrogEnvParams struct {
@@ -145,25 +146,30 @@ func extractGeneralParamsFromEnv(params *FrogbotParams) {
 }
 
 func extractScanPullRequestParamsFromEnv(params *FrogbotParams) error {
-	includeAllVulnerabilities := getTrimmedEnv(IncludeAllVulnerabilitiesEnv)
-	if includeAllVulnerabilities != "" {
-		includeAllVulnerabilitiesValue, err := strconv.ParseBool(includeAllVulnerabilities)
-		if err != nil {
-			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", IncludeAllVulnerabilitiesEnv, includeAllVulnerabilities)
-		}
-		params.IncludeAllVulnerabilities = includeAllVulnerabilitiesValue
+	var err error
+	if params.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
+		return err
 	}
-	failOnSecurityIssues := getTrimmedEnv(FailOnSecurityIssuesEnv)
-	if failOnSecurityIssues != "" {
-		failOnSecurityIssuesValue, err := strconv.ParseBool(failOnSecurityIssues)
-		if err != nil {
-			return fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", FailOnSecurityIssuesEnv, failOnSecurityIssues)
-		}
-		params.FailOnSecurityIssues = failOnSecurityIssuesValue
-	} else {
-		params.FailOnSecurityIssues = true
+
+	if params.FailOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true); err != nil {
+		return err
 	}
-	return nil
+
+	params.UseWrapper, err = getBoolEnv(UseWrapperEnv, true)
+	return err
+}
+
+func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
+	envValue := getTrimmedEnv(envKey)
+	if envValue != "" {
+		parsedEnv, err := strconv.ParseBool(envValue)
+		if err != nil {
+			return false, fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", envKey, envValue)
+		}
+		return parsedEnv, nil
+	}
+
+	return defaultValue, nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
