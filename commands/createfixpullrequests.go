@@ -193,13 +193,14 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
 		return
 	}
+
 	clientLog.Info("Creating branch:", fixBranchName)
 	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, params.RequirementsFile, params.WorkingDirectory)
 	if err != nil {
 		return err
 	}
@@ -230,8 +231,23 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile string) error {
-	var err error
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile, workingDir string) (err error) {
+	if workingDir != "" {
+		// 'CD' into the relevant working directory
+		restoreDir, err := utils.Chdir(workingDir)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			e := restoreDir()
+			if err == nil {
+				err = e
+			} else if e != nil {
+				clientLog.Error(e)
+			}
+		}()
+	}
+
 	switch packageType {
 	case coreutils.Go:
 		commandArgs := []string{"get"}
@@ -255,7 +271,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 
-	return err
+	return
 }
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
@@ -361,13 +377,13 @@ func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (stri
 	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x &lt; 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 &lt; x
-///      (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// 1.0         --> 1.0 ≤ x
+// (,1.0]      --> x ≤ 1.0
+// (,1.0)      --> x &lt; 1.0
+// [1.0]       --> x == 1.0
+// (1.0,)      --> 1.0 &lt; x
+// (1.0, 2.0)   --> 1.0 &lt; x &lt; 2.0
+// [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]
 	if latestVersion[0] == '(' {

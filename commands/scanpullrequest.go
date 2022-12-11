@@ -235,7 +235,7 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, params *uti
 		nil,
 		params.RequirementsFile,
 		true,
-		[]string{})
+		[]string{workDir})
 	return
 }
 
