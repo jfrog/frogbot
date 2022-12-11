@@ -242,7 +242,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 			e := restoreDir()
 			if err == nil {
 				err = e
-			} else if e != nil && err != nil {
+			} else if e != nil {
 				clientLog.Error(e)
 			}
 		}()
