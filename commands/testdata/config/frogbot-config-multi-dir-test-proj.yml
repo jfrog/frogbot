@@ -1,0 +1,16 @@
+- params:
+    git:
+      repoName: multi-dir-test-proj
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommandName: npm
+          installCommandArgs:
+            - i
+          workingDirs:
+            - sub1
+            - sub3/sub4
+        - pipRequirementsFile: requirements.txt
+          workingDirs:
+            - sub2

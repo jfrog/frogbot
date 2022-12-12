@@ -125,3 +125,14 @@ func TestMd5Hash(t *testing.T) {
 		})
 	}
 }
+
+func TestGetRelativeWd(t *testing.T) {
+	fullPath := filepath.Join("a", "b", "c", "d", "e")
+	baseWd := filepath.Join("a", "b", "c")
+	assert.Equal(t, filepath.Join("d", "e"), GetRelativeWd(fullPath, baseWd))
+
+	baseWd = filepath.Join("a", "b", "c", "d", "e")
+	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+	fullPath += string(os.PathSeparator)
+	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}

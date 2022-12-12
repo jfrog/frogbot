@@ -1,0 +1,20 @@
+- params:
+    git:
+      repoName: frogbot
+      branches:
+        - master
+    scan:
+      includeAllVulnerabilities: true
+      failOnSecurityIssues: true
+      projects:
+        - installCommandName: npm
+          installCommandArgs:
+            - i
+          workingDirs:
+            - a/b
+            - b/c
+    jfrogPlatform:
+      watches:
+        - watch-1
+        - watch-2
+      jfrogProjectKey: proj
