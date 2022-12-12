@@ -45,7 +45,6 @@ const (
 	GitProvider     = "JF_GIT_PROVIDER"
 	GitRepoOwnerEnv = "JF_GIT_OWNER"
 	GitRepoEnv      = "JF_GIT_REPO"
-	GitProjectEnv   = "JF_GIT_PROJECT"
 
 	// Single repository scan environment variables - Ignored if config file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"

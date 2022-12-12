@@ -4,22 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"strings"
-
-	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 // Package names are case-insensitive with this prefix
@@ -36,27 +35,33 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
+
 	repoConfig := &(configAggregator)[0]
-	if len(repoConfig.Projects) == 0 {
-		repoConfig.Projects = []utils.Project{{}}
+	baseWd, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 	for _, branch := range repoConfig.Branches {
 		xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
-		for _, project := range repoConfig.Projects {
-			scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams)
-			if err != nil {
-				return err
-			}
+		for projectIndex, project := range repoConfig.Projects {
+			projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
+			for _, fullPathWd := range projectFullPathWorkingDirs {
+				scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
+				if err != nil {
+					return err
+				}
 
-			// Upload scan results to the relevant Git provider code scanning UI
-			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
-			if err != nil {
-				clientLog.Warn(err)
-			}
+				// Upload scan results to the relevant Git provider code scanning UI
+				err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
+				if err != nil {
+					clientLog.Warn(err)
+				}
 
-			// Fix and create PRs
-			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.GitParams, branch, client, scanResults); err != nil {
-				return err
+				// Fix and create PRs
+				relativeCurrentWd := utils.GetRelativeWd(fullPathWd, baseWd)
+				if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.Git, branch, client, scanResults, relativeCurrentWd); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -65,9 +70,10 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams) ([]services.ScanResponse, error) {
+func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams,
+	failOnSecurityIssues bool, currentWorkingDir string) ([]services.ScanResponse, error) {
 	// Audit commit code
-	scanResults, err := auditSource(xrayScanParams, project, server)
+	scanResults, err := runInstallAndAudit(xrayScanParams, &project, server, failOnSecurityIssues, currentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +81,8 @@ func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *corecon
 	return scanResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.GitParams, branch string, client vcsclient.VcsClient, scanResults []services.ScanResponse) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.Git, branch string,
+	client vcsclient.VcsClient, scanResults []services.ScanResponse, currentWd string) (err error) {
 	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults)
 	if err != nil {
 		return err
@@ -125,7 +132,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		clientLog.Info("-----------------------------------------------------------------")
 		clientLog.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
-		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, branch, repoGitParams, client, gitManager)
+		err = cfp.fixSinglePackageAndCreatePR(impactedPackage, *fixVersionInfo, &project, branch, repoGitParams, client, gitManager, currentWd)
 		if err != nil {
 			clientLog.Error("failed while trying to fix and create PR for:", impactedPackage, "with version:", fixVersionInfo.fixVersion, "with error:", err.Error())
 		}
@@ -199,7 +206,7 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo FixVersionInfo, project *utils.Project,
-	branch string, repoGitParams *utils.GitParams, client vcsclient.VcsClient, gitManager *utils.GitManager) (err error) {
+	branch string, repoGitParams *utils.Git, client vcsclient.VcsClient, gitManager *utils.GitManager, currentWd string) (err error) {
 	fixBranchName, err := generateFixBranchName(branch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return err
@@ -213,13 +220,14 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		clientLog.Info("Branch:", fixBranchName, "already exists on remote.")
 		return
 	}
+
 	clientLog.Info("Creating branch:", fixBranchName)
 	err = gitManager.CreateBranchAndCheckout(fixBranchName)
 	if err != nil {
 		return err
 	}
 
-	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.PipRequirementsFile)
+	err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion, project.PipRequirementsFile, currentWd)
 	if err != nil {
 		return err
 	}
@@ -250,8 +258,23 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile string) error {
-	var err error
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType coreutils.Technology, impactedPackage, fixVersion, requirementsFile string, workingDir string) (err error) {
+	// 'CD' into the relevant working directory
+	if workingDir != "" {
+		restoreDir, err := utils.Chdir(workingDir)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			e := restoreDir()
+			if err == nil {
+				err = e
+			} else if e != nil {
+				err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
+			}
+		}()
+	}
+
 	switch packageType {
 	case coreutils.Go:
 		commandArgs := []string{"get"}
@@ -275,7 +298,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
 	}
 
-	return err
+	return
 }
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.

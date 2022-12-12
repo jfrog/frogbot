@@ -28,7 +28,7 @@ const (
 type ScanPullRequestCmd struct {
 }
 
-// ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
+// Run ScanPullRequest method only works for single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
 func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
@@ -66,7 +66,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
 		} else {
 			// Audit target code
-			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.GitParams, &repoConfig.Server)
+			previousScan, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.Git, &repoConfig.Server)
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
@@ -200,7 +200,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.GitParams, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
+func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.Git, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
 	clientLog.Info("Auditing " + git.RepoName + " " + branch)
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, git)

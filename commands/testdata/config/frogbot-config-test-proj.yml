@@ -1,11 +1,13 @@
-- gitParams:
-    repoName: test-proj
-    branches:
-      - master
-  failOnSecurityIssues: false
-  projects:
-    - workingDirs:
-        - .
-      installCommandName: npm
-      installCommandArgs:
-        - i
+- params:
+    git:
+      repoName: test-proj
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommandName: npm
+          installCommandArgs:
+            - i
+          workingDirs:
+            - .
+      failOnSecurityIssues: false
