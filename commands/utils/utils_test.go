@@ -133,6 +133,6 @@ func TestGetRelativeWd(t *testing.T) {
 
 	baseWd = filepath.Join("a", "b", "c", "d", "e")
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
-	fullPath += "/"
+	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 }
