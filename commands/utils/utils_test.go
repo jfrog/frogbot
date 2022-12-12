@@ -127,11 +127,11 @@ func TestMd5Hash(t *testing.T) {
 }
 
 func TestGetRelativeWd(t *testing.T) {
-	fullPath := "a/b/c/d/e"
-	baseWd := "a/b/c"
-	assert.Equal(t, "d/e", GetRelativeWd(fullPath, baseWd))
+	fullPath := filepath.Join("a", "b", "c", "d", "e")
+	baseWd := filepath.Join("a", "b", "c")
+	assert.Equal(t, filepath.Join("d", "e"), GetRelativeWd(fullPath, baseWd))
 
-	baseWd = "a/b/c/d/e"
+	baseWd = filepath.Join("a", "b", "c", "d", "e")
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += "/"
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))

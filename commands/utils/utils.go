@@ -132,6 +132,7 @@ func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) 
 	return nil
 }
 
+// GetRelativeWd receive a base working directory along with a full path containing the base working directory, and the relative part is returned without the base prefix.
 func GetRelativeWd(fullPathWd, baseWd string) string {
 	fullPathWd = strings.TrimSuffix(fullPathWd, string(os.PathSeparator))
 	if fullPathWd == baseWd {
