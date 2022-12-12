@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -75,7 +74,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		if err == nil {
 			err = e
 		} else if e != nil {
-			err = errors.New(fmt.Sprintf("%s\n%s", err.Error(), e.Error()))
+			err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
 		}
 	}()
 

@@ -270,7 +270,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 			if err == nil {
 				err = e
 			} else if e != nil {
-				err = errors.New(fmt.Sprintf("%s\n%s", err.Error(), e.Error()))
+				err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
 			}
 		}()
 	}
