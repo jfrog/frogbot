@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -64,13 +65,21 @@ type Git struct {
 	PullRequestID int
 }
 
-func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, vcsclient.VcsClient, error) {
+func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *coreconfig.ServerDetails, client vcsclient.VcsClient, err error) {
 	server, gitParams, err := extractEnvParams()
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	defer func() {
+		e := SanitizeEnv()
+		if err == nil {
+			err = e
+		} else {
+			clientLog.Error(e)
+		}
+	}()
 
-	client, err := vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
+	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -83,16 +92,15 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 		if gitParams.RepoName == "" {
 			return nil, nil, nil, &ErrMissingEnv{GitRepoEnv}
 		}
-		configData, err = generateConfigAggregatorFromEnv(&gitParams, &server)
+		configData, err = generateConfigAggregatorFromEnv(&gitParams, server)
 		if err != nil {
 			return nil, nil, nil, err
 		}
-		return *configData, &server, client, err
+		return *configData, server, client, err
 	} else if err != nil {
 		return nil, nil, nil, err
 	}
 
-	var configAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
 		gitParams.RepoName = config.RepoName
 		if config.Branches != nil {
@@ -105,12 +113,12 @@ func GetParamsAndClient() (FrogbotConfigAggregator, *coreconfig.ServerDetails, v
 		config.Git = gitParams
 		configAggregator = append(configAggregator, FrogbotRepoConfig{
 			SimplifiedOutput: config.SimplifiedOutput,
-			Server:           server,
+			Server:           *server,
 			Params:           config.Params,
 		})
 	}
 
-	return configAggregator, &server, client, err
+	return configAggregator, server, client, err
 }
 
 func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
@@ -210,18 +218,14 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractEnvParams() (coreconfig.ServerDetails, Git, error) {
+func extractEnvParams() (*coreconfig.ServerDetails, Git, error) {
 	server, err := extractJFrogParamsFromEnv()
 	if err != nil {
-		return coreconfig.ServerDetails{}, Git{}, err
+		return &coreconfig.ServerDetails{}, Git{}, err
 	}
 
 	gitParams, err := extractGitParamsFromEnv()
-	if err != nil {
-		return coreconfig.ServerDetails{}, Git{}, err
-	}
-
-	return server, gitParams, SanitizeEnv()
+	return &server, gitParams, err
 }
 
 func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {

@@ -16,6 +16,7 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"strings"
 )
 
 type ErrMissingEnv struct {
@@ -129,4 +130,13 @@ func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) 
 		return errors.New(UnsupportedMultiRepoErr)
 	}
 	return nil
+}
+
+func GetRelativeWd(fullPathWd, baseWd string) string {
+	fullPathWd = strings.TrimSuffix(fullPathWd, string(os.PathSeparator))
+	if fullPathWd == baseWd {
+		return ""
+	}
+
+	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }

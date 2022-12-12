@@ -28,7 +28,7 @@ const (
 type ScanPullRequestCmd struct {
 }
 
-// ScanPullRequest Run method only works for GitHub and Gitlab git providers. 'scanpullrequests' is used for Bitbucket Server.
+// Run ScanPullRequest method only works for single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
 func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
