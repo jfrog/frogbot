@@ -165,7 +165,7 @@ func extractGitParamsFromEnv() (Git, error) {
 		return Git{}, err
 	}
 
-	// Repo name validation will be checked later, this env is mandatory in case there is no config file.
+	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
 	if err := readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
 		return Git{}, err
