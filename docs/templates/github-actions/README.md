@@ -13,7 +13,6 @@ your GitHub repository.
 3. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
-
 ### Pull Requests Scanning
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of one of the following templates, depending on the
@@ -31,7 +30,7 @@ and before they are merged.
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 
-### ### Pull Requests Opening
+### Pull Requests Opening
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of one of the following templates, depending on the tool
 used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section
