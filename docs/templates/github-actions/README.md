@@ -1,14 +1,10 @@
 [Go back to the Github Installation documentation page](../../install-github.md)
-
 # Frogbot GitHub Actions Templates
-
 ## General
-
 Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/master/README.md#frogbot) on your GitHub
 repository.
 
 ## Prerequisites
-
 Make sure to [set up 'frogbot' environment and secrets](../../README.md#setting-up-frogbot-on-github-repositories) in
 your GitHub repository.
 
@@ -21,7 +17,6 @@ your GitHub repository.
 3. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
-
 ### Pull Requests Scanning
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of one of the following templates, depending on the
