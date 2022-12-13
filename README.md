@@ -1,7 +1,6 @@
 <div align="center">
 
 # Frogbot
-
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
 [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
@@ -48,8 +47,7 @@ Supported package management tools:
 <details>
   <summary>GitHub</summary>
 
-After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request
-from the pull request UI.
+After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
@@ -71,8 +69,7 @@ The Frogbot GitHub scan workflow is:
 <details>
   <summary>GitLab</summary>
 
-After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request
-from the merge request UI.
+After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
 > Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in
@@ -81,6 +78,7 @@ from the merge request UI.
 > merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitLab flow is as follows:
+
 1. The developer opens a merge request.
 2. The maintainer of the repository reviews the merge request and approves the scan by trigerring the manual *frogbot-scan* job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
@@ -193,5 +191,4 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 ## 💻 Contributions
 
-We welcome pull requests from the community. To help us improve this project, please read
-our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
+We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
