@@ -214,21 +214,3 @@ pipeline {
     }
 }
 ```
-
-#### Using Frogbot Configuration File
-
-In order to install the Frogbot configuration file, please follow the steps of `Scan a multiple repositories` section
-under [Frogbot main documentation page](../README.md).
-
-Using `JFrog Pipelines` with Frogbot Config File:
-
-1. Follow the Frogbot installation steps, so you should have a `.jfrog/frogbot-config.yml` file under a repository
-   named `JFrog`.
-2. In the root of the `JFrog` repository, put the pipelines template from the section above and adjust it to your needs.
-
-Using `Jenkins` with Frogbot Config File:
-
-1. Follow the Frogbot installation steps, so you should have a `.jfrog/frogbot-config.yml` file under a repository
-   named `JFrog`.
-2. In the root of the `JFrog` repository, put the Jenkinsfile template from the section above and adjust it to your
-   needs.

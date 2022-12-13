@@ -1,5 +1,5 @@
 <div align="center">
-   
+
 # Frogbot
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
@@ -14,7 +14,6 @@
 - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
 - [Scanning repositories following new commits](#scanning-repositories-following-new-commits)
 - [Installing and using Frogbot](#installing-and-using-frogbot)
-- [Using Frogbot Configuration File](#frogbotconfig)
 - [Contributions](#contributions)
 
 <div id="what-is-frogbot"></div>
@@ -25,14 +24,13 @@ Frogbot is a Git bot that scans your pull requests and repositories for security
 <a href="https://www.youtube.com/watch?v=aw-AAxtAVwY"><img width="30%" src="./images/frogbot-screencast.png"></a>
 
 ## Scan pull requests when they are opened
-### General 
+### General
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
 Supported platforms:
 - Bitbucket Server
 - GitHub
 - GitLab
-- Azure Repos
 
 Supported package management tools:
 - Go
@@ -50,7 +48,8 @@ Supported package management tools:
 <details>
   <summary>GitHub</summary>
 
-After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI. 
+After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request
+from the pull request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
@@ -72,7 +71,8 @@ The Frogbot GitHub scan workflow is:
 <details>
   <summary>GitLab</summary>
 
-After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI. 
+After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request
+from the merge request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
 > Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in
@@ -80,12 +80,12 @@ After you create a new merge request, the maintainer of the Git repository can t
 > report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
 > merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
-The Frogbot GitLab flow is as follows: 
+The Frogbot GitLab flow is as follows:
 1. The developer opens a merge request.
 2. The maintainer of the repository reviews the merge request and approves the scan by trigerring the manual *frogbot-scan* job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
-[GitLab CI Run Button](./images/gitlab-run-button.png)
+   [GitLab CI Run Button](./images/gitlab-run-button.png)
 
 </details>
 
@@ -101,43 +101,9 @@ After you create a new pull request, Frogbot will automatically scan it.
 > PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot scan on Bitbucket Server workflow:
-
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
-
-</details>
-<details>
-  <summary>Azure Repos</summary>
-
-After you create a new pull request, Frogbot will automatically scan it.
-
-1. For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure
-   Repos -> Branches:
-
-   <img src="images/azure-branches.png" alt="azure-branches.png" width="200"/>
-
-2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then
-   select `Branch Policies`:
-   ![azure-branch-policies.png](images/azure-branch-policies.png.png)
-
-3. Add Build Validation Policy:
-   ![azure-build-validation.png](images/azure-build-validation.png)
-4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
-
-   <img src="images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
-
-The Frogbot Azure Repos scan workflow is:
-
-1. The developer opens a pull request.
-2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot is triggered again following new commits.
 
 </details>
 
@@ -146,7 +112,6 @@ The Frogbot Azure Repos scan workflow is:
 Frogbot adds the scan results to the pull request in the following format:
 
 #### 👍 No issues
-
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
@@ -220,50 +185,10 @@ After the setup is complete, you'll receive an email with your JFrog environment
   <summary>Step 2 - Install Frogbot</summary>
 
 - [Installing Frogbot on GitHub repositories](docs/install-github.md)
-- [Installing Frogbot on GitHub Enterprise Server repositories](docs/install-github-server.md)
 - [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
 - [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
-- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
-
 </details>  
 
-<div id="frogbotconfig"></div>
-
-## Using Frogbot Configuration File
-
-Frogbot can be used with our simple templates using environment variables only, but the Frogbot configuration file
-enables many advanced features.
-
-The Frogbot configuration file can be defined in a few simple steps to allow it to scan multiple directories in a
-repository,
-scan multiple repositories, and many more features.
-
-### Scan a single repository
-
-You can define the Frogbot configuration file inside your repository following these steps:
-
-1. Create a new directory in the root of your repository under the name `.jfrog`.
-2. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml)
-   template.
-3. Adjust the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml) template to your needs.
-
-Using the configuration file for a single repository matches the following Frogbot commands:
-> **scan-pull-request** command to scan **pull requests** in the repository for every pull request push.
-
-> **create-fix-pull-requests** command to scan the **repository** following new commits.
-
-### Scan a multiple repositories
-
-You can define the Frogbot configuration file to scan multiple repositories following these steps:
-
-1. Create a new repository under the name `JFrog`.
-2. Create a new directory in the root of your repository under the name `.jfrog`.
-3. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml)
-   template.
-4. Adjust the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml) template to your needs.
-
-Using the configuration file for multiple repositories matches the following Frogbot commands:
-> **scan-pull-requests** command to scan all the open **pull requests** in the configured repositories.
 <div id="contributions"></div>
 
 ## 💻 Contributions
