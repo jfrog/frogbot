@@ -78,7 +78,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		}
 	}()
 
-	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
+	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
