@@ -145,7 +145,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
-		assert.Equal(t, true, repo.FailOnSecurityIssues)
+		assert.Equal(t, true, *repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.JFrogProjectKey)
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
@@ -234,43 +234,40 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		WorkingDirectoryEnv:          "a/b",
 		jfrogProjectEnv:              "projectKey",
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
-		GitProjectEnv:                "testGitProject",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
-		GitProvider:                  string(AzureRepos),
-		GitRepoOwnerEnv:              "jfrog",
-		GitTokenEnv:                  "123456789",
-		GitBaseBranchEnv:             "master",
-		GitApiEndpointEnv:            "endpoint.com",
-		GitPullRequestIDEnv:          "1",
-		GitRepoEnv:                   "repoName",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
+	gitParams := Git{
+		GitProvider:   vcsutils.GitHub,
+		RepoOwner:     "jfrog",
+		Token:         "123456789",
+		RepoName:      "repoName",
+		Branches:      []string{"master"},
+		ApiEndpoint:   "endpoint.com",
+		PullRequestID: 1,
+	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
 		XrayUrl:        "http://127.0.0.1:8081/xray",
 		User:           "admin",
 		Password:       "password",
 	}
-
-	gitParams, err := extractGitParamsFromEnv()
-	assert.NoError(t, err)
 	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
 	repo := (*configAggregator)[0]
-	assert.Equal(t, gitParams.RepoName, repo.RepoName)
+	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
-	assert.Equal(t, false, repo.FailOnSecurityIssues)
+	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)
 	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
 	assert.Equal(t, gitParams.PullRequestID, repo.PullRequestID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
-	assert.Equal(t, "testGitProject", repo.GitProject)
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
 	assert.Equal(t, server.User, repo.Server.User)

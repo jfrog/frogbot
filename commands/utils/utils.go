@@ -16,6 +16,7 @@ import (
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"strings"
 )
 
 type ErrMissingEnv struct {
@@ -102,7 +103,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *GitParams) (wd string, cleanup func() error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -126,4 +127,14 @@ func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) 
 		return errors.New(errUnsupportedMultiRepo)
 	}
 	return nil
+}
+
+// GetRelativeWd receive a base working directory along with a full path containing the base working directory, and the relative part is returned without the base prefix.
+func GetRelativeWd(fullPathWd, baseWd string) string {
+	fullPathWd = strings.TrimSuffix(fullPathWd, string(os.PathSeparator))
+	if fullPathWd == baseWd {
+		return ""
+	}
+
+	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }

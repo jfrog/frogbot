@@ -92,18 +92,19 @@ func isFrogbotResultComment(comment string) bool {
 
 func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	// Download the pull request source ("from") branch
+	params := utils.Params{Git: utils.Git{
+		GitProvider: repo.GitProvider,
+		Token:       repo.Token,
+		ApiEndpoint: repo.ApiEndpoint,
+		RepoOwner:   repo.RepoOwner,
+		RepoName:    pr.Source.Repository,
+		Branches:    []string{pr.Source.Name}},
+	}
 	frogbotParams := &utils.FrogbotRepoConfig{
 		Server: repo.Server,
-		GitParams: utils.GitParams{
-			GitProvider: repo.GitProvider,
-			Token:       repo.Token,
-			ApiEndpoint: repo.ApiEndpoint,
-			RepoOwner:   repo.RepoOwner,
-			RepoName:    pr.Source.Repository,
-			Branches:    []string{pr.Source.Name},
-		},
+		Params: params,
 	}
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, pr.Source.Name, &frogbotParams.GitParams)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, pr.Source.Name, &frogbotParams.Git)
 	if err != nil {
 		return err
 	}
@@ -125,13 +126,13 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 		}
 	}()
 	// The target branch (to) will be downloaded as part of the Frogbot scanPullRequest execution
-	frogbotParams = &utils.FrogbotRepoConfig{
-		SimplifiedOutput:          true,
-		IncludeAllVulnerabilities: repo.IncludeAllVulnerabilities,
-		FailOnSecurityIssues:      repo.FailOnSecurityIssues,
-		Watches:                   repo.Watches,
-		Server:                    repo.Server,
-		GitParams: utils.GitParams{
+	params = utils.Params{
+		Scan: utils.Scan{
+			FailOnSecurityIssues:      repo.FailOnSecurityIssues,
+			IncludeAllVulnerabilities: repo.IncludeAllVulnerabilities,
+			Projects:                  repo.Projects,
+		},
+		Git: utils.Git{
 			GitProvider:   repo.GitProvider,
 			Token:         repo.Token,
 			ApiEndpoint:   repo.ApiEndpoint,
@@ -140,8 +141,15 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			RepoName:      pr.Target.Repository,
 			PullRequestID: int(pr.ID),
 		},
-		Projects:        repo.Projects,
-		JFrogProjectKey: repo.JFrogProjectKey,
+		JFrogPlatform: utils.JFrogPlatform{
+			Watches:         repo.Watches,
+			JFrogProjectKey: repo.JFrogProjectKey,
+		},
+	}
+	frogbotParams = &utils.FrogbotRepoConfig{
+		SimplifiedOutput: true,
+		Server:           repo.Server,
+		Params:           params,
 	}
 	return scanPullRequest(frogbotParams, client)
 }
