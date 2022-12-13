@@ -38,7 +38,7 @@ func scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsc
 }
 
 func downloadAndRunScanAndFix(client vcsclient.VcsClient, branch string, repoConfig *utils.FrogbotRepoConfig) (err error) {
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repoConfig.GitParams)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repoConfig.Git)
 	if err != nil {
 		return err
 	}
