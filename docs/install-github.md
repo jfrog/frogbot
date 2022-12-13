@@ -40,25 +40,16 @@ To install Frogbot on GitHub repositories using GitHub Actions for a multiple re
 
 1. Create a new repository named `JFrog`.
 
-2. Make a folder named `.jfrog` under the newly created repository and add
-   a [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file to it, following the
-   template for [frogbot-config.yml](templates/.jfrog/frogbot-config.yml).
+2. Make a folder named `.jfrog` under the newly created repository and add a [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file to it, following the template for [frogbot-config.yml](templates/.jfrog/frogbot-config.yml).
 
-3. Create a workflow file named [frogbot-scan-pull-requests.yml](scan-pull-requests/frogbot-scan-pull-requests.yml)
-   under
-   the `.github/workflows` folder in the `JFrog`
-   repository. Depending on the tool used to download the project dependencies, uncomment the installation prerequisites
-   inside
-   the workflow file.
+3. Create a workflow file named [frogbot-scan-pull-requests.yml](templates/github-actions/scan-pull-requests/frogbot-scan-pull-requests.yml)
+   under the `.github/workflows` folder in the `JFrog`
+   repository. Depending on the tool used to download the project dependencies, uncomment the installation prerequisites inside the workflow file.
 
 ****Create a GitHub Personal Access Token****
 
-To use the [frogbot-scan-pull-requests.yml](scan-pull-requests/frogbot-scan-pull-requests.yml) workflow, you need to set
-the GH_PAT environment variable.
-Please
-follow [GitHub Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
-to create one with Read and Write permissions to actions, code scanning alerts, commit statuses, pull requests, security
-events, and workflows.
+To use the [frogbot-scan-pull-requests.yml](templates/github-actions/scan-pull-requests/frogbot-scan-pull-requests.yml) workflow, you need to set the GH_PAT environment variable. Please follow [GitHub Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+to create one with Read and Write permissions to actions, code scanning alerts, commit statuses, pull requests, security events, and workflows.
 
 ### Install Frogbot Using JFrog Pipelines
 

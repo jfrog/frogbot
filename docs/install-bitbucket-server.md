@@ -50,10 +50,7 @@ pipelines:
           inputResources:
             - name: cron_trigger
           environmentVariables:
-            # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-            # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-            JF_INSTALL_DEPS_CMD: ""
-
+            
             # [Mandatory]
             # JFrog platform URL
             JF_URL: $int_jfrogPlatform_url
@@ -79,31 +76,36 @@ pipelines:
             # Bitbucket repository name
             JF_GIT_REPO: ""
 
-              # Uncomment the below options if you'd like to use them.
+            # Uncomment the below options if you'd like to use them.
+            # NOTE: The below options are irrelevant if you are using a config file, and should be configured there.
 
-              # [Optional, default: "."]
-              # Relative path to the project in the git repository
-              # JF_WORKING_DIR: path/to/project/dir
+            # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+            # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+            # JF_INSTALL_DEPS_CMD: ""
 
-              # [Optional]
-              # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-              # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional, default: "."]
+            # Relative path to the project in the git repository
+            # JF_WORKING_DIR: path/to/project/dir
 
-              # [Optional]
-              # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-              # JF_PROJECT: <project-key>
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-              # [Optional, default: "FALSE"]
-              # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+            # [Optional]
+            # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+            # JF_PROJECT: <project-key>
 
-              # [Optional, default: "TRUE"]
-              # Fails the Frogbot task if any security issue is found.
-              # JF_FAIL: "FALSE"
+            # [Optional, default: "FALSE"]
+            # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+            # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-              # [Optional, default: "TRUE"]
-              # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-              # JF_USE_WRAPPER: "TRUE"
+            # [Optional, default: "TRUE"]
+            # Fails the Frogbot task if any security issue is found.
+            # JF_FAIL: "FALSE"
+
+            # [Optional, default: "TRUE"]
+            # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
+            # JF_USE_WRAPPER: "TRUE"
             
         execution:
           onExecute:
@@ -150,10 +152,7 @@ pipeline {
     }
 
     environment {
-        // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-        // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-        JF_INSTALL_DEPS_CMD= ""
-
+        
         // [Mandatory]
         // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
         JF_URL= credentials("JF_URL")
@@ -181,7 +180,12 @@ pipeline {
         JF_GIT_API_ENDPOINT= ""
 
         // Uncomment the below options if you'd like to use them.
+        // NOTE: The below options are irrelevant if you are using a config file, and should be configured there.
 
+        // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+        // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+        // JF_INSTALL_DEPS_CMD= ""
+        
         // [Mandatory if JF_USER and JF_PASSWORD are not provided]
         // JFrog access token with 'read' permissions for Xray
         // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
