@@ -46,6 +46,8 @@ To install Frogbot on GitHub repositories using GitHub Actions for a multiple re
    under the `.github/workflows` folder in the `JFrog`
    repository. Depending on the tool used to download the project dependencies, uncomment the installation prerequisites inside the workflow file.
 
+Detailed information about the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file can be found in the [Frogbot Config Documentation](frogbot-config.md).
+
 ****Create a GitHub Personal Access Token****
 
 To use the [frogbot-scan-pull-requests.yml](templates/github-actions/scan-pull-requests/frogbot-scan-pull-requests.yml) workflow, you need to set the GH_PAT environment variable. Please follow [GitHub Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)

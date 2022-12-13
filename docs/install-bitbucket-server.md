@@ -10,25 +10,22 @@ To install Frogbot using JFrog Pipelines:
    a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 3. Save your Bitbucket access token as
-   a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with
-   the token as the key and the Bitbucket access token as the value.
+   a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with the token as the key and the Bitbucket access token as the value.
 4. Create a new repository named `JFrog`.
-5. Make a folder named `.jfrog` under the newly created repository and add
-   a [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file to it, following the
-   template for [frogbot-config.yml](templates/.jfrog/frogbot-config.yml).
+5. Make a folder named `.jfrog` under the newly created repository and add a [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file to it, following the template for [frogbot-config.yml](templates/.jfrog/frogbot-config.yml).
 6. Set the `.jfrog-pipelines` directory in the root of `JFrog` repository.
 7. Create a Pipelines job with the below pipelines.yml content.
 8. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
-9. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described
-   on the yaml comments.
-   **Important**
+9. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
 
-- For npm, yarn 2, NuGet or .NET: Make sure to set inside the frogbot-config.yml the command in a way that it downloads
-  your
-  project dependencies as the value of the **installCommandName**, **installCommandArgs** variables. For
-  example, `npm i` or `nuget restore`
-- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines
-  agent.
+**Important**
+
+- For npm, yarn 2, NuGet or .NET: Make sure to set inside the frogbot-config.yml the command in a way that it downloads your project dependencies as the value of the **installCommandName**, **installCommandArgs** variables. For example, `npm i` or `nuget restore`
+- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
+
+Detailed information about the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file can be found in the [Frogbot Config Documentation](frogbot-config.md).
+
+#### JFrog Pipelines Template
 
 ```yml
 resources:
@@ -130,17 +127,21 @@ To install Frogbot using Jenkins:
    template for [frogbot-config.yml](templates/.jfrog/frogbot-config.yml).
 6. Create a Jenkinsfile with the below content under the root of `JFrog` repository.
 7. In the Jenkinsfile, set the values of all the mandatory variables.
-8. In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins
-   agent operating system.
+8. In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
 9. Create a Pipeline job in Jenkins pointing to the Jenkinsfile in the `JFrog` repository.
 
 **Important**
+
 - If using the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml), please fill the mandatory properties according the config template.
 - If not using the config file:
     - For npm, yarn 2, NuGet or .NET: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
       or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
+
+Detailed information about the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml) file can be found in the [Frogbot Config Documentation](frogbot-config.md).
+
+#### Jenkins Template
 
 ```groovy
 // Run the job every 5 minutes 
