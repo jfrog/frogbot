@@ -74,11 +74,11 @@ To install Frogbot using JFrog Pipelines:
 
 **Important**
 
-- For npm, yarn 2, NuGet or .NET: Make sure to set inside the pipelines.yml the command in a way that it downloads
-  your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
-  or `nuget restore`
-- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines
-  agent.
+- If using the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml), please fill the mandatory properties according the config template.
+- If not using the config file:
+    - For npm, yarn 2, NuGet or .NET: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
+      or `nuget restore`
+- Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
 
 ```yml
 resources:
@@ -145,10 +145,10 @@ To install Frogbot using Jenkins:
 
 **Important**
 
-- For npm, yarn 2, NuGet or .NET: Make sure to set inside the frogbot-config.yml the command in a way that it downloads
-  your
-  project dependencies as the value of the **installCommandName**, **installCommandArgs** variables. For
-  example, `npm i` or `nuget restore`
+- If using the [frogbot-config.yml](templates/.jfrog/frogbot-config.yml), please fill the mandatory properties according the config template.
+- If not using the config file:
+    - For npm, yarn 2, NuGet or .NET: Make sure to set inside the pipelines.yml the command in a way that it downloads your project dependencies as the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i`
+      or `nuget restore`
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
 - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
 
