@@ -1,14 +1,14 @@
 [Go back to the Github Installation documentation page](../../install-github.md)
 # Frogbot GitHub Actions Templates
 ## General
-Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/master/README.md#frogbot) on your GitHub
-repository.
+Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/master/README.md#frogbot) on your GitHub repository.
 
 ## Prerequisites
 Make sure to [set up 'frogbot' environment and secrets](../../README.md#setting-up-frogbot-on-github-repositories) in
 your GitHub repository.
 
 ## Using the Templates
+
 1. Use the templates below, depending on the tool used to download dependencies for you project, to create the workflow files.
 2. Only if the templates you're using include the `JF_INSTALL_DEPS_CMD` variable, make sure they include the correct command to download your project dependencies. For example, `npm i` or `nuget restore`.
 3. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
