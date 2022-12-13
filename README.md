@@ -186,47 +186,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 - [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
 - [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
 
-</details>  
-
-<div id="frogbotconfig"></div>
-
-## Using Frogbot Configuration File
-
-Frogbot can be used with our simple templates using environment variables only, but the Frogbot configuration file
-enables many advanced features.
-
-The Frogbot configuration file can be defined in a few simple steps to allow it to scan multiple directories in a
-repository,
-scan multiple repositories, and many more features.
-
-### Scan a single repository
-
-You can define the Frogbot configuration file inside your repository following these steps:
-
-1. Create a new directory in the root of your repository under the name `.jfrog`.
-2. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml)
-   template.
-3. Adjust the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml) template to your needs.
-
-Using the configuration file for a single repository matches the following Frogbot commands:
-> **scan-pull-request** command to scan **pull requests** in the repository for every pull request push.
-
-> **create-fix-pull-requests** command to scan the **repository** following new commits.
-
-### Scan a multiple repositories
-
-You can define the Frogbot configuration file to scan multiple repositories following these steps:
-
-1. Create a new repository under the name `JFrog`.
-2. Create a new directory in the root of your repository under the name `.jfrog`.
-3. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml)
-   template.
-4. Adjust the [frogbot-config.yml](./docs/templates/.jfrog/frogbot-config.yml) template to your needs.
-
-Using the configuration file for multiple repositories matches the following Frogbot commands:
-> **scan-pull-requests** command to scan all the open **pull requests** in the configured repositories.
-<div id="contributions"></div>
-
+</details>
 
 <div id="contributions"></div>
 
