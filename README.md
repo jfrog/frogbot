@@ -78,7 +78,6 @@ After you create a new merge request, the maintainer of the Git repository can t
 > merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
 
 The Frogbot GitLab flow is as follows:
-
 1. The developer opens a merge request.
 2. The maintainer of the repository reviews the merge request and approves the scan by trigerring the manual *frogbot-scan* job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
