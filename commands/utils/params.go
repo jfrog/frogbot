@@ -7,7 +7,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -74,8 +73,8 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		e := SanitizeEnv()
 		if err == nil {
 			err = e
-		} else {
-			clientLog.Error(e)
+		} else if e != nil {
+			err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
 		}
 	}()
 
