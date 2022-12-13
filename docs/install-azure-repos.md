@@ -1,19 +1,24 @@
 [Go back to the main documentation page](../README.md)
-# Setting up Frogbot on Azure Repos
+# Installing Frogbot on Azure Repos repositories
 
 To install Frogbot on Azure Repos repositories:
 
-1. Make sure you have the connection details of your JFrog environment.
-2. Go to your Azure DevOps repository settings page and save the JFrog connection details as repository secrets with the
-   following names - JF_URL, JF_USER, and JF_PASSWORD
+1. Go to Azure DevOps Pipelines of the relevant project, and add `New pipeline`.
+2. Set `Azure Repos Git` as your code source.
+3. Select the repository you'd like Frogbot to scan.
+4. Select 'Starter Pipeline' and use `frogbot-scan-pr.yml` and `frogbot-scan-and-fix.yml`:
+5. Make sure you have the connection details of your JFrog environment.
+6. In the pipeline page save the JFrog connection details as variables with the
+   following names - JF_URL, JF_USER, and JF_PASSWORD.
 
 > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
-> instead of **JF_USER** and **JF_PASSWORD**
+> instead of **JF_USER** and **JF_PASSWORD**.
 
-3. Go to Azure DevOps Pipelines of the relevant project, and add `New pipeline`.
-4. Set `Azure Repos Git` as your code source.
-5. Select the relevant repository of which Frogbot will scan.
-6. Select 'Starter Pipeline' and use `frogbot-scan-pr.yml` and `frogbot-scan-and-fix.yml`:
+7. To set variables in the pipeline page, click on `Variables` button and set `New variable`:
+
+   ![variables_button.png](../images/azure-variables-button.png)
+   ![img_1.png](../images/azure-new-variable.png)
+   And set the relevant mandatory variables according the chosen pipeline template.
 
 #### frogbot-scan-pr.yml:
 
