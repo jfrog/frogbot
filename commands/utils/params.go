@@ -78,7 +78,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		}
 	}()
 
-	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Build()
+	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -167,6 +167,9 @@ func extractGitParamsFromEnv() (Git, error) {
 
 	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
+	if err := readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
+		return Git{}, err
+	}
 	// Non-mandatory git branch and pr id.
 	var branch string
 	_ = readParamFromEnv(GitBaseBranchEnv, &branch)
@@ -199,6 +202,8 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	// For backward compatibility, we are accepting also "bitbucket server"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
+	case string(AzureRepos):
+		return vcsutils.AzureRepos, nil
 	}
 
 	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)
