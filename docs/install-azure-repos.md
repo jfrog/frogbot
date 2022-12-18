@@ -17,7 +17,9 @@ To install Frogbot on Azure Repos repositories:
 7. To set variables in the pipeline page, click on `Variables` button and set `New variable`:
 
    ![variables_button.png](../images/azure-variables-button.png)
+
    ![img_1.png](../images/azure-new-variable.png)
+
    And set the relevant mandatory variables according the chosen pipeline template.
 
 #### frogbot-scan-pr.yml:
