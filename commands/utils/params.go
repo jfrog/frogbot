@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		}
 	}()
 
-	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Build()
+	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Logger(log.GetLogger()).Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
