@@ -96,6 +96,11 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	vcsProvider, err = extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.BitbucketServer, vcsProvider)
+
+	SetEnvAndAssert(t, map[string]string{GitProvider: string(AzureRepos)})
+	vcsProvider, err = extractVcsProviderFromEnv()
+	assert.NoError(t, err)
+	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
 }
 
 func TestExtractGitParamsFromEnvErrors(t *testing.T) {

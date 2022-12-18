@@ -110,13 +110,13 @@ func getTestDataDir(t *testing.T) (string, string) {
 	return currentDir, testdataDir
 }
 
-// /      1.0         --> 1.0 ≤ x
-// /      (,1.0]      --> x ≤ 1.0
-// /      (,1.0)      --> x < 1.0
-// /      [1.0]       --> x == 1.0
-// /      (1.0,)      --> 1.0 < x
-// /      (1.0, 2.0)   --> 1.0 < x < 2.0
-// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+///      1.0         --> 1.0 ≤ x
+///      (,1.0]      --> x ≤ 1.0
+///      (,1.0)      --> x < 1.0
+///      [1.0]       --> x == 1.0
+///      (1.0,)      --> 1.0 < x
+///      (1.0, 2.0)   --> 1.0 < x < 2.0
+///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
 	tests := []struct {
 		versionChangeString string
