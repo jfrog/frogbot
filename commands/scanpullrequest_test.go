@@ -431,7 +431,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	defer server.Close()
 
 	configAggregator, client := prepareConfigAndClient(t, configPath, failOnSecurityIssues, server, params)
-	cleanUp := prepareTestEnvironment(t, projectName)
+	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
@@ -487,24 +487,6 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 	return configAggregator, client
-}
-
-// Prepare test environment for the integration tests
-// projectName - the directory name under testdata/scanpullrequests
-// Return a cleanup function
-func prepareTestEnvironment(t *testing.T, projectName string) func() {
-	// Copy project to a temporary directory
-	tmpDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	err = fileutils.CopyDir(filepath.Join("testdata", "scanpullrequest"), tmpDir, true, []string{})
-	assert.NoError(t, err)
-
-	restoreDir, err := utils.Chdir(filepath.Join(tmpDir, projectName))
-	assert.NoError(t, err)
-	return func() {
-		assert.NoError(t, restoreDir())
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}
 }
 
 func TestScanPullRequestError(t *testing.T) {

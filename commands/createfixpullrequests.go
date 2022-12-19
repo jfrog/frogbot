@@ -122,10 +122,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	if err != nil {
 		return err
 	}
-	err = gitManager.Clone(wd, branch)
-	if err != nil {
-		return err
-	}
+
 	// 'CD' into the temp working directory
 	restoreDir, err := utils.Chdir(wd)
 	if err != nil {
@@ -137,6 +134,11 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 			err = e
 		}
 	}()
+
+	err = gitManager.Clone(wd, branch)
+	if err != nil {
+		return err
+	}
 
 	// Fix all impacted packages
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {

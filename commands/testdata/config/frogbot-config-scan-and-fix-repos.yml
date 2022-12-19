@@ -1,0 +1,15 @@
+- params:
+    git:
+      repoName: npm-repo
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommandName: npm
+          installCommandArgs:
+            - i
+#- params:
+#    git:
+#      repoName: mvn-repo
+#      branches:
+#        - master

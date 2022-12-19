@@ -1,5 +1,0 @@
-- params:
-    git:
-      repoName: npm-repo
-    scan:
-      projects:
