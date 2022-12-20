@@ -83,7 +83,7 @@ func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...st
 		fullWdPath := filepath.Join(wd, repository)
 		dotGit, err := git.PlainOpen(fullWdPath)
 		assert.NoError(t, err)
-		clientLog.Info(repositories)
+		clientLog.Info(repository)
 		_, err = dotGit.CreateRemote(&config.RemoteConfig{
 			Name: "origin",
 			URLs: []string{fmt.Sprintf("http://127.0.0.1:%s/%s", port, repository)},
