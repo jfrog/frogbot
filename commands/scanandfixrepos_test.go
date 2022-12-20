@@ -6,12 +6,11 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/format/pktline"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -25,15 +24,14 @@ import (
 const cmdDirName = "scanandfixrepos"
 
 var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-and-fix-repos.yml")
-var testRepositories = []string{"npm-repo"}
+var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
 	serverParams, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 
 	var port string
-	var baseWd string
-	server := httptest.NewServer(createHttpHandler(t, &baseWd, &port, testRepositories...))
+	server := httptest.NewServer(createHttpHandler(t, &port, testRepositories...))
 	defer server.Close()
 	port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
@@ -53,7 +51,6 @@ func TestScanAndFixRepos(t *testing.T) {
 
 	tmpDir, cleanUp := utils.PrepareTestEnvironment(t, "", cmdDirName)
 	defer cleanUp()
-	baseWd = tmpDir
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
 
@@ -76,7 +73,7 @@ func TestScanAndFixRepos(t *testing.T) {
 		})
 	}
 
-	var cmd ScanAndFixRepositories
+	var cmd = ScanAndFixRepositories{dryRun: true, repoPath: filepath.Join("testdata", "scanandfixrepos")}
 	assert.NoError(t, cmd.Run(configAggregator, client))
 }
 
@@ -85,7 +82,6 @@ func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...st
 		fullWdPath := filepath.Join(wd, repository)
 		dotGitDetails, err := git.PlainOpen(fullWdPath)
 		assert.NoError(t, err)
-
 		_, err = dotGitDetails.CreateRemote(&config.RemoteConfig{
 			Name: "origin",
 			URLs: []string{fmt.Sprintf("http://127.0.0.1:%s/%s", port, repository)},
@@ -95,40 +91,33 @@ func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...st
 	}
 }
 
-func createHttpHandler(t *testing.T, baseWd, port *string, projectNames ...string) http.HandlerFunc {
+func createHttpHandler(t *testing.T, port *string, projectNames ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		for _, projectName := range projectNames {
 			if r.RequestURI == fmt.Sprintf("/%s/info/refs?service=git-upload-pack", projectName) {
-				dir, err := os.Getwd()
-				assert.NoError(t, err)
-				assert.NoError(t, fileutils.CopyDir(filepath.Join(*baseWd, fmt.Sprintf("%s", projectName)), dir, true, nil))
-				w.WriteHeader(http.StatusOK)
-				assert.NoError(t, err)
-				in := []string{
-					"# service=git-upload-pack\n",
-					pktline.FlushString,
-					"ec1251782e9ad1d337049501a2a7fe01000e4875 HEAD\x00\n",
-					"ec1251782e9ad1d337049501a2a7fe01000e4875 refs/heads/master\n",
-					pktline.FlushString,
+				hash := plumbing.NewHash("5e3021cf22da163f0d312d8fcf299abaa79726fb")
+				capabilities := capability.NewList()
+				assert.NoError(t, capabilities.Add(capability.SymRef, "HEAD:/refs/heads/master"))
+				ar := &packp.AdvRefs{
+					References: map[string]plumbing.Hash{
+						"refs/heads/master": plumbing.NewHash("5e3021cf22da163f0d312d8fcf299abaa79726fb"),
+					},
+					Head:         &hash,
+					Capabilities: capabilities,
 				}
 				var buf bytes.Buffer
-				p := pktline.NewEncoder(&buf)
-				err = p.EncodeString(in...)
-				assert.NoError(t, err)
-				_, err = w.Write(buf.Bytes())
-				assert.NoError(t, err)
-
-			}
-			if r.RequestURI == fmt.Sprintf("/%s/git-upload-pack", projectName) {
-				r := packp.NewUploadPackRequest()
-				r.Wants = append(r.Wants, plumbing.NewHash("ec1251782e9ad1d337049501a2a7fe01000e4875"))
-				buf := bytes.NewBuffer(nil)
-				assert.NoError(t, r.UploadRequest.Encode(buf))
+				assert.NoError(t, ar.Encode(&buf))
 				_, err := w.Write(buf.Bytes())
 				assert.NoError(t, err)
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/pulls", projectName) {
+				w.WriteHeader(200)
+				return
 			}
 			if r.RequestURI == fmt.Sprintf("/%s", projectName) {
-				file, err := os.ReadFile("npm-repo.tar.gz")
+				file, err := os.ReadFile(fmt.Sprintf("%s.tar.gz", projectName))
 				assert.NoError(t, err)
 				_, err = w.Write(file)
 				assert.NoError(t, err)

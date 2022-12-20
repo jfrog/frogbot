@@ -8,8 +8,16 @@
         - installCommandName: npm
           installCommandArgs:
             - i
-#- params:
-#    git:
-#      repoName: mvn-repo
-#      branches:
-#        - master
+- params:
+    git:
+      repoName: mvn-repo
+      branches:
+        - master
+- params:
+    git:
+      repoName: pip-repo
+      branches:
+        - master
+    scan:
+      projects:
+        - pipRequirementsFile: requirements.txt

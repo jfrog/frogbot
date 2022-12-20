@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"os"
 	"strings"
 	"time"
 
@@ -18,18 +20,20 @@ import (
 )
 
 type GitManager struct {
-	repository *git.Repository
-	remoteName string
-	auth       *http.BasicAuth
+	repository     *git.Repository
+	remoteName     string
+	auth           *http.BasicAuth
+	dryRun         bool
+	clonedRepoPath string
 }
 
-func NewGitManager(projectPath, remoteName, token, username string) (*GitManager, error) {
+func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
 	basicAuth := createBasicAuth(token, username)
-	return &GitManager{repository: repository, remoteName: remoteName, auth: basicAuth}, nil
+	return &GitManager{repository: repository, clonedRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -41,6 +45,10 @@ func (gm *GitManager) Checkout(branchName string) error {
 }
 
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
+	if gm.dryRun {
+		// "Clone" the repository from the testdata folder
+		return gm.dryClone(destinationPath)
+	}
 	// Gets the remote repo url from the current .git dir
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
@@ -167,6 +175,10 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) Push() error {
+	if gm.dryRun {
+		// On dry run do not push to any remote
+		return nil
+	}
 	// Pushing to remote
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
@@ -190,6 +202,28 @@ func (gm *GitManager) IsClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+
+func (gm *GitManager) dryClone(destination string) error {
+	baseWd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// Copy all the current directory content to the destination path
+	err = fileutils.CopyDir(baseWd, destination, true, nil)
+	if err != nil {
+		return err
+	}
+	// Set the git repository to the new destination .git folder
+	if err != nil {
+		return err
+	}
+	repo, err := git.PlainOpen(destination)
+	if err != nil {
+		return err
+	}
+	gm.repository = repo
+	return nil
 }
 
 func createBasicAuth(token, username string) *http.BasicAuth {
