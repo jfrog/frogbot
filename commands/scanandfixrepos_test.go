@@ -6,12 +6,12 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const cmdDirName = "scanandfixrepos"
 
 var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-and-fix-repos.yml")
-var testRepositories = []string{"pip-repo", "npm-repo"}
+var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
 	serverParams, restoreEnv := verifyEnv(t)
@@ -81,12 +82,22 @@ func TestScanAndFixRepos(t *testing.T) {
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {
 	for _, repository := range repositories {
 		fullWdPath := filepath.Join(wd, repository)
-		dotGit, err := git.PlainOpen(fullWdPath)
+		dotGit, err := git.PlainInit(fullWdPath, false)
 		assert.NoError(t, err)
-		clientLog.Info(repository)
 		_, err = dotGit.CreateRemote(&config.RemoteConfig{
 			Name: "origin",
 			URLs: []string{fmt.Sprintf("http://127.0.0.1:%s/%s", port, repository)},
+		})
+		assert.NoError(t, err)
+		worktree, err := dotGit.Worktree()
+		assert.NoError(t, err)
+		assert.NoError(t, worktree.AddWithOptions(&git.AddOptions{All: true}))
+		_, err = worktree.Commit("first commit", &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "JFrog-Frogbot",
+				Email: "eco-system+frogbot@jfrog.com",
+				When:  time.Now(),
+			},
 		})
 		assert.NoError(t, err)
 		assert.NoError(t, archiver.Archive([]string{fullWdPath}, repository+".tar.gz"))
