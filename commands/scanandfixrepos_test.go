@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const cmdDirName = "scanandfixreposs"
+const cmdDirName = "scanandfixrepos"
 
 var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-and-fix-repos.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
