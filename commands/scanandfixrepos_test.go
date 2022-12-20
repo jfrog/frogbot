@@ -25,7 +25,7 @@ import (
 const cmdDirName = "scanandfixrepos"
 
 var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-and-fix-repos.yml")
-var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
+var testRepositories = []string{"pip-repo", "npm-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
 	serverParams, restoreEnv := verifyEnv(t)
