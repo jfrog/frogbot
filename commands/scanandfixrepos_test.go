@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -80,9 +81,10 @@ func TestScanAndFixRepos(t *testing.T) {
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {
 	for _, repository := range repositories {
 		fullWdPath := filepath.Join(wd, repository)
-		dotGitDetails, err := git.PlainOpen(fullWdPath)
+		dotGit, err := git.PlainOpen(fullWdPath)
 		assert.NoError(t, err)
-		_, err = dotGitDetails.CreateRemote(&config.RemoteConfig{
+		clientLog.Info(repositories)
+		_, err = dotGit.CreateRemote(&config.RemoteConfig{
 			Name: "origin",
 			URLs: []string{fmt.Sprintf("http://127.0.0.1:%s/%s", port, repository)},
 		})
