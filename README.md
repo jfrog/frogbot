@@ -115,7 +115,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 
 2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then select `Branch Policies`:
 
-   <img src="images/azure-branch-policies.png" alt="azure-branch-policies.png" width="600"/>
+   <img src="images/azure-branch-policies.png" alt="azure-branch-policies.png" width="700"/>
 
 
 3. Add Build Validation Policy:
