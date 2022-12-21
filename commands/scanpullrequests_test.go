@@ -119,9 +119,9 @@ func TestScanAllPullRequests(t *testing.T) {
 	err := scanAllPullRequestsCmd.Run(params, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
-	expectedMessage := "🐸 Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 💀 Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
+	expectedMessage := "Frogbot scanned this pull request and found the issues blow: \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| 💀 Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
-	expectedMessage = "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
+	expectedMessage = "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
 }
 
