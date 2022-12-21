@@ -199,4 +199,4 @@ jobs:
 > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
 > instead of **JF_USER** and **JF_PASSWORD**.
 
-7. Set the other mandatory variables according to the chosen pipeline template.
+7. Set the other mandatory `Variables` according to the chosen pipeline template.
