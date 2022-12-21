@@ -3,6 +3,9 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,23 +21,30 @@ import (
 	clitool "github.com/urfave/cli/v2"
 )
 
+const (
+	testMultiDirProjConfigPath = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
+	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yml"
+	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yml"
+	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yml"
+)
+
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
-	params := createXrayScanParams("", "")
+	params := createXrayScanParams(nil, "")
 	assert.Empty(t, params.Watches)
 	assert.Equal(t, "", params.ProjectKey)
 	assert.True(t, params.IncludeVulnerabilities)
 	assert.False(t, params.IncludeLicenses)
 
 	// Watches
-	params = createXrayScanParams("watch-1,watch-2", "")
+	params = createXrayScanParams([]string{"watch-1", "watch-2"}, "")
 	assert.Equal(t, []string{"watch-1", "watch-2"}, params.Watches)
 	assert.Equal(t, "", params.ProjectKey)
 	assert.False(t, params.IncludeVulnerabilities)
 	assert.False(t, params.IncludeLicenses)
 
 	// Project
-	params = createXrayScanParams("", "project")
+	params = createXrayScanParams(nil, "project")
 	assert.Empty(t, params.Watches)
 	assert.Equal(t, "project", params.ProjectKey)
 	assert.False(t, params.IncludeVulnerabilities)
@@ -366,82 +376,121 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {
-	params := &utils.FrogbotParams{}
-	assert.NoError(t, runInstallIfNeeded(params, "", true))
-
-	params = &utils.FrogbotParams{
+	assert.NoError(t, runInstallIfNeeded(&utils.Project{}, "", true))
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	params := &utils.Project{
 		InstallCommandName: "echo",
 		InstallCommandArgs: []string{"Hello"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, "", true))
+	assert.NoError(t, runInstallIfNeeded(params, tmpDir, true))
 
-	params = &utils.FrogbotParams{
+	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, "", false))
+	assert.NoError(t, runInstallIfNeeded(params, tmpDir, false))
 
-	params = &utils.FrogbotParams{
+	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	assert.Error(t, runInstallIfNeeded(params, "", true))
+	assert.Error(t, runInstallIfNeeded(params, tmpDir, true))
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj", "", true)
+	testScanPullRequest(t, testProjConfigPath, "test-proj", true)
 }
 
 func TestScanPullRequestNoFail(t *testing.T) {
-	testScanPullRequest(t, "", "test-proj", "false", false)
+	testScanPullRequest(t, testProjConfigPath, "test-proj", false)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, "subdir", "test-proj-subdir", "", true)
+	testScanPullRequest(t, testProjSubdirConfigPath, "test-proj-subdir", true)
 }
 
 func TestScanPullRequestNoIssues(t *testing.T) {
-	testScanPullRequest(t, "", "clean-test-proj", "", false)
+	testScanPullRequest(t, testCleanProjConfigPath, "clean-test-proj", false)
 }
 
-func testScanPullRequest(t *testing.T, workingDirectory, projectName, failOnSecurityIssues string, expectFailError bool) {
-	_, restoreEnv := verifyEnv(t)
-	defer restoreEnv()
+func TestScanPullRequestMultiWorkDir(t *testing.T) {
+	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", true)
+}
 
-	cleanUp := prepareTestEnvironment(t, projectName)
-	defer cleanUp()
+func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
+	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", false)
+}
+
+func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
+	params, restoreEnv := verifyEnv(t)
+	defer restoreEnv()
 
 	// Create mock GitLab server
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	// Set required environment variables
-	utils.SetEnvAndAssert(t, map[string]string{
-		utils.GitProvider:             string(utils.GitLab),
-		utils.GitApiEndpointEnv:       server.URL,
-		utils.GitRepoOwnerEnv:         "jfrog",
-		utils.GitRepoEnv:              projectName,
-		utils.GitTokenEnv:             "123456",
-		utils.GitBaseBranchEnv:        "master",
-		utils.GitPullRequestIDEnv:     "1",
-		utils.InstallCommandEnv:       "npm i",
-		utils.WorkingDirectoryEnv:     workingDirectory,
-		utils.FailOnSecurityIssuesEnv: failOnSecurityIssues,
-	})
+	configAggregator, client := prepareConfigAndClient(t, configPath, failOnSecurityIssues, server, params)
+	cleanUp := prepareTestEnvironment(t, projectName)
+	defer cleanUp()
 
-	// Run "frogbot spr"
-	app := clitool.App{Commands: GetCommands()}
-	err := app.Run([]string{"frogbot", "spr"})
-	if expectFailError {
+	// Run "frogbot scan pull request"
+	var scanPullRequest ScanPullRequestCmd
+	err := scanPullRequest.Run(configAggregator, client)
+	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
 	} else {
 		assert.NoError(t, err)
 	}
+
+	// Check env sanitize
+	err = utils.SanitizeEnv()
+	assert.NoError(t, err)
 	utils.AssertSanitizedEnv(t)
 }
 
+func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+	gitParams := utils.Git{
+		GitProvider:   vcsutils.GitLab,
+		RepoOwner:     "jfrog",
+		Token:         "123456",
+		ApiEndpoint:   server.URL,
+		PullRequestID: 1,
+	}
+
+	var configData *utils.FrogbotConfigAggregator
+	var err error
+	if configPath == "" {
+		configData = &utils.FrogbotConfigAggregator{{}}
+	} else {
+		configData, err = utils.ReadConfig(configPath)
+	}
+	assert.NoError(t, err)
+	var configAggregator utils.FrogbotConfigAggregator
+	for _, config := range *configData {
+		gitParams.RepoName = config.RepoName
+		gitParams.Branches = config.Branches
+		config.FailOnSecurityIssues = &failOnSecurityIssues
+		config.Git = gitParams
+		params := utils.Params{
+			Scan:          config.Scan,
+			Git:           gitParams,
+			JFrogPlatform: config.JFrogPlatform,
+		}
+		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
+			Server:           serverParams,
+			SimplifiedOutput: config.SimplifiedOutput,
+			Params:           params,
+		})
+	}
+
+	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
+	assert.NoError(t, err)
+	return configAggregator, client
+}
+
 // Prepare test environment for the integration tests
-// projectName - 'test-proj' or 'test-proj-subdir'
+// projectName - the directory name under testdata/scanpullrequests
 // Return a cleanup function
 func prepareTestEnvironment(t *testing.T, projectName string) func() {
 	// Copy project to a temporary directory
@@ -493,8 +542,18 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
-
 			assert.NotEmpty(t, buf.String())
+
+			var expectedResponse []byte
+			if strings.Contains(projectName, "multi-dir") {
+				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponseMultiDir.json"))
+			} else if strings.Contains(projectName, "pip") {
+				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponsePip.json"))
+			} else {
+				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponse.json"))
+			}
+			assert.NoError(t, err)
+			assert.JSONEq(t, string(expectedResponse), buf.String())
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
@@ -505,7 +564,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
+func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func()) {
 	url := strings.TrimSuffix(os.Getenv(utils.JFrogUrlEnv), "/")
 	username := os.Getenv(utils.JFrogUserEnv)
 	password := os.Getenv(utils.JFrogPasswordEnv)
@@ -516,12 +575,12 @@ func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
 	if token == "" && (username == "" || password == "") {
 		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", utils.JFrogTokenEnv, utils.JFrogUserEnv, utils.JFrogPasswordEnv))
 	}
-	params.Server.Url = url
-	params.Server.XrayUrl = url + "/xray/"
-	params.Server.ArtifactoryUrl = url + "/artifactory/"
-	params.Server.User = username
-	params.Server.Password = password
-	params.Server.AccessToken = token
+	server.Url = url
+	server.XrayUrl = url + "/xray/"
+	server.ArtifactoryUrl = url + "/artifactory/"
+	server.User = username
+	server.Password = password
+	server.AccessToken = token
 	restoreFunc = func() {
 		utils.SetEnvAndAssert(t, map[string]string{
 			utils.JFrogUrlEnv:      url,
@@ -531,4 +590,16 @@ func verifyEnv(t *testing.T) (params utils.JFrogEnvParams, restoreFunc func()) {
 		})
 	}
 	return
+}
+
+func TestGetFullPathWorkingDirs(t *testing.T) {
+	sampleProject := utils.Project{
+		WorkingDirs: []string{filepath.Join("a", "b"), filepath.Join("a", "b", "c"), ".", filepath.Join("c", "d", "e", "f")},
+	}
+	baseWd := "tempDir"
+	fullPathWds := getFullPathWorkingDirs(&sampleProject, baseWd)
+	expectedWds := []string{filepath.Join("tempDir", "a", "b"), filepath.Join("tempDir", "a", "b", "c"), "tempDir", filepath.Join("tempDir", "c", "d", "e", "f")}
+	for _, expectedWd := range expectedWds {
+		assert.Contains(t, fullPathWds, expectedWd)
+	}
 }
