@@ -109,7 +109,7 @@ The Frogbot scan on Bitbucket Server workflow:
 
 After you create a new pull request, Frogbot will automatically scan it.
 
-1. For pull request scanning to be enabled, you must set up `Branch Policies` for the relevant target branch under Azure Repos -> Branches:
+1. To enable pull request scanning, you must set up `Branch Policies` for the relevant target branch under Azure Repos -> Branches:
 
    <img src="images/azure-branches.png" alt="azure-branches.png" width="200"/>
 
