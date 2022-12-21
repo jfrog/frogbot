@@ -14,6 +14,9 @@ async function main() {
             case "push":
                 await Utils.execCreateFixPullRequests();
                 break;
+            case "schedule":
+                await Utils.execScanPullRequests();
+                break;
             default:
                 core.setFailed(eventName + " event is not supported by Frogbot");
         }
