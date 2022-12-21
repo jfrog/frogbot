@@ -109,28 +109,6 @@ The Frogbot scan on Bitbucket Server workflow:
 
 After you create a new pull request, Frogbot will automatically scan it.
 
-1. To enable pull request scanning, you must set up `Branch Policies` for the relevant target branch under Azure Repos -> Branches:
-
-   <img src="images/azure-branches.png" alt="azure-branches.png" width="200"/>
-
-2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then select `Branch Policies`:
-
-   <img src="images/azure-branch-policies.png" alt="azure-branch-policies.png" width="800"/>
-
-
-3. Add Build Validation Policy:
-
-   ![azure-build-validation.png](images/azure-build-validation.png)
-4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
-
-   <img src="images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable. The Frogbot Azure Repos scan workflow is:
-
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
 3. Frogbot is triggered again following new commits.

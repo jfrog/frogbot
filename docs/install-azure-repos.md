@@ -2,6 +2,7 @@
 
 # Installing Frogbot on Azure Repos repositories
 
+## Setup Pipelines
 To install Frogbot on Azure Repos repositories:
 
 1. Make sure you have the connection details of your JFrog environment.
@@ -197,11 +198,35 @@ Edit the yaml of the pipeline you created, and set the relevant branches to be s
 > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
 > instead of **JF_USER** and **JF_PASSWORD**.
 
-   To set variables in the pipeline edit page, click on `Variables` button:
+To set variables in the pipeline edit page, click on `Variables` button:
 
-   ![variables_button.png](../images/azure-variables-button.png)
+![variables_button.png](../images/azure-variables-button.png)
 
-   Set `New variable`:
+Set `New variable`:
 
-   ![img_1.png](../images/azure-new-variable.png)
+![img_1.png](../images/azure-new-variable.png)
 
+## Setup Branch Policies for Pull Request Scanning
+
+1. To enable pull request scanning, you must set up `Branch Policies` for the relevant target branch under Azure Repos -> Branches:
+
+   <img src="../images/azure-branches.png" alt="azure-branches.png" width="200"/>
+
+2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then select `Branch Policies`:
+
+   <img src="../images/azure-branch-policies.png" alt="azure-branch-policies.png" width="800"/>
+
+
+3. Add Build Validation Policy:
+
+   ![azure-build-validation.png](../images/azure-build-validation.png)
+
+4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
+
+   <img src="../images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable. The Frogbot Azure Repos scan workflow is:
