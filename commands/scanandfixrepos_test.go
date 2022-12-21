@@ -75,7 +75,7 @@ func TestScanAndFixRepos(t *testing.T) {
 		})
 	}
 
-	var cmd = ScanAndFixRepositories{dryRun: true, repoPath: filepath.Join("testdata", "scanandfixrepos")}
+	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
 	assert.NoError(t, cmd.Run(configAggregator, client))
 }
 

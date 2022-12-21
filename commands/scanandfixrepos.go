@@ -12,8 +12,8 @@ import (
 type ScanAndFixRepositories struct {
 	// dryRun used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
-	// When dryRun is enabled, repoPath specifies the repository local path to clone
-	repoPath string
+	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
+	dryRunRepoPath string
 }
 
 func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -65,6 +65,6 @@ func (cmd ScanAndFixRepositories) downloadAndRunScanAndFix(client vcsclient.VcsC
 		}
 	}()
 
-	var cfp = CreateFixPullRequestsCmd{dryRun: cmd.dryRun, repoPath: filepath.Join(cmd.repoPath, repoConfig.RepoName)}
+	var cfp = CreateFixPullRequestsCmd{dryRun: cmd.dryRun, dryRunRepoPath: filepath.Join(cmd.dryRunRepoPath, repoConfig.RepoName)}
 	return cfp.scanAndFixRepository(repoConfig, client, branch)
 }

@@ -24,7 +24,7 @@ type GitManager struct {
 	remoteName     string
 	auth           *http.BasicAuth
 	dryRun         bool
-	clonedRepoPath string
+	dryRunRepoPath string
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
@@ -33,7 +33,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 		return nil, err
 	}
 	basicAuth := createBasicAuth(token, username)
-	return &GitManager{repository: repository, clonedRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
+	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {

@@ -31,8 +31,8 @@ type CreateFixPullRequestsCmd struct {
 	mavenDepToPropertyMap map[string][]string
 	// dryRun used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
-	// When dryRun is enabled, repoPath specifies the repository local path to clone
-	repoPath string
+	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
+	dryRunRepoPath string
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -122,7 +122,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.repoPath, ".", "origin", repoGitParams.Token, repoGitParams.RepoOwner)
+	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", repoGitParams.Token, repoGitParams.RepoOwner)
 	if err != nil {
 		return err
 	}
