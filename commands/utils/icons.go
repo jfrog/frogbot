@@ -29,9 +29,9 @@ func getIconTag(imageSource ImageSource) string {
 
 func GetSimplifiedTitle(is ImageSource) string {
 	if is == NoVulnerabilityBannerSource {
-		return "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
+		return "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
 	} else if is == VulnerabilitiesBannerSource {
-		return "🐸 Frogbot scanned this pull request and found the issues blow: \n"
+		return "Frogbot scanned this pull request and found the issues blow: \n"
 	}
 	return ""
 }
