@@ -115,7 +115,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 
 2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then select `Branch Policies`:
 
-   <img src="images/azure-branch-policies.png" alt="azure-branch-policies.png" width="200"/>
+   <img src="images/azure-branch-policies.png" alt="azure-branch-policies.png" width="600"/>
 
 
 3. Add Build Validation Policy:
@@ -123,7 +123,7 @@ After you create a new pull request, Frogbot will automatically scan it.
    ![azure-build-validation.png](images/azure-build-validation.png)
 4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
 
-   <img src="images/azure-build-policy.png" alt="azure-build-policy.png" width="800"/>
+   <img src="images/azure-build-policy.png" alt="azure-build-policy.png" width="600"/>
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
