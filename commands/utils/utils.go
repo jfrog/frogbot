@@ -113,8 +113,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 	}
 	clientLog.Debug("Created temp working directory: ", wd)
 	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
-	err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd)
-	if err != nil {
+	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
 		return
 	}
 	clientLog.Debug("Repository download completed")
