@@ -13,6 +13,9 @@ type GetSeverityTagFunc func(IconName) string
 const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
+	// Errors
+	UnsupportedMultiRepoErr = "multi repository configuration isn't supported. only one repository configuration is allowed"
+
 	// Images
 	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"
 	VulnerabilitiesBannerSource ImageSource = "vulnerabilitiesBanner.png"
@@ -25,13 +28,10 @@ const (
 	GitHub          vcsProvider = "github"
 	GitLab          vcsProvider = "gitlab"
 	BitbucketServer vcsProvider = "bitbucketServer"
+	AzureRepos      vcsProvider = "azureRepos"
 
 	// Frogbot comments
 	RescanRequestComment = "rescan"
-
-	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
-	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
-	WorkingDirectoryEnv = "JF_WORKING_DIR"
 
 	// JFrog platform environment variables
 	JFrogUserEnv           = "JF_USER"
@@ -40,24 +40,29 @@ const (
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	jfrogWatchesEnv        = "JF_WATCHES"
-	jfrogProjectEnv        = "JF_PROJECT"
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"
 	GitRepoOwnerEnv = "JF_GIT_OWNER"
 	GitRepoEnv      = "JF_GIT_REPO"
+	GitProjectEnv   = "JF_GIT_PROJECT"
+
+	// Single repository scan environment variables - Ignored if config file is used
+	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
+	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"
+	WorkingDirectoryEnv          = "JF_WORKING_DIR"
+	jfrogWatchesEnv              = "JF_WATCHES"
+	jfrogProjectEnv              = "JF_PROJECT"
+	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
+	FailOnSecurityIssuesEnv      = "JF_FAIL"
+	UseWrapperEnv                = "JF_USE_WRAPPER"
+	WatchesDelimiter             = ","
+
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv         = "JF_GIT_TOKEN"
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
-	WatchesDelimiter    = ","
-
-	// Environment variables to control Frogbot's functionality.
-	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
-	FailOnSecurityIssuesEnv      = "JF_FAIL"
-	UseWrapperEnv                = "JF_USE_WRAPPER"
 
 	// Comment
 	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +

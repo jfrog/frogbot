@@ -93,7 +93,7 @@ func TestFixPackageVersion(t *testing.T) {
 		t.Run(test.technology.ToString(), func(t *testing.T) {
 			cfg := test.fixPackageVersionCmd(test)
 			// Fix impacted package for each technology
-			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor))
+			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
 			file, err := os.ReadFile(test.packageDescriptor)
 			assert.NoError(t, err)
 			assert.Contains(t, string(file), test.fixVersion)
@@ -169,19 +169,22 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
+	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
-	var frogbotParams = utils.FrogbotParams{
-		JFrogEnvParams: params,
+	params := utils.Params{
+		Scan: utils.Scan{Projects: []utils.Project{{}}},
+	}
+	var frogbotParams = utils.FrogbotRepoConfig{
+		Server: environmentVars,
+		Params: params,
 	}
 	for _, pkgType := range packageTypes {
 		// Create temp technology project
 		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
 		t.Run(pkgType.ToString(), func(t *testing.T) {
-			frogbotParams.WorkingDirectory = projectPath
-			scanResponse, err := testScan.scan(&frogbotParams)
-
+			frogbotParams.Projects[0].WorkingDirs = []string{projectPath}
+			scanResponse, err := testScan.scan(frogbotParams.Projects[0], &frogbotParams.Server, services.XrayGraphScanParams{}, false, projectPath)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})

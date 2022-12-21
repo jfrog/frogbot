@@ -12,9 +12,11 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"strings"
 )
 
 type ErrMissingEnv struct {
@@ -23,6 +25,14 @@ type ErrMissingEnv struct {
 
 func (m *ErrMissingEnv) Error() string {
 	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
+}
+
+type ErrMissingConfig struct {
+	missingReason string
+}
+
+func (e *ErrMissingConfig) Error() string {
+	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
@@ -71,21 +81,63 @@ func Md5Hash(values ...string) (string, error) {
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, params *FrogbotParams, client vcsclient.VcsClient) error {
-	if params.GitProvider.String() != vcsutils.GitHub.String() {
-		clientLog.Debug("Upload Scan to " + params.GitProvider.String() + " is currently unsupported.")
+func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
+	if repo.GitProvider.String() != vcsutils.GitHub.String() {
+		clientLog.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-
-	includeVulnerabilities := params.Project == "" && params.Watches == ""
+	// Don't do anything if scanResults is empty
+	if xrayutils.IsEmptyScanResponse(scanResults) {
+		return nil
+	}
+	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), params.RepoOwner, params.Repo, params.BaseBranch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, scan)
 	if err != nil {
-		return errors.New("upload code scanning failed with: " + err.Error())
+		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 
+	return err
+}
+
+func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func(err error) error, err error) {
+	wd, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	cleanup = func(err error) error {
+		if err == nil {
+			return fileutils.RemoveTempDir(wd)
+		}
+		return err
+	}
+	clientLog.Debug("Created temp working directory: ", wd)
+	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
+	err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd)
+	if err != nil {
+		return
+	}
+	clientLog.Debug("Repository download completed")
+	return
+}
+
+func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
+	// Multi repository configuration is supported only in the scanpulllrequests command on Bitbucket Server.
+	if len(*configAggregator) > 1 {
+		return errors.New(UnsupportedMultiRepoErr)
+	}
 	return nil
+}
+
+// GetRelativeWd receive a base working directory along with a full path containing the base working directory, and the relative part is returned without the base prefix.
+func GetRelativeWd(fullPathWd, baseWd string) string {
+	fullPathWd = strings.TrimSuffix(fullPathWd, string(os.PathSeparator))
+	if fullPathWd == baseWd {
+		return ""
+	}
+
+	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }
