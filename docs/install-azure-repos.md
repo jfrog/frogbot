@@ -10,10 +10,12 @@ To install Frogbot on Azure Repos repositories:
 
 
 2. Set `Azure Repos Git` as your code source:
+
    ![azure-set-code-source.png.png](../images/azure-set-code-source.png)
 
 
 3. Select the repository you'd like Frogbot to scan.
+
    ![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
 
 
