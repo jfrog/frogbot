@@ -83,7 +83,9 @@ func scanPullRequest(params *utils.FrogbotParams, client vcsclient.VcsClient) er
 
 func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
 	if simplifiedOutput {
-		return utils.GetSimplifiedTitle, utils.GetEmojiSeverityTag
+		return utils.GetSimplifiedTitle, func(name utils.IconName) string {
+			return ""
+		}
 	}
 	return utils.GetBanner, utils.GetSeverityTag
 }
