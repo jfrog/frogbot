@@ -1,30 +1,28 @@
 [Go back to the main documentation page](../README.md)
+
 # Installing Frogbot on Azure Repos repositories
 
 To install Frogbot on Azure Repos repositories:
 
-1. Go to Azure DevOps Pipelines of the relevant project, and add `New pipeline`.
-2. Set `Azure Repos Git` as your code source.
+1. Go to your Azure Pipelines project, and add a new pipeline:
+
+   ![azure-new-pipeline.png](../images/azure-new-pipeline.png)
+
+
+2. Set `Azure Repos Git` as your code source:
+   ![azure-set-code-source.png.png](../images/azure-set-code-source.png)
+
+
 3. Select the repository you'd like Frogbot to scan.
-4. Select 'Starter Pipeline' and use `frogbot-scan-pr.yml` and `frogbot-scan-and-fix.yml`:
-5. Make sure you have the connection details of your JFrog environment.
-6. In the pipeline page save the JFrog connection details as variables with the
-   following names - JF_URL, JF_USER, and JF_PASSWORD.
+   ![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
 
-> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
-> instead of **JF_USER** and **JF_PASSWORD**.
 
-7. To set variables in the pipeline page, click on `Variables` button and set `New variable`:
+4. Select `Starter Pipeline` and name it `frogbot-scan-pr.yml`. Use the content of the below yaml for the pipeline.
 
-   ![variables_button.png](../images/azure-variables-button.png)
+<details>
+  <summary>Template for frogbot-scan-pr.yml</summary>
 
-   ![img_1.png](../images/azure-new-variable.png)
-
-   And set the relevant mandatory variables according the chosen pipeline template.
-
-#### frogbot-scan-pr.yml:
-
-```yaml
+```yml
 # Select on which branches to trigger the pipeline
 trigger:
    branches:
@@ -100,7 +98,12 @@ jobs:
                 ./frogbot spr
 ```
 
-#### frogbot-scan-and-fix.yml:
+</details>
+
+5. Select `Starter Pipeline` and name it `frogbot-scan-and-fix.yml`. Use the content of the below yaml for the pipeline.
+
+<details>
+  <summary>Template for frogbot-scan-and-fix.yml</summary>
 
 ```yaml
 # Select on which branches to trigger the pipeline
@@ -178,3 +181,20 @@ jobs:
                 curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
                 ./frogbot cfpr
 ```
+
+</details>
+
+6. Make sure you have the connection details of your JFrog environment. In the pipeline page save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
+
+   To set variables in the pipeline edit page, click on `Variables` button:
+
+   ![variables_button.png](../images/azure-variables-button.png)
+
+   Set `New variable`:
+
+   ![img_1.png](../images/azure-new-variable.png)
+
+> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
+> instead of **JF_USER** and **JF_PASSWORD**.
+
+7. Set the other mandatory variables according to the chosen pipeline template.
