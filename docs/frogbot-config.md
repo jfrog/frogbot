@@ -1,37 +1,46 @@
-# The [`frogbot-config.yml`](templates/.jfrog/frogbot-config.yml) file
+# The [`frogbot-config`](templates/.jfrog/frogbot-config.yml) file
 
-## Using Frogbot Configuration File
+# Defining your Frogbot Management
 
-Frogbot can be used with our simple templates using environment variables only, but the Frogbot configuration file offers more advanced features.
+Frogbot configuration is defined in the [frogbot-config](templates/.jfrog/frogbot-config.yml) file. To manage the [frogbot-config](templates/.jfrog/frogbot-config.yml) file, you need to configure the `Frogbot Management` and it can be set in two ways:
 
-The Frogbot configuration file can be defined in a few simple steps to allow it to scan multiple directories in a repository, scan multiple repositories, and many more features.
+1. Establish a new management repository for the Frogbot Management.
 
-### Scan a single repository
+2. Use an existing code repository as the Frogbot Management Repository.
 
-You can define the Frogbot configuration file inside your repository following these steps:
+### Management Repository
 
-1. Create a new directory in the root of your repository under the name `.jfrog`.
-2. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./templates/.jfrog/frogbot-config.yml)
-   template.
-3. Adjust the [frogbot-config.yml](./templates/.jfrog/frogbot-config.yml) template to your needs.
+Creating a new management repository as your `Frogbot Management` allows you to store all Frogbot configurations in one location. This allows you to configure multiple repositories and run Frogbot tasks on them simultaneously.
 
-Using the configuration file for a single repository matches the following Frogbot commands:
-> **scan-pull-request** command to scan **pull requests** in the repository for every pull request push.
+>> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-requests` and the `scan-and-fix-repos` commands, which can operate over multiple repositories as well as single repositories.
 >
-> **create-fix-pull-requests** command to scan the **repository** following new commits.
+> **scan-pull-requests** command scans all the open **pull requests** in the configured repositories.
+>
+> **scan-and-fix-repos** command scans the configured **repositories** following new commits and opens new pull requests with a fix if a vulnerability is found in the repositories.
 
-### Scan a multiple repositories
 
-You can define the Frogbot configuration file to scan multiple repositories following these steps:
+To set up a new management repository as `Frogbot Management` follow these steps:
 
-1. Create a new repository under the name `JFrog`.
-2. Create a new directory in the root of your repository under the name `.jfrog`.
-3. Inside the newly created `.jfrog` directory, add the [frogbot-config.yml](./templates/.jfrog/frogbot-config.yml)
-   template.
-4. Adjust the [frogbot-config.yml](./templates/.jfrog/frogbot-config.yml) template to your needs.
+1. Create a new repository named `JFrog`.
+2. Under the newly created repository, create a `frogbot` directory.
+3. Put the [frogbot-config](templates/.jfrog/frogbot-config.yml) under the `frogbot` directory.
+4. Set the [frogbot-config](templates/.jfrog/frogbot-config.yml) to your needs.
 
-Using the configuration file for multiple repositories matches the following Frogbot commands:
-> **scan-pull-requests** command to scan all the open **pull requests** in the configured repositories.
+### Using Existing Code Repository
+
+The `Frogbot Management` can be also set as one of your existing code repositories. This kind of `Frogbot Management` allow you to set all the Frogbot configuration for this repository.
+>> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-request` and the `create-fix-pull-request` commands, which operate over a single repository only.
+>
+> **scan-pull-request** command is used to scan **pull requests** in the repository for every pull request push.
+>
+> **create-fix-pull-requests** command is used to scan the **repository** following new commits.
+
+To set up your existing code repository as `Frogbot Management`, follow these steps:
+
+1. Under the root of the chosen repository, create a `.jfrog` directory.
+2. Under the newly created `.jfrog` directory, create a `frogbot` directory.
+3. Put the [frogbot-config](templates/.jfrog/frogbot-config.yml) under the `frogbot` directory.
+4. Set the [frogbot-config](templates/.jfrog/frogbot-config.yml) to your needs.
 
 # The file syntax
 
