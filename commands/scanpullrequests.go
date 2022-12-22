@@ -89,7 +89,6 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, params *utils.Frog
 			Repo:        pr.Source.Repository,
 			BaseBranch:  pr.Source.Name,
 		},
-		WorkingDirectory: params.WorkingDirectory,
 	}
 	wd, cleanup, err := downloadRepoToTempDir(client, frogbotParams)
 	if err != nil {
