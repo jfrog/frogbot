@@ -188,6 +188,16 @@ func TestPackageTypeFromScan(t *testing.T) {
 	}
 }
 
+func TestGetMinimalFixVersion(t *testing.T) {
+	impactedVersionPackage := "1.6.2"
+	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+	impactedVersionPackageGo := "v" + impactedVersionPackage
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
+	impactedVersionPackage = "1.7.1"
+	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+}
+
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
