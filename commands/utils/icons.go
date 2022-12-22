@@ -29,23 +29,9 @@ func getIconTag(imageSource ImageSource) string {
 
 func GetSimplifiedTitle(is ImageSource) string {
 	if is == NoVulnerabilityBannerSource {
-		return "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
+		return "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
 	} else if is == VulnerabilitiesBannerSource {
-		return "🐸 Frogbot scanned this pull request and found the issues blow: \n"
-	}
-	return ""
-}
-
-func GetEmojiSeverityTag(severity IconName) string {
-	switch strings.ToLower(string(severity)) {
-	case "critical":
-		return "💀 "
-	case "high":
-		return "🔥 "
-	case "medium":
-		return "🎃 "
-	case "low":
-		return "👻 "
+		return "Frogbot scanned this pull request and found the issues blow: \n"
 	}
 	return ""
 }
