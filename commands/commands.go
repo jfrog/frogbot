@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/containerd/containerd"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
@@ -31,8 +30,6 @@ func Exec(command FrogbotCommand, name string) error {
 	if err == nil {
 		clientLog.Info(fmt.Sprintf("Frogbot %q command finished successfully ", name))
 	}
-	c, err := containerd.New("", containerd.WithDefaultNamespace("docker"))
-	c = c
 	return err
 }
 
