@@ -1,14 +1,14 @@
-# The [`frogbot-config`](templates/.jfrog/frogbot-config.yml) file
+# Setting the Frogbot Configuration
 
-# Defining your Frogbot Management
+## Defining your Frogbot Management
 
-Frogbot configuration is defined in the [frogbot-config](templates/.jfrog/frogbot-config.yml) file. To manage the [frogbot-config](templates/.jfrog/frogbot-config.yml) file, you need to configure the `Frogbot Management` and it can be set in two ways:
+Frogbot configuration is defined in the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) file. To manage the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) file, you need to configure the `Frogbot Management` repository and it can be set in two ways:
 
-1. Establish a new management repository for the Frogbot Management.
+1. Establish a new central management repository for the Frogbot Management.
 
 2. Use an existing code repository as the Frogbot Management Repository.
 
-### Management Repository
+### Central Management Repository
 
 Creating a new management repository as your `Frogbot Management` allows you to store all Frogbot configurations in one location. This allows you to configure multiple repositories and run Frogbot tasks on them simultaneously.
 
@@ -23,13 +23,13 @@ To set up a new management repository as `Frogbot Management` follow these steps
 
 1. Create a new repository named `JFrog`.
 2. Under the newly created repository, create a `frogbot` directory.
-3. Put the [frogbot-config](templates/.jfrog/frogbot-config.yml) under the `frogbot` directory.
-4. Set the [frogbot-config](templates/.jfrog/frogbot-config.yml) to your needs.
+3. Put the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) under the `frogbot` directory.
+4. Set the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) to your needs.
 
 ### Using Existing Code Repository
 
 The `Frogbot Management` can be also set as one of your existing code repositories. This kind of `Frogbot Management` allow you to set all the Frogbot configuration for this repository.
->> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-request` and the `create-fix-pull-request` commands, which operate over a single repository only.
+>> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-request` and the `create-fix-pull-request` commands, which operate over a single repository only. These commands are supported on GitHub, Azure Repos and GitLab.
 >
 > **scan-pull-request** command is used to scan **pull requests** in the repository for every pull request push.
 >
@@ -39,12 +39,12 @@ To set up your existing code repository as `Frogbot Management`, follow these st
 
 1. Under the root of the chosen repository, create a `.jfrog` directory.
 2. Under the newly created `.jfrog` directory, create a `frogbot` directory.
-3. Put the [frogbot-config](templates/.jfrog/frogbot-config.yml) under the `frogbot` directory.
-4. Set the [frogbot-config](templates/.jfrog/frogbot-config.yml) to your needs.
+3. Put the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) under the `frogbot` directory.
+4. Set the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) to your needs.
 
 # The file syntax
 
-[frogbot-config.yml](./templates/.jfrog/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying each `params` keyword for each repository.
+[frogbot-config.yml](templates/.jfrog/frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying each `params` keyword for each repository.
 > Most of the properties in the file are **OPTIONAL**, please note the ones that specified as **MANDATORY**.
 
 ## Params
