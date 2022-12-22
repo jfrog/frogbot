@@ -168,17 +168,16 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 // getMinimalFixVersion that fixes the current impactedPackage
 // fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
-	var vulnFixVersion string
 	// Trim 'v' prefix in case of Go package
-	currVersion := strings.TrimPrefix(impactedPackageVersion, "v")
-	for index := range fixVersions {
-		fixVersionCandidate := parseVersionChangeString(fixVersions[index])
-		if version.NewVersion(currVersion).Compare(fixVersionCandidate) > 0 {
-			vulnFixVersion = fixVersionCandidate
-			break
+	currVersionStr := strings.TrimPrefix(impactedPackageVersion, "v")
+	currVersion := version.NewVersion(currVersionStr)
+	for _, fixVersion := range fixVersions {
+		fixVersionCandidate := parseVersionChangeString(fixVersion)
+		if currVersion.Compare(fixVersionCandidate) > 0 {
+			return fixVersionCandidate
 		}
 	}
-	return vulnFixVersion
+	return ""
 }
 
 func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.FrogbotParams, vulnerability formats.VulnerabilityOrViolationRow) (bool, error) {
