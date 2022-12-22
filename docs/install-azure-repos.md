@@ -2,28 +2,29 @@
 
 # Installing Frogbot on Azure Repos repositories
 
-## Setup Pipelines
 To install Frogbot on Azure Repos repositories:
 
-1. Make sure you have the connection details of your JFrog environment.
+**Step 1:** Make sure you have the connection details of your JFrog environment.
 
+**Step 2:** Decide which repository branches you'd like to scan.
 
-2. Go to your Azure Pipelines project, and add a new pipeline:
+**Step 3:** Go to your Azure Pipelines project, and add a new pipeline.
 
-   ![azure-new-pipeline.png](../images/azure-new-pipeline.png)
+![azure-new-pipeline.png](../images/azure-new-pipeline.png)
 
+**Step 4:** Set `Azure Repos Git` as your code source.
 
-3. Set `Azure Repos Git` as your code source:
+![azure-set-code-source.png.png](../images/azure-set-code-source.png)
 
-   ![azure-set-code-source.png.png](../images/azure-set-code-source.png)
+**Step 5:** Select the repository you'd like Frogbot to scan.
 
+![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
 
-4. Select the repository you'd like Frogbot to scan.
+**Step 6:** Select `Starter Pipeline` and name it `frogbot-scan-pr`.
 
-   ![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
+![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
 
-
-5. Select `Starter Pipeline` and name it `frogbot-scan-pr`. Use the content of the below template for the pipeline.
+**Step 7:** Use the content of the below template for the pipeline. Edit the list of branches in the template according to the branches you'd like Frogbot to scan.
 
 <details>
   <summary>Template for frogbot-scan-pr.yml</summary>
@@ -31,9 +32,9 @@ To install Frogbot on Azure Repos repositories:
 ```yml
 # Select on which branches to trigger the pipeline
 trigger:
-   branches:
-      include:
-         - master
+  branches:
+    include:
+      - master
          - dev
          - main
 
@@ -99,16 +100,20 @@ jobs:
              JF_GIT_PROVIDER: 'azureRepos'
 
           inputs:
-             script: |
-                curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                ./frogbot spr
+            script: |
+              curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+              ./frogbot spr
 ```
 
 Edit the yaml of the pipeline you created, and set the relevant branches to be scanned, as well as the remaining mandatory `Variables`.
 
 </details>
 
-6. Select `Starter Pipeline` and name it `frogbot-scan-and-fix`. Use the content of the below template for the pipeline.
+**Step 8:** Select `Starter Pipeline` and name it `frogbot-scan-and-fix`.
+
+![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
+
+**Step 9:** Use the content of the below template for the pipeline. Edit the list of branches in the template according to the branches you'd like Frogbot to scan.
 
 <details>
   <summary>Template for frogbot-scan-and-fix.yml</summary>
@@ -116,9 +121,9 @@ Edit the yaml of the pipeline you created, and set the relevant branches to be s
 ```yaml
 # Select on which branches to trigger the pipeline
 trigger:
-   branches:
-      include:
-         - master
+  branches:
+    include:
+      - master
          - dev
          - main
 
@@ -193,40 +198,33 @@ jobs:
 Edit the yaml of the pipeline you created, and set the relevant branches to be scanned, as well as the remaining mandatory `Variables`.
 </details>
 
-7. In the pipeline page save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
+**Step 10:** For each of the two pipelines you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
 
 > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
 > instead of **JF_USER** and **JF_PASSWORD**.
 
-To set variables in the pipeline edit page, click on `Variables` button:
+To set the `Variables` in the pipeline edit page, click on the `Variables` button and set the `Variables`.
 
 ![variables_button.png](../images/azure-variables-button.png)
 
-Set `New variable`:
-
 ![img_1.png](../images/azure-new-variable.png)
 
-## Setup Branch Policies for Pull Request Scanning
+**Step 11:** To enable pull request scanning, you must set up `Branch Policies` for the relevant target branches Frogbot should scan.
 
-1. To enable pull request scanning, you must set up `Branch Policies` for the relevant target branch under Azure Repos -> Branches:
+**Step 12:** Go to Azure Repos -> Branches.
 
    <img src="../images/azure-branches.png" alt="azure-branches.png" width="200"/>
 
-2. To set branch policies, locate the branch you want to manage. Select `More Options` icon next to the branch and then select `Branch Policies`:
+
+**Step 13:** For each branch, select the `More Options` icon next to the branch, and then select `Branch Policies`.
 
    <img src="../images/azure-branch-policies.png" alt="azure-branch-policies.png" width="800"/>
 
 
-3. Add Build Validation Policy:
+**Step 14:** Add Build Validation Policy.
 
-   ![azure-build-validation.png](../images/azure-build-validation.png)
+![azure-build-validation.png](../images/azure-build-validation.png)
 
-4. Fill the `Add build policy` form with the relevant `Build pipeline`, set `Trigger` to `Automatic` and save:
+**Step 15:** Fill out the `Add build policy` form with the relevant `Build pipeline` field. Set the `Trigger` option to `Automatic` and save.
 
    <img src="../images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable. The Frogbot Azure Repos scan workflow is:
