@@ -144,8 +144,11 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 					if !fixVulnerability {
 						continue
 					}
-					// Get the minimal fix version that fixes the current vulnerability. vulnerability.FixedVersions array is sorted, so we take the first index.
-					vulnFixVersion := parseVersionChangeString(vulnerability.FixedVersions[0])
+					vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions)
+					if vulnFixVersion == "" {
+						continue
+					}
+
 					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
 					if exists {
 						// More than one vulnerability can exist on the same impacted package.
@@ -160,6 +163,22 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(params *utils.FrogbotP
 		}
 	}
 	return fixVersionsMap, nil
+}
+
+// getMinimalFixVersion that fixes the current impactedPackage
+// fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now.
+func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
+	var vulnFixVersion string
+	// Trim 'v' prefix in case of Go package
+	currVersion := strings.TrimPrefix(impactedPackageVersion, "v")
+	for index := range fixVersions {
+		fixVersionCandidate := parseVersionChangeString(fixVersions[index])
+		if version.NewVersion(currVersion).Compare(fixVersionCandidate) > 0 {
+			vulnFixVersion = fixVersionCandidate
+			break
+		}
+	}
+	return vulnFixVersion
 }
 
 func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(params *utils.FrogbotParams, vulnerability formats.VulnerabilityOrViolationRow) (bool, error) {
