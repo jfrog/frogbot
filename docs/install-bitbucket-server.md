@@ -1,5 +1,9 @@
 [Go back to the main documentation page](../README.md)
 
+# Frogbot Configuration file
+
+Frogbot requires a [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) file to run it's tasks. This file resides inside a `Frogbot Management` repository that is also need to be set. Please read the [frogbot configuration file documentation](./frogbot-config.md) if you haven't configured your `Frogbot Management` repository yet.
+
 # Installing Frogbot on Bitbucket Server repositories
 
 Frogbot is installed on Bitbucket Server repositories using JFrog Pipelines or Jenkins.
