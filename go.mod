@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.3-0.20221117033540-c798d4a42004
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.8.4
-	github.com/jfrog/froggit-go v1.5.0
+	github.com/jfrog/froggit-go v1.5.1
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.26.0
 	github.com/jfrog/jfrog-client-go v1.24.5
@@ -88,7 +88,7 @@ require (
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
