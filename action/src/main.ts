@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
-import { Utils } from './utils';
+import {Utils} from './utils';
+import {context} from "@actions/github";
 
 async function main() {
     try {
@@ -15,7 +16,11 @@ async function main() {
                 await Utils.execCreateFixPullRequests();
                 break;
             case "schedule":
-                await Utils.execScanPullRequests();
+                if (context.job == "scan-pull-requests") {
+                    await Utils.execScanPullRequests();
+                    break;
+                }
+                await Utils.execScanAndFixRepos();
                 break;
             default:
                 core.setFailed(eventName + " event is not supported by Frogbot");

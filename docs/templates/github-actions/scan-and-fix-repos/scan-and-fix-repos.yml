@@ -5,6 +5,7 @@ on:
     - cron: '*/5 * * * *'
 jobs:
   scan-and-fix-repos:
+    name: scan-and-fix-repos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

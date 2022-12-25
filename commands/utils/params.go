@@ -19,7 +19,10 @@ const (
 	FrogbotConfigFile = "frogbot-config.yml"
 )
 
-var configRelativePath = filepath.Join(".", ".jfrog", FrogbotConfigFile)
+var errConfigNotFound = fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile)
+
+// Possible Config file path's to Frogbot Management repository
+var managementRepoPath = []string{filepath.Join(".", "frogbot", FrogbotConfigFile), filepath.Join(".", ".jfrog", "frogbot", FrogbotConfigFile)}
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
@@ -84,7 +87,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		return nil, nil, nil, err
 	}
 
-	configData, err := ReadConfig(configRelativePath)
+	configData, err := ReadConfig()
 	// If the error is due to missing configuration, try to generate an environment variable-based config aggregator.
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && missingConfigErr {
@@ -233,20 +236,26 @@ func extractEnvParams() (*coreconfig.ServerDetails, Git, error) {
 	return &server, gitParams, err
 }
 
-func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
-	filePath, err := filepath.Abs(configFilePath)
-	if err != nil {
-		return nil, err
+func ReadConfig(configFilePaths ...string) (config *FrogbotConfigAggregator, err error) {
+	if configFilePaths == nil {
+		configFilePaths = managementRepoPath
 	}
-	fileExist, err := fileutils.IsFileExists(filePath, false)
-	if !fileExist || err != nil {
-		// If the WD directory is not ./frogbot, look in parent directories for ./jfrog/frogbot-config.yml.
-		if filePath, err = utils.FindFileInDirAndParents(filePath, configRelativePath); err != nil {
-			return nil, &ErrMissingConfig{
-				fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile),
-			}
+	// Find if the frogbot-config file is in one of the possible paths in the configFilePath array.
+	var filePath string
+	var configFileFound bool
+	for _, possibleConfigPath := range configFilePaths {
+		configFileFound, err = searchConfigFile(possibleConfigPath, &filePath)
+		_, missingConfigErr := err.(*ErrMissingConfig)
+		if err != nil && !missingConfigErr {
+			return nil, err
 		}
-		filePath = filepath.Join(filePath, configFilePath)
+		if configFileFound {
+			break
+		}
+	}
+
+	if !configFileFound {
+		return nil, &ErrMissingConfig{errConfigNotFound}
 	}
 
 	configFile, err := os.ReadFile(filePath)
@@ -254,8 +263,27 @@ func ReadConfig(configFilePath string) (*FrogbotConfigAggregator, error) {
 		return nil, err
 	}
 
-	var config FrogbotConfigAggregator
-	return &config, yaml.Unmarshal(configFile, &config)
+	return config, yaml.Unmarshal(configFile, &config)
+}
+
+func searchConfigFile(possibleConfigPath string, filePath *string) (bool, error) {
+	fullPossiblePath, err := filepath.Abs(possibleConfigPath)
+	if err != nil {
+		return false, err
+	}
+
+	fileExist, err := fileutils.IsFileExists(fullPossiblePath, false)
+	if !fileExist || err != nil {
+		// If the config folder is not inside the current working dir, look for the config file in parent directories.
+		if fullPossiblePath, err = utils.FindFileInDirAndParents(fullPossiblePath, possibleConfigPath); err != nil {
+			return false, &ErrMissingConfig{errConfigNotFound}
+		}
+		*filePath = filepath.Join(fullPossiblePath, possibleConfigPath)
+	} else {
+		*filePath = fullPossiblePath
+	}
+
+	return true, nil
 }
 
 func extractProjectParamsFromEnv(project *Project) error {
