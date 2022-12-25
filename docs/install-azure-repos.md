@@ -223,4 +223,4 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
 14. Fill out the `Add build policy` form with the relevant `Build pipeline` field. Set the `Trigger` option to `Automatic` and save.
 
-   <img src="../images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
+    <img src="../images/azure-build-policy.png" alt="azure-build-policy.png" width="400"/>
