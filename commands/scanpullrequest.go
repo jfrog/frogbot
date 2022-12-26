@@ -96,7 +96,9 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 
 func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
 	if simplifiedOutput {
-		return utils.GetSimplifiedTitle, utils.GetEmojiSeverityTag
+		return utils.GetSimplifiedTitle, func(name utils.IconName) string {
+			return ""
+		}
 	}
 	return utils.GetBanner, utils.GetSeverityTag
 }

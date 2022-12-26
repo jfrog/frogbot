@@ -110,13 +110,13 @@ func getTestDataDir(t *testing.T) (string, string) {
 	return currentDir, testdataDir
 }
 
-// /      1.0         --> 1.0 ≤ x
-// /      (,1.0]      --> x ≤ 1.0
-// /      (,1.0)      --> x < 1.0
-// /      [1.0]       --> x == 1.0
-// /      (1.0,)      --> 1.0 < x
-// /      (1.0, 2.0)   --> 1.0 < x < 2.0
-// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+///      1.0         --> 1.0 ≤ x
+///      (,1.0]      --> x ≤ 1.0
+///      (,1.0)      --> x < 1.0
+///      [1.0]       --> x == 1.0
+///      (1.0,)      --> 1.0 < x
+///      (1.0, 2.0)   --> 1.0 < x < 2.0
+///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
 	tests := []struct {
 		versionChangeString string
@@ -189,6 +189,16 @@ func TestPackageTypeFromScan(t *testing.T) {
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})
 	}
+}
+
+func TestGetMinimalFixVersion(t *testing.T) {
+	impactedVersionPackage := "1.6.2"
+	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+	impactedVersionPackageGo := "v" + impactedVersionPackage
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
+	impactedVersionPackage = "1.7.1"
+	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {

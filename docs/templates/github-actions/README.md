@@ -42,7 +42,7 @@ Create a file named `frogbot-scan-and-fix.yml` with the content of one of the fo
 - [Yarn 2](scan-and-fix/frogbot-scan-and-fix-yarn.yml)
 - [Pipenv](scan-and-fix/frogbot-scan-and-fix-pipenv.yml)
 
->> NOTE: `frogbot-scan-and-fix.yml` and `frogbot-scan-pull-request.yml` should be used with `Existing Code Management Repository` as they are able to scan only one repository. For more information please follow [Frogbot Configuration Documentation](../../frogbot-config.md).
+>> NOTE: `frogbot-scan-and-fix.yml` and `frogbot-scan-pull-request.yml` scans only the repository they exist on. For multiple repositories scanning please use `scan-pull-requests` and `scan-and-fix-repos` commands.
 
 ### Scan All Open Pull Requests
 
