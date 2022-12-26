@@ -41,7 +41,7 @@
 
    3.5. Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
 
-   3.6. Push the workflow files to the **.github/workflows** directory in the root of your GitHub repository.
+   3.6. Push the workflow files to the **.github/workflows** directory in the root of your **Frogbot Management Repository**.
    </details>
 
    <details>
@@ -133,60 +133,60 @@
       <details>
          <summary>Template for scan-pull-requests</summary>
 
-         ```groovy
-         // Run the job every 5 minutes 
-         CRON_SETTINGS = '''*/5 * * * *'''
-         pipeline {
-             agent any
-             triggers {
-                 cron(CRON_SETTINGS)
-             }
-             environment {
-                 // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-                 // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-                 JF_INSTALL_DEPS_CMD = ""
-                 // [Mandatory]
-                 // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-                 JF_URL = credentials("JF_URL")
-                 // [Mandatory if JF_ACCESS_TOKEN is not provided]
-                 // JFrog user and password with 'read' permissions for Xray
-                 JF_USER = credentials("JF_USER")
-                 JF_PASSWORD = credentials("JF_PASSWORD")
-                 // [Mandatory]
-                 // GitHub enterprise server accesses token with the following permissions:
-                 // Read and Write access to code, pull requests, security events, and workflows
-                 JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
-                 JF_GIT_PROVIDER = "github"
-                 // [Mandatory]
-                 // GitHub enterprise server organization namespace
-                 JF_GIT_OWNER = ""
-                 // [Mandatory]
-                 // API endpoint to GitHub enterprise server
-                 JF_GIT_API_ENDPOINT = ""
-                 // Uncomment the below options if you'd like to use them.
-                 // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                 // JFrog access token with 'read' permissions for Xray
-                 // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
-             }
-             stages {
-                 stage('Download Frogbot') {
-                     steps {
-                         // For Linux / MacOS runner:
-                         sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-                         // For Windows runner:
-                         // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
-                     }
-                 }
-                 stage('Scan Pull Requests') {
-                     steps {
-                         sh "./frogbot scan-pull-requests"
-                         // For Windows runner:
-                         // powershell """.\frogbot.exe scan-pull-requests"""
-                     }
-                 }
-             }
-         }
-         ```
+   ```groovy
+   // Run the job every 5 minutes 
+   CRON_SETTINGS = '''*/5 * * * *'''
+   pipeline {
+       agent any
+       triggers {
+           cron(CRON_SETTINGS)
+       }
+       environment {
+           // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+           // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+           JF_INSTALL_DEPS_CMD = ""
+           // [Mandatory]
+           // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+           JF_URL = credentials("JF_URL")
+           // [Mandatory if JF_ACCESS_TOKEN is not provided]
+           // JFrog user and password with 'read' permissions for Xray
+           JF_USER = credentials("JF_USER")
+           JF_PASSWORD = credentials("JF_PASSWORD")
+           // [Mandatory]
+           // GitHub enterprise server accesses token with the following permissions:
+           // Read and Write access to code, pull requests, security events, and workflows
+           JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
+           JF_GIT_PROVIDER = "github"
+           // [Mandatory]
+           // GitHub enterprise server organization namespace
+           JF_GIT_OWNER = ""
+           // [Mandatory]
+           // API endpoint to GitHub enterprise server
+           JF_GIT_API_ENDPOINT = ""
+           // Uncomment the below options if you'd like to use them.
+           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+           // JFrog access token with 'read' permissions for Xray
+           // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+       }
+       stages {
+           stage('Download Frogbot') {
+               steps {
+                   // For Linux / MacOS runner:
+                   sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                   // For Windows runner:
+                   // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+               }
+           }
+           stage('Scan Pull Requests') {
+               steps {
+                   sh "./frogbot scan-pull-requests"
+                   // For Windows runner:
+                   // powershell """.\frogbot.exe scan-pull-requests"""
+               }
+           }
+       }
+   }
+   ```
       </details>
 
    3.5. In the Jenkinsfile, set the values of all the mandatory variables.
