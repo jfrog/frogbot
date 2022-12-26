@@ -6,7 +6,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -19,10 +18,8 @@ const (
 	FrogbotConfigFile = "frogbot-config.yml"
 )
 
-var errConfigNotFound = fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile)
-
 // Possible Config file path's to Frogbot Management repository
-var managementRepoPath = []string{filepath.Join(".", "frogbot", FrogbotConfigFile), filepath.Join(".", ".jfrog", "frogbot", FrogbotConfigFile)}
+var frogbotConfigPath = filepath.Join(".", "frogbot", FrogbotConfigFile)
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
@@ -87,7 +84,7 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		return nil, nil, nil, err
 	}
 
-	configData, err := ReadConfig()
+	configData, err := ReadConfig(frogbotConfigPath)
 	// If the error is due to missing configuration, try to generate an environment variable-based config aggregator.
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && missingConfigErr {
@@ -105,6 +102,9 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 	}
 
 	for _, config := range *configData {
+		if config.RepoName == "" {
+			return nil, nil, nil, &ErrMissingEnv{GitRepoEnv}
+		}
 		gitParams.RepoName = config.RepoName
 		if config.Branches != nil {
 			gitParams.Branches = config.Branches
@@ -236,54 +236,27 @@ func extractEnvParams() (*coreconfig.ServerDetails, Git, error) {
 	return &server, gitParams, err
 }
 
-func ReadConfig(configFilePaths ...string) (config *FrogbotConfigAggregator, err error) {
-	if configFilePaths == nil {
-		configFilePaths = managementRepoPath
-	}
-	// Find if the frogbot-config file is in one of the possible paths in the configFilePath array.
-	var filePath string
-	var configFileFound bool
-	for _, possibleConfigPath := range configFilePaths {
-		configFileFound, err = searchConfigFile(possibleConfigPath, &filePath)
-		_, missingConfigErr := err.(*ErrMissingConfig)
-		if err != nil && !missingConfigErr {
-			return nil, err
-		}
-		if configFileFound {
-			break
-		}
+// ReadConfig looks for the frogbot-config.yml file based on the configRelativePath, and then unmarshal the file into the FrogbotConfigAggregator struct.
+func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err error) {
+	fullConfigDirPath, err := filepath.Abs(configRelativePath)
+	if err != nil {
+		return nil, err
 	}
 
-	if !configFileFound {
-		return nil, &ErrMissingConfig{errConfigNotFound}
+	// Look for the frogbot-config.yml file in fullConfigPath and its parent dirs.
+	if fullConfigDirPath, err = utils.FindFileInDirAndParents(fullConfigDirPath, configRelativePath); err != nil {
+		return nil, &ErrMissingConfig{
+			fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile),
+		}
 	}
+	fullConfigDirPath = filepath.Join(fullConfigDirPath, configRelativePath)
 
-	configFile, err := os.ReadFile(filePath)
+	configFile, err := os.ReadFile(fullConfigDirPath)
 	if err != nil {
 		return nil, err
 	}
 
 	return config, yaml.Unmarshal(configFile, &config)
-}
-
-func searchConfigFile(possibleConfigPath string, filePath *string) (bool, error) {
-	fullPossiblePath, err := filepath.Abs(possibleConfigPath)
-	if err != nil {
-		return false, err
-	}
-
-	fileExist, err := fileutils.IsFileExists(fullPossiblePath, false)
-	if !fileExist || err != nil {
-		// If the config folder is not inside the current working dir, look for the config file in parent directories.
-		if fullPossiblePath, err = utils.FindFileInDirAndParents(fullPossiblePath, possibleConfigPath); err != nil {
-			return false, &ErrMissingConfig{errConfigNotFound}
-		}
-		*filePath = filepath.Join(fullPossiblePath, possibleConfigPath)
-	} else {
-		*filePath = fullPossiblePath
-	}
-
-	return true, nil
 }
 
 func extractProjectParamsFromEnv(project *Project) error {

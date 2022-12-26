@@ -20,10 +20,15 @@ import (
 )
 
 type GitManager struct {
-	repository     *git.Repository
-	remoteName     string
-	auth           *http.BasicAuth
-	dryRun         bool
+	// repository represents a git repository as a .git dir.
+	repository *git.Repository
+	// remoteName is name of the Git remote server
+	remoteName string
+	// The authentication struct consisting a username/password
+	auth *http.BasicAuth
+	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
+	dryRun bool
+	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
 }
 
@@ -32,7 +37,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	if err != nil {
 		return nil, err
 	}
-	basicAuth := createBasicAuth(token, username)
+	basicAuth := toBasicAuth(token, username)
 	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
 }
 
@@ -47,7 +52,7 @@ func (gm *GitManager) Checkout(branchName string) error {
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	if gm.dryRun {
 		// "Clone" the repository from the testdata folder
-		return gm.dryClone(destinationPath)
+		return gm.dryRunClone(destinationPath)
 	}
 	// Gets the remote repo url from the current .git dir
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
@@ -204,7 +209,9 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-func (gm *GitManager) dryClone(destination string) error {
+// dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
+// We should call this function when the current working directory is the repository we want to clone.
+func (gm *GitManager) dryRunClone(destination string) error {
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -215,9 +222,6 @@ func (gm *GitManager) dryClone(destination string) error {
 		return err
 	}
 	// Set the git repository to the new destination .git folder
-	if err != nil {
-		return err
-	}
 	repo, err := git.PlainOpen(destination)
 	if err != nil {
 		return err
@@ -226,12 +230,12 @@ func (gm *GitManager) dryClone(destination string) error {
 	return nil
 }
 
-func createBasicAuth(token, username string) *http.BasicAuth {
+func toBasicAuth(token, username string) *http.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {
 		username = "username"
 	}
-	// Bitbucket server username starts with ~ prefix as the project key, we need to trim it for the authentication
+	// Bitbucket server username starts with ~ prefix as the project key. We need to trim it for the authentication
 	username = strings.TrimPrefix(username, "~")
 	return &http.BasicAuth{
 		Username: username,

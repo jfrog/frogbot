@@ -10,7 +10,7 @@ import (
 )
 
 type ScanAndFixRepositories struct {
-	// dryRun used for testing purposes, mocking part of the git commands that requires networking
+	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string

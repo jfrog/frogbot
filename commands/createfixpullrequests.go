@@ -28,8 +28,9 @@ var pythonPackageRegexPrefix = "(?i)"
 var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
 type CreateFixPullRequestsCmd struct {
+	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
 	mavenDepToPropertyMap map[string][]string
-	// dryRun used for testing purposes, mocking part of the git commands that requires networking
+	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
@@ -51,6 +52,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 }
 
 func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) error {
+	// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
 	if len(repoConfig.Projects) == 0 {
 		repoConfig.Projects = []utils.Project{{}}
 	}
