@@ -37,8 +37,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
       branches:
         include:
           - master
-             - dev
-             - main
+          - dev
+          - main
     
     pool:
        vmImage: ubuntu-latest
@@ -125,9 +125,9 @@ To install Frogbot on Azure Repos repositories, follow these steps.
      trigger:
        branches:
          include:
-           - master
-              - dev
-              - main
+          - master
+          - dev
+          - main
     
      pr: none
     
