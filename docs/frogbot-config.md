@@ -1,50 +1,18 @@
-# Setting the Frogbot Configuration
+#  Creating the frogbot-config.yml file
 
-## Defining your Frogbot Management
+## Overview
 
-Frogbot configuration is defined in the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) file. To manage the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) file, you need to configure the `Frogbot Management` repository and it can be set in two ways:
+The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) includes the configuration required for Frogbot to scan your Git repositories. If your Git organization includes multiple repositories that need to be scanned, you can either place the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file in each repository, or alternatively, place it in a single repository. The repository which includes the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file will be referenced as the **Frogbot Management Repository** throughout this documentation.
 
-1. Establish a new central management repository for the Frogbot Management.
+## Adding the frogbot-config.yml file to Git
 
-2. Use an existing code repository as the Frogbot Management Repository.
+1. Decide which repository in your organization is the **Frogbot Management Repository**.
+2. Push a file named frogbot-config.yml to this repository, under a directory named `.frogbot`. The file path should be `.frogbot/frogbot-config.yml`
 
-### Central Management Repository
-
-Creating a new management repository as your `Frogbot Management` allows you to store all Frogbot configurations in one location. This allows you to configure multiple repositories and run Frogbot tasks on them simultaneously.
-
->> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-requests` and the `scan-and-fix-repos` commands, which can operate over multiple repositories as well as single repositories.
->
-> **scan-pull-requests** command scans all the open **pull requests** in the configured repositories.
->
-> **scan-and-fix-repos** command scans the configured **repositories** following new commits and opens new pull requests with a fix if a vulnerability is found in the repositories.
-
-
-To set up a new management repository as `Frogbot Management` follow these steps:
-
-1. Create a new repository named `JFrog`.
-2. Under the newly created repository, create a `frogbot` directory.
-3. Put the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) under the `frogbot` directory.
-4. Set the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) to your needs.
-
-### Using Existing Code Repository
-
-The `Frogbot Management` can be also set as one of your existing code repositories. This kind of `Frogbot Management` allow you to set all the Frogbot configuration for this repository.
->> NOTE: this kind of `Frogbot Management` is more suitable for the `scan-pull-request` and the `create-fix-pull-request` commands, which operate over a single repository only. These commands are supported on GitHub, Azure Repos and GitLab.
->
-> **scan-pull-request** command is used to scan **pull requests** in the repository for every pull request push.
->
-> **create-fix-pull-requests** command is used to scan the **repository** following new commits.
-
-To set up your existing code repository as `Frogbot Management`, follow these steps:
-
-1. Under the root of the chosen repository, create a `.jfrog` directory.
-2. Under the newly created `.jfrog` directory, create a `frogbot` directory.
-3. Put the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) under the `frogbot` directory.
-4. Set the [frogbot-config](templates/.jfrog/frogbot/frogbot-config.yml) to your needs.
 
 # The file syntax
 
-[frogbot-config.yml](templates/.jfrog/frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying each `params` keyword for each repository.
+[frogbot-config.yml](templates/.frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying each `params` keyword for each repository.
 > Most of the properties in the file are **OPTIONAL**, please note the ones that specified as **MANDATORY**.
 
 ## Params
