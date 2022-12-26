@@ -66,7 +66,7 @@ jobs:
 
           # [Mandatory]
           # GitHub Personal Access Token (PAT)
-          JF_GIT_TOKEN: ${{ secrets.GH_PAT }}
+          JF_GIT_TOKEN: ${{ secrets.FROGBOT_GIT_TOKEN }}
 
           # [Mandatory if JF_USER and JF_PASSWORD are not provided]
           # JFrog access token with 'read' permissions on Xray service
