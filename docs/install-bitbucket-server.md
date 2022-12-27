@@ -21,7 +21,7 @@
 
    2.5. Create a Pipelines job with the below pipelines.yml content.
       <details>
-        <summary>Template for scan-pull-requests</summary>
+        <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
 
    ```yml
     resources:
@@ -65,48 +65,15 @@
               # Bitbucket project namespace
               JF_GIT_OWNER: ""
   
-              # [Mandatory]
-              # Bitbucket repository name
-              JF_GIT_REPO: ""
-  
-              # Uncomment the below options if you'd like to use them.
-              # NOTE: The below options are irrelevant if you are using a config file, and should be configured there.
-  
-              # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-              # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-              # JF_INSTALL_DEPS_CMD: ""
-  
-              # [Optional, default: "."]
-              # Relative path to the project in the git repository
-              # JF_WORKING_DIR: path/to/project/dir
-  
-              # [Optional]
-              # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-              # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
-  
-              # [Optional]
-              # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-              # JF_PROJECT: <project-key>
-  
-              # [Optional, default: "FALSE"]
-              # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
-  
-              # [Optional, default: "TRUE"]
-              # Fails the Frogbot task if any security issue is found.
-              # JF_FAIL: "FALSE"
-  
-              # [Optional, default: "TRUE"]
-              # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-              # JF_USE_WRAPPER: "TRUE"
-              
         execution:
           onExecute:
             - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
             - ./frogbot scan-pull-requests
+            - ./frogbot scan-and-fix-repos   
             # For Windows runner:
             # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
             # - .\frogbot.exe scan-pull-requests
+            # - .\frogbot.exe scan-and-fix-repos
    ```
 
     </details>
@@ -136,7 +103,7 @@
    2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
 
       <details>
-         <summary>Template for scan-pull-requests</summary>
+         <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
 
    ```groovy
    // Run the job every 5 minutes 
@@ -170,47 +137,13 @@
            JF_GIT_OWNER= ""
    
            // [Mandatory]
-           // Bitbucket repository name
-           JF_GIT_REPO= ""
-   
-           // [Mandatory]
            // API endpoint to Bitbucket server
            JF_GIT_API_ENDPOINT= ""
-   
-           // Uncomment the below options if you'd like to use them.
-           // NOTE: The below options are irrelevant if you are using a config file, and should be configured there.
-   
-           // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-           // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-           // JF_INSTALL_DEPS_CMD= ""
-        
+           
            // [Mandatory if JF_USER and JF_PASSWORD are not provided]
            // JFrog access token with 'read' permissions for Xray
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
    
-           // [Optional, default: "."]
-           // Relative path to the project in the git repository
-           // JF_WORKING_DIR= path/to/project/dir
-   
-           // [Optional]
-           // Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-           // JF_WATCHES= <watch-1>,<watch-2>...<watch-n>
-   
-           // [Optional]
-           // JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-           // JF_PROJECT= <project-key>
-   
-           // [Optional, default: "FALSE"]
-           // Displays all existing vulnerabilities, including the ones that were added by the pull request.
-           // JF_INCLUDE_ALL_VULNERABILITIES= "TRUE"
-   
-           // [Optional, default: "TRUE"]
-           // Fails the Frogbot task if any security issue is found.
-           // JF_FAIL= "FALSE"
-   
-           // [Optional, default: "TRUE"]
-           // Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-           // JF_USE_WRAPPER: "TRUE"
        }
    
        stages {
@@ -230,6 +163,15 @@
    
                    // For Windows runner:
                    // powershell """.\frogbot.exe scan-pull-requests"""
+               }
+           }
+   
+            stage('Scan and Fix Repos') {
+               steps {
+                   sh "./frogbot scan-and-fix-repos"
+   
+                   // For Windows runner:
+                   // powershell """.\frogbot.exe scan-and-fix-repos"""
                }
            }
        }

@@ -4,61 +4,49 @@
 
 1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file. Throughout this documentation we will reference this Git repository which includes the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file as the **Frogbot Management Repository**.
 
-
-2. If you wish Frogbot to scan **multiple** repositories in your GitHub organization, and not only the Frogbot Management Repository, you need to grant the Frogbot Management Repository the required permissions. To do this, Create a GitHub Fine-grained personal access token named `FROGBOT_GIT_TOKEN` with read and write permissions to
-   - Actions
-   - Code scanning alerts
-   - Commit statuses
-   - Pull requests
-   - Security events
-   - Workflows
-
-   For more information, please refer to the [GitHub Documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
-
-
-3. Install Frogbot using your platform of choice.
+2. Install Frogbot using your platform of choice.
 
    <details>
       <summary>Install Frogbot Using GitHub Actions</summary>
 
-   3.1. Make sure you have the connection details of your JFrog environment.
+   2.1. Make sure you have the connection details of your JFrog environment.
 
-   3.2. Go to your **Frogbot Management Repository** settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD**
+   2.2. Go to your **Frogbot Management Repository** settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD**
 
    > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
    > instead of **JF_USER** and **JF_PASSWORD**
 
    ![](../images/github-repository-secrets.png)
 
-   3.3. Check the Allow GitHub Actions to create and approve pull requests check box.
+   2.3. Check the Allow GitHub Actions to create and approve pull requests check box.
 
    ![](../images/github-pr-permissions.png)
 
-   3.4. Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
+   2.4. Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
    called **frogbot** and add people or public teams as reviewers. The chosen reviewers can trigger Frogbot scans on pull requests.
 
    ![](../images/github-environment.png)
 
-   3.5. Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
+   2.5. Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
 
-   3.6. Push the workflow files to the **.github/workflows** directory in the root of your **Frogbot Management Repository**.
+   2.6. Push the workflow files to the **.github/workflows** directory in the root of your **Frogbot Management Repository**.
    </details>
 
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
-   3.1. Make sure you have the connection details of your JFrog environment.
+   2.1. Make sure you have the connection details of your JFrog environment.
 
-   3.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
+   2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 
-   3.3. Save your GitHub access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **github** with the token as the key and the GitHub access token as the value.
+   2.3. Save your GitHub access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **github** with the token as the key and the GitHub access token as the value.
 
-   3.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
+   2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
 
-   3.5. Create a Pipelines job with the below pipelines.yml content.
+   2.5. Create a Pipelines job with the below `pipelines.yml` content.
    <details>
-       <summary>Template for scan-pull-requests</summary>
+       <summary>Template for scan-pull-request/scan-and-fix-repos</summary>
 
       ```yml
       resources:
@@ -99,9 +87,11 @@
                 onExecute:
                   - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
                   - ./frogbot scan-pull-requests
+                  - ./frogbot scan-and-fix-repos
                   # For Windows runner:
                   # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
                   # - .\frogbot.exe scan-pull-requests
+                  # - .\frogbot.exe scan-and-fix-repos
       ```
 
       </details>
@@ -121,17 +111,17 @@
    <details>
       <summary>Install Frogbot Using Jenkins</summary>
 
-   3.1. Make sure you have the connection details of your JFrog environment.
+   2.1. Make sure you have the connection details of your JFrog environment.
 
-   3.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
+   2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
    **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**
    and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 
-   3.3. Save your GitHub access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
+   2.3. Save your GitHub access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
 
-   3.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
+   2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
       <details>
-         <summary>Template for scan-pull-requests</summary>
+         <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
 
    ```groovy
    // Run the job every 5 minutes 
@@ -142,9 +132,6 @@
            cron(CRON_SETTINGS)
        }
        environment {
-           // [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-           // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-           JF_INSTALL_DEPS_CMD = ""
            // [Mandatory]
            // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
            JF_URL = credentials("JF_URL")
@@ -184,16 +171,23 @@
                    // powershell """.\frogbot.exe scan-pull-requests"""
                }
            }
+           stage('Scan and Fix Repos') {
+                steps {
+                    sh "./frogbot scan-and-fix-repos"
+                    // For Windows runner:
+                    // powershell """.\frogbot.exe scan-and-fix-repos"""
+                }    
+           }    
        }
    }
    ```
       </details>
 
-   3.5. In the Jenkinsfile, set the values of all the mandatory variables.
+   2.5. In the Jenkinsfile, set the values of all the mandatory variables.
 
-   3.6. In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
+   2.6. In the Jenkinsfile, modify the code inside the `Download Frogbot`, `Scan Pull Requests` and `Scan and Fix Repos` according to the Jenkins agent operating system.
 
-   3.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
+   2.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    **Important**
 

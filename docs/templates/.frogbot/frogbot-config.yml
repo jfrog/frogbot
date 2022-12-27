@@ -1,7 +1,3 @@
-# JFrog Frogbot Config file supports multiple repository configuration.
-# It is important to note that 'scan-pull-request' and 'create-fix-pull-request' only work on a single repository, thus only the first repository in the configuration file will be used.
-# Please use 'scan-pull-requests' command to scan the multiple repository pull requests configurations.
-
 - params:
     # Git parameters to base the scan on
     git:

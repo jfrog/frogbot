@@ -12,8 +12,6 @@ your GitHub repository.
 2. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
-
-
 ### Pull Requests Scanning
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of one of the following templates, depending on the
@@ -31,7 +29,7 @@ and before they are merged.
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 
-### Scan Repository and Create Fixing Pull Request
+### Pull Requests Opening
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 
@@ -41,9 +39,3 @@ Create a file named `frogbot-scan-and-fix.yml` with the content of one of the fo
 - [Pip](scan-and-fix/frogbot-scan-and-fix-pip.yml)
 - [Yarn 2](scan-and-fix/frogbot-scan-and-fix-yarn.yml)
 - [Pipenv](scan-and-fix/frogbot-scan-and-fix-pipenv.yml)
-
->> NOTE: `frogbot-scan-and-fix.yml` and `frogbot-scan-pull-request.yml` scans only the repository they exist on. For multiple repositories scanning please use `scan-pull-requests` and `scan-and-fix-repos` commands.
-
-### Scan All Open Pull Requests
-
-Create a file named `frogbot-scan-pull-requests.yml` with the content of [this template](./scan-pull-requests/frogbot-scan-pull-requests.yml). Make sure to follow the guidelines in the 'Using the Templates' section above. A scheduled workflow will be created where Frogbot scans all the open pull requests in your configured repositories. Frogbot will scan for security vulnerabilities after the pull requests are created and when a `rescan` comment has been submitted.
