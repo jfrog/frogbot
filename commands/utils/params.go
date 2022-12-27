@@ -243,13 +243,17 @@ func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err
 		return nil, err
 	}
 
-	// Look for the frogbot-config.yml file in fullConfigPath and its parent dirs.
-	if fullConfigDirPath, err = utils.FindFileInDirAndParents(fullConfigDirPath, configRelativePath); err != nil {
-		return nil, &ErrMissingConfig{
-			fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile),
+	// Look for the frogbot-config.yml file in fullConfigPath
+	exist, err := utils.IsFileExists(fullConfigDirPath, false)
+	if !exist || err != nil {
+		// Look for the frogbot-config.yml in fullConfigPath parents dirs
+		if fullConfigDirPath, err = utils.FindFileInDirAndParents(fullConfigDirPath, configRelativePath); err != nil {
+			return nil, &ErrMissingConfig{
+				fmt.Sprintf("%s wasn't found in the Frogbot directory and its subdirectories. Continuing with environment variables", FrogbotConfigFile),
+			}
 		}
+		fullConfigDirPath = filepath.Join(fullConfigDirPath, configRelativePath)
 	}
-	fullConfigDirPath = filepath.Join(fullConfigDirPath, configRelativePath)
 
 	configFile, err := os.ReadFile(fullConfigDirPath)
 	if err != nil {
