@@ -12,7 +12,7 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) includes the con
 
 # The file syntax
 
-[frogbot-config.yml](templates/.frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying each `params` keyword for each repository.
+[frogbot-config.yml](templates/.frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying the `params` keyword for each repository.
 > Most of the properties in the file are **OPTIONAL**, please note the ones that specified as **MANDATORY**.
 
 ## Params
