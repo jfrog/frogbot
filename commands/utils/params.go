@@ -19,7 +19,7 @@ const (
 )
 
 // Possible Config file path's to Frogbot Management repository
-var frogbotConfigPath = filepath.Join(".", "frogbot", FrogbotConfigFile)
+var frogbotConfigPath = filepath.Join(".", ".frogbot", FrogbotConfigFile)
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
