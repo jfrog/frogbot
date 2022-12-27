@@ -4,7 +4,7 @@
 
 To install Frogbot on Azure Repos repositories, follow these steps.
 
-1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file. Throughout this documentation we will reference this Git repository which includes the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file as the **Frogbot Management Repository**.
+1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file and defining your **Frogbot Management Repository**.
 
 2. Make sure you have the connection details of your JFrog environment.
 
@@ -55,10 +55,6 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                  # Azure Repos personal access token with Code -> Read & Write permissions
                  JF_GIT_TOKEN: $(USER_TOKEN)
     
-                 # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-                 # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-                 JF_INSTALL_DEPS_CMD: ""
-    
                  # [Mandatory]
                  # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
                  JF_URL: $(JF_URL)
@@ -71,27 +67,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                  # [Mandatory if JF_USER and JF_PASSWORD are not provided]
                  # JFrog access token with 'read' permissions for Xray
                  # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
-    
-                 # [Optional, default: "."]
-                 # Relative path to the project in the git repository
-                 # JF_WORKING_DIR: path/to/project/dir
-    
-                 # [Optional]
-                 # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-                 # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
-    
-                 # [Optional]
-                 # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-                 # JF_PROJECT: <project-key>
-    
-                 # [Optional, default: "FALSE"]
-                 # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-                 # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
-    
-                 # [Optional, default: "TRUE"]
-                 # Fails the Frogbot task if any security issue is found.
-                 # JF_FAIL: "FALSE"
-    
+   
                  # Predefined Azure Pipelines variables. There's no need to set them.
                  JF_GIT_PULL_REQUEST_ID: $(System.PullRequest.PullRequestId)
                  JF_GIT_PROJECT: $(System.TeamProject)
@@ -146,10 +122,6 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                   # Azure Repos personal access token with Code -> Read & Write permissions
                   JF_GIT_TOKEN: $(USER_TOKEN)
     
-                  # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
-                  # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-                  JF_INSTALL_DEPS_CMD: ""
-    
                   # [Mandatory]
                   # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
                   JF_URL: $(JF_URL)
@@ -162,26 +134,6 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                   # [Mandatory if JF_USER and JF_PASSWORD are not provided]
                   # JFrog access token with 'read' permissions for Xray
                   # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
-    
-                  # [Optional, default: "."]
-                  # Relative path to the project in the git repository
-                  # JF_WORKING_DIR: path/to/project/dir
-    
-                  # [Optional]
-                  # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-                  # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
-    
-                  # [Optional]
-                  # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-                  # JF_PROJECT: <project-key>
-    
-                  # [Optional, default: "FALSE"]
-                  # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-                  # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
-    
-                  # [Optional, default: "TRUE"]
-                  # Fails the Frogbot task if any security issue is found.
-                  # JF_FAIL: "FALSE"
     
                   # Predefined Azure Pipelines variables. There's no need to set them.
                   JF_GIT_PROJECT: $(System.TeamProject)
