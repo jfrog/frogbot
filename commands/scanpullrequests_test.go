@@ -115,12 +115,14 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	secondRepoParams := utils.Params{Git: gitParams.Git}
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
-			Server: server,
-			Params: firstRepoParams,
+			SimplifiedOutput: true,
+			Server:           server,
+			Params:           firstRepoParams,
 		},
 		{
-			Server: server,
-			Params: secondRepoParams,
+			SimplifiedOutput: true,
+			Server:           server,
+			Params:           secondRepoParams,
 		},
 	}
 	mockParams := []MockParams{
