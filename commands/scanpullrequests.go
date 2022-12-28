@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"sort"
 	"strings"
 
@@ -146,8 +147,13 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			JFrogProjectKey: repo.JFrogProjectKey,
 		},
 	}
+	var simplifiedOutput bool
+	// Bitbucket server requires a simple output without emojis + images
+	if repo.GitProvider.String() == vcsutils.BitbucketServer.String() {
+		simplifiedOutput = true
+	}
 	frogbotParams = &utils.FrogbotRepoConfig{
-		SimplifiedOutput: true,
+		SimplifiedOutput: simplifiedOutput,
 		Server:           repo.Server,
 		Params:           params,
 	}
