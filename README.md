@@ -118,7 +118,7 @@ The Frogbot Azure Repos scan workflow is:
 
 1. The developer opens a pull request.
 2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot is triggered again following new commits.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
 </details>
 
