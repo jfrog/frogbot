@@ -466,23 +466,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 		configData, err = utils.ReadConfig(configPath)
 	}
 	assert.NoError(t, err)
-	var configAggregator utils.FrogbotConfigAggregator
-	for _, config := range *configData {
-		gitParams.RepoName = config.RepoName
-		gitParams.Branches = config.Branches
-		config.FailOnSecurityIssues = &failOnSecurityIssues
-		config.Git = gitParams
-		params := utils.Params{
-			Scan:          config.Scan,
-			Git:           gitParams,
-			JFrogPlatform: config.JFrogPlatform,
-		}
-		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
-			Server:           serverParams,
-			SimplifiedOutput: config.SimplifiedOutput,
-			Params:           params,
-		})
-	}
+	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, failOnSecurityIssues)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)

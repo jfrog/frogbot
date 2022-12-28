@@ -5,9 +5,7 @@
         - master
     scan:
       projects:
-        - installCommandName: npm
-          installCommandArgs:
-            - i
+        - installCommand: npm i
           workingDirs:
             - sub1
             - sub3/sub4

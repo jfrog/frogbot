@@ -55,25 +55,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer cleanUp()
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
-
-	failOnSecurityIssue := false
-	var configAggregator utils.FrogbotConfigAggregator
-	for _, conf := range *configData {
-		gitParams.RepoName = conf.RepoName
-		gitParams.Branches = conf.Branches
-		conf.FailOnSecurityIssues = &failOnSecurityIssue
-		conf.Git = gitParams
-		params := utils.Params{
-			Scan:          conf.Scan,
-			Git:           conf.Git,
-			JFrogPlatform: conf.JFrogPlatform,
-		}
-		configAggregator = append(configAggregator, utils.FrogbotRepoConfig{
-			Server:           serverParams,
-			SimplifiedOutput: conf.SimplifiedOutput,
-			Params:           params,
-		})
-	}
+	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, false)
 
 	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
 	assert.NoError(t, cmd.Run(configAggregator, client))
