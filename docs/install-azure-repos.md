@@ -35,6 +35,9 @@ To install Frogbot on Azure Repos repositories, follow these steps.
      schedules:
           # Every 5 minutes
           - cron: "*/5 * * * *"
+            branches: 
+              include: 
+                - "*"
      pool:
           vmImage: ubuntu-latest
     
@@ -47,7 +50,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                  env:
                     # [Mandatory]
                     # Azure Repos personal access token with Code -> Read & Write permissions
-                    JF_GIT_TOKEN: $(USER_TOKEN)
+                    JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
     
                     # [Mandatory]
                     # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
@@ -62,10 +65,13 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                     # JFrog access token with 'read' permissions for Xray
                     # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
    
+                    # [Mandatory]
+                    # The name of the organization that owns this project
+                    JF_GIT_OWNER: ""
+   
                     # Predefined Azure Pipelines variables. There's no need to set them.
                     JF_GIT_PROJECT: $(System.TeamProject)
                     JF_GIT_API_ENDPOINT: $(System.CollectionUri)
-                    JF_GIT_OWNER: $(System.TeamProject)
                     JF_GIT_PROVIDER: 'azureRepos'
     
                  inputs:
@@ -89,9 +95,10 @@ To install Frogbot on Azure Repos repositories, follow these steps.
      # Every 5 minutes
      schedules:
         - cron: "*/5 * * * *"
-    
-     pr: none
-    
+          branches: 
+            include: 
+              - "*"
+        
      pool:
         vmImage: ubuntu-latest
     
@@ -104,7 +111,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                env:
                   # [Mandatory]
                   # Azure Repos personal access token with Code -> Read & Write permissions
-                  JF_GIT_TOKEN: $(USER_TOKEN)
+                  JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
     
                   # [Mandatory]
                   # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
@@ -119,16 +126,19 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                   # JFrog access token with 'read' permissions for Xray
                   # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
     
+                  # [Mandatory]
+                  # The name of the organization that owns this project
+                  JF_GIT_OWNER: ""
+    
                   # Predefined Azure Pipelines variables. There's no need to set them.
                   JF_GIT_PROJECT: $(System.TeamProject)
                   JF_GIT_API_ENDPOINT: $(System.CollectionUri)
-                  JF_GIT_OWNER: $(System.TeamProject)
                   JF_GIT_PROVIDER: 'azureRepos'
     
                inputs:
                   script: |
                      curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                     ./frogbot scan-and-fix-repos.yml
+                     ./frogbot scan-and-fix-repos
      ```
 
      </details>
