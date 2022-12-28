@@ -467,6 +467,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	}
 	assert.NoError(t, err)
 	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, failOnSecurityIssues)
+	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
