@@ -68,26 +68,6 @@ export class Utils {
     }
 
     /**
-     * Execute frogbot scan-pull-requests command.
-     */
-    public static async execScanPullRequests() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-requests']);
-        if (res !== core.ExitCode.Success) {
-            throw new Error('Frogbot exited with exit code ' + res);
-        }
-    }
-
-    /**
-     * Execute frogbot scan-and-fix-repos command.
-     */
-    public static async execScanAndFixRepos() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-and-fix-repos']);
-        if (res !== core.ExitCode.Success) {
-            throw new Error('Frogbot exited with exit code ' + res);
-        }
-    }
-
-    /**
      * Try to load the Frogbot executables from cache.
      *
      * @param version  - Frogbot version
