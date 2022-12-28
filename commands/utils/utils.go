@@ -86,10 +86,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		clientLog.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-	// Don't do anything if scanResults is empty
-	if xrayutils.IsEmptyScanResponse(scanResults) {
-		return nil
-	}
+
 	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
