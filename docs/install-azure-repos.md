@@ -22,14 +22,14 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
    ![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
 
-7. Select `Starter Pipeline` and name it `frogbot-scan-pull-requests`.
+7. Select `Starter Pipeline` and name it `frogbot`.
 
    ![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
 
 8. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
 
     <details>
-      <summary>Template for frogbot-scan-pull-requests.yml</summary>
+      <summary>Template</summary>
 
     ```yml
      schedules:
@@ -78,78 +78,18 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                    script: |
                      curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
                      ./frogbot scan-pull-requests
+                     ./frogbot scan-and-fix-repos
     ```
 
 </details>
 
-9. Select `Starter Pipeline` and name it `frogbot-scan-and-fix-repos`.
+9. For the pipeline you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
 
-   ![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
+   > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
+   > instead of **JF_USER** and **JF_PASSWORD**.
 
-10. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
+   To set the `Variables` in the pipeline edit page, click on the `Variables` button and set the `Variables`.
 
-     <details>
-       <summary>Template for frogbot-scan-and-fix-repos.yml</summary>
+   ![variables_button.png](../images/azure-variables-button.png)
 
-     ```yaml
-     # Every 5 minutes
-     schedules:
-        - cron: "*/5 * * * *"
-          branches: 
-            include: 
-              - "*"
-        
-     pool:
-        vmImage: ubuntu-latest
-    
-     jobs:
-        - job:
-          displayName: "Frogbot Scan and Fix Repos"
-          steps:
-             - task: CmdLine@2
-               displayName: 'Download and Run Frogbot'
-               env:
-                  # [Mandatory]
-                  # Azure Repos personal access token with Code -> Read & Write permissions
-                  JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
-    
-                  # [Mandatory]
-                  # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-                  JF_URL: $(JF_URL)
-    
-                  # [Mandatory if JF_ACCESS_TOKEN is not provided]
-                  # JFrog user and password with 'read' permissions for Xray
-                  JF_USER: $(JF_USER)
-                  JF_PASSWORD: $(JF_PASSWORD)
-    
-                  # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                  # JFrog access token with 'read' permissions for Xray
-                  # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
-    
-                  # [Mandatory]
-                  # The name of the organization that owns this project
-                  JF_GIT_OWNER: ""
-    
-                  # Predefined Azure Pipelines variables. There's no need to set them.
-                  JF_GIT_PROJECT: $(System.TeamProject)
-                  JF_GIT_API_ENDPOINT: $(System.CollectionUri)
-                  JF_GIT_PROVIDER: 'azureRepos'
-    
-               inputs:
-                  script: |
-                     curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                     ./frogbot scan-and-fix-repos
-     ```
-
-     </details>
-
-11. For each of the two pipelines you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
-
-    > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
-    > instead of **JF_USER** and **JF_PASSWORD**.
-
-    To set the `Variables` in the pipeline edit page, click on the `Variables` button and set the `Variables`.
-
-    ![variables_button.png](../images/azure-variables-button.png)
-
-    ![img_1.png](../images/azure-new-variable.png)
+   ![img_1.png](../images/azure-new-variable.png)

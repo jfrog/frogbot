@@ -46,7 +46,7 @@
 
    2.5. Create a Pipelines job with the below `pipelines.yml` content.
    <details>
-       <summary>Template for scan-pull-request/scan-and-fix-repos</summary>
+       <summary>Template</summary>
 
       ```yml
       resources:
@@ -121,7 +121,7 @@
 
    2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
       <details>
-         <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
+         <summary>Template</summary>
 
    ```groovy
    // Run the job every 5 minutes 

@@ -21,7 +21,7 @@
 
    2.5. Create a Pipelines job with the below pipelines.yml content.
       <details>
-        <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
+        <summary>Template</summary>
 
    ```yml
     resources:
@@ -94,8 +94,8 @@
 
    2.1. Make sure you have the connection details of your JFrog environment.
 
-   2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**, **
-   JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
+   2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
+   **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
    and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 
    2.3. Save your Bitbucket access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
@@ -103,7 +103,7 @@
    2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
 
       <details>
-         <summary>Template for scan-pull-requests/scan-and-fix-repos</summary>
+         <summary>Template</summary>
 
    ```groovy
    // Run the job every 5 minutes 

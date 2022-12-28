@@ -6,65 +6,55 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) includes the con
 
 ## Adding the frogbot-config.yml file to Git
 
-1. Decide which repository in your organization is the **Frogbot Management Repository**.
+1. If you're using one of the following platforms:
+
+- GitHub with Jenkins or JFrog Pipelines
+- Bitbucket Server
+- Azure Repos Decide which repository in your organization is the **Frogbot Management Repository**.
+
+  If you're using one of the following platforms:
+- GitHub with GitHub actions
+- GitLab each repository that needs to be scanned by Frogbot should be considered a Frogbot Management Repository.
+
 2. Push a file named frogbot-config.yml to this repository, under a directory named `.frogbot`. The file path should be `.frogbot/frogbot-config.yml`
 
+## The file structure
 
-# The file syntax
+[frogbot-config.yml](templates/.frogbot/frogbot-config.yml) is a YAML configuration file. The config file defines an array of repositories by specifying the `params` keyword for each repository.
 
-[frogbot-config.yml](templates/.frogbot/frogbot-config.yml) is a simple YAML configuration file. The config file defines an array of repositories by specifying the `params` keyword for each repository.
-> Most of the properties in the file are **OPTIONAL**, please note the ones that specified as **MANDATORY**.
+### Params
 
-## Params
+The `params` section represents a single Git repository. It includes the `git`, `jfrogPlatform` and `scan` sections.
 
-Using the `params` we can define the `git`, `jfrogPlatform` and `scan` parameters for each of our repositories.
+#### git
 
-### git
+The `git` section includes the git repository related parameters.
 
-Allows you to set the git related information.
+- `repoName` - [Mandatory] The name of the Git repository to scan.
+- `branches` - [Mandatory] List of branches to scan
 
-- `repoName`
-    - **MANDATORY**
-    - Used to point to the relevant repository.
-- `branches`
-    - List of `branches` to preform the commands on.
-    - If the config file is used to run Frogbot's `scan-and-fix-repos` or `create-fix-pull-requests` commands, it is **MANDATORY** to set this property.
+#### scan
 
-### scan
+This section includes the scanning options for Frogbot.
 
-Allows you to set the scanning features of Frogbot.
+- `includeAllVulnerabilities` - [Optional, Default: false] Frogbot displays all the existing vulnerabilities, including the ones that were added by the pull request and the ones that are inside the target branch already.
 
-- `includeAllVulnerabilities`
-    - Displays all existing vulnerabilities, including the ones that were added by the pull request and the ones that are inside the target branch already.
-
-- `failOnSecurityIssues`
-    - Fails the Frogbot task if any security issue is found.
+- `failOnSecurityIssues` - [Optional. Default: true] Frogbot fails the task if any security issue is found.
 - `projects`
-    - A list of package manager related projects.
-    - Each element in the list represents at least one directory with a common technology.
-    - properties:
-        - `workingDirs`
-            - A list of relative path's to the projects directories in the git repository.
-            - Each directory supposed to share the same technology.
-            - If not specified, the root directory of the repository will be scanned.
-        - `installCommandName`
-            - **MANDATORY** for projects which use npm, yarn 2, NuGet and .NET to download their dependencies
-            - Represents the installation command (e.g. npm, maven, yarn).
-        - `installCommandArgs`
-            - Goes along with `installCommandName`, and it is also **MANDATORY** for these projects.
-            - Represents the list of arguments to the installation command (e.g. install, i).
-        - `pipRequirementsFile`
-            - **MANDATORY** for pip only if using a requirements file.
-            - If not specified, the command that will install the dependencies with pip is `pip install .`.
-        - `useWrapper`
-            - For projects which are using Gradle.
-            - Disables/Enables building Gradle projects with Gradle Wrapper.
+    - List of sub-projects / project dirs.
+        - `workingDirs` - [Optional, Default: root directory]
+            - A list of relative path's inside the Git repository. Each path should point to the root of a sub-project to be scanned by Frogbot.
+        - `installCommand` - [Mandatory for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+            - The command to download the project dependencies. For example: 'npm install', 'nuget restore'.
+        - `pipRequirementsFile` [Mandatory for projects which use the pip package manager to download their dependencies, if pip requires the requirements file ]
+        - `useWrapper` [Optional, default: true]
+            - Determines whether to use the Gradle Wrapper for projects which are using Gradle.
 
-### jfrogPlatform
+#### jfrogPlatform
 
-Allows you to set information related to the JFrog Platform settings.
+The section includes the JFrog Platform settings
 
-- `jfrogProjectKey`
-    - JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
-- `watches`
-    - List of Xray watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
+- `jfrogProjectKey` - [Optional]
+    - The JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
+- `watches` - [Optional]
+    - A List of Xray watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
