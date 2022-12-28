@@ -204,12 +204,12 @@ pipeline {
         }
 
         stage('Scan Pull Requests') {
-            steps {
-                sh "./frogbot scan-pull-requests"
+          steps {
+            sh "./frogbot scan-pull-requests"
 
-                // For Windows runner:
-                // powershell """.\frogbot.exe scan-pull-requests"""
-            }
+            // For Windows runner:
+            // powershell """.\frogbot.exe scan-pull-requests"""
+          }
         }
     }
 }

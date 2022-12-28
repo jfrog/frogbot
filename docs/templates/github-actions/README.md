@@ -9,7 +9,7 @@ your GitHub repository.
 
 ## Using the Templates
 1. Use the templates below, depending on the tool used to download dependencies for you project, to create the workflow files.
-2. Only if the templates you're using include the `JF_INSTALL_DEPS_CMD` variable, make sure they include the correct command to download your project dependencies. For example, `npm i` or `nuget restore`. 
+2. Only if the templates you're using include the `JF_INSTALL_DEPS_CMD` variable, make sure they include the correct command to download your project dependencies. For example, `npm i` or `nuget restore`.
 3. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
