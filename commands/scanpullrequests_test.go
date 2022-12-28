@@ -162,8 +162,9 @@ func TestScanAllPullRequests(t *testing.T) {
 		Git: gitParams.Git,
 	}
 	repoParams := &utils.FrogbotRepoConfig{
-		Server: server,
-		Params: params,
+		SimplifiedOutput: true,
+		Server:           server,
+		Params:           params,
 	}
 	paramsAggregator := utils.FrogbotConfigAggregator{}
 	paramsAggregator = append(paramsAggregator, *repoParams)
