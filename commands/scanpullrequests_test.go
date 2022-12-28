@@ -16,6 +16,7 @@ import (
 )
 
 var gitParams = &utils.FrogbotRepoConfig{
+	SimplifiedOutput: true,
 	Params: utils.Params{
 		Git: utils.Git{
 			RepoOwner: "repo-owner",
