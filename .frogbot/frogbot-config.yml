@@ -1,0 +1,6 @@
+- params:
+    git:
+      repoName: frogbot
+      branches:
+        - master
+        - dev
