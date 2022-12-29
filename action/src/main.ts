@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { Utils } from './utils';
+import {Utils} from './utils';
 
 async function main() {
     try {
@@ -13,9 +13,6 @@ async function main() {
                 break;
             case "push":
                 await Utils.execCreateFixPullRequests();
-                break;
-            case "schedule":
-                await Utils.execScanPullRequests();
                 break;
             default:
                 core.setFailed(eventName + " event is not supported by Frogbot");

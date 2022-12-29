@@ -28,44 +28,60 @@ var pythonPackageRegexPrefix = "(?i)"
 var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
 type CreateFixPullRequestsCmd struct {
+	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
 	mavenDepToPropertyMap map[string][]string
+	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
+	dryRun bool
+	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
+	dryRunRepoPath string
 }
 
 func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
+	repoConfig := &configAggregator[0]
+	for _, branch := range repoConfig.Branches {
+		err := cfp.scanAndFixRepository(repoConfig, client, branch)
+		if err != nil {
+			return err
+		}
+	}
 
-	repoConfig := &(configAggregator)[0]
+	return nil
+}
+
+func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) error {
+	// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
+	if len(repoConfig.Projects) == 0 {
+		repoConfig.Projects = []utils.Project{{}}
+	}
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	for _, branch := range repoConfig.Branches {
-		xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
-		for projectIndex, project := range repoConfig.Projects {
-			projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
-			for _, fullPathWd := range projectFullPathWorkingDirs {
-				scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
-				if err != nil {
-					return err
-				}
+	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
+	for projectIndex, project := range repoConfig.Projects {
+		projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
+		for _, fullPathWd := range projectFullPathWorkingDirs {
+			scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
+			if err != nil {
+				return err
+			}
 
-				// Upload scan results to the relevant Git provider code scanning UI
-				err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
-				if err != nil {
-					clientLog.Warn(err)
-				}
+			// Upload scan results to the relevant Git provider code scanning UI
+			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
+			if err != nil {
+				clientLog.Warn(err)
+			}
 
-				// Fix and create PRs
-				relativeCurrentWd := utils.GetRelativeWd(fullPathWd, baseWd)
-				if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.Git, branch, client, scanResults, relativeCurrentWd); err != nil {
-					return err
-				}
+			// Fix and create PRs
+			relativeCurrentWd := utils.GetRelativeWd(fullPathWd, baseWd)
+			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.Git, branch, client, scanResults, relativeCurrentWd); err != nil {
+				return err
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -89,7 +105,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	}
 	// Nothing to fix, return
 	if len(fixVersionsMap) == 0 {
-		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions")
+		clientLog.Info("Didn't find vulnerable dependencies with existing fix versions for", repoGitParams.RepoName)
 		return nil
 	}
 	clientLog.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
@@ -108,14 +124,16 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	gitManager, err := utils.NewGitManager(".", "origin", repoGitParams.Token)
+	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", repoGitParams.Token, repoGitParams.RepoOwner)
 	if err != nil {
 		return err
 	}
+
 	err = gitManager.Clone(wd, branch)
 	if err != nil {
 		return err
 	}
+
 	// 'CD' into the temp working directory
 	restoreDir, err := utils.Chdir(wd)
 	if err != nil {

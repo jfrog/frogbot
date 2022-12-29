@@ -144,6 +144,9 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	configFile, err := ReadConfig(configParamsTestFile)
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
+		for projectI, project := range repo.Projects {
+			SetProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
+		}
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, *repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.JFrogProjectKey)

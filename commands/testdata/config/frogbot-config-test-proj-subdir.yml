@@ -5,9 +5,6 @@
         - master
     scan:
       projects:
-        - installCommandName: npm
-          installCommandArgs:
-            - i
+        - installCommand: npm i
           workingDirs:
             - subdir
-      failOnSecurityIssues: false

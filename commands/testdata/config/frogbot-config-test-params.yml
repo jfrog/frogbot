@@ -7,9 +7,7 @@
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
       projects:
-        - installCommandName: npm
-          installCommandArgs:
-            - i
+        - installCommand: npm i
           workingDirs:
             - a/b
             - b/c
