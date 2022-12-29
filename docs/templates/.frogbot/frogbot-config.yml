@@ -34,7 +34,7 @@
       #   workingDirs:
       #     - "."
 
-      # [Mandatory for pip only if using requirements file, Default: pip install]
+      # [Mandatory for pip only if using requirements file, Default: pip install .]
       # The requirements file name that used to install dependencies in case of pip package manager
       #   pipRequirementsFile: ""
 
