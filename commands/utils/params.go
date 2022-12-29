@@ -19,7 +19,7 @@ const (
 )
 
 // Possible Config file path's to Frogbot Management repository
-var frogbotConfigPath = filepath.Join(".", ".frogbot", FrogbotConfigFile)
+var frogbotConfigPath = filepath.Join(".frogbot", FrogbotConfigFile)
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
@@ -115,7 +115,7 @@ func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, ser
 	for _, config := range *configData {
 		if config.Projects != nil {
 			for projectIndex, project := range config.Projects {
-				SplitInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
+				SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
 			}
 		}
 		if config.RepoName == "" {
@@ -282,7 +282,7 @@ func extractProjectParamsFromEnv(project *Project) error {
 	project.WorkingDirs = []string{workingDir}
 	project.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
-	SplitInstallCommand(installCommand, project)
+	SetProjectInstallCommand(installCommand, project)
 	var err error
 	if project.UseWrapper, err = getBoolEnv(UseWrapperEnv, true); err != nil {
 		return err
@@ -290,7 +290,7 @@ func extractProjectParamsFromEnv(project *Project) error {
 	return err
 }
 
-func SplitInstallCommand(installCommand string, project *Project) {
+func SetProjectInstallCommand(installCommand string, project *Project) {
 	if installCommand == "" {
 		return
 	}
