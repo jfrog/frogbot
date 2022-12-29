@@ -53,7 +53,7 @@ After you create a new pull request, the maintainer of the Git repository can tr
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
 > the
 > report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
 
 The Frogbot GitHub scan workflow is:
 1. The developer opens a pull request.
@@ -75,7 +75,7 @@ After you create a new merge request, the maintainer of the Git repository can t
 > Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in
 > the
 > report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-> merge request, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> merge request, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
 
 The Frogbot GitLab flow is as follows:
 1. The developer opens a merge request.
@@ -95,7 +95,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
 > the
 > report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
 
 The Frogbot scan on Bitbucket Server workflow:
 
@@ -112,7 +112,7 @@ After you create a new pull request, Frogbot will automatically scan it.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
 > the
 > report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the JF_INCLUDE_ALL_VULNERABILITIES environment variable.
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
 
 The Frogbot Azure Repos scan workflow is:
 

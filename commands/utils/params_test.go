@@ -36,7 +36,7 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "master",
+		GitBaseBranchEnv:    "dev",
 		GitPullRequestIDEnv: "1",
 	})
 	extractAndAssertParamsFromEnv(t, true, true)
@@ -53,7 +53,7 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
-		GitBaseBranchEnv:       "master",
+		GitBaseBranchEnv:       "dev",
 		GitPullRequestIDEnv:    "1",
 	})
 	extractAndAssertParamsFromEnv(t, false, true)
@@ -69,7 +69,7 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "master",
+		GitBaseBranchEnv:    "dev",
 		GitPullRequestIDEnv: "1",
 	})
 	extractAndAssertParamsFromEnv(t, true, false)
@@ -135,7 +135,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "master",
+		GitBaseBranchEnv:    "dev",
 		GitPullRequestIDEnv: "1",
 	})
 	defer func() {
@@ -186,7 +186,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "master", configParams.Branches[0])
+		assert.Equal(t, "dev", configParams.Branches[0])
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
