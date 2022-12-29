@@ -11,7 +11,7 @@
 ## Table of contents
 - [What is Frogbot?](#what-is-frogbot)
 - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
-- [Scanning repositories following new commits](#scanning-repositories-following-new-commits)
+- [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
 - [Installing and using Frogbot](#installing-and-using-frogbot)
 - [Contributions](#contributions)
 
@@ -145,7 +145,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |      v3.5.1       |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |      v0.21.0      | CVE-2022-26652 |
 
-## Scanning repositories following new commits
+## Scanning repositories and fixing issues
 
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
 version with a fix.
@@ -202,10 +202,10 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <details>
   <summary>Step 2 - Install Frogbot</summary>
 
+- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
+- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
 - [Installing Frogbot on GitHub repositories](docs/install-github.md)
 - [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
-- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
-- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
 
 </details>  
 

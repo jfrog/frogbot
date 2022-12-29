@@ -1,5 +1,6 @@
-# Params represents the parameters for a single Git repository
-# For Bitbucket Server and Azure Repos, you can define multiple "params" sections one after the other
+# The "params" section includes the configuration of a single Git repository that needs to be scanned.
+# For Azure Repos and Bitbucket Server, you can define multiple "params" sections one after the other, for scanning multiple
+# Git repository in the same orhanization.
 - params:
     # Git parameters
     git:
@@ -8,46 +9,46 @@
       repoName: repo-name
 
       # [Mandatory]
-      # List of branches to scan.
+      # List of branches to scan
       branches:
         - master
 
     # Frogbot scanning parameters
     scan:
       # [Optional, Default: false]
-      # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-      # includeAllVulnerabilities: false
+      # Frogbot displays all existing vulnerabilities, including the ones that were not added by the pull request
+      # includeAllVulnerabilities: true
 
       # [Optional, Default: true]
-      # Fails the Frogbot task if any security issue is found.
+      # Frogbot does not fail the task if any security issues are found
       # failOnSecurityIssues: false
 
-      # List of sub-projects / project dirs.
+      # List of sub-projects / project dirs inside the Git repository
       projects:
       # [Mandatory for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
-      # Installation command (e.g. npm i , nuget restore).
+      # Installation command (e.g. npm i, nuget restore)
       # - installCommand: ""
 
       # [Optional, Default: root directory]
-      # List of relative path's to the projects directories in the git repository.
+      # List of relative path's to the projects directories in the git repository
       #   workingDirs:
       #     - "."
 
-      # [Mandatory for pip only if using requirements file, Default: pip install .]
-      # The requirements file name that used to install dependencies in case of pip package manager.
+      # [Mandatory for pip only if using requirements file, Default: pip install]
+      # The requirements file name that used to install dependencies in case of pip package manager
       #   pipRequirementsFile: ""
 
       # [Optional, Default: true]
-      # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle.
+      # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
       #   useWrapper: true
 
     # JFrog Platform parameters
     jfrogPlatform:
     # [Optional]
-    # JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
+    # JFrog project key. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Projects)
     # jfrogProjectKey: ""
 
     # [Optional]
-    # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
+    # Xray Watches. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches)
     # watches:
     #  - ""

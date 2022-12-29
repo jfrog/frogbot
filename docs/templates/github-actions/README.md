@@ -12,7 +12,7 @@ your GitHub repository.
 2. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
 
 ## The Available Templates
-### Pull Requests Scanning
+### Scan pull requests when they are opened
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of one of the following templates, depending on the
 tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section
@@ -29,7 +29,7 @@ and before they are merged.
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
 
-### Pull Requests Opening
+### Scanning repositories and fixing issues
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of one of the following templates, depending on the tool used to download the project dependencies. Make sure to follow the guidelines in the 'Using the Templates' section above. This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 
