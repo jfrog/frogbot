@@ -2,6 +2,9 @@ name: "Frogbot Scan Pull Request"
 on:
   pull_request_target:
     types: [ opened, synchronize ]
+permissions:
+  pull-requests: write
+  contents: read
 jobs:
   scan-pull-request:
     runs-on: ubuntu-latest
@@ -32,7 +35,3 @@ jobs:
           # [Mandatory]
           # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # [Optional, default: "FALSE"]
-          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"

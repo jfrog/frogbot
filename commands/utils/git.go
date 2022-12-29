@@ -3,6 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -15,18 +20,25 @@ import (
 )
 
 type GitManager struct {
+	// repository represents a git repository as a .git dir.
 	repository *git.Repository
+	// remoteName is name of the Git remote server
 	remoteName string
-	auth       *http.BasicAuth
+	// The authentication struct consisting a username/password
+	auth *http.BasicAuth
+	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
+	dryRun bool
+	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
+	dryRunRepoPath string
 }
 
-func NewGitManager(projectPath, remoteName, token string) (*GitManager, error) {
+func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
-	basicAuth := createBasicAuth(token)
-	return &GitManager{repository: repository, remoteName: remoteName, auth: basicAuth}, nil
+	basicAuth := toBasicAuth(token, username)
+	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -38,6 +50,10 @@ func (gm *GitManager) Checkout(branchName string) error {
 }
 
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
+	if gm.dryRun {
+		// "Clone" the repository from the testdata folder
+		return gm.dryRunClone(destinationPath)
+	}
 	// Gets the remote repo url from the current .git dir
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
@@ -48,6 +64,9 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	repoURL := gitRemote.Config().URLs[0]
 
+	transport.UnsupportedCapabilities = []capability.Capability{
+		capability.ThinPack,
+	}
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,
@@ -103,12 +122,25 @@ func (gm *GitManager) addAll() error {
 		return err
 	}
 	worktree.Excludes = append(worktree.Excludes, ignorePatterns...)
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
 
 	err = worktree.AddWithOptions(&git.AddOptions{All: true})
 	if err != nil {
-		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+		return fmt.Errorf("git add failed with error: %s", err.Error())
 	}
-	return err
+	// go-git add all using AddWithOptions doesn't include deleted files, that's why we need to double-check
+	for fileName, fileStatus := range status {
+		if fileStatus.Worktree == git.Deleted {
+			_, err = worktree.Add(fileName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (gm *GitManager) commit(commitMessage string) error {
@@ -148,6 +180,10 @@ func (gm *GitManager) BranchExistsOnRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) Push() error {
+	if gm.dryRun {
+		// On dry run do not push to any remote
+		return nil
+	}
 	// Pushing to remote
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
@@ -173,10 +209,36 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-func createBasicAuth(token string) *http.BasicAuth {
+// dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
+// We should call this function when the current working directory is the repository we want to clone.
+func (gm *GitManager) dryRunClone(destination string) error {
+	baseWd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// Copy all the current directory content to the destination path
+	err = fileutils.CopyDir(baseWd, destination, true, nil)
+	if err != nil {
+		return err
+	}
+	// Set the git repository to the new destination .git folder
+	repo, err := git.PlainOpen(destination)
+	if err != nil {
+		return err
+	}
+	gm.repository = repo
+	return nil
+}
+
+func toBasicAuth(token, username string) *http.BasicAuth {
+	// The username can be anything except for an empty string
+	if username == "" {
+		username = "username"
+	}
+	// Bitbucket server username starts with ~ prefix as the project key. We need to trim it for the authentication
+	username = strings.TrimPrefix(username, "~")
 	return &http.BasicAuth{
-		// The username can be anything except for an empty string
-		Username: "username",
+		Username: username,
 		Password: token,
 	}
 }

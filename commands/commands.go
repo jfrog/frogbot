@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
@@ -10,22 +9,22 @@ import (
 )
 
 type FrogbotCommand interface {
-	// Runs the command
-	Run(params *utils.FrogbotParams, client vcsclient.VcsClient) error
+	// Run the command
+	Run(config utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
 }
 
 func Exec(command FrogbotCommand, name string) error {
-	// Get params and VCS client
-	params, client, err := utils.GetParamsAndClient()
+	// Get config, server and VCS client
+	configAggregator, server, client, err := utils.GetParamsAndClient()
 	if err != nil {
 		return err
 	}
 	// Send usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, &params.Server, usageReportSent)
+	go utils.ReportUsage(name, server, usageReportSent)
 	// Invoke the command interface
 	clientLog.Info(fmt.Sprintf("Running Frogbot %q command ", name))
-	err = command.Run(params, client)
+	err = command.Run(configAggregator, client)
 	// Waits for the signal from the report usage to be done.
 	<-usageReportSent
 	if err == nil {
@@ -57,9 +56,18 @@ func GetCommands() []*clitool.Command {
 		{
 			Name:    "scan-pull-requests",
 			Aliases: []string{"sprs"},
-			Usage:   "Scans all the open pull requests in the repo with JFrog Xray for security vulnerabilities.",
+			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
 				return Exec(ScanAllPullRequestsCmd{}, ctx.Command.Name)
+			},
+			Flags: []clitool.Flag{},
+		},
+		{
+			Name:    "scan-and-fix-repos",
+			Aliases: []string{"safr"},
+			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
+			Action: func(ctx *clitool.Context) error {
+				return Exec(ScanAndFixRepositories{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},

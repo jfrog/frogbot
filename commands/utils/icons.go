@@ -8,44 +8,30 @@ import (
 func GetSeverityTag(iconName IconName) string {
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
-		return getIconTag(criticalSeveritySource) + "<br>"
+		return GetIconTag(criticalSeveritySource) + "<br>"
 	case "high":
-		return getIconTag(highSeveritySource) + "<br>"
+		return GetIconTag(highSeveritySource) + "<br>"
 	case "medium":
-		return getIconTag(mediumSeveritySource) + "<br>"
+		return GetIconTag(mediumSeveritySource) + "<br>"
 	case "low":
-		return getIconTag(lowSeveritySource) + "<br>"
+		return GetIconTag(lowSeveritySource) + "<br>"
 	}
 	return ""
 }
 
 func GetBanner(banner ImageSource) string {
-	return "[" + getIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
+	return "[" + GetIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
 }
 
-func getIconTag(imageSource ImageSource) string {
+func GetIconTag(imageSource ImageSource) string {
 	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
 }
 
 func GetSimplifiedTitle(is ImageSource) string {
 	if is == NoVulnerabilityBannerSource {
-		return "🐸 Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
+		return "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n"
 	} else if is == VulnerabilitiesBannerSource {
-		return "🐸 Frogbot scanned this pull request and found the issues blow: \n"
-	}
-	return ""
-}
-
-func GetEmojiSeverityTag(severity IconName) string {
-	switch strings.ToLower(string(severity)) {
-	case "critical":
-		return "💀 "
-	case "high":
-		return "🔥 "
-	case "medium":
-		return "🎃 "
-	case "low":
-		return "👻 "
+		return "Frogbot scanned this pull request and found the issues blow: \n"
 	}
 	return ""
 }
