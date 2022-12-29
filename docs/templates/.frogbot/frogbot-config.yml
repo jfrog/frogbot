@@ -1,6 +1,6 @@
 # The "params" section includes the configuration of a single Git repository that needs to be scanned.
 # For Azure Repos and Bitbucket Server, you can define multiple "params" sections one after the other, for scanning multiple
-# Git repository in the same orhanization.
+# Git repository in the same organization.
 - params:
     # Git parameters
     git:
@@ -20,7 +20,7 @@
       # includeAllVulnerabilities: true
 
       # [Optional, Default: true]
-      # Frogbot does not fail the task if any security issues are found
+      # Frogbot does not fail the task if security issues are found and this parameter is set to false
       # failOnSecurityIssues: false
 
       # List of sub-projects / project dirs inside the Git repository
