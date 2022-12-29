@@ -68,16 +68,6 @@ export class Utils {
     }
 
     /**
-     * Execute frogbot scan-pull-requests command.
-     */
-    public static async execScanPullRequests() {
-        let res: number = await exec(Utils.getExecutableName(), ['scan-pull-requests']);
-        if (res !== core.ExitCode.Success) {
-            throw new Error('Frogbot exited with exit code ' + res);
-        }
-    }
-
-    /**
      * Try to load the Frogbot executables from cache.
      *
      * @param version  - Frogbot version

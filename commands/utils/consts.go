@@ -14,7 +14,7 @@ const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Errors
-	UnsupportedMultiRepoErr = "multi repository configuration isn't supported. only one repository configuration is allowed"
+	errUnsupportedMultiRepo = "multi repository configuration isn't supported. only one repository configuration is allowed"
 
 	// Images
 	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"

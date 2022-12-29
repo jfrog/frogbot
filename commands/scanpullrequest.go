@@ -211,7 +211,7 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 	}
 	// Cleanup
 	defer func() {
-		e := cleanup(err)
+		e := cleanup()
 		if err == nil {
 			err = e
 		}

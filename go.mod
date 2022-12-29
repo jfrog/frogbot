@@ -10,6 +10,7 @@ require (
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.26.0
 	github.com/jfrog/jfrog-client-go v1.24.5
+	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.2
 	gopkg.in/yaml.v3 v3.0.1
@@ -54,7 +55,6 @@ require (
 	github.com/ktrysmt/go-bitbucket v0.9.32 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/mholt/archiver/v3 v3.5.1 // indirect
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5 // indirect
 	github.com/minio/sha256-simd v1.0.1-0.20210617151322-99e45fae3395 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

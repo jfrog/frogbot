@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -25,4 +27,22 @@ func AssertSanitizedEnv(t *testing.T) {
 
 func setEnvAndAssert(t *testing.T, key, value string) {
 	assert.NoError(t, os.Setenv(key, value))
+}
+
+// Prepare test environment for the integration tests
+// projectName - the directory name under testDir
+// Return a cleanup function and the temp dir path
+func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, func()) {
+	// Copy project to a temporary directory
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	err = fileutils.CopyDir(filepath.Join("testdata", testDir), tmpDir, true, []string{})
+	assert.NoError(t, err)
+
+	restoreDir, err := Chdir(filepath.Join(tmpDir, projectName))
+	assert.NoError(t, err)
+	return tmpDir, func() {
+		assert.NoError(t, restoreDir())
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}
 }
