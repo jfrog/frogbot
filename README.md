@@ -27,6 +27,7 @@ Frogbot is a Git bot that scans your pull requests and repositories for security
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
 Supported platforms:
+- Azure Repos
 - Bitbucket Server
 - GitHub
 - GitLab
@@ -44,6 +45,43 @@ Supported package management tools:
 - Yarn 2
 
 ### 🕵️‍♀️ How does Pull Request scanning work?
+<details>
+  <summary>Azure Repos</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
+
+The Frogbot Azure Repos scan workflow is:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
+
+</details>
+
+<details>
+  <summary>Bitbucket Server</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
+
+The Frogbot scan on Bitbucket Server workflow:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
+
+</details>
+
 <details>
   <summary>GitHub</summary>
 
@@ -83,42 +121,6 @@ The Frogbot GitLab flow is as follows:
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the *frogbot-scan* job again.
    [GitLab CI Run Button](./images/gitlab-run-button.png)
-
-</details>
-
-<details>
-  <summary>Bitbucket Server</summary>
-
-After you create a new pull request, Frogbot will automatically scan it.
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
-
-The Frogbot scan on Bitbucket Server workflow:
-
-1. The developer opens a pull request.
-2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
-
-</details>
-<details>
-  <summary>Azure Repos</summary>
-
-After you create a new pull request, Frogbot will automatically scan it.
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
-
-The Frogbot Azure Repos scan workflow is:
-
-1. The developer opens a pull request.
-2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
 </details>
 
