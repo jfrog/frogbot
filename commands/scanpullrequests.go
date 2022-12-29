@@ -84,7 +84,7 @@ func shouldScanPullRequest(repo utils.FrogbotRepoConfig, client vcsclient.VcsCli
 }
 
 func isFrogbotRescanComment(comment string) bool {
-	return strings.ToLower(strings.TrimSpace(comment)) == utils.RescanRequestComment
+	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), utils.RescanRequestComment)
 }
 
 func isFrogbotResultComment(comment string, simplifiedOutput bool) bool {
