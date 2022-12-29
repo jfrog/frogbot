@@ -3,10 +3,3 @@
       repoName: frogbot
       branches:
         - dev
-    scan:
-      projects:
-        - workingDirs:
-            - .
-        - installCommand: npm i
-          workingDirs:
-            - action
