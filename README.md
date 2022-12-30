@@ -150,8 +150,6 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
 version with a fix.
 
-> **_NOTE:_** This feature is currently supported for GitHub and GitLab only.
-
 For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
 
 ![](./images/github-code-scanning.png)
