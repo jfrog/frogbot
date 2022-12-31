@@ -44,7 +44,7 @@
 
    2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
 
-   2.5. Create a Pipelines job with the below `pipelines.yml` content.
+   2.5. Create a Pipelines job with the below `pipelines.yml` template.
    <details>
        <summary>Template</summary>
 
@@ -98,7 +98,7 @@
 
    3.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
-   3.7. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
+   3.7. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
 
    **Important**
 
@@ -119,7 +119,7 @@
 
    2.3. Save your GitHub access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
 
-   2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
+   2.4. Create a Jenkinsfile with the below template content under the root of your **Frogbot Management Repository**.
       <details>
          <summary>Template</summary>
 

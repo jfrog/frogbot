@@ -2,11 +2,5 @@
     git:
       repoName: frogbot
       branches:
+        - master
         - dev
-    scan:
-      projects:
-        - workingDirs:
-            - .
-        - installCommand: npm i
-          workingDirs:
-            - action
