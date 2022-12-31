@@ -1,6 +1,6 @@
 # The "params" section includes the configuration of a single Git repository that needs to be scanned.
-# For Azure Repos and Bitbucket Server, you can define multiple "params" sections one after the other, for scanning multiple
-# Git repository in the same organization.
+# For Azure Repos, Bitbucket Server and GitHub with JFrog Pipelines or Jenkins, you can define multiple "params" sections one after the other, for scanning multiple
+# Git repositories in the same organization.
 - params:
     # Git parameters
     git:
