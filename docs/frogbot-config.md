@@ -42,7 +42,7 @@ This section includes the scanning options for Frogbot.
     - **workingDirs** - [Optional, Default: root directory] A list of relative path's inside the Git repository. Each path should point to the root of a sub-project to be scanned by Frogbot.
     - **installCommand** - [Mandatory for projects which use npm, yarn 2, NuGet and .NET to download their dependencies] The command to download the project dependencies. For example: 'npm install', 'nuget restore'.
     - **pipRequirementsFile** [Mandatory for projects which use the pip package manager to download their dependencies, if pip requires the requirements file]
-    - **useWrapper** [Optional, default: true] Determines whether to use the Gradle Wrapper for projects which are using Gradle.
+    - **useWrapper** - [Optional, default: true] Determines whether to use the Gradle Wrapper for projects which are using Gradle.
 
 #### jfrogPlatform
 
