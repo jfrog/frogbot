@@ -48,5 +48,5 @@ This section includes the scanning options for Frogbot.
 
 The section includes the JFrog Platform settings
 
-- **jfrogProjectKey** - [Optional] The JFrog project key. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects.
-- **watches** - [Optional] A List of Xray watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches.
+- **jfrogProjectKey** - [Optional] The JFrog project key. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Projects).
+- **watches** - [Optional] The list of Xray watches. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches).
