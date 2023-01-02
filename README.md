@@ -12,7 +12,8 @@
 - [What is Frogbot?](#what-is-frogbot)
 - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
 - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
-- [Installing and using Frogbot](#installing-and-using-frogbot)
+- [Installing Frogbot](#installing-frogbot)
+- [Reporting issues](#reporting-issues)
 - [Contributions](#contributions)
 
 <div id="what-is-frogbot"></div>
@@ -147,8 +148,9 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 ## Scanning repositories and fixing issues
 
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
-version with a fix.
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
+
+![](./images/fix-pr.png)
 
 For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
 
@@ -169,9 +171,9 @@ Supported package management tools:
 
 </details>
 
-<div id="installing-and-using-frogbot"></div>
+<div id="installing-frogbot"></div>
 
-## 🖥️ Installing and using Frogbot
+## 🖥️ Installing Frogbot
 <details>
   <summary>Step 1 - Optionally set up a FREE JFrog Environment in the Cloud</summary>
 
@@ -185,7 +187,7 @@ The commands will do the following:
 **For macOS and Linux, use curl**
 
 ```
-curl -fL https://getcli.jfrog.io?setup | sh
+curl -fL "https://getcli.jfrog.io?setup" | sh
 ```
 
 **For Windows, use PowerShell**
@@ -206,6 +208,12 @@ After the setup is complete, you'll receive an email with your JFrog environment
 - [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
 
 </details>  
+
+<div id="reporting-issues"></div>
+
+## 🔥 Reporting issues
+
+Please help us improve Frogbot by [reporting issues](https://github.com/jfrog/frogbot/issues/new/choose) you encounter.
 
 <div id="contributions"></div>
 

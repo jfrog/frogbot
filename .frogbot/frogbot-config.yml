@@ -3,3 +3,9 @@
       repoName: frogbot
       branches:
         - dev
+        - master
+    scan:
+      projects:
+        - workingDirs:
+            - .
+          installCommand: npm i
