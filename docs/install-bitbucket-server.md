@@ -84,9 +84,8 @@
 
    **Important**
 
-   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) the command in a way that it downloads your project dependencies as the value of the **installCommandName** and **installCommandArgs** variables. For example, `npm i`
-     or `nuget restore`
-   - Make sure that all necessary build tool that are used to build the scanned project are installed on the Pipelines agent.
+   - For npm, yarn 2, NuGet or .NET: Set inside the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command that downloads the project dependencies as the value of the **installCommand** variable. For example, `npm i` or `nuget restore`.
+   - Make sure all the build tools that are used to build the project are installed on the build agent.
    </details>
 
    <details>
@@ -188,10 +187,9 @@
 
    **Important**
 
-   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the frogbot-config.yml the command in a way that it downloads your project dependencies as the value of the **installCommandName** and **installCommandArgs** variables. For example, `npm i`
-     or `nuget restore`
+   - For npm, yarn 2, NuGet and .NET: Set inside the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies, as the value of the **installCommand** variable. For example, `npm i` or `nuget restore`.
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
-   - Make sure that all necessary build tool that are used to build the scanned project are installed on the Jenkins agent.
+   - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
 
    </details>
 
