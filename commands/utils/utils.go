@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -88,6 +89,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	}
 
 	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
+	scanResults = simplifyScanResults(scanResults)
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err
@@ -98,6 +100,65 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	}
 
 	return err
+}
+
+// simplifyScanResults specifies which alerts should be displayed when uploading code scanning.
+// To avoid uploading many of the same vulnerabilities/violations that could differ only in their impact paths,
+// This function returns a scan response with only unique vulnerabilities/violations.
+func simplifyScanResults(scanResults []services.ScanResponse) []services.ScanResponse {
+	var simplifiedResults []services.ScanResponse
+	for resultId, result := range scanResults {
+		simplifiedResults = append(simplifiedResults, result)
+		if len(result.Violations) > 0 {
+			simplifiedResults[resultId].Violations = simplifyViolations(result.Violations)
+		} else if len(result.Vulnerabilities) > 0 {
+			simplifiedResults[resultId].Vulnerabilities = simplifyVulnerabilities(result.Vulnerabilities)
+		}
+	}
+
+	return simplifiedResults
+}
+
+// simplifyVulnerabilities returns vulnerabilities array without duplicates.
+func simplifyVulnerabilities(vulnerabilities []services.Vulnerability) []services.Vulnerability {
+	var uniqueVulnerabilities = datastructures.MakeSet[string]()
+	var cleanVulnerabilities []services.Vulnerability
+	for i, vulnerability := range vulnerabilities {
+		for componentId := range vulnerability.Components {
+			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
+			if exist := uniqueVulnerabilities.Exists(impactedPackage); !exist {
+				uniqueVulnerabilities.Add(impactedPackage)
+				continue
+			}
+			delete(vulnerabilities[i].Components, componentId)
+		}
+		if len(vulnerability.Components) != 0 {
+			cleanVulnerabilities = append(cleanVulnerabilities, vulnerability)
+		}
+	}
+
+	return cleanVulnerabilities
+}
+
+// simplifyViolations returns violations array without duplicates.
+func simplifyViolations(violations []services.Violation) []services.Violation {
+	var uniqueViolations = datastructures.MakeSet[string]()
+	var cleanViolations []services.Violation
+	for _, violation := range violations {
+		for componentId := range violation.Components {
+			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
+			if exist := uniqueViolations.Exists(impactedPackage); !exist {
+				uniqueViolations.Add(impactedPackage)
+				continue
+			}
+			delete(violation.Components, componentId)
+		}
+		if len(violation.Components) != 0 {
+			cleanViolations = append(cleanViolations, violation)
+		}
+	}
+
+	return cleanViolations
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
