@@ -195,31 +195,17 @@ func TestSimplifyVulnerabilities(t *testing.T) {
 		},
 	}
 	components2 := map[string]services.Component{
-		"vulnerability1": {
-			FixedVersions: []string{"2.1.1"},
-		},
-		"vulnerability3": {
-			FixedVersions: []string{"2.1.1"},
-		},
+		"vulnerability1": {FixedVersions: []string{"2.1.1"}},
+		"vulnerability3": {FixedVersions: []string{"2.1.1"}},
 	}
 	components3 := map[string]services.Component{
-		"vulnerability3": {
-			FixedVersions: []string{"2.1.1"},
-		},
-		"vulnerability4": {
-			FixedVersions: []string{"2.2.1"},
-		},
+		"vulnerability3": {FixedVersions: []string{"2.1.1"}},
+		"vulnerability4": {FixedVersions: []string{"2.2.1"}},
 	}
 	vulnerabilities := []services.Vulnerability{
-		{
-			Components: components1,
-		},
-		{
-			Components: components2,
-		},
-		{
-			Components: components3,
-		},
+		{Components: components1},
+		{Components: components2},
+		{Components: components3},
 	}
 
 	expectedVulnerabilities := []services.Vulnerability{
@@ -231,9 +217,7 @@ func TestSimplifyVulnerabilities(t *testing.T) {
 			},
 		},
 		{
-			Components: map[string]services.Component{
-				"vulnerability4": {FixedVersions: []string{"2.2.1"}},
-			},
+			Components: map[string]services.Component{"vulnerability4": {FixedVersions: []string{"2.2.1"}}},
 		},
 	}
 
