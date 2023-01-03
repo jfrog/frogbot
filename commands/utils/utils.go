@@ -89,7 +89,6 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	}
 
 	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
-	scanResults = simplifyScanResults(scanResults)
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
 	if err != nil {
 		return err
@@ -102,13 +101,14 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return err
 }
 
-// simplifyScanResults specifies which alerts should be displayed when uploading code scanning.
+// SimplifyScanResults specifies which alerts should be displayed when uploading code scanning.
 // To avoid uploading many of the same vulnerabilities/violations that could differ only in their impact paths,
 // This function returns a scan response with only unique vulnerabilities/violations.
-func simplifyScanResults(scanResults []services.ScanResponse) []services.ScanResponse {
+func SimplifyScanResults(scanResults []services.ScanResponse) []services.ScanResponse {
 	var simplifiedResults []services.ScanResponse
-	for resultId, result := range scanResults {
-		simplifiedResults = append(simplifiedResults, result)
+	simplifiedResults = append(simplifiedResults, scanResults...)
+
+	for resultId, result := range simplifiedResults {
 		if len(result.Violations) > 0 {
 			simplifiedResults[resultId].Violations = simplifyViolations(result.Violations)
 		} else if len(result.Vulnerabilities) > 0 {
@@ -124,10 +124,16 @@ func simplifyVulnerabilities(vulnerabilities []services.Vulnerability) []service
 	var uniqueVulnerabilities = datastructures.MakeSet[string]()
 	var cleanVulnerabilities []services.Vulnerability
 	for i, vulnerability := range vulnerabilities {
+		var cvesBuilder strings.Builder
+		for _, cve := range vulnerability.Cves {
+			cvesBuilder.WriteString(cve.Id + ", ")
+		}
+		cves := strings.TrimSuffix(cvesBuilder.String(), ", ")
 		for componentId := range vulnerability.Components {
 			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
-			if exist := uniqueVulnerabilities.Exists(impactedPackage); !exist {
-				uniqueVulnerabilities.Add(impactedPackage)
+			fullPackageKey := "[" + cves + "] " + impactedPackage
+			if exist := uniqueVulnerabilities.Exists(fullPackageKey); !exist {
+				uniqueVulnerabilities.Add(fullPackageKey)
 				continue
 			}
 			delete(vulnerabilities[i].Components, componentId)
