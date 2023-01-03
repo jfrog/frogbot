@@ -131,7 +131,8 @@ func simplifyVulnerabilities(vulnerabilities []services.Vulnerability) []service
 		cves := strings.TrimSuffix(cvesBuilder.String(), ", ")
 		for componentId := range vulnerability.Components {
 			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
-			fullPackageKey := "[" + cves + "] " + impactedPackage
+			// The fullPackageKey is the unique id to check if a vulnerability is already exists, in the form of "cves vulnerability-name"
+			fullPackageKey := fmt.Sprintf("%s %s", cves, impactedPackage)
 			if exist := uniqueVulnerabilities.Exists(fullPackageKey); !exist {
 				uniqueVulnerabilities.Add(fullPackageKey)
 				continue
@@ -151,10 +152,22 @@ func simplifyViolations(violations []services.Violation) []services.Violation {
 	var uniqueViolations = datastructures.MakeSet[string]()
 	var cleanViolations []services.Violation
 	for _, violation := range violations {
+		var key string
+		if violation.LicenseKey == "" {
+			var cvesBuilder strings.Builder
+			for _, cve := range violation.Cves {
+				cvesBuilder.WriteString(cve.Id + ", ")
+			}
+			key = strings.TrimSuffix(cvesBuilder.String(), ", ")
+		} else {
+			key = violation.LicenseKey
+		}
 		for componentId := range violation.Components {
 			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
-			if exist := uniqueViolations.Exists(impactedPackage); !exist {
-				uniqueViolations.Add(impactedPackage)
+			// The fullPackageKey is the unique id to check if a violation is already exists, in the form of "[key] violation-name"
+			fullPackageKey := fmt.Sprintf("%s %s", key, impactedPackage)
+			if exist := uniqueViolations.Exists(fullPackageKey); !exist {
+				uniqueViolations.Add(fullPackageKey)
 				continue
 			}
 			delete(violation.Components, componentId)
