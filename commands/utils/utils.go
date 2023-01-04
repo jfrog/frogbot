@@ -20,6 +20,8 @@ import (
 	"strings"
 )
 
+const RootDir = "."
+
 type ErrMissingEnv struct {
 	VariableName string
 }
