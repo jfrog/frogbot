@@ -117,10 +117,9 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 // getFrogbotConfig reads the configuration file from the target repository, if the client is GitHub or GitLab, otherwise it reads from the current working directory.
 func getFrogbotConfig(gitParams *Git, client vcsclient.VcsClient) (configData *FrogbotConfigAggregator, err error) {
 	var targetConfigContent []byte
-	var missingConfigErr bool
 	if gitParams.GitProvider == vcsutils.GitHub || gitParams.GitProvider == vcsutils.GitLab {
 		targetConfigContent, err = downloadConfigFromTarget(client)
-		_, missingConfigErr = err.(*ErrMissingConfig)
+		_, missingConfigErr := err.(*ErrMissingConfig)
 		if err != nil && !missingConfigErr {
 			return nil, err
 		}
