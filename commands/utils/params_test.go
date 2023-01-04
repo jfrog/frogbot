@@ -65,7 +65,7 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		JFrogUserEnv:        "",
 		JFrogPasswordEnv:    "",
 		JFrogTokenEnv:       "token",
-		GitProvider:         string(GitHub),
+		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
