@@ -54,7 +54,7 @@ func (cfp CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggr
 func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) error {
 	// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
 	if len(repoConfig.Projects) == 0 {
-		repoConfig.Projects = []utils.Project{{}}
+		repoConfig.Projects = []utils.Project{{WorkingDirs: []string{rootDir}}}
 	}
 	baseWd, err := os.Getwd()
 	if err != nil {
