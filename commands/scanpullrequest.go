@@ -43,7 +43,7 @@ func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	if len(repoConfig.Projects) == 0 {
-		repoConfig.Projects = []utils.Project{{}}
+		repoConfig.Projects = []utils.Project{{WorkingDirs: []string{rootDir}}}
 	}
 	// Validate scan params
 	if len(repoConfig.Branches) == 0 {
