@@ -32,7 +32,7 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
 		JFrogUserEnv:        "admin",
 		JFrogPasswordEnv:    "password",
-		GitProvider:         string(GitHub),
+		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
@@ -49,7 +49,7 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:           "admin",
 		JFrogPasswordEnv:       "password",
-		GitProvider:            string(GitHub),
+		GitProvider:            string(BitbucketServer),
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
@@ -65,7 +65,7 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		JFrogUserEnv:        "",
 		JFrogPasswordEnv:    "",
 		JFrogTokenEnv:       "token",
-		GitProvider:         string(GitHub),
+		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
@@ -182,7 +182,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
 	for _, configParams := range configFile {
-		assert.Equal(t, vcsutils.GitHub, configParams.GitProvider)
+		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
