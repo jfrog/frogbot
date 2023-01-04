@@ -5,11 +5,11 @@ go 1.19
 require (
 	github.com/go-git/go-git/v5 v5.5.1
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.8.4
+	github.com/jfrog/build-info-go v1.8.5
 	github.com/jfrog/froggit-go v1.5.1
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.26.0
-	github.com/jfrog/jfrog-client-go v1.24.5
+	github.com/jfrog/jfrog-client-go v1.25.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.11.2
@@ -97,10 +97,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/jfrog/froggit-go => ../froggit-go
-
 replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.24.6-0.20230102092554-c56fc329c8fc
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.26.1-0.20230102115133-9b7586fb129d
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.27.1-0.20230103162751-74a639242aeb
 
 replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.5-0.20230102085833-456b7aea6098

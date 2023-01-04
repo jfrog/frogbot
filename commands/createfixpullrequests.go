@@ -70,6 +70,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 			}
 
 			// Upload scan results to the relevant Git provider code scanning UI
+			scanResults = utils.SimplifyScanResults(scanResults)
 			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
 			if err != nil {
 				clientLog.Warn(err)
