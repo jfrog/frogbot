@@ -103,13 +103,14 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 				return nil, nil, nil, err
 			}
 		}
-	} else {
+	}
+	if targetConfigContent == nil {
 		configData, err = ReadConfig(frogbotConfigPath)
 		_, missingConfigErr = err.(*ErrMissingConfig)
 	}
 
 	// If the error is due to missing configuration, try to generate an environment variable-based config aggregator.
-	if (err != nil && missingConfigErr) || targetConfigContent == nil {
+	if err != nil && missingConfigErr {
 		// If no config file is used, the repo name must be set as a part of the envs.
 		if gitParams.RepoName == "" {
 			return nil, nil, nil, &ErrMissingEnv{GitRepoEnv}
