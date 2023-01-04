@@ -184,15 +184,9 @@ func TestSimplifyViolations(t *testing.T) {
 
 func TestSimplifyVulnerabilities(t *testing.T) {
 	components1 := map[string]services.Component{
-		"vulnerability1": {
-			FixedVersions: []string{"2.1.1"},
-		},
-		"vulnerability2": {
-			FixedVersions: []string{"3.1.1"},
-		},
-		"vulnerability3": {
-			FixedVersions: []string{"3.2.1"},
-		},
+		"vulnerability1": {FixedVersions: []string{"2.1.1"}},
+		"vulnerability2": {FixedVersions: []string{"3.1.1"}},
+		"vulnerability3": {FixedVersions: []string{"3.2.1"}},
 	}
 	components2 := map[string]services.Component{
 		"vulnerability1": {FixedVersions: []string{"2.1.1"}},
