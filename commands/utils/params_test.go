@@ -49,7 +49,7 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:           "admin",
 		JFrogPasswordEnv:       "password",
-		GitProvider:            string(GitHub),
+		GitProvider:            string(BitbucketServer),
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
