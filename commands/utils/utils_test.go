@@ -140,28 +140,16 @@ func TestGetRelativeWd(t *testing.T) {
 
 func TestSimplifyViolations(t *testing.T) {
 	components1 := map[string]services.Component{
-		"violation1": {
-			FixedVersions: []string{"2.1.1"},
-		},
-		"violation2": {
-			FixedVersions: []string{"3.1.1"},
-		},
+		"violation1": {FixedVersions: []string{"2.1.1"}},
+		"violation2": {FixedVersions: []string{"3.1.1"}},
 	}
 	components2 := map[string]services.Component{
-		"violation1": {
-			FixedVersions: []string{"2.1.1"},
-		},
-		"violation3": {
-			FixedVersions: []string{"2.2.1"},
-		},
+		"violation1": {FixedVersions: []string{"2.1.1"}},
+		"violation3": {FixedVersions: []string{"2.2.1"}},
 	}
 	violations := []services.Violation{
-		{
-			Components: components1,
-		},
-		{
-			Components: components2,
-		},
+		{Components: components1},
+		{Components: components2},
 	}
 
 	expectedViolation := []services.Violation{
@@ -172,9 +160,7 @@ func TestSimplifyViolations(t *testing.T) {
 			},
 		},
 		{
-			Components: map[string]services.Component{
-				"violation3": {FixedVersions: []string{"2.2.1"}},
-			},
+			Components: map[string]services.Component{"violation3": {FixedVersions: []string{"2.2.1"}}},
 		},
 	}
 
