@@ -21,7 +21,6 @@ import (
 
 const (
 	securityIssueFoundErr    = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
-	rootDir                  = "."
 	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 )
 
@@ -42,9 +41,6 @@ func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
-	if len(repoConfig.Projects) == 0 {
-		repoConfig.Projects = []utils.Project{{}}
-	}
 	// Validate scan params
 	if len(repoConfig.Branches) == 0 {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
@@ -190,7 +186,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	var fullPathWds []string
 	if len(project.WorkingDirs) != 0 {
 		for _, workDir := range project.WorkingDirs {
-			if workDir == rootDir {
+			if workDir == utils.RootDir {
 				fullPathWds = append(fullPathWds, baseWd)
 				continue
 			}

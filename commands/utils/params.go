@@ -67,6 +67,7 @@ type Git struct {
 	RepoOwner     string
 	Token         string
 	ApiEndpoint   string
+	Username      string
 	PullRequestID int
 }
 
@@ -84,7 +85,14 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		}
 	}()
 
-	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Logger(log.GetLogger()).Build()
+	client, err = vcsclient.
+		NewClientBuilder(gitParams.GitProvider).
+		ApiEndpoint(gitParams.ApiEndpoint).
+		Token(gitParams.Token).
+		Project(gitParams.GitProject).
+		Logger(log.GetLogger()).
+		Username(gitParams.Username).
+		Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -140,10 +148,12 @@ func getFrogbotConfig(gitParams *Git, client vcsclient.VcsClient) (configData *F
 func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, server *coreconfig.ServerDetails, failOnSecurityIssues bool) (FrogbotConfigAggregator, error) {
 	var newConfigAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
-		if config.Projects != nil {
-			for projectIndex, project := range config.Projects {
-				SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
-			}
+		// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
+		if config.Projects == nil {
+			config.Projects = []Project{{WorkingDirs: []string{RootDir}}}
+		}
+		for projectIndex, project := range config.Projects {
+			SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
 		}
 		if config.RepoName == "" {
 			return nil, &ErrMissingEnv{GitRepoEnv}
@@ -198,7 +208,7 @@ func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
 func extractGitParamsFromEnv() (Git, error) {
 	var err error
 	gitParams := Git{}
-	// Non-mandatory Git Api Endpoint
+	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return Git{}, err
@@ -209,7 +219,8 @@ func extractGitParamsFromEnv() (Git, error) {
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return Git{}, err
 	}
-
+	// Username is only mandatory for Bitbucket server on the scan-and-fix-repos command.
+	_ = readParamFromEnv(GitUsernameEnv, &gitParams.Username)
 	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
 	if err := readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
@@ -306,6 +317,9 @@ func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err
 
 func extractProjectParamsFromEnv(project *Project) error {
 	workingDir := getTrimmedEnv(WorkingDirectoryEnv)
+	if workingDir == "" {
+		workingDir = RootDir
+	}
 	project.WorkingDirs = []string{workingDir}
 	project.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)

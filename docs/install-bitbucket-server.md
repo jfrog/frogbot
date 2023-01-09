@@ -51,6 +51,10 @@
               # [Mandatory if JF_USER and JF_PASSWORD are not provided]
               # JFrog access token with 'read' permissions for Xray
               JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+   
+              # [Mandatory]
+              # Username of the Bitbucket account
+              JF_GIT_USERNAME: ""
   
               # [Mandatory]
               # Bitbucket accesses token with the following permissions 
@@ -64,7 +68,8 @@
               # [Mandatory]
               # Bitbucket project namespace
               JF_GIT_OWNER: ""
-  
+   
+            
         execution:
           onExecute:
             - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -130,6 +135,10 @@
            // Bitbucket accesses token with the following permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
            JF_GIT_PROVIDER= "bitbucketServer"
+   
+           // [Mandatory]
+           // Username of the Bitbucket account
+           JF_GIT_USERNAME= ""
    
            // [Mandatory]
            // Bitbucket project namespace
