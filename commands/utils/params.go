@@ -206,7 +206,7 @@ func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
 func extractGitParamsFromEnv() (Git, error) {
 	var err error
 	gitParams := Git{}
-	// Non-mandatory Git Api Endpoint
+	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return Git{}, err
@@ -217,6 +217,7 @@ func extractGitParamsFromEnv() (Git, error) {
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return Git{}, err
 	}
+	// Username is only mandatory for Bitbucket server on the scan-and-fix-repos command.
 	_ = readParamFromEnv(GitUsernameEnv, &gitParams.Username)
 	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
