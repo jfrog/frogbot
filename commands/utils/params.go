@@ -67,6 +67,7 @@ type Git struct {
 	RepoOwner     string
 	Token         string
 	ApiEndpoint   string
+	Username      string
 	PullRequestID int
 }
 
@@ -84,7 +85,14 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 		}
 	}()
 
-	client, err = vcsclient.NewClientBuilder(gitParams.GitProvider).ApiEndpoint(gitParams.ApiEndpoint).Token(gitParams.Token).Project(gitParams.GitProject).Logger(log.GetLogger()).Build()
+	client, err = vcsclient.
+		NewClientBuilder(gitParams.GitProvider).
+		ApiEndpoint(gitParams.ApiEndpoint).
+		Token(gitParams.Token).
+		Project(gitParams.GitProject).
+		Logger(log.GetLogger()).
+		Username(gitParams.Username).
+		Build()
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -200,7 +208,7 @@ func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
 func extractGitParamsFromEnv() (Git, error) {
 	var err error
 	gitParams := Git{}
-	// Non-mandatory Git Api Endpoint
+	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	_ = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return Git{}, err
@@ -211,7 +219,8 @@ func extractGitParamsFromEnv() (Git, error) {
 	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return Git{}, err
 	}
-
+	// Username is only mandatory for Bitbucket server on the scan-and-fix-repos command.
+	_ = readParamFromEnv(GitUsernameEnv, &gitParams.Username)
 	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
 	_ = readParamFromEnv(GitRepoEnv, &gitParams.RepoName)
 	if err := readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
