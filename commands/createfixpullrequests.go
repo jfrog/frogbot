@@ -125,7 +125,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	clientLog.Debug("Created temp working directory:", wd)
 
 	// Clone the content of the repo to the new working directory
-	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", repoGitParams.Token, repoGitParams.RepoOwner)
+	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", repoGitParams.Token, repoGitParams.Username)
 	if err != nil {
 		return err
 	}
