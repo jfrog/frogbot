@@ -140,10 +140,12 @@ func getFrogbotConfig(gitParams *Git, client vcsclient.VcsClient) (configData *F
 func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, server *coreconfig.ServerDetails, failOnSecurityIssues bool) (FrogbotConfigAggregator, error) {
 	var newConfigAggregator FrogbotConfigAggregator
 	for _, config := range *configData {
-		if config.Projects != nil {
-			for projectIndex, project := range config.Projects {
-				SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
-			}
+		// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
+		if config.Projects == nil {
+			config.Projects = []Project{{WorkingDirs: []string{RootDir}}}
+		}
+		for projectIndex, project := range config.Projects {
+			SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
 		}
 		if config.RepoName == "" {
 			return nil, &ErrMissingEnv{GitRepoEnv}
@@ -306,6 +308,9 @@ func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err
 
 func extractProjectParamsFromEnv(project *Project) error {
 	workingDir := getTrimmedEnv(WorkingDirectoryEnv)
+	if workingDir == "" {
+		workingDir = RootDir
+	}
 	project.WorkingDirs = []string{workingDir}
 	project.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
