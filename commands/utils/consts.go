@@ -46,7 +46,7 @@ const (
 	GitRepoOwnerEnv = "JF_GIT_OWNER"
 	GitRepoEnv      = "JF_GIT_REPO"
 	GitProjectEnv   = "JF_GIT_PROJECT"
-	GitUsername     = "JF_GIT_USERNAME"
+	GitUsernameEnv  = "JF_GIT_USERNAME"
 
 	// Single repository scan environment variables - Ignored if config file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
