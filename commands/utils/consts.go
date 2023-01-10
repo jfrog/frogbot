@@ -40,6 +40,7 @@ const (
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
+	JFrogRemoteRepo        = "JF_REMOTE_REPO"
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"
@@ -48,7 +49,7 @@ const (
 	GitProjectEnv   = "JF_GIT_PROJECT"
 	GitUsernameEnv  = "JF_GIT_USERNAME"
 
-	// Single repository scan environment variables - Ignored if config file is used
+	// Repository environment variables - Ignored if config file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
 	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv          = "JF_WORKING_DIR"

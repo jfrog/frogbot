@@ -6,21 +6,27 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/jfrog/build-info-go/build"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	gradleutils "github.com/jfrog/jfrog-cli-core/v2/utils/gradle"
+	mvnutils "github.com/jfrog/jfrog-cli-core/v2/utils/mvn"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 const RootDir = "."
+
+var extractorsRepositoryPath = filepath.Join("artifactory", "oss-release-local")
 
 type ErrMissingEnv struct {
 	VariableName string
@@ -215,4 +221,57 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 	}
 
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
+}
+
+// downloadExtractorsFromRemote downloads build-info-extractors for air-gapped environments
+func downloadExtractorsFromRemote(server config.ServerDetails, remoteName string) error {
+	clientLog.Info("Downloading extractors if needed...")
+	if err := downloadMavenExtractor(server, remoteName); err != nil {
+		return err
+	}
+	return downloadGradleExtractor(server, remoteName)
+}
+
+func downloadMavenExtractor(server config.ServerDetails, remoteName string) error {
+	mavenDependencyDirPath, err := mvnutils.GetMavenDependencyLocalPath()
+	if err != nil {
+		return err
+	}
+	alreadyExist, err := fileutils.IsDirExists(mavenDependencyDirPath, false)
+	if err != nil || alreadyExist {
+		return err
+	}
+	fileName := fmt.Sprintf(build.MavenExtractorRemotePath, build.MavenExtractorDependencyVersion)
+	filePath := fmt.Sprintf(build.MavenExtractorFileName, build.MavenExtractorDependencyVersion)
+	downloadTo := filepath.Join(mavenDependencyDirPath, fileName)
+	downloadFrom := filepath.Join(extractorsRepositoryPath, fileName, filePath)
+	return setRemoteAndDownloadExtractor(server, remoteName, downloadFrom, downloadTo)
+}
+
+func downloadGradleExtractor(server config.ServerDetails, remoteName string) error {
+	gradleDependencyDirPath, err := gradleutils.GetGradleDependencyLocalPath()
+	if err != nil {
+		return err
+	}
+	alreadyExist, err := fileutils.IsDirExists(gradleDependencyDirPath, false)
+	if err != nil || alreadyExist {
+		return err
+	}
+	fileName := fmt.Sprintf(build.GradleExtractorFileName, build.GradleExtractorDependencyVersion)
+	filePath := fmt.Sprintf(build.GradleExtractorRemotePath, build.GradleExtractorDependencyVersion)
+	downloadTo := filepath.Join(gradleDependencyDirPath, fileName)
+	downloadFrom := filepath.Join(extractorsRepositoryPath, filePath, fileName)
+	return setRemoteAndDownloadExtractor(server, remoteName, downloadFrom, downloadTo)
+}
+
+func setRemoteAndDownloadExtractor(server config.ServerDetails, remoteName, downloadFrom, downloadTo string) error {
+	remoteURL := server.ArtifactoryUrl + remoteName + string(os.PathSeparator)
+	remoteServer := &config.ServerDetails{
+		ArtifactoryUrl: remoteURL,
+		AccessToken:    server.AccessToken,
+		User:           server.User,
+		Password:       server.Password,
+	}
+
+	return utils.DownloadExtractor(remoteServer, downloadFrom, downloadTo)
 }

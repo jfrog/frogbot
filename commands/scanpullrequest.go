@@ -223,8 +223,13 @@ func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *ut
 		}
 	}
 
-	results, _, err = audit.GenericAudit(xrayScanParams, server, false, project.UseWrapper, false,
-		nil, nil, project.PipRequirementsFile, false, workDirs, []string{}...)
+	auditParams := audit.NewAuditParams().
+		SetXrayGraphScanParams(xrayScanParams).
+		SetServerDetails(server).
+		SetUseWrapper(project.UseWrapper).
+		SetRequirementsFile(project.PipRequirementsFile).
+		SetWorkingDirs(workDirs)
+	results, _, err = audit.GenericAudit(auditParams)
 	if err != nil {
 		return nil, err
 	}

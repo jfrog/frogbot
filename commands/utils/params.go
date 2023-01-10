@@ -300,9 +300,7 @@ func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err
 	if !exist || err != nil {
 		// Look for the frogbot-config.yml in fullConfigPath parents dirs
 		if fullConfigDirPath, err = utils.FindFileInDirAndParents(fullConfigDirPath, configRelativePath); err != nil {
-			return nil, &ErrMissingConfig{
-				errFrogbotConfigNotFound.Error(),
-			}
+			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
 		}
 		fullConfigDirPath = filepath.Join(fullConfigDirPath, configRelativePath)
 	}

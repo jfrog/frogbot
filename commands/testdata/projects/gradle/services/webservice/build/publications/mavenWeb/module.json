@@ -1,0 +1,35 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+	"group": "org.jfrog.example.gradle",
+	"module": "webservice",
+	"version": "1.0",
+	"attributes": {
+	  "org.gradle.status": "release"
+	}
+  },
+  "createdBy": {
+	"gradle": {
+	  "version": "7.6"
+	}
+  },
+  "variants": [
+	{
+	  "name": "master",
+	  "attributes": {
+		"org.gradle.usage": "java-runtime"
+	  },
+	  "files": [
+		{
+		  "name": "webservice-1.0.war",
+		  "url": "webservice-1.0.war",
+		  "size": 2655727,
+		  "sha512": "995e7db9b8b9756c6a530964cf0df710418ec1fa9d922d96e196a8416aa36ec1e9432a1eb7e07308d01ca46aa3040f493339e083caa293998befb316b7a8839c",
+		  "sha256": "54257a7fd58650a2f6ea5818a1ae17a3c25f342c8ffcca2219942d1f4b33a89f",
+		  "sha1": "3fe407723e8da20865aff4414c45dd4bf631213d",
+		  "md5": "f3b6c89d375d5915c162aa6cbbac45fb"
+		}
+	  ]
+	}
+  ]
+}

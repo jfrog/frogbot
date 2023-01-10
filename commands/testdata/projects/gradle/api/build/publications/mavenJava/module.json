@@ -1,0 +1,83 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+	"group": "org.jfrog.example.gradle",
+	"module": "api",
+	"version": "1.0",
+	"attributes": {
+	  "org.gradle.status": "release"
+	}
+  },
+  "createdBy": {
+	"gradle": {
+	  "version": "7.6"
+	}
+  },
+  "variants": [
+	{
+	  "name": "apiElements",
+	  "attributes": {
+		"org.gradle.category": "library",
+		"org.gradle.dependency.bundling": "external",
+		"org.gradle.jvm.version": 11,
+		"org.gradle.libraryelements": "jar",
+		"org.gradle.usage": "java-api"
+	  },
+	  "files": [
+		{
+		  "name": "api-1.0.jar",
+		  "url": "api-1.0.jar",
+		  "size": 1781,
+		  "sha512": "3dd1e99b83b5f58ede963c179b3215f77cc0ff07241283f06c65ddb6c5c93070a877db273761e454fd7f226a1ecde9bd26c87522bd1225203efa5ad9c01b3a01",
+		  "sha256": "a8d33b86a0320918da0615b1f4ad2010d026558f321009d11507cce004128aa3",
+		  "sha1": "a0db12de72ba63684c87f3ec5f2be571ce5295d4",
+		  "md5": "ca65ca2452e3a798c5f1a1e636aaef39"
+		}
+	  ]
+	},
+	{
+	  "name": "runtimeElements",
+	  "attributes": {
+		"org.gradle.category": "library",
+		"org.gradle.dependency.bundling": "external",
+		"org.gradle.jvm.version": 11,
+		"org.gradle.libraryelements": "jar",
+		"org.gradle.usage": "java-runtime"
+	  },
+	  "dependencies": [
+		{
+		  "group": "org.jfrog.example.gradle",
+		  "module": "shared",
+		  "version": {
+			"requires": "1.0"
+		  }
+		},
+		{
+		  "group": "commons-lang",
+		  "module": "commons-lang",
+		  "version": {
+			"requires": "2.4"
+		  }
+		},
+		{
+		  "group": "org.apache.wicket",
+		  "module": "wicket",
+		  "version": {
+			"requires": "1.3.7"
+		  }
+		}
+	  ],
+	  "files": [
+		{
+		  "name": "api-1.0.jar",
+		  "url": "api-1.0.jar",
+		  "size": 1781,
+		  "sha512": "3dd1e99b83b5f58ede963c179b3215f77cc0ff07241283f06c65ddb6c5c93070a877db273761e454fd7f226a1ecde9bd26c87522bd1225203efa5ad9c01b3a01",
+		  "sha256": "a8d33b86a0320918da0615b1f4ad2010d026558f321009d11507cce004128aa3",
+		  "sha1": "a0db12de72ba63684c87f3ec5f2be571ce5295d4",
+		  "md5": "ca65ca2452e3a798c5f1a1e636aaef39"
+		}
+	  ]
+	}
+  ]
+}

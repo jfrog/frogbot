@@ -1,0 +1,25 @@
+{
+  "type": "gradle",
+  "id": "org.jfrog.example.gradle:services:1.0",
+  "repository": "empty_repo",
+  "artifacts": [
+	{
+	  "type": "jar",
+	  "sha1": "b073e1be8d98d8473e8b7c9296e00db87335c3d4",
+	  "sha256": "103c4565e75c2ac0ef2d927e44151c682900a87a3964670fc68ba90265ffe1b6",
+	  "md5": "7c8c35b9fe6973537356c06c02a3e945",
+	  "name": "services-1.0.jar",
+	  "path": "org/jfrog/example/gradle/services/1.0/services-1.0.jar"
+	},
+	{
+	  "type": "module",
+	  "sha1": "9deb169407a4eb34a1e5ee138003cc56226553ae",
+	  "sha256": "5ff1a95ccd4f0b07c7b296fff5f95e64101c426bd1bdadec5ab23f2492797442",
+	  "md5": "5f880d98d341aa93ab5dff58287000bd",
+	  "name": "services-1.0.module",
+	  "path": "org/jfrog/example/gradle/services/1.0/services-1.0.module"
+	}
+  ],
+  "excludedArtifacts": [],
+  "dependencies": []
+}
