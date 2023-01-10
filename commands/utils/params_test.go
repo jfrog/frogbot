@@ -294,7 +294,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	err := extractProjectParamsFromEnv(&params)
 	assert.NoError(t, err)
 	assert.True(t, params.UseWrapper)
-	assert.Equal(t, []string{""}, params.WorkingDirs)
+	assert.Equal(t, []string{RootDir}, params.WorkingDirs)
 	assert.Equal(t, "", params.PipRequirementsFile)
 	assert.Equal(t, "", params.InstallCommandName)
 	assert.Equal(t, []string(nil), params.InstallCommandArgs)

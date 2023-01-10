@@ -20,7 +20,7 @@ type ScanAndFixRepositories struct {
 func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		if configAggregator[repoNum].GitProvider.String() == vcsutils.BitbucketServer.String() {
+		if configAggregator[repoNum].GitProvider == vcsutils.BitbucketServer {
 			// Bitbucket server requires a simple output without emojis + images
 			configAggregator[repoNum].SimplifiedOutput = true
 		}

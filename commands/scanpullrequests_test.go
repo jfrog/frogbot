@@ -112,7 +112,11 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			}},
 		Git: gitParams.Git,
 	}
-	secondRepoParams := utils.Params{Git: gitParams.Git}
+	secondRepoParams := utils.Params{
+		Git:  gitParams.Git,
+		Scan: utils.Scan{Projects: []utils.Project{{WorkingDirs: []string{utils.RootDir}}}},
+	}
+
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
 			SimplifiedOutput: true,
