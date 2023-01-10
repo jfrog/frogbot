@@ -137,8 +137,8 @@ func getFrogbotConfig(gitParams *Git, client vcsclient.VcsClient) (configData *F
 			}
 		}
 	}
-	// Read the config from the current working dir, if reading from the target branch is irrelevant, or the config is missing from the target branch.
-	if targetConfigContent == nil {
+	// Read the config from the current working dir, if reading from the target branch is irrelevant
+	if targetConfigContent == nil && err == nil {
 		configData, err = ReadConfig(frogbotConfigPath)
 	}
 
