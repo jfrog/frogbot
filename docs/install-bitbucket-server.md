@@ -42,6 +42,13 @@
                 - name: bitbucket
             inputResources:
                 - name: cron_trigger
+            runtime:
+               type: image
+               image:
+                 auto:
+                   language: go
+                   versions: 
+                     - "1.19"
             environmentVariables:
               
               # [Mandatory]

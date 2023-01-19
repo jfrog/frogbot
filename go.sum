@@ -214,8 +214,6 @@ github.com/jfrog/froggit-go v1.5.2 h1:lFG9iWUQ7IkB6LzxjH6vQUcm/wQMGgKQaY3MxSqWqq
 github.com/jfrog/froggit-go v1.5.2/go.mod h1:KOJN88vwiYz+5kYufC1idMaa2G48XoRMas6l6G7sQfE=
 github.com/jfrog/gofrog v1.2.5 h1:jCgJC0iGQ8bU7jCC+YEFJTNINyngApIrhd8BjZAVRIE=
 github.com/jfrog/gofrog v1.2.5/go.mod h1:o00tSRff6IapTgaCMuX1Cs9MH08Y1JqnsKgRtx91Gc4=
-github.com/jfrog/jfrog-cli-core/v2 v2.27.0 h1:44uv1shgsKJ+3EAZLfwcDveBLcLkJBB6B8UCRcO2PlQ=
-github.com/jfrog/jfrog-cli-core/v2 v2.27.0/go.mod h1:lD9vRmJeggZFjNOPRigtcw5gl17lm29PQJRvmnO9UbA=
 github.com/jfrog/jfrog-client-go v1.25.0 h1:baSjeB9OrE4+bFtulyD0IPRkTt5Ynr7XGsTvtlIUztg=
 github.com/jfrog/jfrog-client-go v1.25.0/go.mod h1:3UIKpuDbH+CeWXHrIqnYPqZmG0+0lXnFh5WJ7qN3jAM=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
@@ -267,6 +265,8 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230119094234-85d7f49c49bf h1:pITKvYMYRy0wAvfkR/L2RpJTf5ctmN9blyk2kpOVzds=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230119094234-85d7f49c49bf/go.mod h1:lD9vRmJeggZFjNOPRigtcw5gl17lm29PQJRvmnO9UbA=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.1.2 h1:PMDK7tXShJ9zsB7bfvlpADH5NEw1dfA9xwU8Xtdj73U=
 github.com/owenrumney/go-sarif/v2 v2.1.2/go.mod h1:MSqMMx9WqlBSY7pXoOZWgEsVB4FDNfhcaXDA1j6Sr+w=

@@ -66,7 +66,7 @@ const (
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
 	// Comment
-	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n" +
+	TableHeader = "\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
 	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
