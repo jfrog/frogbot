@@ -123,16 +123,24 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:             "XRAY-1",
+			Severity:            "high",
+			ImpactedPackageName: "component-A",
+		},
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-C",
+		},
+	}
+
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
 	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-	assert.Equal(t, "component-C", rows[1].ImpactedPackageName)
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
@@ -141,7 +149,6 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 		Violations: []services.Violation{
 			{
 				IssueId:       "XRAY-1",
-				Summary:       "summary-1",
 				Severity:      "high",
 				ViolationType: "security",
 				Components:    map[string]services.Component{"component-A": {}},
