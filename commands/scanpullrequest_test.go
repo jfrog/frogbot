@@ -252,18 +252,24 @@ func TestGetNewVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-C",
+		},
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-D",
+		},
+	}
+
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-2", rows[0].IssueId)
-	assert.Equal(t, "low", rows[0].Severity)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-
-	impactedPackageOne := rows[0].ImpactedPackageName
-	impactedPackageTwo := rows[1].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
@@ -290,16 +296,24 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-B",
+		},
+		{
+			IssueId:             "XRAY-1",
+			Severity:            "high",
+			ImpactedPackageName: "component-A",
+		},
+	}
+
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-	assert.Equal(t, "component-B", rows[1].ImpactedPackageName)
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {

@@ -1,5 +1,5 @@
 - params:
     git:
-      repoName: frogbot
+      repoName: test_mvn
       branches:
-        - dev
+        - master
