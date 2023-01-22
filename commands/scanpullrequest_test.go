@@ -193,25 +193,34 @@ func TestGetAllVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:             "XRAY-1",
+			Severity:            "high",
+			ImpactedPackageName: "component-A",
+		},
+		{
+			IssueId:             "XRAY-1",
+			Severity:            "high",
+			ImpactedPackageName: "component-B",
+		},
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-C",
+		},
+		{
+			IssueId:             "XRAY-2",
+			Severity:            "low",
+			ImpactedPackageName: "component-D",
+		},
+	}
+
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
 	rows, err := createAllIssuesRows([]services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 4)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "XRAY-1", rows[1].IssueId)
-	assert.Equal(t, "high", rows[1].Severity)
-	assert.Equal(t, "XRAY-2", rows[2].IssueId)
-	assert.Equal(t, "low", rows[2].Severity)
-	assert.Equal(t, "XRAY-2", rows[3].IssueId)
-	assert.Equal(t, "low", rows[3].Severity)
-
-	impactedPackageOne := rows[0].ImpactedPackageName
-	impactedPackageTwo := rows[1].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-A", "component-B"}, []string{impactedPackageOne, impactedPackageTwo})
-	impactedPackageThree := rows[2].ImpactedPackageName
-	impactedPackageFour := rows[3].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageThree, impactedPackageFour})
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
