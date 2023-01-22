@@ -292,7 +292,7 @@ func getNewVulnerabilities(previousScan, currentScan services.ScanResponse, isMu
 }
 
 func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return vulnerability.ImpactedPackageName + vulnerability.ImpactedPackageVersion + vulnerability.IssueId
+	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
@@ -318,8 +318,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 			vulnerability.Severity,
 			strings.TrimSuffix(directDependencies.String(), "; "),
 			strings.TrimSuffix(directDependenciesVersions.String(), "; "),
-			vulnerability.ImpactedPackageName,
-			vulnerability.ImpactedPackageVersion,
+			vulnerability.ImpactedDependencyName,
+			vulnerability.ImpactedDependencyVersion,
 			fixedVersionString,
 			cve)
 	}

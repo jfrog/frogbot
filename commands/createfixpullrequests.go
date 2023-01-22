@@ -178,19 +178,19 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 					if !fixVulnerability {
 						continue
 					}
-					vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions)
+					vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 					if vulnFixVersion == "" {
 						continue
 					}
 
-					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
+					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]
 					if exists {
 						// More than one vulnerability can exist on the same impacted package.
 						// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
 						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
+						fixVersionsMap[vulnerability.ImpactedDependencyName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
 			}
@@ -229,7 +229,7 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 				}
 			}
 		}
-		if _, exist := cfp.mavenDepToPropertyMap[vulnerability.ImpactedPackageName]; !exist {
+		if _, exist := cfp.mavenDepToPropertyMap[vulnerability.ImpactedDependencyName]; !exist {
 			return false, nil
 		}
 	}
