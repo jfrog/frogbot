@@ -215,7 +215,7 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) er
 	if err != nil {
 		return err
 	}
-	sourceDir, err := filepath.Abs(filepath.Join("commands", "testdata", "scanpullrequests", testProject))
+	sourceDir, err := filepath.Abs(filepath.Join("testdata", "scanpullrequests", testProject))
 	if err != nil {
 		return err
 	}
