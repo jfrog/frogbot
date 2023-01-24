@@ -147,7 +147,7 @@
            JF_PASSWORD= credentials("JF_PASSWORD")
    
            // [Mandatory]
-           // Bitbucket access token with the following permissions 
+           // Bitbucket access token with the write repository permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
            
            JF_GIT_PROVIDER= "bitbucketServer"
