@@ -64,8 +64,9 @@
               JF_GIT_USERNAME: ""
   
               # [Mandatory]
-              # Bitbucket accesses token with write repository permissions
+              # Bitbucket access token with write repository permissions
               JF_GIT_TOKEN: $int_bitbucket_token
+              
               JF_GIT_PROVIDER: "bitbucketServer"
   
               # [Mandatory]
@@ -146,8 +147,9 @@
            JF_PASSWORD= credentials("JF_PASSWORD")
    
            // [Mandatory]
-           // Bitbucket accesses token with the following permissions 
+           // Bitbucket access token with the following permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
+           
            JF_GIT_PROVIDER= "bitbucketServer"
    
            // [Mandatory]

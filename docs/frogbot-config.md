@@ -17,7 +17,7 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes th
     - GitHub with GitHub actions
     - GitLab
 
-2. Push the file to the root of your repository. The path should be: `.frogbot/frogbot-config.yml`
+2. Push the file to the following path in the root of your repository: `.frogbot/frogbot-config.yml`
 
 ## The file structure
 ### Params

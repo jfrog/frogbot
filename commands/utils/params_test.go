@@ -165,7 +165,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	server, gitParams, err := ExtractEnvParams()
+	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
 	configFile, err := generateConfigAggregatorFromEnv(&gitParams, server)
 	assert.NoError(t, err)
