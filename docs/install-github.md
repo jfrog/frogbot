@@ -65,6 +65,13 @@
                   - name: github
                 inputResources:
                   - name: cron_trigger
+                # Set the relevant language based on your project, read more: https://www.jfrog.com/confluence/display/JFROG/Choosing+your+Runtime+Image#ChoosingyourRuntimeImage-ChoosingLanguageandVersion
+                # runtime:
+                #   type: image
+                #   image:
+                #     auto:
+                #       language: 
+                #       versions: 
                 environmentVariables:
                   # [Mandatory]
                   # JFrog platform URL
@@ -83,6 +90,12 @@
                   # [Mandatory]
                   # GitHub organization namespace
                   JF_GIT_OWNER: ""
+                  # [Mandatory]
+                  # Frogbot Management repository in which the frogbot-config.yml resides
+                  JF_GIT_REPO: ""
+                  # [Mandatory]
+                  # Frogbot Management repository branch in which the frogbot-config.yml resides
+                  JF_GIT_BASE_BRANCH: ""
               execution:
                 onExecute:
                   - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -149,10 +162,16 @@
            // [Mandatory]
            // API endpoint to GitHub enterprise server
            JF_GIT_API_ENDPOINT = ""
-           // Uncomment the below options if you'd like to use them.
+           // [OPTIONAL]
+           // Frogbot Management repository in which the frogbot-config.yml resides
+           JF_GIT_REPO: ""
+           // [OPTIONAL]
+           // Frogbot Management repository branch in which the frogbot-config.yml resides
+           JF_GIT_BASE_BRANCH: ""
            // [Mandatory if JF_USER and JF_PASSWORD are not provided]
            // JFrog access token with 'read' permissions for Xray
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+  
        }
        stages {
            stage('Download Frogbot') {
