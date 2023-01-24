@@ -76,23 +76,30 @@
                   # [Mandatory]
                   # JFrog platform URL
                   JF_URL: $int_jfrogPlatform_url
+   
                   # [Mandatory if JF_USER and JF_PASSWORD are not provided]
                   # JFrog access token with 'read' permissions for Xray
                   JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+                  
                   # [Mandatory]
                   # GitHub personal access token with the following permissions:
                   # Read and Write access to code, pull requests, security events, and workflows
                   JF_GIT_TOKEN: $int_github_token
+                  
                   JF_GIT_PROVIDER: "github"
+                 
                   # [Mandatory]
                   # API endpoint to GitHub Enterprise server
                   JF_GIT_API_ENDPOINT: $int_github_url
+                 
                   # [Mandatory]
                   # GitHub organization namespace
                   JF_GIT_OWNER: ""
+                  
                   # [Mandatory]
                   # Frogbot Management repository in which the frogbot-config.yml resides
                   JF_GIT_REPO: ""
+                 
                   # [Mandatory]
                   # Frogbot Management repository branch in which the frogbot-config.yml resides
                   JF_GIT_BASE_BRANCH: ""
@@ -147,26 +154,33 @@
            // [Mandatory]
            // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
            JF_URL = credentials("JF_URL")
+   
            // [Mandatory if JF_ACCESS_TOKEN is not provided]
            // JFrog user and password with 'read' permissions for Xray
            JF_USER = credentials("JF_USER")
            JF_PASSWORD = credentials("JF_PASSWORD")
+   
            // [Mandatory]
-           // GitHub enterprise server accesses token with the following permissions:
+           // GitHub enterprise server access token with the following permissions:
            // Read and Write access to code, pull requests, security events, and workflows
            JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
+           
            JF_GIT_PROVIDER = "github"
+   
            // [Mandatory]
            // GitHub enterprise server organization namespace
            JF_GIT_OWNER = ""
+   
            // [Mandatory]
            // API endpoint to GitHub enterprise server
            JF_GIT_API_ENDPOINT = ""
+   
            // [OPTIONAL]
-           // Frogbot Management repository in which the frogbot-config.yml resides
+           // The repository in which the frogbot-config.yml resides
            JF_GIT_REPO: ""
+   
            // [OPTIONAL]
-           // Frogbot Management repository branch in which the frogbot-config.yml resides
+           // The branch in the repository which the frogbot-config.yml resides
            JF_GIT_BASE_BRANCH: ""
            // [Mandatory if JF_USER and JF_PASSWORD are not provided]
            // JFrog access token with 'read' permissions for Xray

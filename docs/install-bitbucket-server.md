@@ -64,8 +64,9 @@
               JF_GIT_USERNAME: ""
   
               # [Mandatory]
-              # Bitbucket accesses token with write repository permissions
+              # Bitbucket access token with write repository permissions
               JF_GIT_TOKEN: $int_bitbucket_token
+              
               JF_GIT_PROVIDER: "bitbucketServer"
   
               # [Mandatory]
@@ -77,11 +78,11 @@
               JF_GIT_OWNER: ""
               
               # [Mandatory]
-              # Frogbot Management repository in which the frogbot-config.yml resides
+              # The repository in which the frogbot-config.yml resides
               JF_GIT_REPO: ""
               
               # [Mandatory]
-              # Frogbot Management repository branch in which the frogbot-config.yml resides
+              # The branch in the repository which the frogbot-config.yml resides
               JF_GIT_BASE_BRANCH: ""
             
         execution:
@@ -146,8 +147,9 @@
            JF_PASSWORD= credentials("JF_PASSWORD")
    
            // [Mandatory]
-           // Bitbucket accesses token with the following permissions 
+           // Bitbucket access token with the following permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
+           
            JF_GIT_PROVIDER= "bitbucketServer"
    
            // [Mandatory]
@@ -167,11 +169,11 @@
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
    
            // [OPTIONAL]
-           // Frogbot Management repository in which the frogbot-config.yml resides
+           // The repository in which the frogbot-config.yml resides
            JF_GIT_REPO: ""
             
            // [OPTIONAL]
-           // Frogbot Management repository branch in which the frogbot-config.yml resides
+           // The branch in the repository which the frogbot-config.yml resides
            JF_GIT_BASE_BRANCH: ""
    
        }
