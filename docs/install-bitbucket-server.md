@@ -15,88 +15,12 @@
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 
-   2.3. Save your Bitbucket access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **bitbucket** with the token as the key and the Bitbucket access token as the value.
+   2.3. Save your Bitbucket access token in a [Bitbucket Server Integration](https://www.jfrog.com/confluence/display/JFROG/Bitbucket+Server+Integration) named
+   **gitIntegration**.
 
    2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
 
-   2.5. Create a Pipelines job with the below pipelines.yml content.
-      <details>
-        <summary>Template</summary>
-
-   ```yml
-    resources:
-      - name: cron_trigger
-        type: CronTrigger
-        configuration:
-          interval: '*/5 * * * *'     # Every 5 minutes
-    
-    
-    pipelines:
-      - name: Frogbot
-        steps:
-          - name: Frogbot_Scan
-            type: Bash # For Windows runner: PowerShell
-            configuration:
-              integrations:
-                - name: jfrogPlatform
-                - name: bitbucket
-            inputResources:
-                - name: cron_trigger
-            # Set the relevant language based on your project, read more: https://www.jfrog.com/confluence/display/JFROG/Choosing+your+Runtime+Image#ChoosingyourRuntimeImage-ChoosingLanguageandVersion
-            # runtime:
-            #   type: image
-            #   image:
-            #     auto:
-            #       language: 
-            #       versions: 
-            environmentVariables:
-              
-              # [Mandatory]
-              # JFrog platform URL
-              JF_URL: $int_jfrogPlatform_url
-  
-              # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-              # JFrog access token with 'read' permissions for Xray
-              JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
-   
-              # [Mandatory]
-              # Username of the Bitbucket account
-              JF_GIT_USERNAME: ""
-  
-              # [Mandatory]
-              # Bitbucket access token with write repository permissions
-              JF_GIT_TOKEN: $int_bitbucket_token
-              
-              JF_GIT_PROVIDER: "bitbucketServer"
-  
-              # [Mandatory]
-              # API endpoint to Bitbucket server
-              JF_GIT_API_ENDPOINT: $int_bitbucket_url
-  
-              # [Mandatory]
-              # Bitbucket project namespace
-              JF_GIT_OWNER: ""
-              
-              # [Mandatory]
-              # The repository in which the frogbot-config.yml resides
-              JF_GIT_REPO: ""
-              
-              # [Mandatory]
-              # The branch in the repository which the frogbot-config.yml resides
-              JF_GIT_BASE_BRANCH: ""
-            
-        execution:
-          onExecute:
-            - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-            - ./frogbot scan-pull-requests
-            - ./frogbot scan-and-fix-repos   
-            # For Windows runner:
-            # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-            # - .\frogbot.exe scan-pull-requests
-            # - .\frogbot.exe scan-and-fix-repos
-   ```
-
-    </details>
+   2.5. Create a Pipelines job with one of our [templates](templates/jfrog-pipelines).
 
    2.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
@@ -147,7 +71,7 @@
            JF_PASSWORD= credentials("JF_PASSWORD")
    
            // [Mandatory]
-           // Bitbucket access token with the following permissions 
+           // Bitbucket access token with the write repository permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
            
            JF_GIT_PROVIDER= "bitbucketServer"

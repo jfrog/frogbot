@@ -1,0 +1,76 @@
+resources:
+  - name: cron_trigger
+    type: CronTrigger
+    configuration:
+      interval: '*/5 * * * *'     # Every 5 minutes
+
+  - name: frogbotGitRepo
+    type: GitRepo
+    configuration:
+      gitProvider: gitIntegration
+      path: {{.jfrog-pipelines.sourceRepository}}
+      branches:
+        include: ^{{gitBranch}}$
+      cloneProtocol: https
+
+pipelines:
+  - name: Frogbot
+    steps:
+      - name: Frogbot_Scan
+        type: Bash # For Windows runner: PowerShell
+        configuration:
+          integrations:
+            - name: jfrogPlatform
+            - name: gitIntegration
+        inputResources:
+          - name: cron_trigger
+          - name: frogbotGitRepo
+        environmentVariables:
+
+          # [Mandatory]
+          # JFrog platform URL
+          JF_URL: $int_jfrogPlatform_url
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions for Xray
+          JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+
+          # [Mandatory for Bitbucket]
+          # Username of the git provider account
+          JF_GIT_USERNAME: ""
+
+          # [Mandatory]
+          # Git provider access token with minimal permissions according to the relevant integration type.
+          # Read more - https://www.jfrog.com/confluence/display/JFROG/Pipelines+Integrations
+          JF_GIT_TOKEN: $int_gitIntegration_token
+
+          # [Mandatory]
+          # Name of your git provider: "bitbucketServer" or "github".
+          JF_GIT_PROVIDER: ""
+
+          # [Mandatory]
+          # API endpoint to your git provider
+          JF_GIT_API_ENDPOINT: $int_gitIntegration_url
+
+          # [Mandatory]
+          # Git provider project owner.
+          JF_GIT_OWNER: ""
+
+          # [Mandatory]
+          # The repository in which the frogbot-config.yml resides
+          JF_GIT_REPO: ""
+
+          # [Mandatory]
+          # The branch in the repository which the frogbot-config.yml resides
+          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_branchName
+
+    execution:
+      onExecute:
+        - cd $res_frogbotGitRepo_resourcePath
+        - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+        - ./frogbot scan-pull-requests
+        - ./frogbot scan-and-fix-repos
+        # For Windows runner:
+        # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+        # - .\frogbot.exe scan-pull-requests
+        # - .\frogbot.exe scan-and-fix-repos

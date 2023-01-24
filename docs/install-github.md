@@ -40,89 +40,22 @@
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 
-   2.3. Save your GitHub access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **github** with the token as the key and the GitHub access token as the value.
+   2.3.Save your Github access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
+   **gitIntegration**.
 
    2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
 
-   2.5. Create a Pipelines job with the below `pipelines.yml` template.
-   <details>
-       <summary>Template</summary>
+   2.5. Create a Pipelines job with one of our [templates](templates/jfrog-pipelines).
 
-      ```yml
-      resources:
-        - name: cron_trigger
-          type: CronTrigger
-          configuration:
-            interval: '*/5 * * * *'     # Every 5 minutes
-      pipelines:
-        - name: Frogbot
-          steps:
-            - name: Frogbot_Scan
-              type: Bash # For Windows runner: PowerShell
-              configuration:
-                integrations:
-                  - name: jfrogPlatform
-                  - name: github
-                inputResources:
-                  - name: cron_trigger
-                # Set the relevant language based on your project, read more: https://www.jfrog.com/confluence/display/JFROG/Choosing+your+Runtime+Image#ChoosingyourRuntimeImage-ChoosingLanguageandVersion
-                # runtime:
-                #   type: image
-                #   image:
-                #     auto:
-                #       language: 
-                #       versions: 
-                environmentVariables:
-                  # [Mandatory]
-                  # JFrog platform URL
-                  JF_URL: $int_jfrogPlatform_url
-   
-                  # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                  # JFrog access token with 'read' permissions for Xray
-                  JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
-                  
-                  # [Mandatory]
-                  # GitHub personal access token with the following permissions:
-                  # Read and Write access to code, pull requests, security events, and workflows
-                  JF_GIT_TOKEN: $int_github_token
-                  
-                  JF_GIT_PROVIDER: "github"
-                 
-                  # [Mandatory]
-                  # API endpoint to GitHub Enterprise server
-                  JF_GIT_API_ENDPOINT: $int_github_url
-                 
-                  # [Mandatory]
-                  # GitHub organization namespace
-                  JF_GIT_OWNER: ""
-                  
-                  # [Mandatory]
-                  # Frogbot Management repository in which the frogbot-config.yml resides
-                  JF_GIT_REPO: ""
-                 
-                  # [Mandatory]
-                  # Frogbot Management repository branch in which the frogbot-config.yml resides
-                  JF_GIT_BASE_BRANCH: ""
-              execution:
-                onExecute:
-                  - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                  - ./frogbot scan-pull-requests
-                  - ./frogbot scan-and-fix-repos
-                  # For Windows runner:
-                  # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-                  # - .\frogbot.exe scan-pull-requests
-                  # - .\frogbot.exe scan-and-fix-repos
-      ```
+   2.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
-      </details>
-
-   3.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
-
-   3.7. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
+   2.7. In the **pipelines.yml
+   **, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
 
    **Important**
 
-   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the **installCommand** variable. For example, `npm i`  or `nuget restore`
+   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the
+     **installCommand** variable. For example, `npm i`  or `nuget restore`
    - Make sure all the build tools used to build the project are installed on the build agent.
 
    </details>
