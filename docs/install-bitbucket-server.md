@@ -42,6 +42,13 @@
                 - name: bitbucket
             inputResources:
                 - name: cron_trigger
+            # Set the relevant language based on your project, read more: https://www.jfrog.com/confluence/display/JFROG/Choosing+your+Runtime+Image#ChoosingyourRuntimeImage-ChoosingLanguageandVersion
+            # runtime:
+            #   type: image
+            #   image:
+            #     auto:
+            #       language: 
+            #       versions: 
             environmentVariables:
               
               # [Mandatory]
@@ -57,7 +64,7 @@
               JF_GIT_USERNAME: ""
   
               # [Mandatory]
-              # Bitbucket accesses token with the following permissions 
+              # Bitbucket accesses token with write repository permissions
               JF_GIT_TOKEN: $int_bitbucket_token
               JF_GIT_PROVIDER: "bitbucketServer"
   
@@ -68,7 +75,14 @@
               # [Mandatory]
               # Bitbucket project namespace
               JF_GIT_OWNER: ""
-   
+              
+              # [Mandatory]
+              # Frogbot Management repository in which the frogbot-config.yml resides
+              JF_GIT_REPO: ""
+              
+              # [Mandatory]
+              # Frogbot Management repository branch in which the frogbot-config.yml resides
+              JF_GIT_BASE_BRANCH: ""
             
         execution:
           onExecute:
@@ -151,6 +165,14 @@
            // [Mandatory if JF_USER and JF_PASSWORD are not provided]
            // JFrog access token with 'read' permissions for Xray
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+   
+           // [OPTIONAL]
+           // Frogbot Management repository in which the frogbot-config.yml resides
+           JF_GIT_REPO: ""
+            
+           // [OPTIONAL]
+           // Frogbot Management repository branch in which the frogbot-config.yml resides
+           JF_GIT_BASE_BRANCH: ""
    
        }
    

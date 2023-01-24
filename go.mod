@@ -96,3 +96,5 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.20230124100451-c87f1f76513d

@@ -67,6 +67,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
+	if branchName == "" {
+		clientLog.Debug("branch name is empty, assuming 'master' is the default branch")
+		branchName = "master"
+	}
+	clientLog.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,
