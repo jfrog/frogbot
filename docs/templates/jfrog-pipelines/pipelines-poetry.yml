@@ -25,6 +25,12 @@ pipelines:
         inputResources:
           - name: cron_trigger
           - name: frogbotGitRepo
+        runtime:
+          type: image
+          image:
+            custom:
+              name: python
+              tag: latest
         environmentVariables:
 
           # [Mandatory]
@@ -59,6 +65,8 @@ pipelines:
     execution:
       onExecute:
         - cd $res_frogbotGitRepo_resourcePath
+        - export LC_ALL=C.UTF-8
+        - export LANG=C.UTF-8
         - pip install poetry
         - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
         - ./frogbot scan-pull-requests

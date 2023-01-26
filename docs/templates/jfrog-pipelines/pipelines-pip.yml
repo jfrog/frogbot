@@ -25,6 +25,12 @@ pipelines:
         inputResources:
           - name: cron_trigger
           - name: frogbotGitRepo
+        runtime:
+          type: image
+          image:
+            custom:
+              name: python
+              tag: latest
         environmentVariables:
 
           # [Mandatory]
