@@ -59,16 +59,7 @@ pipelines:
 
           # [Mandatory]
           # Git provider project owner.
-          JF_GIT_OWNER: $(echo $res_frogbotGitRepo_gitRepoFullName | cut -d '/' -f 1)
-
-          # [Mandatory]
-          # The repository in which the frogbot-config.yml resides
-          JF_GIT_REPO: $(echo $res_frogbotGitRepo_gitRepoFullName | cut -d '/' -f 2)
-
-          # [Mandatory]
-          # The branch in the repository which the frogbot-config.yml resides
-          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_branchName
-
+          JF_GIT_OWNER: ""
     execution:
       onExecute:
         - cd $res_frogbotGitRepo_resourcePath

@@ -92,14 +92,6 @@
            // JFrog access token with 'read' permissions for Xray
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
    
-           // [OPTIONAL]
-           // The repository in which the frogbot-config.yml resides
-           JF_GIT_REPO: ""
-            
-           // [OPTIONAL]
-           // The branch in the repository which the frogbot-config.yml resides
-           JF_GIT_BASE_BRANCH: ""
-   
        }
    
        stages {

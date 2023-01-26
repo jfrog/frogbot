@@ -108,13 +108,6 @@
            // API endpoint to GitHub enterprise server
            JF_GIT_API_ENDPOINT = ""
    
-           // [OPTIONAL]
-           // The repository in which the frogbot-config.yml resides
-           JF_GIT_REPO: ""
-   
-           // [OPTIONAL]
-           // The branch in the repository which the frogbot-config.yml resides
-           JF_GIT_BASE_BRANCH: ""
            // [Mandatory if JF_USER and JF_PASSWORD are not provided]
            // JFrog access token with 'read' permissions for Xray
            // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
