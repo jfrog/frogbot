@@ -460,7 +460,7 @@ func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
-	assert.NoError(t, os.Setenv("GITHUB_ACTIONS", "true"))
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
 
 	// Run verifyGitHubFrogbotEnvironment
 	err := verifyGitHubFrogbotEnvironment(client, gitParams)
@@ -477,7 +477,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, errors.New("404"))
-	assert.NoError(t, os.Setenv("GITHUB_ACTIONS", "true"))
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
 
 	// Run verifyGitHubFrogbotEnvironment
 	err := verifyGitHubFrogbotEnvironment(client, gitParams)
@@ -490,7 +490,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, nil)
-	assert.NoError(t, os.Setenv("GITHUB_ACTIONS", "true"))
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
 
 	// Run verifyGitHubFrogbotEnvironment
 	err := verifyGitHubFrogbotEnvironment(client, gitParams)

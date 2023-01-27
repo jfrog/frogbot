@@ -37,7 +37,13 @@ func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
-	return scanPullRequest(&(configAggregator)[0], client)
+	repoConfig := &(configAggregator)[0]
+	if repoConfig.GitProvider == vcsutils.GitHub {
+		if err := verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
+			return err
+		}
+	}
+	return scanPullRequest(repoConfig, client)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
@@ -45,11 +51,6 @@ func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
-	if repoConfig.GitProvider == vcsutils.GitHub {
-		if err := verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
-			return err
-		}
-	}
 	// Validate scan params
 	if len(repoConfig.Branches) == 0 {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
@@ -105,7 +106,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 		// Don't verify 'frogbot' environment on GitHub on-prem
 		return nil
 	}
-	if _, exist := os.LookupEnv("GITHUB_ACTIONS"); !exist {
+	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
 		// Don't verify 'frogbot' environment on non GitHub Actions CI
 		return nil
 	}
