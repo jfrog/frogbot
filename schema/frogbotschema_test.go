@@ -53,6 +53,10 @@ func TestBadFrogbotSchemas(t *testing.T) {
 }
 
 // Validate frogbot config against the frogbot schema
+// t                     - Testing object
+// schemaLoader          - Frogbot config schema
+// frogbotConfigFilePath - Frogbot config file path
+// expectError           - Expected error or an empty string if error is not expected
 func validateSchema(t *testing.T, schemaLoader gojsonschema.JSONLoader, frogbotConfigFilePath, expectError string) {
 	t.Run(filepath.Base(frogbotConfigFilePath), func(t *testing.T) {
 		// Read frogbot config
@@ -64,7 +68,7 @@ func validateSchema(t *testing.T, schemaLoader gojsonschema.JSONLoader, frogbotC
 		err = yaml.Unmarshal(frogbotConfigFile, &frogbotConfigYaml)
 		assert.NoError(t, err)
 
-		// Convert the Yaml schema to JSON schema to help the json parser to validate it
+		// Convert the Yaml schema to JSON schema to help the json parser validate it
 		frogbotConfigJson := convertYamlToJson(frogbotConfigYaml)
 
 		// Load and validate frogbot config
