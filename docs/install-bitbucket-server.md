@@ -26,105 +26,100 @@
 
    **Important**
    - Make sure all the build tools that are used to build the project are installed on the build agent.
-  </details>
+   </details>
+   <details>
+      <summary>Using Jenkins</summary>
+   2.1. Make sure you have the connection details of your JFrog environment.
 
-  <details>
-  <summary>Using Jenkins</summary>
-
-  2.1. Make sure you have the connection details of your JFrog environment.
-
-  2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
-  **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
-  and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
+   2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
+   **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
+   and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 
    2.3. Save your Bitbucket access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
 
    2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
 
       <details>
-         <summary>Template</summary>
-
-   ```groovy
-
-   // Run the job every 5 minutes 
-   CRON_SETTINGS = '''*/5 * * * *'''
+        <summary>Template</summary>
    
-   pipeline {
-       agent any
-   
-       triggers {
-           cron(CRON_SETTINGS)
-       }
-   
-       environment {
-        
-           // [Mandatory]
-           // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-           JF_URL= credentials("JF_URL")
-   
-           // [Mandatory if JF_ACCESS_TOKEN is not provided]
-           // JFrog user and password with 'read' permissions for Xray
-           JF_USER= credentials("JF_USER")
-           JF_PASSWORD= credentials("JF_PASSWORD")
-   
-           // [Mandatory]
-           // Bitbucket access token with the write repository permissions 
-           JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
+      ```groovy
+      // Run the job every 5 minutes 
+      CRON_SETTINGS = '''*/5 * * * *'''
+      
+      pipeline {
+          agent any
+      
+          triggers {
+              cron(CRON_SETTINGS)
+          }
+      
+          environment {
            
-           JF_GIT_PROVIDER= "bitbucketServer"
-   
-           // [Mandatory]
-           // Username of the Bitbucket account
-           JF_GIT_USERNAME= ""
-   
-           // [Mandatory]
-           // Bitbucket project namespace
-           JF_GIT_OWNER= ""
-   
-           // [Mandatory]
-           // API endpoint to Bitbucket server
-           JF_GIT_API_ENDPOINT= ""
-           
-           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-           // JFrog access token with 'read' permissions for Xray
-           // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
-   
-       }
-   
-       stages {
-           stage('Download Frogbot') {
-               steps {
-                   // For Linux / MacOS runner:
-                   sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-   
-                   // For Windows runner:
-                   // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
-               }
-           }
-   
-           stage('Scan Pull Requests') {
-               steps {
-                   sh "./frogbot scan-pull-requests"
-   
-                   // For Windows runner:
-                   // powershell """.\frogbot.exe scan-pull-requests"""
-               }
-           }
-   
-            stage('Scan and Fix Repos') {
-               steps {
-                   sh "./frogbot scan-and-fix-repos"
-   
-                   // For Windows runner:
-                   // powershell """.\frogbot.exe scan-and-fix-repos"""
-               }
-           }
-       }
-   }
-   
-   ```
-
-  </details>
+              // [Mandatory]
+              // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+              JF_URL= credentials("JF_URL")
+      
+              // [Mandatory if JF_ACCESS_TOKEN is not provided]
+              // JFrog user and password with 'read' permissions for Xray
+              JF_USER= credentials("JF_USER")
+              JF_PASSWORD= credentials("JF_PASSWORD")
+      
+              // [Mandatory]
+              // Bitbucket access token with the write repository permissions 
+              JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
+              
+              JF_GIT_PROVIDER= "bitbucketServer"
+      
+              // [Mandatory]
+              // Username of the Bitbucket account
+              JF_GIT_USERNAME= ""
+      
+              // [Mandatory]
+              // Bitbucket project namespace
+              JF_GIT_OWNER= ""
+      
+              // [Mandatory]
+              // API endpoint to Bitbucket server
+              JF_GIT_API_ENDPOINT= ""
+              
+              // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+              // JFrog access token with 'read' permissions for Xray
+              // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+      
+          }
+      
+          stages {
+              stage('Download Frogbot') {
+                  steps {
+                      // For Linux / MacOS runner:
+                      sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+      
+                      // For Windows runner:
+                      // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                  }
+              }
+      
+              stage('Scan Pull Requests') {
+                  steps {
+                      sh "./frogbot scan-pull-requests"
+      
+                      // For Windows runner:
+                      // powershell """.\frogbot.exe scan-pull-requests"""
+                  }
+              }
+      
+               stage('Scan and Fix Repos') {
+                  steps {
+                      sh "./frogbot scan-and-fix-repos"
+      
+                      // For Windows runner:
+                      // powershell """.\frogbot.exe scan-and-fix-repos"""
+                  }
+              }
+          }
+      }
+      ```
+     </details>
 
    2.5. In the Jenkinsfile, set the values of all the mandatory variables.
 
@@ -136,6 +131,8 @@
 
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
+   
+   </details>
 
   </details>
 

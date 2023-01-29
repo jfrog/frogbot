@@ -69,8 +69,7 @@
       <details>
              <summary>Template</summary>
 
-       ```groovy
-       
+   ```groovy
        // Run the job every 5 minutes 
        CRON_SETTINGS = '''*/5 * * * *'''
        pipeline {
@@ -133,8 +132,7 @@
                }    
            }
        }
-
-       ```
+   ```
       </details>
 
    2.5. In the Jenkinsfile, set the values of all the mandatory variables.
@@ -145,7 +143,7 @@
 
    **Important**
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN
-   ** are set in the Jenkinsfile, but not both. - Make sure all the build tools used to build the project are installed on the Jenkins agent.****
+   ** are set in the Jenkinsfile, but not both. - Make sure all the build tools used to build the project are installed on the Jenkins agent.**
 
    </details>
 
