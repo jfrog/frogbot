@@ -17,7 +17,7 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
@@ -64,7 +64,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 			return err
 		}
 		if repoConfig.IncludeAllVulnerabilities {
-			clientLog.Info("Frogbot is configured to show all vulnerabilities")
+			log.Info("Frogbot is configured to show all vulnerabilities")
 			allIssuesRows, err := createAllIssuesRows(currentScan)
 			if err != nil {
 				return err
@@ -84,7 +84,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		}
 	}
 
-	clientLog.Info("Xray scan completed")
+	log.Info("Xray scan completed")
 
 	// Frogbot adds a comment on the PR.
 	getTitleFunc, getSeverityTagFunc := getCommentFunctions(repoConfig.SimplifiedOutput)
@@ -242,7 +242,7 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 
 func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.Git, server *coreconfig.ServerDetails) (res []services.ScanResponse, err error) {
 	// First download the target repo to temp dir
-	clientLog.Info("Auditing " + git.RepoName + " " + branch)
+	log.Info("Auditing " + git.RepoName + " " + branch)
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, git)
 	if err != nil {
 		return
@@ -284,13 +284,13 @@ func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallati
 			err = restoreErr
 		}
 	}()
-	clientLog.Info("Executing", "'"+project.InstallCommandName+"'", project.InstallCommandArgs, "at", workDir)
+	log.Info("Executing", "'"+project.InstallCommandName+"'", project.InstallCommandArgs, "at", workDir)
 	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
 	if err = exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
 		if failOnInstallationErrors {
 			return err
 		}
-		clientLog.Info(installationCmdFailedErr, err.Error())
+		log.Info(installationCmdFailedErr, err.Error())
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}

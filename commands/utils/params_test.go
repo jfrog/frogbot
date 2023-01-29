@@ -141,7 +141,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	configFile, err := ReadConfig(configParamsTestFile)
+	configFile, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
 		for projectI, project := range repo.Projects {
@@ -165,7 +165,11 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	configFile, server, _, err := GetParamsAndClient()
+	server, gitParams, err := extractEnvParams()
+	assert.NoError(t, err)
+	configFile, err := generateConfigAggregatorFromEnv(&gitParams, server)
+	assert.NoError(t, err)
+	err = SanitizeEnv()
 	assert.NoError(t, err)
 	AssertSanitizedEnv(t)
 
@@ -181,7 +185,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, configParams := range configFile {
+	for _, configParams := range *configFile {
 		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
