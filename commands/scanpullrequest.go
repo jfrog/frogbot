@@ -100,7 +100,7 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 	return err
 }
 
-// Verify repository 'frogbot' environment was properly configured on GitHub
+// Verify that the 'frogbot' GitHub environment was properly configured on the repository
 func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig) error {
 	if repoConfig.ApiEndpoint != "" && repoConfig.ApiEndpoint != "https://api.github.com" {
 		// Don't verify 'frogbot' environment on GitHub on-prem
@@ -123,8 +123,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
 	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
 	if err != nil {
-		clientLog.Error(err.Error())
-		return errors.New(noGitHubEnvErr)
+		return errors.New(err.Error() + "/n" + noGitHubEnvErr)
 	}
 	if len(repoEnvInfo.Reviewers) == 0 {
 		return errors.New(noGitHubEnvReviewersErr)
