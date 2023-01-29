@@ -463,7 +463,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 	if configPath == "" {
 		configData = &utils.FrogbotConfigAggregator{{}}
 	} else {
-		configData, err = utils.ReadConfig(configPath)
+		configData, err = utils.ReadConfigFromFileSystem(configPath)
 	}
 	assert.NoError(t, err)
 	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, failOnSecurityIssues)

@@ -141,7 +141,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	configFile, err := ReadConfig(configParamsTestFile)
+	configFile, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
 		for projectI, project := range repo.Projects {

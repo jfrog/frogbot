@@ -40,12 +40,12 @@
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 
-   2.3.Save your Github access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
+   2.3. Save your GitHub access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
    **gitIntegration**.
 
    2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
 
-   2.5. Create a Pipelines job with one of our [templates](templates/jfrog-pipelines).
+   2.5. Create a Pipelines job with one of the available [templates](templates/jfrog-pipelines).
 
    2.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
@@ -54,19 +54,17 @@
 
    **Important**
 
-   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the
-     **installCommand** variable. For example, `npm i`  or `nuget restore`
-   - Make sure all the build tools used to build the project are installed on the build agent.
+- Make sure all the build tools used to build the project are installed on the build agent.
 
-   </details>
+  </details>
 
-   <details>
-      <summary>Install Frogbot Using Jenkins</summary>
+  <details>
+     <summary>Install Frogbot Using Jenkins</summary>
 
-   2.1. Make sure you have the connection details of your JFrog environment.
+  2.1. Make sure you have the connection details of your JFrog environment.
 
-   2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
-   **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**
+  2.2. Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
+  **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**
    and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**).
 
    2.3. Save your GitHub access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID.
@@ -148,10 +146,8 @@
    2.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    **Important**
-
-   - For npm, yarn 2, NuGet or .NET: Set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the **installCommand** variables. For example, `npm i` or `nuget restore`.
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure all the build tools used to build the project are installed on the Jenkins agent.
 
-   </details>
+  </details>
 

@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"net/http"
 	"os"
@@ -100,8 +101,8 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 	configData, err := getFrogbotConfig(client)
 	// If the error is due to missing configuration, try to generate an environment variable-based config aggregator.
 	if _, missingConfigErr := err.(*ErrMissingConfig); missingConfigErr {
+		log.Debug("getFrogbotConfig failed with:", err.Error())
 		// If no config file is used, the repo name must be set as a part of the envs.
-		log.Error("getFrogbotConfig failed with:", err.Error())
 		if gitParams.RepoName == "" {
 			return nil, nil, nil, &ErrMissingEnv{GitRepoEnv}
 		}
@@ -123,7 +124,10 @@ func GetParamsAndClient() (configAggregator FrogbotConfigAggregator, server *cor
 	return configAggregator, server, client, err
 }
 
-// getFrogbotConfig reads the configuration file from the target repository, otherwise it reads from the current working directory.
+// The getFrogbotConfig method retrieves the frogbot-config.yml file.
+// The frogbot-config.yml is read from the target repository.
+// It is possible that reading from the target repository might fail if either the JF_GIT_REPO or the JF_GIT_OWNER env vars are missing, or if the REST API returned a different status code than 200.
+// If reading from the target fails, it reads from the current working directory instead.
 func getFrogbotConfig(client vcsclient.VcsClient) (configData *FrogbotConfigAggregator, err error) {
 	var targetConfigContent []byte
 	targetConfigContent, err = downloadConfigFromTarget(client)
@@ -138,7 +142,7 @@ func getFrogbotConfig(client vcsclient.VcsClient) (configData *FrogbotConfigAggr
 	}
 	// Read the config from the current working dir, if reading from the target branch failed
 	if targetConfigContent == nil && err == nil {
-		configData, err = ReadConfig(frogbotConfigPath)
+		configData, err = ReadConfigFromFileSystem(frogbotConfigPath)
 	}
 
 	return configData, err
@@ -155,7 +159,7 @@ func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, ser
 			SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
 		}
 		if config.RepoName == "" {
-			return nil, fmt.Errorf("repo name is missing from the frogbot-config file")
+			return nil, errors.New("repo name is missing from the frogbot-config file")
 		}
 		gitParams.RepoName = config.RepoName
 		if config.Branches != nil {
@@ -287,8 +291,9 @@ func extractEnvParams() (*coreconfig.ServerDetails, Git, error) {
 	return &server, gitParams, err
 }
 
-// ReadConfig looks for the frogbot-config.yml file based on the configRelativePath, and then unmarshal the file into the FrogbotConfigAggregator struct.
-func ReadConfig(configRelativePath string) (config *FrogbotConfigAggregator, err error) {
+// ReadConfigFromFileSystem looks for .frogbot/frogbot-config.yml from the given path. The path is relatively from the root.
+// If the config file is not found in the relative path, it will search in parent dirs.
+func ReadConfigFromFileSystem(configRelativePath string) (config *FrogbotConfigAggregator, err error) {
 	log.Debug("Reading config from file system. Looking for", frogbotConfigPath)
 	fullConfigDirPath, err := filepath.Abs(configRelativePath)
 	if err != nil {
@@ -404,9 +409,9 @@ func downloadConfigFromTarget(client vcsclient.VcsClient) ([]byte, error) {
 	var statusCode int
 	if repo != "" && owner != "" {
 		if branch == "" {
-			log.Debug("JF_GIT_BASE_BRANCH is missing. Assuming that the frogbot-config.yml file exists on default branch")
+			log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
 		}
-		log.Debug("Downloading config from target", owner, "/", repo, "/", branch)
+		log.Debug("Downloading", FrogbotConfigFile, "from target", owner, "/", repo, "/", branch)
 		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), owner, repo, branch, frogbotConfigPath)
 		if statusCode == http.StatusNotFound {
 			log.Debug(frogbotConfigPath, "wasn't found on", owner, "/", repo)
