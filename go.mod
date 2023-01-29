@@ -3,13 +3,13 @@ module github.com/jfrog/frogbot
 go 1.19
 
 require (
-	github.com/go-git/go-git/v5 v5.5.2
+	github.com/go-git/go-git/v5 v5.5.1
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.8.6
-	github.com/jfrog/froggit-go v1.5.4
+	github.com/jfrog/build-info-go v1.8.5
+	github.com/jfrog/froggit-go v1.5.5
 	github.com/jfrog/gofrog v1.2.5
-	github.com/jfrog/jfrog-cli-core/v2 v2.28.0
-	github.com/jfrog/jfrog-client-go v1.26.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.27.0
+	github.com/jfrog/jfrog-client-go v1.25.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.11.2
@@ -33,7 +33,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
-	github.com/go-git/go-billy/v5 v5.4.0 // indirect
+	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
