@@ -18,17 +18,16 @@
    2.3. Save your Bitbucket access token in a [Bitbucket Server Integration](https://www.jfrog.com/confluence/display/JFROG/Bitbucket+Server+Integration) named
    **gitIntegration**.
 
-   2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
+   2.4.Create a **pipelines.yml
+   ** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
 
-   2.5. Create a Pipelines job with one of the available [templates](templates/jfrog-pipelines).
+   2.5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
-   2.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
-
-   2.7. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described on the yaml comments.
+   2.6. In the **pipelines.yml
+   **, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
 
    **Important**
-
-- Make sure all the build tools that are used to build the project are installed on the build agent.
+   - Make sure all the build tools that are used to build the project are installed on the build agent.
   </details>
 
   <details>
@@ -125,7 +124,7 @@
    }
    ```
 
-      </details>
+  </details>
 
    2.5. In the Jenkinsfile, set the values of all the mandatory variables.
 

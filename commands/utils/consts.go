@@ -72,4 +72,7 @@ const (
 
 	// Product ID for usage reporting
 	productId = "frogbot"
+
+	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
+	GitHubActionsEnv = "GITHUB_ACTIONS"
 )

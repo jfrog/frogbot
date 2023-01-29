@@ -2,10 +2,10 @@ package commands
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
-	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,9 +13,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
@@ -449,6 +454,59 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	utils.AssertSanitizedEnv(t)
 }
 
+func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
+	// Init mock
+	client := mockVcsClient(t)
+	environment := "frogbot"
+	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
+	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
+
+	// Run verifyGitHubFrogbotEnvironment
+	err := verifyGitHubFrogbotEnvironment(client, gitParams)
+	assert.NoError(t, err)
+}
+
+func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
+	// Redirect log to avoid negative output
+	previousLogger := redirectLogOutputToNil()
+	defer log.SetLogger(previousLogger)
+
+	// Init mock
+	client := mockVcsClient(t)
+	environment := "frogbot"
+	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
+	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, errors.New("404"))
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
+
+	// Run verifyGitHubFrogbotEnvironment
+	err := verifyGitHubFrogbotEnvironment(client, gitParams)
+	assert.ErrorContains(t, err, noGitHubEnvErr)
+}
+
+func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
+	// Init mock
+	client := mockVcsClient(t)
+	environment := "frogbot"
+	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
+	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, nil)
+	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
+
+	// Run verifyGitHubFrogbotEnvironment
+	err := verifyGitHubFrogbotEnvironment(client, gitParams)
+	assert.ErrorContains(t, err, noGitHubEnvReviewersErr)
+}
+
+func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
+	repoConfig := &utils.FrogbotRepoConfig{
+		Params: utils.Params{Git: utils.Git{ApiEndpoint: "https://acme.vcs.io"}},
+	}
+
+	// Run verifyGitHubFrogbotEnvironment
+	err := verifyGitHubFrogbotEnvironment(&vcsclient.GitHubClient{}, repoConfig)
+	assert.NoError(t, err)
+}
+
 func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
 	gitParams := utils.Git{
 		GitProvider:   vcsutils.GitLab,
@@ -569,4 +627,15 @@ func TestGetFullPathWorkingDirs(t *testing.T) {
 	for _, expectedWd := range expectedWds {
 		assert.Contains(t, fullPathWds, expectedWd)
 	}
+}
+
+// Set new logger with output redirection to a null logger. This is useful for negative tests.
+// Caller is responsible to set the old log back.
+func redirectLogOutputToNil() (previousLog log.Log) {
+	previousLog = log.Logger
+	newLog := log.NewLogger(log.ERROR, nil)
+	newLog.SetOutputWriter(io.Discard)
+	newLog.SetLogsWriter(io.Discard, 0)
+	log.SetLogger(newLog)
+	return previousLog
 }
