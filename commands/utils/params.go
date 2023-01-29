@@ -170,7 +170,7 @@ func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, ser
 		}
 		config.Git = gitParams
 		newConfigAggregator = append(newConfigAggregator, FrogbotRepoConfig{
-			SimplifiedOutput: config.SimplifiedOutput,
+			SimplifiedOutput: IsSimplifiedOutput(gitParams.GitProvider),
 			Server:           *server,
 			Params:           config.Params,
 		})
@@ -393,6 +393,7 @@ func generateConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDe
 		return nil, err
 	}
 	repo.Projects = append(repo.Projects, project)
+	repo.SimplifiedOutput = IsSimplifiedOutput(gitParams.GitProvider)
 	return &FrogbotConfigAggregator{repo}, nil
 }
 
