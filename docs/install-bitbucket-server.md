@@ -2,6 +2,9 @@
 
 # Installing Frogbot on Bitbucket Server repositories
 
+| Important: Using this method isn't recommended for open source projects. Learn more about it in the README under [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning). |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
 1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file. Throughout this documentation we will reference this Git repository which includes the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file as the **Frogbot Management Repository**.
 
 
