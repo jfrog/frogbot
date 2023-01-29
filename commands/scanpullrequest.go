@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -22,6 +24,8 @@ import (
 const (
 	securityIssueFoundErr    = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
+	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 )
 
 type ScanPullRequestCmd struct {
@@ -33,7 +37,13 @@ func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
-	return scanPullRequest(&(configAggregator)[0], client)
+	repoConfig := &(configAggregator)[0]
+	if repoConfig.GitProvider == vcsutils.GitHub {
+		if err := verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
+			return err
+		}
+	}
+	return scanPullRequest(repoConfig, client)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
@@ -88,6 +98,38 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
+}
+
+// Verify that the 'frogbot' GitHub environment was properly configured on the repository
+func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig) error {
+	if repoConfig.ApiEndpoint != "" && repoConfig.ApiEndpoint != "https://api.github.com" {
+		// Don't verify 'frogbot' environment on GitHub on-prem
+		return nil
+	}
+	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
+		// Don't verify 'frogbot' environment on non GitHub Actions CI
+		return nil
+	}
+
+	// If repository is not public, using 'frogbot' environment is not mandatory
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
+	if err != nil {
+		return err
+	}
+	if repoInfo.RepositoryVisibility != vcsclient.Public {
+		return nil
+	}
+
+	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
+	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
+	if err != nil {
+		return errors.New(err.Error() + "/n" + noGitHubEnvErr)
+	}
+	if len(repoEnvInfo.Reviewers) == 0 {
+		return errors.New(noGitHubEnvReviewersErr)
+	}
+
+	return nil
 }
 
 func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
