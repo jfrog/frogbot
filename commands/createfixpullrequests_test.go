@@ -110,13 +110,13 @@ func getTestDataDir(t *testing.T) (string, string) {
 	return currentDir, testdataDir
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x < 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 < x
-///      (1.0, 2.0)   --> 1.0 < x < 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// /      1.0         --> 1.0 ≤ x
+// /      (,1.0]      --> x ≤ 1.0
+// /      (,1.0)      --> x < 1.0
+// /      [1.0]       --> x == 1.0
+// /      (1.0,)      --> 1.0 < x
+// /      (1.0, 2.0)   --> 1.0 < x < 2.0
+// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
 	tests := []struct {
 		versionChangeString string
@@ -184,7 +184,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
 		t.Run(pkgType.ToString(), func(t *testing.T) {
 			frogbotParams.Projects[0].WorkingDirs = []string{projectPath}
-			scanResponse, err := testScan.scan(frogbotParams.Projects[0], &frogbotParams.Server, services.XrayGraphScanParams{}, false, projectPath)
+			scanResponse, _, err := testScan.scan(frogbotParams.Projects[0], &frogbotParams.Server, services.XrayGraphScanParams{}, false, projectPath)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})
