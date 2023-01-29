@@ -89,7 +89,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
@@ -97,8 +97,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	assert.Equal(t, "XRAY-2", rows[1].IssueId)
 	assert.Equal(t, "low", rows[1].Severity)
 
-	impactedPackageOne := rows[0].ImpactedPackageName
-	impactedPackageTwo := rows[1].ImpactedPackageName
+	impactedPackageOne := rows[0].ImpactedDependencyName
+	impactedPackageTwo := rows[1].ImpactedDependencyName
 	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }
 
@@ -128,16 +128,24 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:                "XRAY-1",
+			Severity:               "high",
+			ImpactedDependencyName: "component-A",
+		},
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-C",
+		},
+	}
+
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-	assert.Equal(t, "component-C", rows[1].ImpactedPackageName)
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
@@ -146,7 +154,6 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 		Violations: []services.Violation{
 			{
 				IssueId:       "XRAY-1",
-				Summary:       "summary-1",
 				Severity:      "high",
 				ViolationType: "security",
 				Components:    map[string]services.Component{"component-A": {}},
@@ -167,7 +174,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
 }
@@ -191,25 +198,34 @@ func TestGetAllVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:                "XRAY-1",
+			Severity:               "high",
+			ImpactedDependencyName: "component-A",
+		},
+		{
+			IssueId:                "XRAY-1",
+			Severity:               "high",
+			ImpactedDependencyName: "component-B",
+		},
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-C",
+		},
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-D",
+		},
+	}
+
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows, err := createAllIssuesRows([]services.ScanResponse{currentScan})
+	rows, err := createAllIssuesRows([]services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 4)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "XRAY-1", rows[1].IssueId)
-	assert.Equal(t, "high", rows[1].Severity)
-	assert.Equal(t, "XRAY-2", rows[2].IssueId)
-	assert.Equal(t, "low", rows[2].Severity)
-	assert.Equal(t, "XRAY-2", rows[3].IssueId)
-	assert.Equal(t, "low", rows[3].Severity)
-
-	impactedPackageOne := rows[0].ImpactedPackageName
-	impactedPackageTwo := rows[1].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-A", "component-B"}, []string{impactedPackageOne, impactedPackageTwo})
-	impactedPackageThree := rows[2].ImpactedPackageName
-	impactedPackageFour := rows[3].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageThree, impactedPackageFour})
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
@@ -241,18 +257,24 @@ func TestGetNewVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-C",
+		},
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-D",
+		},
+	}
+
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-2", rows[0].IssueId)
-	assert.Equal(t, "low", rows[0].Severity)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-
-	impactedPackageOne := rows[0].ImpactedPackageName
-	impactedPackageTwo := rows[1].ImpactedPackageName
-	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
@@ -279,16 +301,24 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 		},
 	}
 
+	expected := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId:                "XRAY-2",
+			Severity:               "low",
+			ImpactedDependencyName: "component-B",
+		},
+		{
+			IssueId:                "XRAY-1",
+			Severity:               "high",
+			ImpactedDependencyName: "component-A",
+		},
+	}
+
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-1", rows[0].IssueId)
-	assert.Equal(t, "high", rows[0].Severity)
-	assert.Equal(t, "component-A", rows[0].ImpactedPackageName)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
-	assert.Equal(t, "component-B", rows[1].ImpactedPackageName)
+	assert.ElementsMatch(t, expected, rows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
@@ -316,7 +346,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan})
+	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
 }
@@ -334,10 +364,10 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 func TestCreatePullRequestMessage(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
-			Severity:               "High",
-			ImpactedPackageName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedPackageVersion: "v0.21.0",
-			FixedVersions:          []string{"[0.24.1]"},
+			Severity:                  "High",
+			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+			ImpactedDependencyVersion: "v0.21.0",
+			FixedVersions:             []string{"[0.24.1]"},
 			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/nats-io/nats-streaming-server",
@@ -347,9 +377,9 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Cves: []formats.CveRow{{Id: "CVE-2022-24450"}},
 		},
 		{
-			Severity:               "High",
-			ImpactedPackageName:    "github.com/mholt/archiver/v3",
-			ImpactedPackageVersion: "v3.5.1",
+			Severity:                  "High",
+			ImpactedDependencyName:    "github.com/mholt/archiver/v3",
+			ImpactedDependencyVersion: "v3.5.1",
 			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/mholt/archiver/v3",
@@ -359,10 +389,10 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Cves: []formats.CveRow{},
 		},
 		{
-			Severity:               "Medium",
-			ImpactedPackageName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedPackageVersion: "v0.21.0",
-			FixedVersions:          []string{"[0.24.3]"},
+			Severity:                  "Medium",
+			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+			ImpactedDependencyVersion: "v0.21.0",
+			FixedVersions:             []string{"[0.24.3]"},
 			Components: []formats.ComponentRow{
 				{
 					Name:    "github.com/nats-io/nats-streaming-server",
@@ -374,9 +404,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	message := createPullRequestMessage(vulnerabilities, utils.GetBanner, utils.GetSeverityTag)
 
-	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "dummyvulnerabilities.md"))
-	assert.NoError(t, err)
-	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | github.com/nats-io/nats-streaming-server | v0.21.0 | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.1] | CVE-2022-24450 \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | github.com/mholt/archiver/v3 | v3.5.1 | github.com/mholt/archiver/v3 | v3.5.1 |  |  \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>  Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3] | CVE-2022-26652 "
 	assert.Equal(t, expectedMessage, message)
 }
 

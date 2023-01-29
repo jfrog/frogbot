@@ -60,21 +60,19 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 	for projectIndex, project := range repoConfig.Projects {
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
-			scanResults, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
+			scanResults, isMultipleRoots, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
 			if err != nil {
 				return err
 			}
 
-			// Upload scan results to the relevant Git provider code scanning UI
-			scanResults = utils.SimplifyScanResults(scanResults)
-			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client)
+			err = utils.UploadScanToGitProvider(scanResults, repoConfig, branch, client, isMultipleRoots)
 			if err != nil {
 				log.Warn(err)
 			}
 
 			// Fix and create PRs
 			relativeCurrentWd := utils.GetRelativeWd(fullPathWd, baseWd)
-			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.Git, branch, client, scanResults, relativeCurrentWd); err != nil {
+			if err = cfp.fixImpactedPackagesAndCreatePRs(project, &repoConfig.Git, branch, client, scanResults, relativeCurrentWd, isMultipleRoots); err != nil {
 				return err
 			}
 		}
@@ -84,19 +82,19 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 
 // Audit the dependencies of the current commit.
 func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams,
-	failOnSecurityIssues bool, currentWorkingDir string) ([]services.ScanResponse, error) {
+	failOnSecurityIssues bool, currentWorkingDir string) ([]services.ScanResponse, bool, error) {
 	// Audit commit code
-	scanResults, err := runInstallAndAudit(xrayScanParams, &project, server, failOnSecurityIssues, currentWorkingDir)
+	scanResults, isMultipleRoots, err := runInstallAndAudit(xrayScanParams, &project, server, failOnSecurityIssues, currentWorkingDir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	log.Info("Xray scan completed")
-	return scanResults, nil
+	return scanResults, isMultipleRoots, nil
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project utils.Project, repoGitParams *utils.Git, branch string,
-	client vcsclient.VcsClient, scanResults []services.ScanResponse, currentWd string) (err error) {
-	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults)
+	client vcsclient.VcsClient, scanResults []services.ScanResponse, currentWd string, isMultipleRoots bool) (err error) {
+	fixVersionsMap, err := cfp.createFixVersionsMap(&project, scanResults, isMultipleRoots)
 	if err != nil {
 		return err
 	}
@@ -163,11 +161,11 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 }
 
 // Create fixVersionMap - a map between impacted packages and their fix version
-func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project, scanResults []services.ScanResponse) (map[string]*FixVersionInfo, error) {
+func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project, scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*FixVersionInfo, error) {
 	fixVersionsMap := map[string]*FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, false)
+			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
@@ -180,19 +178,19 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 					if !fixVulnerability {
 						continue
 					}
-					vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedPackageVersion, vulnerability.FixedVersions)
+					vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 					if vulnFixVersion == "" {
 						continue
 					}
 
-					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedPackageName]
+					fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]
 					if exists {
 						// More than one vulnerability can exist on the same impacted package.
 						// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
 						fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 					} else {
 						// First appearance of a version that fixes the current impacted package
-						fixVersionsMap[vulnerability.ImpactedPackageName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
+						fixVersionsMap[vulnerability.ImpactedDependencyName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
 			}
@@ -231,7 +229,7 @@ func (cfp *CreateFixPullRequestsCmd) shouldFixVulnerability(project *utils.Proje
 				}
 			}
 		}
-		if _, exist := cfp.mavenDepToPropertyMap[vulnerability.ImpactedPackageName]; !exist {
+		if _, exist := cfp.mavenDepToPropertyMap[vulnerability.ImpactedDependencyName]; !exist {
 			return false, nil
 		}
 	}
