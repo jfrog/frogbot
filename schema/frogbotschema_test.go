@@ -68,7 +68,10 @@ func validateSchema(t *testing.T, schemaLoader gojsonschema.JSONLoader, frogbotC
 		err = yaml.Unmarshal(frogbotConfigFile, &frogbotConfigYaml)
 		assert.NoError(t, err)
 
-		// Convert the Yaml schema to JSON schema to help the json parser validate it
+		// Convert the Yaml config to JSON config to help the json parser validate it.
+		// The reason we don't do the convert by as follows:
+		// YAML -> Unmarshall -> Go Struct -> Marshal -> JSON
+		// is because the config's struct includes only YAML annotations.
 		frogbotConfigJson := convertYamlToJson(frogbotConfigYaml)
 
 		// Load and validate frogbot config
