@@ -48,7 +48,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	configData, err := utils.ReadConfig(testScanAndFixReposConfigPath)
+	configData, err := utils.ReadConfigFromFileSystem(testScanAndFixReposConfigPath)
 	assert.NoError(t, err)
 
 	tmpDir, cleanUp := utils.PrepareTestEnvironment(t, "", cmdDirName)

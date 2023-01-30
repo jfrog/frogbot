@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"path/filepath"
 	"strings"
 )
@@ -20,10 +19,6 @@ type ScanAndFixRepositories struct {
 func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		if configAggregator[repoNum].GitProvider == vcsutils.BitbucketServer {
-			// Bitbucket server requires a simple output without emojis + images
-			configAggregator[repoNum].SimplifiedOutput = true
-		}
 		err := cmd.scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))

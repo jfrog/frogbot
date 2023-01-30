@@ -107,7 +107,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
-				WorkingDirs:        []string{"."},
+				WorkingDirs:        []string{utils.RootDir},
 			},
 			}},
 		Git: gitParams.Git,
@@ -139,11 +139,11 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	err := scanAllPullRequestsCmd.Run(configAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 4)
-	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [1.2.6] | CVE-2021-44906 "
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
-	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | pyjwt | 1.7.1 | [2.4.0] | pyjwt | 1.7.1 | CVE-2022-29217 "
+	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | pip-example | 1.2.3 | pyjwt | 1.7.1 | [2.4.0] | CVE-2022-29217 "
 	assert.Equal(t, expectedMessage, frogbotMessages[2])
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[3])
@@ -178,7 +178,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
-	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | IMPACTED PACKAGE | VERSION | FIXED VERSIONS | COMPONENT | COMPONENT VERSION | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | [1.2.6] | minimist | 1.2.5 | CVE-2021-44906 "
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [1.2.6] | CVE-2021-44906 "
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
@@ -205,15 +205,19 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 	return client
 }
 
-func fakeRepoDownload(_ context.Context, _, _, testProject, localPath string) error {
+func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) error {
 	// In order to mimic the "real" repository download the tests project have to be in the same dir:
 	// First test-proj-with-vulnerability (that includes a "test-proj" dir) will be copied to a temp (random) dir.
 	// This project will be used in the source auditing phase - mimic a PR with a new vulnerable dependency.
 	// Second "download" will occur inside the first temp dir. Therefor the "test-proj" will be found and will
 	// be copied to the second (random) temp dir and will be used in the target auditing phase.
-	err := fileutils.CopyDir(filepath.Join(testProject), localPath, true, []string{})
+	err := fileutils.CopyDir(filepath.Join(testProject), targetDir, true, []string{})
 	if err != nil {
 		return err
 	}
-	return fileutils.CopyDir(filepath.Join("testdata", "scanpullrequests", testProject), localPath, true, []string{})
+	sourceDir, err := filepath.Abs(filepath.Join("testdata", "scanpullrequests", testProject))
+	if err != nil {
+		return err
+	}
+	return fileutils.CopyDir(sourceDir, targetDir, true, []string{})
 }

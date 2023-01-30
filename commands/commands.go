@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	clitool "github.com/urfave/cli/v2"
 )
 
@@ -23,12 +23,12 @@ func Exec(command FrogbotCommand, name string) error {
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(name, server, usageReportSent)
 	// Invoke the command interface
-	clientLog.Info(fmt.Sprintf("Running Frogbot %q command ", name))
+	log.Info(fmt.Sprintf("Running Frogbot %q command ", name))
 	err = command.Run(configAggregator, client)
 	// Waits for the signal from the report usage to be done.
 	<-usageReportSent
 	if err == nil {
-		clientLog.Info(fmt.Sprintf("Frogbot %q command finished successfully ", name))
+		log.Info(fmt.Sprintf("Frogbot %q command finished successfully ", name))
 	}
 	return err
 }

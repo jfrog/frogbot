@@ -35,80 +35,33 @@
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
    2.1. Make sure you have the connection details of your JFrog environment.
 
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
    named **jfrogPlatform**.
 
-   2.3. Save your GitHub access token as a [Generic Integration](https://www.jfrog.com/confluence/display/JFROG/Generic+Integration) named **github** with the token as the key and the GitHub access token as the value.
+   2.3. Save your GitHub access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
+   **gitIntegration**.
 
-   2.4. Set the `.jfrog-pipelines` directory in the root of your **Frogbot Management Repository**.
+   2.4.Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
 
-   2.5. Create a Pipelines job with the below `pipelines.yml` template.
-   <details>
-       <summary>Template</summary>
+   2.5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
-      ```yml
-      resources:
-        - name: cron_trigger
-          type: CronTrigger
-          configuration:
-            interval: '*/5 * * * *'     # Every 5 minutes
-      pipelines:
-        - name: Frogbot
-          steps:
-            - name: Frogbot_Scan
-              type: Bash # For Windows runner: PowerShell
-              configuration:
-                integrations:
-                  - name: jfrogPlatform
-                  - name: github
-                inputResources:
-                  - name: cron_trigger
-                environmentVariables:
-                  # [Mandatory]
-                  # JFrog platform URL
-                  JF_URL: $int_jfrogPlatform_url
-                  # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                  # JFrog access token with 'read' permissions for Xray
-                  JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
-                  # [Mandatory]
-                  # GitHub personal access token with the following permissions:
-                  # Read and Write access to code, pull requests, security events, and workflows
-                  JF_GIT_TOKEN: $int_github_token
-                  JF_GIT_PROVIDER: "github"
-                  # [Mandatory]
-                  # API endpoint to GitHub Enterprise server
-                  JF_GIT_API_ENDPOINT: $int_github_url
-                  # [Mandatory]
-                  # GitHub organization namespace
-                  JF_GIT_OWNER: ""
-              execution:
-                onExecute:
-                  - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                  - ./frogbot scan-pull-requests
-                  - ./frogbot scan-and-fix-repos
-                  # For Windows runner:
-                  # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-                  # - .\frogbot.exe scan-pull-requests
-                  # - .\frogbot.exe scan-and-fix-repos
-      ```
-
-      </details>
-
-   3.6. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
-
-   3.7. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
+   2.6. In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
 
    **Important**
-
-   - For npm, yarn 2, NuGet or .NET: Make sure to set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the **installCommand** variable. For example, `npm i`  or `nuget restore`
-   - Make sure all the build tools used to build the project are installed on the build agent.
+    - Make sure all the build tools used to build the project are installed on the build agent.
 
    </details>
 
-   <details>
-      <summary>Install Frogbot Using Jenkins</summary>
+    <details>
+     <summary>Install Frogbot Using Jenkins</summary>
+
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    2.1. Make sure you have the connection details of your JFrog environment.
 
@@ -120,65 +73,71 @@
 
    2.4. Create a Jenkinsfile with the below template content under the root of your **Frogbot Management Repository**.
       <details>
-         <summary>Template</summary>
+             <summary>Template</summary>
 
    ```groovy
-   // Run the job every 5 minutes 
-   CRON_SETTINGS = '''*/5 * * * *'''
-   pipeline {
-       agent any
-       triggers {
-           cron(CRON_SETTINGS)
-       }
-       environment {
-           // [Mandatory]
-           // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-           JF_URL = credentials("JF_URL")
-           // [Mandatory if JF_ACCESS_TOKEN is not provided]
-           // JFrog user and password with 'read' permissions for Xray
-           JF_USER = credentials("JF_USER")
-           JF_PASSWORD = credentials("JF_PASSWORD")
-           // [Mandatory]
-           // GitHub enterprise server accesses token with the following permissions:
-           // Read and Write access to code, pull requests, security events, and workflows
-           JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
-           JF_GIT_PROVIDER = "github"
-           // [Mandatory]
-           // GitHub enterprise server organization namespace
-           JF_GIT_OWNER = ""
-           // [Mandatory]
-           // API endpoint to GitHub enterprise server
-           JF_GIT_API_ENDPOINT = ""
-           // Uncomment the below options if you'd like to use them.
-           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-           // JFrog access token with 'read' permissions for Xray
-           // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
-       }
-       stages {
-           stage('Download Frogbot') {
-               steps {
-                   // For Linux / MacOS runner:
-                   sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-                   // For Windows runner:
-                   // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
-               }
+       // Run the job every 5 minutes 
+       CRON_SETTINGS = '''*/5 * * * *'''
+       pipeline {
+           agent any
+           triggers {
+               cron(CRON_SETTINGS)
            }
-           stage('Scan Pull Requests') {
-               steps {
-                   sh "./frogbot scan-pull-requests"
-                   // For Windows runner:
-                   // powershell """.\frogbot.exe scan-pull-requests"""
-               }
+           environment {
+               // [Mandatory]
+               // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+               JF_URL = credentials("JF_URL")
+       
+               // [Mandatory if JF_ACCESS_TOKEN is not provided]
+               // JFrog user and password with 'read' permissions for Xray
+               JF_USER = credentials("JF_USER")
+               JF_PASSWORD = credentials("JF_PASSWORD")
+       
+               // [Mandatory]
+               // GitHub enterprise server access token with the following permissions:
+               // Read and Write access to code, pull requests, security events, and workflows
+               JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
+               
+               JF_GIT_PROVIDER = "github"
+       
+               // [Mandatory]
+               // GitHub enterprise server organization namespace
+               JF_GIT_OWNER = ""
+       
+               // [Mandatory]
+               // API endpoint to GitHub enterprise server
+               JF_GIT_API_ENDPOINT = ""
+       
+               // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+               // JFrog access token with 'read' permissions for Xray
+               // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+      
            }
-           stage('Scan and Fix Repos') {
-                steps {
-                    sh "./frogbot scan-and-fix-repos"
-                    // For Windows runner:
-                    // powershell """.\frogbot.exe scan-and-fix-repos"""
-                }    
-           }    
+           stages {
+               stage('Download Frogbot') {
+                   steps {
+                       // For Linux / MacOS runner:
+                       sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                       // For Windows runner:
+                       // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                   }
+               }
+               stage('Scan Pull Requests') {
+                   steps {
+                       sh "./frogbot scan-pull-requests"
+                       // For Windows runner:
+                       // powershell """.\frogbot.exe scan-pull-requests"""
+                   }
+               }
+               stage('Scan and Fix Repos') {
+                    steps {
+                        sh "./frogbot scan-and-fix-repos"
+                        // For Windows runner:
+                        // powershell """.\frogbot.exe scan-and-fix-repos"""
+                    }    
+               }    
+           }
        }
-   }
    ```
       </details>
 
@@ -189,9 +148,7 @@
    2.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    **Important**
-
-   - For npm, yarn 2, NuGet or .NET: Set inside the  [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file the command to download the project dependencies as the value of the **installCommand** variables. For example, `npm i` or `nuget restore`.
-   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
+   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both. 
    - Make sure all the build tools used to build the project are installed on the Jenkins agent.
 
    </details>

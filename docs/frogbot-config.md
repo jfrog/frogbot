@@ -11,13 +11,13 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes th
 1. If you're using one of the below platforms, you can choose a single repository in the organization to include the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file.
     - GitHub with Jenkins or JFrog Pipelines
     - Bitbucket Server
-    - Azure Repos 
+    - Azure Repos
 
-    If you're using one of the below platforms, each repository that needs to be scanned by Frogbot should include the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file.
+   If you're using one of the below platforms, each repository that needs to be scanned by Frogbot should include the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file.
     - GitHub with GitHub actions
-    - GitLab 
+    - GitLab
 
-2. Push the file to the following path in the repository: `.frogbot/frogbot-config.yml`
+2. Push the file to the following path in the root of your repository: `.frogbot/frogbot-config.yml`
 
 ## The file structure
 ### Params
