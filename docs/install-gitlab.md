@@ -41,7 +41,7 @@ frogbot-scan:
     JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Mandatory]
-    # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
+    # GitLab access token with the following permissions scopes: api, read_api, read_user, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
 
     # Predefined GitLab variables. There's no need to set them.

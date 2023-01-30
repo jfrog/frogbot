@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
 	"strings"
@@ -59,15 +58,15 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 	if serverDetails.ArtifactoryUrl == "" {
 		return
 	}
-	clientLog.Debug(usage.ReportUsagePrefix + "Sending info...")
+	log.Debug(usage.ReportUsagePrefix + "Sending info...")
 	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
-		clientLog.Debug(usage.ReportUsagePrefix + err.Error())
+		log.Debug(usage.ReportUsagePrefix + err.Error())
 		return
 	}
 	err = usage.SendReportUsage(productId, commandName, serviceManager)
 	if err != nil {
-		clientLog.Debug(err.Error())
+		log.Debug(err.Error())
 		return
 	}
 }
@@ -84,14 +83,14 @@ func Md5Hash(values ...string) (string, error) {
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
+func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient, isMultipleRoots bool) error {
 	if repo.GitProvider.String() != vcsutils.GitHub.String() {
-		clientLog.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
+		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
 
 	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, false)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}
@@ -103,85 +102,6 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	return err
 }
 
-// SimplifyScanResults specifies which alerts should be displayed when uploading code scanning.
-// To avoid uploading many of the same vulnerabilities/violations that could differ only in their impact paths,
-// This function returns a scan response with only unique vulnerabilities/violations.
-func SimplifyScanResults(scanResults []services.ScanResponse) []services.ScanResponse {
-	var simplifiedResults []services.ScanResponse
-	simplifiedResults = append(simplifiedResults, scanResults...)
-
-	for resultId, result := range simplifiedResults {
-		if len(result.Violations) > 0 {
-			simplifiedResults[resultId].Violations = simplifyViolations(result.Violations)
-		} else if len(result.Vulnerabilities) > 0 {
-			simplifiedResults[resultId].Vulnerabilities = simplifyVulnerabilities(result.Vulnerabilities)
-		}
-	}
-
-	return simplifiedResults
-}
-
-// simplifyVulnerabilities returns vulnerabilities array without duplicates.
-func simplifyVulnerabilities(vulnerabilities []services.Vulnerability) []services.Vulnerability {
-	var uniqueVulnerabilities = datastructures.MakeSet[string]()
-	var cleanVulnerabilities []services.Vulnerability
-	for i, vulnerability := range vulnerabilities {
-		var cvesBuilder strings.Builder
-		for _, cve := range vulnerability.Cves {
-			cvesBuilder.WriteString(cve.Id + ", ")
-		}
-		cves := strings.TrimSuffix(cvesBuilder.String(), ", ")
-		for componentId := range vulnerability.Components {
-			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
-			// The fullPackageKey is the unique id to check if a vulnerability is already exists, in the form of "cves vulnerability-name"
-			fullPackageKey := fmt.Sprintf("%s %s", cves, impactedPackage)
-			if exist := uniqueVulnerabilities.Exists(fullPackageKey); !exist {
-				uniqueVulnerabilities.Add(fullPackageKey)
-				continue
-			}
-			delete(vulnerabilities[i].Components, componentId)
-		}
-		if len(vulnerability.Components) != 0 {
-			cleanVulnerabilities = append(cleanVulnerabilities, vulnerability)
-		}
-	}
-
-	return cleanVulnerabilities
-}
-
-// simplifyViolations returns violations array without duplicates.
-func simplifyViolations(violations []services.Violation) []services.Violation {
-	var uniqueViolations = datastructures.MakeSet[string]()
-	var cleanViolations []services.Violation
-	for _, violation := range violations {
-		var key string
-		if violation.LicenseKey == "" {
-			var cvesBuilder strings.Builder
-			for _, cve := range violation.Cves {
-				cvesBuilder.WriteString(cve.Id + ", ")
-			}
-			key = strings.TrimSuffix(cvesBuilder.String(), ", ")
-		} else {
-			key = violation.LicenseKey
-		}
-		for componentId := range violation.Components {
-			impactedPackage, _, _ := xrayutils.SplitComponentId(componentId)
-			// The fullPackageKey is the unique id to check if a violation is already exists, in the form of "[key] violation-name"
-			fullPackageKey := fmt.Sprintf("%s %s", key, impactedPackage)
-			if exist := uniqueViolations.Exists(fullPackageKey); !exist {
-				uniqueViolations.Add(fullPackageKey)
-				continue
-			}
-			delete(violation.Components, componentId)
-		}
-		if len(violation.Components) != 0 {
-			cleanViolations = append(cleanViolations, violation)
-		}
-	}
-
-	return cleanViolations
-}
-
 func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
@@ -190,12 +110,12 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	clientLog.Debug("Created temp working directory: ", wd)
-	clientLog.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
+	log.Debug("Created temp working directory: ", wd)
+	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
 	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
 		return
 	}
-	clientLog.Debug("Repository download completed")
+	log.Debug("Repository download completed")
 	return
 }
 
@@ -215,4 +135,8 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 	}
 
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
+}
+
+func isSimplifiedOutput(provider vcsutils.VcsProvider) bool {
+	return provider == vcsutils.BitbucketServer
 }

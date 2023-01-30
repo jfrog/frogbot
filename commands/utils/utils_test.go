@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -136,71 +135,4 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
-}
-
-func TestSimplifyViolations(t *testing.T) {
-	components1 := map[string]services.Component{
-		"violation1": {FixedVersions: []string{"2.1.1"}},
-		"violation2": {FixedVersions: []string{"3.1.1"}},
-	}
-	components2 := map[string]services.Component{
-		"violation1": {FixedVersions: []string{"2.1.1"}},
-		"violation3": {FixedVersions: []string{"2.2.1"}},
-	}
-	violations := []services.Violation{
-		{Components: components1},
-		{Components: components2},
-	}
-
-	expectedViolation := []services.Violation{
-		{
-			Components: map[string]services.Component{
-				"violation1": {FixedVersions: []string{"2.1.1"}},
-				"violation2": {FixedVersions: []string{"3.1.1"}},
-			},
-		},
-		{
-			Components: map[string]services.Component{"violation3": {FixedVersions: []string{"2.2.1"}}},
-		},
-	}
-
-	results := simplifyViolations(violations)
-	assert.ElementsMatch(t, expectedViolation, results)
-}
-
-func TestSimplifyVulnerabilities(t *testing.T) {
-	components1 := map[string]services.Component{
-		"vulnerability1": {FixedVersions: []string{"2.1.1"}},
-		"vulnerability2": {FixedVersions: []string{"3.1.1"}},
-		"vulnerability3": {FixedVersions: []string{"3.2.1"}},
-	}
-	components2 := map[string]services.Component{
-		"vulnerability1": {FixedVersions: []string{"2.1.1"}},
-		"vulnerability3": {FixedVersions: []string{"2.1.1"}},
-	}
-	components3 := map[string]services.Component{
-		"vulnerability3": {FixedVersions: []string{"2.1.1"}},
-		"vulnerability4": {FixedVersions: []string{"2.2.1"}},
-	}
-	vulnerabilities := []services.Vulnerability{
-		{Components: components1},
-		{Components: components2},
-		{Components: components3},
-	}
-
-	expectedVulnerabilities := []services.Vulnerability{
-		{
-			Components: map[string]services.Component{
-				"vulnerability1": {FixedVersions: []string{"2.1.1"}},
-				"vulnerability2": {FixedVersions: []string{"3.1.1"}},
-				"vulnerability3": {FixedVersions: []string{"3.2.1"}},
-			},
-		},
-		{
-			Components: map[string]services.Component{"vulnerability4": {FixedVersions: []string{"2.2.1"}}},
-		},
-	}
-
-	results := simplifyVulnerabilities(vulnerabilities)
-	assert.ElementsMatch(t, expectedVulnerabilities, results)
 }
