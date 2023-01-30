@@ -134,25 +134,29 @@
            // [Mandatory]
            // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
            JF_URL = credentials("JF_URL")
-           // [Mandatory if JF_ACCESS_TOKEN is not provided]
-           // JFrog user and password with 'read' permissions for Xray
-           JF_USER = credentials("JF_USER")
-           JF_PASSWORD = credentials("JF_PASSWORD")
+   
+           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+           // JFrog access token with 'read' permissions for Xray
+           JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+   
            // [Mandatory]
            // GitHub enterprise server accesses token with the following permissions:
            // Read and Write access to code, pull requests, security events, and workflows
            JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
            JF_GIT_PROVIDER = "github"
+   
            // [Mandatory]
            // GitHub enterprise server organization namespace
            JF_GIT_OWNER = ""
+   
            // [Mandatory]
            // API endpoint to GitHub enterprise server
            JF_GIT_API_ENDPOINT = ""
-           // Uncomment the below options if you'd like to use them.
-           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-           // JFrog access token with 'read' permissions for Xray
-           // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+   
+           // [Mandatory if JF_ACCESS_TOKEN is not provided]
+           // JFrog user and password with 'read' permissions for Xray
+           // JF_USER = credentials("JF_USER")
+           // JF_PASSWORD = credentials("JF_PASSWORD")
        }
        stages {
            stage('Download Frogbot') {

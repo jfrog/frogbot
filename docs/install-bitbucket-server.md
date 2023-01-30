@@ -121,16 +121,14 @@
        }
    
        environment {
-        
            // [Mandatory]
            // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
            JF_URL= credentials("JF_URL")
    
-           // [Mandatory if JF_ACCESS_TOKEN is not provided]
-           // JFrog user and password with 'read' permissions for Xray
-           JF_USER= credentials("JF_USER")
-           JF_PASSWORD= credentials("JF_PASSWORD")
-   
+           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+           // JFrog access token with 'read' permissions for Xray
+           JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+      
            // [Mandatory]
            // Bitbucket accesses token with the following permissions 
            JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
@@ -147,11 +145,11 @@
            // [Mandatory]
            // API endpoint to Bitbucket server
            JF_GIT_API_ENDPOINT= ""
-           
-           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-           // JFrog access token with 'read' permissions for Xray
-           // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
    
+           // [Mandatory if JF_ACCESS_TOKEN is not provided]
+           // JFrog user and password with 'read' permissions for Xray
+           // JF_USER= credentials("JF_USER")
+           // JF_PASSWORD= credentials("JF_PASSWORD")
        }
    
        stages {
