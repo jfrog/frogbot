@@ -2,7 +2,7 @@
 
 # Installing Frogbot on Azure Repos repositories
 
-| Important: Using this method isn't recommended for open source projects. Learn more about it in the README under [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning). |
+| Important: Using Frogbot with Azure DevOps isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 To install Frogbot on Azure Repos repositories, follow these steps.

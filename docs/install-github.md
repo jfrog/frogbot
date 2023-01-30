@@ -35,7 +35,7 @@
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
-   | Important: Using this method isn't recommended for open source projects. Learn more about it in the README under [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning). |
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
    | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    2.1. Make sure you have the connection details of your JFrog environment.
@@ -60,7 +60,7 @@
     <details>
      <summary>Install Frogbot Using Jenkins</summary>
 
-   | Important: Using this method isn't recommended for open source projects. Learn more about it in the README under [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning). |
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
    | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    2.1. Make sure you have the connection details of your JFrog environment.
