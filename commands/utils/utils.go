@@ -136,3 +136,7 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }
+
+func isSimplifiedOutput(provider vcsutils.VcsProvider) bool {
+	return provider == vcsutils.BitbucketServer
+}
