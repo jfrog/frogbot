@@ -347,19 +347,19 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 		var directDependencies, directDependenciesVersions strings.Builder
 		if len(vulnerability.Components) > 0 {
 			for _, dependency := range vulnerability.Components {
-				directDependencies.WriteString(fmt.Sprintf("%s; ", dependency.Name))
-				directDependenciesVersions.WriteString(fmt.Sprintf("%s; ", dependency.Version))
+				directDependencies.WriteString(fmt.Sprintf("%s<br>", dependency.Name))
+				directDependenciesVersions.WriteString(fmt.Sprintf("%s<br>", dependency.Version))
 			}
 		}
 		if len(vulnerability.Cves) > 0 {
 			cve = vulnerability.Cves[0].Id
 		}
-		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
+		fixedVersionString := strings.Join(vulnerability.FixedVersions, "<br>")
 		tableContent += fmt.Sprintf("\n| %s%8s | %s | %s | %s | %s | %s | %s ",
 			getSeverityTag(utils.IconName(vulnerability.Severity)),
 			vulnerability.Severity,
-			strings.TrimSuffix(directDependencies.String(), "; "),
-			strings.TrimSuffix(directDependenciesVersions.String(), "; "),
+			strings.TrimSuffix(directDependencies.String(), "<br>"),
+			strings.TrimSuffix(directDependenciesVersions.String(), "<br>"),
 			vulnerability.ImpactedDependencyName,
 			vulnerability.ImpactedDependencyVersion,
 			fixedVersionString,
