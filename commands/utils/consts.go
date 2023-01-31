@@ -68,7 +68,8 @@ const (
 	// Comment
 	TableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
-	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
+	SimplifiedTableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" + ":--: | -- | -- | -- | :--: | --"
+	WhatIsFrogbotMd       = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
 	// Product ID for usage reporting
 	productId = "frogbot"

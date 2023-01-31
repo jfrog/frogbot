@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -35,6 +36,14 @@ type ErrMissingConfig struct {
 
 func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
+}
+
+type OutputWriter interface {
+	TableRow(vulnerability formats.VulnerabilityOrViolationRow) string
+	NoVulnerabilitiesTitle() string
+	VulnerabiltiesTitle() string
+	TableHeader() string
+	IsFrogbotResultComment(comment string) bool
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
@@ -137,6 +146,9 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }
 
-func isSimplifiedOutput(provider vcsutils.VcsProvider) bool {
-	return provider == vcsutils.BitbucketServer
+func SetOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
+	if provider == vcsutils.BitbucketServer {
+		return &SimplifiedOutput{}
+	}
+	return &StandardOutput{}
 }

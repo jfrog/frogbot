@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"sort"
 	"strings"
 
@@ -75,7 +74,7 @@ func shouldScanPullRequest(repo utils.FrogbotRepoConfig, client vcsclient.VcsCli
 			return true, nil
 		}
 		// if this is a Frogbot 'scan results' comment and not 're-scan' request comment, do not scan this pull request.
-		if isFrogbotResultComment(comment.Content, repo.SimplifiedOutput) {
+		if repo.OutputWriter.IsFrogbotResultComment(comment.Content) {
 			return false, nil
 		}
 	}
@@ -85,13 +84,6 @@ func shouldScanPullRequest(repo utils.FrogbotRepoConfig, client vcsclient.VcsCli
 
 func isFrogbotRescanComment(comment string) bool {
 	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), utils.RescanRequestComment)
-}
-
-func isFrogbotResultComment(comment string, simplifiedOutput bool) bool {
-	if simplifiedOutput {
-		return strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, utils.GetSimplifiedTitle(utils.VulnerabilitiesBannerSource))
-	}
-	return strings.Contains(comment, utils.GetIconTag(utils.NoVulnerabilityBannerSource)) || strings.Contains(comment, utils.GetIconTag(utils.VulnerabilitiesBannerSource))
 }
 
 func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
@@ -150,15 +142,11 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 			JFrogProjectKey: repo.JFrogProjectKey,
 		},
 	}
-	var simplifiedOutput bool
-	// Bitbucket server requires a simple output without emojis + images
-	if repo.GitProvider.String() == vcsutils.BitbucketServer.String() {
-		simplifiedOutput = true
-	}
+
 	frogbotParams = &utils.FrogbotRepoConfig{
-		SimplifiedOutput: simplifiedOutput,
-		Server:           repo.Server,
-		Params:           params,
+		OutputWriter: utils.SetOutputWriter(repo.GitProvider),
+		Server:       repo.Server,
+		Params:       params,
 	}
 	return scanPullRequest(frogbotParams, client)
 }

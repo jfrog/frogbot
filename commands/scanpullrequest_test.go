@@ -353,7 +353,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities, utils.GetBanner, utils.GetSeverityTag)
+	message := createPullRequestMessage(vulnerabilities, &utils.SimplifiedOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -402,7 +402,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
-	message := createPullRequestMessage(vulnerabilities, utils.GetBanner, utils.GetSeverityTag)
+	message := createPullRequestMessage(vulnerabilities, &utils.StandardOutput{})
 
 	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | github.com/nats-io/nats-streaming-server | v0.21.0 | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.1] | CVE-2022-24450 \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | github.com/mholt/archiver/v3 | v3.5.1 | github.com/mholt/archiver/v3 | v3.5.1 |  |  \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>  Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3] | CVE-2022-26652 "
 	assert.Equal(t, expectedMessage, message)
