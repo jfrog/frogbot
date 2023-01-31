@@ -25,6 +25,7 @@ and before they are merged.
 - [Yarn 2](scan-pull-request/frogbot-scan-pr-yarn.yml)
 - [Pip](scan-pull-request/frogbot-scan-pr-pip.yml)
 - [Pipenv](scan-pull-request/frogbot-scan-pr-pipenv.yml)
+- [Poetry](scan-pull-request/frogbot-scan-pr-poetry.yml)
 - [Go](scan-pull-request/frogbot-scan-pr-go.yml)
 - [DotNet](scan-pull-request/frogbot-scan-pr-dotnet.yml)
 - [NuGet](scan-pull-request/frogbot-scan-pr-nuget.yml)
@@ -39,3 +40,4 @@ Create a file named `frogbot-scan-and-fix.yml` with the content of one of the fo
 - [Pip](scan-and-fix/frogbot-scan-and-fix-pip.yml)
 - [Yarn 2](scan-and-fix/frogbot-scan-and-fix-yarn.yml)
 - [Pipenv](scan-and-fix/frogbot-scan-and-fix-pipenv.yml)
+- [Poetry](scan-and-fix/frogbot-scan-and-fix-poetry.yml)
