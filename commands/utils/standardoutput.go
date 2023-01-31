@@ -42,7 +42,7 @@ func (so *StandardOutput) VulnerabiltiesTitle() string {
 }
 
 func (so *StandardOutput) TableHeader() string {
-	return TableHeader
+	return tableHeader
 }
 
 func (smo *StandardOutput) IsFrogbotResultComment(comment string) bool {

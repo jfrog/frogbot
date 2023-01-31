@@ -37,7 +37,7 @@ func (smo *SimplifiedOutput) VulnerabiltiesTitle() string {
 }
 
 func (smo *SimplifiedOutput) TableHeader() string {
-	return SimplifiedTableHeader
+	return simplifiedTableHeader
 }
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
