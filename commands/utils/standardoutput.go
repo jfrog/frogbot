@@ -45,6 +45,6 @@ func (so *StandardOutput) TableHeader() string {
 	return tableHeader
 }
 
-func (smo *StandardOutput) IsFrogbotResultComment(comment string) bool {
+func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.Contains(comment, GetIconTag(NoVulnerabilityBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesBannerSource))
 }
