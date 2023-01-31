@@ -35,6 +35,9 @@
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
    2.1. Make sure you have the connection details of your JFrog environment.
 
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
@@ -56,6 +59,9 @@
 
     <details>
      <summary>Install Frogbot Using Jenkins</summary>
+
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    2.1. Make sure you have the connection details of your JFrog environment.
 
@@ -142,8 +148,8 @@
    2.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    **Important**
-   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN
-   ** are set in the Jenkinsfile, but not both. - Make sure all the build tools used to build the project are installed on the Jenkins agent.**
+   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both. 
+   - Make sure all the build tools used to build the project are installed on the Jenkins agent.
 
    </details>
 
