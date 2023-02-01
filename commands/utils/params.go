@@ -170,7 +170,7 @@ func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, ser
 		}
 		config.Git = gitParams
 		newConfigAggregator = append(newConfigAggregator, FrogbotRepoConfig{
-			OutputWriter: SetOutputWriter(gitParams.GitProvider),
+			OutputWriter: GetCompatibleOutputWriter(gitParams.GitProvider),
 			Server:       *server,
 			Params:       config.Params,
 		})
@@ -393,7 +393,7 @@ func generateConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDe
 		return nil, err
 	}
 	repo.Projects = append(repo.Projects, project)
-	repo.OutputWriter = SetOutputWriter(gitParams.GitProvider)
+	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
 	return &FrogbotConfigAggregator{repo}, nil
 }
 

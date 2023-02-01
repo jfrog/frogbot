@@ -38,6 +38,8 @@ func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
+// The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
+// Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
 	TableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
@@ -146,7 +148,7 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
 }
 
-func SetOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
+func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	if provider == vcsutils.BitbucketServer {
 		return &SimplifiedOutput{}
 	}

@@ -144,7 +144,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Frogbot
 	}
 
 	frogbotParams = &utils.FrogbotRepoConfig{
-		OutputWriter: utils.SetOutputWriter(repo.GitProvider),
+		OutputWriter: utils.GetCompatibleOutputWriter(repo.GitProvider),
 		Server:       repo.Server,
 		Params:       params,
 	}
