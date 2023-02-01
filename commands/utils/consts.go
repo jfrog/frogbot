@@ -4,12 +4,6 @@ type IconName string
 type ImageSource string
 type vcsProvider string
 
-// GetGetTitleFunc, a func to determine the title of Frogbot comment
-type GetTitleFunc func(ImageSource) string
-
-// GetGetTitleFunc, a func to determine the table's severity tag in the Frogbot comment
-type GetSeverityTagFunc func(IconName) string
-
 const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
@@ -67,9 +61,10 @@ const (
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
 	// Comment
-	TableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +
+	tableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
-	WhatIsFrogbotMd = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
+	simplifiedTableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" + ":--: | -- | -- | -- | :--: | --"
+	WhatIsFrogbotMd       = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
 	// Product ID for usage reporting
 	productId = "frogbot"
