@@ -32,9 +32,9 @@ const (
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
+	JFrogRemoteRepo        = "JF_REMOTE_REPO"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	JFrogRemoteRepo        = "JF_REMOTE_REPO"
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"

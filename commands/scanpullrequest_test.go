@@ -536,7 +536,7 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 }
 
 func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
-	gitParams := utils.Git{
+	git := &utils.Git{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
 		Token:         "123456",
@@ -544,20 +544,14 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 		PullRequestID: 1,
 	}
 
-	var configData *utils.FrogbotConfigAggregator
-	var err error
-	if configPath == "" {
-		configData = &utils.FrogbotConfigAggregator{{}}
-	} else {
-		configData, err = utils.ReadConfigFromFileSystem(configPath)
-	}
+	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, failOnSecurityIssues)
+	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams, failOnSecurityIssues)
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
-	return configAggregator, client
+	return *configAggregator, client
 }
 
 func TestScanPullRequestError(t *testing.T) {

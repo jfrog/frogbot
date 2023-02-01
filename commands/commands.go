@@ -14,17 +14,24 @@ type FrogbotCommand interface {
 }
 
 func Exec(command FrogbotCommand, name string) error {
-	// Get config, server and VCS client
-	configAggregator, server, client, err := utils.GetParamsAndClient()
+	// Get frogbotUtils the contains the config, server and VCS client
+	frogbotUtils, err := utils.GetFrogbotUtils()
 	if err != nil {
 		return err
 	}
+	var remoteName string
+	if err = utils.ReadParamFromEnv(utils.JFrogRemoteRepo, &remoteName); err == nil {
+		// Download extractors if remote repo environment variable is set
+		if err = utils.DownloadExtractorsFromRemoteIfNeeded(frogbotUtils.ServerDetails, remoteName); err != nil {
+			return err
+		}
+	}
 	// Send usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, server, usageReportSent)
+	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command ", name))
-	err = command.Run(configAggregator, client)
+	err = command.Run(*frogbotUtils.ConfigAggregator, frogbotUtils.Client)
 	// Waits for the signal from the report usage to be done.
 	<-usageReportSent
 	if err == nil {
