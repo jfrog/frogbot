@@ -3,13 +3,10 @@ package commands
 import (
 	"context"
 	"errors"
-	"fmt"
+	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
-
-	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -28,8 +25,7 @@ const (
 	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 )
 
-type ScanPullRequestCmd struct {
-}
+type ScanPullRequestCmd struct{}
 
 // Run ScanPullRequest method only works for single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -55,19 +51,41 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 	if len(repoConfig.Branches) == 0 {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
+
 	// Audit PR code
+	vulnerabilitiesRows, err := auditPullRequest(repoConfig, client)
+	if err != nil {
+		return err
+	}
+
+	// Create pull request message
+	message := createPullRequestMessage(vulnerabilitiesRows, repoConfig.OutputWriter)
+
+	// Add comment to the pull request
+	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
+		return errors.New("couldn't add pull request comment: " + err.Error())
+	}
+
+	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
+	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+		err = errors.New(securityIssueFoundErr)
+	}
+	return err
+}
+
+func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, error) {
 	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for _, project := range repoConfig.Projects {
 		currentScan, isMultipleRoot, err := auditSource(xrayScanParams, project, &repoConfig.Server)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if repoConfig.IncludeAllVulnerabilities {
 			log.Info("Frogbot is configured to show all vulnerabilities")
 			allIssuesRows, err := createAllIssuesRows(currentScan, isMultipleRoot)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
 			continue
@@ -75,29 +93,16 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		// Audit target code
 		previousScan, isMultipleRoot, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.Git, &repoConfig.Server)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		newIssuesRows, err := createNewIssuesRows(previousScan, currentScan, isMultipleRoot)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
 	}
-
 	log.Info("Xray scan completed")
-
-	// Frogbot adds a comment on the PR.
-	getTitleFunc, getSeverityTagFunc := getCommentFunctions(repoConfig.SimplifiedOutput)
-	message := createPullRequestMessage(vulnerabilitiesRows, getTitleFunc, getSeverityTagFunc)
-	err := client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID)
-	if err != nil {
-		return errors.New("couldn't add pull request comment: " + err.Error())
-	}
-	// Fail the Frogbot task, if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
-		err = errors.New(securityIssueFoundErr)
-	}
-	return err
+	return vulnerabilitiesRows, nil
 }
 
 // Verify that the 'frogbot' GitHub environment was properly configured on the repository
@@ -130,15 +135,6 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	}
 
 	return nil
-}
-
-func getCommentFunctions(simplifiedOutput bool) (utils.GetTitleFunc, utils.GetSeverityTagFunc) {
-	if simplifiedOutput {
-		return utils.GetSimplifiedTitle, func(name utils.IconName) string {
-			return ""
-		}
-	}
-	return utils.GetBanner, utils.GetSeverityTag
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
@@ -337,33 +333,18 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, getBanner utils.GetTitleFunc, getSeverityTag utils.GetSeverityTagFunc) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return getBanner(utils.NoVulnerabilityBannerSource) + utils.WhatIsFrogbotMd
+		return writer.NoVulnerabilitiesTitle()
 	}
+	tableContent := getTableContent(vulnerabilitiesRows, writer)
+	return writer.VulnerabiltiesTitle() + writer.TableHeader() + tableContent
+}
+
+func getTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer utils.OutputWriter) string {
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
-		var cve string
-		var directDependencies, directDependenciesVersions strings.Builder
-		if len(vulnerability.Components) > 0 {
-			for _, dependency := range vulnerability.Components {
-				directDependencies.WriteString(fmt.Sprintf("%s; ", dependency.Name))
-				directDependenciesVersions.WriteString(fmt.Sprintf("%s; ", dependency.Version))
-			}
-		}
-		if len(vulnerability.Cves) > 0 {
-			cve = vulnerability.Cves[0].Id
-		}
-		fixedVersionString := strings.Join(vulnerability.FixedVersions, " ")
-		tableContent += fmt.Sprintf("\n| %s%8s | %s | %s | %s | %s | %s | %s ",
-			getSeverityTag(utils.IconName(vulnerability.Severity)),
-			vulnerability.Severity,
-			strings.TrimSuffix(directDependencies.String(), "; "),
-			strings.TrimSuffix(directDependenciesVersions.String(), "; "),
-			vulnerability.ImpactedDependencyName,
-			vulnerability.ImpactedDependencyVersion,
-			fixedVersionString,
-			cve)
+		tableContent += writer.TableRow(vulnerability)
 	}
-	return getBanner(utils.VulnerabilitiesBannerSource) + utils.WhatIsFrogbotMd + utils.TableHeader + tableContent
+	return tableContent
 }

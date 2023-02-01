@@ -99,6 +99,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
 		Branch: getFullBranchName(branchName),
+		Force:  true,
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
