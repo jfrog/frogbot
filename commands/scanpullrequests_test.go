@@ -16,7 +16,7 @@ import (
 )
 
 var gitParams = &utils.FrogbotRepoConfig{
-	SimplifiedOutput: true,
+	OutputWriter: &utils.SimplifiedOutput{},
 	Params: utils.Params{
 		Git: utils.Git{
 			RepoOwner: "repo-owner",
@@ -119,14 +119,14 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 
 	configAggregator := utils.FrogbotConfigAggregator{
 		{
-			SimplifiedOutput: true,
-			Server:           server,
-			Params:           firstRepoParams,
+			OutputWriter: &utils.SimplifiedOutput{},
+			Server:       server,
+			Params:       firstRepoParams,
 		},
 		{
-			SimplifiedOutput: true,
-			Server:           server,
-			Params:           secondRepoParams,
+			OutputWriter: &utils.SimplifiedOutput{},
+			Server:       server,
+			Params:       secondRepoParams,
 		},
 	}
 	mockParams := []MockParams{
@@ -166,9 +166,9 @@ func TestScanAllPullRequests(t *testing.T) {
 		Git: gitParams.Git,
 	}
 	repoParams := &utils.FrogbotRepoConfig{
-		SimplifiedOutput: true,
-		Server:           server,
-		Params:           params,
+		OutputWriter: &utils.SimplifiedOutput{},
+		Server:       server,
+		Params:       params,
 	}
 	paramsAggregator := utils.FrogbotConfigAggregator{}
 	paramsAggregator = append(paramsAggregator, *repoParams)

@@ -29,9 +29,9 @@ var frogbotConfigPath = filepath.Join(".frogbot", FrogbotConfigFile)
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 type FrogbotRepoConfig struct {
-	Server           coreconfig.ServerDetails
-	SimplifiedOutput bool
-	Params           `yaml:"params,omitempty"`
+	Params `yaml:"params,omitempty"`
+	OutputWriter
+	Server coreconfig.ServerDetails
 }
 
 type Params struct {
@@ -170,9 +170,9 @@ func NewConfigAggregator(configData *FrogbotConfigAggregator, gitParams Git, ser
 		}
 		config.Git = gitParams
 		newConfigAggregator = append(newConfigAggregator, FrogbotRepoConfig{
-			SimplifiedOutput: config.SimplifiedOutput,
-			Server:           *server,
-			Params:           config.Params,
+			OutputWriter: GetCompatibleOutputWriter(gitParams.GitProvider),
+			Server:       *server,
+			Params:       config.Params,
 		})
 	}
 	return newConfigAggregator, nil
@@ -393,6 +393,7 @@ func generateConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDe
 		return nil, err
 	}
 	repo.Projects = append(repo.Projects, project)
+	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
 	return &FrogbotConfigAggregator{repo}, nil
 }
 

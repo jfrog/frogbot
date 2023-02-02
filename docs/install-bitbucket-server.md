@@ -2,6 +2,9 @@
 
 # Installing Frogbot on Bitbucket Server repositories
 
+| Important: Using Frogbot on Bitbucket Server using JFrog Pipelines or Jenkins isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
 1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file. Throughout this documentation we will reference this Git repository which includes the [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file as the **Frogbot Management Repository**.
 
 
@@ -18,7 +21,8 @@
    2.3. Save your Bitbucket access token in a [Bitbucket Server Integration](https://www.jfrog.com/confluence/display/JFROG/Bitbucket+Server+Integration) named
    **gitIntegration**.
 
-   2.4.Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
+   2.4. Create a **pipelines.yml
+   ** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
 
    2.5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
@@ -40,52 +44,49 @@
    2.4. Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
 
       <details>
-        <summary>Template</summary>
+         <summary>Template</summary>
+
+   ```groovy
+   // Run the job every 5 minutes 
+   CRON_SETTINGS = '''*/5 * * * *'''
    
-      ```groovy
-      // Run the job every 5 minutes 
-      CRON_SETTINGS = '''*/5 * * * *'''
+   pipeline {
+       agent any
+   
+       triggers {
+           cron(CRON_SETTINGS)
+       }
+   
+       environment {
+           // [Mandatory]
+           // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+           JF_URL= credentials("JF_URL")
+   
+           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+           // JFrog access token with 'read' permissions for Xray
+           JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
       
-      pipeline {
-          agent any
-      
-          triggers {
-              cron(CRON_SETTINGS)
-          }
-      
-          environment {
-           
-              // [Mandatory]
-              // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-              JF_URL= credentials("JF_URL")
-      
-              // [Mandatory if JF_ACCESS_TOKEN is not provided]
-              // JFrog user and password with 'read' permissions for Xray
-              JF_USER= credentials("JF_USER")
-              JF_PASSWORD= credentials("JF_PASSWORD")
-      
-              // [Mandatory]
-              // Bitbucket access token with the write repository permissions 
-              JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
-              
-              JF_GIT_PROVIDER= "bitbucketServer"
-      
-              // [Mandatory]
-              // Username of the Bitbucket account
-              JF_GIT_USERNAME= ""
-      
-              // [Mandatory]
-              // Bitbucket project namespace
-              JF_GIT_OWNER= ""
-      
-              // [Mandatory]
-              // API endpoint to Bitbucket server
-              JF_GIT_API_ENDPOINT= ""
-              
-              // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-              // JFrog access token with 'read' permissions for Xray
-              // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
-      
+           // [Mandatory]
+           // Bitbucket access token with the write repository permissions 
+           JF_GIT_TOKEN= credentials("FROGBOT_GIT_TOKEN")
+           JF_GIT_PROVIDER= "bitbucketServer"
+   
+           // [Mandatory]
+           // Username of the Bitbucket account
+           JF_GIT_USERNAME= ""
+   
+           // [Mandatory]
+           // Bitbucket project namespace
+           JF_GIT_OWNER= ""
+   
+           // [Mandatory]
+           // API endpoint to Bitbucket server
+           JF_GIT_API_ENDPOINT= ""
+   
+           // [Mandatory if JF_ACCESS_TOKEN is not provided]
+           // JFrog user and password with 'read' permissions for Xray
+           // JF_USER= credentials("JF_USER")
+           // JF_PASSWORD= credentials("JF_PASSWORD")
           }
       
           stages {
@@ -131,7 +132,7 @@
 
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
-   
+
    </details>
 
   </details>

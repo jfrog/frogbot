@@ -35,6 +35,9 @@
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
    2.1. Make sure you have the connection details of your JFrog environment.
 
    2.2. Save the JFrog connection details as a [JFrog Platform Access Token Integration](https://www.jfrog.com/confluence/display/JFROG/JFrog+Platform+Access+Token+Integration)
@@ -43,7 +46,8 @@
    2.3. Save your GitHub access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
    **gitIntegration**.
 
-   2.4.Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
+   2.4. Create a **pipelines.yml
+   ** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
 
    2.5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
@@ -56,6 +60,9 @@
 
     <details>
      <summary>Install Frogbot Using Jenkins</summary>
+
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    2.1. Make sure you have the connection details of your JFrog environment.
 
@@ -70,42 +77,41 @@
              <summary>Template</summary>
 
    ```groovy
-       // Run the job every 5 minutes 
-       CRON_SETTINGS = '''*/5 * * * *'''
-       pipeline {
-           agent any
-           triggers {
-               cron(CRON_SETTINGS)
-           }
-           environment {
-               // [Mandatory]
-               // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-               JF_URL = credentials("JF_URL")
+   // Run the job every 5 minutes 
+   CRON_SETTINGS = '''*/5 * * * *'''
+   pipeline {
+       agent any
+       triggers {
+           cron(CRON_SETTINGS)
+       }
+       environment {
+           // [Mandatory]
+           // JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+           JF_URL = credentials("JF_URL")
+   
+           // [Mandatory if JF_USER and JF_PASSWORD are not provided]
+           // JFrog access token with 'read' permissions for Xray
+           JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
+   
        
-               // [Mandatory if JF_ACCESS_TOKEN is not provided]
-               // JFrog user and password with 'read' permissions for Xray
-               JF_USER = credentials("JF_USER")
-               JF_PASSWORD = credentials("JF_PASSWORD")
-       
-               // [Mandatory]
-               // GitHub enterprise server access token with the following permissions:
-               // Read and Write access to code, pull requests, security events, and workflows
-               JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
-               
-               JF_GIT_PROVIDER = "github"
-       
-               // [Mandatory]
-               // GitHub enterprise server organization namespace
-               JF_GIT_OWNER = ""
-       
-               // [Mandatory]
-               // API endpoint to GitHub enterprise server
-               JF_GIT_API_ENDPOINT = ""
-       
-               // [Mandatory if JF_USER and JF_PASSWORD are not provided]
-               // JFrog access token with 'read' permissions for Xray
-               // JF_ACCESS_TOKEN= credentials("JF_ACCESS_TOKEN")
-      
+           // [Mandatory]
+           // GitHub enterprise server access token with the following permissions:
+           // Read and Write access to code, pull requests, security events, and workflows
+           JF_GIT_TOKEN = credentials("FROGBOT_GIT_TOKEN")
+           JF_GIT_PROVIDER = "github"
+   
+           // [Mandatory]
+           // GitHub enterprise server organization namespace
+           JF_GIT_OWNER = ""
+   
+           // [Mandatory]
+           // API endpoint to GitHub enterprise server
+           JF_GIT_API_ENDPOINT = ""
+   
+           // [Mandatory if JF_ACCESS_TOKEN is not provided]
+           // JFrog user and password with 'read' permissions for Xray
+           // JF_USER = credentials("JF_USER")
+           // JF_PASSWORD = credentials("JF_PASSWORD")
            }
            stages {
                stage('Download Frogbot') {
@@ -142,8 +148,8 @@
    2.7. Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    **Important**
-   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN
-   ** are set in the Jenkinsfile, but not both. - Make sure all the build tools used to build the project are installed on the Jenkins agent.**
+   - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both. 
+   - Make sure all the build tools used to build the project are installed on the Jenkins agent.
 
    </details>
 
