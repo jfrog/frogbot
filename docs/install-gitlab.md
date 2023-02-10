@@ -36,13 +36,12 @@ frogbot-scan:
     # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
     JF_URL: $JF_URL
 
-    # [Mandatory if JF_ACCESS_TOKEN is not provided]
-    # JFrog user and password with 'read' permissions for Xray
-    JF_USER: $JF_USER
-    JF_PASSWORD: $JF_PASSWORD
+    # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+    # JFrog access token with 'read' permissions for Xray
+    JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Mandatory]
-    # GitLab accesses token with the following permissions scopes: api, read_api, read_user, read_repository
+    # GitLab access token with the following permissions scopes: api, read_api, read_user, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
 
     # Predefined GitLab variables. There's no need to set them.
@@ -53,13 +52,14 @@ frogbot-scan:
 
     # Uncomment the below options if you'd like to use them.
 
+    # [Mandatory if JF_ACCESS_TOKEN is not provided]
+    # JFrog user and password with 'read' permissions for Xray
+    # JF_USER: $JF_USER
+    # JF_PASSWORD: $JF_PASSWORD
+
     # [Optional, default: https://gitlab.com]
     # API endpoint to GitLab
     # JF_GIT_API_ENDPOINT: https://gitlab.example.com
-
-    # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-    # JFrog access token with 'read' permissions for Xray
-    # JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
     # [Optional, default: "."]
     # Relative path to the project in the git repository

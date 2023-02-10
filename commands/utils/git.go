@@ -16,7 +16,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
-	clientLog "github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 type GitManager struct {
@@ -67,6 +67,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
+	if branchName == "" {
+		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
+		branchName = "master"
+	}
+	log.Info(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,
@@ -78,7 +83,7 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, repoURL, err.Error())
 	}
 	gm.repository = repo
-	clientLog.Debug(fmt.Sprintf("Project cloned from %s to %s", repoURL, destinationPath))
+	log.Debug(fmt.Sprintf("Project cloned from %s to %s", repoURL, destinationPath))
 	return nil
 }
 
@@ -94,6 +99,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
 		Branch: getFullBranchName(branchName),
+		Force:  true,
 	}
 	worktree, err := gm.repository.Worktree()
 	if err != nil {

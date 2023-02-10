@@ -32,7 +32,7 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
 		JFrogUserEnv:        "admin",
 		JFrogPasswordEnv:    "password",
-		GitProvider:         string(GitHub),
+		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
@@ -49,7 +49,7 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:           "admin",
 		JFrogPasswordEnv:       "password",
-		GitProvider:            string(GitHub),
+		GitProvider:            string(BitbucketServer),
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
@@ -65,7 +65,7 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		JFrogUserEnv:        "",
 		JFrogPasswordEnv:    "",
 		JFrogTokenEnv:       "token",
-		GitProvider:         string(GitHub),
+		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
@@ -141,7 +141,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	configFile, err := ReadConfig(configParamsTestFile)
+	configFile, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
 	for _, repo := range *configFile {
 		for projectI, project := range repo.Projects {
@@ -165,7 +165,11 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	configFile, server, _, err := GetParamsAndClient()
+	server, gitParams, err := extractEnvParams()
+	assert.NoError(t, err)
+	configFile, err := generateConfigAggregatorFromEnv(&gitParams, server)
+	assert.NoError(t, err)
+	err = SanitizeEnv()
 	assert.NoError(t, err)
 	AssertSanitizedEnv(t)
 
@@ -181,8 +185,8 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, configParams := range configFile {
-		assert.Equal(t, vcsutils.GitHub, configParams.GitProvider)
+	for _, configParams := range *configFile {
+		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
@@ -294,7 +298,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	err := extractProjectParamsFromEnv(&params)
 	assert.NoError(t, err)
 	assert.True(t, params.UseWrapper)
-	assert.Equal(t, []string{""}, params.WorkingDirs)
+	assert.Equal(t, []string{RootDir}, params.WorkingDirs)
 	assert.Equal(t, "", params.PipRequirementsFile)
 	assert.Equal(t, "", params.InstallCommandName)
 	assert.Equal(t, []string(nil), params.InstallCommandArgs)

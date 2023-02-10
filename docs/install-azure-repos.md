@@ -2,6 +2,9 @@
 
 # Installing Frogbot on Azure Repos repositories
 
+| Important: Using Frogbot with Azure DevOps isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+
 To install Frogbot on Azure Repos repositories, follow these steps.
 
 1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file.
@@ -55,15 +58,15 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                     # [Mandatory]
                     # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
                     JF_URL: $(JF_URL)
+   
+                    # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+                    # JFrog access token with 'read' permissions for Xray
+                    JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
     
                     # [Mandatory if JF_ACCESS_TOKEN is not provided]
                     # JFrog user and password with 'read' permissions for Xray
-                    JF_USER: $(JF_USER)
-                    JF_PASSWORD: $(JF_PASSWORD)
-    
-                    # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                    # JFrog access token with 'read' permissions for Xray
-                    # JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
+                    # JF_USER: $(JF_USER)
+                    # JF_PASSWORD: $(JF_PASSWORD)
    
                     # [Mandatory]
                     # The name of the organization that owns this project
