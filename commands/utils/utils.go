@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	coreutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -17,7 +17,9 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const RootDir = "."
@@ -70,7 +72,7 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 		return
 	}
 	log.Debug(usage.ReportUsagePrefix + "Sending info...")
-	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
+	serviceManager, err := coreutils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
 		log.Debug(usage.ReportUsagePrefix + err.Error())
 		return
@@ -114,7 +116,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
-	wd, err = fileutils.CreateTempDir()
+	wd, err = CreateFrogbotTempDir()
 	if err != nil {
 		return
 	}
@@ -153,4 +155,18 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+var tempDirBase string
+
+func CreateFrogbotTempDir() (string, error) {
+	if tempDirBase == "" {
+		tempDirBase = getTrimmedEnv(TempDir)
+		if tempDirBase == "" {
+			tempDirBase = os.TempDir()
+		}
+	}
+
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+	return os.MkdirTemp(tempDirBase, tempDirPrefix+timestamp+"-")
 }

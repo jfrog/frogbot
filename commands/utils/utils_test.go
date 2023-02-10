@@ -3,10 +3,12 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -135,4 +137,64 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+
+func TestCreateTempDir(t *testing.T) {
+	// Create a temp dir.
+	path1, err := CreateFrogbotTempDir()
+	assert.NoError(t, err)
+	defer func() {
+		// Delete the temp dir.
+		assert.NoError(t, fileutils.RemoveTempDir(path1))
+		// Assert that the dir was deleted.
+		exists, err := fileutils.IsDirExists(path1, false)
+		assert.NoError(t, err)
+		assert.False(t, exists)
+	}()
+
+	// Extract the dir name from the path, and assert that it is valid.
+	tempDirName := filepath.Base(path1)
+	assertTempDirName(t, tempDirName)
+
+	// Use the temp dir path, as the new temp dir base, and create a new temp dir.
+	oldTempDirBase := tempDirBase
+	defer func() {
+		tempDirBase = oldTempDirBase
+	}()
+	tempDirBase = path1
+	path2, err := CreateFrogbotTempDir()
+	assert.NoError(t, err)
+	assertTempDirBase(t, path1, path2)
+
+	// Extract the dir name from the path, and assert that it is valid
+	tempDirName = filepath.Base(path2)
+	assertTempDirName(t, tempDirName)
+
+	// Set a base to the `TempDir` environment variable, and assert that for a
+	// a new temp dir created, the environment variable value will be used as the base path.
+	tempDirEnvVarValue := os.Getenv(TempDir)
+	defer func() {
+		os.Setenv(TempDir, tempDirEnvVarValue)
+	}()
+	path3 := filepath.Join(path2, "dir")
+	assert.NoError(t, os.Mkdir(path3, 0777))
+	os.Setenv(TempDir, path3)
+	tempDirBase = ""
+	path4, err := CreateFrogbotTempDir()
+	assert.NoError(t, err)
+	assertTempDirBase(t, os.Getenv(TempDir), path4)
+}
+
+func assertTempDirBase(t *testing.T, base, tempDirName string) {
+	// Asset that base dir path was used to create the the new temp dir.
+	assert.True(t, strings.HasPrefix(tempDirName, base))
+	assert.True(t, len(tempDirName) > len(base))
+}
+
+func assertTempDirName(t *testing.T, tempDirName string) {
+	// Assert that the temp dir name starts with the defined prefix.
+	assert.True(t, strings.HasPrefix(tempDirName, tempDirPrefix))
+
+	// Assert that the temp dir name is longer than the prefix.
+	assert.True(t, len(tempDirName) > len(tempDirPrefix))
 }

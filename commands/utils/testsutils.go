@@ -34,7 +34,7 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 // Return a cleanup function and the temp dir path
 func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, func()) {
 	// Copy project to a temporary directory
-	tmpDir, err := fileutils.CreateTempDir()
+	tmpDir, err := CreateFrogbotTempDir()
 	assert.NoError(t, err)
 	err = fileutils.CopyDir(filepath.Join("testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
