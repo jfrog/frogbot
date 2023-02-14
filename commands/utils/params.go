@@ -18,13 +18,14 @@ import (
 )
 
 const (
+	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
 )
 
 var errFrogbotConfigNotFound = fmt.Errorf("%s wasn't found in the Frogbot directory and its subdirectories. Assuming all the configuration is stored as environment variables", FrogbotConfigFile)
 
 // Possible Config file path's to Frogbot Management repository
-var frogbotConfigPath = filepath.Join(".frogbot", FrogbotConfigFile)
+var osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
@@ -142,7 +143,7 @@ func getFrogbotConfig(client vcsclient.VcsClient) (configData *FrogbotConfigAggr
 	}
 	// Read the config from the current working dir, if reading from the target branch failed
 	if targetConfigContent == nil && err == nil {
-		configData, err = ReadConfigFromFileSystem(frogbotConfigPath)
+		configData, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 	}
 
 	return configData, err
@@ -294,7 +295,7 @@ func extractEnvParams() (*coreconfig.ServerDetails, Git, error) {
 // ReadConfigFromFileSystem looks for .frogbot/frogbot-config.yml from the given path. The path is relatively from the root.
 // If the config file is not found in the relative path, it will search in parent dirs.
 func ReadConfigFromFileSystem(configRelativePath string) (config *FrogbotConfigAggregator, err error) {
-	log.Debug("Reading config from file system. Looking for", frogbotConfigPath)
+	log.Debug("Reading config from file system. Looking for", osFrogbotConfigPath)
 	fullConfigDirPath, err := filepath.Abs(configRelativePath)
 	if err != nil {
 		return nil, err
@@ -398,24 +399,23 @@ func generateConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDe
 }
 
 // downloadConfigFromTarget downloads the .frogbot/frogbot-config.yml from the target repository
-func downloadConfigFromTarget(client vcsclient.VcsClient) ([]byte, error) {
+func downloadConfigFromTarget(client vcsclient.VcsClient) (configContent []byte, err error) {
 	var branch string
 	_ = readParamFromEnv(GitBaseBranchEnv, &branch)
 	var repo string
 	_ = readParamFromEnv(GitRepoEnv, &repo)
 	var owner string
 	_ = readParamFromEnv(GitRepoOwnerEnv, &owner)
-	var configContent []byte
-	var err error
 	var statusCode int
 	if repo != "" && owner != "" {
 		if branch == "" {
 			log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
 		}
 		log.Debug("Downloading", FrogbotConfigFile, "from target", owner, "/", repo, "/", branch)
-		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), owner, repo, branch, frogbotConfigPath)
+		gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
+		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), owner, repo, branch, gitFrogbotConfigPath)
 		if statusCode == http.StatusNotFound {
-			log.Debug(frogbotConfigPath, "wasn't found on", owner, "/", repo)
+			log.Debug(osFrogbotConfigPath, "wasn't found on", owner, "/", repo)
 			// If .frogbot/frogbot-config.yml isn't found, we'll try to run Frogbot using environment variables
 			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
 		}
