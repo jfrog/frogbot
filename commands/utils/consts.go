@@ -32,7 +32,7 @@ const (
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
-	JFrogRemoteRepo        = "JF_REMOTE_REPO"
+	jfrogRemoteRepo        = "JF_FROGBOT_REPO"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 

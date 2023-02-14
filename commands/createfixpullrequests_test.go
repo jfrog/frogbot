@@ -184,7 +184,12 @@ func TestPackageTypeFromScan(t *testing.T) {
 		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
 		t.Run(pkgType.ToString(), func(t *testing.T) {
 			frogbotParams.Projects[0].WorkingDirs = []string{projectPath}
-			scanResponse, _, err := testScan.scan(frogbotParams.Projects[0], &frogbotParams.Server, services.XrayGraphScanParams{}, false, projectPath)
+			scanSetup := utils.ScanSetup{
+				XrayGraphScanParams: services.XrayGraphScanParams{},
+				Project:             frogbotParams.Projects[0],
+				ServerDetails:       &frogbotParams.Server,
+			}
+			scanResponse, _, err := testScan.scan(&scanSetup, projectPath)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse, pkgType)
 		})

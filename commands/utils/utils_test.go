@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -135,4 +136,34 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+
+// Check connection details with JFrog instance.
+// Return a callback method that restores the credentials after the test is done.
+func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
+	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
+	username := os.Getenv(JFrogUserEnv)
+	password := os.Getenv(JFrogPasswordEnv)
+	token := os.Getenv(JFrogTokenEnv)
+	if url == "" {
+		assert.FailNow(t, fmt.Sprintf("'%s' is not set", JFrogUrlEnv))
+	}
+	if token == "" && (username == "" || password == "") {
+		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", JFrogTokenEnv, JFrogUserEnv, JFrogPasswordEnv))
+	}
+	server.Url = url
+	server.XrayUrl = url + "/xray/"
+	server.ArtifactoryUrl = url + "/artifactory/"
+	server.User = username
+	server.Password = password
+	server.AccessToken = token
+	restoreFunc = func() {
+		SetEnvAndAssert(t, map[string]string{
+			JFrogUrlEnv:      url,
+			JFrogTokenEnv:    token,
+			JFrogUserEnv:     username,
+			JFrogPasswordEnv: password,
+		})
+	}
+	return
 }

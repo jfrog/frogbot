@@ -3,6 +3,12 @@ package utils
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -10,11 +16,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -51,6 +52,7 @@ type Project struct {
 	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
 	UseWrapper          bool     `yaml:"useWrapper,omitempty"`
+	DepsResolutionRepo  string   `yaml:"depsResolutionRepo,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
 }
@@ -93,7 +95,7 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 		}
 	}()
 
-	// Build Version control client for Frogbot REST API requests
+	// Build Version control client for REST API requests
 	client, err := vcsclient.
 		NewClientBuilder(gitParams.GitProvider).
 		ApiEndpoint(gitParams.ApiEndpoint).
@@ -134,12 +136,13 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 // If these variables are not set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(client vcsclient.VcsClient) (configFileContent []byte, err error) {
 	var targetConfigContent []byte
-	configFileContent, err = downloadConfigFromTarget(client)
+	configFileContent, err = readConfigFromTarget(client)
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && !missingConfigErr {
 		return nil, err
 	}
-	// Read the config from the current working dir, if reading from the target branch failed
+
+	// Read the config from the current working dir
 	if targetConfigContent == nil && err == nil {
 		configFileContent, err = ReadConfigFromFileSystem(frogbotConfigPath)
 	}
@@ -171,6 +174,9 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 		if config.FailOnSecurityIssues == nil {
 			config.FailOnSecurityIssues = &failOnSecurityIssues
 		}
+		if err := verifyFrogbotRepo(server); err != nil {
+			return nil, err
+		}
 		config.Git = *gitParams
 		newConfigAggregator = append(newConfigAggregator, FrogbotRepoConfig{
 			OutputWriter: GetCompatibleOutputWriter(gitParams.GitProvider),
@@ -179,6 +185,15 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 		})
 	}
 	return &newConfigAggregator, nil
+}
+
+func verifyFrogbotRepo(serverDetails *coreconfig.ServerDetails) error {
+	var frogbotRepo string
+	if frogbotRepo = getTrimmedEnv(jfrogRemoteRepo); frogbotRepo == "" {
+		return nil
+	}
+	// Download extractors if remote repo environment variable is set
+	return downloadExtractorsFromRemoteIfNeeded(serverDetails, frogbotRepo, false)
 }
 
 func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
@@ -394,6 +409,9 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	if err := extractProjectParamsFromEnv(&project); err != nil {
 		return nil, err
 	}
+	if err := verifyFrogbotRepo(server); err != nil {
+		return nil, err
+	}
 	params := Params{Git: *gitParams}
 	repo := FrogbotRepoConfig{Params: params, Server: *server}
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
@@ -404,22 +422,20 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	return &FrogbotConfigAggregator{repo}, nil
 }
 
-// downloadConfigFromTarget downloads the .frogbot/frogbot-config.yml from the target repository
-func downloadConfigFromTarget(client vcsclient.VcsClient) ([]byte, error) {
+// readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
+func readConfigFromTarget(client vcsclient.VcsClient) (configContent []byte, err error) {
 	var branch string
 	_ = ReadParamFromEnv(GitBaseBranchEnv, &branch)
 	var repo string
 	_ = ReadParamFromEnv(GitRepoEnv, &repo)
 	var owner string
 	_ = ReadParamFromEnv(GitRepoOwnerEnv, &owner)
-	var configContent []byte
-	var err error
-	var statusCode int
 	if repo != "" && owner != "" {
 		if branch == "" {
 			log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
 		}
 		log.Debug("Downloading", FrogbotConfigFile, "from target", owner, "/", repo, "/", branch)
+		var statusCode int
 		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), owner, repo, branch, frogbotConfigPath)
 		if statusCode == http.StatusNotFound {
 			log.Debug(frogbotConfigPath, "wasn't found on", owner, "/", repo)

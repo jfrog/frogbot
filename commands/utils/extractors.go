@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/jfrog/build-info-go/build"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -10,7 +12,6 @@ import (
 	mvnutils "github.com/jfrog/jfrog-cli-core/v2/utils/mvn"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"path/filepath"
 )
 
 var extractorsRepositoryPath = filepath.Join("artifactory", "oss-release-local")
@@ -30,9 +31,9 @@ func (ed *extractorDetails) DownloadFromPath() string {
 	return filepath.Join(extractorsRepositoryPath, ed.remotePath, ed.fileName)
 }
 
-// DownloadExtractorsFromRemoteIfNeeded downloads build-info-extractors for air-gapped environments, if they're not exist on the remote repository yet.
-func DownloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, remoteName string) error {
-	log.Info("Downloading extractors if needed...")
+// downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors for air-gapped environments, if they're not exist on the remote repository yet.
+func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, remoteRepoName string, forceDownload bool) error {
+	log.Info("Downloading extractors if needed from", remoteRepoName)
 	mavenExtractorLocalPath, err := mvnutils.GetMavenDependencyLocalPath()
 	if err != nil {
 		return err
@@ -55,35 +56,35 @@ func DownloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, remoteNa
 			remotePath:    fmt.Sprintf(build.GradleExtractorRemotePath, build.GradleExtractorDependencyVersion),
 		},
 	}
-	return downloadExtractors(remoteName, server, extractors...)
+	return downloadExtractors(remoteRepoName, server, forceDownload, extractors...)
 }
 
-// TODO: check the already exists and error mechanism
-func downloadExtractors(remoteName string, server *config.ServerDetails, extractors ...extractorDetails) (err error) {
+func downloadExtractors(remoteRepoName string, server *config.ServerDetails, forceDownload bool, extractors ...extractorDetails) (err error) {
 	for _, extractor := range extractors {
-		var alreadyExist bool
-		if alreadyExist, err = fileutils.IsDirExists(extractor.localPath, false); alreadyExist {
-			log.Debug(extractor.extractorType, "extractor already exists, no download necessary")
-			continue
+		if !forceDownload {
+			var alreadyExist bool
+			if alreadyExist, err = fileutils.IsDirExists(extractor.localPath, false); alreadyExist {
+				log.Debug(extractor.extractorType, "extractor already exists, no download necessary")
+				continue
+			}
+			if err != nil {
+				return err
+			}
 		}
-		if err != nil {
-			return err
-		}
-		if err = setRemoteAndDownloadExtractor(server, remoteName, extractor); err != nil {
+		remoteServer := getRemoteServer(server, remoteRepoName)
+		if err = utils.DownloadExtractor(remoteServer, extractor.DownloadFromPath(), extractor.DownloadToPath()); err != nil {
 			return err
 		}
 	}
 	return
 }
 
-func setRemoteAndDownloadExtractor(server *config.ServerDetails, remoteName string, extractor extractorDetails) error {
+func getRemoteServer(server *config.ServerDetails, remoteName string) *config.ServerDetails {
 	remoteURL := server.ArtifactoryUrl + remoteName + "/"
-	remoteServer := &config.ServerDetails{
+	return &config.ServerDetails{
 		ArtifactoryUrl: remoteURL,
 		AccessToken:    server.AccessToken,
 		User:           server.User,
 		Password:       server.Password,
 	}
-
-	return utils.DownloadExtractor(remoteServer, extractor.DownloadFromPath(), extractor.DownloadToPath())
 }

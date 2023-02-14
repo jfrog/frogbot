@@ -4,7 +4,6 @@ FROGBOT_OS="na"
 FILE_NAME="na"
 VERSION="[RELEASE]"
 PLATFORM_URL="https://releases.jfrog.io"
-REMOTE_PATH=""
 
 setFrogbotVersion() {
   if [ $# -eq 1 ]

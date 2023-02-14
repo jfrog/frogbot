@@ -19,13 +19,6 @@ func Exec(command FrogbotCommand, name string) error {
 	if err != nil {
 		return err
 	}
-	var remoteName string
-	if err = utils.ReadParamFromEnv(utils.JFrogRemoteRepo, &remoteName); err == nil {
-		// Download extractors if remote repo environment variable is set
-		if err = utils.DownloadExtractorsFromRemoteIfNeeded(frogbotUtils.ServerDetails, remoteName); err != nil {
-			return err
-		}
-	}
 	// Send usage report
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
