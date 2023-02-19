@@ -293,8 +293,8 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219070240-3de544a6111b h1:fdHdvxtS1Y53jqFEN72khepSAViaJGdNdjzLecqEdro=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219070240-3de544a6111b/go.mod h1:3f1jFV/pwYTefbPDkwJX/Q1D7a10DW+CV8nbc3W0+LU=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219102335-7842d2c98ef2 h1:wH4875J7k6OCIcENCCUttlpgm7pV0BNO2FE/4KvB6LY=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219102335-7842d2c98ef2/go.mod h1:WLGGRncn7z6jhtLnpkwxoTuCPlUg7iRlKystf3gGSHg=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.1.2 h1:PMDK7tXShJ9zsB7bfvlpADH5NEw1dfA9xwU8Xtdj73U=
 github.com/owenrumney/go-sarif/v2 v2.1.2/go.mod h1:MSqMMx9WqlBSY7pXoOZWgEsVB4FDNfhcaXDA1j6Sr+w=
