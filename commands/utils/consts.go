@@ -5,6 +5,7 @@ type ImageSource string
 type vcsProvider string
 
 const (
+	FrogbotVersion  = "2.5.8"
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Errors

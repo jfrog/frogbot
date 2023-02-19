@@ -15,6 +15,7 @@ type FrogbotCommand interface {
 
 func Exec(command FrogbotCommand, name string) error {
 	// Get frogbotUtils the contains the config, server and VCS client
+	log.Info("Running with Frogbot version:", utils.FrogbotVersion)
 	frogbotUtils, err := utils.GetFrogbotUtils()
 	if err != nil {
 		return err
