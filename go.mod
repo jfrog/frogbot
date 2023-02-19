@@ -115,4 +115,4 @@ require (
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219153622-a6d5355093cc
 
-replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.8-0.20230219095709-fcfb59bf54d3
+replace github.com/jfrog/build-info-go => github.com/omerzi/build-info-go v1.3.1-0.20230220071736-5c70df3760b7

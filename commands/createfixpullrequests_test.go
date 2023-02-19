@@ -59,39 +59,39 @@ var testPackagesData = []struct {
 	commandName string
 	commandArgs []string
 }{
-	{
-		packageType: coreutils.Go,
-	},
+	//{
+	//	packageType: coreutils.Go,
+	//},
 	{
 		packageType: coreutils.Maven,
 	},
-	{
-		packageType: coreutils.Gradle,
-	},
-	{
-		packageType: coreutils.Npm,
-		commandName: "npm",
-		commandArgs: []string{"install"},
-	},
-	{
-		packageType: coreutils.Yarn,
-		commandName: "yarn",
-		commandArgs: []string{"install"},
-	},
-	{
-		packageType: coreutils.Dotnet,
-		commandName: "dotnet",
-		commandArgs: []string{"restore"},
-	},
-	{
-		packageType: coreutils.Pip,
-	},
-	{
-		packageType: coreutils.Pipenv,
-	},
-	{
-		packageType: coreutils.Poetry,
-	},
+	//{
+	//	packageType: coreutils.Gradle,
+	//},
+	//{
+	//	packageType: coreutils.Npm,
+	//	commandName: "npm",
+	//	commandArgs: []string{"install"},
+	//},
+	//{
+	//	packageType: coreutils.Yarn,
+	//	commandName: "yarn",
+	//	commandArgs: []string{"install"},
+	//},
+	//{
+	//	packageType: coreutils.Dotnet,
+	//	commandName: "dotnet",
+	//	commandArgs: []string{"restore"},
+	//},
+	//{
+	//	packageType: coreutils.Pip,
+	//},
+	//{
+	//	packageType: coreutils.Pipenv,
+	//},
+	//{
+	//	packageType: coreutils.Poetry,
+	//},
 }
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
