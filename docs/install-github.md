@@ -1,4 +1,4 @@
-[Go back to the main documentation page](../README.md)
+[Go back to the main documentation page](https://github.com/jfrog/frogbot)
 
 # Installing Frogbot on GitHub repositories
 
@@ -46,8 +46,7 @@
    2.3. Save your GitHub access token in a [GitHub Integration](https://www.jfrog.com/confluence/display/JFROG/GitHub+Enterprise+Integration) named
    **gitIntegration**.
 
-   2.4. Create a **pipelines.yml
-   ** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `jfrog-pipelines`.
+   2.4. Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `.jfrog-pipelines`.
 
    2.5. In the **pipelines.yml**, make sure to set values for all the mandatory variables.
 
