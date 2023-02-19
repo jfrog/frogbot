@@ -10,7 +10,7 @@ import (
 func setTestEnvironment(t *testing.T, project string) func() {
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	sourceDir := filepath.Join("..", "testdata", "projects", project)
+	sourceDir := filepath.Join("..", "testdata", "projects", "unbuilt"+project)
 	assert.NoError(t, fileutils.CopyDir(sourceDir, tmpDir, true, nil))
 	restoreDir, err := Chdir(tmpDir)
 	assert.NoError(t, err)
