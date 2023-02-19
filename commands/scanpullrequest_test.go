@@ -409,26 +409,35 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {
-	assert.NoError(t, runInstallIfNeeded(&utils.Project{}, "", true))
+	scanSetup := utils.ScanSetup{
+		Project:                  utils.Project{},
+		FailOnInstallationErrors: true,
+	}
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	params := &utils.Project{
 		InstallCommandName: "echo",
 		InstallCommandArgs: []string{"Hello"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, tmpDir, true))
+	scanSetup.Project = *params
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, tmpDir, false))
+	scanSetup.Project = *params
+	scanSetup.FailOnInstallationErrors = false
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	assert.Error(t, runInstallIfNeeded(params, tmpDir, true))
+	scanSetup.Project = *params
+	scanSetup.FailOnInstallationErrors = true
+	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
 }
 
 func TestScanPullRequest(t *testing.T) {
