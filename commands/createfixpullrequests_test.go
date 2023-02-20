@@ -114,6 +114,10 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 }
 
 func TestMavenFixVersion(t *testing.T) {
+	err := os.Setenv("JFORG_CLI_LOG_LEVEL", "DEBUG")
+	if err != nil {
+		return
+	}
 	currentDir, testdataDir := getTestDataDir(t)
 	test := packageFixTests[0]
 	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
