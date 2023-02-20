@@ -244,7 +244,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}()
 			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
 			if pkg.packageType == coreutils.Gradle {
-				assert.NoError(t, os.Chmod("gradlew", 0777))
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
 			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
