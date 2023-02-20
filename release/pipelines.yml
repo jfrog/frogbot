@@ -46,8 +46,11 @@ pipelines:
             - test -n "$NEXT_VERSION" -a "$NEXT_VERSION" != "0.0.0"
 
             # Update Frogbot version constant
+            - git checkout dev
             - export VERSION_FILE_PATH=commands/utils/consts.go
             - sed -i '' "s/FrogbotVersion = .*/FrogbotVersion = $NEW_VERSION/" $VERSION_FILE_PATH
+            - git add .
+            - git commit -m "Promote Frogbot version"
 
             # Configure Git and merge from the dev
             - git checkout master
