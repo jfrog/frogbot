@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -82,6 +83,11 @@ type Git struct {
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
+	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("Build-info-extractor exists:", exists)
 	// Get server and git details
 	server, gitParams, err := extractEnvParams()
 	if err != nil {
@@ -95,6 +101,11 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 			err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
 		}
 	}()
+	exists, err = fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("Build-info-extractor exists:", exists)
 
 	// Build Version control client for REST API requests
 	client, err := vcsclient.
@@ -110,6 +121,11 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 	}
 
 	configAggregator, err := getConfigAggregator(client, server, gitParams)
+	exists, err = fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	if err != nil {
+		return nil, err
+	}
+	log.Info("Build-info-extractor exists:", exists)
 	return &FrogbotUtils{ConfigAggregator: configAggregator, Client: client, ServerDetails: server}, err
 }
 
