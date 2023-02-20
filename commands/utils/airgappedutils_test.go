@@ -35,7 +35,7 @@ func TestResolveDependencies(t *testing.T) {
 			scanSetup: &ScanSetup{
 				ServerDetails: &params,
 				Project: Project{
-					DepsResolutionRepo: "npm-virtual",
+					DepsResolutionRepo: "frogbot-npm-remote-tests",
 					InstallCommandName: "npm",
 					InstallCommandArgs: []string{"install"},
 				}},
@@ -47,7 +47,7 @@ func TestResolveDependencies(t *testing.T) {
 			scanSetup: &ScanSetup{
 				ServerDetails: &params,
 				Project: Project{
-					DepsResolutionRepo: "frogbot-yarn-remote-tests",
+					DepsResolutionRepo: "frogbot-npm-remote-tests",
 					InstallCommandName: "yarn",
 					InstallCommandArgs: []string{"install"},
 				}},
