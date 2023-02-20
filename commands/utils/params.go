@@ -210,7 +210,7 @@ func verifyFrogbotRepo(serverDetails *coreconfig.ServerDetails) error {
 		return nil
 	}
 	// Download extractors if remote repo environment variable is set
-	return downloadExtractorsFromRemoteIfNeeded(serverDetails, frogbotRepo, false)
+	return downloadExtractorsFromRemoteIfNeeded(serverDetails, frogbotRepo, "")
 }
 
 func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {

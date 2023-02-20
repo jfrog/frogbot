@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -21,17 +20,14 @@ func TestDownloadExtractorsFromRemoteIfNeeded(t *testing.T) {
 	assert.NoError(t, err)
 	restoreDir, err := Chdir(tmpDir)
 	assert.NoError(t, err)
-	extractorsDir := os.Getenv("JFROG_CLI_DEPENDENCIES_DIR")
-	// JFROG_CLI_DEPENDENCIES_DIR is set to avoid downloading empty extractor to the default extractor dir as this test does.
-	assert.NoError(t, os.Setenv("JFROG_CLI_DEPENDENCIES_DIR", tmpDir))
 	defer func() {
-		assert.NoError(t, os.Setenv("JFROG_CLI_DEPENDENCIES_DIR", extractorsDir))
 		assert.NoError(t, restoreDir())
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}()
 	testServer := httptest.NewServer(createRemoteArtifactoryHandler())
 	defer testServer.Close()
 	serverDetails.ArtifactoryUrl = testServer.URL + "/artifactory/"
-	assert.NoError(t, downloadExtractorsFromRemoteIfNeeded(serverDetails, remoteRepo, true))
+	assert.NoError(t, downloadExtractorsFromRemoteIfNeeded(serverDetails, remoteRepo, tmpDir))
 }
 
 // Create HTTP handler to mock remote artifactory server
