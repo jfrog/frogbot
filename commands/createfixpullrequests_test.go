@@ -113,6 +113,31 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
+func TestMavenFixVersion(t *testing.T) {
+	currentDir, testdataDir := getTestDataDir(t)
+	test := packageFixTests[0]
+	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	assert.NoError(t, err)
+	log.Logger.Info("tech:", test.technology, "Build-info-extractor exists:", exists)
+	projectPath := filepath.Join(testdataDir, test.technology.ToString())
+	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+	defer cleanup()
+	assert.NoError(t, os.Chdir(tmpProjectPath))
+
+	t.Run(test.technology.ToString(), func(t *testing.T) {
+		cfg := test.fixPackageVersionCmd(test)
+		// Fix impacted package for each technology
+		assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
+		file, err := os.ReadFile(test.packageDescriptor)
+		assert.NoError(t, err)
+		assert.Contains(t, string(file), test.fixVersion)
+	})
+	exists, err = fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	assert.NoError(t, err)
+	log.Logger.Info("tech:", test.technology, "Build-info-extractor exists:", exists)
+	assert.NoError(t, os.Chdir(currentDir))
+}
+
 func TestFixPackageVersion(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	for _, test := range packageFixTests {
