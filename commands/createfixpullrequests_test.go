@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -113,6 +114,9 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 }
 
 func TestFixPackageVersion(t *testing.T) {
+	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	assert.NoError(t, err)
+	log.Logger.Info("Build-info-extractor exists:", exists)
 	currentDir, testdataDir := getTestDataDir(t)
 	for _, test := range packageFixTests {
 		// Create temp technology project
@@ -149,6 +153,9 @@ func getTestDataDir(t *testing.T) (string, string) {
 // /      (1.0, 2.0)   --> 1.0 < x < 2.0
 // /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
+	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	assert.NoError(t, err)
+	log.Logger.Info("Build-info-extractor exists:", exists)
 	tests := []struct {
 		versionChangeString string
 		expectedVersion     string
@@ -200,6 +207,9 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
+	exists, err := fileutils.IsFileExists("/home/runner/.jfrog/dependencies/maven/2.39.3/build-info-extractor-maven3-2.39.3-uber.jar", false)
+	assert.NoError(t, err)
+	log.Logger.Info("Build-info-extractor exists:", exists)
 	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
