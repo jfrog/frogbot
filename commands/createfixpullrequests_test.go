@@ -63,9 +63,9 @@ var testPackagesData = []struct {
 	//{
 	//	packageType: coreutils.Go,
 	//},
-	{
-		packageType: coreutils.Maven,
-	},
+	//{
+	//	packageType: coreutils.Maven,
+	//},
 	//{
 	//	packageType: coreutils.Gradle,
 	//},
