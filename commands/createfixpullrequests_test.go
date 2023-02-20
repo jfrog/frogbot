@@ -112,29 +112,6 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
-func TestMavenFixVersion(t *testing.T) {
-	err := os.Setenv("JFORG_CLI_LOG_LEVEL", "DEBUG")
-	if err != nil {
-		return
-	}
-	currentDir, testdataDir := getTestDataDir(t)
-	test := packageFixTests[0]
-	projectPath := filepath.Join(testdataDir, test.technology.ToString())
-	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
-	defer cleanup()
-	assert.NoError(t, os.Chdir(tmpProjectPath))
-
-	t.Run(test.technology.ToString(), func(t *testing.T) {
-		cfg := test.fixPackageVersionCmd(test)
-		// Fix impacted package for each technology
-		assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
-		file, err := os.ReadFile(test.packageDescriptor)
-		assert.NoError(t, err)
-		assert.Contains(t, string(file), test.fixVersion)
-	})
-	assert.NoError(t, os.Chdir(currentDir))
-}
-
 func TestFixPackageVersion(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	for _, test := range packageFixTests {
@@ -244,7 +221,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}()
 			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
 			if pkg.packageType == coreutils.Gradle {
-				assert.NoError(t, os.Chmod("gradlew", 0777))
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
 			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
