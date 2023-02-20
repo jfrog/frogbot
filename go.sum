@@ -223,6 +223,8 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i
 github.com/jedib0t/go-pretty/v6 v6.4.3 h1:2n9BZ0YQiXGESUSR+6FLg0WWWE80u+mIz35f0uHWcIE=
 github.com/jedib0t/go-pretty/v6 v6.4.3/go.mod h1:MgmISkTWDSFu0xOqiZ0mKNntMQ2mDgOcwOkwBEkMDJI=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
+github.com/jfrog/build-info-go v1.8.7 h1:a9aGDs5ROWcTbWP6xjmutf+yporTpEPG7lVlRnQa714=
+github.com/jfrog/build-info-go v1.8.7/go.mod h1:iSTj26qEX3eUtyAGMH0qKsW4WJT+MceYxLWP9FfiAq4=
 github.com/jfrog/froggit-go v1.5.5 h1:fRjYd7SKTKZV+lnSAEFZSfltWkQKNDxScOT/iCC2KYA=
 github.com/jfrog/froggit-go v1.5.5/go.mod h1:KOJN88vwiYz+5kYufC1idMaa2G48XoRMas6l6G7sQfE=
 github.com/jfrog/gofrog v1.2.5 h1:jCgJC0iGQ8bU7jCC+YEFJTNINyngApIrhd8BjZAVRIE=
@@ -291,8 +293,6 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/build-info-go v1.3.1-0.20230220072914-65bb7f8b93b0 h1:7nbe7NnMHZnJ16ROws8IWl7iRv4PLyVbwRiFxli8vgY=
-github.com/omerzi/build-info-go v1.3.1-0.20230220072914-65bb7f8b93b0/go.mod h1:iSTj26qEX3eUtyAGMH0qKsW4WJT+MceYxLWP9FfiAq4=
 github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219153622-a6d5355093cc h1:pR9n2ymD8/OjOko9z0jF5w5qaHSlUgqjO1Us+HInDXE=
 github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230219153622-a6d5355093cc/go.mod h1:WLGGRncn7z6jhtLnpkwxoTuCPlUg7iRlKystf3gGSHg=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=

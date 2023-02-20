@@ -227,7 +227,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
 	params := utils.Params{
-		Scan: utils.Scan{Projects: []utils.Project{{}}},
+		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: true}}},
 	}
 	var frogbotParams = utils.FrogbotRepoConfig{
 		Server: environmentVars,
