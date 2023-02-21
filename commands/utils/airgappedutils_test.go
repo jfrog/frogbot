@@ -131,7 +131,7 @@ func TestResolveDependencies(t *testing.T) {
 			test.scanSetup.Project.DepsResolutionRepo = repoKey
 			output, err := test.resolveFunc(test.scanSetup)
 			assert.NoError(t, err)
-			log.Info(output)
+			log.Info(string(output))
 		})
 	}
 }
