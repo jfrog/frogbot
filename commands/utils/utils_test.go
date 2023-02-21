@@ -141,10 +141,10 @@ func TestGetRelativeWd(t *testing.T) {
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
 func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
-	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
+	url := strings.TrimSuffix(os.Getenv("PLATFORM_URL"), "/")
 	username := os.Getenv(JFrogUserEnv)
 	password := os.Getenv(JFrogPasswordEnv)
-	token := os.Getenv(JFrogTokenEnv)
+	token := os.Getenv("PLATFORM_ADMIN_TOKEN")
 	if url == "" {
 		assert.FailNow(t, fmt.Sprintf("'%s' is not set", JFrogUrlEnv))
 	}
