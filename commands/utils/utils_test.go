@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -142,6 +143,7 @@ func TestGetRelativeWd(t *testing.T) {
 // Return a callback method that restores the credentials after the test is done.
 func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	url := strings.TrimSuffix(os.Getenv("PLATFORM_URL"), "/")
+	log.Info("url:", os.Getenv("PLATFORM_URL"))
 	username := os.Getenv(JFrogUserEnv)
 	password := os.Getenv(JFrogPasswordEnv)
 	token := os.Getenv("PLATFORM_ADMIN_TOKEN")
