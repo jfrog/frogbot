@@ -1,23 +1,80 @@
 package utils
 
 import (
+	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-client-go/artifactory/services"
+	"github.com/jfrog/jfrog-client-go/auth"
+	"github.com/jfrog/jfrog-client-go/http/jfroghttpclient"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
-func setTestEnvironment(t *testing.T, project string) func() {
+var timestamp = time.Now().Unix()
+
+func setTestEnvironment(t *testing.T, project string, server *config.ServerDetails) (func(), string) {
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	sourceDir := filepath.Join("..", "testdata", "projects", project)
 	assert.NoError(t, fileutils.CopyDir(sourceDir, tmpDir, true, nil))
 	restoreDir, err := Chdir(tmpDir)
 	assert.NoError(t, err)
+	deleteRemoteRepoFunc, repoKey := createRemoteRepo(t, project, server)
 	return func() {
+		deleteRemoteRepoFunc()
 		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}, repoKey
+}
+
+func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
+	repoParams := services.NewNpmRemoteRepositoryParams()
+	timestamp++
+	repoParams.Key = fmt.Sprintf("frogbot-npm-remote-repo-%d", timestamp)
+	repoParams.Url = "https://registry.npmjs.org"
+	assert.NoError(t, remoteRepoService.Npm(repoParams))
+	return repoParams.Key
+}
+
+func createNugetRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
+	repoParams := services.NewNugetRemoteRepositoryParams()
+	timestamp++
+	repoParams.Key = fmt.Sprintf("frogbot-nuget-remote-repo-%d", timestamp)
+	repoParams.Url = "https://www.nuget.org/"
+	assert.NoError(t, remoteRepoService.Nuget(repoParams))
+	return repoParams.Key
+}
+
+func createRemoteRepo(t *testing.T, project string, server *config.ServerDetails) (func(), string) {
+	rtDetails, err := server.CreateArtAuthConfig()
+	assert.NoError(t, err)
+	jfrogClient, err := createJfrogHttpClient(&rtDetails)
+	createRemoteRepoServices := services.NewRemoteRepositoryService(jfrogClient, false)
+	createRemoteRepoServices.ArtDetails = rtDetails
+	var repoKey string
+	switch project {
+	case "npm", "yarn":
+		repoKey = createNpmRemoteRepo(t, createRemoteRepoServices)
+	case "dotnet":
+		repoKey = createNugetRemoteRepo(t, createRemoteRepoServices)
 	}
+
+	deleteRemoteRepoServices := services.NewDeleteRepositoryService(jfrogClient)
+	deleteRemoteRepoServices.ArtDetails = rtDetails
+	return func() {
+		assert.NoError(t, deleteRemoteRepoServices.Delete(repoKey))
+	}, repoKey
+}
+
+func createJfrogHttpClient(artDetails *auth.ServiceDetails) (*jfroghttpclient.JfrogHttpClient, error) {
+	return jfroghttpclient.JfrogClientBuilder().
+		SetClientCertPath((*artDetails).GetClientCertPath()).
+		SetClientCertKeyPath((*artDetails).GetClientCertKeyPath()).
+		Build()
 }
 
 func TestResolveDependencies(t *testing.T) {
@@ -27,6 +84,7 @@ func TestResolveDependencies(t *testing.T) {
 		name        string
 		tech        string
 		scanSetup   *ScanSetup
+		repoKey     string
 		resolveFunc func(scanSetup *ScanSetup) ([]byte, error)
 	}{
 		{
@@ -35,7 +93,6 @@ func TestResolveDependencies(t *testing.T) {
 			scanSetup: &ScanSetup{
 				ServerDetails: &params,
 				Project: Project{
-					DepsResolutionRepo: "frogbot-npm-remote-tests",
 					InstallCommandName: "npm",
 					InstallCommandArgs: []string{"install"},
 				}},
@@ -47,7 +104,6 @@ func TestResolveDependencies(t *testing.T) {
 			scanSetup: &ScanSetup{
 				ServerDetails: &params,
 				Project: Project{
-					DepsResolutionRepo: "frogbot-npm-remote-tests",
 					InstallCommandName: "yarn",
 					InstallCommandArgs: []string{"install"},
 				}},
@@ -69,10 +125,12 @@ func TestResolveDependencies(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			restoreFunc := setTestEnvironment(t, test.tech)
+			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
-			_, err := test.resolveFunc(test.scanSetup)
+			test.scanSetup.Project.DepsResolutionRepo = repoKey
+			output, err := test.resolveFunc(test.scanSetup)
 			assert.NoError(t, err)
+			log.Info(output)
 		})
 	}
 }
