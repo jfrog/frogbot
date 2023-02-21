@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
@@ -71,8 +72,9 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			restoreFunc := setTestEnvironment(t, test.tech)
 			defer restoreFunc()
-			_, err := test.resolveFunc(test.scanSetup)
+			output, err := test.resolveFunc(test.scanSetup)
 			assert.NoError(t, err)
+			log.Info(output)
 		})
 	}
 }
