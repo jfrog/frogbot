@@ -303,7 +303,7 @@ func runInstallIfNeeded(scanSetup *utils.ScanSetup, workDir string) (err error) 
 		output, err = exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
 	}
 	if err != nil && !scanSetup.FailOnInstallationErrors {
-		log.Info(installationCmdFailedErr, err.Error(), "\n", output)
+		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}
