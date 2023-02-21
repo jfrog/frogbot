@@ -53,6 +53,7 @@ func createRemoteRepo(t *testing.T, project string, server *config.ServerDetails
 	rtDetails, err := server.CreateArtAuthConfig()
 	assert.NoError(t, err)
 	jfrogClient, err := createJfrogHttpClient(&rtDetails)
+	assert.NoError(t, err)
 	createRemoteRepoServices := services.NewRemoteRepositoryService(jfrogClient, false)
 	createRemoteRepoServices.ArtDetails = rtDetails
 	var repoKey string
