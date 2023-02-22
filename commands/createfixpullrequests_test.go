@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -225,6 +226,11 @@ func TestPackageTypeFromScan(t *testing.T) {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
 			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
+			files, err := fileutils.ListFiles(tmpDir, true)
+			assert.NoError(t, err)
+			for _, file := range files {
+				log.Info(file)
+			}
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanSetup{
