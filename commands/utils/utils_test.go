@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -142,15 +141,13 @@ func TestGetRelativeWd(t *testing.T) {
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
 func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
-	url := strings.TrimSuffix(os.Getenv("PLATFORM_URL"), "/")
-	token := os.Getenv("PLATFORM_ADMIN_TOKEN")
-	log.Info("url:", os.Getenv("PLATFORM_URL"))
-	log.Info("Access token exists:", token != "")
+	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
+	token := os.Getenv(JFrogTokenEnv)
 	if url == "" {
-		assert.FailNow(t, "PLATFORM_URL is not set")
+		assert.FailNow(t, "JF_URL is not set")
 	}
 	if token == "" {
-		assert.FailNow(t, "access token is not set")
+		assert.FailNow(t, "JF_ACCESS_TOKEN is not set")
 	}
 	server.Url = url
 	server.XrayUrl = url + "/xray/"
@@ -158,8 +155,8 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	server.AccessToken = token
 	restoreFunc = func() {
 		SetEnvAndAssert(t, map[string]string{
-			"PLATFORM_URL":         url,
-			"PLATFORM_ADMIN_TOKEN": token,
+			JFrogUrlEnv:   url,
+			JFrogTokenEnv: token,
 		})
 	}
 	return
