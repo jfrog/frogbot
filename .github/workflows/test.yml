@@ -34,13 +34,9 @@ jobs:
         with:
           node-version: "16"
 
-      - name: Install Yarn in Yarn test directory
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-          cache: 'yarn'
-        run: yarn set version berry
+      - name: Install Yarn in testdata directory
         working-directory: commands/testdata/projects/yarn
+        run: yarn set version berry
 
       - name: Go Cache
         uses: actions/cache@v3
