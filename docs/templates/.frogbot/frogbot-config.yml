@@ -23,7 +23,7 @@
       # Frogbot does not fail the task if security issues are found and this parameter is set to false
       # failOnSecurityIssues: false
 
-      # List of sub-projects / project dirs inside the Git repository
+      # List of subprojects / project dirs inside the Git repository
       projects:
       # [Mandatory for projects which use npm, yarn 2, nuget and dotnet to download their dependencies]
       # Installation command (e.g. npm i, nuget restore)
@@ -41,6 +41,10 @@
       # [Optional, Default: true]
       # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
       #   useWrapper: true
+
+      # [Optional]
+      # Name of the Artifactory Virtual Repository to resolve dependencies from
+      #   depsResolutionRepo: ""
 
     # JFrog Platform parameters
     jfrogPlatform:
