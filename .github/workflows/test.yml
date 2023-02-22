@@ -33,10 +33,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16"
+          cache: 'yarn'
 
       - name: Install Yarn in testdata directory
         working-directory: commands/testdata/projects/yarn
-        run: yarn install --immutable --immutable-cache
+        run: |
+          yarn set version berry
+          yarn install --immutable --immutable-cache
 
       - name: Go Cache
         uses: actions/cache@v3
