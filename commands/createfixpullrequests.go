@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -26,6 +27,8 @@ var pythonPackageRegexPrefix = "(?i)"
 
 // Match all possible operators and versions syntax
 var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
+
+const versions_separator = "."
 
 type CreateFixPullRequestsCmd struct {
 	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
@@ -307,42 +310,51 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 	}
 
 	switch packageType {
-	case coreutils.Go:
-		commandArgs := []string{"get"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@v")
-	case coreutils.Npm:
-		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Maven:
 		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
-	case coreutils.Yarn:
-		commandArgs := []string{"up"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Pip:
 		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
-	case coreutils.Pipenv:
-		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "==")
 	case coreutils.Poetry:
 		err = fixPackageVersionPoetry(impactedPackage, fixVersion)
 	default:
-		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
+		err = fixPackageVersionGeneric(packageType, impactedPackage, fixVersion)
+		if err != nil {
+			return fmt.Errorf("package type: %s is currently not supported", string(packageType))
+		}
 	}
-
 	return
 }
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
 // In other cases, we had to handle the upgrade process
-// commandName - Name of the package manager
-// commandArgs - Package manager upgrade command
+// technology - Name of the package manager
 // impactedPackage - Vulnerable package to upgrade
 // fixVersion - The version that fixes the vulnerable package
-// operator - The operator between the impactedPackage to the fixVersion
-func fixPackageVersionGeneric(commandName string, commandArgs []string, impactedPackage, fixVersion, operator string) error {
-	fixedPackage := impactedPackage + operator + fixVersion
+func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, fixVersion string) error {
+
+	impactedPackageFormatted := formatImpactedPackage(technology, impactedPackage, fixVersion)
+	commandArgs := []string{technology.GetPackageInstallOperator()}
+	operator := technology.GetPackageOperator()
+	fixedPackage := impactedPackageFormatted + operator + fixVersion
+
 	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(commandName, commandArgs)
+
+	return runPackageMangerCommand(technology.GetExecCommandName(), commandArgs)
+}
+
+// Edge case in GO that needs adding /v{majorVersion} to the package name
+func formatImpactedPackage(technology coreutils.Technology, impactedPackage, fixVersion string) string {
+	if technology == coreutils.Go {
+		majorVersion, err := strconv.Atoi(strings.Split(fixVersion, versions_separator)[0])
+		if err != nil {
+			log.Error("Failed to parse major version of fix version!")
+		}
+		if majorVersion > 1 {
+			return fmt.Sprintf("%s/v%d", impactedPackage, majorVersion)
+		}
+		return impactedPackage
+	}
+	return impactedPackage
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {
@@ -416,7 +428,7 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 
 func fixPackageVersionPoetry(impactedPackage, fixVersion string) error {
 	// Install the desired fixed version
-	err := fixPackageVersionGeneric(coreutils.Poetry.GetExecCommandName(), []string{"add"}, impactedPackage, fixVersion, "==")
+	err := fixPackageVersionGeneric(coreutils.Poetry, impactedPackage, fixVersion)
 	if err != nil {
 		return err
 	}
