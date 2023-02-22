@@ -36,7 +36,7 @@ jobs:
 
       - name: Install Yarn in testdata directory
         working-directory: commands/testdata/projects/yarn
-        run: yarn set version berry
+        run: yarn install --immutable --immutable-cache
 
       - name: Go Cache
         uses: actions/cache@v3
