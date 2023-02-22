@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -34,7 +35,7 @@ func setTestEnvironment(t *testing.T, project string, server *config.ServerDetai
 func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
 	repoParams := services.NewNpmRemoteRepositoryParams()
 	timestamp++
-	repoParams.Key = fmt.Sprintf("frogbot-npm-remote-repo-%d", timestamp)
+	repoParams.Key = fmt.Sprintf("frogbot-npm-remote-repo-%d-%s", timestamp, runtime.GOOS)
 	repoParams.Url = "https://registry.npmjs.org"
 	assert.NoError(t, remoteRepoService.Npm(repoParams))
 	return repoParams.Key
@@ -43,7 +44,7 @@ func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteReposit
 func createNugetRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
 	repoParams := services.NewNugetRemoteRepositoryParams()
 	timestamp++
-	repoParams.Key = fmt.Sprintf("frogbot-nuget-remote-repo-%d", timestamp)
+	repoParams.Key = fmt.Sprintf("frogbot-nuget-remote-repo-%d-%s", timestamp, runtime.GOOS)
 	repoParams.Url = "https://www.nuget.org/"
 	assert.NoError(t, remoteRepoService.Nuget(repoParams))
 	return repoParams.Key

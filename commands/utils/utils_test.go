@@ -143,28 +143,23 @@ func TestGetRelativeWd(t *testing.T) {
 // Return a callback method that restores the credentials after the test is done.
 func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	url := strings.TrimSuffix(os.Getenv("PLATFORM_URL"), "/")
-	log.Info("url:", os.Getenv("PLATFORM_URL"))
-	username := os.Getenv(JFrogUserEnv)
-	password := os.Getenv(JFrogPasswordEnv)
 	token := os.Getenv("PLATFORM_ADMIN_TOKEN")
+	log.Info("url:", os.Getenv("PLATFORM_URL"))
+	log.Info("Access token exists:", token != "")
 	if url == "" {
-		assert.FailNow(t, fmt.Sprintf("'%s' is not set", JFrogUrlEnv))
+		assert.FailNow(t, "PLATFORM_URL is not set")
 	}
-	if token == "" && (username == "" || password == "") {
-		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", JFrogTokenEnv, JFrogUserEnv, JFrogPasswordEnv))
+	if token == "" {
+		assert.FailNow(t, "access token is not set")
 	}
 	server.Url = url
 	server.XrayUrl = url + "/xray/"
 	server.ArtifactoryUrl = url + "/artifactory/"
-	server.User = username
-	server.Password = password
 	server.AccessToken = token
 	restoreFunc = func() {
 		SetEnvAndAssert(t, map[string]string{
-			"PLATFORM_URL":   url,
-			JFrogTokenEnv:    token,
-			JFrogUserEnv:     username,
-			JFrogPasswordEnv: password,
+			"PLATFORM_URL":         url,
+			"PLATFORM_ADMIN_TOKEN": token,
 		})
 	}
 	return
