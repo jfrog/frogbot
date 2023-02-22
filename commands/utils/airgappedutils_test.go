@@ -44,8 +44,13 @@ func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteReposit
 func createNugetRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
 	repoParams := services.NewNugetRemoteRepositoryParams()
 	timestamp++
+	trueValue := true
 	repoParams.Key = fmt.Sprintf("frogbot-nuget-remote-repo-%d-%s", timestamp, runtime.GOOS)
 	repoParams.Url = "https://www.nuget.org/"
+	repoParams.FeedContextPath = "api/v1"
+	repoParams.DownloadContextPath = "api/v1/package"
+	repoParams.V3FeedUrl = "https://api.nuget.org/v3/index.json"
+	repoParams.ForceNugetAuthentication = &trueValue
 	assert.NoError(t, remoteRepoService.Nuget(repoParams))
 	return repoParams.Key
 }
