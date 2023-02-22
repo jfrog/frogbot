@@ -38,7 +38,7 @@ jobs:
         working-directory: commands/testdata/projects/yarn
         run: |
           yarn set version berry
-          yarn install --immutable --immutable-cache
+          yarn install
 
       - name: Go Cache
         uses: actions/cache@v3
