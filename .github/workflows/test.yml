@@ -72,7 +72,6 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-
       # Generate code coverage
       - name: Send coverage
         run: |
