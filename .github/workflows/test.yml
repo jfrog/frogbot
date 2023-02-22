@@ -101,6 +101,4 @@ jobs:
           JF_GIT_PROVIDER: "github"
           JF_GIT_OWNER: ${{ github.repository_owner }}
           JF_GIT_REPO: ${{ github.event.repository.name }}
-          PLATFORM_URL: ${{ secrets.PLATFORM_URL }}
-          PLATFORM_ADMIN_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
         run: ./frogbot scan-pull-request
