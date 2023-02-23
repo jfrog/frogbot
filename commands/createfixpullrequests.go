@@ -28,7 +28,7 @@ var pythonPackageRegexPrefix = "(?i)"
 // Match all possible operators and versions syntax
 var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
-const versions_separator = "."
+var semanticVersioningSeparator = "."
 
 type CreateFixPullRequestsCmd struct {
 	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
@@ -350,7 +350,7 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // Module paths in GO must have a major version suffix like /v2 that matches the major version.
 // For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
 func formatMajorVersionSuffix(impactedPackage, fixVersion string) (string, error) {
-	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, versions_separator)[0])
+	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
 	if err != nil {
 		return "", err
 	}
