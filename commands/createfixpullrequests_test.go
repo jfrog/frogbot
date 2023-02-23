@@ -27,6 +27,7 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
 	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Go, impactedPackaged: "github.com/go-git/go-git", fixVersion: "5.5.2", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
