@@ -319,7 +319,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 	default:
 		err = fixPackageVersionGeneric(packageType, impactedPackage, fixVersion)
 		if err != nil {
-			return fmt.Errorf("package type: %s is currently not supported", string(packageType))
+			return err
 		}
 	}
 	return
@@ -332,29 +332,32 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 // fixVersion - The version that fixes the vulnerable package
 func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, fixVersion string) error {
 
-	impactedPackageFormatted := formatImpactedPackage(technology, impactedPackage, fixVersion)
+	if technology == coreutils.Go {
+		impactedPackageFormatted, err := formatMajorVersionSuffix(impactedPackage, fixVersion)
+		if err != nil {
+			return err
+		}
+		impactedPackage = impactedPackageFormatted
+	}
 	commandArgs := []string{technology.GetPackageInstallOperator()}
 	operator := technology.GetPackageOperator()
-	fixedPackage := impactedPackageFormatted + operator + fixVersion
+	fixedPackage := impactedPackage + operator + fixVersion
 
 	commandArgs = append(commandArgs, fixedPackage)
-
 	return runPackageMangerCommand(technology.GetExecCommandName(), commandArgs)
 }
 
-// Edge case in GO that needs adding /v{majorVersion} to the package name
-func formatImpactedPackage(technology coreutils.Technology, impactedPackage, fixVersion string) string {
-	if technology == coreutils.Go {
-		majorVersion, err := strconv.Atoi(strings.Split(fixVersion, versions_separator)[0])
-		if err != nil {
-			log.Error("Failed to parse major version of fix version!")
-		}
-		if majorVersion > 1 {
-			return fmt.Sprintf("%s/v%d", impactedPackage, majorVersion)
-		}
-		return impactedPackage
+// Module paths in GO must have a major version suffix like /v2 that matches the major version.
+// For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
+func formatMajorVersionSuffix(impactedPackage, fixVersion string) (string, error) {
+	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, versions_separator)[0])
+	if err != nil {
+		return "", err
 	}
-	return impactedPackage
+	if majorVersion > 1 {
+		return fmt.Sprintf("%s/v%d", impactedPackage, majorVersion), nil
+	}
+	return impactedPackage, nil
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {
