@@ -62,9 +62,8 @@ jobs:
       - name: Tests
         run: go test ./... -v -race -timeout 0 -cover -coverprofile=covprofile -covermode=atomic
         env:
-          JF_URL: ${{ secrets.FROGBOT_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
-
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
       # Generate code coverage
       - name: Send coverage
         run: |
