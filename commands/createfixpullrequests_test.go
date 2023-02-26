@@ -27,7 +27,6 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
 	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Go, impactedPackaged: "github.com/go-git/go-git", fixVersion: "5.5.2", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
@@ -207,5 +206,42 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 		for _, vulnerability := range resp.Vulnerabilities {
 			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)
 		}
+	}
+}
+
+func TestFormatGoVersion(t *testing.T) {
+	formatGoCases := []struct {
+		description     string
+		impactedPackage string
+		fixVersion      string
+		expected        string
+	}{
+		{
+			impactedPackage: "github.com/go-git/go-git",
+			fixVersion:      "5.5.2",
+			expected:        "github.com/go-git/go-git/v5",
+			description:     "Validate adding /v5 to impacted package name",
+		},
+		{
+			impactedPackage: "github.com/go-git/go-git",
+			fixVersion:      "4.1.1",
+			expected:        "github.com/go-git/go-git/v4",
+			description:     "Validate adding /v4 to impacted package name",
+		},
+		{
+			impactedPackage: "github.com/go-git/go-git",
+			fixVersion:      "1.0.0",
+			expected:        "github.com/go-git/go-git",
+			description:     "Validate no string has been added",
+		},
+	}
+
+	for _, tt := range formatGoCases {
+		t.Run(tt.description, func(t *testing.T) {
+			result, _ := formatGoVersion(tt.impactedPackage, tt.fixVersion)
+			if result != tt.expected {
+				t.Errorf("expected %s, but got %s", tt.expected, result)
+			}
+		})
 	}
 }

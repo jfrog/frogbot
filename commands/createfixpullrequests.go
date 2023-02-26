@@ -318,9 +318,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 		err = fixPackageVersionPoetry(impactedPackage, fixVersion)
 	default:
 		err = fixPackageVersionGeneric(packageType, impactedPackage, fixVersion)
-		if err != nil {
-			return err
-		}
 	}
 	return
 }
@@ -331,9 +328,8 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 // impactedPackage - Vulnerable package to upgrade
 // fixVersion - The version that fixes the vulnerable package
 func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, fixVersion string) error {
-
 	if technology == coreutils.Go {
-		impactedPackageFormatted, err := formatMajorVersionSuffix(impactedPackage, fixVersion)
+		impactedPackageFormatted, err := formatGoVersion(impactedPackage, fixVersion)
 		if err != nil {
 			return err
 		}
@@ -349,7 +345,7 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 
 // Module paths in GO must have a major version suffix like /v2 that matches the major version.
 // For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
-func formatMajorVersionSuffix(impactedPackage, fixVersion string) (string, error) {
+func formatGoVersion(impactedPackage, fixVersion string) (string, error) {
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
 	if err != nil {
 		return "", err
