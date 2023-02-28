@@ -316,6 +316,8 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
 	case coreutils.Poetry:
 		err = fixPackageVersionPoetry(impactedPackage, fixVersion)
+	case coreutils.Go:
+		err = fixPackageVersionGo(impactedPackage, fixVersion)
 	default:
 		err = fixPackageVersionGeneric(packageType, impactedPackage, fixVersion)
 	}
@@ -328,13 +330,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 // impactedPackage - Vulnerable package to upgrade
 // fixVersion - The version that fixes the vulnerable package
 func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, fixVersion string) error {
-	if technology == coreutils.Go {
-		impactedPackageFormatted, err := formatGoVersion(impactedPackage, fixVersion)
-		if err != nil {
-			return err
-		}
-		impactedPackage = impactedPackageFormatted
-	}
 	commandArgs := []string{technology.GetPackageInstallOperator()}
 	operator := technology.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixVersion
@@ -477,4 +472,12 @@ func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
 	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
+}
+
+func fixPackageVersionGo(impactedPackage, fixVersion string) error {
+	impactedPackage, err := formatGoVersion(impactedPackage, fixVersion)
+	if err != nil {
+		return err
+	}
+	return fixPackageVersionGeneric(coreutils.Go, impactedPackage, fixVersion)
 }
