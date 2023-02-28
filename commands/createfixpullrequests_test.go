@@ -238,10 +238,9 @@ func TestFormatGoVersion(t *testing.T) {
 
 	for _, tt := range formatGoCases {
 		t.Run(tt.description, func(t *testing.T) {
-			result, _ := formatGoVersion(tt.impactedPackage, tt.fixVersion)
-			if result != tt.expected {
-				t.Errorf("expected %s, but got %s", tt.expected, result)
-			}
+			result, err := formatGoVersion(tt.impactedPackage, tt.fixVersion)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

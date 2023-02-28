@@ -22,13 +22,15 @@ import (
 	"strings"
 )
 
-// Package names are case-insensitive with this prefix
-var pythonPackageRegexPrefix = "(?i)"
+const (
+	// Package names are case-insensitive with this prefix
+	pythonPackageRegexPrefix = "(?i)"
 
-// Match all possible operators and versions syntax
-var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
+	// Match all possible operators and versions syntax
+	pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
-var semanticVersioningSeparator = "."
+	semanticVersioningSeparator = "."
+)
 
 type CreateFixPullRequestsCmd struct {
 	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
