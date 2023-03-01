@@ -8,6 +8,16 @@ import (
 	"strings"
 )
 
+const (
+	modulePattern       = "<module>(\\S|\\s)*?<\\/module>"
+	dependenciesPattern = "(<dependency>(\\S|\\s)*?<\\/dependency>)|(<plugin>(\\S|\\s)*?<\\/plugin>)"
+)
+
+var (
+	moduleRegexp       = regexp.MustCompile(modulePattern)
+	dependenciesRegexp = regexp.MustCompile(dependenciesPattern)
+)
+
 func GetVersionProperties(projectPath string, depToPropertyMap map[string][]string) error {
 	contentBytes, err := os.ReadFile(filepath.Join(projectPath, "pom.xml")) // #nosec G304
 	if err != nil {
@@ -27,11 +37,7 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 		}
 	}
 
-	moduleStrings, err := getMavenModuleFromPomXml(contentBytes)
-	if err != nil {
-		return err
-	}
-	for _, moduleStr := range moduleStrings {
+	for _, moduleStr := range getMavenModuleFromPomXml(contentBytes) {
 		if err = GetVersionProperties(filepath.Join(projectPath, moduleStr), depToPropertyMap); err != nil {
 			return err
 		}
@@ -42,16 +48,11 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 // Extract all dependencies from the input pom.xml
 // pomXmlContent - The pom.xml content
 func getDependenciesFromPomXml(pomXmlContent []byte) ([]mavenDependency, error) {
-	dependenciesPattern := "(<dependency>(\\S|\\s)*?<\\/dependency>)|(<plugin>(\\S|\\s)*?<\\/plugin>)"
-	dependenciesRegexp, err := regexp.Compile(dependenciesPattern)
-	if err != nil {
-		return []mavenDependency{}, err
-	}
 	var results []mavenDependency
 	dependencyStrings := dependenciesRegexp.FindAll(pomXmlContent, -1)
 	for _, depStr := range dependencyStrings {
 		dep := &mavenDependency{}
-		err = xml.Unmarshal(depStr, dep)
+		err := xml.Unmarshal(depStr, dep)
 		if err != nil {
 			return []mavenDependency{}, err
 		}
@@ -63,19 +64,14 @@ func getDependenciesFromPomXml(pomXmlContent []byte) ([]mavenDependency, error) 
 
 // Extract all modules from pom.xml
 // pomXmlContent - The pom.xml content
-func getMavenModuleFromPomXml(pomXmlContent []byte) ([]string, error) {
-	modulePattern := "<module>(\\S|\\s)*?<\\/module>"
-	moduleRegexp, err := regexp.Compile(modulePattern)
-	if err != nil {
-		return []string{}, err
-	}
+func getMavenModuleFromPomXml(pomXmlContent []byte) []string {
 	var results []string
 	moduleStrings := moduleRegexp.FindAllString(string(pomXmlContent), -1)
 	for _, moduleStr := range moduleStrings {
 		modulePath := strings.TrimPrefix(strings.TrimSuffix(moduleStr, "</module>"), "<module>")
 		results = append(results, strings.TrimSpace(modulePath))
 	}
-	return results, nil
+	return results
 }
 
 type mavenDependency struct {

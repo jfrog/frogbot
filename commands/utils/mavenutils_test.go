@@ -77,8 +77,7 @@ func TestGetDependenciesFromPomXmlMultiDependency(t *testing.T) {
 func TestGetMavenModuleFromPomXml(t *testing.T) {
 	testCases := []string{`<module>multi-1</module>`, ` <module>  	multi-1 </module>	`}
 	for _, testCase := range testCases {
-		modules, err := getMavenModuleFromPomXml([]byte(testCase))
-		assert.NoError(t, err)
+		modules := getMavenModuleFromPomXml([]byte(testCase))
 		assert.ElementsMatch(t, modules, []string{"multi-1"})
 	}
 }
@@ -87,8 +86,7 @@ func TestGetMavenModuleFromPomXmlMultiModules(t *testing.T) {
 	testCases := []string{`<module>multi-1</module><module>multi-2</module>`,
 		`<module>multi-1</module>	some-xml-tags  <module>multi-2</module>`}
 	for _, testCase := range testCases {
-		modules, err := getMavenModuleFromPomXml([]byte(testCase))
-		assert.NoError(t, err)
+		modules := getMavenModuleFromPomXml([]byte(testCase))
 		assert.ElementsMatch(t, modules, []string{"multi-1", "multi-2"})
 	}
 }
