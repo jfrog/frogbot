@@ -4,7 +4,7 @@
 Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/master/README.md#frogbot) on your GitHub repository.
 
 ## Prerequisites
-Make sure to [set up 'frogbot' environment and secrets](../../README.md#setting-up-frogbot-on-github-repositories) in
+Make sure to [set up 'frogbot' environment and secrets](../../install-github.md#installing-frogbot-on-github-repositories) in
 your GitHub repository.
 
 ## Using the Templates
