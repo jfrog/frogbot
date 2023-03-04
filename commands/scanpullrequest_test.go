@@ -19,7 +19,6 @@ import (
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
@@ -410,7 +409,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 
 func TestRunInstallIfNeeded(t *testing.T) {
 	assert.NoError(t, runInstallIfNeeded(&utils.Project{}, "", true))
-	tmpDir, err := fileutils.CreateTempDir()
+	tmpDir, err := utils.CreateFrogbotTempDir()
 	assert.NoError(t, err)
 	params := &utils.Project{
 		InstallCommandName: "echo",

@@ -106,7 +106,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(project uti
 	log.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 
 	// Create temp working directory
-	wd, err := fileutils.CreateTempDir()
+	wd, err := utils.CreateFrogbotTempDir()
 	if err != nil {
 		return err
 	}

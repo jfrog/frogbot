@@ -59,6 +59,9 @@ const (
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
+	// General environment variables
+	TempDir = "JF_TEMP_DIR"
+
 	// Comment
 	tableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +
 		":--: | -- | -- | -- | -- | :--: | --"
@@ -67,6 +70,9 @@ const (
 
 	// Product ID for usage reporting
 	productId = "frogbot"
+
+	// Temp directory name prefix
+	tempDirPrefix = "frogbot.temp-"
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
