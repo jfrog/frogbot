@@ -16,10 +16,10 @@ setFrogbotVersion() {
 }
 
 setFrogbotRemoteRepositoryIfNeeded() {
-  if [[ -n "${JF_FROGBOT_REPO}" ]]
+  if [ -n "${JF_FROGBOT_REPO}" ]
   then
-    PLATFORM_URL="${JF_URL%/}"
-    REMOTE_PATH="$JF_REMOTE_REPO/artifactory/"
+    PLATFORM_URL="${JF_URL%%/}"
+    REMOTE_PATH="$JF_FROGBOT_REPO/artifactory/"
   fi
 }
 
@@ -79,25 +79,22 @@ setFrogbotDownloadProperties() {
   fi
 }
 
-setCurlArgs() {
-  if [[ -n ${REMOTE_PATH} ]]; then
-    if [[ -n ${JF_ACCESS_TOKEN} ]]; then
-      CURL_ARGS=(-XGET "$URL" -L -k -g -H "Authorization: Bearer ${JF_ACCESS_TOKEN}")
+downloadFrogbot() {
+  echo "Downloading Frogbot..."
+  if [ -n "${REMOTE_PATH}" ]; then
+    if [ -n "${JF_ACCESS_TOKEN}" ]; then
+      curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${URL}" -o "${FILE_NAME}"
     else
-      CURL_ARGS=(-XGET -u "${JF_USER}":"${JF_PASSWORD}" "$URL" -L -k -g)
+      curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${URL}" -o "${FILE_NAME}"
     fi
   else
-    CURL_ARGS=(-XGET "$URL" -L -k -g)
+    curl -fLg -X GET "${URL}" -o "${FILE_NAME}"
   fi
-}
-
-downloadFrogbot() {
-  curl "${CURL_ARGS[@]}" > $FILE_NAME
-  chmod u+x $FILE_NAME
+  chmod +x "${FILE_NAME}"
+  echo "Frogbot downloaded successfully!"
 }
 
 setFrogbotVersion "$@"
 setFrogbotRemoteRepositoryIfNeeded
 setFrogbotDownloadProperties
-setCurlArgs
 downloadFrogbot
