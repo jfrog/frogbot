@@ -81,8 +81,8 @@ pipelines:
             - jf rt bp
 
             # Distribute release bundle
-            - jf ds rbc "frogbot" $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
-            - jf ds rbd "frogbot" $NEXT_VERSION --site="releases.jfrog.io" --sync
+            - jf ds rbc ecosystem-frogbot $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
+            - jf ds rbd ecosystem-frogbot $NEXT_VERSION --site="releases.jfrog.io" --sync
 
             # Push to master
             - git clean -fd
