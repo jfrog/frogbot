@@ -15,7 +15,7 @@ type FrogbotCommand interface {
 
 func Exec(command FrogbotCommand, name string) error {
 	// Get frogbotUtils the contains the config, server and VCS client
-	log.Info("Running with Frogbot version:", utils.FrogbotVersion)
+	log.Info("Frogbot version:", utils.FrogbotVersion)
 	frogbotUtils, err := utils.GetFrogbotUtils()
 	if err != nil {
 		return err
@@ -24,9 +24,9 @@ func Exec(command FrogbotCommand, name string) error {
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 	// Invoke the command interface
-	log.Info(fmt.Sprintf("Running Frogbot %q command ", name))
+	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
 	err = command.Run(*frogbotUtils.ConfigAggregator, frogbotUtils.Client)
-	// Waits for the signal from the report usage to be done.
+	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
 	if err == nil {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully ", name))

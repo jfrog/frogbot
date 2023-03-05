@@ -44,7 +44,7 @@ const (
 	GitProjectEnv   = "JF_GIT_PROJECT"
 	GitUsernameEnv  = "JF_GIT_USERNAME"
 
-	// Repository environment variables - Ignored if config file is used
+	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
 	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv          = "JF_WORKING_DIR"

@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -15,7 +16,8 @@ func TestDownloadExtractorsFromRemoteIfNeeded(t *testing.T) {
 	serverDetails := &config.ServerDetails{
 		AccessToken: "eyJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmYWtlXC91c2Vyc1wvdGVzdCJ9.MTIzNDU2Nzg5MA",
 	}
-	remoteRepo := "remote-repo"
+	assert.NoError(t, os.Setenv(jfrogRemoteRepo, "remote-repo"))
+	defer assert.NoError(t, os.Unsetenv(jfrogRemoteRepo))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	restoreDir, err := Chdir(tmpDir)
@@ -27,7 +29,7 @@ func TestDownloadExtractorsFromRemoteIfNeeded(t *testing.T) {
 	testServer := httptest.NewServer(createRemoteArtifactoryHandler())
 	defer testServer.Close()
 	serverDetails.ArtifactoryUrl = testServer.URL + "/artifactory/"
-	assert.NoError(t, downloadExtractorsFromRemoteIfNeeded(serverDetails, remoteRepo, tmpDir))
+	assert.NoError(t, downloadExtractorsFromRemoteIfNeeded(serverDetails, tmpDir))
 }
 
 // Create HTTP handler to mock remote artifactory server

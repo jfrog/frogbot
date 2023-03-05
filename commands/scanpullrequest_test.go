@@ -409,7 +409,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {
-	scanSetup := utils.ScanSetup{
+	scanSetup := utils.ScanDetails{
 		Project:                  utils.Project{},
 		FailOnInstallationErrors: true,
 	}
@@ -423,11 +423,8 @@ func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup.Project = *params
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
-	params = &utils.Project{
-		InstallCommandName: "not-existed",
-		InstallCommandArgs: []string{"1", "2"},
-	}
-	scanSetup.Project = *params
+	scanSetup.InstallCommandName = "not-exist"
+	scanSetup.InstallCommandArgs = []string{"1", "2"}
 	scanSetup.FailOnInstallationErrors = false
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 

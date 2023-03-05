@@ -89,14 +89,14 @@ func TestResolveDependencies(t *testing.T) {
 	testCases := []struct {
 		name        string
 		tech        string
-		scanSetup   *ScanSetup
+		scanSetup   *ScanDetails
 		repoKey     string
-		resolveFunc func(scanSetup *ScanSetup) ([]byte, error)
+		resolveFunc func(scanSetup *ScanDetails) ([]byte, error)
 	}{
 		{
 			name: "Resolve NPM dependencies",
 			tech: "npm",
-			scanSetup: &ScanSetup{
+			scanSetup: &ScanDetails{
 				ServerDetails: &params,
 				Project: Project{
 					InstallCommandName: "npm",
@@ -107,7 +107,7 @@ func TestResolveDependencies(t *testing.T) {
 		{
 			name: "Resolve Yarn dependencies",
 			tech: "yarn",
-			scanSetup: &ScanSetup{
+			scanSetup: &ScanDetails{
 				ServerDetails: &params,
 				Project: Project{
 					InstallCommandName: "yarn",
@@ -118,10 +118,10 @@ func TestResolveDependencies(t *testing.T) {
 		{
 			name: "Resolve .NET dependencies",
 			tech: "dotnet",
-			scanSetup: &ScanSetup{
+			scanSetup: &ScanDetails{
 				ServerDetails: &params,
 				Project: Project{
-					DepsResolutionRepo: "frogbot-nuget-remote-tests",
+					Repository:         "frogbot-nuget-remote-tests",
 					InstallCommandName: "dotnet",
 					InstallCommandArgs: []string{"restore"},
 				}},
@@ -133,7 +133,7 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
-			test.scanSetup.Project.DepsResolutionRepo = repoKey
+			test.scanSetup.Project.Repository = repoKey
 			_, err := test.resolveFunc(test.scanSetup)
 			assert.NoError(t, err)
 		})

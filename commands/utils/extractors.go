@@ -14,6 +14,9 @@ import (
 
 var extractorsRepositoryPath = filepath.Join("artifactory", "oss-release-local")
 
+// extractorDetails holds the relevant details to download the build-info extractors.
+// Build Info is Artifactory's open integration layer for the CI servers and build tools.
+// The build information is sent to Artifactory in json format.
 type extractorDetails struct {
 	extractorType string
 	localPath     string
@@ -21,17 +24,22 @@ type extractorDetails struct {
 	fileName      string
 }
 
-func (ed *extractorDetails) DownloadToPath() string {
+func (ed *extractorDetails) downloadToPath() string {
 	return filepath.Join(ed.localPath, ed.fileName)
 }
 
-func (ed *extractorDetails) DownloadFromPath() string {
+func (ed *extractorDetails) downloadFromPath() string {
 	return filepath.Join(extractorsRepositoryPath, ed.remotePath, ed.fileName)
 }
 
-// downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors for air-gapped environments, if they're not exist on the remote repository yet.
-func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, remoteRepoName string, extractorsLocalPath string) (err error) {
-	log.Info("Downloading extractors if needed from", remoteRepoName)
+// downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
+func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (err error) {
+	var frogbotRepo string
+	if frogbotRepo = getTrimmedEnv(jfrogRemoteRepo); frogbotRepo == "" {
+		return nil
+	}
+	// Download extractors if remote repo environment variable is set
+	log.Info("Checking whether the build-info extractors exist locally")
 	if extractorsLocalPath == "" {
 		extractorsLocalPath, err = config.GetJfrogDependenciesPath()
 		if err != nil {
@@ -54,7 +62,7 @@ func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, remoteRe
 			remotePath:    fmt.Sprintf(build.GradleExtractorRemotePath, build.GradleExtractorDependencyVersion),
 		},
 	}
-	return downloadExtractors(remoteRepoName, server, extractors...)
+	return downloadExtractors(frogbotRepo, server, extractors...)
 }
 
 func downloadExtractors(remoteRepoName string, server *config.ServerDetails, extractors ...extractorDetails) (err error) {
@@ -67,9 +75,9 @@ func downloadExtractors(remoteRepoName string, server *config.ServerDetails, ext
 		if err != nil {
 			return err
 		}
-		log.Info(extractor.extractorType, "extractor downloads to path:", extractor.localPath)
+		log.Info("Downloading", extractor.extractorType, "extractor to path:", extractor.localPath)
 		remoteServer := getRemoteServer(server, remoteRepoName)
-		if err = utils.DownloadExtractor(remoteServer, extractor.DownloadFromPath(), extractor.DownloadToPath()); err != nil {
+		if err = utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath()); err != nil {
 			return err
 		}
 	}

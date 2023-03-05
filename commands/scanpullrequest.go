@@ -77,7 +77,7 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for _, project := range repoConfig.Projects {
-		scanSetup := &utils.ScanSetup{
+		scanSetup := &utils.ScanDetails{
 			XrayGraphScanParams:      xrayScanParams,
 			Project:                  project,
 			Client:                   client,
@@ -215,7 +215,7 @@ func createXrayScanParams(watches []string, project string) (params services.Xra
 	return
 }
 
-func auditSource(scanSetup *utils.ScanSetup) ([]services.ScanResponse, bool, error) {
+func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return []services.ScanResponse{}, false, err
@@ -240,9 +240,9 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(scanSetup *utils.ScanSetup) (res []services.ScanResponse, isMultipleRoot bool, err error) {
+func auditTarget(scanSetup *utils.ScanDetails) (res []services.ScanResponse, isMultipleRoot bool, err error) {
 	// First download the target repo to temp dir
-	log.Info("Auditing " + scanSetup.Git.RepoName + " " + scanSetup.Branch)
+	log.Info("Auditing ", scanSetup.Git.RepoName, scanSetup.Branch)
 	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client, scanSetup.Branch, scanSetup.Git)
 	if err != nil {
 		return
@@ -258,7 +258,7 @@ func auditTarget(scanSetup *utils.ScanSetup) (res []services.ScanResponse, isMul
 	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
-func runInstallAndAudit(scanSetup *utils.ScanSetup, workDirs ...string) (results []services.ScanResponse, isMultipleRoot bool, err error) {
+func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (results []services.ScanResponse, isMultipleRoot bool, err error) {
 	for _, wd := range workDirs {
 		if err = runInstallIfNeeded(scanSetup, wd); err != nil {
 			return nil, false, err
@@ -270,7 +270,7 @@ func runInstallAndAudit(scanSetup *utils.ScanSetup, workDirs ...string) (results
 		SetUseWrapper(scanSetup.UseWrapper).
 		SetRequirementsFile(scanSetup.PipRequirementsFile).
 		SetWorkingDirs(workDirs).
-		SetDepsRepo(scanSetup.DepsResolutionRepo).
+		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true)
 	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
 	if err != nil {
@@ -279,7 +279,7 @@ func runInstallAndAudit(scanSetup *utils.ScanSetup, workDirs ...string) (results
 	return results, isMultipleRoot, err
 }
 
-func runInstallIfNeeded(scanSetup *utils.ScanSetup, workDir string) (err error) {
+func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error) {
 	if scanSetup.InstallCommandName == "" {
 		return nil
 	}
@@ -290,24 +290,27 @@ func runInstallIfNeeded(scanSetup *utils.ScanSetup, workDir string) (err error) 
 			err = restoreErr
 		}
 	}()
-	log.Info("Executing", "'"+scanSetup.InstallCommandName+"'", scanSetup.InstallCommandArgs, "at", workDir)
-	var output []byte
-	if scanSetup.DepsResolutionRepo != "" {
-		if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
-			return fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
-		}
-		log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.DepsResolutionRepo)
-		output, err = utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
-	} else {
-		//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-		output, err = exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
-	}
+	log.Info(fmt.Sprintf("Executing '%s %s' at %s", scanSetup.InstallCommandName, scanSetup.InstallCommandArgs, workDir))
+	output, err := runInstallCommand(scanSetup)
 	if err != nil && !scanSetup.FailOnInstallationErrors {
 		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}
 	return
+}
+
+func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
+	if scanSetup.Repository == "" {
+		//#nosec G204 -- False positive - the subprocess only run after the user's approval.
+		return exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
+	}
+
+	if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
+		return nil, fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
+	}
+	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.Repository)
+	return utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
 }
 
 func getNewViolations(previousScan, currentScan services.ScanResponse, isMultipleRoot bool) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {

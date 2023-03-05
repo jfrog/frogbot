@@ -38,7 +38,7 @@ func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
-type ScanSetup struct {
+type ScanDetails struct {
 	services.XrayGraphScanParams
 	Project
 	*config.ServerDetails

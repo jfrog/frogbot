@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 )
 
-type resolveDependenciesFunc func(scanSetup *ScanSetup) ([]byte, error)
+type resolveDependenciesFunc func(scanSetup *ScanDetails) ([]byte, error)
 
 var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 	coreutils.Npm.ToString():    resolveNpmDependencies,
@@ -22,11 +22,11 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 	coreutils.Nuget.ToString():  resolveDotnetDependencies,
 }
 
-func resolveNpmDependencies(scanSetup *ScanSetup) (output []byte, err error) {
+func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	commonArgs := npm.CommonArgs{}
 	commonArgs.SetServerDetails(scanSetup.ServerDetails)
 	commonArgs.SetCmdName(scanSetup.InstallCommandArgs[0])
-	if err = commonArgs.PreparePrerequisites(scanSetup.DepsResolutionRepo, true); err != nil {
+	if err = commonArgs.PreparePrerequisites(scanSetup.Repository, true); err != nil {
 		return nil, err
 	}
 	if err = commonArgs.CreateTempNpmrc(); err != nil {
@@ -41,7 +41,7 @@ func resolveNpmDependencies(scanSetup *ScanSetup) (output []byte, err error) {
 	return exec.Command(coreutils.Npm.ToString(), scanSetup.InstallCommandArgs...).CombinedOutput()
 }
 
-func resolveYarnDependencies(scanSetup *ScanSetup) (output []byte, err error) {
+func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	currWd, err := coreutils.GetWorkingDirectory()
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func resolveYarnDependencies(scanSetup *ScanSetup) (output []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.DepsResolutionRepo)
+	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.Repository)
 	if err != nil {
 		return nil, yarn.RestoreConfigurationsAndError(nil, restoreYarnrcFunc, err)
 	}
@@ -71,7 +71,7 @@ func resolveYarnDependencies(scanSetup *ScanSetup) (output []byte, err error) {
 	return nil, build.RunYarnCommand(yarnExecPath, currWd, scanSetup.InstallCommandArgs...)
 }
 
-func resolveDotnetDependencies(scanSetup *ScanSetup) (output []byte, err error) {
+func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	wd, err := fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -82,7 +82,7 @@ func resolveDotnetDependencies(scanSetup *ScanSetup) (output []byte, err error) 
 			err = e
 		}
 	}()
-	configFile, err := dotnet.InitNewConfig(wd, scanSetup.DepsResolutionRepo, scanSetup.ServerDetails, false)
+	configFile, err := dotnet.InitNewConfig(wd, scanSetup.Repository, scanSetup.ServerDetails, false)
 	if err != nil {
 		return
 	}

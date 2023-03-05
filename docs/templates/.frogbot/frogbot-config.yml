@@ -15,11 +15,11 @@
 
     # Frogbot scanning parameters
     scan:
-      # [Optional, Default: false]
+      # [Default: false]
       # Frogbot displays all existing vulnerabilities, including the ones that were not added by the pull request
       # includeAllVulnerabilities: true
 
-      # [Optional, Default: true]
+      # [Default: true]
       # Frogbot does not fail the task if security issues are found and this parameter is set to false
       # failOnSecurityIssues: false
 
@@ -29,7 +29,7 @@
       # Installation command (e.g. npm i, nuget restore)
       # - installCommand: ""
 
-      # [Optional, Default: root directory]
+      # [Default: root directory]
       # List of relative path's to the projects directories in the git repository
       #   workingDirs:
       #     - "."
@@ -38,13 +38,13 @@
       # The requirements file name that used to install dependencies in case of pip package manager
       #   pipRequirementsFile: ""
 
-      # [Optional, Default: true]
+      # [Default: true]
       # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
       #   useWrapper: true
 
       # [Optional]
-      # Name of the Artifactory Virtual Repository to resolve dependencies from
-      #   depsResolutionRepo: ""
+      # Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from
+      #   repository: ""
 
     # JFrog Platform parameters
     jfrogPlatform:

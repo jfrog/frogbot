@@ -59,7 +59,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 	for projectIndex, project := range repoConfig.Projects {
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
-			scanResults, isMultipleRoots, err := cfp.scan(&utils.ScanSetup{
+			scanResults, isMultipleRoots, err := cfp.scan(&utils.ScanDetails{
 				Project:                  project,
 				ServerDetails:            &repoConfig.Server,
 				XrayGraphScanParams:      xrayScanParams,
@@ -85,7 +85,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *CreateFixPullRequestsCmd) scan(scanSetup *utils.ScanSetup, currentWorkingDir string) ([]services.ScanResponse, bool, error) {
+func (cfp *CreateFixPullRequestsCmd) scan(scanSetup *utils.ScanDetails, currentWorkingDir string) ([]services.ScanResponse, bool, error) {
 	// Audit commit code
 	scanResults, isMultipleRoots, err := runInstallAndAudit(scanSetup, currentWorkingDir)
 	if err != nil {
