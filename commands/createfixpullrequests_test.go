@@ -234,6 +234,18 @@ func TestFormatGoVersion(t *testing.T) {
 			expected:        "github.com/go-git/go-git",
 			description:     "Validate no string has been added",
 		},
+		{
+			impactedPackage: "gopkg.in/ini",
+			fixVersion:      "1.67.0",
+			expected:        "gopkg.in/ini.v1",
+			description:     "gopkg different separator",
+		},
+		{
+			impactedPackage: "gopkg.in/ini",
+			fixVersion:      "2.1.0",
+			expected:        "gopkg.in/ini.v2",
+			description:     "gopkg different separator",
+		},
 	}
 
 	for _, tt := range formatGoCases {
