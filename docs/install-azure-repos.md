@@ -43,7 +43,6 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                - "*"
     pool:
          vmImage: ubuntu-latest
-   
     jobs:
        - job:
          displayName: "Frogbot Scan Pull Requests"
