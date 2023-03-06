@@ -79,22 +79,31 @@ setFrogbotDownloadProperties() {
   fi
 }
 
-
-downloadFrogbot() {
-  if [ -n "${REMOTE_PATH}" ]; then
-    if [ -n "${JF_ACCESS_TOKEN}" ]; then
-      curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${URL}" -o "${FILE_NAME}"
-    else
-      curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${URL}" -o "${FILE_NAME}"
-    fi
-  else
-    curl -fLg -X GET "${URL}" -o "${FILE_NAME}"
-  fi
+setPermissions() {
   chmod u+x "${FILE_NAME}"
+}
+
+echoGreetings() {
   echo "Frogbot downloaded successfully!"
+}
+
+getDownloadCommand() {
+  if [ -n "${REMOTE_PATH}" ]; then
+      if [ -n "${JF_ACCESS_TOKEN}" ]; then
+        curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${URL}" -o "${FILE_NAME}"
+      else
+        curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${URL}" -o "${FILE_NAME}"
+      fi
+    else
+      curl -fLg -X GET "${URL}" -o "${FILE_NAME}"
+    fi
+}
+
+download() {
+  getDownloadCommand && setPermissions && echoGreetings
 }
 
 setFrogbotVersion "$@"
 setFrogbotRemoteRepositoryIfNeeded
 setFrogbotDownloadProperties
-downloadFrogbot
+download
