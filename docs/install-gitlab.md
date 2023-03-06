@@ -84,6 +84,11 @@ frogbot-scan:
     # [Optional, default: "TRUE"]
     # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
     # JF_USE_WRAPPER: "TRUE"
+
+    # [Optional]
+    # Relevant for air-gapped environments.
+    # Name of the remote repository that Frogbot and its dependencies will be downloaded to.
+    # JF_FROGBOT_REPO: ""
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh

@@ -111,6 +111,11 @@
            // JFrog user and password with 'read' permissions for Xray
            // JF_USER = credentials("JF_USER")
            // JF_PASSWORD = credentials("JF_PASSWORD")
+           
+           // [Optional]
+           // Relevant for air-gapped environments.
+           // Name of the remote repository that Frogbot and its dependencies will be downloaded to.
+           // JF_FROGBOT_REPO = ""
            }
            stages {
                stage('Download Frogbot') {
