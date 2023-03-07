@@ -31,9 +31,7 @@ const (
 
 	semanticVersioningSeparator = "."
 
-	githubPackageManager = "github"
-
-	goPackageManager = "gopkg"
+	gopkg = "gopkg"
 
 	goVersionStringFormat = "%s%sv%d"
 )
@@ -348,28 +346,19 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 
 // Module paths in GO must have a major version suffix like /v2 that matches the major version.
 // For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
-// Also bear in mind the package manager , GitHub uses "/" while gopkg use "." to indicate major version change
+// Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
 func formatGoVersion(impactedPackage, fixVersion string) (string, error) {
-	packageManger := strings.Split(impactedPackage, ".")[0]
+	importPathPrefix := strings.Split(impactedPackage, ".")[0]
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
 	if err != nil {
 		return "", err
 	}
-	var separator string
-	switch packageManger {
-	case githubPackageManager:
-		{
-			separator = "/"
-			if majorVersion > 1 {
-				return fmt.Sprintf(goVersionStringFormat, impactedPackage, separator, majorVersion), nil
-			}
-		}
-	case goPackageManager:
-		{
-			separator = "."
-			return fmt.Sprintf(goVersionStringFormat, impactedPackage, separator, majorVersion), nil
-		}
+	if importPathPrefix == gopkg {
+		return fmt.Sprintf(goVersionStringFormat, impactedPackage, ".", majorVersion), nil
+	}
+	if majorVersion > 1 {
+		return fmt.Sprintf(goVersionStringFormat, impactedPackage, "/", majorVersion), nil
 	}
 	return impactedPackage, nil
 }
