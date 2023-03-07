@@ -350,7 +350,7 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
 func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (string, error) {
 	pathSeparator := "/"
-	shouldMentionFirstVersion := false // Weather or not to mention /v1 packages
+	shouldMentionFirstVersion := false // Whether or not to mention /v1 packages
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
 	importPathPrefix := strings.Split(impactedPackage, ".")[0]
 	if err != nil {
