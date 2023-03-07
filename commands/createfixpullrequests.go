@@ -348,7 +348,7 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
 // Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
-func formatGoVersion(impactedPackage, fixVersion string) (string, error) {
+func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (string, error) {
 	importPathPrefix := strings.Split(impactedPackage, ".")[0]
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
 	if err != nil {
@@ -487,7 +487,7 @@ func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
 }
 
 func fixPackageVersionGo(impactedPackage, fixVersion string) error {
-	impactedPackage, err := formatGoVersion(impactedPackage, fixVersion)
+	impactedPackage, err := handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion)
 	if err != nil {
 		return err
 	}

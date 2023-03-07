@@ -250,7 +250,7 @@ func TestFormatGoVersion(t *testing.T) {
 
 	for _, tt := range formatGoCases {
 		t.Run(tt.description, func(t *testing.T) {
-			result, err := formatGoVersion(tt.impactedPackage, tt.fixVersion)
+			result, err := handleGoPackageSemanticVersionSuffix(tt.impactedPackage, tt.fixVersion)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
