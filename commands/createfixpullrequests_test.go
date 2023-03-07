@@ -217,7 +217,7 @@ func TestFormatGoVersion(t *testing.T) {
 		expected        string
 	}{
 		{
-			impactedPackage: "github.com/go-git/go-git",
+			impactedPackage: "github.com/go-git/go-git/v2",
 			fixVersion:      "5.5.2",
 			expected:        "github.com/go-git/go-git/v5",
 			description:     "Validate adding /v5 to impacted package name",
@@ -244,7 +244,13 @@ func TestFormatGoVersion(t *testing.T) {
 			impactedPackage: "gopkg.in/ini",
 			fixVersion:      "2.1.0",
 			expected:        "gopkg.in/ini.v2",
-			description:     "gopkg different separator",
+			description:     "gopkg jump major version",
+		},
+		{
+			impactedPackage: "gopkg.in/ini.v2",
+			fixVersion:      "3.1.0",
+			expected:        "gopkg.in/ini.v3",
+			description:     "gopkg validate no chained versions like gopkg.in/ini.v2.v3",
 		},
 	}
 

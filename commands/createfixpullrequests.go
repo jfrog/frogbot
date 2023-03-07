@@ -349,16 +349,20 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
 func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (string, error) {
-	importPathPrefix := strings.Split(impactedPackage, ".")[0]
+	pathSeparator := "/"
+	shouldMentionFirstVersion := false // Weather or not to mention /v1 packages
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
+	importPathPrefix := strings.Split(impactedPackage, ".")[0]
 	if err != nil {
 		return "", err
 	}
 	if importPathPrefix == gopkg {
-		return fmt.Sprintf(goVersionStringFormat, impactedPackage, ".", majorVersion), nil
+		pathSeparator = "."
+		shouldMentionFirstVersion = true
 	}
-	if majorVersion > 1 {
-		return fmt.Sprintf(goVersionStringFormat, impactedPackage, "/", majorVersion), nil
+	if majorVersion > 1 || shouldMentionFirstVersion {
+		impactedPackageWithoutVersion := strings.Split(impactedPackage, pathSeparator+"v")[0]
+		return fmt.Sprintf(goVersionStringFormat, impactedPackageWithoutVersion, pathSeparator, majorVersion), nil
 	}
 	return impactedPackage, nil
 }
