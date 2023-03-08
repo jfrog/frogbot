@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/jfrog/frogbot/commands/utils"
 	"os"
 
 	"github.com/jfrog/frogbot/commands"
@@ -8,8 +9,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/log"
 	clitool "github.com/urfave/cli/v2"
 )
-
-var frogbotVersion = "0.0.0"
 
 func main() {
 	log.SetDefaultLogger()
@@ -21,7 +20,7 @@ func ExecMain() error {
 		Name:     "Frogbot",
 		Usage:    "See https://github.com/jfrog/frogbot for usage instructions.",
 		Commands: commands.GetCommands(),
-		Version:  frogbotVersion,
+		Version:  utils.FrogbotVersion,
 	}
 
 	err := app.Run(os.Args)
