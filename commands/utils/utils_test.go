@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -135,4 +136,43 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+func TestRemoveDowngradedVersionsSingle(t *testing.T) {
+	tests := []struct {
+		vulRow         *formats.VulnerabilityOrViolationRow
+		expectedResult []string
+		description    string
+	}{
+		{
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"[1.2.6]", "[0.2.6]"},
+			},
+			expectedResult: []string{"[1.2.6]"},
+			description:    "Test remove downgraded versions of current",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[0.2.5]",
+				FixedVersions:             []string{"[1.2.6]", "[3.2.6]"},
+			},
+			expectedResult: []string{"[1.2.6]", "[3.2.6]"},
+			description:    "Test dont remove upgraded versions",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"[1.2.5]"},
+			},
+			expectedResult: []string{},
+			description:    "Test equals",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			RemoveDowngradedVersions(test.vulRow)
+			assert.Equal(t, test.expectedResult, test.vulRow.FixedVersions)
+		})
+	}
 }

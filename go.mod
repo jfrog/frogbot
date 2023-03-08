@@ -101,3 +101,5 @@ require (
 )
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.29.7-0.20230307085550-c52f81802fb3
+
+replace github.com/jfrog/gofrog v1.2.5 => github.com/eyaldelarea/gofrog v1.2.6-0.20230308221052-73ca9c3ca51d

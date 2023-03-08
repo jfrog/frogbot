@@ -202,6 +202,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 						fixVersionsMap[vulnerability.ImpactedDependencyName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
+				utils.RemoveDowngradedVersions(&vulnerability)
 			}
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -153,4 +154,16 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+// RemoveDowngradedVersions removes fix suggestions which are downgraded versions of current
+func RemoveDowngradedVersions(vul *formats.VulnerabilityOrViolationRow) {
+	upgradeVersions := make([]string, 0)
+	effectedVersion := version.NewVersion(vul.ImpactedDependencyVersion)
+	for _, suggestedFixVersion := range vul.FixedVersions {
+		if effectedVersion.IsLessThan(suggestedFixVersion) {
+			upgradeVersions = append(upgradeVersions, suggestedFixVersion)
+		}
+	}
+	vul.FixedVersions = upgradeVersions
 }
