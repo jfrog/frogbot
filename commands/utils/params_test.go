@@ -141,11 +141,15 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	configFile, err := ReadConfigFromFileSystem(configParamsTestFile)
+	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	for _, repo := range *configFile {
+	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
+	assert.NoError(t, err)
+	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server)
+	assert.NoError(t, err)
+	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
-			SetProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
+			setProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
 		}
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, *repo.FailOnSecurityIssues)
@@ -167,7 +171,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	configFile, err := generateConfigAggregatorFromEnv(&gitParams, server)
+	configFile, err := newConfigAggregatorFromEnv(gitParams, server)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -185,7 +189,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, configParams := range *configFile {
+	for _, configParams := range configFile {
 		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
@@ -241,6 +245,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		WorkingDirectoryEnv:          "a/b",
 		jfrogProjectEnv:              "projectKey",
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
+		DependenciesRepo:             "deps-remote",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
 	})
@@ -263,9 +268,9 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server)
+	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
-	repo := (*configAggregator)[0]
+	repo := configAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
@@ -282,10 +287,11 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 
 	project := repo.Projects[0]
 	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
-	assert.False(t, project.UseWrapper)
+	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
 	assert.Equal(t, "npm", project.InstallCommandName)
 	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "deps-remote", project.Repository)
 }
 
 func TestExtractProjectParamsFromEnv(t *testing.T) {
@@ -297,7 +303,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	// Test default values
 	err := extractProjectParamsFromEnv(&params)
 	assert.NoError(t, err)
-	assert.True(t, params.UseWrapper)
+	assert.True(t, *params.UseWrapper)
 	assert.Equal(t, []string{RootDir}, params.WorkingDirs)
 	assert.Equal(t, "", params.PipRequirementsFile)
 	assert.Equal(t, "", params.InstallCommandName)
@@ -309,7 +315,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"b/c"}, params.WorkingDirs)
 	assert.Equal(t, "r.txt", params.PipRequirementsFile)
-	assert.False(t, params.UseWrapper)
+	assert.False(t, *params.UseWrapper)
 	assert.Equal(t, "nuget", params.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, params.InstallCommandArgs)
 }

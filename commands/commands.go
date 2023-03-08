@@ -14,18 +14,19 @@ type FrogbotCommand interface {
 }
 
 func Exec(command FrogbotCommand, name string) error {
-	// Get config, server and VCS client
-	configAggregator, server, client, err := utils.GetParamsAndClient()
+	// Get frogbotUtils the contains the config, server and VCS client
+	log.Info("Frogbot version:", utils.FrogbotVersion)
+	frogbotUtils, err := utils.GetFrogbotUtils()
 	if err != nil {
 		return err
 	}
 	// Send usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, server, usageReportSent)
+	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 	// Invoke the command interface
-	log.Info(fmt.Sprintf("Running Frogbot %q command ", name))
-	err = command.Run(configAggregator, client)
-	// Waits for the signal from the report usage to be done.
+	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
+	err = command.Run(frogbotUtils.ConfigAggregator, frogbotUtils.Client)
+	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
 	if err == nil {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully ", name))

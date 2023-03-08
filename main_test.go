@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/jfrog/frogbot/commands/utils"
 	"io"
 	"os"
 	"strings"
@@ -23,5 +25,6 @@ func TestVersion(t *testing.T) {
 	assert.NoError(t, w.Close())
 	out, err := io.ReadAll(r)
 	assert.NoError(t, err)
-	assert.Equal(t, "Frogbot version 0.0.0", strings.TrimSpace(string(out)))
+	expectedVersion := fmt.Sprintf("Frogbot version %s", utils.FrogbotVersion)
+	assert.Equal(t, expectedVersion, strings.TrimSpace(string(out)))
 }

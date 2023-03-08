@@ -6,11 +6,13 @@
     scan:
       projects:
         - installCommand: npm i
+      failOnSecurityIssues: false
 - params:
     git:
       repoName: mvn-repo
       branches:
         - master
+      failOnSecurityIssues: false
 - params:
     git:
       repoName: pip-repo
@@ -19,3 +21,4 @@
     scan:
       projects:
         - pipRequirementsFile: requirements.txt
+      failOnSecurityIssues: false

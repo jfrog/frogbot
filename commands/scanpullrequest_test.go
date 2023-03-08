@@ -31,6 +31,7 @@ const (
 	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yml"
 	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yml"
+	testProjConfigPathNoFail   = "testdata/config/frogbot-config-test-proj-no-fail.yml"
 )
 
 func TestCreateXrayScanParams(t *testing.T) {
@@ -409,26 +410,32 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {
-	assert.NoError(t, runInstallIfNeeded(&utils.Project{}, "", true))
+	scanSetup := utils.ScanDetails{
+		Project:                  utils.Project{},
+		FailOnInstallationErrors: true,
+	}
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	params := &utils.Project{
 		InstallCommandName: "echo",
 		InstallCommandArgs: []string{"Hello"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, tmpDir, true))
+	scanSetup.Project = *params
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
+
+	scanSetup.InstallCommandName = "not-exist"
+	scanSetup.InstallCommandArgs = []string{"1", "2"}
+	scanSetup.FailOnInstallationErrors = false
+	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	assert.NoError(t, runInstallIfNeeded(params, tmpDir, false))
-
-	params = &utils.Project{
-		InstallCommandName: "not-existed",
-		InstallCommandArgs: []string{"1", "2"},
-	}
-	assert.Error(t, runInstallIfNeeded(params, tmpDir, true))
+	scanSetup.Project = *params
+	scanSetup.FailOnInstallationErrors = true
+	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
 }
 
 func TestScanPullRequest(t *testing.T) {
@@ -436,7 +443,7 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func TestScanPullRequestNoFail(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPath, "test-proj", false)
+	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
@@ -463,7 +470,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	configAggregator, client := prepareConfigAndClient(t, configPath, failOnSecurityIssues, server, params)
+	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
 	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
 
@@ -535,8 +542,8 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
-	gitParams := utils.Git{
+func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+	git := &utils.Git{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
 		Token:         "123456",
@@ -544,15 +551,9 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 		PullRequestID: 1,
 	}
 
-	var configData *utils.FrogbotConfigAggregator
-	var err error
-	if configPath == "" {
-		configData = &utils.FrogbotConfigAggregator{{}}
-	} else {
-		configData, err = utils.ReadConfigFromFileSystem(configPath)
-	}
+	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, failOnSecurityIssues)
+	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams)
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
