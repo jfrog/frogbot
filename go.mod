@@ -5,11 +5,11 @@ go 1.19
 require (
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.8.8
+	github.com/jfrog/build-info-go v1.8.9
 	github.com/jfrog/froggit-go v1.6.1
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.29.6
-	github.com/jfrog/jfrog-client-go v1.26.3
+	github.com/jfrog/jfrog-client-go v1.26.4
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
@@ -69,7 +69,6 @@ require (
 	github.com/pjbgf/sha1cd v0.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/skeema/knownhosts v1.1.0 // indirect
@@ -100,3 +99,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.29.7-0.20230308090320-7b2e61c7caa9
