@@ -141,9 +141,13 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	configFile, err := ReadConfigFromFileSystem(configParamsTestFile)
+	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	for _, repo := range *configFile {
+	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
+	assert.NoError(t, err)
+	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, true)
+	assert.NoError(t, err)
+	for _, repo := range *configAggregator {
 		for projectI, project := range repo.Projects {
 			SetProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
 		}
@@ -167,7 +171,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	configFile, err := generateConfigAggregatorFromEnv(&gitParams, server)
+	configFile, err := newConfigAggregatorFromEnv(gitParams, server)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -263,7 +267,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := generateConfigAggregatorFromEnv(&gitParams, &server)
+	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
 	repo := (*configAggregator)[0]
 	assert.Equal(t, "repoName", repo.RepoName)

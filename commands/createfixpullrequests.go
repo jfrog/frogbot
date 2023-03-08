@@ -7,7 +7,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
-	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -69,7 +68,12 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 	for projectIndex, project := range repoConfig.Projects {
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(&repoConfig.Projects[projectIndex], baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
-			scanResults, isMultipleRoots, err := cfp.scan(project, &repoConfig.Server, xrayScanParams, *repoConfig.FailOnSecurityIssues, fullPathWd)
+			scanResults, isMultipleRoots, err := cfp.scan(&utils.ScanDetails{
+				Project:                  project,
+				ServerDetails:            &repoConfig.Server,
+				XrayGraphScanParams:      xrayScanParams,
+				FailOnInstallationErrors: *repoConfig.FailOnSecurityIssues,
+			}, fullPathWd)
 			if err != nil {
 				return err
 			}
@@ -90,10 +94,9 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repoConfig *utils.Frog
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *CreateFixPullRequestsCmd) scan(project utils.Project, server *coreconfig.ServerDetails, xrayScanParams services.XrayGraphScanParams,
-	failOnSecurityIssues bool, currentWorkingDir string) ([]services.ScanResponse, bool, error) {
+func (cfp *CreateFixPullRequestsCmd) scan(scanSetup *utils.ScanDetails, currentWorkingDir string) ([]services.ScanResponse, bool, error) {
 	// Audit commit code
-	scanResults, isMultipleRoots, err := runInstallAndAudit(xrayScanParams, &project, server, failOnSecurityIssues, currentWorkingDir)
+	scanResults, isMultipleRoots, err := runInstallAndAudit(scanSetup, currentWorkingDir)
 	if err != nil {
 		return nil, false, err
 	}

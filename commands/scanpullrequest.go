@@ -3,7 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
-	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,7 +80,16 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	for _, project := range repoConfig.Projects {
-		currentScan, isMultipleRoot, err := auditSource(xrayScanParams, project, &repoConfig.Server)
+		scanSetup := &utils.ScanDetails{
+			XrayGraphScanParams:      xrayScanParams,
+			Project:                  project,
+			Client:                   client,
+			ServerDetails:            &repoConfig.Server,
+			Git:                      &repoConfig.Git,
+			FailOnInstallationErrors: false,
+			Branch:                   repoConfig.Branches[0],
+		}
+		currentScan, isMultipleRoot, err := auditSource(scanSetup)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +103,8 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 			continue
 		}
 		// Audit target code
-		previousScan, isMultipleRoot, err := auditTarget(client, xrayScanParams, project, repoConfig.Branches[0], &repoConfig.Git, &repoConfig.Server)
+		scanSetup.FailOnInstallationErrors = *repoConfig.FailOnSecurityIssues
+		previousScan, isMultipleRoot, err := auditTarget(scanSetup)
 		if err != nil {
 			return nil, err
 		}
@@ -211,13 +221,13 @@ func createXrayScanParams(watches []string, project string) (params services.Xra
 	return
 }
 
-func auditSource(xrayScanParams services.XrayGraphScanParams, project utils.Project, server *coreconfig.ServerDetails) ([]services.ScanResponse, bool, error) {
+func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return []services.ScanResponse{}, false, err
 	}
-	fullPathWds := getFullPathWorkingDirs(&project, wd)
-	return runInstallAndAudit(xrayScanParams, &project, server, true, fullPathWds...)
+	fullPathWds := getFullPathWorkingDirs(&scanSetup.Project, wd)
+	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
 func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
@@ -236,10 +246,10 @@ func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
 	return fullPathWds
 }
 
-func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphScanParams, project utils.Project, branch string, git *utils.Git, server *coreconfig.ServerDetails) (res []services.ScanResponse, isMultipleRoot bool, err error) {
+func auditTarget(scanSetup *utils.ScanDetails) (res []services.ScanResponse, isMultipleRoot bool, err error) {
 	// First download the target repo to temp dir
-	log.Info("Auditing " + git.RepoName + " " + branch)
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, git)
+	log.Info("Auditing ", scanSetup.Git.RepoName, scanSetup.Branch)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client, scanSetup.Branch, scanSetup.Git)
 	if err != nil {
 		return
 	}
@@ -250,27 +260,33 @@ func auditTarget(client vcsclient.VcsClient, xrayScanParams services.XrayGraphSc
 			err = e
 		}
 	}()
-	fullPathWds := getFullPathWorkingDirs(&project, wd)
-	return runInstallAndAudit(xrayScanParams, &project, server, false, fullPathWds...)
+	fullPathWds := getFullPathWorkingDirs(&scanSetup.Project, wd)
+	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
-func runInstallAndAudit(xrayScanParams services.XrayGraphScanParams, project *utils.Project, server *coreconfig.ServerDetails, failOnInstallationErrors bool, workDirs ...string) (results []services.ScanResponse, isMultipleRoot bool, err error) {
+func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (results []services.ScanResponse, isMultipleRoot bool, err error) {
 	for _, wd := range workDirs {
-		if err = runInstallIfNeeded(project, wd, failOnInstallationErrors); err != nil {
+		if err = runInstallIfNeeded(scanSetup, wd); err != nil {
 			return nil, false, err
 		}
 	}
-
-	results, isMultipleRoot, err = audit.GenericAudit(xrayScanParams, server, false, project.UseWrapper, false,
-		nil, nil, project.PipRequirementsFile, false, workDirs, []string{}...)
+	auditParams := audit.NewAuditParams().
+		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
+		SetServerDetails(scanSetup.ServerDetails).
+		SetUseWrapper(scanSetup.UseWrapper).
+		SetRequirementsFile(scanSetup.PipRequirementsFile).
+		SetWorkingDirs(workDirs).
+		SetDepsRepo(scanSetup.Repository).
+		SetIgnoreConfigFile(true)
+	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
 	if err != nil {
 		return nil, false, err
 	}
 	return results, isMultipleRoot, err
 }
 
-func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallationErrors bool) (err error) {
-	if project.InstallCommandName == "" {
+func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error) {
+	if scanSetup.InstallCommandName == "" {
 		return nil
 	}
 	restoreDir, err := utils.Chdir(workDir)
@@ -280,17 +296,27 @@ func runInstallIfNeeded(project *utils.Project, workDir string, failOnInstallati
 			err = restoreErr
 		}
 	}()
-	log.Info("Executing", "'"+project.InstallCommandName+"'", project.InstallCommandArgs, "at", workDir)
-	//#nosec G204 -- False positive - the subprocess only run after the user's approval.
-	if err = exec.Command(project.InstallCommandName, project.InstallCommandArgs...).Run(); err != nil {
-		if failOnInstallationErrors {
-			return err
-		}
-		log.Info(installationCmdFailedErr, err.Error())
+	log.Info(fmt.Sprintf("Executing '%s %s' at %s", scanSetup.InstallCommandName, scanSetup.InstallCommandArgs, workDir))
+	output, err := runInstallCommand(scanSetup)
+	if err != nil && !scanSetup.FailOnInstallationErrors {
+		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}
 	return
+}
+
+func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
+	if scanSetup.Repository == "" {
+		//#nosec G204 -- False positive - the subprocess only run after the user's approval.
+		return exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
+	}
+
+	if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
+		return nil, fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
+	}
+	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.Repository)
+	return utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
 }
 
 func getNewViolations(previousScan, currentScan services.ScanResponse, isMultipleRoot bool) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {

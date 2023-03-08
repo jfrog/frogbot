@@ -102,8 +102,10 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
+	failOnSecurityIssues := false
 	firstRepoParams := utils.Params{
 		Scan: utils.Scan{
+			FailOnSecurityIssues: &failOnSecurityIssues,
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
@@ -113,8 +115,10 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		Git: gitParams.Git,
 	}
 	secondRepoParams := utils.Params{
-		Git:  gitParams.Git,
-		Scan: utils.Scan{Projects: []utils.Project{{WorkingDirs: []string{utils.RootDir}}}},
+		Git: gitParams.Git,
+		Scan: utils.Scan{
+			FailOnSecurityIssues: &failOnSecurityIssues,
+			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}}}},
 	}
 
 	configAggregator := utils.FrogbotConfigAggregator{
