@@ -37,7 +37,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer server.Close()
 	port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
-	gitParams := utils.Git{
+	gitTestParams := &utils.Git{
 		GitProvider:   vcsutils.GitHub,
 		RepoOwner:     "jfrog",
 		Token:         "123456",
@@ -55,11 +55,11 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer cleanUp()
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
-	configAggregator, err := utils.NewConfigAggregator(configData, gitParams, &serverParams, false)
+	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, false)
 	assert.NoError(t, err)
 
 	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
-	assert.NoError(t, cmd.Run(configAggregator, client))
+	assert.NoError(t, cmd.Run(*configAggregator, client))
 }
 
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {
