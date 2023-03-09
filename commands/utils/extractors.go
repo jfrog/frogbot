@@ -35,7 +35,7 @@ func (ed *extractorDetails) downloadFromPath() string {
 // downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
 func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (err error) {
 	var releasesRepo string
-	if releasesRepo = getTrimmedEnv(jfrogReleasesRepo); releasesRepo == "" {
+	if releasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv); releasesRepo == "" {
 		return nil
 	}
 	// Download extractors if remote repo environment variable is set

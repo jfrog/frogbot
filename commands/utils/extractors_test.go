@@ -16,8 +16,8 @@ func TestDownloadExtractorsFromRemoteIfNeeded(t *testing.T) {
 	serverDetails := &config.ServerDetails{
 		AccessToken: "eyJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmYWtlXC91c2Vyc1wvdGVzdCJ9.MTIzNDU2Nzg5MA",
 	}
-	assert.NoError(t, os.Setenv(jfrogReleasesRepo, "remote-repo"))
-	defer assert.NoError(t, os.Unsetenv(jfrogReleasesRepo))
+	assert.NoError(t, os.Setenv(jfrogReleasesRepoEnv, "remote-repo"))
+	defer assert.NoError(t, os.Unsetenv(jfrogReleasesRepoEnv))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	restoreDir, err := Chdir(tmpDir)

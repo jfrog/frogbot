@@ -36,14 +36,14 @@ type FrogbotUtils struct {
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
-// UnmarshalYaml uses the yaml.Unmarshaler interface to parse the yamlContent, and then sets default values if it wasn't supplied by the user.
+// UnmarshalYaml uses the yaml.Unmarshaler interface to parse the yamlContent, and then sets default values if they weren't set by the user.
 func (fca FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result FrogbotConfigAggregator, err error) {
 	var configFile *FrogbotConfigAggregator
 	if err := yaml.Unmarshal(yamlContent, &configFile); err != nil {
 		return nil, err
 	}
 	for _, repository := range *configFile {
-		repository.Params, err = repository.setDefaultsIfNeeded()
+		repository.Params, err = repository.Params.setDefaultsIfNeeded()
 		if err != nil {
 			return
 		}

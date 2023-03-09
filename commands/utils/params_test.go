@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -318,4 +319,34 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.False(t, *params.UseWrapper)
 	assert.Equal(t, "nuget", params.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, params.InstallCommandArgs)
+}
+
+func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
+	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
+	fileContent, err := os.ReadFile(testFilePath)
+	assert.NoError(t, err)
+	configAggregator := FrogbotConfigAggregator{}
+	configAggregator, err = configAggregator.UnmarshalYaml(fileContent)
+	assert.NoError(t, err)
+	firstRepo := configAggregator[0]
+	assert.Equal(t, "npm-repo", firstRepo.RepoName)
+	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
+	assert.False(t, *firstRepo.FailOnSecurityIssues)
+	firstRepoProject := firstRepo.Projects[0]
+	assert.Equal(t, "npm i", firstRepoProject.InstallCommand)
+	assert.False(t, *firstRepoProject.UseWrapper)
+	assert.Equal(t, "test-repo", firstRepoProject.Repository)
+	secondRepo := configAggregator[1]
+	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
+	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
+	thirdRepo := configAggregator[2]
+	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
+	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
+	assert.True(t, *thirdRepo.FailOnSecurityIssues)
+	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
+	thirdRepoProject := thirdRepo.Projects[0]
+	assert.Equal(t, "requirements.txt", thirdRepoProject.PipRequirementsFile)
+	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
+	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
+	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
