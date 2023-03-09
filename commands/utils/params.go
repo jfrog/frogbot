@@ -183,8 +183,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server)
-	return configAggregator, err
+	return NewConfigAggregatorFromFile(configFileContent, gitParams, server)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
