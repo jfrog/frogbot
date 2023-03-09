@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,16 +23,16 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
 )
 
 const (
-	testMultiDirProjConfigPath = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
-	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yml"
-	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yml"
-	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yml"
-	testProjConfigPathNoFail   = "testdata/config/frogbot-config-test-proj-no-fail.yml"
+	testMultiDirProjConfigPath       = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
+	testMultiDirProjConfigPathNoFail = "testdata/config/frogbot-config-multi-dir-test-proj-no-fail.yml"
+	testProjSubdirConfigPath         = "testdata/config/frogbot-config-test-proj-subdir.yml"
+	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
+	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
+	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
 )
 
 func TestCreateXrayScanParams(t *testing.T) {
@@ -459,7 +460,7 @@ func TestScanPullRequestMultiWorkDir(t *testing.T) {
 }
 
 func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", false)
+	testScanPullRequest(t, testMultiDirProjConfigPathNoFail, "multi-dir-test-proj", false)
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
