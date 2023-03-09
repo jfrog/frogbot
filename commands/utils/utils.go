@@ -173,13 +173,18 @@ func RemoveDowngradedVersions(vul *formats.VulnerabilityOrViolationRow) {
 		return
 	}
 	upgradeVersions := make([]string, 0)
-	effectedVersion := version.NewVersion(vul.ImpactedDependencyVersion)
+	effectedVersion := version.NewVersion(removeBrackets(vul.ImpactedDependencyVersion))
 	for _, suggestedFixVersion := range vul.FixedVersions {
-		replacer := strings.NewReplacer("[", "", "]", "") //trims brackets if exists
-		suggestedFixVersionTrimmed := replacer.Replace(suggestedFixVersion)
+		suggestedFixVersionTrimmed := removeBrackets(suggestedFixVersion)
 		if !effectedVersion.AtLeast(suggestedFixVersionTrimmed) {
 			upgradeVersions = append(upgradeVersions, suggestedFixVersion)
 		}
 	}
 	vul.FixedVersions = upgradeVersions
+}
+
+func removeBrackets(suggestedFixVersion string) string {
+	replacer := strings.NewReplacer("[", "", "]", "") //trims brackets if exists
+	suggestedFixVersionTrimmed := replacer.Replace(suggestedFixVersion)
+	return suggestedFixVersionTrimmed
 }

@@ -176,6 +176,14 @@ func TestRemoveDowngradedVersions(t *testing.T) {
 			},
 			expectedResult: []string{"1.5.4", "2.5.0"},
 			description:    "Test without brackets",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"1.2.5", "1.2.6"},
+			},
+			expectedResult: []string{"1.2.6"},
+			description:    "Test mixed brackets and without brackets",
 		},
 	}
 	for _, test := range tests {
