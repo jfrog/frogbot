@@ -364,7 +364,10 @@ func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (s
 		return handleGoPkgPackageSemanticVersionSuffix(impactedPackage, majorVersion)
 	}
 	if majorVersion > 1 {
-		packageNameWithoutVersion := removeVersionFromPackageName(impactedPackage, "/")
+		packageNameWithoutVersion, err := removeVersionFromPackageName(impactedPackage, "/")
+		if err != nil {
+			return "", err
+		}
 		return fmt.Sprintf(goVersionStringFormat, packageNameWithoutVersion, majorVersion), nil
 	}
 	return impactedPackage, nil
@@ -501,28 +504,25 @@ func fixPackageVersionGo(impactedPackage, fixVersion string) error {
 	return fixPackageVersionGeneric(coreutils.Go, impactedPackage, fixVersion)
 }
 
-// isVersionContainedInString return if the package name includes version indicator like  /v{x} or .v{x}
-func isVersionContainedInString(str string) bool {
-	match, err := regexp.MatchString(`^.+[\/\.]v(\d+)$`, str)
-	if err != nil {
-		return false
-	}
-	return match
-}
-
 // handleGoPkgPackageSemanticVersionSuffix handles gopkg specific needs
 func handleGoPkgPackageSemanticVersionSuffix(packageName string, majorVersion int) (string, error) {
-	packageNameWithoutVersion := removeVersionFromPackageName(packageName, ".")
+	packageNameWithoutVersion, err := removeVersionFromPackageName(packageName, ".")
+	if err != nil {
+		return "", err
+	}
 	return fmt.Sprintf(goVersionStringFormatGopkg, packageNameWithoutVersion, majorVersion), nil
 }
 
 // removeVersionFromPackageName remove the last /v{x} or .v{x} from the package name
-func removeVersionFromPackageName(impactedPackage string, pathSeparator string) string {
-	split := strings.Split(impactedPackage, pathSeparator)
-	amountToSubtract := 0
-	if isVersionContainedInString(impactedPackage) {
-		amountToSubtract = 1
+func removeVersionFromPackageName(impactedPackage string, pathSeparator string) (string, error) {
+	containsVersionIndicator, err := regexp.MatchString(`.+[\/\.]v(\d+)$`, impactedPackage)
+	if err != nil {
+		return "", err
 	}
-	packagePath := strings.Join(split[0:len(split)-amountToSubtract], pathSeparator)
-	return packagePath
+	if containsVersionIndicator {
+		// remove the version indicator
+		split := strings.Split(impactedPackage, pathSeparator)
+		return strings.Join(split[0:len(split)-1], pathSeparator), nil
+	}
+	return impactedPackage, nil
 }
