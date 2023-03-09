@@ -271,10 +271,10 @@ func TestFormatGoVersion(t *testing.T) {
 		expected        string
 	}{
 		{
-			impactedPackage: "github.com/vbauerster/mpb/v7",
-			fixVersion:      "8.1.0",
-			expected:        "github.com/vbauerster/mpb/v8",
-			description:     "Validate adding /v5 to impacted package name",
+			impactedPackage: "github.com/vbauerster/mpb/v10",
+			fixVersion:      "12.1.0",
+			expected:        "github.com/vbauerster/mpb/v12",
+			description:     "Validate adding /v10 to impacted package name",
 		}, {
 			impactedPackage: "github.com/vbauerster/mpb/myseomthing/v7",
 			fixVersion:      "8.1.0",

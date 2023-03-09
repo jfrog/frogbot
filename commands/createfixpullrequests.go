@@ -502,20 +502,12 @@ func fixPackageVersionGo(impactedPackage, fixVersion string) error {
 }
 
 // isVersionContainedInString return if the package name includes version indicator like  /v{x} or .v{x}
-func isVersionContainedInString(str, separator string) bool {
-	patterns := []string{`^v\d{1}$`, `^v.d{1}$`}
-	parts := strings.Split(str, separator)
-	lastPart := parts[len(parts)-1]
-	for _, pattern := range patterns {
-		match, err := regexp.MatchString(pattern, lastPart)
-		if err != nil {
-			return false
-		}
-		if match {
-			return match
-		}
+func isVersionContainedInString(str string) bool {
+	match, err := regexp.MatchString(`^.+[\/\.]v(\d+)$`, str)
+	if err != nil {
+		return false
 	}
-	return false
+	return match
 }
 
 // handleGoPkgPackageSemanticVersionSuffix handles gopkg specific needs
@@ -528,7 +520,7 @@ func handleGoPkgPackageSemanticVersionSuffix(packageName string, majorVersion in
 func removeVersionFromPackageName(impactedPackage string, pathSeparator string) string {
 	split := strings.Split(impactedPackage, pathSeparator)
 	amountToSubtract := 0
-	if isVersionContainedInString(impactedPackage, pathSeparator) {
+	if isVersionContainedInString(impactedPackage) {
 		amountToSubtract = 1
 	}
 	packagePath := strings.Join(split[0:len(split)-amountToSubtract], pathSeparator)
