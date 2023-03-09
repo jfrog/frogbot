@@ -31,9 +31,6 @@ const (
 	semanticVersioningSeparator = "."
 
 	gopkg = "gopkg"
-
-	goVersionStringFormat      = "%s/v%d"
-	goVersionStringFormatGopkg = "%s.v%d"
 )
 
 type CreateFixPullRequestsCmd struct {
@@ -353,24 +350,47 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
 // Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
-func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (string, error) {
-	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
+func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (updatedImpactedPackage string, err error) {
+	minSemanticVersion := 1
+	majorFixVersion := strings.Split(fixVersion, semanticVersioningSeparator)[0]
+	majorFixVersionInt, err := strconv.Atoi(majorFixVersion)
 	if err != nil {
-		return "", err
+		return
 	}
+	semanticVersionPrefix, impactedPackageVersionInt, err := utils.ExtractPackageMajorVersionSuffix(impactedPackage)
+	if majorFixVersionInt == impactedPackageVersionInt {
+		updatedImpactedPackage = impactedPackage
+		return
+	}
+	if semanticVersionPrefix == "" {
+		// No version indicator was found need to add by package host type
+		handleEmptySemanticVersion(impactedPackage, &minSemanticVersion, &semanticVersionPrefix)
+	}
+	prefix, err := utils.ExtractSemanticVersionPrefix(semanticVersionPrefix)
+	if err != nil {
+		return
+	}
+	impactedPackage = strings.TrimSuffix(impactedPackage, semanticVersionPrefix)
+	if majorFixVersionInt > minSemanticVersion {
+		return impactedPackage + prefix + majorFixVersion, nil
+	}
+	updatedImpactedPackage = impactedPackage
+	return
+}
+
+// Helper function , when the semantic version is empty, need to add prefix by package host
+// and adjust the min version to address to
+// gopkg is a special case where they use . instead of /
+// and gopkg use /v1 annotation where GitHub and others doesn't.
+func handleEmptySemanticVersion(impactedPackage string, minVersion *int, impactedPackageSemanticVersionString *string) {
 	importPathPrefixSplit := strings.Split(impactedPackage, ".")
 	packageSource := importPathPrefixSplit[0]
 	if packageSource == gopkg {
-		return handleGoPkgPackageSemanticVersionSuffix(impactedPackage, majorVersion)
+		*minVersion = 0
+		*impactedPackageSemanticVersionString = ".v"
+	} else {
+		*impactedPackageSemanticVersionString = "/v"
 	}
-	if majorVersion > 1 {
-		packageNameWithoutVersion, err := removeVersionFromPackageName(impactedPackage, "/")
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(goVersionStringFormat, packageNameWithoutVersion, majorVersion), nil
-	}
-	return impactedPackage, nil
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {
@@ -502,27 +522,4 @@ func fixPackageVersionGo(impactedPackage, fixVersion string) error {
 		return err
 	}
 	return fixPackageVersionGeneric(coreutils.Go, impactedPackage, fixVersion)
-}
-
-// handleGoPkgPackageSemanticVersionSuffix handles gopkg specific needs
-func handleGoPkgPackageSemanticVersionSuffix(packageName string, majorVersion int) (string, error) {
-	packageNameWithoutVersion, err := removeVersionFromPackageName(packageName, ".")
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf(goVersionStringFormatGopkg, packageNameWithoutVersion, majorVersion), nil
-}
-
-// removeVersionFromPackageName remove the last /v{x} or .v{x} from the package name
-func removeVersionFromPackageName(impactedPackage string, pathSeparator string) (string, error) {
-	containsVersionIndicator, err := regexp.MatchString(`.+[\/\.]v(\d+)$`, impactedPackage)
-	if err != nil {
-		return "", err
-	}
-	if containsVersionIndicator {
-		// remove the version indicator
-		split := strings.Split(impactedPackage, pathSeparator)
-		return strings.Join(split[0:len(split)-1], pathSeparator), nil
-	}
-	return impactedPackage, nil
 }

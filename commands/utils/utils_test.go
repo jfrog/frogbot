@@ -217,3 +217,65 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	}
 	return
 }
+
+func TestExtractPackageMajorVersionSuffix(t *testing.T) {
+	tests := []struct {
+		fullPackageName string
+		expectedResult  string
+		description     string
+	}{
+		{
+			fullPackageName: "gopkg.in/vini/ini.v2",
+			expectedResult:  ".v2",
+			description:     "validate gopkg version suffix",
+		}, {
+			fullPackageName: "gopkg.in/ini",
+			expectedResult:  "",
+			description:     "validate gopkg without version",
+		}, {
+			fullPackageName: "github.com/go-git/go-git/v4",
+			expectedResult:  "/v4",
+			description:     "validate github and others version suffix",
+		}, {
+			fullPackageName: "github.com/go-git/go-git",
+			expectedResult:  "",
+			description:     "github without version  ",
+		}, {
+			fullPackageName: "github.com/go-git/go-git/v500",
+			expectedResult:  "/v500",
+			description:     "github big version",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			str, _, err := ExtractPackageMajorVersionSuffix(test.fullPackageName)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedResult, str)
+		})
+	}
+}
+
+func TestExtractSemanticVersionPrefix(t *testing.T) {
+	tests := []struct {
+		semanticVersionString string
+		expectedResult        string
+		description           string
+	}{
+		{
+			semanticVersionString: "/v2",
+			expectedResult:        "/v",
+			description:           "extract normal packages prefix",
+		}, {
+			semanticVersionString: ".v2",
+			expectedResult:        ".v",
+			description:           "extract gopkg packages prefix",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			str, err := ExtractSemanticVersionPrefix(test.semanticVersionString)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedResult, str)
+		})
+	}
+}
