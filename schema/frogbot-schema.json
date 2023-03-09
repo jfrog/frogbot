@@ -103,6 +103,11 @@
               "title": "Use Gradle Wrapper",
               "description": "Set to false to avoid using the Gradle wrapper.",
               "default": true
+            },
+            "repository": {
+              "type": "string",
+              "title": "Virtual Artifactory Repository",
+              "description": "Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from"
             }
           }
         }
