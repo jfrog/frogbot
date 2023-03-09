@@ -32,7 +32,8 @@ const (
 
 	gopkg = "gopkg"
 
-	goVersionStringFormat = "%s%sv%d"
+	goVersionStringFormat      = "%s/v%d"
+	goVersionStringFormatGopkg = "%s.v%d"
 )
 
 type CreateFixPullRequestsCmd struct {
@@ -353,20 +354,18 @@ func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, 
 // Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
 // Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
 func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (string, error) {
-	pathSeparator := "/"
-	shouldMentionFirstVersion := false // Whether or not to mention /v1 packages
 	majorVersion, err := strconv.Atoi(strings.Split(fixVersion, semanticVersioningSeparator)[0])
-	importPathPrefix := strings.Split(impactedPackage, ".")[0]
 	if err != nil {
 		return "", err
 	}
-	if importPathPrefix == gopkg {
-		pathSeparator = "."
-		shouldMentionFirstVersion = true
+	importPathPrefixSplit := strings.Split(impactedPackage, ".")
+	packageSource := importPathPrefixSplit[0]
+	if packageSource == gopkg {
+		return handleGoPkgPackageSemanticVersionSuffix(impactedPackage, majorVersion)
 	}
-	if majorVersion > 1 || shouldMentionFirstVersion {
-		impactedPackageWithoutVersion := strings.Split(impactedPackage, pathSeparator+"v")[0]
-		return fmt.Sprintf(goVersionStringFormat, impactedPackageWithoutVersion, pathSeparator, majorVersion), nil
+	if majorVersion > 1 {
+		packageNameWithoutVersion := removeVersionFromPackageName(impactedPackage, "/")
+		return fmt.Sprintf(goVersionStringFormat, packageNameWithoutVersion, majorVersion), nil
 	}
 	return impactedPackage, nil
 }
@@ -500,4 +499,36 @@ func fixPackageVersionGo(impactedPackage, fixVersion string) error {
 		return err
 	}
 	return fixPackageVersionGeneric(coreutils.Go, impactedPackage, fixVersion)
+}
+
+// isVersionContainedInString return if the package name includes version indicator like  /v{x} or .v{x}
+func isVersionContainedInString(str, separator string) bool {
+	patterns := []string{`^v\d{1}$`, `^v.d{1}$`}
+	parts := strings.Split(str, separator)
+	lastPart := parts[len(parts)-1]
+	for _, pattern := range patterns {
+		match, err := regexp.MatchString(pattern, lastPart)
+		if err != nil {
+			return false
+		}
+		return match
+	}
+	return false
+}
+
+// handleGoPkgPackageSemanticVersionSuffix handles gopkg specific needs
+func handleGoPkgPackageSemanticVersionSuffix(packageName string, majorVersion int) (string, error) {
+	packageNameWithoutVersion := removeVersionFromPackageName(packageName, ".")
+	return fmt.Sprintf(goVersionStringFormatGopkg, packageNameWithoutVersion, majorVersion), nil
+}
+
+// removeVersionFromPackageName remove the last /v{x} or .v{x} from the package name
+func removeVersionFromPackageName(impactedPackage string, pathSeparator string) string {
+	split := strings.Split(impactedPackage, pathSeparator)
+	amountToSubtract := 0
+	if isVersionContainedInString(impactedPackage, pathSeparator) {
+		amountToSubtract = 1
+	}
+	packagePath := strings.Join(split[0:len(split)-amountToSubtract], pathSeparator)
+	return packagePath
 }

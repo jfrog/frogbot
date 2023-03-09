@@ -271,9 +271,14 @@ func TestFormatGoVersion(t *testing.T) {
 		expected        string
 	}{
 		{
-			impactedPackage: "github.com/go-git/go-git/v2",
-			fixVersion:      "5.5.2",
-			expected:        "github.com/go-git/go-git/v5",
+			impactedPackage: "github.com/vbauerster/mpb/v7",
+			fixVersion:      "8.1.0",
+			expected:        "github.com/vbauerster/mpb/v8",
+			description:     "Validate adding /v5 to impacted package name",
+		}, {
+			impactedPackage: "github.com/vbauerster/mpb/myseomthing/v7",
+			fixVersion:      "8.1.0",
+			expected:        "github.com/vbauerster/mpb/myseomthing/v8",
 			description:     "Validate adding /v5 to impacted package name",
 		},
 		{
@@ -305,6 +310,12 @@ func TestFormatGoVersion(t *testing.T) {
 			fixVersion:      "3.1.0",
 			expected:        "gopkg.in/ini.v3",
 			description:     "gopkg validate no chained versions like gopkg.in/ini.v2.v3",
+		},
+		{
+			impactedPackage: "gopkg.in/vini/ini.v2",
+			fixVersion:      "3.1.0",
+			expected:        "gopkg.in/vini/ini.v3",
+			description:     "gopkg validate nested package paths",
 		},
 	}
 
