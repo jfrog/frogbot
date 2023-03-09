@@ -511,7 +511,9 @@ func isVersionContainedInString(str, separator string) bool {
 		if err != nil {
 			return false
 		}
-		return match
+		if match {
+			return match
+		}
 	}
 	return false
 }
