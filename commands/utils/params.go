@@ -29,12 +29,28 @@ var errFrogbotConfigNotFound = fmt.Errorf("%s wasn't found in the Frogbot direct
 var osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
 
 type FrogbotUtils struct {
-	ConfigAggregator *FrogbotConfigAggregator
+	ConfigAggregator FrogbotConfigAggregator
 	ServerDetails    *coreconfig.ServerDetails
 	Client           vcsclient.VcsClient
 }
 
 type FrogbotConfigAggregator []FrogbotRepoConfig
+
+// UnmarshalYaml uses the yaml.Unmarshaler interface to parse the yamlContent, and then sets default values if they weren't set by the user.
+func (fca FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result FrogbotConfigAggregator, err error) {
+	var configFile *FrogbotConfigAggregator
+	if err := yaml.Unmarshal(yamlContent, &configFile); err != nil {
+		return nil, err
+	}
+	for _, repository := range *configFile {
+		repository.Params, err = repository.Params.setDefaultsIfNeeded()
+		if err != nil {
+			return
+		}
+		result = append(result, repository)
+	}
+	return
+}
 
 type FrogbotRepoConfig struct {
 	Params `yaml:"params,omitempty"`
@@ -48,20 +64,56 @@ type Params struct {
 	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
 }
 
+func (p *Params) setDefaultsIfNeeded() (Params, error) {
+	if p.RepoName == "" {
+		return Params{}, errors.New("repository name is missing")
+	}
+	p.Scan = *p.Scan.setDefaultsIfNeeded()
+	return *p, nil
+}
+
 type Project struct {
 	InstallCommand      string   `yaml:"installCommand,omitempty"`
 	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
-	UseWrapper          bool     `yaml:"useWrapper,omitempty"`
+	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
 	Repository          string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
+}
+
+func (p *Project) setDefaultsIfNeeded() *Project {
+	if len(p.WorkingDirs) == 0 {
+		p.WorkingDirs = append(p.WorkingDirs, RootDir)
+	}
+	if p.UseWrapper == nil {
+		p.UseWrapper = &TrueVal
+	}
+	if p.InstallCommand != "" {
+		setProjectInstallCommand(p.InstallCommand, p)
+	}
+	return p
 }
 
 type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
+}
+
+func (s *Scan) setDefaultsIfNeeded() *Scan {
+	if s.FailOnSecurityIssues == nil {
+		s.FailOnSecurityIssues = &TrueVal
+	}
+	if s.Projects == nil {
+		s.Projects = []Project{{}}
+	}
+	var projectsWithDefaults []Project
+	for _, project := range s.Projects {
+		projectsWithDefaults = append(projectsWithDefaults, *project.setDefaultsIfNeeded())
+	}
+	s.Projects = projectsWithDefaults
+	return s
 }
 
 type JFrogPlatform struct {
@@ -114,7 +166,7 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 }
 
 // getConfigAggregator returns a FrogbotConfigAggregator based on frogbot-config.yml and environment variables.
-func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDetails, gitParams *Git) (*FrogbotConfigAggregator, error) {
+func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDetails, gitParams *Git) (FrogbotConfigAggregator, error) {
 	if err := downloadExtractorsFromRemoteIfNeeded(server, ""); err != nil {
 		return nil, err
 	}
@@ -131,8 +183,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, true)
-	return configAggregator, err
+	return NewConfigAggregatorFromFile(configFileContent, gitParams, server)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
@@ -154,38 +205,23 @@ func getConfigFileContent(client vcsclient.VcsClient) (configFileContent []byte,
 }
 
 // NewConfigAggregatorFromFile receive a frogbot-config.yml file content along with the Git and ServerDetails parameters, and returns a FrogbotConfigAggregator instance with all the default and necessary fields.
-func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, server *coreconfig.ServerDetails, failOnSecurityIssues bool) (*FrogbotConfigAggregator, error) {
-	var fileConfig *FrogbotConfigAggregator
-	if err := yaml.Unmarshal(configFileContent, &fileConfig); err != nil {
+func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, server *coreconfig.ServerDetails) (result FrogbotConfigAggregator, err error) {
+	// Unmarshal the frogbot-config.yml file
+	result, err = result.UnmarshalYaml(configFileContent)
+	if err != nil {
 		return nil, err
 	}
-	var newConfigAggregator FrogbotConfigAggregator
-	for _, config := range *fileConfig {
-		// In case the projects property in the frogbot-config.yml file is missing, we generate an empty one to work on the default projects settings.
-		if config.Projects == nil {
-			config.Projects = []Project{{WorkingDirs: []string{RootDir}}}
+	// Set git parameters and server details for each repository
+	for i := range result {
+		gitParams.RepoName = result[i].RepoName
+		if result[i].Branches != nil {
+			gitParams.Branches = result[i].Branches
 		}
-		for projectIndex, project := range config.Projects {
-			SetProjectInstallCommand(project.InstallCommand, &config.Projects[projectIndex])
-		}
-		if config.RepoName == "" {
-			return nil, errors.New("repo name is missing from the frogbot-config file")
-		}
-		gitParams.RepoName = config.RepoName
-		if config.Branches != nil {
-			gitParams.Branches = config.Branches
-		}
-		if config.FailOnSecurityIssues == nil {
-			config.FailOnSecurityIssues = &failOnSecurityIssues
-		}
-		config.Git = *gitParams
-		newConfigAggregator = append(newConfigAggregator, FrogbotRepoConfig{
-			OutputWriter: GetCompatibleOutputWriter(gitParams.GitProvider),
-			Server:       *server,
-			Params:       config.Params,
-		})
+		result[i].Git = *gitParams
+		result[i].Server = *server
+		result[i].OutputWriter = GetCompatibleOutputWriter(result[i].GitProvider)
 	}
-	return &newConfigAggregator, nil
+	return
 }
 
 func extractJFrogParamsFromEnv() (coreconfig.ServerDetails, error) {
@@ -331,17 +367,20 @@ func extractProjectParamsFromEnv(project *Project) error {
 		workingDir = RootDir
 	}
 	project.WorkingDirs = []string{workingDir}
+	project.Repository = getTrimmedEnv(DepsRepoEnv)
 	project.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
-	SetProjectInstallCommand(installCommand, project)
+	setProjectInstallCommand(installCommand, project)
 	var err error
-	if project.UseWrapper, err = getBoolEnv(UseWrapperEnv, true); err != nil {
+	var useWrapper bool
+	if useWrapper, err = getBoolEnv(UseWrapperEnv, true); err != nil {
 		return err
 	}
+	project.UseWrapper = &useWrapper
 	return err
 }
 
-func SetProjectInstallCommand(installCommand string, project *Project) {
+func setProjectInstallCommand(installCommand string, project *Project) {
 	if installCommand == "" {
 		return
 	}
@@ -388,7 +427,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 }
 
 // In case frogbot-config.yml does not exist, newConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
-func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails) (*FrogbotConfigAggregator, error) {
+func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails) (FrogbotConfigAggregator, error) {
 	// The repo name must be set as a part of the envs.
 	if gitParams.RepoName == "" {
 		return nil, &ErrMissingEnv{GitRepoEnv}
@@ -404,7 +443,7 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	}
 	repo.Projects = append(repo.Projects, project)
 	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
-	return &FrogbotConfigAggregator{repo}, nil
+	return FrogbotConfigAggregator{repo}, nil
 }
 
 // readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository

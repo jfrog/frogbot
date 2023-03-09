@@ -34,8 +34,8 @@ func (ed *extractorDetails) downloadFromPath() string {
 
 // downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
 func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (err error) {
-	var frogbotRepo string
-	if frogbotRepo = getTrimmedEnv(jfrogRemoteRepo); frogbotRepo == "" {
+	var releasesRepo string
+	if releasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv); releasesRepo == "" {
 		return nil
 	}
 	// Download extractors if remote repo environment variable is set
@@ -62,7 +62,7 @@ func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extracto
 			remotePath:    fmt.Sprintf(build.GradleExtractorRemotePath, build.GradleExtractorDependencyVersion),
 		},
 	}
-	return downloadExtractors(frogbotRepo, server, extractors...)
+	return downloadExtractors(releasesRepo, server, extractors...)
 }
 
 func downloadExtractors(remoteRepoName string, server *config.ServerDetails, extractors ...extractorDetails) (err error) {

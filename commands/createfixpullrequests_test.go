@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,7 +13,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/stretchr/testify/assert"
 )
 
 type FixPackagesTestFunc func(test packageFixTest) CreateFixPullRequestsCmd
@@ -204,8 +204,9 @@ func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
+	trueVal := true
 	params := utils.Params{
-		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: true}}},
+		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
 	}
 	var frogbotParams = utils.FrogbotRepoConfig{
 		Server: environmentVars,

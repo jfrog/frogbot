@@ -3,21 +3,33 @@
       repoName: npm-repo
       branches:
         - master
+        - main
     scan:
       projects:
         - installCommand: npm i
+          useWrapper: false
+          repository: test-repo
       failOnSecurityIssues: false
 - params:
     git:
       repoName: mvn-repo
       branches:
-        - master
+        - dev
 - params:
     git:
       repoName: pip-repo
       branches:
-        - master
+        - test
     scan:
       projects:
         - pipRequirementsFile: requirements.txt
-      failOnSecurityIssues: false
+          workingDirs:
+            - a/b
+            - b/c
+      failOnSecurityIssues: true
+      includeAllVulnerabilities: false
+    jfrogPlatform:
+      watches:
+        - watch-1
+        - watch-2
+      jfrogProjectKey: proj

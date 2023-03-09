@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,15 +23,16 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/stretchr/testify/assert"
 	clitool "github.com/urfave/cli/v2"
 )
 
 const (
-	testMultiDirProjConfigPath = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
-	testProjSubdirConfigPath   = "testdata/config/frogbot-config-test-proj-subdir.yml"
-	testCleanProjConfigPath    = "testdata/config/frogbot-config-clean-test-proj.yml"
-	testProjConfigPath         = "testdata/config/frogbot-config-test-proj.yml"
+	testMultiDirProjConfigPath       = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
+	testMultiDirProjConfigPathNoFail = "testdata/config/frogbot-config-multi-dir-test-proj-no-fail.yml"
+	testProjSubdirConfigPath         = "testdata/config/frogbot-config-test-proj-subdir.yml"
+	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
+	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
+	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
 )
 
 func TestCreateXrayScanParams(t *testing.T) {
@@ -442,7 +444,7 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func TestScanPullRequestNoFail(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPath, "test-proj", false)
+	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
 }
 
 func TestScanPullRequestSubdir(t *testing.T) {
@@ -458,7 +460,7 @@ func TestScanPullRequestMultiWorkDir(t *testing.T) {
 }
 
 func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", false)
+	testScanPullRequest(t, testMultiDirProjConfigPathNoFail, "multi-dir-test-proj", false)
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
@@ -469,7 +471,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	configAggregator, client := prepareConfigAndClient(t, configPath, failOnSecurityIssues, server, params)
+	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
 	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
 
@@ -541,7 +543,7 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssues bool, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
 	git := &utils.Git{
 		GitProvider:   vcsutils.GitLab,
 		RepoOwner:     "jfrog",
@@ -552,12 +554,12 @@ func prepareConfigAndClient(t *testing.T, configPath string, failOnSecurityIssue
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams, failOnSecurityIssues)
+	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams)
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
-	return *configAggregator, client
+	return configAggregator, client
 }
 
 func TestScanPullRequestError(t *testing.T) {
