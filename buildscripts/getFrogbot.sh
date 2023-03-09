@@ -16,10 +16,10 @@ setFrogbotVersion() {
 }
 
 setFrogbotRemoteRepositoryIfNeeded() {
-  if [ -n "${JF_FROGBOT_REPO}" ]
+  if [ -n "${JF_RELEASES_REPO}" ]
   then
     PLATFORM_URL="${JF_URL%%/}"
-    REMOTE_PATH="$JF_FROGBOT_REPO/artifactory/"
+    REMOTE_PATH="$JF_RELEASES_REPO/artifactory/"
   fi
 }
 

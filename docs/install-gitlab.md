@@ -81,9 +81,17 @@ frogbot-scan:
     # Fails the Frogbot task if any security issue is found.
     # JF_FAIL: "FALSE"
 
-    # [Optional, default: "TRUE"]
-    # Use Gradle Wrapper (gradlew/gradlew.bat) to run Gradle
-    # JF_USE_WRAPPER: "TRUE"
+    # [Optional]
+    # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+    # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+    # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+    # JF_RELEASES_REPO: ""
+
+    # [Optional]
+    # Frogbot will download the project dependencies if they're not cached locally. To download the
+    # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+    # need to set this value, if it is set in the frogbot-config.yml file.
+    # JF_DEPS_REPO: ""
   script:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
@@ -91,5 +99,9 @@ frogbot-scan:
 
     # For Windows runner:
     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+    # .\frogbot.exe ${FROGBOT_CMD}
+
+    # For Windows runner using Artifactory remote repository:
+    # iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
     # .\frogbot.exe ${FROGBOT_CMD}
 ```

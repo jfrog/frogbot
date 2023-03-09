@@ -33,7 +33,7 @@ const (
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
-	jfrogRemoteRepo        = "JF_FROGBOT_REPO"
+	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 
@@ -53,6 +53,7 @@ const (
 	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
 	FailOnSecurityIssuesEnv      = "JF_FAIL"
 	UseWrapperEnv                = "JF_USE_WRAPPER"
+	DepsRepoEnv                  = "JF_DEPS_REPO"
 	WatchesDelimiter             = ","
 
 	//#nosec G101 -- False positive - no hardcoded credentials.

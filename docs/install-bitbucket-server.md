@@ -86,6 +86,18 @@
            // JFrog user and password with 'read' permissions for Xray
            // JF_USER= credentials("JF_USER")
            // JF_PASSWORD= credentials("JF_PASSWORD")
+   
+           // [Optional]
+           // If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+           // in Artifactory, which proxies https://releases.jfrog.io/artifactory
+           // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+           // JF_RELEASES_REPO= ""
+
+           // [Optional]
+           // Frogbot will download the project dependencies if they're not cached locally. To download the
+           // dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+           // need to set this value, if it is set in the frogbot-config.yml file.
+           // JF_DEPS_REPO= ""
           }
       
           stages {
