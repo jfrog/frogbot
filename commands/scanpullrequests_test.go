@@ -166,6 +166,7 @@ func TestScanAllPullRequests(t *testing.T) {
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
 				WorkingDirs:        []string{"."},
+				UseWrapper:         &utils.TrueVal,
 			}},
 		},
 		Git: gitParams.Git,
