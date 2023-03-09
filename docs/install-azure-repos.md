@@ -29,7 +29,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
    ![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
 
-   8. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
+8. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
 
    <details>
      <summary>Template</summary>
@@ -72,9 +72,16 @@ To install Frogbot on Azure Repos repositories, follow these steps.
               JF_GIT_OWNER: ""
    
               # [Optional]
-              # Relevant for air-gapped environments.
-              # Name of the remote repository that Frogbot and its dependencies will be downloaded to.
-              # JF_FROGBOT_REPO: ""
+              # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+              # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+              # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+              # JF_RELEASES_REPO: ""
+
+              # [Optional]
+              # Frogbot will download the project dependencies if they're not cached locally. To download the
+              # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+              # need to set this value, if it is set in the frogbot-config.yml file.
+              # JF_DEPS_REPO: ""
    
               # Predefined Azure Pipelines variables. There's no need to set them.
               JF_GIT_PROJECT: $(System.TeamProject)
@@ -87,6 +94,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                ./frogbot scan-pull-requests
                ./frogbot scan-and-fix-repos
    ```
+
    </details>
 
 9. For the pipeline you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.

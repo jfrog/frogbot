@@ -11,12 +11,20 @@
 
 ## Table of contents
 
-- [What is Frogbot?](#what-is-frogbot)
-- [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
-- [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
-- [Installing Frogbot](#installing-frogbot)
-- [Reporting issues](#reporting-issues)
-- [Contributions](#contributions)
+- [Frogbot](#frogbot)
+  - [Table of contents](#table-of-contents)
+  - [🤖 What is Frogbot?](#-what-is-frogbot)
+  - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
+    - [General](#general)
+    - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
+    - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
+    - [Scan results](#scan-results)
+      - [👍 No issues](#-no-issues)
+      - [👎 Issues were found](#-issues-were-found)
+  - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
+  - [🖥️ Installing Frogbot](#️-installing-frogbot)
+  - [🔥 Reporting issues](#-reporting-issues)
+  - [💻 Contributions](#-contributions)
 
 <div id="what-is-frogbot"></div>
 
@@ -231,31 +239,6 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <div id="reporting-issues"></div>
-
-## 🌐 Air-Gapped Environments
-Virtually all development organizations need access to remote public resources such as Maven Central, NuGet Gallery, npmjs.org, Docker Hub etc., to download dependencies needed for a build. 
-
-One of the big benefits of using Artifactory is its remote repositories which proxy these remote resources and cache artifacts that are downloaded. This way, once any developer or CI server that has requested an artifact for the first time, it is cached and directly available from the remote repository in Artifactory on the internal network. This is the usual way to work with remote resources through Artifactory.
-
-### How to use Frogbot on Air-Gapped Environments
-To use Frogbot with Artifactory on an air-gapped environments you need to set 2 repositories. Please follow the following steps in order to configure these repositories.
-
-#### Step 1
-You need a repository that will serve as a remote repository to download Frogbot binary and its dependencies, such as Maven and Gradle build-info extractors.
-1. Create a new **Generic** remote repository in your Artifactory instance.
-2. Set the remote repository url to [https://releases.jfrog.io](https://releases.jfrog.io).
-3. Add to your frogbot template from the "Installing Frogbot" section a new environment variable named `JF_FROGBOT_REPO` with the name of your newly created remote repository as the value. 
-
-#### Step 2
-You need a repository that will serve as a remote repository for your dependencies, based on your project technology.
-If you don't have one already:
-1. Create a new remote repository from with a type that matches your project dependencies.
-2. Leave the URL as its default value, or set a custom one if desired.
-
-In your [frogbot-config.yml](docs/templates/.frogbot/frogbot-config.yml) file, set the `repository` field under the relevant `project`
-as the name of your dependencies repository.
-
-> Not familiar with the [frogbot-config.yml](docs/templates/.frogbot/frogbot-config.yml) file? Please read [this](docs/frogbot-config.md).
 
 ## 🔥 Reporting issues
 

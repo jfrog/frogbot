@@ -51,6 +51,13 @@ jobs:
           # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
           # [Optional]
-          # Relevant for air-gapped environments.
-          # Name of the remote repository that Frogbot and its dependencies will be downloaded to.
-          # JF_FROGBOT_REPO: ""
+          # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+          # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+          # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+          # JF_RELEASES_REPO: ""
+
+          # [Optional]
+          # Frogbot will download the project dependencies if they're not cached locally. To download the
+          # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+          # need to set this value, if it is set in the frogbot-config.yml file.
+          # JF_DEPS_REPO: ""
