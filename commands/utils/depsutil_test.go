@@ -48,7 +48,7 @@ func createNugetRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepos
 	repoParams.FeedContextPath = "api/v1"
 	repoParams.DownloadContextPath = "api/v1/package"
 	repoParams.V3FeedUrl = "https://api.nuget.org/v3/index.json"
-	repoParams.ForceNugetAuthentication = &trueVal
+	repoParams.ForceNugetAuthentication = &TrueVal
 	assert.NoError(t, remoteRepoService.Nuget(repoParams))
 	return repoParams.Key
 }

@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"github.com/stretchr/testify/assert"
 )
 
 var gitParams = &utils.FrogbotRepoConfig{
@@ -110,15 +110,16 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
 				WorkingDirs:        []string{utils.RootDir},
-			},
+				UseWrapper:         &utils.TrueVal,
 			}},
+		},
 		Git: gitParams.Git,
 	}
 	secondRepoParams := utils.Params{
 		Git: gitParams.Git,
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &failOnSecurityIssues,
-			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}}}},
+			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
 	}
 
 	configAggregator := utils.FrogbotConfigAggregator{

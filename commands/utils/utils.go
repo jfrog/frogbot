@@ -22,7 +22,7 @@ import (
 
 const RootDir = "."
 
-var trueVal = true
+var TrueVal = true
 
 type ErrMissingEnv struct {
 	VariableName string

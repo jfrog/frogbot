@@ -87,7 +87,7 @@ func (p *Project) setDefaultsIfNeeded() *Project {
 		p.WorkingDirs = append(p.WorkingDirs, RootDir)
 	}
 	if p.UseWrapper == nil {
-		p.UseWrapper = &trueVal
+		p.UseWrapper = &TrueVal
 	}
 	if p.InstallCommand != "" {
 		setProjectInstallCommand(p.InstallCommand, p)
@@ -103,7 +103,7 @@ type Scan struct {
 
 func (s *Scan) setDefaultsIfNeeded() *Scan {
 	if s.FailOnSecurityIssues == nil {
-		s.FailOnSecurityIssues = &trueVal
+		s.FailOnSecurityIssues = &TrueVal
 	}
 	if s.Projects == nil {
 		s.Projects = []Project{{}}

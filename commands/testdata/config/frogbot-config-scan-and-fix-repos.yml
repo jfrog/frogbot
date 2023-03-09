@@ -12,7 +12,6 @@
       repoName: mvn-repo
       branches:
         - master
-      failOnSecurityIssues: false
 - params:
     git:
       repoName: pip-repo
