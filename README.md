@@ -11,12 +11,20 @@
 
 ## Table of contents
 
-- [What is Frogbot?](#what-is-frogbot)
-- [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
-- [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
-- [Installing Frogbot](#installing-frogbot)
-- [Reporting issues](#reporting-issues)
-- [Contributions](#contributions)
+- [Frogbot](#frogbot)
+  - [Table of contents](#table-of-contents)
+  - [🤖 What is Frogbot?](#-what-is-frogbot)
+  - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
+    - [General](#general)
+    - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
+    - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
+    - [Scan results](#scan-results)
+      - [👍 No issues](#-no-issues)
+      - [👎 Issues were found](#-issues-were-found)
+  - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
+  - [🖥️ Installing Frogbot](#️-installing-frogbot)
+  - [🔥 Reporting issues](#-reporting-issues)
+  - [💻 Contributions](#-contributions)
 
 <div id="what-is-frogbot"></div>
 

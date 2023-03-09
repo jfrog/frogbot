@@ -39,11 +39,11 @@ This section includes the scanning options for Frogbot.
 
 - **failOnSecurityIssues** - [Default: true] Frogbot fails the task if any security issue is found.
 - **projects** - List of sub-projects / project dirs.
-    - **workingDirs** - [Default: root directory] A list of relative path's inside the Git repository. Each path should point to the root of a sub-project to be scanned by Frogbot.
-    - **installCommand** - [Mandatory for projects which use npm, yarn 2, NuGet and .NET to download their dependencies] The command to download the project dependencies. For example: 'npm install', 'nuget restore'.
-    - **pipRequirementsFile** [Mandatory for projects which use the pip package manager to download their dependencies, if pip requires the requirements file]
-    - **useWrapper** - [Default: true] Determines whether to use the Gradle Wrapper for projects which are using Gradle.
-    - **repository** - [Optional] Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from.
+  - **workingDirs** - [Default: root directory] A list of relative path's inside the Git repository. Each path should point to the root of a sub-project to be scannedby Frogbot.
+  - **installCommand** - [Mandatory for projects which use npm, yarn 2, NuGet and .NET to download their dependencies] The command to download the projectdependencies. For example: 'npm install', 'nuget restore'.
+  - **pipRequirementsFile** [Mandatory for projects which use the pip package manager to download their dependencies, if pip requires the requirements file]
+  - **useWrapper** - [Default: true] Determines whether to use the Gradle Wrapper for projects which are using Gradle.
+  - **repository** - [Optional] Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from.
 
 #### jfrogPlatform
 

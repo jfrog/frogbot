@@ -31,60 +31,71 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
 8. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
 
-    <details>
-      <summary>Template</summary>
+   <details>
+     <summary>Template</summary>
 
-    ```yml
-     schedules:
-          # Every 5 minutes
-          - cron: "*/5 * * * *"
-            branches: 
-              include: 
-                - "*"
-     pool:
-          vmImage: ubuntu-latest
-    
-     jobs:
-        - job:
-          displayName: "Frogbot Scan Pull Requests"
-          steps:
-               - task: CmdLine@2
-                 displayName: 'Download and Run Frogbot'
-                 env:
-                    # [Mandatory]
-                    # Azure Repos personal access token with Code -> Read & Write permissions
-                    JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
-    
-                    # [Mandatory]
-                    # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
-                    JF_URL: $(JF_URL)
+   ```yml
+    schedules:
+         # Every 5 minutes
+         - cron: "*/5 * * * *"
+           branches: 
+             include: 
+               - "*"
+    pool:
+         vmImage: ubuntu-latest
+    jobs:
+       - job:
+         displayName: "Frogbot Scan Pull Requests"
+         steps:
+         - task: CmdLine@2
+           displayName: 'Download and Run Frogbot'
+           env:
+              # [Mandatory]
+              # Azure Repos personal access token with Code -> Read & Write permissions
+              JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
    
-                    # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-                    # JFrog access token with 'read' permissions for Xray
-                    JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
-    
-                    # [Mandatory if JF_ACCESS_TOKEN is not provided]
-                    # JFrog user and password with 'read' permissions for Xray
-                    # JF_USER: $(JF_USER)
-                    # JF_PASSWORD: $(JF_PASSWORD)
+              # [Mandatory]
+              # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+              JF_URL: $(JF_URL)
    
-                    # [Mandatory]
-                    # The name of the organization that owns this project
-                    JF_GIT_OWNER: ""
+              # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+              # JFrog access token with 'read' permissions for Xray
+              JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
    
-                    # Predefined Azure Pipelines variables. There's no need to set them.
-                    JF_GIT_PROJECT: $(System.TeamProject)
-                    JF_GIT_API_ENDPOINT: $(System.CollectionUri)
-                    JF_GIT_PROVIDER: 'azureRepos'
-    
-                 inputs:
-                   script: |
-                     curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-                     ./frogbot scan-pull-requests
-                     ./frogbot scan-and-fix-repos
-    ```
+              # [Mandatory if JF_ACCESS_TOKEN is not provided]
+              # JFrog user and password with 'read' permissions for Xray
+              # JF_USER: $(JF_USER)
+              # JF_PASSWORD: $(JF_PASSWORD)
+   
+              # [Mandatory]
+              # The name of the organization that owns this project
+              JF_GIT_OWNER: ""
+   
+              # [Optional]
+              # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+              # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+              # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+              # JF_RELEASES_REPO: ""
 
-</details>
+              # [Optional]
+              # Frogbot will download the project dependencies if they're not cached locally. To download the
+              # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+              # need to set this value, if it is set in the frogbot-config.yml file.
+              # JF_DEPS_REPO: ""
+   
+              # Predefined Azure Pipelines variables. There's no need to set them.
+              JF_GIT_PROJECT: $(System.TeamProject)
+              JF_GIT_API_ENDPOINT: $(System.CollectionUri)
+              JF_GIT_PROVIDER: 'azureRepos'
+   
+           inputs:
+             script: |
+               curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+               ./frogbot scan-pull-requests
+               ./frogbot scan-and-fix-repos
+   ```
+
+   </details>
 
 9. For the pipeline you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
 
