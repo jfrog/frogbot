@@ -182,7 +182,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 			if err != nil {
 				return nil, err
 			}
-			for _, vulnerability := range vulnerabilities {
+			for index, vulnerability := range vulnerabilities {
 				if vulnerability.FixedVersions != nil && len(vulnerability.FixedVersions) > 0 {
 					fixVulnerability, err := cfp.shouldFixVulnerability(project, vulnerability)
 					if err != nil {
@@ -206,7 +206,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 						fixVersionsMap[vulnerability.ImpactedDependencyName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
-				utils.RemoveDowngradedVersions(&vulnerability)
+				utils.RemoveDowngradedVersions(&vulnerabilities[index])
 			}
 		}
 	}
@@ -511,7 +511,9 @@ func isVersionContainedInString(str, separator string) bool {
 		if err != nil {
 			return false
 		}
-		return match
+		if match {
+			return match
+		}
 	}
 	return false
 }

@@ -168,9 +168,8 @@ func createNewIssuesRows(previousScan, currentScan []services.ScanResponse, isMu
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
 	}
-
-	for _, vulnerability := range vulnerabilitiesRows {
-		utils.RemoveDowngradedVersions(&vulnerability)
+	for i := range vulnerabilitiesRows {
+		utils.RemoveDowngradedVersions(&vulnerabilitiesRows[i])
 	}
 	return vulnerabilitiesRows, nil
 }
