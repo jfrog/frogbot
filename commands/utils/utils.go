@@ -167,11 +167,17 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 }
 
 // RemoveDowngradedVersions removes fix suggestions which are downgraded versions of current
+// trimming brackets as some xray api returns with or without brackets it breaks the compare function
 func RemoveDowngradedVersions(vul *formats.VulnerabilityOrViolationRow) {
+	if len(vul.FixedVersions) == 0 {
+		return
+	}
 	upgradeVersions := make([]string, 0)
 	effectedVersion := version.NewVersion(vul.ImpactedDependencyVersion)
 	for _, suggestedFixVersion := range vul.FixedVersions {
-		if effectedVersion.IsLessThan(suggestedFixVersion) {
+		replacer := strings.NewReplacer("[", "", "]", "") //trims brackets if exists
+		suggestedFixVersionTrimmed := replacer.Replace(suggestedFixVersion)
+		if !effectedVersion.AtLeast(suggestedFixVersionTrimmed) {
 			upgradeVersions = append(upgradeVersions, suggestedFixVersion)
 		}
 	}
