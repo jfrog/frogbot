@@ -367,7 +367,7 @@ func extractProjectParamsFromEnv(project *Project) error {
 		workingDir = RootDir
 	}
 	project.WorkingDirs = []string{workingDir}
-	project.Repository = getTrimmedEnv(DependenciesRepo)
+	project.Repository = getTrimmedEnv(DepsRepoEnv)
 	project.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	installCommand := getTrimmedEnv(InstallCommandEnv)
 	setProjectInstallCommand(installCommand, project)

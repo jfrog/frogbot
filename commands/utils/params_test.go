@@ -245,7 +245,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		WorkingDirectoryEnv:          "a/b",
 		jfrogProjectEnv:              "projectKey",
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
-		DependenciesRepo:             "deps-remote",
+		DepsRepoEnv:                  "deps-remote",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
 	})
