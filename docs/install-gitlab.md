@@ -8,8 +8,7 @@ To install Frogbot on GitLab repositories using GitLab CI:
 3. Add a job named **frogbot-scan** to your **.gitlab-ci.yml** file in your GitLab repository using the code block below.
 
 **Important**
-- For npm, yarn 2, NuGet or .NET: Make sure to set the command in a way that it downloads your project dependencies as
-  the value of the **JF_INSTALL_DEPS_CMD** variable. For example, `npm i` or `nuget restore`
+- Set the **JF_INSTALL_DEPS_CMD** variable below, or the **installCommand** property in your frogbot-config.yml file, if the project uses npm, yarn 2, NuGet or .NET to download its dependencies
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, **but not both**.
 
 ```yml
@@ -28,7 +27,10 @@ frogbot-scan:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
-    # [Mandatory only for projects which use npm, yarn 2, NuGet and .NET to download their dependencies]
+    # [Mandatory if the two conditions below are met]
+    # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+    # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+    #
     # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
     JF_INSTALL_DEPS_CMD: ""
 
@@ -40,6 +42,11 @@ frogbot-scan:
     # JFrog access token with 'read' permissions for Xray
     JF_ACCESS_TOKEN: $JF_ACCESS_TOKEN
 
+    # [Mandatory if JF_ACCESS_TOKEN is not provided]
+    # JFrog user and password with 'read' permissions for Xray
+    # JF_USER: $JF_USER
+    # JF_PASSWORD: $JF_PASSWORD
+
     # [Mandatory]
     # GitLab access token with the following permissions scopes: api, read_api, read_user, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
@@ -49,13 +56,6 @@ frogbot-scan:
     JF_GIT_OWNER: $CI_PROJECT_NAMESPACE
     JF_GIT_REPO: $CI_PROJECT_NAME
     JF_GIT_PULL_REQUEST_ID: $CI_MERGE_REQUEST_IID
-
-    # Uncomment the below options if you'd like to use them.
-
-    # [Mandatory if JF_ACCESS_TOKEN is not provided]
-    # JFrog user and password with 'read' permissions for Xray
-    # JF_USER: $JF_USER
-    # JF_PASSWORD: $JF_PASSWORD
 
     # [Optional, default: https://gitlab.com]
     # API endpoint to GitLab

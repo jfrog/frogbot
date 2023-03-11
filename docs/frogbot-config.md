@@ -1,10 +1,15 @@
-[Go back to the main documentation page](https://github.com/jfrog/frogbot)
+~~[Go back to the main documentation page](https://github.com/jfrog/frogbot)
 
 # Creating the frogbot-config.yml file
 
-## Overview
-
+## What is the frogbot-config.yml file?
 The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes the configuration required for Frogbot to scan your Git repositories.
+
+## Is the file mandatory?
+Not all projects require the frogbot-config.yml. For projects which have a simple structure, the file isn't mandatory.
+If the following conditions apply to your project, you don't have to create the file.
+1. The project has only one descriptor file (pom.xml, package.json, go.mod, etc.) 
+2. The descriptor file is at the root directory of the project 
 
 ## Adding the frogbot-config.yml file to Git
 
@@ -50,4 +55,4 @@ This section includes the scanning options for Frogbot.
 The section includes the JFrog Platform settings
 
 - **jfrogProjectKey** - [Optional] The JFrog project key. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Projects).
-- **watches** - [Optional] The list of Xray watches. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches).
+- **watches** - [Optional] The list of Xray watches. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches).~~
