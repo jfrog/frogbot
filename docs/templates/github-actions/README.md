@@ -9,7 +9,7 @@ your GitHub repository.
 
 ## Using the Templates
 1. Use the templates below, depending on the tool used to download dependencies for you project, to create the workflow files.
-2. Push the workflow files to the `.github/workflow` directory at the root of your GitHub repository.
+2. Push the workflow files to the `.github/workflows` directory at the root of your GitHub repository.
 
 ## The Available Templates
 ### Scan pull requests when they are opened

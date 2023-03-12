@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -145,11 +146,11 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, true)
+	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server)
 	assert.NoError(t, err)
-	for _, repo := range *configAggregator {
+	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
-			SetProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
+			setProjectInstallCommand(project.InstallCommand, &repo.Projects[projectI])
 		}
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, *repo.FailOnSecurityIssues)
@@ -189,7 +190,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, configParams := range *configFile {
+	for _, configParams := range configFile {
 		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
@@ -245,6 +246,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		WorkingDirectoryEnv:          "a/b",
 		jfrogProjectEnv:              "projectKey",
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
+		DepsRepoEnv:                  "deps-remote",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
 	})
@@ -269,7 +271,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	}
 	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server)
 	assert.NoError(t, err)
-	repo := (*configAggregator)[0]
+	repo := configAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
@@ -286,10 +288,11 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 
 	project := repo.Projects[0]
 	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
-	assert.False(t, project.UseWrapper)
+	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
 	assert.Equal(t, "npm", project.InstallCommandName)
 	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "deps-remote", project.Repository)
 }
 
 func TestExtractProjectParamsFromEnv(t *testing.T) {
@@ -301,7 +304,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	// Test default values
 	err := extractProjectParamsFromEnv(&params)
 	assert.NoError(t, err)
-	assert.True(t, params.UseWrapper)
+	assert.True(t, *params.UseWrapper)
 	assert.Equal(t, []string{RootDir}, params.WorkingDirs)
 	assert.Equal(t, "", params.PipRequirementsFile)
 	assert.Equal(t, "", params.InstallCommandName)
@@ -313,7 +316,37 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"b/c"}, params.WorkingDirs)
 	assert.Equal(t, "r.txt", params.PipRequirementsFile)
-	assert.False(t, params.UseWrapper)
+	assert.False(t, *params.UseWrapper)
 	assert.Equal(t, "nuget", params.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, params.InstallCommandArgs)
+}
+
+func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
+	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
+	fileContent, err := os.ReadFile(testFilePath)
+	assert.NoError(t, err)
+	configAggregator := FrogbotConfigAggregator{}
+	configAggregator, err = configAggregator.UnmarshalYaml(fileContent)
+	assert.NoError(t, err)
+	firstRepo := configAggregator[0]
+	assert.Equal(t, "npm-repo", firstRepo.RepoName)
+	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
+	assert.False(t, *firstRepo.FailOnSecurityIssues)
+	firstRepoProject := firstRepo.Projects[0]
+	assert.Equal(t, "npm i", firstRepoProject.InstallCommand)
+	assert.False(t, *firstRepoProject.UseWrapper)
+	assert.Equal(t, "test-repo", firstRepoProject.Repository)
+	secondRepo := configAggregator[1]
+	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
+	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
+	thirdRepo := configAggregator[2]
+	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
+	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
+	assert.True(t, *thirdRepo.FailOnSecurityIssues)
+	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
+	thirdRepoProject := thirdRepo.Projects[0]
+	assert.Equal(t, "requirements.txt", thirdRepoProject.PipRequirementsFile)
+	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
+	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
+	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
