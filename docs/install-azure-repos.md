@@ -51,7 +51,6 @@ To install Frogbot on Azure Repos repositories, follow these steps.
               # [Mandatory if the two conditions below are met]
               # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
               # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
-              #
               # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
               JF_INSTALL_DEPS_CMD: ""
    
@@ -67,30 +66,48 @@ To install Frogbot on Azure Repos repositories, follow these steps.
               # JFrog access token with 'read' permissions for Xray
               JF_ACCESS_TOKEN: $(JF_ACCESS_TOKEN)
    
+              # [Mandatory]
+              # The name of the organization that owns this project
+              JF_GIT_OWNER: ""
+   
               # [Mandatory if JF_ACCESS_TOKEN is not provided]
               # JFrog user and password with 'read' permissions for Xray
               # JF_USER: $(JF_USER)
               # JF_PASSWORD: $(JF_PASSWORD)
    
-              # [Mandatory]
-              # The name of the organization that owns this project
-              JF_GIT_OWNER: ""
-   
               # [Optional]
-              # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+              # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
               # in Artifactory, which proxies https://releases.jfrog.io/artifactory
               # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
               # JF_RELEASES_REPO: ""
 
               # [Optional]
               # Frogbot will download the project dependencies if they're not cached locally. To download the
-              # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+              # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
               # need to set this value, if it is set in the frogbot-config.yml file.
               # JF_DEPS_REPO: ""
+   
+              # [Optional, default: "."]
+              # Relative path to the project in the git repository
+              # JF_WORKING_DIR: path/to/project/dir
+    
+              # [Optional]
+              # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+              # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+   
+              # [Optional, default: "FALSE"]
+              # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+              # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+              # [Optional, default: "TRUE"]
+              # Fails the Frogbot task if any security issue is found.
+              # JF_FAIL: "FALSE"
    
               # Predefined Azure Pipelines variables. There's no need to set them.
               JF_GIT_PROJECT: $(System.TeamProject)
               JF_GIT_API_ENDPOINT: $(System.CollectionUri)
+              JF_GIT_BASE_BRANCH: $(Build.SourceBranchName)
+              JF_GIT_REPO: $(Build.Repository.Name)
               JF_GIT_PROVIDER: 'azureRepos'
    
            inputs:

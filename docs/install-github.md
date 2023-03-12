@@ -109,20 +109,28 @@
               // [Mandatory]
               // GitHub enterprise server organization namespace
               JF_GIT_OWNER = ""
+     
+              // [Mandatory]
+              // Bitbucket repository name
+              JF_GIT_REPO= ""
+     
+              // [Mandatory]
+              // Repository branch to scan
+              JF_GIT_BASE_BRANCH= ""
    
               // [Mandatory]
               // API endpoint to GitHub enterprise server
               JF_GIT_API_ENDPOINT = ""
               
               // [Optional]
-              // If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+              // If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
               // in Artifactory, which proxies https://releases.jfrog.io/artifactory
               // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
               // JF_RELEASES_REPO= ""
 
               // [Optional]
               // Frogbot will download the project dependencies if they're not cached locally. To download the
-              // dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+              // dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
               // need to set this value, if it is set in the frogbot-config.yml file.
               // JF_DEPS_REPO= ""
          }
