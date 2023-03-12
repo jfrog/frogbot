@@ -58,7 +58,7 @@ jobs:
 
           ##########################################################################
           ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
-          ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
+          ##   the following variables inside the file, instead of here.          ##
           ##########################################################################
 
           # [Mandatory if the `installCommand` variable isn't set in your frogbot-config.yml file]
