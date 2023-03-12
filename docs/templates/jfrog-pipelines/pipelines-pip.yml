@@ -33,6 +33,10 @@ pipelines:
               tag: latest
         environmentVariables:
 
+          # [Mandatory if the `installCommand` variable isn't set in your frogbot-config.yml file]
+          # The command that installs the project dependencies (e.g "npm i")
+          # JF_INSTALL_DEPS_CMD: ""
+
           # [Mandatory]
           # JFrog platform URL
           JF_URL: $int_jfrogPlatform_url
@@ -61,6 +65,14 @@ pipelines:
           # [Mandatory]
           # Git provider project owner.
           JF_GIT_OWNER: ""
+
+          # [Mandatory]
+          # Git repository name
+          JF_GIT_REPO: $res_frogbotGitRepo_gitRepoFullName
+
+          # [Mandatory]
+          # Repository branch to scan
+          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
 
           # [Optional]
           # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository
@@ -97,9 +109,29 @@ pipelines:
 
           # [Optional]
           # Frogbot will download the project dependencies if they're not cached locally. To download the
-          # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.
           # JF_DEPS_REPO: ""
+
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
+          # [Optional]
+          # Pip requirements.txt file path
+          # JF_REQUIREMENTS_FILE: ""
 
     execution:
       onExecute:

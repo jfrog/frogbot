@@ -31,6 +31,9 @@ pipelines:
             auto:
               language: dotnet
         environmentVariables:
+          # [Mandatory if the `installCommand` variable isn't set in your frogbot-config.yml file]
+          # The command that installs the project dependencies (e.g "npm i")
+          # JF_INSTALL_DEPS_CMD: ""
 
           # [Mandatory]
           # JFrog platform URL
@@ -60,6 +63,14 @@ pipelines:
           # [Mandatory]
           # Git provider project owner.
           JF_GIT_OWNER: ""
+
+          # [Mandatory]
+          # Git repository name
+          JF_GIT_REPO: $res_frogbotGitRepo_gitRepoFullName
+
+          # [Mandatory]
+          # Repository branch to scan
+          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
 
           # [Optional]
           # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository
@@ -101,7 +112,7 @@ pipelines:
 
           # [Optional]
           # Frogbot will download the project dependencies if they're not cached locally. To download the
-          # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.
           # JF_DEPS_REPO: ""
 

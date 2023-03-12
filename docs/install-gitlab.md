@@ -97,7 +97,7 @@ frogbot-scan:
 
     # [Optional]
     # Frogbot will download the project dependencies if they're not cached locally. To download the
-    # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+    # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
     # need to set this value, if it is set in the frogbot-config.yml file.
     # JF_DEPS_REPO: ""
   script:

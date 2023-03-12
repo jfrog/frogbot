@@ -27,7 +27,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
    ![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
 
-   7. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
+ 7. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
 
       <details>
         <summary>Template</summary>
@@ -81,8 +81,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
                  # JF_RELEASES_REPO: ""
    
    
-   
-   
+     
                  ##########################################################################
                  ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
                  ##   the following variables inside the file, instead of here.          ##
