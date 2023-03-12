@@ -31,16 +31,6 @@ jobs:
           # JFrog access token with 'read' permissions on Xray service
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-          # [Mandatory]
-          # The GitHub token automatically generated for the job
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # Uncomment the below options if you'd like to use them.
-
-          # [Optional, default: https://api.github.com]
-          # API endpoint to GitHub
-          # JF_GIT_API_ENDPOINT: https://github.example.com
-
           # [Mandatory if JF_ACCESS_TOKEN is not provided]
           # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
           # JF_USER: ${{ secrets.JF_USER }}
@@ -49,8 +39,16 @@ jobs:
           # JFrog password. Must be provided with JF_USER
           # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
+          # [Mandatory]
+          # The GitHub token automatically generated for the job
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # [Optional, default: https://api.github.com]
+          # API endpoint to GitHub
+          # JF_GIT_API_ENDPOINT: https://github.example.com
+
           # [Optional]
-          # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+          # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository
           # in Artifactory, which proxies https://releases.jfrog.io/artifactory
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""

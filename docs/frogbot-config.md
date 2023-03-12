@@ -2,9 +2,68 @@
 
 # Creating the frogbot-config.yml file
 
-## Overview
+## What is the frogbot-config.yml file?
+The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes configuration related to your projects, to help Frogbot scan your Git repositories.
 
-The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes the configuration required for Frogbot to scan your Git repositories.
+## Is the file mandatory?
+Not all projects require the **frogbot-config.yml** file. For projects which have a simple structure, the file isn't mandatory.
+As a rule of thumb, if the following conditions apply to your project, you don't have to create the file. 
+
+1. The project has only one descriptor file (pom.xml, package.json, go.mod, etc.) 
+2. The descriptor file is at the root directory of the project 
+
+When your Git repository includes multiple projects, and each project has its own own descriptor file (package.json in the case of npm), the **frogbot-config.yml** file should 
+include the relative paths to the directories which include descriptor files.
+In the following example, there are two descriptor files under `path/to/project-1` and `path/to/project-2`
+```yaml
+- params:
+    git:
+      repoName: my-git-repo-name
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+          workingDirs:
+            - path/to/npm/project-1
+            - path/to/npm/project-2
+```
+
+Here's another example for a repository that uses both `npm` and `nuget` to download the dependencies.
+```yaml
+- params:
+    git:
+      repoName: my-git-repo-name
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+          workingDirs:
+            - path/to/node/project
+        - installCommand: nuget restore
+          workingDirs:
+            - path/to/.net/project
+```
+
+Here's another example for a repository that uses both `npm` and `mvn` to download the dependencies.
+Notice that for Maven projects, there's no need to set the `installCommand` property.
+```yaml
+- params:
+    git:
+      repoName: my-git-repo-name
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+          workingDirs:
+            - path/to/node/project
+        - workingDirs:
+            - path/to/maven/project
+```
+
+See the full **frogbot-config.yml** structure [here](templates/.frogbot/frogbot-config.yml).
 
 ## Adding the frogbot-config.yml file to Git
 
@@ -20,6 +79,9 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes th
 2. Push the file to the following path in the root of your repository: `.frogbot/frogbot-config.yml`
 
 ## The file structure
+
+The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file has the following structure.
+
 ### Params
 
 This section represents a single Git repository. It includes the **git**, **jfrogPlatform** and **scan** sections.

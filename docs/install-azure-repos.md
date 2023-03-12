@@ -7,29 +7,27 @@
 
 To install Frogbot on Azure Repos repositories, follow these steps.
 
-1. Frogbot uses a [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file to run. [This](frogbot-config.md) article will guide you through the process of creating this file.
+1. Make sure you have the connection details of your JFrog environment.
 
-2. Make sure you have the connection details of your JFrog environment.
+2. Decide which repository branches you'd like to scan.
 
-3. Decide which repository branches you'd like to scan.
-
-4. Go to your Azure Pipelines project, and add a new pipeline.
+3. Go to your Azure Pipelines project, and add a new pipeline.
 
    ![azure-new-pipeline.png](../images/azure-new-pipeline.png)
 
-5. Set `Azure Repos Git` as your code source.
+4. Set `Azure Repos Git` as your code source.
 
    ![azure-set-code-source.png.png](../images/azure-set-code-source.png)
 
-6. Select your `Frogbot Management Repository`.
+5. Select your `Frogbot Management Repository`.
 
    ![azure-select-repo-to-test.png](../images/azure-select-repo-to-test.png)
 
-7. Select `Starter Pipeline` and name it `frogbot`.
+6. Select `Starter Pipeline` and name it `frogbot`.
 
    ![azure-starter-pipeline.png](../images/azure-starter-pipeline.png)
 
-8. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
+7. Use the content of the below template for the pipeline. Edit the remaining mandatory `Variables`.
 
    <details>
      <summary>Template</summary>
@@ -50,6 +48,13 @@ To install Frogbot on Azure Repos repositories, follow these steps.
          - task: CmdLine@2
            displayName: 'Download and Run Frogbot'
            env:
+              # [Mandatory if the two conditions below are met]
+              # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+              # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+              #
+              # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+              JF_INSTALL_DEPS_CMD: ""
+   
               # [Mandatory]
               # Azure Repos personal access token with Code -> Read & Write permissions
               JF_GIT_TOKEN: $(FROGBOT_GIT_TOKEN)
@@ -97,7 +102,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
    </details>
 
-9. For the pipeline you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
+8. For the pipeline you created, save the JFrog connection details as variables with the following names - JF_URL, JF_USER, and JF_PASSWORD.
 
    > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
    > instead of **JF_USER** and **JF_PASSWORD**.

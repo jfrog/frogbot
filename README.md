@@ -229,7 +229,14 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <details>
-  <summary>Step 2 - Install Frogbot</summary>
+  <summary>Step 2 - Create the frogbot-config.yml file if needed</summary>
+
+- [Creating the frogbot-config.yml File](docs/frogbot-config.md)
+
+</details>
+
+<details>
+  <summary>Step 3 - Install Frogbot</summary>
 
 - [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
 - [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
