@@ -27,13 +27,6 @@ frogbot-scan:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
-    # [Mandatory if the two conditions below are met]
-    # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
-    # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
-    #
-    # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-    JF_INSTALL_DEPS_CMD: ""
-
     # [Mandatory]
     # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
     JF_URL: $JF_URL
@@ -61,8 +54,29 @@ frogbot-scan:
     # API endpoint to GitLab
     # JF_GIT_API_ENDPOINT: https://gitlab.example.com
 
+    # [Optional]
+    # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
+    # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+    # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+    # JF_RELEASES_REPO: ""
+
+
+
+
+    ##########################################################################
+    ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
+    ##   the following variables inside the file, instead of here.          ##
+    ##########################################################################
+
+    # [Mandatory if the two conditions below are met]
+    # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+    # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+    #
+    # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+    JF_INSTALL_DEPS_CMD: ""
+
     # [Optional, default: "."]
-    # Relative path to the project in the git repository
+    # Relative path to the root of the project in the Git repository
     # JF_WORKING_DIR: path/to/project/dir
 
     # [Optional]
@@ -82,10 +96,12 @@ frogbot-scan:
     # JF_FAIL: "FALSE"
 
     # [Optional]
-    # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
-    # in Artifactory, which proxies https://releases.jfrog.io/artifactory
-    # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
-    # JF_RELEASES_REPO: ""
+    # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+    # JF_REQUIREMENTS_FILE: ""
+
+    # [Optional, Default: "TRUE"]
+    # Use Gradle wrapper.
+    # JF_USE_WRAPPER: "FALSE"
 
     # [Optional]
     # Frogbot will download the project dependencies if they're not cached locally. To download the
