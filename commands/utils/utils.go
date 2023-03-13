@@ -22,7 +22,10 @@ import (
 
 const RootDir = "."
 
-var TrueVal = true
+var (
+	TrueVal        = true
+	FrogbotVersion = "0.0.0"
+)
 
 type ErrMissingEnv struct {
 	VariableName string
