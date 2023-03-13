@@ -2,10 +2,12 @@
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
 # documentation.
-# Frogbot Scan Pull Requests does the following:
+# Frogbot Scan Pull Request does the following:
 # Automatically scans new pull requests for security vulnerabilities.
 # Uses JFrog Xray to scan the project.
 # Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
+
+# The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
 name: "Frogbot Scan Pull Request"
 on:
@@ -19,57 +21,89 @@ jobs:
     runs-on: ubuntu-latest
     # A pull request needs to be approved, before Frogbot scans it. Any GitHub user who is associated with the
     # "frogbot" GitHub environment can approve the pull request to be scanned.
+    # Read more here (Install Frogbot Using GitHub Actions): https://github.com/jfrog/frogbot/blob/master/docs/install-github.md
     environment: frogbot
     steps:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # Install prerequisites - uncomment the relevant ones
+      #  IMPORTANT:
+      #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
+      #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
-      # - uses: actions/setup-go@v3
-      #   with:
-      #     go-version: 1.18.x
-
-      # - uses: actions/setup-java@v3
-      #    with:
-      #      java-version: "11"
-      #      distribution: "temurin"
-
-      # - uses: actions/setup-node@v3
-      #    with:
-      #      node-version: "16.x"
-
-      # The full template list with the required GitHub Actions can be found at https://github.com/jfrog/frogbot/tree/master/templates/github-actions/scan-pull-request
-
-      - uses: jfrog/frogbot@9304d3b1d8e05a1b5fc0ba9ebf9ffbd495386250
+      - uses: jfrog/frogbot@80d5c273e67898731f4d20cb5eb218f9f15b3afd
         env:
           # [Mandatory]
-          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
+          # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions on Xray service
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
           # [Mandatory if JF_ACCESS_TOKEN is not provided]
           # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
-          JF_USER: ${{ secrets.JF_USER }}
+          # JF_USER: ${{ secrets.JF_USER }}
 
           # [Mandatory if JF_ACCESS_TOKEN is not provided]
           # JFrog password. Must be provided with JF_USER
-          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
           # [Mandatory]
           # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-          # JFrog access token with 'read' permissions on Xray service
-          # JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          # [Optional]
+          # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
+          # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+          # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+          # JF_RELEASES_REPO: ""
 
-          # [Mandatory when using npm]
-          # The command that installs the dependencies
-          # JF_INSTALL_DEPS_CMD: "npm i"
 
-          # [Mandatory when using .NET]
-          # The command that installs the dependencies
-          # JF_INSTALL_DEPS_CMD: "dotnet restore"
 
-          # The full template list with full optional environment variables can be found at https://github.com/jfrog/frogbot/tree/master/templates/github-actions/scan-pull-request
+          #######################################################################
+          ##   If you project uses a 'frogbot-config.yml' file, you can define    ##
+          ##   the following variables inside the file, instead of here.          ##
+          #######################################################################
+
+          # [Mandatory if the two conditions below are met]
+          # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+          # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+          #
+          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+          # JF_INSTALL_DEPS_CMD: ""
+
+          # [Optional, default: "."]
+          # Relative path to the root of the project in the Git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
+          # [Optional]
+          # Frogbot will download the project dependencies, if they're not cached locally. To download the
+          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
+          # need to set this value, if it is set in the frogbot-config.yml file.
+          # JF_DEPS_REPO: ""
+
+          # [Optional]
+          # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+          # JF_REQUIREMENTS_FILE: ""
+
+          # [Optional, Default: "TRUE"]
+          # Use Gradle wrapper.
+          # JF_USE_WRAPPER: "FALSE"

@@ -1,0 +1,128 @@
+resources:
+  - name: cron_trigger
+    type: CronTrigger
+    configuration:
+      interval: '*/5 * * * *'     # Every 5 minutes
+
+  - name: frogbotGitRepo
+    type: GitRepo
+    configuration:
+      gitProvider: gitIntegration
+      path: {{.jfrog-pipelines.sourceRepository}}
+      branches:
+        include: ^{{gitBranch}}$
+      cloneProtocol: https
+
+pipelines:
+  - name: Frogbot
+    steps:
+      - name: Frogbot_Scan
+        type: Bash # For Windows runner: PowerShell
+        configuration:
+          integrations:
+            - name: jfrogPlatform
+            - name: gitIntegration
+        inputResources:
+          - name: cron_trigger
+          - name: frogbotGitRepo
+        runtime:
+          type: image
+          image:
+            auto:
+              language: node
+              version: "16"
+        environmentVariables:
+
+          # [Mandatory if the `installCommand` variable isn't set in your frogbot-config.yml file]
+          # The command that installs the project dependencies (e.g "npm i")
+          # JF_INSTALL_DEPS_CMD: ""
+
+          # [Mandatory]
+          # JFrog platform URL
+          JF_URL: $int_jfrogPlatform_url
+
+          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+          # JFrog access token with 'read' permissions for Xray
+          JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+
+          # [Mandatory for Bitbucket]
+          # Username of the git provider account
+          JF_GIT_USERNAME: ""
+
+          # [Mandatory]
+          # Git provider access token with minimal permissions according to the relevant integration type.
+          # Read more - https://www.jfrog.com/confluence/display/JFROG/Pipelines+Integrations
+          JF_GIT_TOKEN: $int_gitIntegration_token
+
+          # [Mandatory]
+          # Name of your git provider: "bitbucketServer" or "github".
+          JF_GIT_PROVIDER: ""
+
+          # [Mandatory]
+          # API endpoint to your git provider
+          JF_GIT_API_ENDPOINT: $int_gitIntegration_url
+
+          # [Mandatory]
+          # Git provider project owner.
+          JF_GIT_OWNER: ""
+
+          # [Mandatory]
+          # Git repository name
+          JF_GIT_REPO: $res_frogbotGitRepo_gitRepoFullName
+
+          # [Mandatory]
+          # Repository branch to scan
+          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
+
+          # [Optional]
+          # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
+          # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+          # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+          # JF_RELEASES_REPO: ""
+
+
+
+
+          ##########################################################################
+          ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
+          ##   the following variables inside the file, instead of here.          ##
+          ##########################################################################
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
+
+          # [Optional]
+          # Frogbot will download the project dependencies if they're not cached locally. To download the
+          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
+          # need to set this value, if it is set in the frogbot-config.yml file.
+          # JF_DEPS_REPO: ""
+
+          # [Optional, default: "."]
+          # Relative path to the project in the git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
+    execution:
+      onExecute:
+        - cd $res_frogbotGitRepo_resourcePath
+        - npm install -g yarn
+        - yarn set version berry
+        - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+        - ./frogbot scan-pull-requests
+        - ./frogbot scan-and-fix-repos
+        # For Windows runner:
+        # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+        # - .\frogbot.exe scan-pull-requests
+        # - .\frogbot.exe scan-and-fix-repos

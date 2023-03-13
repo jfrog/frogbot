@@ -28,7 +28,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.x
+          go-version: 1.19.x
       - name: Install npm
         uses: actions/setup-node@v3
         with:
@@ -47,8 +47,8 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Setup Pipenv
-        run: pip3 install pipenv
+      - name: Install python components
+        run: pip3 install pipenv virtualenv poetry
 
       # Generate mocks
       - name: Generate mocks
@@ -62,9 +62,8 @@ jobs:
       - name: Tests
         run: go test ./... -v -race -timeout 0 -cover -coverprofile=covprofile -covermode=atomic
         env:
-          JF_URL: ${{ secrets.FROGBOT_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
-
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
       # Generate code coverage
       - name: Send coverage
         run: |
@@ -83,7 +82,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.x
+          go-version: 1.19.x
 
       - name: Checkout code
         uses: actions/checkout@v3

@@ -1,0 +1,9 @@
+- params:
+    git:
+      repoName: clean-test-proj
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+      failOnSecurityIssues: false

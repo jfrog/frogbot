@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -10,7 +13,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/stretchr/testify/assert"
 )
 
 type FixPackagesTestFunc func(test packageFixTest) CreateFixPullRequestsCmd
@@ -53,14 +55,44 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
 }
 
-var packageTypes = []coreutils.Technology{
-	coreutils.Go,
-	coreutils.Maven,
-	coreutils.Npm,
-	coreutils.Yarn,
-	coreutils.Pip,
-	coreutils.Pipenv,
-	coreutils.Poetry,
+var testPackagesData = []struct {
+	packageType coreutils.Technology
+	commandName string
+	commandArgs []string
+}{
+	{
+		packageType: coreutils.Go,
+	},
+	{
+		packageType: coreutils.Maven,
+	},
+	{
+		packageType: coreutils.Gradle,
+	},
+	{
+		packageType: coreutils.Npm,
+		commandName: "npm",
+		commandArgs: []string{"install"},
+	},
+	{
+		packageType: coreutils.Yarn,
+		commandName: "yarn",
+		commandArgs: []string{"install"},
+	},
+	{
+		packageType: coreutils.Dotnet,
+		commandName: "dotnet",
+		commandArgs: []string{"restore"},
+	},
+	{
+		packageType: coreutils.Pip,
+	},
+	{
+		packageType: coreutils.Pipenv,
+	},
+	{
+		packageType: coreutils.Poetry,
+	},
 }
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
@@ -93,7 +125,7 @@ func TestFixPackageVersion(t *testing.T) {
 		t.Run(test.technology.ToString(), func(t *testing.T) {
 			cfg := test.fixPackageVersionCmd(test)
 			// Fix impacted package for each technology
-			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor))
+			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
 			file, err := os.ReadFile(test.packageDescriptor)
 			assert.NoError(t, err)
 			assert.Contains(t, string(file), test.fixVersion)
@@ -110,13 +142,13 @@ func getTestDataDir(t *testing.T) (string, string) {
 	return currentDir, testdataDir
 }
 
-///      1.0         --> 1.0 ≤ x
-///      (,1.0]      --> x ≤ 1.0
-///      (,1.0)      --> x < 1.0
-///      [1.0]       --> x == 1.0
-///      (1.0,)      --> 1.0 < x
-///      (1.0, 2.0)   --> 1.0 < x < 2.0
-///      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+// /      1.0         --> 1.0 ≤ x
+// /      (,1.0]      --> x ≤ 1.0
+// /      (,1.0)      --> x < 1.0
+// /      [1.0]       --> x == 1.0
+// /      (1.0,)      --> 1.0 < x
+// /      (1.0, 2.0)   --> 1.0 < x < 2.0
+// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
 	tests := []struct {
 		versionChangeString string
@@ -169,22 +201,59 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
+	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
 	var testScan CreateFixPullRequestsCmd
-	var frogbotParams = utils.FrogbotParams{
-		JFrogEnvParams: params,
+	trueVal := true
+	params := utils.Params{
+		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
 	}
-	for _, pkgType := range packageTypes {
+	var frogbotParams = utils.FrogbotRepoConfig{
+		Server: environmentVars,
+		Params: params,
+	}
+	for _, pkg := range testPackagesData {
 		// Create temp technology project
-		projectPath := filepath.Join("testdata", "projects", pkgType.ToString())
-		t.Run(pkgType.ToString(), func(t *testing.T) {
-			frogbotParams.WorkingDirectory = projectPath
-			scanResponse, err := testScan.scan(&frogbotParams)
+		projectPath := filepath.Join("testdata", "projects", pkg.packageType.ToString())
+		t.Run(pkg.packageType.ToString(), func(t *testing.T) {
+			tmpDir, err := fileutils.CreateTempDir()
 			assert.NoError(t, err)
-			verifyTechnologyNaming(t, scanResponse, pkgType)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+			}()
+			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
+			if pkg.packageType == coreutils.Gradle {
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
+				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
+			}
+			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
+			files, err := fileutils.ListFiles(tmpDir, true)
+			assert.NoError(t, err)
+			for _, file := range files {
+				log.Info(file)
+			}
+			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
+			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
+			scanSetup := utils.ScanDetails{
+				XrayGraphScanParams: services.XrayGraphScanParams{},
+				Project:             frogbotParams.Projects[0],
+				ServerDetails:       &frogbotParams.Server,
+			}
+			scanResponse, _, err := testScan.scan(&scanSetup, tmpDir)
+			assert.NoError(t, err)
+			verifyTechnologyNaming(t, scanResponse, pkg.packageType)
 		})
 	}
+}
+
+func TestGetMinimalFixVersion(t *testing.T) {
+	impactedVersionPackage := "1.6.2"
+	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+	impactedVersionPackageGo := "v" + impactedVersionPackage
+	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
+	impactedVersionPackage = "1.7.1"
+	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {

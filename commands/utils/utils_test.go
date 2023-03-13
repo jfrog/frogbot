@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -124,4 +125,39 @@ func TestMd5Hash(t *testing.T) {
 			assert.Equal(t, test.expectedHash, hash)
 		})
 	}
+}
+
+func TestGetRelativeWd(t *testing.T) {
+	fullPath := filepath.Join("a", "b", "c", "d", "e")
+	baseWd := filepath.Join("a", "b", "c")
+	assert.Equal(t, filepath.Join("d", "e"), GetRelativeWd(fullPath, baseWd))
+
+	baseWd = filepath.Join("a", "b", "c", "d", "e")
+	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+	fullPath += string(os.PathSeparator)
+	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+
+// Check connection details with JFrog instance.
+// Return a callback method that restores the credentials after the test is done.
+func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
+	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
+	token := os.Getenv(JFrogTokenEnv)
+	if url == "" {
+		assert.FailNow(t, "JF_URL is not set")
+	}
+	if token == "" {
+		assert.FailNow(t, "JF_ACCESS_TOKEN is not set")
+	}
+	server.Url = url
+	server.XrayUrl = url + "/xray/"
+	server.ArtifactoryUrl = url + "/artifactory/"
+	server.AccessToken = token
+	restoreFunc = func() {
+		SetEnvAndAssert(t, map[string]string{
+			JFrogUrlEnv:   url,
+			JFrogTokenEnv: token,
+		})
+	}
+	return
 }

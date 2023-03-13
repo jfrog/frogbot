@@ -1,0 +1,23 @@
+- params:
+    git:
+      repoName: npm-repo
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+      failOnSecurityIssues: false
+- params:
+    git:
+      repoName: mvn-repo
+      branches:
+        - master
+- params:
+    git:
+      repoName: pip-repo
+      branches:
+        - master
+    scan:
+      projects:
+        - pipRequirementsFile: requirements.txt
+      failOnSecurityIssues: false

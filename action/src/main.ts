@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { Utils } from './utils';
+import {Utils} from './utils';
 
 async function main() {
     try {

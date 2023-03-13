@@ -16,7 +16,7 @@ pipelines:
           auto:
             language: go
             versions:
-              - "1.18"
+              - "1.19"
       environmentVariables:
         readOnly:
           NEXT_VERSION: 0.0.0
@@ -44,7 +44,7 @@ pipelines:
             # Make sure version provided
             - echo "Checking variables"
             - test -n "$NEXT_VERSION" -a "$NEXT_VERSION" != "0.0.0"
-
+            -
             # Configure Git and merge from the dev
             - git checkout master
             - git remote set-url origin https://$int_il_automation_token@github.com/jfrog/frogbot.git
@@ -74,8 +74,8 @@ pipelines:
             - jf rt bp
 
             # Distribute release bundle
-            - jf ds rbc "frogbot" $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
-            - jf ds rbd "frogbot" $NEXT_VERSION --site="releases.jfrog.io" --sync
+            - jf ds rbc ecosystem-frogbot $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
+            - jf ds rbd ecosystem-frogbot $NEXT_VERSION --site="releases.jfrog.io" --sync
 
             # Push to master
             - git clean -fd

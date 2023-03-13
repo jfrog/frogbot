@@ -1,0 +1,10 @@
+- params:
+    git:
+      repoName: test-proj
+      branches:
+        - master
+    scan:
+      projects:
+        - installCommand: npm i
+          workingDirs:
+            - .
