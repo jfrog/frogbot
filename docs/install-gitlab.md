@@ -55,7 +55,7 @@ frogbot-scan:
     # JF_GIT_API_ENDPOINT: https://gitlab.example.com
 
     # [Optional]
-    # If the machine that runs Frogbot has no access to the internat, set the name of a remote repository 
+    # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
     # in Artifactory, which proxies https://releases.jfrog.io/artifactory
     # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
     # JF_RELEASES_REPO: ""
@@ -94,6 +94,14 @@ frogbot-scan:
     # [Optional, default: "TRUE"]
     # Fails the Frogbot task if any security issue is found.
     # JF_FAIL: "FALSE"
+
+    # [Optional]
+    # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+    # JF_REQUIREMENTS_FILE: ""
+
+    # [Optional, Default: "TRUE"]
+    # Use Gradle wrapper.
+    # JF_USE_WRAPPER: "FALSE"
 
     # [Optional]
     # Frogbot will download the project dependencies if they're not cached locally. To download the

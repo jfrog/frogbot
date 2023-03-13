@@ -78,6 +78,10 @@ jobs:
           # JF_FAIL: "FALSE"
 
           # [Optional]
+          # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+          # JF_REQUIREMENTS_FILE: ""
+
+          # [Optional]
           # Frogbot will download the project dependencies if they're not cached locally. To download the
           # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.

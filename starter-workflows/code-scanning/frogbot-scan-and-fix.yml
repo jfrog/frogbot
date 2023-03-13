@@ -94,3 +94,11 @@ jobs:
           # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.
           # JF_DEPS_REPO: ""
+
+          # [Optional]
+          # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+          # JF_REQUIREMENTS_FILE: ""
+
+          # [Optional, Default: "TRUE"]
+          # Use Gradle wrapper.
+          # JF_USE_WRAPPER: "FALSE"
