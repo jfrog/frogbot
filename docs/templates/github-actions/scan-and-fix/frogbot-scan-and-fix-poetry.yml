@@ -56,6 +56,29 @@ jobs:
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""
 
+
+
+          ##########################################################################
+          ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
+          ##   the following variables inside the file, instead of here.          ##
+          ##########################################################################
+
+          # [Optional, default: "."]
+          # Relative path to the root of the project in the Git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
           # [Optional]
           # Frogbot will download the project dependencies if they're not cached locally. To download the
           # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no

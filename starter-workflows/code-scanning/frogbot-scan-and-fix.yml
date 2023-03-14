@@ -7,7 +7,7 @@
 # Uses JFrog Xray to scan the project.
 # Read more about Frogbot here - https://github.com/jfrog/frogbot#frogbot
 
-# Some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
+# The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
 name: "Frogbot Scan and Fix"
 on:
@@ -25,17 +25,10 @@ jobs:
 
       #  IMPORTANT:
       #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
-      #  2. Some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
+      #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
       - uses: jfrog/frogbot@80d5c273e67898731f4d20cb5eb218f9f15b3afd
         env:
-          # [Mandatory if the two conditions below are met]
-          # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
-          # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
-          #
-          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
-          # JF_INSTALL_DEPS_CMD: ""
-
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
@@ -62,8 +55,50 @@ jobs:
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""
 
+
+
+          ##########################################################################
+          ##   If you project uses a 'frogbot-config.yml' file, you can define    ##
+          ##   the following variables inside the file, instead of here.          ##
+          ##########################################################################
+
+          # [Mandatory if the two conditions below are met]
+          # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+          # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+          #
+          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+          # JF_INSTALL_DEPS_CMD: ""
+
+          # [Optional, default: "."]
+          # Relative path to the root of the project in the Git repository
+          # JF_WORKING_DIR: path/to/project/dir
+
+          # [Optional]
+          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+
+          # [Optional]
+          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+          # JF_PROJECT: <project-key>
+
+          # [Optional, default: "FALSE"]
+          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+
+          # [Optional, default: "TRUE"]
+          # Fails the Frogbot task if any security issue is found.
+          # JF_FAIL: "FALSE"
+
           # [Optional]
           # Frogbot will download the project dependencies, if they're not cached locally. To download the
           # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.
           # JF_DEPS_REPO: ""
+
+          # [Optional]
+          # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+          # JF_REQUIREMENTS_FILE: ""
+
+          # [Optional, Default: "TRUE"]
+          # Use Gradle wrapper.
+          # JF_USE_WRAPPER: "FALSE"
