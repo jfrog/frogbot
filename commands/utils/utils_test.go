@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -137,6 +138,61 @@ func TestGetRelativeWd(t *testing.T) {
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 }
+func TestRemoveDowngradedVersions(t *testing.T) {
+	tests := []struct {
+		vulRow         *formats.VulnerabilityOrViolationRow
+		expectedResult []string
+		description    string
+	}{
+		{
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"[1.2.6]", "[0.2.6]"},
+			},
+			expectedResult: []string{"[1.2.6]"},
+			description:    "Test remove downgraded versions of current",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[0.2.5]",
+				FixedVersions:             []string{"[1.2.6]", "[3.2.6]"},
+			},
+			expectedResult: []string{"[1.2.6]", "[3.2.6]"},
+			description:    "Test dont remove upgraded versions",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"[1.2.5]"},
+			},
+			expectedResult: []string{},
+			description:    "Test equals",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "1.2.5",
+				FixedVersions:             []string{"1.5.4", "2.5.0"},
+			},
+			expectedResult: []string{"1.5.4", "2.5.0"},
+			description:    "Test without brackets",
+		}, {
+			vulRow: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyName:    "myBrokenPackage",
+				ImpactedDependencyVersion: "[1.2.5]",
+				FixedVersions:             []string{"1.2.5", "1.2.6"},
+			},
+			expectedResult: []string{"1.2.6"},
+			description:    "Test mixed brackets and without brackets",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			RemoveDowngradedVersions(test.vulRow)
+			assert.Equal(t, test.expectedResult, test.vulRow.FixedVersions)
+		})
+	}
+}
 
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
@@ -160,4 +216,66 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 		})
 	}
 	return
+}
+
+func TestExtractPackageMajorVersionSuffix(t *testing.T) {
+	tests := []struct {
+		fullPackageName string
+		expectedResult  string
+		description     string
+	}{
+		{
+			fullPackageName: "gopkg.in/vini/ini.v2",
+			expectedResult:  ".v2",
+			description:     "validate gopkg version suffix",
+		}, {
+			fullPackageName: "gopkg.in/ini",
+			expectedResult:  "",
+			description:     "validate gopkg without version",
+		}, {
+			fullPackageName: "github.com/go-git/go-git/v4",
+			expectedResult:  "/v4",
+			description:     "validate github and others version suffix",
+		}, {
+			fullPackageName: "github.com/go-git/go-git",
+			expectedResult:  "",
+			description:     "github without version  ",
+		}, {
+			fullPackageName: "github.com/go-git/go-git/v500",
+			expectedResult:  "/v500",
+			description:     "github big version",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			str, _, err := ExtractPackageMajorVersionSuffix(test.fullPackageName)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedResult, str)
+		})
+	}
+}
+
+func TestExtractSemanticVersionPrefix(t *testing.T) {
+	tests := []struct {
+		semanticVersionString string
+		expectedResult        string
+		description           string
+	}{
+		{
+			semanticVersionString: "/v2",
+			expectedResult:        "/v",
+			description:           "extract normal packages prefix",
+		}, {
+			semanticVersionString: ".v2",
+			expectedResult:        ".v",
+			description:           "extract gopkg packages prefix",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			str, err := ExtractSemanticVersionPrefix(test.semanticVersionString)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedResult, str)
+		})
+	}
 }

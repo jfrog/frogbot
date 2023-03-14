@@ -144,7 +144,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	err := scanAllPullRequestsCmd.Run(configAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 4)
-	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [0.2.4]<br>[1.2.6] | CVE-2021-44906 "
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [1.2.6] | CVE-2021-44906 "
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
@@ -184,7 +184,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
-	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [0.2.4]<br>[1.2.6] | CVE-2021-44906 "
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [1.2.6] | CVE-2021-44906 "
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 	assert.Equal(t, expectedMessage, frogbotMessages[1])

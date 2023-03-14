@@ -17,14 +17,21 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
-// Package names are case-insensitive with this prefix
-var pythonPackageRegexPrefix = "(?i)"
+const (
+	// Package names are case-insensitive with this prefix
+	pythonPackageRegexPrefix = "(?i)"
 
-// Match all possible operators and versions syntax
-var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
+	// Match all possible operators and versions syntax
+	pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
+
+	semanticVersioningSeparator = "."
+
+	gopkg = "gopkg"
+)
 
 type CreateFixPullRequestsCmd struct {
 	// mavenDepToPropertyMap holds a map of dependencies to their version properties for maven vulnerabilities
@@ -172,7 +179,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 			if err != nil {
 				return nil, err
 			}
-			for _, vulnerability := range vulnerabilities {
+			for index, vulnerability := range vulnerabilities {
 				if vulnerability.FixedVersions != nil && len(vulnerability.FixedVersions) > 0 {
 					fixVulnerability, err := cfp.shouldFixVulnerability(project, vulnerability)
 					if err != nil {
@@ -196,6 +203,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(project *utils.Project
 						fixVersionsMap[vulnerability.ImpactedDependencyName] = NewFixVersionInfo(vulnFixVersion, vulnerability.Technology)
 					}
 				}
+				utils.RemoveDowngradedVersions(&vulnerabilities[index])
 			}
 		}
 	}
@@ -310,42 +318,79 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(packageType cor
 	}
 
 	switch packageType {
-	case coreutils.Go:
-		commandArgs := []string{"get"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@v")
-	case coreutils.Npm:
-		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Maven:
 		err = fixPackageVersionMaven(cfp, impactedPackage, fixVersion)
-	case coreutils.Yarn:
-		commandArgs := []string{"up"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "@")
 	case coreutils.Pip:
 		err = fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile)
-	case coreutils.Pipenv:
-		commandArgs := []string{"install"}
-		err = fixPackageVersionGeneric(packageType.GetExecCommandName(), commandArgs, impactedPackage, fixVersion, "==")
 	case coreutils.Poetry:
 		err = fixPackageVersionPoetry(impactedPackage, fixVersion)
+	case coreutils.Go:
+		err = fixPackageVersionGo(impactedPackage, fixVersion)
 	default:
-		return fmt.Errorf("package type: %s is currently not supported", string(packageType))
+		err = fixPackageVersionGeneric(packageType, impactedPackage, fixVersion)
 	}
-
 	return
 }
 
 // The majority of package managers already support upgrading specific package versions and update the dependency files automatically.
 // In other cases, we had to handle the upgrade process
-// commandName - Name of the package manager
-// commandArgs - Package manager upgrade command
+// technology - Name of the package manager
 // impactedPackage - Vulnerable package to upgrade
 // fixVersion - The version that fixes the vulnerable package
-// operator - The operator between the impactedPackage to the fixVersion
-func fixPackageVersionGeneric(commandName string, commandArgs []string, impactedPackage, fixVersion, operator string) error {
+func fixPackageVersionGeneric(technology coreutils.Technology, impactedPackage, fixVersion string) error {
+	commandArgs := []string{technology.GetPackageInstallOperator()}
+	operator := technology.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixVersion
+
 	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(commandName, commandArgs)
+	return runPackageMangerCommand(technology.GetExecCommandName(), commandArgs)
+}
+
+// Module paths in GO must have a major version suffix like /v2 that matches the major version.
+// For example, if a module has the path example.com/mod at v1.0.0, it must have the path example.com/mod/v2 at version v2.0.0.
+// Also bear in mind, that GitHub uses "/" while gopkg use "." to indicate major version change
+// Further reading https://github.com/golang/go/wiki/Modules#semantic-import-versioning
+func handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion string) (updatedImpactedPackage string, err error) {
+	minSemanticVersion := 1
+	majorFixVersion := strings.Split(fixVersion, semanticVersioningSeparator)[0]
+	majorFixVersionInt, err := strconv.Atoi(majorFixVersion)
+	if err != nil {
+		return
+	}
+	semanticVersionPrefix, impactedPackageVersionInt, err := utils.ExtractPackageMajorVersionSuffix(impactedPackage)
+	if majorFixVersionInt == impactedPackageVersionInt {
+		updatedImpactedPackage = impactedPackage
+		return
+	}
+	if semanticVersionPrefix == "" {
+		// No version indicator was found need to add by package host type
+		handleEmptySemanticVersion(impactedPackage, &minSemanticVersion, &semanticVersionPrefix)
+	}
+	prefix, err := utils.ExtractSemanticVersionPrefix(semanticVersionPrefix)
+	if err != nil {
+		return
+	}
+	impactedPackage = strings.TrimSuffix(impactedPackage, semanticVersionPrefix)
+	if majorFixVersionInt > minSemanticVersion {
+		return impactedPackage + prefix + majorFixVersion, nil
+	}
+	updatedImpactedPackage = impactedPackage
+	return
+}
+
+// Helper function , when the semantic version is empty, need to add prefix by package host
+// and adjust the min version to address to
+// gopkg is a special case where they use . instead of /
+// and gopkg use /v1 annotation where GitHub and others doesn't.
+func handleEmptySemanticVersion(impactedPackage string, minVersion *int, impactedPackageSemanticVersionString *string) {
+	importPathPrefixSplit := strings.Split(impactedPackage, ".")
+	packageSource := importPathPrefixSplit[0]
+	if packageSource == gopkg {
+		*minVersion = 0
+		*impactedPackageSemanticVersionString = ".v"
+	} else {
+		*impactedPackageSemanticVersionString = "/v"
+	}
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {
@@ -419,7 +464,7 @@ func fixPackageVersionPip(impactedPackage, fixVersion, requirementsFile string) 
 
 func fixPackageVersionPoetry(impactedPackage, fixVersion string) error {
 	// Install the desired fixed version
-	err := fixPackageVersionGeneric(coreutils.Poetry.GetExecCommandName(), []string{"add"}, impactedPackage, fixVersion, "==")
+	err := fixPackageVersionGeneric(coreutils.Poetry, impactedPackage, fixVersion)
 	if err != nil {
 		return err
 	}
@@ -469,4 +514,12 @@ func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
 	if fvi.fixVersion == "" || version.NewVersion(fvi.fixVersion).Compare(newFixVersion) > 0 {
 		fvi.fixVersion = newFixVersion
 	}
+}
+
+func fixPackageVersionGo(impactedPackage, fixVersion string) error {
+	impactedPackage, err := handleGoPackageSemanticVersionSuffix(impactedPackage, fixVersion)
+	if err != nil {
+		return err
+	}
+	return fixPackageVersionGeneric(coreutils.Go, impactedPackage, fixVersion)
 }

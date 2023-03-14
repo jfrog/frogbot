@@ -263,3 +263,68 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 		}
 	}
 }
+
+func TestFormatGoVersion(t *testing.T) {
+	formatGoCases := []struct {
+		description     string
+		impactedPackage string
+		fixVersion      string
+		expected        string
+	}{
+		{
+			impactedPackage: "github.com/vbauerster/mpb/v10",
+			fixVersion:      "12.1.0",
+			expected:        "github.com/vbauerster/mpb/v12",
+			description:     "Validate adding /v10 to impacted package name",
+		}, {
+			impactedPackage: "github.com/vbauerster/mpb/myseomthing/v7",
+			fixVersion:      "8.1.0",
+			expected:        "github.com/vbauerster/mpb/myseomthing/v8",
+			description:     "Validate adding /v5 to impacted package name",
+		},
+		{
+			impactedPackage: "github.com/go-git/go-git",
+			fixVersion:      "4.1.1",
+			expected:        "github.com/go-git/go-git/v4",
+			description:     "Validate adding /v4 to impacted package name",
+		},
+		{
+			impactedPackage: "github.com/go-git/go-git",
+			fixVersion:      "1.0.0",
+			expected:        "github.com/go-git/go-git",
+			description:     "Validate no string has been added",
+		},
+		{
+			impactedPackage: "gopkg.in/ini",
+			fixVersion:      "1.67.0",
+			expected:        "gopkg.in/ini.v1",
+			description:     "gopkg different separator",
+		},
+		{
+			impactedPackage: "gopkg.in/ini",
+			fixVersion:      "2.1.0",
+			expected:        "gopkg.in/ini.v2",
+			description:     "gopkg jump major version",
+		},
+		{
+			impactedPackage: "gopkg.in/ini.v2",
+			fixVersion:      "3.1.0",
+			expected:        "gopkg.in/ini.v3",
+			description:     "gopkg validate no chained versions like gopkg.in/ini.v2.v3",
+		},
+		{
+			impactedPackage: "gopkg.in/vini/ini.v2",
+			fixVersion:      "3.1.0",
+			expected:        "gopkg.in/vini/ini.v3",
+			description:     "gopkg validate nested package paths",
+		},
+	}
+
+	for _, tt := range formatGoCases {
+		t.Run(tt.description, func(t *testing.T) {
+			result, err := handleGoPackageSemanticVersionSuffix(tt.impactedPackage, tt.fixVersion)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

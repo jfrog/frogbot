@@ -58,6 +58,9 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 		return err
 	}
 
+	for i := range vulnerabilitiesRows {
+		utils.RemoveDowngradedVersions(&vulnerabilitiesRows[i])
+	}
 	// Create pull request message
 	message := createPullRequestMessage(vulnerabilitiesRows, repoConfig.OutputWriter)
 
@@ -147,7 +150,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	return nil
 }
 
-// Create vulnerabilities rows. The rows should contain only the new issues added by this PR
+// Create vulnerabilities rows. The rows should contain only the new issues added by this PR and only upgraded versions
 func createNewIssuesRows(previousScan, currentScan []services.ScanResponse, isMultipleRoot bool) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	previousScanAggregatedResults := aggregateScanResults(previousScan)
 	currentScanAggregatedResults := aggregateScanResults(currentScan)
@@ -165,7 +168,9 @@ func createNewIssuesRows(previousScan, currentScan []services.ScanResponse, isMu
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
 	}
-
+	for i := range vulnerabilitiesRows {
+		utils.RemoveDowngradedVersions(&vulnerabilitiesRows[i])
+	}
 	return vulnerabilitiesRows, nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -17,6 +18,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -167,4 +170,65 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+// RemoveDowngradedVersions removes fix suggestions which are downgraded versions of current
+// trimming brackets as some xray api returns with or without brackets it breaks the compare function
+func RemoveDowngradedVersions(vul *formats.VulnerabilityOrViolationRow) {
+	if len(vul.FixedVersions) == 0 {
+		return
+	}
+	upgradeVersions := make([]string, 0)
+	effectedVersion := version.NewVersion(removeBrackets(vul.ImpactedDependencyVersion))
+	for _, suggestedFixVersion := range vul.FixedVersions {
+		suggestedFixVersionTrimmed := removeBrackets(suggestedFixVersion)
+		if !effectedVersion.AtLeast(suggestedFixVersionTrimmed) {
+			upgradeVersions = append(upgradeVersions, suggestedFixVersion)
+		}
+	}
+	vul.FixedVersions = upgradeVersions
+}
+
+func removeBrackets(suggestedFixVersion string) string {
+	replacer := strings.NewReplacer("[", "", "]", "") //trims brackets if exists
+	suggestedFixVersionTrimmed := replacer.Replace(suggestedFixVersion)
+	return suggestedFixVersionTrimmed
+}
+
+// Extracts the major version suffix from a full package name including the prefix
+// Example : github/somePackage/v4 -> /v4.
+// Example : gopkg/somePackage.v4 -> .v4.
+func ExtractPackageMajorVersionSuffix(impactedPackage string) (versionSuffixString string, majorVersionInt int, err error) {
+	reg, err := regexp.Compile(`.+([\/\.]v\d+)$`)
+	if err != nil {
+		return
+	}
+	currentSemanticVersionString := reg.FindStringSubmatch(impactedPackage)
+	if currentSemanticVersionString == nil {
+		// No version indicator was found
+		return
+	}
+	versionSuffixString = currentSemanticVersionString[1]
+	numReg, err := regexp.Compile(`\d+`)
+	extractedNumber := numReg.FindString(versionSuffixString)
+	if extractedNumber == "" {
+		return
+	}
+	majorVersionInt, err = strconv.Atoi(extractedNumber)
+	if err != nil {
+		return
+	}
+	return
+}
+
+// Extracts the semantic version number as string
+// Example: "/v4" will result 4
+// Example: ".v5" will result 5
+func ExtractSemanticVersionPrefix(semanticVersionString string) (prefix string, err error) {
+	reg, err := regexp.Compile(`\d+`)
+	if err != nil {
+		return
+	}
+	prefix = reg.ReplaceAllString(semanticVersionString, "")
+	return
 }
