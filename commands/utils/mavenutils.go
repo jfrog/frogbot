@@ -2,21 +2,70 @@ package utils
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-const (
-	modulePattern       = "<module>(\\S|\\s)*?<\\/module>"
-	dependenciesPattern = "(<dependency>(\\S|\\s)*?<\\/dependency>)|(<plugin>(\\S|\\s)*?<\\/plugin>)"
-)
+const modulePattern = "<module>(\\S|\\s)*?<\\/module>"
 
-var (
-	moduleRegexp       = regexp.MustCompile(modulePattern)
-	dependenciesRegexp = regexp.MustCompile(dependenciesPattern)
-)
+var moduleRegexp = regexp.MustCompile(modulePattern)
+
+type gavCoordinate struct {
+	GroupId    string `xml:"groupId"`
+	ArtifactId string `xml:"artifactId"`
+	Version    string `xml:"version"`
+}
+
+func (gc *gavCoordinate) isEmpty() bool {
+	return gc.GroupId == "" && gc.ArtifactId == "" && gc.Version == ""
+}
+
+func (gc *gavCoordinate) trimSpaces() *gavCoordinate {
+	gc.GroupId = strings.TrimSpace(gc.GroupId)
+	gc.ArtifactId = strings.TrimSpace(gc.ArtifactId)
+	gc.Version = strings.TrimSpace(gc.Version)
+	return gc
+}
+
+type mavenDependency struct {
+	gavCoordinate
+	Dependencies []mavenDependency `xml:"dependencies>dependency"`
+	Plugins      []mavenPlugin     `xml:"build>plugins>plugin"`
+}
+
+func (md *mavenDependency) collectMavenDependencies() []gavCoordinate {
+	var result []gavCoordinate
+	if !md.gavCoordinate.isEmpty() {
+		result = append(result, *md.gavCoordinate.trimSpaces())
+	}
+	for _, dependency := range md.Dependencies {
+		result = append(result, dependency.collectMavenDependencies()...)
+	}
+	for _, plugin := range md.Plugins {
+		result = append(result, plugin.collectMavenPlugins()...)
+	}
+
+	return result
+}
+
+type mavenPlugin struct {
+	gavCoordinate
+	NestedPlugins []mavenPlugin `xml:"configuration>plugins>plugin"`
+}
+
+func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
+	var result []gavCoordinate
+	if !mp.gavCoordinate.isEmpty() {
+		result = append(result, *mp.gavCoordinate.trimSpaces())
+	}
+	for _, plugin := range mp.NestedPlugins {
+		result = append(result, plugin.collectMavenPlugins()...)
+	}
+	return result
+}
 
 func GetVersionProperties(projectPath string, depToPropertyMap map[string][]string) error {
 	contentBytes, err := os.ReadFile(filepath.Join(projectPath, "pom.xml")) // #nosec G304
@@ -28,12 +77,12 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 		return err
 	}
 	for _, mavenDependency := range mavenDependencies {
-		depName := mavenDependency.GroupId + ":" + mavenDependency.ArtifactId
+		depName := fmt.Sprintf("%s:%s", mavenDependency.GroupId, mavenDependency.ArtifactId)
 		if _, exist := depToPropertyMap[depName]; !exist {
 			depToPropertyMap[depName] = []string{}
 		}
 		if strings.HasPrefix(mavenDependency.Version, "${") {
-			depToPropertyMap[depName] = append(depToPropertyMap[mavenDependency.GroupId+":"+mavenDependency.ArtifactId], strings.TrimPrefix(strings.TrimSuffix(mavenDependency.Version, "}"), "${"))
+			depToPropertyMap[depName] = append(depToPropertyMap[depName], strings.TrimPrefix(strings.TrimSuffix(mavenDependency.Version, "}"), "${"))
 		}
 	}
 
@@ -47,19 +96,13 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 
 // Extract all dependencies from the input pom.xml
 // pomXmlContent - The pom.xml content
-func getDependenciesFromPomXml(pomXmlContent []byte) ([]mavenDependency, error) {
-	var results []mavenDependency
-	dependencyStrings := dependenciesRegexp.FindAll(pomXmlContent, -1)
-	for _, depStr := range dependencyStrings {
-		dep := &mavenDependency{}
-		err := xml.Unmarshal(depStr, dep)
-		if err != nil {
-			return []mavenDependency{}, err
-		}
-		dep.trimSpaces()
-		results = append(results, *dep)
+func getDependenciesFromPomXml(pomXmlContent []byte) (result []gavCoordinate, err error) {
+	var dependencies mavenDependency
+	if err := xml.Unmarshal(pomXmlContent, &dependencies); err != nil {
+		return result, err
 	}
-	return results, nil
+	result = append(result, dependencies.collectMavenDependencies()...)
+	return result, err
 }
 
 // Extract all modules from pom.xml
@@ -72,16 +115,4 @@ func getMavenModuleFromPomXml(pomXmlContent []byte) []string {
 		results = append(results, strings.TrimSpace(modulePath))
 	}
 	return results
-}
-
-type mavenDependency struct {
-	GroupId    string `xml:"groupId"`
-	ArtifactId string `xml:"artifactId"`
-	Version    string `xml:"version"`
-}
-
-func (md *mavenDependency) trimSpaces() {
-	md.GroupId = strings.TrimSpace(md.GroupId)
-	md.ArtifactId = strings.TrimSpace(md.ArtifactId)
-	md.Version = strings.TrimSpace(md.Version)
 }
