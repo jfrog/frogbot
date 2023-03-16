@@ -61,6 +61,10 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 	// Create pull request message
 	message := createPullRequestMessage(vulnerabilitiesRows, repoConfig.OutputWriter)
 
+	for i := range vulnerabilitiesRows {
+		utils.RemoveDowngradedVersions(&vulnerabilitiesRows[i])
+	}
+
 	// Add comment to the pull request
 	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
@@ -165,7 +169,9 @@ func createNewIssuesRows(previousScan, currentScan []services.ScanResponse, isMu
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
 	}
-
+	for i := range vulnerabilitiesRows {
+		utils.RemoveDowngradedVersions(&vulnerabilitiesRows[i])
+	}
 	return vulnerabilitiesRows, nil
 }
 

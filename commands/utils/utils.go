@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -167,4 +168,27 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+// RemoveDowngradedVersions removes fix suggestions which are downgraded versions of current
+// trimming brackets as some xray api returns with or without brackets it breaks the compare function
+func RemoveDowngradedVersions(vul *formats.VulnerabilityOrViolationRow) {
+	if len(vul.FixedVersions) == 0 {
+		return
+	}
+	upgradeVersions := make([]string, 0)
+	effectedVersion := version.NewVersion(removeBrackets(vul.ImpactedDependencyVersion))
+	for _, suggestedFixVersion := range vul.FixedVersions {
+		suggestedFixVersionTrimmed := removeBrackets(suggestedFixVersion)
+		if !effectedVersion.AtLeast(suggestedFixVersionTrimmed) {
+			upgradeVersions = append(upgradeVersions, suggestedFixVersion)
+		}
+	}
+	vul.FixedVersions = upgradeVersions
+}
+
+func removeBrackets(suggestedFixVersion string) string {
+	replacer := strings.NewReplacer("[", "", "]", "") //trims brackets if exists
+	suggestedFixVersionTrimmed := replacer.Replace(suggestedFixVersion)
+	return suggestedFixVersionTrimmed
 }
