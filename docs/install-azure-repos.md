@@ -34,8 +34,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
        ```yml
         schedules:
-             # Every 5 minutes
-             - cron: "*/5 * * * *"
+             # Run once an hour
+             - cron: "* */1 * * *"
                branches: 
                  include: 
                    - "*"

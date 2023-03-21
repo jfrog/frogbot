@@ -2,7 +2,7 @@ resources:
   - name: cron_trigger
     type: CronTrigger
     configuration:
-      interval: '*/5 * * * *'     # Every 5 minutes
+      interval: '* */1 * * *'     # Run once an hour
 
   - name: frogbotGitRepo
     type: GitRepo
