@@ -115,8 +115,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		return nil
 	}
 
-	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}

@@ -72,8 +72,8 @@
           <summary>Template</summary>
 
    ```groovy
-   // Run the job every 5 minutes 
-   CRON_SETTINGS = '''*/5 * * * *'''
+   // Run the job once an hour 
+   CRON_SETTINGS = '''* */1 * * *'''
    pipeline {
        agent any
        triggers {
