@@ -34,8 +34,8 @@
    - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    ```groovy
-   // Run the job every 5 minutes 
-   CRON_SETTINGS = '''*/5 * * * *'''
+   // Run the job once an hour 
+   CRON_SETTINGS = '''* */1 * * *'''
    
    pipeline {
        agent any
