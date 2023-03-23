@@ -62,6 +62,161 @@ func TestScanAndFixRepos(t *testing.T) {
 	assert.NoError(t, cmd.Run(configAggregator, client))
 }
 
+func TestShouldScanBranchByStatus(t *testing.T) {
+	commitStatusTestCases := []struct {
+		statuses    []vcsclient.CommitStatusInfo
+		description string
+		expected    bool
+	}{
+		{
+			statuses: []vcsclient.CommitStatusInfo{
+				{
+					State:         vcsclient.Pass,
+					Description:   "description",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				}, {
+					State:         vcsclient.InProgress,
+					Description:   "this is the latest commit",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				},
+			},
+			description: "Latest status is not successful",
+			expected:    true,
+		},
+		{
+			statuses: []vcsclient.CommitStatusInfo{
+				{
+					State:         vcsclient.InProgress,
+					Description:   "description",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				}, {
+					State:         vcsclient.Pass,
+					Description:   "this is the latest commit",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				},
+			},
+			description: "Latest status is successful",
+			expected:    false,
+		},
+		{
+			statuses:    []vcsclient.CommitStatusInfo{},
+			description: "Empty statuses",
+			expected:    true,
+		},
+		{
+			statuses: []vcsclient.CommitStatusInfo{
+				{
+					State:         vcsclient.Fail,
+					Description:   "description",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				}, {
+					State:         vcsclient.InProgress,
+					Description:   "this is the latest commit",
+					DetailsUrl:    utils.FrogbotReadMeUrl,
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				},
+			},
+			description: "FrogBot failed statues should scan",
+			expected:    true,
+		},
+		{
+			statuses: []vcsclient.CommitStatusInfo{
+				{
+					State:         vcsclient.Fail,
+					Description:   "description",
+					DetailsUrl:    "some other url",
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				}, {
+					State:         vcsclient.InProgress,
+					Description:   "this is the latest commit",
+					DetailsUrl:    "some other url",
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				},
+				{
+					State:         vcsclient.Pass,
+					Description:   "this is the latest commit",
+					DetailsUrl:    "some other url",
+					Creator:       "test",
+					LastUpdatedAt: time.Now().UTC(),
+				},
+			},
+			description: "Non FrogBot statues",
+			expected:    true,
+		},
+	}
+	for _, tt := range commitStatusTestCases {
+		t.Run(tt.description, func(t *testing.T) {
+			shouldScan := shouldScanBranchByStatus(tt.statuses)
+			assert.Equal(t, tt.expected, shouldScan)
+		})
+	}
+}
+
+func TestIsStatusOldAndNeedScan(t *testing.T) {
+	testCases := []struct {
+		commitStatusInfo vcsclient.CommitStatusInfo
+		description      string
+		expected         bool
+	}{
+		{
+			commitStatusInfo: vcsclient.CommitStatusInfo{
+				State:         0,
+				Description:   "",
+				DetailsUrl:    "",
+				Creator:       "",
+				CreatedAt:     time.Now().UTC().AddDate(0, -3, 0),
+				LastUpdatedAt: time.Now().UTC().AddDate(0, 0, -utils.DefaultAmountOfDaysToRescanRepo-1),
+			},
+			expected:    true,
+			description: "Last Update time is priority",
+		},
+		{
+			commitStatusInfo: vcsclient.CommitStatusInfo{
+				State:         0,
+				Description:   "",
+				DetailsUrl:    "",
+				Creator:       "",
+				CreatedAt:     time.Now(),
+				LastUpdatedAt: time.Now(),
+			},
+			expected:    false,
+			description: "No scan needed ",
+		},
+		{
+			commitStatusInfo: vcsclient.CommitStatusInfo{
+				State:         0,
+				Description:   "",
+				DetailsUrl:    "",
+				Creator:       "",
+				CreatedAt:     time.Now().UTC(),
+				LastUpdatedAt: time.Time{},
+			},
+			expected:    false,
+			description: "Creation time fallback",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.description, func(t *testing.T) {
+			needScan := isStatusOldAndNeedScan(tt.commitStatusInfo)
+			assert.Equal(t, tt.expected, needScan)
+		})
+	}
+}
+
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {
 	for _, repository := range repositories {
 		fullWdPath := filepath.Join(wd, repository)
@@ -131,99 +286,5 @@ func createHttpHandler(t *testing.T, port *string, projectNames ...string) http.
 				return
 			}
 		}
-	}
-}
-
-func TestShouldScanBranchByStatus(t *testing.T) {
-	commitStatusTestCases := []struct {
-		statuses    []vcsclient.CommitStatus
-		description string
-		expected    bool
-	}{
-		{
-			statuses: []vcsclient.CommitStatus{
-				{
-					State:       "success",
-					Description: "description",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				}, {
-					State:       "pending",
-					Description: "this is the latest commit",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				},
-			},
-			description: "Latest status is not successful",
-			expected:    true,
-		},
-		{
-			statuses: []vcsclient.CommitStatus{
-				{
-					State:       "pending",
-					Description: "description",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				}, {
-					State:       "success",
-					Description: "this is the latest commit",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				},
-			},
-			description: "Latest status is successful",
-			expected:    false,
-		},
-		{
-			statuses:    []vcsclient.CommitStatus{},
-			description: "Empty statuses",
-			expected:    true,
-		},
-		{
-			statuses: []vcsclient.CommitStatus{
-				{
-					State:       "failed",
-					Description: "description",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				}, {
-					State:       "pending",
-					Description: "this is the latest commit",
-					DetailsUrl:  utils.FrogbotReadMeUrl,
-					Creator:     "test",
-				},
-			},
-			description: "FrogBot failed statues should scan",
-			expected:    true,
-		},
-		{
-			statuses: []vcsclient.CommitStatus{
-				{
-					State:       "failed",
-					Description: "description",
-					DetailsUrl:  "some other url",
-					Creator:     "test",
-				}, {
-					State:       "pending",
-					Description: "this is the latest commit",
-					DetailsUrl:  "some other url",
-					Creator:     "test",
-				},
-				{
-					State:       "success",
-					Description: "this is the latest commit",
-					DetailsUrl:  "some other url",
-					Creator:     "test",
-				},
-			},
-			description: "Non FrogBot statues",
-			expected:    true,
-		},
-	}
-	for _, tt := range commitStatusTestCases {
-		t.Run(tt.description, func(t *testing.T) {
-			shouldScan := shouldScanBranchByStatus(tt.statuses)
-			assert.Equal(t, tt.expected, shouldScan)
-		})
 	}
 }

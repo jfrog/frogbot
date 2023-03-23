@@ -111,4 +111,4 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/froggit-go v1.6.3 => github.com/EyalDelarea/froggit-go v1.6.1-0.20230316100731-b56fdd6b4467
+replace github.com/jfrog/froggit-go v1.6.3 => github.com/eyaldelarea/froggit-go v1.6.1-0.20230323125910-390acdcec910

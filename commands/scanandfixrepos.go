@@ -99,32 +99,14 @@ func (cmd ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx 
 		return false, "", err
 	}
 	ref := latestCommit.Hash
-	commitTime := time.Unix(latestCommit.Timestamp, 0)
-	maxDateToRescanRepo := time.Now().UTC().AddDate(0, 0, -utils.DefaultAmountOfDaysToRescanRepo)
-	if commitTime.Before(maxDateToRescanRepo) {
-		return true, "", nil
-	}
-	statuses, err := client.GetCommitStatus(ctx, owner, repo, ref)
+	statuses, err := client.GetCommitStatuses(ctx, owner, repo, ref)
 	if err != nil {
 		return false, "", err
 	}
 	return shouldScanBranchByStatus(statuses), latestCommit.Hash, err
 }
 
-// Checks by the last frogbot commit status if it should scan this branch or not
-func shouldScanBranchByStatus(statuses []vcsclient.CommitStatus) bool {
-	length := len(statuses)
-	if length == 0 {
-		return true
-	}
-	latestStatus := statuses[length-1]
-	if !strings.Contains(latestStatus.DetailsUrl, utils.FrogbotReadMeUrl) {
-		return shouldScanBranchByStatus(statuses[0 : length-1])
-	}
-	return !strings.Contains(latestStatus.State, "success")
-}
-
-func (cmd ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatusState, commitHash string, description string) error {
+func (cmd ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
 	background := context.Background()
 	err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.ProductId, description, utils.FrogbotReadMeUrl)
 	if err != nil {
@@ -133,4 +115,33 @@ func (cmd ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClien
 	}
 	log.Info(fmt.Sprintf("Successfully marked commit %s as checked by FrogBot", commitHash))
 	return nil
+}
+
+// Return true if that last status by FrogBot is not successful
+// OR it's older than DefaultAmountOfDaysToRescanRepo.
+func shouldScanBranchByStatus(statuses []vcsclient.CommitStatusInfo) bool {
+	length := len(statuses)
+	if length == 0 {
+		return true
+	}
+	latestStatus := statuses[length-1]
+	if !strings.Contains(latestStatus.DetailsUrl, utils.FrogbotReadMeUrl) {
+		return shouldScanBranchByStatus(statuses[0 : length-1])
+	}
+	return isStatusOldAndNeedScan(latestStatus) || latestStatus.State != vcsclient.Pass
+}
+
+// isStatusOldAndNeedScan - check if status need rescan because it is older than DefaultAmountOfDaysToRescanRepo
+func isStatusOldAndNeedScan(latestStatus vcsclient.CommitStatusInfo) bool {
+	statusLastUpdatedTime := time.Time{}
+	if !latestStatus.CreatedAt.IsZero() {
+		statusLastUpdatedTime = latestStatus.CreatedAt
+	}
+	if !latestStatus.LastUpdatedAt.IsZero() {
+		statusLastUpdatedTime = latestStatus.LastUpdatedAt
+	}
+	if statusLastUpdatedTime.IsZero() {
+		return true
+	}
+	return statusLastUpdatedTime.Before(time.Now().UTC().AddDate(0, 0, -utils.DefaultAmountOfDaysToRescanRepo))
 }
