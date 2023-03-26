@@ -16,10 +16,10 @@ type ScanAndFixRepositories struct {
 	dryRunRepoPath string
 }
 
-func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		err := cmd.scanAndFixSingleRepository(&configAggregator[repoNum], client)
+		err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))
 		}
@@ -31,9 +31,9 @@ func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggreg
 	return nil
 }
 
-func (cmd ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	for _, branch := range repoConfig.Branches {
-		err := cmd.downloadAndRunScanAndFix(client, branch, repoConfig)
+		err := saf.downloadAndRunScanAndFix(repoConfig, branch, client)
 		if err != nil {
 			return err
 		}
@@ -42,8 +42,8 @@ func (cmd ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.F
 	return nil
 }
 
-func (cmd ScanAndFixRepositories) downloadAndRunScanAndFix(client vcsclient.VcsClient, branch string, repoConfig *utils.FrogbotRepoConfig) (err error) {
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repoConfig.Git)
+func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,6 @@ func (cmd ScanAndFixRepositories) downloadAndRunScanAndFix(client vcsclient.VcsC
 		}
 	}()
 
-	var cfp = CreateFixPullRequestsCmd{dryRun: cmd.dryRun, dryRunRepoPath: filepath.Join(cmd.dryRunRepoPath, repoConfig.RepoName)}
-	return cfp.scanAndFixRepository(repoConfig, client, branch)
+	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: filepath.Join(saf.dryRunRepoPath, repository.RepoName)}
+	return cfp.scanAndFixRepository(repository, branch, client)
 }
