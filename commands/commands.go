@@ -41,7 +41,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanPullRequestCmd{}, ctx.Command.Name)
+				return Exec(&ScanPullRequestCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -50,7 +50,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"cfpr"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(CreateFixPullRequestsCmd{}, ctx.Command.Name)
+				return Exec(&CreateFixPullRequestsCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -59,7 +59,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"sprs"},
 			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanAllPullRequestsCmd{}, ctx.Command.Name)
+				return Exec(&ScanAllPullRequestsCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -68,7 +68,7 @@ func GetCommands() []*clitool.Command {
 			Aliases: []string{"safr"},
 			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(ScanAndFixRepositories{}, ctx.Command.Name)
+				return Exec(&ScanAndFixRepositories{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},

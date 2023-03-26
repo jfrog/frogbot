@@ -19,10 +19,10 @@ type ScanAndFixRepositories struct {
 	dryRunRepoPath string
 }
 
-func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		err := cmd.scanAndFixSingleRepository(&configAggregator[repoNum], client)
+		err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))
 		}
@@ -34,9 +34,9 @@ func (cmd ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggreg
 	return nil
 }
 
-func (cmd ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	for _, branch := range repoConfig.Branches {
-		shouldScan, checkedCommit, err := cmd.shouldScanRepositoryByFrogBotCommitStatus(context.Background(), repoConfig, client, branch)
+		shouldScan, checkedCommit, err := saf.shouldScanRepositoryByFrogBotCommitStatus(context.Background(), repoConfig, client, branch)
 		if err != nil {
 			return err
 		}
@@ -44,14 +44,14 @@ func (cmd ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.F
 			log.Info(fmt.Sprintf("Commit %s has already been scanned by FrogBot", checkedCommit))
 			continue
 		}
-		err = cmd.downloadAndRunScanAndFix(client, branch, repoConfig)
+		err = saf.downloadAndRunScanAndFix(repoConfig, branch, client)
 		if err != nil {
 			errorDescription := fmt.Sprintf("FrogBot error %s", err)
 			log.Error(errorDescription)
-			err = cmd.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, errorDescription)
+			err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, errorDescription)
 			return err
 		}
-		err = cmd.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, "FrogBot scanned")
+		err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, "FrogBot scanned")
 		if err != nil {
 			return err
 		}
@@ -59,8 +59,8 @@ func (cmd ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.F
 	return nil
 }
 
-func (cmd ScanAndFixRepositories) downloadAndRunScanAndFix(client vcsclient.VcsClient, branch string, repoConfig *utils.FrogbotRepoConfig) (err error) {
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repoConfig.Git)
+func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
 	if err != nil {
 		return err
 	}
@@ -82,12 +82,12 @@ func (cmd ScanAndFixRepositories) downloadAndRunScanAndFix(client vcsclient.VcsC
 		}
 	}()
 
-	var cfp = CreateFixPullRequestsCmd{dryRun: cmd.dryRun, dryRunRepoPath: filepath.Join(cmd.dryRunRepoPath, repoConfig.RepoName)}
-	return cfp.scanAndFixRepository(repoConfig, client, branch)
+	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: filepath.Join(saf.dryRunRepoPath, repository.RepoName)}
+	return cfp.scanAndFixRepository(repository, branch, client)
 }
 
 // Checking last FrogBot commit status that indicates whether FrogBot has already scanned this branch or not
-func (cmd ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
+func (saf ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
 	owner := repoConfig.RepoOwner
 	repo := repoConfig.RepoName
 	latestCommit, err := client.GetLatestCommit(ctx, owner, repo, branch)
@@ -106,7 +106,7 @@ func (cmd ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx 
 	return shouldScanBranchByStatus(statuses), latestCommit.Hash, err
 }
 
-func (cmd ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
+func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
 	background := context.Background()
 	err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.ProductId, description, utils.FrogbotReadMeUrl)
 	if err != nil {
