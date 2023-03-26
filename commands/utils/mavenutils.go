@@ -78,13 +78,16 @@ func GetVersionProperties(projectPath string, depToPropertyMap map[string][]stri
 	if err != nil {
 		return err
 	}
-	for _, mavenDependency := range mavenDependencies {
-		depName := fmt.Sprintf("%s:%s", mavenDependency.GroupId, mavenDependency.ArtifactId)
+	for _, dependency := range mavenDependencies {
+		if dependency.Version == "" {
+			continue
+		}
+		depName := fmt.Sprintf("%s:%s", dependency.GroupId, dependency.ArtifactId)
 		if _, exist := depToPropertyMap[depName]; !exist {
 			depToPropertyMap[depName] = []string{}
 		}
-		if strings.HasPrefix(mavenDependency.Version, "${") {
-			depToPropertyMap[depName] = append(depToPropertyMap[depName], strings.TrimPrefix(strings.TrimSuffix(mavenDependency.Version, "}"), "${"))
+		if strings.HasPrefix(dependency.Version, "${") {
+			depToPropertyMap[depName] = append(depToPropertyMap[depName], strings.TrimPrefix(strings.TrimSuffix(dependency.Version, "}"), "${"))
 		}
 	}
 
