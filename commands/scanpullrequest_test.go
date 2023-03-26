@@ -652,7 +652,7 @@ func TestGetFullPathWorkingDirs(t *testing.T) {
 		WorkingDirs: []string{filepath.Join("a", "b"), filepath.Join("a", "b", "c"), ".", filepath.Join("c", "d", "e", "f")},
 	}
 	baseWd := "tempDir"
-	fullPathWds := getFullPathWorkingDirs(&sampleProject, baseWd)
+	fullPathWds := getFullPathWorkingDirs(sampleProject.WorkingDirs, baseWd)
 	expectedWds := []string{filepath.Join("tempDir", "a", "b"), filepath.Join("tempDir", "a", "b", "c"), "tempDir", filepath.Join("tempDir", "c", "d", "e", "f")}
 	for _, expectedWd := range expectedWds {
 		assert.Contains(t, fullPathWds, expectedWd)

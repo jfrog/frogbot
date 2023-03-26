@@ -173,7 +173,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 	configFileContent, err := getConfigFileContent(client)
 	// If there is a missing configuration file error, try to generate an environment variable-based config aggregator.
 	if _, missingConfigErr := err.(*ErrMissingConfig); missingConfigErr {
-		log.Debug("Retrieving", FrogbotConfigFile, "failed with:", err.Error())
+		log.Debug("Unable to retrieve", FrogbotConfigFile, err.Error())
 		configAggregator, err := newConfigAggregatorFromEnv(gitParams, server)
 		if err != nil {
 			return nil, err
