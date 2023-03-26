@@ -123,13 +123,17 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 
 func TestFixPackageVersion(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
+	defer func() {
+		assert.NoError(t, os.Chdir(currentDir))
+	}()
+
 	for _, test := range packageFixTests {
 		func() {
 			// Create temp technology project
 			projectPath := filepath.Join(testdataDir, test.technology.ToString())
 			tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
-			test.testPath = tmpProjectPath
 			defer cleanup()
+			test.testPath = tmpProjectPath
 			assert.NoError(t, os.Chdir(tmpProjectPath))
 
 			t.Run(test.technology.ToString(), func(t *testing.T) {
@@ -142,7 +146,6 @@ func TestFixPackageVersion(t *testing.T) {
 			})
 		}()
 	}
-	assert.NoError(t, os.Chdir(currentDir))
 }
 
 func getTestDataDir(t *testing.T) (string, string) {

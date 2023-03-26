@@ -27,7 +27,8 @@ var pythonPackageRegexPrefix = "(?i)"
 var pythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 
 type CreateFixPullRequestsCmd struct {
-	// mavenDepToPropertyMap holds a map of maven direct dependencies that was found in the pom.xml as a key and the value is only set in case the version is set in a property
+	// mavenDepToPropertyMap holds a map of direct dependencies found in pom.xml.
+	// Keys values are only set if the key version is a property.
 	mavenDepToPropertyMap map[string][]string
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
@@ -37,7 +38,7 @@ type CreateFixPullRequestsCmd struct {
 	details *utils.ScanDetails
 	// The current project working directory
 	projectWorkingDir string
-	// The git client that the command perform git operations with
+	// The git client the command performs git operations with
 	gitManager *utils.GitManager
 }
 
@@ -133,8 +134,11 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 	defer func() {
 		e1 := restoreBaseDir()
 		e2 := fileutils.RemoveTempDir(clonedRepoDir)
-		if err == nil && (e1 != nil || e2 != nil) {
-			err = fmt.Errorf("%s\n%s", e1, e2)
+		if err == nil {
+			err = e1
+			if err == nil {
+				err = e2
+			}
 		}
 	}()
 
@@ -143,7 +147,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		if err = cfp.fixSinglePackage(impactedPackage, fixVersionInfo); err != nil {
 			log.Warn(err)
 		}
-		// After finishing to work on the current vulnerability we go back to the base branch to start the next vulnerability fix
+		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Info("Running git checkout to base branch:", cfp.details.Branch)
 		if err = cfp.gitManager.Checkout(cfp.details.Branch); err != nil {
 			return err
@@ -157,15 +161,15 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fi
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.fixVersion)
 	fixBranchName, err := cfp.createFixingBranch(impactedPackage, fixVersionInfo)
 	if err != nil {
-		return fmt.Errorf("failed while trying to create new branch: \n%s", err.Error())
+		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
 
 	if err = cfp.updatePackageToFixedVersion(fixVersionInfo.packageType, impactedPackage, fixVersionInfo.fixVersion); err != nil {
-		return fmt.Errorf("failed while trying to fix %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.fixVersion, err.Error())
+		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.fixVersion, err.Error())
 	}
 
 	if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
-		return fmt.Errorf("failed while trying to create a fixing pull request for: %s with version: %s with error: \n%s",
+		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
 			impactedPackage, fixVersionInfo.fixVersion, err.Error())
 	}
 	return
@@ -181,14 +185,14 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	log.Info("Running git add all and commit")
 	commitString := fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
+	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitString)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Pushing fix branch:", fixBranchName)
+	log.Info("Pushing fix branch:", fixBranchName, "...")
 	err = cfp.gitManager.Push()
 	if err != nil {
 		return err
@@ -202,12 +206,12 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *FixVersionInfo) (fixBranchName string, err error) {
 	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	exists, err := cfp.gitManager.BranchExistsOnRemote(fixBranchName)
 	if err != nil {
-		return "", err
+		return
 	}
 	log.Info("Creating branch:", fixBranchName)
 	if exists {
@@ -222,14 +226,14 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 	// Create temp working directory
 	tempWd, err = fileutils.CreateTempDir()
 	if err != nil {
-		return "", nil, err
+		return
 	}
 	log.Debug("Created temp working directory:", tempWd)
 
 	// Clone the content of the repo to the new working directory
 	err = cfp.gitManager.Clone(tempWd, cfp.details.Branch)
 	if err != nil {
-		return tempWd, nil, err
+		return
 	}
 
 	// 'CD' into the temp working directory
@@ -237,7 +241,7 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 	return
 }
 
-// Create fixVersionMap - a map between impacted packages and their fix version
+// Create fixVersionMap - a map with 'impacted package' as key and 'fix version' as value.
 func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*FixVersionInfo, error) {
 	fixVersionsMap := map[string]*FixVersionInfo{}
 	for _, scanResult := range scanResults {

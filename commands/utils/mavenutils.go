@@ -67,6 +67,8 @@ func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 	return result
 }
 
+// GetVersionProperties collects a map of the direct dependencies in the projectPath pom.xml file.
+// If the version of a dependency is set in another property section, it is added as its value in the map.
 func GetVersionProperties(projectPath string, depToPropertyMap map[string][]string) error {
 	contentBytes, err := os.ReadFile(filepath.Join(projectPath, "pom.xml")) // #nosec G304
 	if err != nil {
