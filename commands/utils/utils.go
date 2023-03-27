@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
@@ -53,6 +55,11 @@ type ScanDetails struct {
 	Branch                   string
 }
 
+type FixVersionInfo struct {
+	FixVersion  string
+	PackageType coreutils.Technology
+}
+
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
@@ -61,6 +68,10 @@ type OutputWriter interface {
 	VulnerabiltiesTitle() string
 	TableHeader() string
 	IsFrogbotResultComment(comment string) bool
+}
+
+type FixVersionSuggestions interface {
+	AddToMap(vulnerability *formats.VulnerabilityOrViolationRow)
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
@@ -167,4 +178,32 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology) *FixVersionInfo {
+	return &FixVersionInfo{newFixVersion, packageType}
+}
+
+func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
+	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
+		fvi.FixVersion = newFixVersion
+	}
+}
+
+// 1.0         --> 1.0 ≤ x
+// (,1.0]      --> x ≤ 1.0
+// (,1.0)      --> x &lt; 1.0
+// [1.0]       --> x == 1.0
+// (1.0,)      --> 1.0 &lt; x
+// (1.0, 2.0)  --> 1.0 &lt; x &lt; 2.0
+// [1.0, 2.0]  --> 1.0 ≤ x ≤ 2.0
+func parseVersionChangeString(fixVersion string) string {
+	latestVersion := strings.Split(fixVersion, ",")[0]
+	if latestVersion[0] == '(' {
+		return ""
+	}
+	latestVersion = strings.Trim(latestVersion, "[")
+	latestVersion = strings.Trim(latestVersion, "]")
+	return latestVersion
 }

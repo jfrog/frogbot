@@ -110,3 +110,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/jfrog/gofrog v1.2.5 => github.com/eyaldelarea/gofrog v1.2.6-0.20230327102843-fa6bb6f827f8

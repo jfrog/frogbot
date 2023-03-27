@@ -161,3 +161,32 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	}
 	return
 }
+
+// /      1.0         --> 1.0 ≤ x
+// /      (,1.0]      --> x ≤ 1.0
+// /      (,1.0)      --> x < 1.0
+// /      [1.0]       --> x == 1.0
+// /      (1.0,)      --> 1.0 < x
+// /      (1.0, 2.0)   --> 1.0 < x < 2.0
+// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
+func TestParseVersionChangeString(t *testing.T) {
+	tests := []struct {
+		versionChangeString string
+		expectedVersion     string
+	}{
+		{"1.2.3", "1.2.3"},
+		{"[1.2.3]", "1.2.3"},
+		{"[1.2.3, 2.0.0]", "1.2.3"},
+
+		{"(,1.2.3]", ""},
+		{"(,1.2.3)", ""},
+		{"(1.2.3,)", ""},
+		{"(1.2.3, 2.0.0)", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.versionChangeString, func(t *testing.T) {
+			assert.Equal(t, test.expectedVersion, parseVersionChangeString(test.versionChangeString))
+		})
+	}
+}

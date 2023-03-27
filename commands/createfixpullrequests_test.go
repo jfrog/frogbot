@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
 type FixPackagesTestFunc func(test packageFixTest) CreateFixPullRequestsCmd
@@ -156,35 +156,6 @@ func getTestDataDir(t *testing.T) (string, string) {
 	return currentDir, testdataDir
 }
 
-// /      1.0         --> 1.0 ≤ x
-// /      (,1.0]      --> x ≤ 1.0
-// /      (,1.0)      --> x < 1.0
-// /      [1.0]       --> x == 1.0
-// /      (1.0,)      --> 1.0 < x
-// /      (1.0, 2.0)   --> 1.0 < x < 2.0
-// /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
-func TestParseVersionChangeString(t *testing.T) {
-	tests := []struct {
-		versionChangeString string
-		expectedVersion     string
-	}{
-		{"1.2.3", "1.2.3"},
-		{"[1.2.3]", "1.2.3"},
-		{"[1.2.3, 2.0.0]", "1.2.3"},
-
-		{"(,1.2.3]", ""},
-		{"(,1.2.3)", ""},
-		{"(1.2.3,)", ""},
-		{"(1.2.3, 2.0.0)", ""},
-	}
-
-	for _, test := range tests {
-		t.Run(test.versionChangeString, func(t *testing.T) {
-			assert.Equal(t, test.expectedVersion, parseVersionChangeString(test.versionChangeString))
-		})
-	}
-}
-
 func TestGenerateFixBranchName(t *testing.T) {
 	tests := []struct {
 		baseBranch      string
@@ -259,17 +230,6 @@ func TestPackageTypeFromScan(t *testing.T) {
 		})
 	}
 }
-
-func TestGetMinimalFixVersion(t *testing.T) {
-	impactedVersionPackage := "1.6.2"
-	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-	impactedVersionPackageGo := "v" + impactedVersionPackage
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
-	impactedVersionPackage = "1.7.1"
-	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-}
-
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
