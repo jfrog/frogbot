@@ -36,7 +36,7 @@ func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggre
 
 func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	for _, branch := range repoConfig.Branches {
-		shouldScan, checkedCommit, err := saf.shouldScanRepoByCommitStatus(context.Background(), repoConfig, client, branch)
+		shouldScan, checkedCommit, err := saf.shouldScanLatestCommit(context.Background(), repoConfig, client, branch)
 		if err != nil {
 			return err
 		}
@@ -97,13 +97,13 @@ func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClien
 	return nil
 }
 
-// Returns true if the latest commit hasn't been scanned, or the time passed from the last scan exceed the configured value.
-// The commit status is used for this check.
-func (saf ScanAndFixRepositories) shouldScanRepoByCommitStatus(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
+// Returns true if the latest commit hasn't been scanned
+// or the time passed from the last scan exceed the configured value.
+func (saf ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
 	owner := repoConfig.RepoOwner
 	repo := repoConfig.RepoName
 	latestCommit, err := client.GetLatestCommit(ctx, owner, repo, branch)
-	if err != nil || latestCommit.Hash == "" {
+	if err != nil {
 		return false, "", err
 	}
 	ref := latestCommit.Hash
@@ -111,12 +111,12 @@ func (saf ScanAndFixRepositories) shouldScanRepoByCommitStatus(ctx context.Conte
 	if err != nil {
 		return false, "", err
 	}
-	return shouldScanBranchByStatus(statuses), latestCommit.Hash, err
+	return shouldScanCommitByStatus(statuses), latestCommit.Hash, err
 }
 
 // Returns true if the latest commit status by FrogBot is not successful
 // OR it's older than SkipRepoScanDays.
-func shouldScanBranchByStatus(statuses []vcsclient.CommitStatusInfo) bool {
+func shouldScanCommitByStatus(statuses []vcsclient.CommitStatusInfo) bool {
 	for _, status := range statuses {
 		if status.Creator == utils.ProductId && status.Description == utils.CommitStatusDescription {
 			return status.State != vcsclient.Pass || statusTimestampExpired(status)

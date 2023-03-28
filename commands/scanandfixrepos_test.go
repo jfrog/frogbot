@@ -133,7 +133,7 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 	}
 	for _, tt := range commitStatusTestCases {
 		t.Run(tt.description, func(t *testing.T) {
-			shouldScan := shouldScanBranchByStatus(tt.statuses)
+			shouldScan := shouldScanCommitByStatus(tt.statuses)
 			assert.Equal(t, tt.expected, shouldScan)
 		})
 	}
@@ -256,7 +256,9 @@ func createHttpHandler(t *testing.T, port *string, projectNames ...string) http.
 				return
 			}
 			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/commits?page=1&per_page=1&sha=master", projectName) {
-				w.WriteHeader(http.StatusNotFound)
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte{})
+				assert.NoError(t, err)
 				return
 			}
 		}
