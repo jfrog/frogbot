@@ -74,5 +74,8 @@ const (
 	GitHubActionsEnv = "GITHUB_ACTIONS"
 	FrogbotReadMeUrl = "https://github.com/jfrog/frogbot#readme"
 
-	DefaultAmountOfDaysToRescanRepo = 4
+	// Amount of days in which we want to rescan a repo even it had no changes to the code.
+	SkipRepoScanDays = 4
+	// Description will appear in commit statuses made by Frogbot
+	CommitStatusDescription = "Scanned by FrogBot"
 )

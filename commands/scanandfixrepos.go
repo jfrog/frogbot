@@ -36,7 +36,7 @@ func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggre
 
 func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
 	for _, branch := range repoConfig.Branches {
-		shouldScan, checkedCommit, err := saf.shouldScanRepositoryByFrogBotCommitStatus(context.Background(), repoConfig, client, branch)
+		shouldScan, checkedCommit, err := saf.shouldScanRepoByCommitStatus(context.Background(), repoConfig, client, branch)
 		if err != nil {
 			return err
 		}
@@ -97,16 +97,13 @@ func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClien
 	return nil
 }
 
-// Checking last FrogBot commit status that indicates whether FrogBot has already scanned this branch or not
-func (saf ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
+// Returns true if the latest commit hasn't been scanned, or the time passed from the last scan exceed the configured value.
+// The commit status is used for this check.
+func (saf ScanAndFixRepositories) shouldScanRepoByCommitStatus(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
 	owner := repoConfig.RepoOwner
 	repo := repoConfig.RepoName
 	latestCommit, err := client.GetLatestCommit(ctx, owner, repo, branch)
-	if latestCommit.Hash == "" {
-		// No commits at all
-		return true, "", nil
-	}
-	if err != nil {
+	if err != nil || latestCommit.Hash == "" {
 		return false, "", err
 	}
 	ref := latestCommit.Hash
@@ -118,30 +115,28 @@ func (saf ScanAndFixRepositories) shouldScanRepositoryByFrogBotCommitStatus(ctx 
 }
 
 // Returns true if the latest commit status by FrogBot is not successful
-// OR it's older than DefaultAmountOfDaysToRescanRepo.
+// OR it's older than SkipRepoScanDays.
 func shouldScanBranchByStatus(statuses []vcsclient.CommitStatusInfo) bool {
-	length := len(statuses)
-	if length == 0 {
-		return true
+	for _, status := range statuses {
+		if status.Creator == utils.ProductId && status.Description == utils.CommitStatusDescription {
+			return status.State != vcsclient.Pass || statusTimestampExpired(status)
+		}
 	}
-	latestStatus := statuses[length-1]
-	if !strings.Contains(latestStatus.DetailsUrl, utils.FrogbotReadMeUrl) {
-		return shouldScanBranchByStatus(statuses[0 : length-1])
-	}
-	return isStatusOldAndNeedScan(latestStatus) || latestStatus.State != vcsclient.Pass
+	return true
 }
 
-// Checks if status need rescan because it is older than DefaultAmountOfDaysToRescanRepo
-func isStatusOldAndNeedScan(latestStatus vcsclient.CommitStatusInfo) bool {
-	statusLastUpdatedTime := time.Time{}
-	if !latestStatus.CreatedAt.IsZero() {
-		statusLastUpdatedTime = latestStatus.CreatedAt
-	}
-	if !latestStatus.LastUpdatedAt.IsZero() {
-		statusLastUpdatedTime = latestStatus.LastUpdatedAt
-	}
+// Checks if a commit status is older than SkipRepoScanDays number of days.
+// Uses the creation time if the timestamp is uninitialized.
+func statusTimestampExpired(latestStatus vcsclient.CommitStatusInfo) bool {
+	statusLastUpdatedTime := latestStatus.LastUpdatedAt
 	if statusLastUpdatedTime.IsZero() {
-		return true
+		// Fallback to creation time
+		statusLastUpdatedTime = latestStatus.CreatedAt
+		if statusLastUpdatedTime.IsZero() {
+			// When creation time is uninitialized,scan again.
+			return true
+		}
 	}
-	return statusLastUpdatedTime.Before(time.Now().UTC().AddDate(0, 0, -utils.DefaultAmountOfDaysToRescanRepo))
+	passDueDate := time.Now().UTC().AddDate(0, 0, -utils.SkipRepoScanDays)
+	return statusLastUpdatedTime.Before(passDueDate)
 }

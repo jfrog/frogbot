@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.6.0
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.8.9
-	github.com/jfrog/froggit-go v1.6.3
+	github.com/jfrog/froggit-go v1.7.0
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.29.9
 	github.com/jfrog/jfrog-client-go v1.26.5
@@ -110,5 +110,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/jfrog/froggit-go v1.6.3 => github.com/eyaldelarea/froggit-go v1.6.1-0.20230326093136-095fcd577f99
