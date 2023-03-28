@@ -248,9 +248,12 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 			if err != nil {
 				return nil, err
 			}
-			for _, vul := range vulnerabilities {
+			for i, vul := range vulnerabilities {
 				mapper := utils.GetCompatibleFixVersionsMap(vul.Technology, cfp.details.Project.WorkingDirs, cfp.mavenDepToPropertyMap)
-				mapper.AddToMap(&vul, fixVersionsMap)
+				err = mapper.AddToMap(&vulnerabilities[i], fixVersionsMap)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
