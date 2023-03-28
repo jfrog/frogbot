@@ -126,16 +126,15 @@ func shouldScanCommitByStatus(statuses []vcsclient.CommitStatusInfo) bool {
 }
 
 // Checks if a commit status is older than SkipRepoScanDays number of days.
-// Uses the creation time if the timestamp is uninitialized.
 func statusTimestampExpired(latestStatus vcsclient.CommitStatusInfo) bool {
+	if latestStatus.CreatedAt.IsZero() && latestStatus.LastUpdatedAt.IsZero() {
+		// In case non were initialized, address this as expired date
+		return true
+	}
 	statusLastUpdatedTime := latestStatus.LastUpdatedAt
 	if statusLastUpdatedTime.IsZero() {
 		// Fallback to creation time
 		statusLastUpdatedTime = latestStatus.CreatedAt
-		if statusLastUpdatedTime.IsZero() {
-			// When creation time is uninitialized,scan again.
-			return true
-		}
 	}
 	passDueDate := time.Now().UTC().AddDate(0, 0, -utils.SkipRepoScanDays)
 	return statusLastUpdatedTime.Before(passDueDate)
