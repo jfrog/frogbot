@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -66,13 +67,42 @@ func Test_GetMinimalFixVersionGeneric(t *testing.T) {
 	}
 }
 
-// TODO address this test cases in the the above test in goalng "v"
-//func TestGetMinimalFixVersion(t *testing.T) {
-//	impactedVersionPackage := "1.6.2"
-//	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
-//	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-//	impactedVersionPackageGo := "v" + impactedVersionPackage
-//	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
-//	impactedVersionPackage = "1.7.1"
-//	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-//}
+// Specific for Maven
+func TestShouldFixMavenVulnerability(t *testing.T) {
+	// TODO implement me
+}
+
+// Specific for Go
+func TestTrimVersionPrefix(t *testing.T) {
+	type testCase struct {
+		impactedPackageVersion *formats.VulnerabilityOrViolationRow
+		original               string
+		expectedVersion        string
+		description            string
+	}
+
+	testCases := []testCase{
+		{
+			impactedPackageVersion: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyVersion: "v1.2.5",
+			},
+			original:        "v1.2.5",
+			expectedVersion: "1.2.5",
+			description:     "validates remove prefix",
+		},
+		{
+			impactedPackageVersion: &formats.VulnerabilityOrViolationRow{
+				ImpactedDependencyVersion: "1.3.555",
+			},
+			original:        "v1.3.555",
+			expectedVersion: "1.3.555",
+			description:     "validates no prefix removal",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			trimVersionPrefix(tc.impactedPackageVersion)
+			assert.Equal(t, tc.impactedPackageVersion.ImpactedDependencyVersion, tc.expectedVersion)
+		})
+	}
+}

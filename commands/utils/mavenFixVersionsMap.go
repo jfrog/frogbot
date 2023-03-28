@@ -4,13 +4,13 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 )
 
-type mavenFixVersionsMapping struct {
+type mavenFixVersionsMap struct {
 	workDirs        []string
 	mavenVersionMap map[string][]string
-	standard        StandardFixVersionsMapping
+	standard        GenericFixVersionsMap
 }
 
-func (s mavenFixVersionsMapping) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
+func (s mavenFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
 	fixVulnerability, err := s.shouldFixMavenVulnerability(vulnerability)
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func (s mavenFixVersionsMapping) AddToMap(vulnerability *formats.VulnerabilityOr
 	return s.standard.AddToMap(vulnerability, fixVersionsMap)
 }
 
-func (s mavenFixVersionsMapping) shouldFixMavenVulnerability(vulnerability *formats.VulnerabilityOrViolationRow) (bool, error) {
+func (s mavenFixVersionsMap) shouldFixMavenVulnerability(vulnerability *formats.VulnerabilityOrViolationRow) (bool, error) {
 	// In Maven, fix only direct dependencies
 	if len(s.mavenVersionMap) == 0 {
 		// Get all Maven dependencies and plugins from pom.xml

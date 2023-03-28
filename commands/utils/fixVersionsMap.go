@@ -6,10 +6,10 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 )
 
-type StandardFixVersionsMapping struct {
+type GenericFixVersionsMap struct {
 }
 
-func (s StandardFixVersionsMapping) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
+func (s GenericFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
 
 	vulnFixVersion, err := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if err != nil || vulnFixVersion == "" {
@@ -30,6 +30,7 @@ func (s StandardFixVersionsMapping) AddToMap(vulnerability *formats.Vulnerabilit
 // getMinimalFixVersion that fixes the current impactedPackage
 // FixVersions array is sorted
 // MinimalFixVersion is the smallest version change possible with priority on upgrading version
+// Currently major upgrades are not supported.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) (minimalVersion string, err error) {
 	if len(fixVersions) == 0 {
 		return
@@ -67,13 +68,13 @@ func GetCompatibleFixVersionsMap(technology coreutils.Technology, workDirs []str
 	switch technology {
 	case coreutils.Maven:
 		{
-			return mavenFixVersionsMapping{workDirs: workDirs, mavenVersionMap: mavenDepMap, standard: StandardFixVersionsMapping{}}
+			return mavenFixVersionsMap{workDirs: workDirs, mavenVersionMap: mavenDepMap, standard: GenericFixVersionsMap{}}
 		}
 	case coreutils.Go:
 		{
-			return goFixVersionsMapping{standard: StandardFixVersionsMapping{}}
+			return goFixVersionsMap{standard: GenericFixVersionsMap{}}
 		}
 	default:
-		return StandardFixVersionsMapping{}
+		return GenericFixVersionsMap{}
 	}
 }
