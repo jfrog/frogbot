@@ -66,7 +66,7 @@ func Test_GetMinimalFixVersionGeneric(t *testing.T) {
 	}
 }
 
-// TODO address this test cases in the the above test
+// TODO address this test cases in the the above test in goalng "v"
 //func TestGetMinimalFixVersion(t *testing.T) {
 //	impactedVersionPackage := "1.6.2"
 //	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}

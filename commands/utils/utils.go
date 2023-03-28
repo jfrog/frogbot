@@ -71,7 +71,7 @@ type OutputWriter interface {
 }
 
 type FixVersionSuggestions interface {
-	AddToMap(vulnerability *formats.VulnerabilityOrViolationRow)
+	AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
