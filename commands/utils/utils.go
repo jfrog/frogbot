@@ -90,7 +90,7 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 		log.Debug(usage.ReportUsagePrefix + err.Error())
 		return
 	}
-	err = usage.SendReportUsage(ProductId, commandName, serviceManager)
+	err = usage.SendReportUsage(productId, commandName, serviceManager)
 	if err != nil {
 		log.Debug(err.Error())
 		return

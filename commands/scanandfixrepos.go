@@ -88,7 +88,7 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 
 func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
 	background := context.Background()
-	err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.ProductId, description, utils.FrogbotReadMeUrl)
+	err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl)
 	if err != nil {
 		log.Error("Failed to mark last commit as checked")
 		return err
@@ -118,7 +118,7 @@ func (saf ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, re
 // OR it's older than SkipRepoScanDays.
 func shouldScanCommitByStatus(statuses []vcsclient.CommitStatusInfo) bool {
 	for _, status := range statuses {
-		if status.Creator == utils.ProductId && status.Description == utils.CommitStatusDescription {
+		if status.Creator == utils.FrogbotCreatorName && status.Description == utils.CommitStatusDescription {
 			return status.State != vcsclient.Pass || statusTimestampExpired(status)
 		}
 	}

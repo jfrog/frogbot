@@ -78,7 +78,7 @@ func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, ProductId, commandName), buf.String())
+			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
 
 			// Send response OK
 			w.WriteHeader(http.StatusOK)

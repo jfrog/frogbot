@@ -68,14 +68,16 @@ const (
 	WhatIsFrogbotMd       = "\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n"
 
 	// Product ID for usage reporting
-	ProductId = "frogbot"
+	productId = "frogbot"
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
-	FrogbotReadMeUrl = "https://github.com/jfrog/frogbot#readme"
 
 	// Amount of days in which we want to rescan a repo even it had no changes to the code.
 	SkipRepoScanDays = 4
-	// Description will appear in commit statuses made by Frogbot
+
+	// Used by FrogBot to create new commits statuses and recognize its own statuses.
 	CommitStatusDescription = "Scanned by FrogBot"
+	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
+	FrogbotCreatorName      = "Frogbot"
 )

@@ -78,8 +78,8 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 				{
 					State:         vcsclient.Fail,
 					Description:   utils.CommitStatusDescription,
-					DetailsUrl:    utils.FrogbotReadMeUrl,
-					Creator:       utils.ProductId,
+					DetailsUrl:    utils.CommitStatusDetailsUrl,
+					Creator:       utils.FrogbotCreatorName,
 					LastUpdatedAt: time.Now().UTC(),
 				}, {
 					State:         vcsclient.InProgress,
@@ -122,8 +122,8 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 				{
 					State:         vcsclient.Pass,
 					Description:   utils.CommitStatusDescription,
-					DetailsUrl:    utils.FrogbotReadMeUrl,
-					Creator:       utils.ProductId,
+					DetailsUrl:    utils.CommitStatusDetailsUrl,
+					Creator:       utils.FrogbotCreatorName,
 					LastUpdatedAt: time.Now().AddDate(0, -1, 0),
 				},
 			},
