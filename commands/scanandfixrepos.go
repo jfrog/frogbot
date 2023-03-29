@@ -41,18 +41,14 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			return err
 		}
 		if !shouldScan {
-			log.Info(fmt.Sprintf("Commit %s has already been scanned by FrogBot", checkedCommit))
+			log.Info(fmt.Sprintf("Commit '%s' in repo '%s', branch '%s' has already been scanned. Skipping the scan.", checkedCommit, repoConfig.RepoName, branch))
 			continue
 		}
-		err = saf.downloadAndRunScanAndFix(repoConfig, branch, client)
-		if err != nil {
-			errorDescription := fmt.Sprintf("FrogBot error %s", err)
-			log.Error(errorDescription)
-			err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, errorDescription)
+		if err = saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
+			err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error %s", err))
 			return err
 		}
-		err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, "FrogBot scanned")
-		if err != nil {
+		if err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, utils.CommitStatusDescription); err != nil {
 			return err
 		}
 	}
@@ -88,17 +84,15 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 
 func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
 	background := context.Background()
-	err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl)
-	if err != nil {
-		log.Error("Failed to mark last commit as checked")
-		return err
+	if err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl); err != nil {
+		return fmt.Errorf("failed to mark last commit as scanned due to: %s", err.Error())
 	}
-	log.Info(fmt.Sprintf("Successfully marked commit %s as checked by FrogBot", commitHash))
+	log.Info("Successfully marked commit %s as scanned", commitHash)
 	return nil
 }
 
 // Returns true if the latest commit hasn't been scanned
-// or the time passed from the last scan exceed the configured value.
+// or the time passed from the last scan exceeded the configured value.
 func (saf ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
 	owner := repoConfig.RepoOwner
 	repo := repoConfig.RepoName
@@ -114,19 +108,19 @@ func (saf ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, re
 	return shouldScanCommitByStatus(statuses), latestCommit.Hash, err
 }
 
-// Returns true if the latest commit status by FrogBot is not successful
+// Returns true if the latest commit status by Frogbot is not successful
 // OR it's older than SkipRepoScanDays.
 func shouldScanCommitByStatus(statuses []vcsclient.CommitStatusInfo) bool {
 	for _, status := range statuses {
 		if status.Creator == utils.FrogbotCreatorName && status.Description == utils.CommitStatusDescription {
-			return status.State != vcsclient.Pass || statusTimestampExpired(status)
+			return status.State != vcsclient.Pass || statusTimestampElapsed(status)
 		}
 	}
 	return true
 }
 
 // Checks if a commit status is older than SkipRepoScanDays number of days.
-func statusTimestampExpired(latestStatus vcsclient.CommitStatusInfo) bool {
+func statusTimestampElapsed(latestStatus vcsclient.CommitStatusInfo) bool {
 	if latestStatus.CreatedAt.IsZero() && latestStatus.LastUpdatedAt.IsZero() {
 		// In case non were initialized, address this as expired date
 		return true

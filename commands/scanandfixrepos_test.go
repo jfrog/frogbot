@@ -89,7 +89,7 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 					LastUpdatedAt: time.Now().UTC(),
 				},
 			},
-			description: "FrogBot failed statues should scan",
+			description: "Frogbot failed statues should scan",
 			expected:    true,
 		},
 		{
@@ -115,7 +115,7 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 					LastUpdatedAt: time.Now().UTC(),
 				},
 			},
-			description: "Non FrogBot statues",
+			description: "Non Frogbot statues",
 			expected:    true,
 		}, {
 			statuses: []vcsclient.CommitStatusInfo{
@@ -139,7 +139,7 @@ func TestShouldScanBranchByStatus(t *testing.T) {
 	}
 }
 
-func TestIsStatusOldAndNeedScan(t *testing.T) {
+func TestStatusTimestampElapsed(t *testing.T) {
 	testCases := []struct {
 		commitStatusInfo vcsclient.CommitStatusInfo
 		description      string
@@ -185,7 +185,7 @@ func TestIsStatusOldAndNeedScan(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.description, func(t *testing.T) {
-			needScan := statusTimestampExpired(tt.commitStatusInfo)
+			needScan := statusTimestampElapsed(tt.commitStatusInfo)
 			assert.Equal(t, tt.expected, needScan)
 		})
 	}
