@@ -10,12 +10,10 @@ type GenericFixVersionsMap struct {
 }
 
 func (s GenericFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
-
 	vulnFixVersion, err := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if err != nil || vulnFixVersion == "" {
 		return nil
 	}
-
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
@@ -27,10 +25,11 @@ func (s GenericFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrVi
 	return nil
 }
 
-// getMinimalFixVersion that fixes the current impactedPackage
-// FixVersions array is sorted
-// MinimalFixVersion is the smallest version change possible with priority on upgrading version
-// Currently major upgrades are not supported.
+// getMinimalFixVersion finds the smallest version change possible to fix the current impactedPackage version.
+// The fixVersions array returns sorted from Xray.
+// The priority order is as follows:
+// Patch upgrade ,Minor upgrade ,Patch downgrade , Minor downgrade.
+// Currently major version changes are not supported.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) (minimalVersion string, err error) {
 	if len(fixVersions) == 0 {
 		return
@@ -40,28 +39,30 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) (
 	if err != nil {
 		return
 	}
-	// Upgrade
+	// Search possible upgrade
 	for _, fixVersion := range fixVersions {
-		fixVersionCandidate := parseVersionChangeString(fixVersion)
-		suggestVersion := version.NewVersion(fixVersion)
-		suggestedMajorVersion, err := suggestVersion.GetMajor()
-		isMajorUpgrade := currVersionMajor != suggestedMajorVersion
+		fixVersionCandidate, err, isMajorUpgrade := parseVersionCandidate(fixVersion, currVersionMajor)
 		if currVersion.Compare(fixVersionCandidate) > 0 && !isMajorUpgrade {
 			return fixVersionCandidate, err
 		}
 	}
-	// Downgrade
+	// Search possible downgrade, reverse search in sorted array
 	for i := len(fixVersions) - 1; i >= 0; i-- {
-		fixVersionCandidate := parseVersionChangeString(fixVersions[i])
-		suggestVersion := version.NewVersion(fixVersions[i])
-		suggestedMajorVersion, err := suggestVersion.GetMajor()
-		isMajorUpgrade := currVersionMajor != suggestedMajorVersion
+		fixVersionCandidate, err, isMajorUpgrade := parseVersionCandidate(fixVersions[i], currVersionMajor)
 		if currVersion.Compare(fixVersionCandidate) < 0 && !isMajorUpgrade {
 			return fixVersionCandidate, err
 		}
 	}
 	// No suggestions found
 	return
+}
+
+func parseVersionCandidate(fixVersion string, currVersionMajor string) (string, error, bool) {
+	fixVersionCandidate := parseVersionChangeString(fixVersion)
+	suggestVersion := version.NewVersion(fixVersion)
+	suggestedMajorVersion, err := suggestVersion.GetMajor()
+	isMajorUpgrade := currVersionMajor != suggestedMajorVersion
+	return fixVersionCandidate, err, isMajorUpgrade
 }
 
 func GetCompatibleFixVersionsMap(technology coreutils.Technology, workDirs []string, mavenDepMap map[string][]string) FixVersionSuggestions {
