@@ -9,7 +9,7 @@ import (
 type GenericFixVersionsMap struct {
 }
 
-func (s GenericFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
+func (s *GenericFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
 	vulnFixVersion, err := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if err != nil || vulnFixVersion == "" {
 		return nil
@@ -68,14 +68,10 @@ func parseVersionCandidate(fixVersion string, currVersionMajor string) (string, 
 func GetCompatibleFixVersionsMap(technology coreutils.Technology, workDirs []string, mavenDepMap map[string][]string) FixVersionSuggestions {
 	switch technology {
 	case coreutils.Maven:
-		{
-			return mavenFixVersionsMap{workDirs: workDirs, mavenVersionMap: mavenDepMap, standard: GenericFixVersionsMap{}}
-		}
+		return &mavenFixVersionsMap{workDirs: workDirs, mavenVersionMap: mavenDepMap}
 	case coreutils.Go:
-		{
-			return goFixVersionsMap{standard: GenericFixVersionsMap{}}
-		}
+		return &goFixVersionsMap{}
 	default:
-		return GenericFixVersionsMap{}
+		return &GenericFixVersionsMap{}
 	}
 }

@@ -7,10 +7,10 @@ import (
 type mavenFixVersionsMap struct {
 	workDirs        []string
 	mavenVersionMap map[string][]string
-	standard        GenericFixVersionsMap
+	GenericFixVersionsMap
 }
 
-func (s mavenFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
+func (s *mavenFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
 	fixVulnerability, err := s.shouldFixMavenVulnerability(vulnerability)
 	if err != nil {
 		return err
@@ -18,10 +18,10 @@ func (s mavenFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViol
 	if !fixVulnerability {
 		return nil
 	}
-	return s.standard.AddToMap(vulnerability, fixVersionsMap)
+	return s.AddToMap(vulnerability, fixVersionsMap)
 }
 
-func (s mavenFixVersionsMap) shouldFixMavenVulnerability(vulnerability *formats.VulnerabilityOrViolationRow) (bool, error) {
+func (s *mavenFixVersionsMap) shouldFixMavenVulnerability(vulnerability *formats.VulnerabilityOrViolationRow) (bool, error) {
 	// In Maven, fix only direct dependencies
 	if len(s.mavenVersionMap) == 0 {
 		// Get all Maven dependencies and plugins from pom.xml

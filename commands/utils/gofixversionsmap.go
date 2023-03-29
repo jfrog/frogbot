@@ -9,7 +9,7 @@ type goFixVersionsMap struct {
 	standard GenericFixVersionsMap
 }
 
-func (g goFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
+func (g *goFixVersionsMap) AddToMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*FixVersionInfo) error {
 	trimVersionPrefix(vulnerability)
 	return g.standard.AddToMap(vulnerability, fixVersionsMap)
 }
