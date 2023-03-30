@@ -1,6 +1,7 @@
 package commands
 
 import (
+	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -9,7 +10,6 @@ import (
 	"regexp"
 	"testing"
 
-	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -139,7 +139,8 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion))
+				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				assert.Contains(t, string(file), test.fixVersion)
@@ -208,7 +209,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 
 func TestPipPackageRegex(t *testing.T) {
 	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(pythonPackageRegexPrefix + pack.packageName + pythonPackageRegexSuffix)
+		re := regexp.MustCompile(utils.PythonPackageRegexPrefix + pack.packageName + utils.PythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
 		assert.Equal(t, pack.expectedRequirement, found)
 	}

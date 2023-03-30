@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
@@ -61,6 +63,10 @@ type OutputWriter interface {
 	VulnerabiltiesTitle() string
 	TableHeader() string
 	IsFrogbotResultComment(comment string) bool
+}
+
+type PackageUpdater interface {
+	UpdatePackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
@@ -167,4 +173,37 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+type FixVersionInfo struct {
+	FixVersion         string
+	PackageType        coreutils.Technology
+	IsDirectDependency bool
+}
+
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, isDirectDependency bool) *FixVersionInfo {
+	return &FixVersionInfo{newFixVersion, packageType, isDirectDependency}
+}
+
+func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
+	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
+		fvi.FixVersion = newFixVersion
+	}
+}
+func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, details *ScanDetails, mavenPropertyMap *map[string][]string) PackageUpdater {
+	switch fixVersionInfo.PackageType {
+	case coreutils.Go:
+		return &GoPackageHandler{}
+	case coreutils.Maven:
+		return &MavenPackageHandler{MavenDepToPropertyMap: *mavenPropertyMap}
+	case coreutils.Poetry:
+		return &PythonPackageHandler{}
+	case coreutils.Pip:
+		return &PythonPackageHandler{PipRequirementsFile: details.PipRequirementsFile}
+	case coreutils.Npm:
+		return &NpmPackageHandler{}
+	default:
+		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
+	}
 }
