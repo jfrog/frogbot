@@ -45,8 +45,9 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			continue
 		}
 		if err = saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
-			err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
-			return err
+			// Scan failed,mark commit status failed with error info
+			e := saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
+			return errors.Join(err, e)
 		}
 		if err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, utils.CommitStatusDescription); err != nil {
 			return err
@@ -82,12 +83,11 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 	return cfp.scanAndFixRepository(repository, branch, client)
 }
 
-func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash string, description string) error {
-	background := context.Background()
-	if err := client.SetCommitStatus(background, state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl); err != nil {
+func (saf ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash, description string) error {
+	if err := client.SetCommitStatus(context.Background(), state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl); err != nil {
 		return fmt.Errorf("failed to mark last commit as scanned due to: %s", err.Error())
 	}
-	log.Info("Successfully marked commit %s as scanned", commitHash)
+	log.Info("Commit '%s' in repo '%s', has successfully marked as scanned", commitHash, repoConfig.RepoName)
 	return nil
 }
 
