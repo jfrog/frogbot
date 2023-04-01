@@ -59,7 +59,7 @@ pipelines:
 
             # Generate mocks
             - go generate ./...
-            
+
             # Audit
             - jf audit --fail=false
 
