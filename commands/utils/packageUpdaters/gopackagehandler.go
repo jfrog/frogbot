@@ -1,6 +1,8 @@
-package utils
+package packageUpdaters
 
-import "strings"
+import (
+	"strings"
+)
 
 type GoPackageHandler struct {
 	GenericPackageHandler

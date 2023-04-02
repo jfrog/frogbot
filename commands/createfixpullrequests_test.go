@@ -2,6 +2,7 @@ package commands
 
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
+	"github.com/jfrog/frogbot/commands/utils/packageUpdaters"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -139,7 +140,7 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				fixVersionInfo := packageUpdaters.NewFixVersionInfo(test.fixVersion, test.technology, true)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
@@ -209,7 +210,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 
 func TestPipPackageRegex(t *testing.T) {
 	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(utils.PythonPackageRegexPrefix + pack.packageName + utils.PythonPackageRegexSuffix)
+		re := regexp.MustCompile(packageUpdaters.PythonPackageRegexPrefix + pack.packageName + packageUpdaters.PythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
 		assert.Equal(t, pack.expectedRequirement, found)
 	}
