@@ -2,13 +2,14 @@ package commands
 
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
-	"github.com/jfrog/frogbot/commands/utils/packageUpdaters"
+	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/frogbot/commands/utils"
@@ -33,8 +34,11 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pipenv, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Poetry, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pip, impactedPackaged: "PyJwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 }
 
@@ -140,16 +144,23 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				fixVersionInfo := packageUpdaters.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, true)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				assert.Contains(t, string(file), test.fixVersion)
+				// Verify that case-sensitive packages in python are lowered
+				assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
+			})
+			t.Run(test.technology.ToString(), func(t *testing.T) {
+				cfg := test.fixPackageVersionCmd(test)
+				// Fix indirect dependency for each technology
+				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, false)
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 			})
 		}()
 	}
 }
-
 func getTestDataDir(t *testing.T) (string, string) {
 	currentDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -210,7 +221,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 
 func TestPipPackageRegex(t *testing.T) {
 	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(packageUpdaters.PythonPackageRegexPrefix + pack.packageName + packageUpdaters.PythonPackageRegexSuffix)
+		re := regexp.MustCompile(packagehandlers.PythonPackageRegexPrefix + pack.packageName + packagehandlers.PythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
 		assert.Equal(t, pack.expectedRequirement, found)
 	}

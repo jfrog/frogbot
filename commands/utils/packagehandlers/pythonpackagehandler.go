@@ -1,4 +1,4 @@
-package packageUpdaters
+package packagehandlers
 
 import (
 	"errors"
@@ -19,12 +19,13 @@ const (
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 )
 
+// PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
 	PipRequirementsFile string
 	GenericPackageHandler
 }
 
-func (py *PythonPackageHandler) UpdatePackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
 	// Python package mangers are case-sensitive which can cause duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
 	switch fixVersionInfo.PackageType {
@@ -33,7 +34,7 @@ func (py *PythonPackageHandler) UpdatePackage(impactedPackage string, fixVersion
 	case coreutils.Pip:
 		return py.handlePip(impactedPackage, fixVersionInfo)
 	case coreutils.Pipenv:
-		return py.GenericPackageHandler.UpdatePackage(impactedPackage, fixVersionInfo)
+		return py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 	default:
 		return errors.New("Unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
 	}
@@ -41,7 +42,7 @@ func (py *PythonPackageHandler) UpdatePackage(impactedPackage string, fixVersion
 
 func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *FixVersionInfo) error {
 	// Install the desired fixed version
-	err := py.GenericPackageHandler.UpdatePackage(impactedPackage, fixVersionInfo)
+	err := py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 	if err != nil {
 		return err
 	}

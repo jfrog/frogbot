@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/jfrog/frogbot/commands/utils/packageUpdaters"
+	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -111,7 +111,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 	return cfp.fixVulnerablePackages(fixVersionsMap)
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*packageUpdaters.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*packagehandlers.FixVersionInfo) (err error) {
 	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 	return nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fixVersionInfo *packageUpdaters.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.FixVersion)
 	fixBranchName, err := cfp.createFixingBranch(impactedPackage, fixVersionInfo)
@@ -165,7 +165,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fi
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixBranchName string, fixVersionInfo *packageUpdaters.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixBranchName string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
@@ -193,7 +193,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, commitString, prBody)
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *packageUpdaters.FixVersionInfo) (fixBranchName string, err error) {
+func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (fixBranchName string, err error) {
 	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
@@ -232,8 +232,8 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 }
 
 // Create fixVersionMap - a map with 'impacted package' as key and 'fix version' as value.
-func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*packageUpdaters.FixVersionInfo, error) {
-	fixVersionsMap := map[string]*packageUpdaters.FixVersionInfo{}
+func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*packagehandlers.FixVersionInfo, error) {
+	fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
 			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
@@ -250,7 +250,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	return fixVersionsMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*packageUpdaters.FixVersionInfo) error {
+func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*packagehandlers.FixVersionInfo) error {
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
@@ -266,7 +266,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 		fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 	} else {
 		// First appearance of a version that fixes the current impacted package
-		fixVersionsMap[vulnerability.ImpactedDependencyName] = packageUpdaters.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
+		fixVersionsMap[vulnerability.ImpactedDependencyName] = packagehandlers.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
 	}
 	return nil
 }
@@ -286,7 +286,7 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	return ""
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packageUpdaters.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
 		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
@@ -302,8 +302,8 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			}
 		}()
 	}
-	packageHandler := packageUpdaters.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
-	return packageHandler.UpdatePackage(impactedPackage, fixVersionInfo)
+	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
+	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 }
 
 // TODO check this to be more generic!

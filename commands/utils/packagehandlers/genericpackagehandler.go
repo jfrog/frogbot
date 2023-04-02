@@ -1,4 +1,4 @@
-package packageUpdaters
+package packagehandlers
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// FixVersionInfo Basic struct used to hold needed information about version fixing
 type FixVersionInfo struct {
 	FixVersion         string
 	PackageType        coreutils.Technology
@@ -27,8 +28,9 @@ func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
 	}
 }
 
+// PackageUpdater Interface to hold operations on packages
 type PackageUpdater interface {
-	UpdatePackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error
+	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error
 }
 
 func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageUpdater {
@@ -48,12 +50,12 @@ func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *ut
 	}
 }
 
-// PackageUpdater
 type GenericPackageHandler struct {
 	FixVersionInfo *FixVersionInfo
 }
 
-func (g *GenericPackageHandler) UpdatePackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+// UpdateImpactedPackage installs new version of the impacted package to the fixed version
+func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}
 	for _, arg := range extraArgs {
 		commandArgs = append(commandArgs, arg)

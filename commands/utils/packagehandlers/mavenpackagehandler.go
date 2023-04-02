@@ -1,4 +1,4 @@
-package packageUpdaters
+package packagehandlers
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type MavenPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (mvn *MavenPackageHandler) UpdatePackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
 	// In Maven, fix only direct dependencies
 	if !fixVersionInfo.IsDirectDependency {
 		return nil
