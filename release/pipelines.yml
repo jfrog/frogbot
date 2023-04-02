@@ -16,7 +16,7 @@ pipelines:
           auto:
             language: go
             versions:
-              - "1.19"
+              - "1.20"
       environmentVariables:
         readOnly:
           NEXT_VERSION: 0.0.0
@@ -59,7 +59,7 @@ pipelines:
 
             # Generate mocks
             - go generate ./...
-            
+
             # Audit
             - jf audit --fail=false
 
