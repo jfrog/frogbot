@@ -82,5 +82,9 @@ pipelines:
             - git push
             - git push --tags
 
+            # Merge changes to dev
+            - git checkout dev
+            - git merge origin/master
+            - git push
           onComplete:
             - jf c rm --quiet
