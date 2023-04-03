@@ -45,9 +45,12 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			continue
 		}
 		if err = saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
-			// Scan failed,mark commit status failed with error info
+			// Scan failed, mark commit status failed with error info
 			e := saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
-			return errors.Join(err, e)
+			if e != nil {
+				return errors.New(err.Error() + "\n" + e.Error())
+			}
+			return err
 		}
 		if err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, utils.CommitStatusDescription); err != nil {
 			return err
