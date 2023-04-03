@@ -44,7 +44,7 @@ pipelines:
             # Make sure version provided
             - echo "Checking variables"
             - test -n "$NEXT_VERSION" -a "$NEXT_VERSION" != "0.0.0"
-            -
+
             # Configure Git and merge from the dev
             - git checkout master
             - git remote set-url origin https://$int_il_automation_token@github.com/jfrog/frogbot.git
@@ -82,5 +82,9 @@ pipelines:
             - git push
             - git push --tags
 
+            # Merge changes to dev
+            - git checkout dev
+            - git merge origin/master
+            - git push
           onComplete:
             - jf c rm --quiet
