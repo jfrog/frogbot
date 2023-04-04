@@ -105,15 +105,12 @@ Here's an example for a **frogbot-config.yml** referencing multiple repositories
         - pipRequirementsFile: requirements.txt
 ```
 
-
 If however you're using one of the following platforms, each repository that needs to be scanned by Frogbot should include its own **frogbot-config.yml** file.
 - GitHub with GitHub actions
 - GitLab
 
 ## Where should the frogbot-config.yml file be placed in the repository?
-Frogbot expects the frogbot-config.yml file to be in the following path from the root of the Git repository: `.frogbot/frogbot-config.yml`.
-
-**IMPORTANT**: The `frogbot-config.yml` file must be pushed to the target branch before it can be used by Frogbot. This means that if, for example, a pull request includes the `frogbot-config.yml` and the target branch doesn't, the file will be ignored.
+Frogbot expects the frogbot-config.yml file to be in the following path from the root of the Git repository: `.frogbot/frogbot-config.yml` .
 
 ## The frogbot-config.yml file structure
 
