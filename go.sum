@@ -222,8 +222,8 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i
 github.com/jedib0t/go-pretty/v6 v6.4.6 h1:v6aG9h6Uby3IusSSEjHaZNXpHFhzqMmjXcPq1Rjl9Jw=
 github.com/jedib0t/go-pretty/v6 v6.4.6/go.mod h1:Ndk3ase2CkQbXLLNf5QDHoYb6J9WtVfmHZu9n8rk2xs=
 github.com/jessevdk/go-flags v1.5.0/go.mod h1:Fw0T6WPc1dYxT4mKEZRfG5kJhaTDP9pj1c2EWnYs/m4=
-github.com/jfrog/build-info-go v1.9.0 h1:gLxBfp4C6pVz+bKTmsqwFGZAueVMuzGw+/M9HZgtGG4=
-github.com/jfrog/build-info-go v1.9.0/go.mod h1:dQ8OKddrbgtO3jK9uLYoqmRGNEjuDuNXV0bSRdpeTCI=
+github.com/jfrog/build-info-go v1.8.9-0.20230403064815-ea83b399ac8e h1:MB5u0Kbq9IIDIlnpDYUq+SHTZ+/ossTOCK7z/t8S0l8=
+github.com/jfrog/build-info-go v1.8.9-0.20230403064815-ea83b399ac8e/go.mod h1:HIrpwf4p4XHpAx+N+rb8SX9yrWYWs7X4rT/s0GOJfW8=
 github.com/jfrog/froggit-go v1.7.0 h1:ID0X81Cp1JWYeTZ5Co2IxgFKFljqgAEXDqTFRPGjQR0=
 github.com/jfrog/froggit-go v1.7.0/go.mod h1:xfsfQXzSaAM04RV9IyU5heBiRrsm2oS6rFCfEofQr6U=
 github.com/jfrog/gofrog v1.2.5 h1:jCgJC0iGQ8bU7jCC+YEFJTNINyngApIrhd8BjZAVRIE=
@@ -291,8 +291,8 @@ github.com/mmcloughlin/avo v0.5.0/go.mod h1:ChHFdoV7ql95Wi7vuq2YT1bwCJqiWdZrQ1im
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230404071818-819972f9002b h1:PHdu7si9hv2fxIPPsOIsKW3+vMqNIxIS+MXNR+m/FVU=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230404071818-819972f9002b/go.mod h1:OZnE1VNrFE53Am9FXPExWL4zXgBhl/M7wYyUqasl0RM=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230404084346-6bb387f361ca h1:U9DO0AzZdSne/znc35nNNMrX5EEngNou1e6W5j4o6W4=
+github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230404084346-6bb387f361ca/go.mod h1:OZnE1VNrFE53Am9FXPExWL4zXgBhl/M7wYyUqasl0RM=
 github.com/omerzi/jfrog-client-go v1.13.2-0.20230404053100-99c7a5a74858 h1:X40kRpPYRSihLuJ9F41ZpF8XTIc/N7xlWI/HRsZNsUw=
 github.com/omerzi/jfrog-client-go v1.13.2-0.20230404053100-99c7a5a74858/go.mod h1:sBY4Z1nUXmacN+rwFkzALfS11fsZ/14nmxL7gbjULhQ=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
