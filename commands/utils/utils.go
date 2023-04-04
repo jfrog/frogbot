@@ -51,6 +51,7 @@ type ScanDetails struct {
 	Client                   vcsclient.VcsClient
 	FailOnInstallationErrors bool
 	Branch                   string
+	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.

@@ -68,6 +68,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 		Client:                   client,
 		FailOnInstallationErrors: *repository.FailOnSecurityIssues,
 		Branch:                   branch,
+		ReleasesRepo:             repository.JfrogReleasesRepo,
 	}
 	for _, project := range repository.Projects {
 		cfp.details.Project = project

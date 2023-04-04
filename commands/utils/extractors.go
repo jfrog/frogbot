@@ -12,7 +12,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-var extractorsRepositoryPath = filepath.Join("artifactory", "oss-release-local")
+var extractorsRepositoryPath = fmt.Sprintf("%s/%s", "artifactory", "oss-release-local")
 
 // extractorDetails holds the relevant details to download the build-info extractors.
 // Build Info is Artifactory's open integration layer for the CI servers and build tools.
@@ -33,53 +33,39 @@ func (ed *extractorDetails) downloadFromPath() string {
 }
 
 // downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
-func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (err error) {
-	var releasesRepo string
+func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (releasesRepo string, err error) {
 	if releasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv); releasesRepo == "" {
-		return nil
+		return
 	}
 	// Download extractors if remote repo environment variable is set
 	log.Info("Checking whether the build-info extractors exist locally")
 	if extractorsLocalPath == "" {
 		extractorsLocalPath, err = config.GetJfrogDependenciesPath()
 		if err != nil {
-			return err
+			return
 		}
 	}
 	mavenExtractorLocalPath := filepath.Join(extractorsLocalPath, "maven", build.MavenExtractorDependencyVersion)
-	gradleExtractorLocalPath := filepath.Join(extractorsLocalPath, "gradle", build.GradleExtractorDependencyVersion)
-	extractors := []extractorDetails{
-		{
-			extractorType: coreutils.Maven.ToString(),
-			localPath:     mavenExtractorLocalPath,
-			fileName:      fmt.Sprintf(build.MavenExtractorFileName, build.MavenExtractorDependencyVersion),
-			remotePath:    fmt.Sprintf(build.MavenExtractorRemotePath, build.MavenExtractorDependencyVersion),
-		},
-		{
-			extractorType: coreutils.Gradle.ToString(),
-			localPath:     gradleExtractorLocalPath,
-			fileName:      fmt.Sprintf(build.GradleExtractorFileName, build.GradleExtractorDependencyVersion),
-			remotePath:    fmt.Sprintf(build.GradleExtractorRemotePath, build.GradleExtractorDependencyVersion),
-		},
+	mavenExtractor := extractorDetails{
+		extractorType: coreutils.Maven.ToString(),
+		localPath:     mavenExtractorLocalPath,
+		fileName:      fmt.Sprintf(build.MavenExtractorFileName, build.MavenExtractorDependencyVersion),
+		remotePath:    fmt.Sprintf(build.MavenExtractorRemotePath, build.MavenExtractorDependencyVersion),
 	}
-	return downloadExtractors(releasesRepo, server, extractors...)
+	return releasesRepo, downloadExtractor(releasesRepo, server, mavenExtractor)
 }
 
-func downloadExtractors(remoteRepoName string, server *config.ServerDetails, extractors ...extractorDetails) (err error) {
-	for _, extractor := range extractors {
-		var alreadyExist bool
-		if alreadyExist, err = fileutils.IsDirExists(extractor.localPath, false); alreadyExist {
-			log.Debug(extractor.extractorType, "extractor already exists, no download necessary")
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		log.Info("Downloading", extractor.extractorType, "extractor to path:", extractor.localPath)
-		remoteServer := getRemoteServer(server, remoteRepoName)
-		if err = utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath()); err != nil {
-			return err
-		}
+func downloadExtractor(remoteRepoName string, server *config.ServerDetails, extractor extractorDetails) (err error) {
+	var alreadyExist bool
+	if alreadyExist, err = fileutils.IsDirExists(extractor.localPath, false); alreadyExist {
+		log.Debug(extractor.extractorType, "extractor already exists, no download necessary")
+		return
+	}
+
+	log.Info("Downloading", extractor.extractorType, "extractor to path:", extractor.localPath)
+	remoteServer := getRemoteServer(server, remoteRepoName)
+	if err = utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath()); err != nil {
+		return
 	}
 	return
 }
