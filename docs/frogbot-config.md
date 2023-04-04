@@ -105,7 +105,6 @@ Here's an example for a **frogbot-config.yml** referencing multiple repositories
         - pipRequirementsFile: requirements.txt
 ```
 
-
 If however you're using one of the following platforms, each repository that needs to be scanned by Frogbot should include its own **frogbot-config.yml** file.
 - GitHub with GitHub actions
 - GitLab
