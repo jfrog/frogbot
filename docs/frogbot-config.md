@@ -110,7 +110,9 @@ If however you're using one of the following platforms, each repository that nee
 - GitLab
 
 ## Where should the frogbot-config.yml file be placed in the repository?
-Frogbot expects the frogbot-config.yml file to be in the following path from the root of the Git repository: `.frogbot/frogbot-config.yml` .
+Frogbot expects the frogbot-config.yml file to be in the following path from the root of the Git repository: `.frogbot/frogbot-config.yml`.
+
+**IMPORTANT**: The `frogbot-config.yml` file must be pushed to the target branch before it can be used by Frogbot. This means that if, for example, a pull request includes the `frogbot-config.yml` and the target branch doesn't, the file will be ignored.
 
 ## The frogbot-config.yml file structure
 
