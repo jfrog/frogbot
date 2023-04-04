@@ -29,7 +29,7 @@ type ScanPullRequestCmd struct{}
 
 // Run ScanPullRequest method only works for single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
-func (cmd ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (cmd *ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
@@ -220,14 +220,14 @@ func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, e
 	if err != nil {
 		return []services.ScanResponse{}, false, err
 	}
-	fullPathWds := getFullPathWorkingDirs(&scanSetup.Project, wd)
+	fullPathWds := getFullPathWorkingDirs(scanSetup.WorkingDirs, wd)
 	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
-func getFullPathWorkingDirs(project *utils.Project, baseWd string) []string {
+func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 	var fullPathWds []string
-	if len(project.WorkingDirs) != 0 {
-		for _, workDir := range project.WorkingDirs {
+	if len(workingDirs) != 0 {
+		for _, workDir := range workingDirs {
 			if workDir == utils.RootDir {
 				fullPathWds = append(fullPathWds, baseWd)
 				continue
@@ -254,7 +254,7 @@ func auditTarget(scanSetup *utils.ScanDetails) (res []services.ScanResponse, isM
 			err = e
 		}
 	}()
-	fullPathWds := getFullPathWorkingDirs(&scanSetup.Project, wd)
+	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
 	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
