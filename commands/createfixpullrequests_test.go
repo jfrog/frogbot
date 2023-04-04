@@ -22,6 +22,7 @@ type packageFixTest struct {
 	impactedPackaged     string
 	fixVersion           string
 	packageDescriptor    string
+	testPath             string
 	fixPackageVersionCmd FixPackagesTestFunc
 }
 
@@ -97,7 +98,14 @@ var testPackagesData = []struct {
 
 func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
 	return func(test packageFixTest) CreateFixPullRequestsCmd {
-		return CreateFixPullRequestsCmd{}
+		return CreateFixPullRequestsCmd{
+			details: &utils.ScanDetails{
+				Project: utils.Project{
+					PipRequirementsFile: test.packageDescriptor,
+					WorkingDirs:         []string{test.testPath},
+				},
+			},
+		}
 	}
 }
 
@@ -115,23 +123,29 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 
 func TestFixPackageVersion(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
-	for _, test := range packageFixTests {
-		// Create temp technology project
-		projectPath := filepath.Join(testdataDir, test.technology.ToString())
-		tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
-		defer cleanup()
-		assert.NoError(t, os.Chdir(tmpProjectPath))
+	defer func() {
+		assert.NoError(t, os.Chdir(currentDir))
+	}()
 
-		t.Run(test.technology.ToString(), func(t *testing.T) {
-			cfg := test.fixPackageVersionCmd(test)
-			// Fix impacted package for each technology
-			assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion, test.packageDescriptor, tmpProjectPath))
-			file, err := os.ReadFile(test.packageDescriptor)
-			assert.NoError(t, err)
-			assert.Contains(t, string(file), test.fixVersion)
-		})
+	for _, test := range packageFixTests {
+		func() {
+			// Create temp technology project
+			projectPath := filepath.Join(testdataDir, test.technology.ToString())
+			tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+			defer cleanup()
+			test.testPath = tmpProjectPath
+			assert.NoError(t, os.Chdir(tmpProjectPath))
+
+			t.Run(test.technology.ToString(), func(t *testing.T) {
+				cfg := test.fixPackageVersionCmd(test)
+				// Fix impacted package for each technology
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion))
+				file, err := os.ReadFile(test.packageDescriptor)
+				assert.NoError(t, err)
+				assert.Contains(t, string(file), test.fixVersion)
+			})
+		}()
 	}
-	assert.NoError(t, os.Chdir(currentDir))
 }
 
 func getTestDataDir(t *testing.T) (string, string) {

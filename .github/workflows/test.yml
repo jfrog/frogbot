@@ -20,7 +20,7 @@ jobs:
         if: ${{github.event_name != 'push' }} && runner.os == 'Linux'
         with:
           labels: 'safe to test'
-          
+
       # Configure prerequisites
       - uses: actions/checkout@v3
         with:

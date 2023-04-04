@@ -72,4 +72,13 @@ const (
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
+
+	// When Frogbot periodically scans repositories, it skips scanning repositories for which the latest commit has already been scanned,
+	// unless the latest commit has been scanned more then 'SkipRepoScanDays' days ago.
+	SkipRepoScanDays = 4
+
+	// Used by Frogbot to create new commits statuses and recognize its own statuses.
+	CommitStatusDescription = "Scanned by Frogbot"
+	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
+	FrogbotCreatorName      = "Frogbot"
 )
