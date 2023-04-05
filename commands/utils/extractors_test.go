@@ -29,11 +29,13 @@ func TestDownloadExtractorsFromRemoteIfNeeded(t *testing.T) {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}()
 	testServer := httptest.NewServer(createRemoteArtifactoryHandler())
-	defer testServer.Close()
+	defer func() {
+		testServer.Close()
+	}()
 	serverDetails.ArtifactoryUrl = testServer.URL + "/artifactory/"
 	releasesRepo, err := downloadExtractorsFromRemoteIfNeeded(serverDetails, tmpDir)
-	assert.Equal(t, "remote-repo", releasesRepo)
 	assert.NoError(t, err)
+	assert.Equal(t, "remote-repo", releasesRepo)
 }
 
 // Create HTTP handler to mock remote artifactory server

@@ -12,7 +12,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-var extractorsRepositoryPath = fmt.Sprintf("%s/%s", "artifactory", "oss-release-local")
+var extractorsRepositoryPath = "artifactory/oss-release-local"
 
 // extractorDetails holds the relevant details to download the build-info extractors.
 // Build Info is Artifactory's open integration layer for the CI servers and build tools.
@@ -58,16 +58,13 @@ func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extracto
 func downloadExtractor(remoteRepoName string, server *config.ServerDetails, extractor extractorDetails) (err error) {
 	var alreadyExist bool
 	if alreadyExist, err = fileutils.IsDirExists(extractor.localPath, false); alreadyExist {
-		log.Debug(extractor.extractorType, "extractor already exists, no download necessary")
+		log.Debug(extractor.extractorType, "extractor already exists, no download required")
 		return
 	}
 
 	log.Info("Downloading", extractor.extractorType, "extractor to path:", extractor.localPath)
 	remoteServer := getRemoteServer(server, remoteRepoName)
-	if err = utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath()); err != nil {
-		return
-	}
-	return
+	return utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath())
 }
 
 func getRemoteServer(server *config.ServerDetails, remoteName string) *config.ServerDetails {
