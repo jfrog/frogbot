@@ -166,11 +166,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
-|                                            SEVERITY                                             | IMPACTED PACKAGE                         | VERSION | FIXED VERSIONS | DIRECT DEPENDENCIES                      | DIRECT DEPENDENCIES VERSIONS | CVE            |
-|:-----------------------------------------------------------------------------------------------:|------------------------------------------|---------|----------------|------------------------------------------|:----------------------------:|----------------|
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.1]       | github.com/nats-io/nats-streaming-server |           v0.21.0            | CVE-2022-24450 |
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |            v3.5.1            |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |           v0.21.0            | CVE-2022-26652 |
+| SEVERITY | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
+:--: | -- | -- | -- | -- | :--: | --
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview | 0.1.20 | ten-webpack | 4.75.0 | [4.76.0] | CVE-2023-28154
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | magic-streaming-server | 0.21.10 | ten-webpack | 4.75.0 | [4.76.0] | CVE-2023-28154
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | jump-archiver | 3.5.1 | quicksilver | 5.75.0 | [5.76.0] | CVE-2023-28154
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium | expense-calculator | 6.6.0 | cve-alpha | 1.10.0 | [1.10.1] | CVE-2023-28154 
 
 ## Scanning repositories and fixing issues
 
