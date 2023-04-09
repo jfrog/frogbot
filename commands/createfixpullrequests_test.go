@@ -274,13 +274,24 @@ func TestPackageTypeFromScan(t *testing.T) {
 }
 
 func TestGetMinimalFixVersion(t *testing.T) {
-	impactedVersionPackage := "1.6.2"
-	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-	impactedVersionPackageGo := "v" + impactedVersionPackage
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
-	impactedVersionPackage = "1.7.1"
-	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+
+	tests := []struct {
+		impactedVersionPackage string
+		fixVersions            []string
+		expected               string
+	}{
+		{impactedVersionPackage: "1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
+		{impactedVersionPackage: "v1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: ""},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"2.5.3"}, expected: ""},
+		{impactedVersionPackage: "v1.7.1", fixVersions: []string{"0.5.3", "0.9.9"}, expected: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			expected := getMinimalFixVersion(test.impactedVersionPackage, test.fixVersions)
+			assert.Equal(t, test.expected, expected)
+		})
+	}
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {

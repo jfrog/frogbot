@@ -283,11 +283,28 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	currVersion := version.NewVersion(currVersionStr)
 	for _, fixVersion := range fixVersions {
 		fixVersionCandidate := parseVersionChangeString(fixVersion)
+		// Don't allow major version changes
+		majorChanged := isMajorVersionChange(fixVersionCandidate, currVersionStr)
+		if majorChanged {
+			return ""
+		}
 		if currVersion.Compare(fixVersionCandidate) > 0 {
 			return fixVersionCandidate
 		}
 	}
 	return ""
+}
+
+// Assuming version comes in a.b.c format,without any prefixes.
+func isMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
+	index := 0
+	separator := "."
+	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
+	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
+	if candidateMajorVersion != currentMajorVersion {
+		return true
+	}
+	return false
 }
 
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
