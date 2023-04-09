@@ -255,20 +255,19 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
-	if err != nil {
-		return err
-	}
 	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {
 		return nil
 	}
-
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
 		fixVersionInfo.UpdateFixVersion(vulnFixVersion)
 	} else {
+		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
+		if err != nil {
+			return err
+		}
 		// First appearance of a version that fixes the current impacted package
 		fixVersionsMap[vulnerability.ImpactedDependencyName] = packagehandlers.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
 	}
@@ -284,7 +283,7 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	for _, fixVersion := range fixVersions {
 		fixVersionCandidate := parseVersionChangeString(fixVersion)
 		// Don't allow major version changes
-		majorChanged := isMajorVersionChange(fixVersionCandidate, currVersionStr)
+		majorChanged := utils.IsMajorVersionChange(fixVersionCandidate, currVersionStr)
 		if majorChanged {
 			return ""
 		}
@@ -293,18 +292,6 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 		}
 	}
 	return ""
-}
-
-// Assuming version comes in a.b.c format,without any prefixes.
-func isMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
-	index := 0
-	separator := "."
-	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
-	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
-	if candidateMajorVersion != currentMajorVersion {
-		return true
-	}
-	return false
 }
 
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {

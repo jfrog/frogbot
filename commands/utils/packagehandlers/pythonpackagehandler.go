@@ -42,8 +42,7 @@ func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 
 func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *FixVersionInfo) error {
 	// Install the desired fixed version
-	err := py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
-	if err != nil {
+	if err := py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo); err != nil {
 		return err
 	}
 	// Update Poetry lock file as well
@@ -76,10 +75,5 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersi
 		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
 	}
 	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
-	err = os.WriteFile(py.PipRequirementsFile, []byte(fixedFile), 0600)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(py.PipRequirementsFile, []byte(fixedFile), 0600)
 }

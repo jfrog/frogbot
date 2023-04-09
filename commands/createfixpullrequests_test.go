@@ -3,6 +3,7 @@ package commands
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -274,7 +275,6 @@ func TestPackageTypeFromScan(t *testing.T) {
 }
 
 func TestGetMinimalFixVersion(t *testing.T) {
-
 	tests := []struct {
 		impactedVersionPackage string
 		fixVersions            []string
@@ -292,6 +292,53 @@ func TestGetMinimalFixVersion(t *testing.T) {
 			assert.Equal(t, test.expected, expected)
 		})
 	}
+}
+
+func Test_createFixVersionsMap(t *testing.T) {
+	var testScan CreateFixPullRequestsCmd
+	packageName := "pkg"
+	tests := []struct {
+		vulnerability *formats.VulnerabilityOrViolationRow
+		expected      map[string]*packagehandlers.FixVersionInfo
+		description   string
+	}{
+		{
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"1.2.3", "1.2.2"},
+				ImpactedDependencyVersion: "1.2.1",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.2.3", DirectDependency: true}},
+			description: "Get the bigger version",
+		}, {
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"2.0.0", "0.1.5"},
+				ImpactedDependencyVersion: "1.2.1",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
+			description: "Don't suggest major changes fixes",
+		}, {
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"1.1.0", "1.1.4"},
+				ImpactedDependencyVersion: "1.1.5",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
+			description: "Suggest smallest downgrade",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
+			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
+			assert.NoError(t, err)
+			if len(fixVersionsMap) != 0 {
+				assert.Equal(t, *test.expected[packageName], *fixVersionsMap[packageName])
+			}
+		})
+	}
+
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {

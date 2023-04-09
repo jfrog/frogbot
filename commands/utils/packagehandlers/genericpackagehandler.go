@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-// FixVersionInfo Basic struct used to hold needed information about version fixing
+// FixVersionInfo is a basic struct used to hold needed information about version fixing
 type FixVersionInfo struct {
-	FixVersion         string
-	PackageType        coreutils.Technology
-	IsDirectDependency bool
+	FixVersion       string
+	PackageType      coreutils.Technology
+	DirectDependency bool
 }
 
-func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, isDirectDependency bool) *FixVersionInfo {
-	return &FixVersionInfo{newFixVersion, packageType, isDirectDependency}
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
+	return &FixVersionInfo{newFixVersion, packageType, directDependency}
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
