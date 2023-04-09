@@ -43,8 +43,6 @@ func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *ut
 		return &PythonPackageHandler{}
 	case coreutils.Pip:
 		return &PythonPackageHandler{PipRequirementsFile: pipfilePath.PipRequirementsFile}
-	case coreutils.Npm:
-		return &NpmPackageHandler{}
 	default:
 		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
 	}
