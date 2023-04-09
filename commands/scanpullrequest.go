@@ -85,6 +85,7 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 			Git:                      &repoConfig.Git,
 			FailOnInstallationErrors: false,
 			Branch:                   repoConfig.Branches[0],
+			ReleasesRepo:             repoConfig.JfrogReleasesRepo,
 		}
 		currentScan, isMultipleRoot, err := auditSource(scanSetup)
 		if err != nil {
@@ -271,6 +272,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 		SetRequirementsFile(scanSetup.PipRequirementsFile).
 		SetWorkingDirs(workDirs).
 		SetDepsRepo(scanSetup.Repository).
+		SetReleasesRepo(scanSetup.ReleasesRepo).
 		SetIgnoreConfigFile(true)
 	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
 	if err != nil {
