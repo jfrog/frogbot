@@ -48,7 +48,12 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 	}
 	repository := configAggregator[0]
 	for _, branch := range repository.Branches {
-		err := cfp.scanAndFixRepository(&repository, branch, client)
+		gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
+		if err != nil {
+			return err
+		}
+		cfp.gitManager = gitManager
+		err = cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
 			return err
 		}
@@ -123,11 +128,6 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*FixVersionInfo) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
-	if err != nil {
-		return err
-	}
-
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	commitString := fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.fixVersion)
+	commitString := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo)
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitString)
 	if err != nil {
@@ -199,13 +199,16 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return err
 	}
 
+	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(cfp.details.Branch, impactedPackage, fixVersionInfo.fixVersion)
 	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, commitString, prBody)
+	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, cfp.details.Branch, commitString, prBody)
 }
 
 func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *FixVersionInfo) (fixBranchName string, err error) {
 	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.fixVersion)
+	// TODO implement
+	//fixBranchName, err = cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.fixVersion)
 	if err != nil {
 		return
 	}

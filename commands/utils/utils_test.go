@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/frogbot/commands"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -136,6 +137,41 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+
+func TestGitManager_GenerateCommitMessage(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      commands.FixVersionInfo
+		expected        string
+	}{
+		{
+			gitManager: GitManager{
+				commitMessageFormat: "hello %s you %s",
+			},
+			impactedPackage: "mquery",
+			fixVersion: commands.FixVersionInfo{
+				fixVersion:""
+			},
+			expected:        "hello mquery you 1.2.3",
+		},
+		{
+			gitManager: GitManager{
+				// <type>[optional scope]: <description>
+				commitMessageFormat: "%s[%s]: %s ",
+			},
+			impactedPackage: "mquery",
+			fixVersion:      "1.2.3",
+			expected:        "hello mquery you ",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, fixVersion)
+			assert.Equal(t, test.expected, commitMessage)
+		})
+	}
 }
 
 // Check connection details with JFrog instance.

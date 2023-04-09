@@ -13,7 +13,15 @@
       branches:
         - master
 
-    # Frogbot scanning parameters
+      # [Optional] Formats for commit,branches and PR created by Frogbot
+      formats:
+        commitMessageFormat: ""
+        # TODO fill this and explain we add hash
+        branchNameFormat: ""
+
+        pullRequestNameFormat: ""
+
+        # Frogbot scanning parameters
     scan:
       # [Default: false]
       # Frogbot displays all existing vulnerabilities, including the ones that were not added by the pull request

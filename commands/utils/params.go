@@ -123,15 +123,18 @@ type JFrogPlatform struct {
 }
 
 type Git struct {
-	GitProvider   vcsutils.VcsProvider
-	RepoName      string   `yaml:"repoName,omitempty"`
-	Branches      []string `yaml:"branches,omitempty"`
-	GitProject    string
-	RepoOwner     string
-	Token         string
-	ApiEndpoint   string
-	Username      string
-	PullRequestID int
+	GitProvider            vcsutils.VcsProvider
+	RepoName               string   `yaml:"repoName,omitempty"`
+	Branches               []string `yaml:"branches,omitempty"`
+	CommitMessageFormat    string   `yaml:"formats.commitMessageFormat,omitempty"`
+	BranchNameFormat       string   `yaml:"formats.branchNameFormat,omitempty"`
+	PullRequestTitleFormat string   `yaml:"formats.pullRequestTitleFormat,omitempty"`
+	GitProject             string
+	RepoOwner              string
+	Token                  string
+	ApiEndpoint            string
+	Username               string
+	PullRequestID          int
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {

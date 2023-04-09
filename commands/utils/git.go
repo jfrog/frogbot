@@ -30,6 +30,12 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
+	// new commit message format
+	commitMessageFormat string
+	// new branchFormat name format
+	branchFormat string
+	// new pullRequestFormat title format
+	pullRequestFormat string
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
@@ -213,6 +219,20 @@ func (gm *GitManager) IsClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version string) string {
+	if gm.commitMessageFormat == "" {
+		return fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, version)
+	}
+	return fmt.Sprintf(gm.commitMessageFormat, impactedPackage, version)
+}
+
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
+	return "", nil
+}
+
+func (gm *GitManager) GeneratePullRequestTitle(branch string, impactedPackage string, version string) string {
+	return ""
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
