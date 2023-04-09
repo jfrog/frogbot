@@ -55,9 +55,7 @@ type GenericPackageHandler struct {
 // UpdateImpactedPackage installs new version of the impacted package to the fixed version
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}
-	for _, arg := range extraArgs {
-		commandArgs = append(commandArgs, arg)
-	}
+	commandArgs = append(commandArgs, extraArgs...)
 	operator := fixVersionInfo.PackageType.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixVersionInfo.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
