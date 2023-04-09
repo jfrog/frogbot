@@ -255,7 +255,10 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	isDirectDependency := cfp.IsDirectDependency(vulnerability)
+	isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
+	if err != nil {
+		return err
+	}
 	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {
 		return nil
@@ -305,11 +308,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 	}
 	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
-}
-
-// TODO check this to be more generic!
-func (cfp *CreateFixPullRequestsCmd) IsDirectDependency(vul *formats.VulnerabilityOrViolationRow) bool {
-	return vul.ImpactPaths[0][1].Name == vul.ImpactedDependencyName
 }
 
 func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {
