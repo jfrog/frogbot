@@ -216,7 +216,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, 
 	}
 	log.Info("Creating branch:", fixBranchName)
 	if exists {
-		return "", fmt.Errorf(fmt.Sprintf("Branch:%s already exists on remote.", fixBranchName))
+		return "", fmt.Errorf("branch:%s already exists on remote", fixBranchName)
 	}
 
 	return fixBranchName, cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
