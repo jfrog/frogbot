@@ -55,10 +55,12 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 	{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
 	{"paramiko", "paramiko==2.7.2"},
 	{"passlib", "passlib<=1.7.4"},
+	{"PassLib", "passlib<=1.7.4"},
 	{"prance", "prance>=0.9.0"},
 	{"prompt-toolkit", "prompt-toolkit~=1.0.15"},
 	{"pyinotify", "pyinotify>0.9.6"},
-	{"pyjwt", "PyJWT>1.7.1"},
+	{"pyjwt", "pyjwt>1.7.1"},
+	{"PyJWT", "pyjwt>1.7.1"},
 	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
 }
 
@@ -224,9 +226,9 @@ func TestGenerateFixBranchName(t *testing.T) {
 
 func TestPipPackageRegex(t *testing.T) {
 	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(packagehandlers.PythonPackageRegexPrefix + pack.packageName + packagehandlers.PythonPackageRegexSuffix)
+		re := regexp.MustCompile(packagehandlers.PythonPackageRegexPrefix + "(" + pack.packageName + "|" + strings.ToLower(pack.packageName) + ")" + packagehandlers.PythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
-		assert.Equal(t, pack.expectedRequirement, found)
+		assert.Equal(t, pack.expectedRequirement, strings.ToLower(found))
 	}
 }
 
