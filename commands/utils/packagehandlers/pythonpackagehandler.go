@@ -21,7 +21,7 @@ const (
 
 // PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
-	PipRequirementsFile string
+	pipRequirementsFile string
 	GenericPackageHandler
 }
 
@@ -52,18 +52,18 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersionInfo) error {
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion
-	if py.PipRequirementsFile == "" {
-		py.PipRequirementsFile = "setup.py"
+	if py.pipRequirementsFile == "" {
+		py.pipRequirementsFile = "setup.py"
 	}
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	fullPath := filepath.Join(wd, py.PipRequirementsFile)
+	fullPath := filepath.Join(wd, py.pipRequirementsFile)
 	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
 		return errors.New("wrong requirements file input")
 	}
-	data, err := os.ReadFile(filepath.Clean(py.PipRequirementsFile))
+	data, err := os.ReadFile(filepath.Clean(py.pipRequirementsFile))
 	if err != nil {
 		return err
 	}
@@ -75,5 +75,5 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersi
 		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
 	}
 	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
-	return os.WriteFile(py.PipRequirementsFile, []byte(fixedFile), 0600)
+	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
 }

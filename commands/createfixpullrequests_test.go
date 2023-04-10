@@ -304,11 +304,11 @@ func Test_createFixVersionsMap(t *testing.T) {
 	}{
 		{
 			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"1.2.3", "1.2.2"},
+				FixedVersions:             []string{"1.9.3", "1.2.2"},
 				ImpactedDependencyVersion: "1.2.1",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.2.3", DirectDependency: true}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
 			description: "Get the bigger version",
 		}, {
 			vulnerability: &formats.VulnerabilityOrViolationRow{

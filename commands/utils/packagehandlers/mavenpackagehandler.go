@@ -8,7 +8,7 @@ import (
 )
 
 type MavenPackageHandler struct {
-	MavenDepToPropertyMap map[string][]string
+	mavenDepToPropertyMap map[string][]string
 	GenericPackageHandler
 }
 
@@ -17,7 +17,7 @@ func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	if !fixVersionInfo.DirectDependency {
 		return nil
 	}
-	properties := mvn.MavenDepToPropertyMap[impactedPackage]
+	properties := mvn.mavenDepToPropertyMap[impactedPackage]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
 	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersionInfo.FixVersion, "-DgenerateBackupPoms=false"}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))

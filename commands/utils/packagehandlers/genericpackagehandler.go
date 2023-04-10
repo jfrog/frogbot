@@ -28,21 +28,21 @@ func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
 	}
 }
 
-// PackageUpdater Interface to hold operations on packages
-type PackageUpdater interface {
+// PackageHandler interface to hold operations on packages
+type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageUpdater {
+func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Go:
 		return &GoPackageHandler{}
 	case coreutils.Maven:
-		return &MavenPackageHandler{MavenDepToPropertyMap: *mavenPropertyMap}
+		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
 		return &PythonPackageHandler{}
 	case coreutils.Pip:
-		return &PythonPackageHandler{PipRequirementsFile: pipfilePath.PipRequirementsFile}
+		return &PythonPackageHandler{pipRequirementsFile: pipfilePath.PipRequirementsFile}
 	default:
 		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
 	}
@@ -52,7 +52,7 @@ type GenericPackageHandler struct {
 	FixVersionInfo *FixVersionInfo
 }
 
-// UpdateImpactedPackage installs new version of the impacted package to the fixed version
+// UpdateImpactedPackage updates the impacted package to the fixed version
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}
 	commandArgs = append(commandArgs, extraArgs...)
