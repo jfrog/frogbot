@@ -351,3 +351,28 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
+
+func TestValidateStructInputs(t *testing.T) {
+	tests := []struct {
+		input string
+		fail  bool
+	}{
+		{input: "[prefix]%s", fail: true},
+		{input: "[prefix%d]", fail: true},
+		{input: "prefix%f", fail: true},
+		{input: "[prefix]", fail: false},
+	}
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			gitParams := GitManager{
+				commitPrefix: test.input,
+			}
+			err := validateStructInputs(gitParams)
+			if test.fail {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

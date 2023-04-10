@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -188,7 +190,24 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
+	if err = validateStructInputs(gitParams); err != nil {
+		return nil, err
+	}
+
 	return NewConfigAggregatorFromFile(configFileContent, gitParams, server, releasesRepo)
+}
+
+// Prevents malicious user inputs, validates struct field do not contain format specifiers.
+func validateStructInputs(s interface{}) error {
+	regex := regexp.MustCompile(`%\d*(\.\d+)?[a-z]`)
+	v := reflect.ValueOf(s)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Kind() == reflect.String && regex.MatchString(field.String()) {
+			return errors.New("invalid input in struct")
+		}
+	}
+	return nil
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.

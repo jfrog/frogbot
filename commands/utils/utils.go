@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
@@ -52,6 +54,24 @@ type ScanDetails struct {
 	FailOnInstallationErrors bool
 	Branch                   string
 	ReleasesRepo             string
+}
+
+// FixVersionInfo is a basic struct used to hold needed information about version fixing
+type FixVersionInfo struct {
+	FixVersion       string
+	PackageType      coreutils.Technology
+	DirectDependency bool
+}
+
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
+	return &FixVersionInfo{newFixVersion, packageType, directDependency}
+}
+
+func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
+	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
+		fvi.FixVersion = newFixVersion
+	}
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.

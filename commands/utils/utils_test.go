@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
@@ -177,29 +176,27 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      packagehandlers.FixVersionInfo
+		fixVersion      FixVersionInfo
 		expected        string
+		description     string
 	}{
 		{
-			gitManager: GitManager{
-				commitMessageFormat: "hello %s you %s",
-			},
+			gitManager:      GitManager{commitPrefix: "<type>"},
 			impactedPackage: "mquery",
-			fixVersion: packagehandlers.FixVersionInfo{
-				FixVersion: "3.4.5",
-			},
-			expected: "hello mquery you 1.2.3",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "<type>: Upgrade mquery to 3.4.5",
+			description:     "Custom prefix",
 		},
 		{
-			gitManager: GitManager{
-				// <type>[optional scope]: <description>
-				commitMessageFormat: "%s[%s]: %s ",
-			},
-			impactedPackage: "mquery",
-			fixVersion: packagehandlers.FixVersionInfo{
-				FixVersion: "3.4.5",
-			},
-			expected: "hello mquery you ",
+			gitManager:      GitManager{commitPrefix: "<type>[scope]"},
+			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
+			expected:    "<type>[scope]: Upgrade mquery to 3.4.5",
+			description: "Default format",
+		}, {
+			gitManager:      GitManager{commitPrefix: ""},
+			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
+			expected:    "Upgrade mquery to 3.4.5",
+			description: "Default format",
 		},
 	}
 	for _, test := range tests {
@@ -208,6 +205,70 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 			assert.Equal(t, test.expected, commitMessage)
 		})
 	}
+}
+
+func TestGitManager_GenerateFixBranchName(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      FixVersionInfo
+		expected        string
+		description     string
+	}{
+		{
+			gitManager:      GitManager{branchPrefix: "[MyPrefix]"},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[MyPrefix]-frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
+			description:     "Custom prefix",
+		},
+		{
+			gitManager:      GitManager{branchPrefix: ""},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
+			description:     "No prefix",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.FixVersion)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, commitMessage)
+		})
+	}
+}
+
+func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      FixVersionInfo
+		expected        string
+		description     string
+	}{
+		{
+			gitManager:      GitManager{branchPrefix: "[MyPrefix]"},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[MyPrefix]-[🐸 Frogbot] Upgrade mquery to 3.4.5",
+			description:     "Custom prefix",
+		},
+		{
+			gitManager:      GitManager{branchPrefix: ""},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
+			description:     "No prefix",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.FixVersion)
+			assert.Equal(t, test.expected, titleOutput)
+		})
+	}
+
 }
 
 // Check connection details with JFrog instance.

@@ -147,7 +147,7 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
@@ -158,7 +158,7 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix indirect dependency for each technology
-				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, false)
+				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, false)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 			})
 		}()
@@ -303,7 +303,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 	packageName := "pkg"
 	tests := []struct {
 		vulnerability *formats.VulnerabilityOrViolationRow
-		expected      map[string]*packagehandlers.FixVersionInfo
+		expected      map[string]*utils.FixVersionInfo
 		description   string
 	}{
 		{
@@ -312,7 +312,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.2.1",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
 			description: "Get the bigger version",
 		}, {
 			vulnerability: &formats.VulnerabilityOrViolationRow{
@@ -320,7 +320,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.2.1",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
 			description: "Don't suggest major changes fixes",
 		}, {
 			vulnerability: &formats.VulnerabilityOrViolationRow{
@@ -328,13 +328,13 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.1.5",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
 			description: "Suggest smallest downgrade",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
+			fixVersionsMap := map[string]*utils.FixVersionInfo{}
 			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
 			assert.NoError(t, err)
 			if len(fixVersionsMap) != 0 {

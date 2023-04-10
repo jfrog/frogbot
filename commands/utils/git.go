@@ -235,19 +235,19 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	}
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	// Custom format provided by user
+	prefix := ""
 	if gm.branchPrefix != "" {
-		return fmt.Sprintf(gm.branchPrefix, fixedPackageName, uniqueString), nil
+		prefix = gm.branchPrefix + "-"
 	}
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	return fmt.Sprintf(NewBranchesFormat, fixedPackageName, uniqueString), nil
+	return fmt.Sprintf(prefix+NewBranchesFormat, fixedPackageName, uniqueString), nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
-	if gm.pullRequestPrefix != "" {
-		return fmt.Sprintf(gm.pullRequestPrefix, impactedPackage, version)
+	prefix := ""
+	if gm.branchPrefix != "" {
+		prefix = gm.branchPrefix + "-"
 	}
-	return fmt.Sprintf(PullRequestFormat, impactedPackage, version)
+	return fmt.Sprintf(prefix+PullRequestFormat, impactedPackage, version)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
