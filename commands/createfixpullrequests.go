@@ -201,9 +201,8 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 }
 
 func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (fixBranchName string, err error) {
-	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
-	// TODO implement
-	//fixBranchName, err = cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.fixVersion)
+	//fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
+	fixBranchName, err = cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
 	}
@@ -320,17 +319,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 	}
 	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
-}
-
-func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {
-	uniqueString, err := utils.Md5Hash("frogbot", baseBranch, impactedPackage, fixVersion)
-	if err != nil {
-		return "", err
-	}
-	// Package names in Maven usually contain colons, which are not allowed in a branch name
-	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
 // 1.0         --> 1.0 ≤ x

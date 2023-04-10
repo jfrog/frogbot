@@ -228,7 +228,17 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version stri
 }
 
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
-	return "", nil
+	uniqueString, err := Md5Hash("frogbot", branch, impactedPackage, version)
+	if err != nil {
+		return "", err
+	}
+	// Package names in Maven usually contain colons, which are not allowed in a branch name
+	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
+	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
+	if gm.branchFormat != "" {
+		return fmt.Sprintf(gm.branchFormat, "frogbot", fixedPackageName, uniqueString), nil
+	}
+	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(branch string, impactedPackage string, version string) string {
