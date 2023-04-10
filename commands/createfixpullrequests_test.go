@@ -1,15 +1,18 @@
 package commands
 
 import (
+	testdatautils "github.com/jfrog/build-info-go/build/testdata"
+	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
-	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -32,8 +35,11 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pipenv, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Poetry, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pip, impactedPackaged: "PyJwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 }
 
@@ -49,10 +55,12 @@ var pipPackagesRegexTests = []pipPackageRegexTest{
 	{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
 	{"paramiko", "paramiko==2.7.2"},
 	{"passlib", "passlib<=1.7.4"},
+	{"PassLib", "passlib<=1.7.4"},
 	{"prance", "prance>=0.9.0"},
 	{"prompt-toolkit", "prompt-toolkit~=1.0.15"},
 	{"pyinotify", "pyinotify>0.9.6"},
-	{"pyjwt", "PyJWT>1.7.1"},
+	{"pyjwt", "pyjwt>1.7.1"},
+	{"PyJWT", "pyjwt>1.7.1"},
 	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
 }
 
@@ -139,15 +147,23 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.technology, test.impactedPackaged, test.fixVersion))
+				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				assert.Contains(t, string(file), test.fixVersion)
+				// Verify that case-sensitive packages in python are lowered
+				assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
+			})
+			t.Run(test.technology.ToString(), func(t *testing.T) {
+				cfg := test.fixPackageVersionCmd(test)
+				// Fix indirect dependency for each technology
+				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, false)
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 			})
 		}()
 	}
 }
-
 func getTestDataDir(t *testing.T) (string, string) {
 	currentDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -208,9 +224,9 @@ func TestGenerateFixBranchName(t *testing.T) {
 
 func TestPipPackageRegex(t *testing.T) {
 	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(pythonPackageRegexPrefix + pack.packageName + pythonPackageRegexSuffix)
+		re := regexp.MustCompile(packagehandlers.PythonPackageRegexPrefix + "(" + pack.packageName + "|" + strings.ToLower(pack.packageName) + ")" + packagehandlers.PythonPackageRegexSuffix)
 		found := re.FindString(requirementsFile)
-		assert.Equal(t, pack.expectedRequirement, found)
+		assert.Equal(t, pack.expectedRequirement, strings.ToLower(found))
 	}
 }
 
@@ -261,13 +277,70 @@ func TestPackageTypeFromScan(t *testing.T) {
 }
 
 func TestGetMinimalFixVersion(t *testing.T) {
-	impactedVersionPackage := "1.6.2"
-	fixVersions := []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackage, fixVersions))
-	impactedVersionPackageGo := "v" + impactedVersionPackage
-	assert.Equal(t, "1.6.22", getMinimalFixVersion(impactedVersionPackageGo, fixVersions))
-	impactedVersionPackage = "1.7.1"
-	assert.Equal(t, "", getMinimalFixVersion(impactedVersionPackage, fixVersions))
+	tests := []struct {
+		impactedVersionPackage string
+		fixVersions            []string
+		expected               string
+	}{
+		{impactedVersionPackage: "1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
+		{impactedVersionPackage: "v1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: ""},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"2.5.3"}, expected: ""},
+		{impactedVersionPackage: "v1.7.1", fixVersions: []string{"0.5.3", "0.9.9"}, expected: ""},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			expected := getMinimalFixVersion(test.impactedVersionPackage, test.fixVersions)
+			assert.Equal(t, test.expected, expected)
+		})
+	}
+}
+
+func Test_createFixVersionsMap(t *testing.T) {
+	var testScan CreateFixPullRequestsCmd
+	packageName := "pkg"
+	tests := []struct {
+		vulnerability *formats.VulnerabilityOrViolationRow
+		expected      map[string]*packagehandlers.FixVersionInfo
+		description   string
+	}{
+		{
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"1.9.3", "1.2.2"},
+				ImpactedDependencyVersion: "1.2.1",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
+			description: "Get the bigger version",
+		}, {
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"2.0.0", "0.1.5"},
+				ImpactedDependencyVersion: "1.2.1",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
+			description: "Don't suggest major changes fixes",
+		}, {
+			vulnerability: &formats.VulnerabilityOrViolationRow{
+				FixedVersions:             []string{"1.1.0", "1.1.4"},
+				ImpactedDependencyVersion: "1.1.5",
+				ImpactedDependencyName:    packageName,
+				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
+			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
+			description: "Suggest smallest downgrade",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
+			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
+			assert.NoError(t, err)
+			if len(fixVersionsMap) != 0 {
+				assert.Equal(t, *test.expected[packageName], *fixVersionsMap[packageName])
+			}
+		})
+	}
+
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
