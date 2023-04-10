@@ -126,9 +126,9 @@ type Git struct {
 	GitProvider            vcsutils.VcsProvider
 	RepoName               string   `yaml:"repoName,omitempty"`
 	Branches               []string `yaml:"branches,omitempty"`
-	CommitMessageFormat    string   `yaml:"formats.commitMessageFormat,omitempty"`
-	BranchNameFormat       string   `yaml:"formats.branchNameFormat,omitempty"`
-	PullRequestTitleFormat string   `yaml:"formats.pullRequestTitleFormat,omitempty"`
+	CommitMessagePrefix    string   `yaml:"formats.commitMessage,omitempty"`
+	BranchNamePrefix       string   `yaml:"formats.branchName,omitempty"`
+	PullRequestTitlePrefix string   `yaml:"formats.pullRequestTitle,omitempty"`
 	GitProject             string
 	RepoOwner              string
 	Token                  string

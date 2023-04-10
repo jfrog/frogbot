@@ -43,6 +43,31 @@
           "examples": ["master", "v1", "v2"]
         },
         "examples": [["master", "v1", "v2"]]
+      },
+      "prefixes": {
+        "type": "array",
+        "title": "Custom Prefixes",
+        "description": "Git custom prefixes for commit,branches and PR created by Frogbot.",
+        "additionalProperties": false,
+        "items": {
+          "properties": {
+            "commitMessage": {
+              "type": "string",
+              "default": "",
+              "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]
+            },
+            "branchName": {
+              "type": "string",
+              "default": "",
+              "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]
+            },
+            "pullRequestTitle": {
+              "type": "string",
+              "default": "",
+              "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]
+            }
+          }
+        }
       }
     },
     "examples": [

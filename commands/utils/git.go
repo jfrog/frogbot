@@ -30,12 +30,12 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
-	// new commit message format
-	commitMessageFormat string
-	// new branchFormat name format
-	branchFormat string
-	// new pullRequestFormat title format
-	pullRequestFormat string
+	// new commit message prefix
+	commitPrefix string
+	// new branch name prefix
+	branchPrefix string
+	// new pullRequestPrefix title prefix
+	pullRequestPrefix string
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
@@ -221,10 +221,11 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version string) string {
-	if gm.commitMessageFormat == "" {
-		return fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, version)
+	prefix := ""
+	if gm.commitPrefix != "" {
+		prefix = gm.commitPrefix + ": "
 	}
-	return fmt.Sprintf(gm.commitMessageFormat, impactedPackage, version)
+	return fmt.Sprintf(prefix+CommitMessageFormat, impactedPackage, version)
 }
 
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
@@ -234,15 +235,19 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	}
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	if gm.branchFormat != "" {
-		return fmt.Sprintf(gm.branchFormat, "frogbot", fixedPackageName, uniqueString), nil
+	// Custom format provided by user
+	if gm.branchPrefix != "" {
+		return fmt.Sprintf(gm.branchPrefix, fixedPackageName, uniqueString), nil
 	}
-	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
+	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
+	return fmt.Sprintf(NewBranchesFormat, fixedPackageName, uniqueString), nil
 }
 
-func (gm *GitManager) GeneratePullRequestTitle(branch string, impactedPackage string, version string) string {
-	return ""
+func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
+	if gm.pullRequestPrefix != "" {
+		return fmt.Sprintf(gm.pullRequestPrefix, impactedPackage, version)
+	}
+	return fmt.Sprintf(PullRequestFormat, impactedPackage, version)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
