@@ -99,6 +99,7 @@ type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
+	JfrogReleasesRepo         string
 }
 
 func (s *Scan) setDefaultsIfNeeded() *Scan {
@@ -167,14 +168,15 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 
 // getConfigAggregator returns a FrogbotConfigAggregator based on frogbot-config.yml and environment variables.
 func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDetails, gitParams *Git) (FrogbotConfigAggregator, error) {
-	if err := downloadExtractorsFromRemoteIfNeeded(server, ""); err != nil {
+	releasesRepo, err := downloadExtractorsFromRemoteIfNeeded(server, "")
+	if err != nil {
 		return nil, err
 	}
 	configFileContent, err := getConfigFileContent(client)
 	// If there is a missing configuration file error, try to generate an environment variable-based config aggregator.
 	if _, missingConfigErr := err.(*ErrMissingConfig); missingConfigErr {
-		log.Debug("Retrieving", FrogbotConfigFile, "failed with:", err.Error())
-		configAggregator, err := newConfigAggregatorFromEnv(gitParams, server)
+		log.Debug("Unable to retrieve", FrogbotConfigFile, err.Error())
+		configAggregator, err := newConfigAggregatorFromEnv(gitParams, server, releasesRepo)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +185,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
-	return NewConfigAggregatorFromFile(configFileContent, gitParams, server)
+	return NewConfigAggregatorFromFile(configFileContent, gitParams, server, releasesRepo)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
@@ -205,7 +207,7 @@ func getConfigFileContent(client vcsclient.VcsClient) (configFileContent []byte,
 }
 
 // NewConfigAggregatorFromFile receive a frogbot-config.yml file content along with the Git and ServerDetails parameters, and returns a FrogbotConfigAggregator instance with all the default and necessary fields.
-func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, server *coreconfig.ServerDetails) (result FrogbotConfigAggregator, err error) {
+func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, server *coreconfig.ServerDetails, releasesRepo string) (result FrogbotConfigAggregator, err error) {
 	// Unmarshal the frogbot-config.yml file
 	result, err = result.UnmarshalYaml(configFileContent)
 	if err != nil {
@@ -217,6 +219,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}
+		result[i].JfrogReleasesRepo = releasesRepo
 		result[i].Git = *gitParams
 		result[i].Server = *server
 		result[i].OutputWriter = GetCompatibleOutputWriter(result[i].GitProvider)
@@ -427,7 +430,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 }
 
 // In case frogbot-config.yml does not exist, newConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
-func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails) (FrogbotConfigAggregator, error) {
+func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails, releasesRepo string) (FrogbotConfigAggregator, error) {
 	// The repo name must be set as a part of the envs.
 	if gitParams.RepoName == "" {
 		return nil, &ErrMissingEnv{GitRepoEnv}
@@ -441,6 +444,7 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
 		return nil, err
 	}
+	repo.JfrogReleasesRepo = releasesRepo
 	repo.Projects = append(repo.Projects, project)
 	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
 	return FrogbotConfigAggregator{repo}, nil

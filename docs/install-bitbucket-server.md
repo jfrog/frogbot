@@ -34,8 +34,8 @@
    - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
    ```groovy
-   // Run the job every 5 minutes 
-   CRON_SETTINGS = '''*/5 * * * *'''
+   // Run the job once an hour 
+   CRON_SETTINGS = '''* */1 * * *'''
    
    pipeline {
        agent any
@@ -77,7 +77,7 @@
             
             // [Optional]
             // If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
-            // in Artifactory, which proxies https://releases.jfrog.io/artifactory
+            // in Artifactory, which proxies https://releases.jfrog.io
             // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
             // JF_RELEASES_REPO= ""
             

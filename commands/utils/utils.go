@@ -51,6 +51,7 @@ type ScanDetails struct {
 	Client                   vcsclient.VcsClient
 	FailOnInstallationErrors bool
 	Branch                   string
+	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -115,8 +116,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		return nil
 	}
 
-	includeVulnerabilities := repo.JFrogProjectKey == "" && len(repo.Watches) == 0
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, includeVulnerabilities, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}

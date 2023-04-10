@@ -27,7 +27,7 @@ jobs:
       #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
       #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
-      - uses: jfrog/frogbot@80d5c273e67898731f4d20cb5eb218f9f15b3afd
+      - uses: jfrog/frogbot@bf25a2d861aef4bbb9282882963e57472a327583
         env:
           # [Mandatory]
           # JFrog platform URL
@@ -51,7 +51,7 @@ jobs:
 
           # [Optional]
           # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-          # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+          # in Artifactory, which proxies https://releases.jfrog.io
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""
 

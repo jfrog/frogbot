@@ -146,7 +146,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server)
+	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, "")
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -172,7 +172,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	configFile, err := newConfigAggregatorFromEnv(gitParams, server)
+	configFile, err := newConfigAggregatorFromEnv(gitParams, server, "")
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -269,10 +269,11 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server)
+	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server, "releases-remote")
 	assert.NoError(t, err)
 	repo := configAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
+	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)

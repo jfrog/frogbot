@@ -34,8 +34,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
        ```yml
         schedules:
-             # Every 5 minutes
-             - cron: "*/5 * * * *"
+             # Run once an hour
+             - cron: "* */1 * * *"
                branches: 
                  include: 
                    - "*"
@@ -76,7 +76,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
    
                   # [Optional]
                   # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
-                  # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+                  # in Artifactory, which proxies https://releases.jfrog.io
                   # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
                   # JF_RELEASES_REPO: ""
    

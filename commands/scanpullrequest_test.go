@@ -554,7 +554,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams)
+	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams, "")
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
@@ -652,7 +652,7 @@ func TestGetFullPathWorkingDirs(t *testing.T) {
 		WorkingDirs: []string{filepath.Join("a", "b"), filepath.Join("a", "b", "c"), ".", filepath.Join("c", "d", "e", "f")},
 	}
 	baseWd := "tempDir"
-	fullPathWds := getFullPathWorkingDirs(&sampleProject, baseWd)
+	fullPathWds := getFullPathWorkingDirs(sampleProject.WorkingDirs, baseWd)
 	expectedWds := []string{filepath.Join("tempDir", "a", "b"), filepath.Join("tempDir", "a", "b", "c"), "tempDir", filepath.Join("tempDir", "c", "d", "e", "f")}
 	for _, expectedWd := range expectedWds {
 		assert.Contains(t, fullPathWds, expectedWd)
