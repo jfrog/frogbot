@@ -48,6 +48,7 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 }
 
 func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersionInfo) error {
+	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion
 	if py.pipRequirementsFile == "" {
@@ -66,12 +67,15 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersi
 		return err
 	}
 	currentFile := string(data)
+
+	// Check both original and lowered package name and replace to only one lowered result
 	// This regex will match the impactedPackage with it's pinned version e.py. PyJWT==1.7.1
-	re := regexp.MustCompile(PythonPackageRegexPrefix + impactedPackage + PythonPackageRegexSuffix)
-	packageToReplace := re.FindString(currentFile)
-	if packageToReplace == "" {
-		return fmt.Errorf("impacted package %s not found, fix failed", packageToReplace)
+	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + impactedPackage + "|" + strings.ToLower(impactedPackage) + ")" + PythonPackageRegexSuffix)
+	if packageToReplace := re.FindString(currentFile); packageToReplace != "" {
+		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
-	fixedFile := strings.Replace(currentFile, packageToReplace, fixedPackage, 1)
+	if fixedFile == "" {
+		return fmt.Errorf("impacted package %s not found, fix failed", impactedPackage)
+	}
 	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
 }
