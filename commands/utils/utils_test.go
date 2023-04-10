@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -136,6 +137,39 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 	fullPath += string(os.PathSeparator)
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
+}
+
+func TestIsDirectDependency(t *testing.T) {
+	tests := []struct {
+		impactPath    [][]formats.ComponentRow
+		expected      bool
+		expectedError bool
+	}{
+		{
+			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack2", Version: "1.2.3"}}},
+			expected:      true,
+			expectedError: false,
+		}, {
+			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}, {{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack22", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
+			expected:      false,
+			expectedError: false,
+		}, {
+			impactPath:    [][]formats.ComponentRow{},
+			expected:      false,
+			expectedError: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			isDirect, err := IsDirectDependency(test.impactPath)
+			assert.Equal(t, test.expected, isDirect)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 // Check connection details with JFrog instance.
