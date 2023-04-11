@@ -164,7 +164,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
 	assert.Equal(t, "", project.PipRequirementsFile)
 }
@@ -292,7 +292,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
 	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
