@@ -5,8 +5,7 @@
         - master
     scan:
       projects:
-        - installCommand: npm i
-          workingDirs:
+        - workingDirs:
             - sub1
             - sub3/sub4
         - pipRequirementsFile: requirements.txt
