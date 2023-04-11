@@ -23,7 +23,7 @@
       - [👎 Issues were found](#-issues-were-found)
   - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
   - [🖥️ Installing Frogbot](#️-installing-frogbot)
-  - [Adding](#️adding)
+  
   - [🔥 Reporting issues](#-reporting-issues)
   - [💻 Contributions](#-contributions)
 
