@@ -1,10 +1,10 @@
 <div align="center">
 
-# Frogbot
+# JFrog Frogbot
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
-[![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
+[![Scanned by Frogbot](https://github.com/eyalbe4/frogbot/tree/master/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme) [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
 
 </div>
