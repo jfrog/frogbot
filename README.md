@@ -253,7 +253,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 You can show people that your repository is scanned by Frogbot by adding a badge to the README of your Git repository.
 
-<img width="120" src="./images/badge-image.png">
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
 
 You can add this badge by copying the following markdown snippet and pasting it into your repository's README.md file.
 ```
