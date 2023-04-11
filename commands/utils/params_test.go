@@ -240,7 +240,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:                 "admin",
 		JFrogPasswordEnv:             "password",
-		InstallCommandEnv:            "npm i",
+		InstallCommandEnv:            "nuget restore",
 		UseWrapperEnv:                "false",
 		RequirementsFileEnv:          "requirements.txt",
 		WorkingDirectoryEnv:          "a/b",

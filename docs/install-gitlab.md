@@ -8,7 +8,7 @@ To install Frogbot on GitLab repositories using GitLab CI:
 3. Add a job named **frogbot-scan** to your **.gitlab-ci.yml** file in your GitLab repository using the code block below.
 
 **Important**
-- Set the **JF_INSTALL_DEPS_CMD** variable below, or the **installCommand** property in your frogbot-config.yml file, if the project uses npm, yarn 2, NuGet or .NET to download its dependencies
+- Set the **JF_INSTALL_DEPS_CMD** variable below, or the **installCommand** property in your frogbot-config.yml file, if the project uses yarn 2, NuGet or .NET to download its dependencies
 - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set, **but not both**.
 
 ```yml
@@ -69,10 +69,10 @@ frogbot-scan:
     ##########################################################################
 
     # [Mandatory if the two conditions below are met]
-    # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+    # 1. The project uses yarn 2, NuGet or .NET to download its dependencies
     # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
     #
-    # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+    # The command that installs the project dependencies (e.g "nuget restore")
     JF_INSTALL_DEPS_CMD: ""
 
     # [Optional, default: "."]

@@ -6,7 +6,7 @@
         - main
     scan:
       projects:
-        - installCommand: npm i
+        - installCommand: nuget restore
           useWrapper: false
           repository: test-repo
       failOnSecurityIssues: false

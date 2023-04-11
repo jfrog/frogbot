@@ -5,7 +5,7 @@
         - master
     scan:
       projects:
-        - installCommand: npm i
+        - installCommand: nuget restore
           workingDirs:
             - sub1
             - sub3/sub4
