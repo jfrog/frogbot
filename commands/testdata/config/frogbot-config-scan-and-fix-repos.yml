@@ -4,8 +4,6 @@
       branches:
         - master
     scan:
-      projects:
-        - installCommand: nuget restore
       failOnSecurityIssues: false
 - params:
     git:

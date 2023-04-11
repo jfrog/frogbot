@@ -5,6 +5,5 @@
         - master
     scan:
       projects:
-        - installCommand: nuget restore
-          workingDirs:
+        - workingDirs:
             - .
