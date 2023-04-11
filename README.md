@@ -23,7 +23,7 @@
       - [👎 Issues were found](#-issues-were-found)
   - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
   - [🖥️ Installing Frogbot](#️-installing-frogbot)
-  - [📛 Adding the Frogbot badge](#adding)
+  - [📛 Adding the Frogbot badge](#️adding-the-frogbot-badge)
   - [🔥 Reporting issues](#-reporting-issues)
   - [💻 Contributions](#-contributions)
 
@@ -249,7 +249,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 <div id="reporting-issues"></div>
 
-## Adding
+## Adding the Frogbot badge
 
 You can show people that your repository is scanned by Frogbot by copying the following Frogbot badge and pasting it in your repository's README.md file.
 ```
