@@ -255,7 +255,7 @@ You can show people that your repository is scanned by Frogbot by copying the fo
 ```
 [![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
 ```
-<img width="200" src="./images/badge-image.png">
+<img width="170" src="./images/badge-image.png">
 
 ## 🔥 Reporting issues
 
