@@ -7,7 +7,7 @@
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
       projects:
-        - installCommand: npm i
+        - installCommand: nuget restore
           workingDirs:
             - a/b
             - b/c

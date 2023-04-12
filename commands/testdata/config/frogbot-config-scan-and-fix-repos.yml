@@ -4,8 +4,6 @@
       branches:
         - master
     scan:
-      projects:
-        - installCommand: npm i
       failOnSecurityIssues: false
 - params:
     git:

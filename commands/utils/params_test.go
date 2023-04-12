@@ -163,8 +163,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 }
 
 func testExtractAndAssertProjectParams(t *testing.T, project Project) {
-	assert.Equal(t, "npm", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
 	assert.Equal(t, "", project.PipRequirementsFile)
 }
@@ -240,7 +240,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:                 "admin",
 		JFrogPasswordEnv:             "password",
-		InstallCommandEnv:            "npm i",
+		InstallCommandEnv:            "nuget restore",
 		UseWrapperEnv:                "false",
 		RequirementsFileEnv:          "requirements.txt",
 		WorkingDirectoryEnv:          "a/b",
@@ -291,8 +291,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
 	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
-	assert.Equal(t, "npm", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
@@ -334,7 +334,7 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]
-	assert.Equal(t, "npm i", firstRepoProject.InstallCommand)
+	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
 	assert.False(t, *firstRepoProject.UseWrapper)
 	assert.Equal(t, "test-repo", firstRepoProject.Repository)
 	secondRepo := configAggregator[1]
