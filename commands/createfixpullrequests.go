@@ -254,7 +254,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
+	vulnFixVersion := getFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {
 		return nil
 	}
@@ -273,20 +273,24 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	return nil
 }
 
-// getMinimalFixVersion that fixes the current impactedPackage
-// fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now.
-func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
+// getFixVersion chooses the smallest gap between versions that fixes the impacted package
+// First of all tries to find the smallest upgrade, then tries to find the smallest downgrade
+// fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now
+func getFixVersion(impactedPackageVersion string, fixVersions []string) string {
 	// Trim 'v' prefix in case of Go package
 	currVersionStr := strings.TrimPrefix(impactedPackageVersion, "v")
 	currVersion := version.NewVersion(currVersionStr)
 	for _, fixVersion := range fixVersions {
 		fixVersionCandidate := parseVersionChangeString(fixVersion)
-		// Don't allow major version changes
-		majorChanged := utils.IsMajorVersionChange(fixVersionCandidate, currVersionStr)
-		if majorChanged {
-			return ""
-		}
 		if currVersion.Compare(fixVersionCandidate) > 0 {
+			return fixVersionCandidate
+		}
+	}
+	// When no upgrade was found,search for downgrade options
+	for i := len(fixVersions) - 1; i >= 0; i-- {
+		fixVersion := fixVersions[i]
+		fixVersionCandidate := parseVersionChangeString(fixVersion)
+		if currVersion.Compare(fixVersionCandidate) < 0 {
 			return fixVersionCandidate
 		}
 	}
