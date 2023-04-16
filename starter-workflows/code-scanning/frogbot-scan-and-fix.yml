@@ -27,7 +27,7 @@ jobs:
       #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
       #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
-      - uses: jfrog/frogbot@80d5c273e67898731f4d20cb5eb218f9f15b3afd
+      - uses: jfrog/frogbot@b03f17265a90e238f6c5fa6ab010357d56615381
         env:
           # [Mandatory]
           # JFrog platform URL
@@ -51,7 +51,7 @@ jobs:
 
           # [Optional]
           # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-          # in Artifactory, which proxies https://releases.jfrog.io/artifactory
+          # in Artifactory, which proxies https://releases.jfrog.io
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""
 
@@ -63,10 +63,10 @@ jobs:
           ##########################################################################
 
           # [Mandatory if the two conditions below are met]
-          # 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+          # 1. The project uses yarn 2, NuGet or .NET Core to download its dependencies
           # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
           #
-          # The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+          # The command that installs the project dependencies (e.g "nuget restore")
           # JF_INSTALL_DEPS_CMD: ""
 
           # [Optional, default: "."]

@@ -146,7 +146,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server)
+	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, "")
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -163,8 +163,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 }
 
 func testExtractAndAssertProjectParams(t *testing.T, project Project) {
-	assert.Equal(t, "npm", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
 	assert.Equal(t, "", project.PipRequirementsFile)
 }
@@ -172,7 +172,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, gitParams, err := extractEnvParams()
 	assert.NoError(t, err)
-	configFile, err := newConfigAggregatorFromEnv(gitParams, server)
+	configFile, err := newConfigAggregatorFromEnv(gitParams, server, "")
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -240,7 +240,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:                 "admin",
 		JFrogPasswordEnv:             "password",
-		InstallCommandEnv:            "npm i",
+		InstallCommandEnv:            "nuget restore",
 		UseWrapperEnv:                "false",
 		RequirementsFileEnv:          "requirements.txt",
 		WorkingDirectoryEnv:          "a/b",
@@ -269,10 +269,11 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server)
+	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server, "releases-remote")
 	assert.NoError(t, err)
 	repo := configAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
+	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
@@ -290,8 +291,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
 	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
-	assert.Equal(t, "npm", project.InstallCommandName)
-	assert.Equal(t, []string{"i"}, project.InstallCommandArgs)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
@@ -333,7 +334,7 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]
-	assert.Equal(t, "npm i", firstRepoProject.InstallCommand)
+	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
 	assert.False(t, *firstRepoProject.UseWrapper)
 	assert.Equal(t, "test-repo", firstRepoProject.Repository)
 	secondRepo := configAggregator[1]

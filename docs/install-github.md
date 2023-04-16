@@ -109,7 +109,7 @@
               
            // [Optional]
            // If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
-           // in Artifactory, which proxies https://releases.jfrog.io/artifactory
+           // in Artifactory, which proxies https://releases.jfrog.io
            // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
            // JF_RELEASES_REPO= ""
 
@@ -122,10 +122,10 @@
            //////////////////////////////////////////////////////////////////////////
 
            // [Mandatory if the two conditions below are met]
-           // 1. The project uses npm, yarn 2, NuGet or .NET to download its dependencies
+           // 1. The project uses yarn 2, NuGet or .NET to download its dependencies
            // 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
            //
-           // The command that installs the project dependencies (e.g "npm i", "nuget restore" or "dotnet restore")
+           // The command that installs the project dependencies (e.g "nuget restore")
            JF_INSTALL_DEPS_CMD = ""
 
            // [Optional, default: "."]

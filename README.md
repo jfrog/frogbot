@@ -1,10 +1,10 @@
 <div align="center">
 
-# Frogbot
+# JFrog Frogbot
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
-[![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme) [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
 
 </div>
@@ -23,6 +23,7 @@
       - [👎 Issues were found](#-issues-were-found)
   - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
   - [🖥️ Installing Frogbot](#️-installing-frogbot)
+  - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
   - [🔥 Reporting issues](#-reporting-issues)
   - [💻 Contributions](#-contributions)
 
@@ -166,11 +167,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
-|                                            SEVERITY                                             | IMPACTED PACKAGE                         | VERSION | FIXED VERSIONS | DIRECT DEPENDENCIES                      | DIRECT DEPENDENCIES VERSIONS | CVE            |
-|:-----------------------------------------------------------------------------------------------:|------------------------------------------|---------|----------------|------------------------------------------|:----------------------------:|----------------|
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.1]       | github.com/nats-io/nats-streaming-server |           v0.21.0            | CVE-2022-24450 |
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png) High   | github.com/mholt/archiver/v3             | v3.5.1  |                | github.com/mholt/archiver/v3             |            v3.5.1            |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png) Medium | github.com/nats-io/nats-streaming-server | v0.21.0 | [0.24.3]       | github.com/nats-io/nats-streaming-server |           v0.21.0            | CVE-2022-26652 |
+| SEVERITY | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
+:--: | -- | -- | -- | -- |:-----------------:| --
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview | v0.1.20 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | magic-streaming-server | v0.21.10 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154  
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
 
 ## Scanning repositories and fixing issues
 
@@ -246,6 +248,17 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <div id="reporting-issues"></div>
+
+## 📛 Adding the Frogbot badge
+
+You can show people that your repository is scanned by Frogbot by adding a badge to the README of your Git repository.
+
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
+
+You can add this badge by copying the following markdown snippet and pasting it into your repository's README.md file.
+```
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
+```
 
 ## 🔥 Reporting issues
 

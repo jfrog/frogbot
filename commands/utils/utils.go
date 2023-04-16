@@ -51,6 +51,7 @@ type ScanDetails struct {
 	Client                   vcsclient.VcsClient
 	FailOnInstallationErrors bool
 	Branch                   string
+	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -167,4 +168,21 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &SimplifiedOutput{}
 	}
 	return &StandardOutput{}
+}
+
+// The impact graph of direct dependencies consists of only two elements.
+func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
+	if len(impactPath) == 0 {
+		return false, fmt.Errorf("invalid impact path provided")
+	}
+	return len(impactPath[0]) < 3, nil
+}
+
+// Assuming version comes in a.b.c format,without any prefixes.
+func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
+	index := 0
+	separator := "."
+	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
+	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
+	return candidateMajorVersion != currentMajorVersion
 }
