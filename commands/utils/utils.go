@@ -43,6 +43,14 @@ func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
+type ErrUnsupportedIndirectFix struct {
+	PackageName string
+}
+
+func (e *ErrUnsupportedIndirectFix) Error() string {
+	return fmt.Sprintf("Indirect dependecy %s fix it not supported ", e.PackageName)
+}
+
 type ScanDetails struct {
 	services.XrayGraphScanParams
 	Project
@@ -176,13 +184,4 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 		return false, fmt.Errorf("invalid impact path provided")
 	}
 	return len(impactPath[0]) < 3, nil
-}
-
-// Assuming version comes in a.b.c format,without any prefixes.
-func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
-	index := 0
-	separator := "."
-	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
-	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
-	return candidateMajorVersion != currentMajorVersion
 }
