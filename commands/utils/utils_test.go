@@ -153,6 +153,11 @@ func TestIsDirectDependency(t *testing.T) {
 			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}, {{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack22", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
 			expected:      false,
 			expectedError: false,
+		},
+		{
+			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
+			expected:      false,
+			expectedError: false,
 		}, {
 			impactPath:    [][]formats.ComponentRow{},
 			expected:      false,
