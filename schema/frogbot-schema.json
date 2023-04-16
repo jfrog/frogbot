@@ -44,10 +44,10 @@
         },
         "examples": [["master", "v1", "v2"]]
       },
-      "prefixes": {
+      "formats": {
         "type": "array",
-        "title": "Custom Prefixes",
-        "description": "Git custom prefixes for commit,branches and PR created by Frogbot.",
+        "title": "Custom formats",
+        "description": "Git custom formats for commit,branches and PR created by Frogbot.",
         "additionalProperties": false,
         "items": {
           "properties": {

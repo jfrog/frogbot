@@ -85,7 +85,7 @@ const (
 	// Default formats for Commits,Branches and Pull Requests created by Frogbot
 	// The default inputs are: packageName, fixedVersion
 	// Example frogbot-%s-%s will result frogobt-fetch-1.4.2
-	NewBranchesFormat   = "frogbot-%s-%s"
+	NewBranchesFormat   = "frogbot-%v-%v"
 	CommitMessageFormat = "Upgrade %s to %s"
 	PullRequestFormat   = "[🐸 Frogbot] Upgrade %s to %s"
 )

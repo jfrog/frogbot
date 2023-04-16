@@ -31,11 +31,11 @@ type GitManager struct {
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
 	// new commit message prefix
-	commitPrefix string
+	commitMessageFormat string
 	// new branch name prefix
-	branchPrefix string
-	// new pullRequestPrefix title prefix
-	pullRequestPrefix string
+	branchNameFormat string
+	// new pullRequestTitleFormat title prefix
+	pullRequestTitleFormat string
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
@@ -221,13 +221,18 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version string) string {
-	prefix := ""
-	if gm.commitPrefix != "" {
-		prefix = gm.commitPrefix + ": "
+	format := gm.commitMessageFormat
+	if format == "" {
+		format = CommitMessageFormat
 	}
-	return fmt.Sprintf(prefix+CommitMessageFormat, impactedPackage, version)
+	//return fmt.Sprintf(format, impactedPackage, version)
+	return formatStringWithPlaceHolders(impactedPackage, version)
 }
 
+func formatStringWithPlaceHolders(impactedPackage string, version string) string {
+	// TODO implement me !
+	return ""
+}
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
 	uniqueString, err := Md5Hash("frogbot", branch, impactedPackage, version)
 	if err != nil {
@@ -235,19 +240,19 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	}
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	prefix := ""
-	if gm.branchPrefix != "" {
-		prefix = gm.branchPrefix + "-"
+	if gm.branchNameFormat == "" {
+		return fmt.Sprintf(NewBranchesFormat, fixedPackageName, uniqueString), nil
 	}
-	return fmt.Sprintf(prefix+NewBranchesFormat, fixedPackageName, uniqueString), nil
+	// Unique string is not optional
+	return fmt.Sprintf(gm.branchNameFormat+"-"+uniqueString, fixedPackageName), nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
-	prefix := ""
-	if gm.branchPrefix != "" {
-		prefix = gm.branchPrefix + "-"
+	format := PullRequestFormat
+	if format = gm.pullRequestTitleFormat; format != "" {
+		format = gm.pullRequestTitleFormat
 	}
-	return fmt.Sprintf(prefix+PullRequestFormat, impactedPackage, version)
+	return fmt.Sprintf(format, impactedPackage, version)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.

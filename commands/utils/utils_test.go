@@ -181,19 +181,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{commitPrefix: "<type>"},
+			gitManager:      GitManager{commitMessageFormat: "<type>"},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "<type>: Upgrade mquery to 3.4.5",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{commitPrefix: "<type>[scope]"},
+			gitManager:      GitManager{commitMessageFormat: "<type>[scope]"},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade mquery to 3.4.5",
 			description: "Default format",
 		}, {
-			gitManager:      GitManager{commitPrefix: ""},
+			gitManager:      GitManager{commitMessageFormat: ""},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default format",
@@ -216,18 +216,18 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{branchPrefix: "[MyPrefix]"},
+			gitManager:      GitManager{branchNameFormat: "[MyPrefix]-%v"},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[MyPrefix]-frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
-			description:     "Custom prefix",
+			expected:        "[MyPrefix]-mquery-41b1f45136b25e3624b15999bd57a476",
+			description:     "Custom format",
 		},
 		{
-			gitManager:      GitManager{branchPrefix: ""},
+			gitManager:      GitManager{branchNameFormat: ""},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
-			description:     "No prefix",
+			description:     "No format",
 		},
 	}
 	for _, test := range tests {
@@ -248,14 +248,21 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{branchPrefix: "[MyPrefix]"},
+			gitManager:      GitManager{pullRequestTitleFormat: "[CustomPR] update %s to %s"},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[MyPrefix]-[🐸 Frogbot] Upgrade mquery to 3.4.5",
-			description:     "Custom prefix",
+			expected:        "[CustomPR] update mquery to 3.4.5",
+			description:     "Custom format",
 		},
 		{
-			gitManager:      GitManager{branchPrefix: ""},
+			gitManager:      GitManager{pullRequestTitleFormat: "[CustomPR] update %v"},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[CustomPR] update mquery",
+			description:     "Custom format one var",
+		},
+		{
+			gitManager:      GitManager{branchNameFormat: ""},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",

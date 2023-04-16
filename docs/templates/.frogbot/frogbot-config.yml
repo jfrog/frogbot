@@ -13,13 +13,21 @@
       branches:
         - master
 
-      # [Optional] Custom Prefixes for commit,branches and PR created by Frogbot
-      prefixes:
+      # [Optional] Custom formats for commits,branches and PR created by Frogbot
+      formats:
+      # Please note,we add the following variables into the format:
+      # 1. impacted package
+      # 2. fixed version
+      # You can use them in your formats by allowing strings inputs (i.e "[MyLabel]:Vulnerability fix %s to version %s")
+
       # commitMessage: ""
 
-      # branchName: ""
-
       # pullRequestTitle: ""
+
+      # Branches name accepts optional impacted version name and a mandatory unique string
+      # Example format: "[BoTBranch]%s" -> "[BoTBranch]_impactedPackage_47bce5c74f589f4867dbd57e9ca9f808"
+      # Example format: "[BoTBranch]"   -> "[BoTBranch]_47bce5c74f589f4867dbd57e9ca9f808"
+      # branchName: ""
 
     # Frogbot scanning parameters
     scan:

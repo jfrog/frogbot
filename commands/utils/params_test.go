@@ -353,6 +353,7 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 }
 
 func TestValidateStructInputs(t *testing.T) {
+	// TODO implement theses with right examples
 	tests := []struct {
 		input string
 		fail  bool
@@ -365,9 +366,9 @@ func TestValidateStructInputs(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
 			gitParams := GitManager{
-				commitPrefix: test.input,
+				commitMessageFormat: test.input,
 			}
-			err := validateStructInputs(gitParams)
+			err := validateFormatInputs(gitParams)
 			if test.fail {
 				assert.Error(t, err)
 			} else {

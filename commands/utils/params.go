@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -128,9 +126,9 @@ type Git struct {
 	GitProvider            vcsutils.VcsProvider
 	RepoName               string   `yaml:"repoName,omitempty"`
 	Branches               []string `yaml:"branches,omitempty"`
-	CommitMessagePrefix    string   `yaml:"formats.commitMessage,omitempty"`
-	BranchNamePrefix       string   `yaml:"formats.branchName,omitempty"`
-	PullRequestTitlePrefix string   `yaml:"formats.pullRequestTitle,omitempty"`
+	CommitMessageFormat    string   `yaml:"formats.commitMessage,omitempty"`
+	BranchNameFormat       string   `yaml:"formats.branchName,omitempty"`
+	PullRequestTitleFormat string   `yaml:"formats.pullRequestTitle,omitempty"`
 	GitProject             string
 	RepoOwner              string
 	Token                  string
@@ -190,21 +188,23 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
-	if err = validateStructInputs(gitParams); err != nil {
+	if err = validateFormatInputs(gitParams); err != nil {
 		return nil, err
 	}
 
 	return NewConfigAggregatorFromFile(configFileContent, gitParams, server, releasesRepo)
 }
 
-// Prevents malicious user inputs, validates struct field do not contain format specifiers.
-func validateStructInputs(s interface{}) error {
-	regex := regexp.MustCompile(`%\d*(\.\d+)?[a-z]`)
-	v := reflect.ValueOf(s)
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if field.Kind() == reflect.String && regex.MatchString(field.String()) {
-			return errors.New("invalid input in struct")
+// Validates optional inputted formats don't have extra inputs params.
+// TODO validate the format itself for malicious input (ask Yahav)
+func validateFormatInputs(gitParams *Git) error {
+	for formatStr, maxVars := range map[string]int{
+		gitParams.BranchNameFormat:       2,
+		gitParams.CommitMessageFormat:    2,
+		gitParams.PullRequestTitleFormat: 1,
+	} {
+		if formatStr != "" && strings.Count(formatStr, "%") > maxVars {
+			return fmt.Errorf("invalid number of input params in %q", formatStr)
 		}
 	}
 	return nil
