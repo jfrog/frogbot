@@ -103,7 +103,7 @@
               "type": "string",
               "title": "Install Command",
               "description": "An installation command to run to resolve the project dependencies.",
-              "examples": ["npm i", "nuget restore", "dotnet restore"]
+              "examples": ["nuget restore", "dotnet restore"]
             },
             "workingDirs": {
               "type": "array",
