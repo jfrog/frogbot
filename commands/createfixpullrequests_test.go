@@ -3,7 +3,6 @@ package commands
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -291,79 +290,16 @@ func TestGetMinimalFixVersion(t *testing.T) {
 		{impactedVersionPackage: "v1.0.0", fixVersions: []string{"0.9.9999", "1.0.1"}, expected: "1.0.1"},
 		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.2.0", "1.5.1"}, expected: "1.5.1"},
 		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.5.1"}, expected: "1.5.1"},
-		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.2.0"}, expected: "1.2.0"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.1.0"}, expected: "1.1.0"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"0.1.2", "1.1.1", "1.2.0", "2.0.0"}, expected: "1.2.0"},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			expected := getFixVersion(test.impactedVersionPackage, test.fixVersions)
+			expected, err := getFixVersion(test.impactedVersionPackage, test.fixVersions)
+			assert.NoError(t, err)
 			assert.Equal(t, test.expected, expected)
 		})
 	}
-}
-
-func Test_createFixVersionsMap(t *testing.T) {
-	var testScan CreateFixPullRequestsCmd
-	packageName := "pkg"
-	tests := []struct {
-		vulnerability *formats.VulnerabilityOrViolationRow
-		expected      map[string]*packagehandlers.FixVersionInfo
-		description   string
-	}{
-		{
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"1.2.2", "1.9.3"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.2.2", DirectDependency: true}},
-			description: "Get the bigger version",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"0.1.2", "1.1.1", "1.2.0", "1.5.1", "2.0.0"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.5.1", DirectDependency: true}},
-			description: "Suggest closest fix",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"0.1.2", "1.1.1", "1.2.0", "2.0.0"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.2.0", DirectDependency: true}},
-			description: "Suggest major upgrade fix",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"0.1.2"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "0.1.2", DirectDependency: true}},
-			description: "Suggest major downgrade fix",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"1.1.0", "1.1.4"},
-				ImpactedDependencyVersion: "1.1.5",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
-			description: "Suggest smallest downgrade",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
-			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
-			assert.NoError(t, err)
-			if len(fixVersionsMap) != 0 {
-				assert.Equal(t, *test.expected[packageName], *fixVersionsMap[packageName])
-			} else {
-				assert.Equal(t, len(fixVersionsMap), len(test.expected))
-			}
-		})
-	}
-
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
