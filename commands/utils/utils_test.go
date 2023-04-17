@@ -181,16 +181,16 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{commitMessageFormat: "<type>"},
+			gitManager:      GitManager{commitMessageFormat: "<type>: bump $PACKAGE_NAME"},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "<type>: Upgrade mquery to 3.4.5",
+			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{commitMessageFormat: "<type>[scope]"},
+			gitManager:      GitManager{commitMessageFormat: "<type>[scope]: Upgrade package $PACKAGE_NAME to $FIX_VERSION"},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
-			expected:    "<type>[scope]: Upgrade mquery to 3.4.5",
+			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default format",
 		}, {
 			gitManager:      GitManager{commitMessageFormat: ""},
@@ -216,10 +216,10 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{branchNameFormat: "[MyPrefix]-%v"},
+			gitManager:      GitManager{branchNameFormat: "[Feature]-$PACKAGE_NAME"},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[MyPrefix]-mquery-41b1f45136b25e3624b15999bd57a476",
+			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom format",
 		},
 		{
@@ -228,6 +228,12 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No format",
+		}, {
+			gitManager:      GitManager{branchNameFormat: "just-a-branch"},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
+			description:     "Custom format without inputs",
 		},
 	}
 	for _, test := range tests {
