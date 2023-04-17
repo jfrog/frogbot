@@ -6,13 +6,13 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -251,11 +251,11 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 }
 
 func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*packagehandlers.FixVersionInfo) error {
+	vulnFixVersion := ""
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	vulnFixVersion := getFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
-	if vulnFixVersion == "" {
+	if vulnFixVersion = getFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions); vulnFixVersion == "" {
 		return nil
 	}
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
@@ -273,28 +273,27 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	return nil
 }
 
-// getFixVersion chooses the smallest gap between versions that fixes the impacted package
-// First of all tries to find the smallest upgrade, then tries to find the smallest downgrade
-// fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now
+// getFixVersion returns the suggested fix version.
+// Selects upgrade and downgrade options and pass it to next function to make a decision.
+// fixVersions array is sorted, smallest version in index 0.
 func getFixVersion(impactedPackageVersion string, fixVersions []string) string {
-	// Trim 'v' prefix in case of Go package
-	currVersionStr := strings.TrimPrefix(impactedPackageVersion, "v")
-	currVersion := version.NewVersion(currVersionStr)
-	for _, fixVersion := range fixVersions {
-		fixVersionCandidate := parseVersionChangeString(fixVersion)
-		if currVersion.Compare(fixVersionCandidate) > 0 {
-			return fixVersionCandidate
-		}
+	if len(fixVersions) == 0 {
+		return ""
 	}
-	// When no upgrade was found,search for downgrade options
-	for i := len(fixVersions) - 1; i >= 0; i-- {
-		fixVersion := fixVersions[i]
-		fixVersionCandidate := parseVersionChangeString(fixVersion)
-		if currVersion.Compare(fixVersionCandidate) < 0 {
-			return fixVersionCandidate
-		}
+	currVersion := strings.TrimPrefix(impactedPackageVersion, "v")
+	// Find original version place in the sorted array
+	idx := sort.SearchStrings(fixVersions, currVersion)
+	if idx == len(fixVersions) {
+		return fixVersions[len(fixVersions)-1]
 	}
-	return ""
+	if idx == 0 {
+		return fixVersions[0]
+	}
+	// Gets the nearest upgrade and downgrade neighbours
+	lower := fixVersions[idx-1]
+	upper := fixVersions[idx]
+	// Decide which one of the options is better
+	return utils.GetFixVersionSuggestion(currVersion, lower, upper)
 }
 
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
