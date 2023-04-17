@@ -82,10 +82,12 @@ const (
 	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
 	FrogbotCreatorName      = "Frogbot"
 
+	PackagePlaceHolder    = "$PACKAGE_NAME"
+	FixVersionPlaceHolder = "$FIX_VERSION"
+
 	// Default formats for Commits,Branches and Pull Requests created by Frogbot
 	// The default inputs are: packageName, fixedVersion
-	// Example frogbot-%s-%s will result frogobt-fetch-1.4.2
-	NewBranchesFormat   = "frogbot-%v-%v"
-	CommitMessageFormat = "Upgrade %s to %s"
-	PullRequestFormat   = "[🐸 Frogbot] Upgrade %s to %s"
+	NewBranchesFormat   = "frogbot-$PACKAGE_NAME"
+	CommitMessageFormat = "Upgrade $PACKAGE_NAME to $FIX_VERSION"
+	PullRequestFormat   = "[🐸 Frogbot] Upgrade $PACKAGE_NAME to $FIX_VERSION"
 )

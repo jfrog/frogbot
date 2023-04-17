@@ -225,14 +225,13 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version stri
 	if format == "" {
 		format = CommitMessageFormat
 	}
-	//return fmt.Sprintf(format, impactedPackage, version)
-	return formatStringWithPlaceHolders(impactedPackage, version)
+	return formatStringWithPlaceHolders(format, impactedPackage, version)
 }
 
-func formatStringWithPlaceHolders(impactedPackage string, version string) string {
-	// TODO implement me !
-	return ""
+func formatStringWithPlaceHolders(format, impactedPackage, fixVersion string) string {
+	return strings.Replace(strings.Replace(format, PackagePlaceHolder, impactedPackage, 1), FixVersionPlaceHolder, fixVersion, 1)
 }
+
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
 	uniqueString, err := Md5Hash("frogbot", branch, impactedPackage, version)
 	if err != nil {
@@ -241,18 +240,19 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
 	if gm.branchNameFormat == "" {
-		return fmt.Sprintf(NewBranchesFormat, fixedPackageName, uniqueString), nil
+		gm.branchNameFormat = NewBranchesFormat
 	}
 	// Unique string is not optional
-	return fmt.Sprintf(gm.branchNameFormat+"-"+uniqueString, fixedPackageName), nil
+	branchName := formatStringWithPlaceHolders(gm.branchNameFormat, fixedPackageName, version)
+	return branchName + "-" + uniqueString, nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
 	format := PullRequestFormat
-	if format = gm.pullRequestTitleFormat; format != "" {
+	if gm.pullRequestTitleFormat != "" {
 		format = gm.pullRequestTitleFormat
 	}
-	return fmt.Sprintf(format, impactedPackage, version)
+	return formatStringWithPlaceHolders(format, impactedPackage, version)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
