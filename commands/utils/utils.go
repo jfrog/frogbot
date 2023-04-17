@@ -28,12 +28,6 @@ var (
 	FrogbotVersion = "0.0.0"
 )
 
-const (
-	Patch = 3
-	Minor = 2
-	Major = 1
-)
-
 type ErrMissingEnv struct {
 	VariableName string
 }
@@ -185,7 +179,7 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	return len(impactPath[0]) < 3, nil
 }
 
-// Accepts current impacted version and two of it's closest neighbours, upgrade and downgrade suggestions.
+// Accepts current impacted version and two of its closest neighbours, upgrade and downgrade suggestions.
 // Returns the fix suggestion version by the following priority rules:
 // 1. Patch up
 // 2. Minor up
@@ -193,32 +187,30 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 // 4. Minor down
 // 5. Major Up
 // 5. Major down
-func GetFixVersionSuggestion(current, down, up *version.Version) (*version.Version, error) {
+func GetFixVersionSuggestion(current, down, up *version.Version) (ver *version.Version, err error) {
 	suggestions := []struct {
 		index   int
 		version *version.Version
 		upgrade bool
 	}{
-		{Patch, up, true},
-		{Minor, up, true},
-		{Patch, down, false},
-		{Minor, down, false},
-		{Major, up, true},
-		{Major, down, false},
+		{version.Patch, up, true},
+		{version.Minor, up, true},
+		{version.Patch, down, false},
+		{version.Minor, down, false},
+		{version.Major, up, true},
+		{version.Major, down, false},
 	}
 	for _, check := range suggestions {
 		if check.upgrade {
-			if ver, err := current.IsGreaterAtIndex(*check.version, check.index); err != nil {
-				return nil, err
-			} else if ver != nil {
-				return ver, nil
-			}
+			ver, err = current.IsUpgradeAtPosition(*check.version, check.index)
 		} else {
-			if ver, err := current.IsDowngradeAtIndex(*check.version, check.index); err != nil {
-				return nil, err
-			} else if ver != nil {
-				return ver, nil
-			}
+			ver, err = current.IsDowngradeAtPosition(*check.version, check.index)
+		}
+		if err != nil {
+			return
+		}
+		if ver != nil {
+			return
 		}
 	}
 	return nil, nil
