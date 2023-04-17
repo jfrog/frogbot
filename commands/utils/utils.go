@@ -55,7 +55,7 @@ type ErrUnsupportedIndirectFix struct {
 }
 
 func (e *ErrUnsupportedIndirectFix) Error() string {
-	return fmt.Sprintf("Indirect dependecy %s fix it not supported ", e.PackageName)
+	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
 }
 
 type ScanDetails struct {
