@@ -286,6 +286,7 @@ func TestGetMinimalFixVersion(t *testing.T) {
 		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.5.1"}, expected: "1.5.1"},
 		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.1.0"}, expected: "1.1.0"},
 		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"0.1.2", "1.1.1", "1.2.0", "2.0.0"}, expected: "1.2.0"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"[0.1.2]", "[1.1.1]", "[1.2.0]", "[2.0.0]"}, expected: "1.2.0"},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {

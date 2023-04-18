@@ -285,6 +285,8 @@ func getFixVersion(impactedPackageVersion string, fixVersions []string) (string,
 		return "", nil
 	}
 	currVersion := strings.TrimPrefix(impactedPackageVersion, "v")
+	// Trim brackets in order to compare
+	fixVersions = trimBrackets(fixVersions)
 	// Find original version place in the sorted array
 	idx := sort.SearchStrings(fixVersions, currVersion)
 	if idx == len(fixVersions) {
@@ -353,4 +355,12 @@ func parseVersionChangeString(fixVersion string) string {
 	latestVersion = strings.Trim(latestVersion, "[")
 	latestVersion = strings.Trim(latestVersion, "]")
 	return latestVersion
+}
+
+func trimBrackets(versions []string) []string {
+	result := make([]string, len(versions))
+	for index, ver := range versions {
+		result[index] = strings.Trim(strings.Trim(ver, "["), "]")
+	}
+	return result
 }
