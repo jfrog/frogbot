@@ -189,9 +189,9 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 // 5. Major down
 func GetFixVersionSuggestion(current, down, up *version.Version) (ver *version.Version, err error) {
 	suggestions := []struct {
-		index   int
-		version *version.Version
-		upgrade bool
+		versionPosition version.VersionPosition
+		version         *version.Version
+		upgrade         bool
 	}{
 		{version.Patch, up, true},
 		{version.Minor, up, true},
@@ -200,17 +200,18 @@ func GetFixVersionSuggestion(current, down, up *version.Version) (ver *version.V
 		{version.Major, up, true},
 		{version.Major, down, false},
 	}
+	var result int
 	for _, check := range suggestions {
 		if check.upgrade {
-			ver, err = current.IsUpgradeAtPosition(*check.version, check.index)
+			result, err = current.CompareUpgradeAtPosition(*check.version, check.versionPosition)
 		} else {
-			ver, err = current.IsDowngradeAtPosition(*check.version, check.index)
+			result, err = current.CompareDowngradeAtPosition(*check.version, check.versionPosition)
 		}
-		if err != nil {
-			return
+		if err != nil || result == -1 {
+			return nil, err
 		}
-		if ver != nil {
-			return
+		if result == 1 {
+			return check.version, nil
 		}
 	}
 	return nil, nil
