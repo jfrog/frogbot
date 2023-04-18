@@ -17,6 +17,7 @@ frogbot-scan:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: manual
       variables:
+        
         FROGBOT_CMD: "scan-pull-request"
         JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
       # Creating fix pull requests will be triggered by any push to the default branch.
