@@ -179,7 +179,7 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	return len(impactPath[0]) < 3, nil
 }
 
-// Accepts current impacted version and two of its closest neighbours, upgrade and downgrade suggestions.
+// Accepts a current impacted version and two of its closest neighbours, upgrade and downgrade suggestions.
 // Returns the fix suggestion version by the following priority rules:
 // 1. Patch up
 // 2. Minor up
@@ -187,30 +187,26 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 // 4. Minor down
 // 5. Major Up
 // 5. Major down
-func GetFixVersionSuggestion(current, down, up *version.Version) (ver *version.Version, err error) {
-	suggestions := []struct {
+func GetFixVersionSuggestion(current, down, up *version.Version) (*version.Version, error) {
+	priorityList := []struct {
 		versionPosition version.VersionPosition
 		version         *version.Version
-		upgrade         bool
+		expected        int
 	}{
-		{version.Patch, up, true},
-		{version.Minor, up, true},
-		{version.Patch, down, false},
-		{version.Minor, down, false},
-		{version.Major, up, true},
-		{version.Major, down, false},
+		{version.Patch, up, 1},
+		{version.Minor, up, 1},
+		{version.Patch, down, -1},
+		{version.Minor, down, -1},
+		{version.Major, up, 1},
+		{version.Major, down, -1},
 	}
-	var result int
-	for _, check := range suggestions {
-		if check.upgrade {
-			result, err = current.CompareUpgradeAtPosition(*check.version, check.versionPosition)
-		} else {
-			result, err = current.CompareDowngradeAtPosition(*check.version, check.versionPosition)
-		}
-		if err != nil || result == -1 {
+	for _, check := range priorityList {
+		result, err := current.CompareAtPosition(*check.version, check.versionPosition)
+		if err != nil {
 			return nil, err
 		}
-		if result == 1 {
+		// Verify the result is bigger or smaller as expected
+		if result == check.expected {
 			return check.version, nil
 		}
 	}

@@ -115,4 +115,4 @@ require (
 
 //replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.15.3-0.20230404095831-ce76a2622e41
 
-replace github.com/jfrog/gofrog => github.com/eyaldelarea/gofrog v1.2.6-0.20230418070644-b7c349521800
+replace github.com/jfrog/gofrog => github.com/eyaldelarea/gofrog v1.2.6-0.20230418120459-fdf58d3cf2ac
