@@ -46,6 +46,7 @@ function main() {
                     yield utils_1.Utils.execScanPullRequest();
                     break;
                 case "push":
+                case "schedule":
                     yield utils_1.Utils.execCreateFixPullRequests();
                     break;
                 default:

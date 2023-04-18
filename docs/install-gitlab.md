@@ -26,6 +26,10 @@ frogbot-scan:
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        FROGBOT_CMD: "create-fix-pull-requests"
+        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
     # [Mandatory]
     # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)

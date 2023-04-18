@@ -6,6 +6,9 @@ on:
     branches:
       - "main"
       - "master"
+  schedule:
+    # The job will run once a day at 00:00 GMT.
+    - cron: "0 0 * * *"
 permissions:
   contents: write
   pull-requests: write
