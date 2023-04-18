@@ -247,11 +247,16 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version stri
 	if format == "" {
 		format = CommitMessageFormat
 	}
-	return formatStringWithPlaceHolders(format, impactedPackage, version)
+	return formatStringWithPlaceHolders(format, impactedPackage, version, true)
 }
 
-func formatStringWithPlaceHolders(format, impactedPackage, fixVersion string) string {
-	return strings.ReplaceAll(strings.Replace(strings.Replace(format, PackagePlaceHolder, impactedPackage, 1), FixVersionPlaceHolder, fixVersion, 1), " ", "_")
+func formatStringWithPlaceHolders(format, impactedPackage, fixVersion string, allowSpaces bool) string {
+	str := strings.Replace(strings.Replace(format, PackagePlaceHolder, impactedPackage, 1), FixVersionPlaceHolder, fixVersion, 1)
+	if allowSpaces {
+		return str
+	} else {
+		return strings.ReplaceAll(str, " ", "_")
+	}
 }
 
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
@@ -266,8 +271,8 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 		branchFormat = NewBranchesFormat
 	}
 	// Unique string is not optional
-	branchName := formatStringWithPlaceHolders(branchFormat, fixedPackageName, version)
-	return branchName + "_" + uniqueString, nil
+	branchName := formatStringWithPlaceHolders(branchFormat, fixedPackageName, version, false)
+	return branchName + "-" + uniqueString, nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
@@ -276,7 +281,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	if pullRequestFormat != "" {
 		format = pullRequestFormat
 	}
-	return formatStringWithPlaceHolders(format, impactedPackage, version)
+	return formatStringWithPlaceHolders(format, impactedPackage, version, true)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
