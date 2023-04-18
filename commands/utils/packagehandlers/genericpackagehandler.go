@@ -54,6 +54,10 @@ type GenericPackageHandler struct {
 
 // UpdateImpactedPackage updates the impacted package to the fixed version
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+	// Indirect package fix should we implemented for each package handler
+	if !fixVersionInfo.DirectDependency {
+		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
+	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}

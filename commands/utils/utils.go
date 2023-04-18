@@ -44,6 +44,14 @@ func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
+type ErrUnsupportedIndirectFix struct {
+	PackageName string
+}
+
+func (e *ErrUnsupportedIndirectFix) Error() string {
+	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+}
+
 type ScanDetails struct {
 	services.XrayGraphScanParams
 	Project
