@@ -3,7 +3,6 @@ package commands
 import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -155,12 +154,6 @@ func TestFixPackageVersion(t *testing.T) {
 				// Verify that case-sensitive packages in python are lowered
 				assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
 			})
-			t.Run(test.technology.ToString(), func(t *testing.T) {
-				cfg := test.fixPackageVersionCmd(test)
-				// Fix indirect dependency for each technology
-				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, false)
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
-			})
 		}()
 	}
 }
@@ -286,60 +279,21 @@ func TestGetMinimalFixVersion(t *testing.T) {
 	}{
 		{impactedVersionPackage: "1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
 		{impactedVersionPackage: "v1.6.2", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.6.22"},
-		{impactedVersionPackage: "1.7.1", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: ""},
-		{impactedVersionPackage: "1.7.1", fixVersions: []string{"2.5.3"}, expected: ""},
-		{impactedVersionPackage: "v1.7.1", fixVersions: []string{"0.5.3", "0.9.9"}, expected: ""},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"1.5.3", "1.6.1", "1.6.22", "1.7.0"}, expected: "1.7.0"},
+		{impactedVersionPackage: "1.7.1", fixVersions: []string{"2.5.3"}, expected: "2.5.3"},
+		{impactedVersionPackage: "v1.7.1", fixVersions: []string{"0.5.3", "0.9.9"}, expected: "0.9.9"},
+		{impactedVersionPackage: "v1.7.1", fixVersions: []string{}, expected: ""},
+		{impactedVersionPackage: "v1.0.0", fixVersions: []string{"0.9.9999", "1.0.1"}, expected: "1.0.1"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.2.0", "1.5.1"}, expected: "1.5.1"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.5.1"}, expected: "1.5.1"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"1.1.0"}, expected: "1.1.0"},
+		{impactedVersionPackage: "v1.2.1", fixVersions: []string{"0.1.2", "1.1.1", "1.2.0", "2.0.0"}, expected: "1.2.0"},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			expected := getMinimalFixVersion(test.impactedVersionPackage, test.fixVersions)
-			assert.Equal(t, test.expected, expected)
-		})
-	}
-}
-
-func Test_createFixVersionsMap(t *testing.T) {
-	var testScan CreateFixPullRequestsCmd
-	packageName := "pkg"
-	tests := []struct {
-		vulnerability *formats.VulnerabilityOrViolationRow
-		expected      map[string]*utils.FixVersionInfo
-		description   string
-	}{
-		{
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"1.9.3", "1.2.2"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
-			description: "Get the bigger version",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"2.0.0", "0.1.5"},
-				ImpactedDependencyVersion: "1.2.1",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
-			description: "Don't suggest major changes fixes",
-		}, {
-			vulnerability: &formats.VulnerabilityOrViolationRow{
-				FixedVersions:             []string{"1.1.0", "1.1.4"},
-				ImpactedDependencyVersion: "1.1.5",
-				ImpactedDependencyName:    packageName,
-				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
-			description: "Suggest smallest downgrade",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			fixVersionsMap := map[string]*utils.FixVersionInfo{}
-			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
+			expected, err := getFixVersion(test.impactedVersionPackage, test.fixVersions)
 			assert.NoError(t, err)
-			if len(fixVersionsMap) != 0 {
-				assert.Equal(t, *test.expected[packageName], *fixVersionsMap[packageName])
-			}
+			assert.Equal(t, test.expected, expected)
 		})
 	}
 

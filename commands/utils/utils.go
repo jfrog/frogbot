@@ -49,6 +49,14 @@ func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
 }
 
+type ErrUnsupportedIndirectFix struct {
+	PackageName string
+}
+
+func (e *ErrUnsupportedIndirectFix) Error() string {
+	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+}
+
 type ScanDetails struct {
 	services.XrayGraphScanParams
 	Project
@@ -202,13 +210,38 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	return len(impactPath[0]) < 3, nil
 }
 
-// Assuming version comes in a.b.c format,without any prefixes.
-func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
-	index := 0
-	separator := "."
-	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
-	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
-	return candidateMajorVersion != currentMajorVersion
+// Accepts a current impacted version and two of its closest neighbours, upgrade and downgrade suggestions.
+// Returns the fix suggestion version by the following priority rules:
+// 1. Patch up
+// 2. Minor up
+// 3. Patch down
+// 4. Minor down
+// 5. Major Up
+// 5. Major down
+func GetFixVersionSuggestion(current, down, up *version.Version) (*version.Version, error) {
+	priorityList := []struct {
+		versionPosition version.VersionPosition
+		version         *version.Version
+		expected        int
+	}{
+		{version.Patch, up, 1},
+		{version.Minor, up, 1},
+		{version.Patch, down, -1},
+		{version.Minor, down, -1},
+		{version.Major, up, 1},
+		{version.Major, down, -1},
+	}
+	for _, check := range priorityList {
+		result, err := current.CompareAtPosition(*check.version, check.versionPosition)
+		if err != nil {
+			return nil, err
+		}
+		// Verify the result is bigger or smaller as expected
+		if result == check.expected {
+			return check.version, nil
+		}
+	}
+	return nil, nil
 }
 
 func IsValidBranchName(branchName string) error {
