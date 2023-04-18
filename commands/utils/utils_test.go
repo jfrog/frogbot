@@ -186,19 +186,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: "<type>: bump $PACKAGE_NAME"}},
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>: bump PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: "<type>[scope]: Upgrade package $PACKAGE_NAME to $FIX_VERSION"}},
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>[scope]: Upgrade package PACKAGE_NAME to FIX_VERSION"}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default format",
 		}, {
-			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: ""}},
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: ""}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default format",
@@ -206,7 +206,7 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, test.fixVersion.FixVersion)
+			commitMessage := test.gitManager.GenerateCommitTitle(test.impactedPackage, test.fixVersion.FixVersion)
 			assert.Equal(t, test.expected, commitMessage)
 		})
 	}
@@ -221,7 +221,7 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "[Feature]-$PACKAGE_NAME"}},
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "[Feature]-PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
@@ -259,14 +259,14 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME to $FIX_VERSION"}},
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME to FIX_VERSION"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom format",
 		},
 		{
-			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME"}},
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
@@ -321,7 +321,7 @@ func TestIsValidBranchName(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.branchName, func(t *testing.T) {
-			err := IsValidBranchName(test.branchName)
+			err := IsValidBranchFormat(test.branchName)
 			if test.expectedError {
 				assert.Error(t, err)
 			} else {

@@ -36,7 +36,7 @@ type GitManager struct {
 
 type CustomFormats struct {
 	// new commit message prefix
-	commitMessageFormat string
+	commitTitleFormat string
 	// new branch name prefix
 	branchNameFormat string
 	// new pullRequestTitleFormat title prefix
@@ -58,11 +58,11 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 
 func loadCustomFormats(formatsArray map[string]string) (CustomFormats, error) {
 	format := CustomFormats{
-		commitMessageFormat:    formatsArray["commitMessage"],
+		commitTitleFormat:      formatsArray["commitTitle"],
 		branchNameFormat:       formatsArray["branchName"],
 		pullRequestTitleFormat: formatsArray["pullRequestTitle"],
 	}
-	err := IsValidBranchName(format.branchNameFormat)
+	err := IsValidBranchFormat(format.branchNameFormat)
 	if err != nil {
 		return CustomFormats{}, err
 	}
@@ -242,10 +242,10 @@ func (gm *GitManager) IsClean() (bool, error) {
 
 	return status.IsClean(), nil
 }
-func (gm *GitManager) GenerateCommitMessage(impactedPackage string, version string) string {
-	format := gm.customFormats.commitMessageFormat
+func (gm *GitManager) GenerateCommitTitle(impactedPackage string, version string) string {
+	format := gm.customFormats.commitTitleFormat
 	if format == "" {
-		format = CommitMessageFormat
+		format = CommitTitleFormat
 	}
 	return formatStringWithPlaceHolders(format, impactedPackage, version, true)
 }

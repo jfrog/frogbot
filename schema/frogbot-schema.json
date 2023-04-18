@@ -50,7 +50,7 @@
         "description": "Git custom formats for commit,branches and PR created by Frogbot.",
         "additionalProperties": false,
           "properties": {
-            "commitMessage": {
+            "commitTitle": {
               "type": "string",
               "default": "",
               "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]

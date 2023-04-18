@@ -16,11 +16,11 @@
       # [Optional] Custom formats for commits, branches, and PR created by Frogbot.
       customFormats:
         # Please note, Frogbot will replace the following placeholders
-        # 1. $IMPACTED_PACKAGE
-        # 2. $FIX_VERSION
-        # Example branchName:"(MyLabel):Vulnerability_fix_$IMPACTED_PACKAGE_to_version_$FIX_VERSION"
+        # 1. IMPACTED_PACKAGE
+        # 2. FIX_VERSION
+        # Example branchName:"(MyLabel):Vulnerability_fix_IMPACTED_PACKAGE_to_version_FIX_VERSION"
 
-        commitMessage: ""
+        commitTitle: ""
 
         pullRequestTitle: ""
 

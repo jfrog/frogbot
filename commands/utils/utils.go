@@ -244,7 +244,10 @@ func GetFixVersionSuggestion(current, down, up *version.Version) (*version.Versi
 	return nil, nil
 }
 
-func IsValidBranchName(branchName string) error {
+func IsValidBranchFormat(branchName string) error {
+	if len(branchName) == 0 {
+		return nil
+	}
 	invalidChars := regexp.MustCompile(BranchNameRegex)
 	if invalidChars.MatchString(branchName) {
 		return fmt.Errorf("branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, } ")
