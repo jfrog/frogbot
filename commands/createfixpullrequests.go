@@ -38,12 +38,7 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 	}
 	repository := configAggregator[0]
 	for _, branch := range repository.Branches {
-		gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
-		if err != nil {
-			return err
-		}
-		cfp.gitManager = gitManager
-		err = cfp.scanAndFixRepository(&repository, branch, client)
+		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
 			return err
 		}
@@ -118,7 +113,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 	if err != nil {
 		return err
 	}
@@ -197,7 +192,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, cfp.details.Branch, commitString, prBody)
+	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
 }
 
 func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (fixBranchName string, err error) {

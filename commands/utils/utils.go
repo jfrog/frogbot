@@ -19,10 +19,14 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"regexp"
 	"strings"
 )
 
-const RootDir = "."
+const (
+	RootDir         = "."
+	BranchNameRegex = `[~^:?\\\[\]@{}*]`
+)
 
 var (
 	TrueVal        = true
@@ -205,4 +209,18 @@ func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) boo
 	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
 	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
 	return candidateMajorVersion != currentMajorVersion
+}
+
+func IsValidBranchName(branchName string) error {
+	invalidChars := regexp.MustCompile(BranchNameRegex)
+	if invalidChars.MatchString(branchName) {
+		return fmt.Errorf("branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, } ")
+	}
+	if branchName[0] == '-' {
+		return fmt.Errorf("branch name cannot start with '-' ")
+	}
+	if len(branchName) > 255 {
+		return fmt.Errorf("branch name length exceeded 255 chars")
+	}
+	return nil
 }

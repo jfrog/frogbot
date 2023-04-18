@@ -181,19 +181,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{commitMessageFormat: "<type>: bump $PACKAGE_NAME"},
+			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: "<type>: bump $PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{commitMessageFormat: "<type>[scope]: Upgrade package $PACKAGE_NAME to $FIX_VERSION"},
+			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: "<type>[scope]: Upgrade package $PACKAGE_NAME to $FIX_VERSION"}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default format",
 		}, {
-			gitManager:      GitManager{commitMessageFormat: ""},
+			gitManager:      GitManager{customFormats: CustomFormats{commitMessageFormat: ""}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default format",
@@ -216,20 +216,20 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{branchNameFormat: "[Feature]-$PACKAGE_NAME"},
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "[Feature]-$PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom format",
 		},
 		{
-			gitManager:      GitManager{branchNameFormat: ""},
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: ""}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No format",
 		}, {
-			gitManager:      GitManager{branchNameFormat: "just-a-branch"},
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "just-a-branch"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
@@ -254,21 +254,21 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME to $FIX_VERSION"},
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME to $FIX_VERSION"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom format",
 		},
 		{
-			gitManager:      GitManager{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME"},
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update $PACKAGE_NAME"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
 			description:     "Custom format one var",
 		},
 		{
-			gitManager:      GitManager{branchNameFormat: ""},
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: ""}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
@@ -281,7 +281,49 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 			assert.Equal(t, test.expected, titleOutput)
 		})
 	}
+}
 
+func TestIsValidBranchName(t *testing.T) {
+	tests := []struct {
+		branchName    string
+		expectedError bool
+	}{
+		{
+			branchName:    "thi?s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "thi^s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "thi~s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this[]-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this@-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this is myt est",
+			expectedError: false,
+		}, {
+			branchName:    "(Feature)New branch",
+			expectedError: false,
+		}, {
+			branchName:    "(frogbot)(feature) my name",
+			expectedError: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.branchName, func(t *testing.T) {
+			err := IsValidBranchName(test.branchName)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 // Check connection details with JFrog instance.

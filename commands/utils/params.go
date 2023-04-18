@@ -123,18 +123,16 @@ type JFrogPlatform struct {
 }
 
 type Git struct {
-	GitProvider            vcsutils.VcsProvider
-	RepoName               string   `yaml:"repoName,omitempty"`
-	Branches               []string `yaml:"branches,omitempty"`
-	CommitMessageFormat    string   `yaml:"formats.commitMessage,omitempty"`
-	BranchNameFormat       string   `yaml:"formats.branchName,omitempty"`
-	PullRequestTitleFormat string   `yaml:"formats.pullRequestTitle,omitempty"`
-	GitProject             string
-	RepoOwner              string
-	Token                  string
-	ApiEndpoint            string
-	Username               string
-	PullRequestID          int
+	GitProvider   vcsutils.VcsProvider
+	RepoName      string            `yaml:"repoName,omitempty"`
+	Branches      []string          `yaml:"branches,omitempty"`
+	CustomFormats map[string]string `yaml:"customFormats,omitempty"`
+	GitProject    string
+	RepoOwner     string
+	Token         string
+	ApiEndpoint   string
+	Username      string
+	PullRequestID int
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
@@ -188,26 +186,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 		return nil, err
 	}
 
-	if err = validateFormatInputs(gitParams); err != nil {
-		return nil, err
-	}
-
 	return NewConfigAggregatorFromFile(configFileContent, gitParams, server, releasesRepo)
-}
-
-// TODO ask yahav what to validate here from user input
-// Veirfy no spaces , no %
-func validateFormatInputs(gitParams *Git) error {
-	//for _, formatStr := range []string{
-	//	gitParams.BranchNameFormat,
-	//	gitParams.CommitMessageFormat,
-	//	gitParams.PullRequestTitleFormat,
-	//} {
-	//	if formatStr != "" && strings.Count(formatStr, "%") > 1 {
-	//		return fmt.Errorf("invalid number of input params in %q", formatStr)
-	//	}
-	//}
-	return nil
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
@@ -238,6 +217,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 	// Set git parameters and server details for each repository
 	for i := range result {
 		gitParams.RepoName = result[i].RepoName
+		gitParams.CustomFormats = result[i].CustomFormats
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}
