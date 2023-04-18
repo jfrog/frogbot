@@ -195,18 +195,18 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 	return NewConfigAggregatorFromFile(configFileContent, gitParams, server, releasesRepo)
 }
 
-// Validates optional inputted formats don't have extra inputs params.
-// TODO validate the format itself for malicious input (ask Yahav)
+// TODO ask yahav what to validate here from user input
+// Veirfy no spaces , no %
 func validateFormatInputs(gitParams *Git) error {
-	for formatStr, maxVars := range map[string]int{
-		gitParams.BranchNameFormat:       2,
-		gitParams.CommitMessageFormat:    2,
-		gitParams.PullRequestTitleFormat: 1,
-	} {
-		if formatStr != "" && strings.Count(formatStr, "%") > maxVars {
-			return fmt.Errorf("invalid number of input params in %q", formatStr)
-		}
-	}
+	//for _, formatStr := range []string{
+	//	gitParams.BranchNameFormat,
+	//	gitParams.CommitMessageFormat,
+	//	gitParams.PullRequestTitleFormat,
+	//} {
+	//	if formatStr != "" && strings.Count(formatStr, "%") > 1 {
+	//		return fmt.Errorf("invalid number of input params in %q", formatStr)
+	//	}
+	//}
 	return nil
 }
 
