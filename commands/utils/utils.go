@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -17,7 +18,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -26,12 +26,6 @@ const RootDir = "."
 var (
 	TrueVal        = true
 	FrogbotVersion = "0.0.0"
-)
-
-const (
-	Patch = 3
-	Minor = 2
-	Major = 1
 )
 
 type ErrMissingEnv struct {
@@ -193,7 +187,7 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	return len(impactPath[0]) < 3, nil
 }
 
-// Accepts current impacted version and two of it's closest neighbours, upgrade and downgrade suggestions.
+// Accepts a current impacted version and two of its closest neighbours, upgrade and downgrade suggestions.
 // Returns the fix suggestion version by the following priority rules:
 // 1. Patch up
 // 2. Minor up
@@ -201,72 +195,28 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 // 4. Minor down
 // 5. Major Up
 // 5. Major down
-func GetFixVersionSuggestion(current, lower, upper string) string {
-	// Patch up
-	if patchVersion := isVersionUpgrade(current, upper, Patch); patchVersion != "" {
-		return patchVersion
+func GetFixVersionSuggestion(current, down, up *version.Version) (*version.Version, error) {
+	priorityList := []struct {
+		versionPosition version.VersionPosition
+		version         *version.Version
+		expected        int
+	}{
+		{version.Patch, up, 1},
+		{version.Minor, up, 1},
+		{version.Patch, down, -1},
+		{version.Minor, down, -1},
+		{version.Major, up, 1},
+		{version.Major, down, -1},
 	}
-	// Minor up
-	if patchVersion := isVersionUpgrade(current, upper, Minor); patchVersion != "" {
-		return patchVersion
-	}
-	// Patch Down
-	if patchVersion := isVersionDowngrade(current, lower, Patch); patchVersion != "" {
-		return patchVersion
-	}
-	// Minor down
-	if patchVersion := isVersionDowngrade(current, lower, Minor); patchVersion != "" {
-		return patchVersion
-	}
-	// Major Up
-	if patchVersion := isVersionUpgrade(current, upper, Major); patchVersion != "" {
-		return patchVersion
-	}
-	// Major down
-	if patchVersion := isVersionDowngrade(current, lower, Major); patchVersion != "" {
-		return patchVersion
-	}
-	return ""
-}
-
-// isVersionUpgrade returns the version string with the higher version number
-// at a specified Major, Minor or Patch indexes.
-func isVersionUpgrade(v1 string, v2 string, index int) string {
-	v1Parts := strings.Split(v1, ".")
-	v2Parts := strings.Split(v2, ".")
-	for i := 0; i < 3; i++ {
-		v1Part, _ := strconv.Atoi(v1Parts[i])
-		v2Part, _ := strconv.Atoi(v2Parts[i])
-		if v1Part == v2Part {
-			continue
+	for _, check := range priorityList {
+		result, err := current.CompareAtPosition(*check.version, check.versionPosition)
+		if err != nil {
+			return nil, err
 		}
-		if i < index-1 {
-			return ""
-		}
-		if v1Part < v2Part {
-			return v2
+		// Verify the result is bigger or smaller as expected
+		if result == check.expected {
+			return check.version, nil
 		}
 	}
-	return ""
-}
-
-// isVersionDowngrade returns the version string with the lower version number
-// at a specified Major, Minor or Patch indexes.
-func isVersionDowngrade(v1 string, v2 string, index int) string {
-	v1Parts := strings.Split(v1, ".")
-	v2Parts := strings.Split(v2, ".")
-	for i := 0; i < 3; i++ {
-		v1Part, _ := strconv.Atoi(v1Parts[i])
-		v2Part, _ := strconv.Atoi(v2Parts[i])
-		if v1Part == v2Part {
-			continue
-		}
-		if i < index-1 {
-			continue
-		}
-		if v1Part > v2Part {
-			return v2
-		}
-	}
-	return ""
+	return nil, nil
 }
