@@ -195,3 +195,157 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	}
 	return
 }
+
+func TestGitManager_GenerateCommitMessage(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      FixVersionInfo
+		expected        string
+		description     string
+	}{
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>: bump PACKAGE_NAME"}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "<type>: bump mquery",
+			description:     "Custom prefix",
+		},
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>[scope]: Upgrade package PACKAGE_NAME to FIX_VERSION"}},
+			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
+			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
+			description: "Default format",
+		}, {
+			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: ""}},
+			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
+			expected:    "Upgrade mquery to 3.4.5",
+			description: "Default format",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			commitMessage := test.gitManager.GenerateCommitTitle(test.impactedPackage, test.fixVersion.FixVersion)
+			assert.Equal(t, test.expected, commitMessage)
+		})
+	}
+}
+
+func TestGitManager_GenerateFixBranchName(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      FixVersionInfo
+		expected        string
+		description     string
+	}{
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "[Feature]-PACKAGE_NAME"}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
+			description:     "Custom format",
+		},
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: ""}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
+			description:     "No format",
+		}, {
+			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "just-a-branch"}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
+			description:     "Custom format without inputs",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.FixVersion)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, commitMessage)
+		})
+	}
+}
+
+func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
+	tests := []struct {
+		gitManager      GitManager
+		impactedPackage string
+		fixVersion      FixVersionInfo
+		expected        string
+		description     string
+	}{
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME to FIX_VERSION"}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[CustomPR] update mquery to 3.4.5",
+			description:     "Custom format",
+		},
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME"}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[CustomPR] update mquery",
+			description:     "Custom format one var",
+		},
+		{
+			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: ""}},
+			impactedPackage: "mquery",
+			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
+			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
+			description:     "No prefix",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.FixVersion)
+			assert.Equal(t, test.expected, titleOutput)
+		})
+	}
+}
+
+func TestIsValidBranchName(t *testing.T) {
+	tests := []struct {
+		branchName    string
+		expectedError bool
+	}{
+		{
+			branchName:    "thi?s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "thi^s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "thi~s-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this[]-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this@-is-my-test",
+			expectedError: true,
+		}, {
+			branchName:    "this is myt est",
+			expectedError: false,
+		}, {
+			branchName:    "(Feature)New branch",
+			expectedError: false,
+		}, {
+			branchName:    "(frogbot)(feature) my name",
+			expectedError: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.branchName, func(t *testing.T) {
+			err := IsValidBranchFormat(test.branchName)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

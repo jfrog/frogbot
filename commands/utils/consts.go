@@ -74,11 +74,20 @@ const (
 	GitHubActionsEnv = "GITHUB_ACTIONS"
 
 	// When Frogbot periodically scans repositories, it skips scanning repositories for which the latest commit has already been scanned,
-	// unless the latest commit has been scanned more then 'SkipRepoScanDays' days ago.
+	// unless the latest commit was scanned more than 'SkipRepoScanDays' days ago.
 	SkipRepoScanDays = 4
 
 	// Used by Frogbot to create new commits statuses and recognize its own statuses.
 	CommitStatusDescription = "Scanned by Frogbot"
 	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
 	FrogbotCreatorName      = "Frogbot"
+
+	// Placeholders for formats
+	PackagePlaceHolder    = "PACKAGE_NAME"
+	FixVersionPlaceHolder = "FIX_VERSION"
+
+	// Default naming formats
+	NewBranchesFormat = "frogbot-PACKAGE_NAME"
+	CommitTitleFormat = "Upgrade PACKAGE_NAME to FIX_VERSION"
+	PullRequestFormat = "[🐸 Frogbot] Upgrade PACKAGE_NAME to FIX_VERSION"
 )

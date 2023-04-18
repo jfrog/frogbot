@@ -124,8 +124,9 @@ type JFrogPlatform struct {
 
 type Git struct {
 	GitProvider   vcsutils.VcsProvider
-	RepoName      string   `yaml:"repoName,omitempty"`
-	Branches      []string `yaml:"branches,omitempty"`
+	RepoName      string            `yaml:"repoName,omitempty"`
+	Branches      []string          `yaml:"branches,omitempty"`
+	CustomFormats map[string]string `yaml:"customFormats,omitempty"`
 	GitProject    string
 	RepoOwner     string
 	Token         string
@@ -216,6 +217,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 	// Set git parameters and server details for each repository
 	for i := range result {
 		gitParams.RepoName = result[i].RepoName
+		gitParams.CustomFormats = result[i].CustomFormats
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}

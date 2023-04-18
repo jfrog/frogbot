@@ -113,7 +113,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	commitTitle := fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.FixVersion)
+	commitTitle := cfp.gitManager.GenerateCommitTitle(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitTitle)
 	if err != nil {
@@ -189,13 +189,14 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return err
 	}
 
+	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 	prBody := commitTitle + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, commitTitle, prBody)
+	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
 }
 
 func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (fixBranchName string, err error) {
-	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
+	fixBranchName, err = cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
 	}
@@ -311,17 +312,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 	}
 	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
-}
-
-func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {
-	uniqueString, err := utils.Md5Hash("frogbot", baseBranch, impactedPackage, fixVersion)
-	if err != nil {
-		return "", err
-	}
-	// Package names in Maven usually contain colons, which are not allowed in a branch name
-	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
 // 1.0         --> 1.0 ≤ x

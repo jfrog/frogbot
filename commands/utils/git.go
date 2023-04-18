@@ -30,15 +30,31 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
+	// Custom naming formats
+	customFormats CustomFormats
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
+type CustomFormats struct {
+	// new commit message prefix
+	commitTitleFormat string
+	// new branch name prefix
+	branchNameFormat string
+	// new pullRequestTitleFormat title prefix
+	pullRequestTitleFormat string
+}
+
+func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
 	basicAuth := toBasicAuth(token, username)
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
+	formats, err := loadCustomFormats(g.CustomFormats)
+	if err != nil {
+		return nil, err
+	}
+	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customFormats: formats}, nil
+
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -215,6 +231,48 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
+func (gm *GitManager) GenerateCommitTitle(impactedPackage string, version string) string {
+	format := gm.customFormats.commitTitleFormat
+	if format == "" {
+		format = CommitTitleFormat
+	}
+	return formatStringWithPlaceHolders(format, impactedPackage, version, true)
+}
+
+func formatStringWithPlaceHolders(format, impactedPackage, fixVersion string, allowSpaces bool) string {
+	str := strings.Replace(strings.Replace(format, PackagePlaceHolder, impactedPackage, 1), FixVersionPlaceHolder, fixVersion, 1)
+	if allowSpaces {
+		return str
+	} else {
+		return strings.ReplaceAll(str, " ", "_")
+	}
+}
+
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
+	uniqueString, err := Md5Hash("frogbot", branch, impactedPackage, version)
+	if err != nil {
+		return "", err
+	}
+	// Package names in Maven usually contain colons, which are not allowed in a branch name
+	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
+	branchFormat := gm.customFormats.branchNameFormat
+	if branchFormat == "" {
+		branchFormat = NewBranchesFormat
+	}
+	// Unique string is not optional
+	branchName := formatStringWithPlaceHolders(branchFormat, fixedPackageName, version, false)
+	return branchName + "-" + uniqueString, nil
+}
+
+func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
+	format := PullRequestFormat
+	pullRequestFormat := gm.customFormats.pullRequestTitleFormat
+	if pullRequestFormat != "" {
+		format = pullRequestFormat
+	}
+	return formatStringWithPlaceHolders(format, impactedPackage, version, true)
+}
+
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
@@ -253,4 +311,17 @@ func toBasicAuth(token, username string) *http.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
+}
+
+func loadCustomFormats(formatsArray map[string]string) (CustomFormats, error) {
+	format := CustomFormats{
+		commitTitleFormat:      formatsArray["commitTitle"],
+		branchNameFormat:       formatsArray["branchName"],
+		pullRequestTitleFormat: formatsArray["pullRequestTitle"],
+	}
+	err := IsValidBranchFormat(format.branchNameFormat)
+	if err != nil {
+		return CustomFormats{}, err
+	}
+	return format, nil
 }
