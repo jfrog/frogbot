@@ -37,6 +37,14 @@ type ErrMissingEnv struct {
 	VariableName string
 }
 
+type ErrUnsupportedIndirectFix struct {
+	PackageName string
+}
+
+func (e *ErrUnsupportedIndirectFix) Error() string {
+	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+}
+
 // FixVersionInfo is a basic struct used to hold needed information about version fixing
 type FixVersionInfo struct {
 	FixVersion       string
