@@ -112,15 +112,15 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 	return cfp.fixVulnerablePackages(fixVersionsMap)
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*packagehandlers.FixVersionInfo) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username)
+func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 	if err != nil {
-		return err
+		return
 	}
 
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
 	if err != nil {
-		return err
+		return
 	}
 	defer func() {
 		e1 := restoreBaseDir()
@@ -141,13 +141,13 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Info("Running git checkout to base branch:", cfp.details.Branch)
 		if err = cfp.gitManager.Checkout(cfp.details.Branch); err != nil {
-			return err
+			return
 		}
 	}
-	return nil
+	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.FixVersion)
 	fixBranchName, err := cfp.createFixingBranch(impactedPackage, fixVersionInfo)
@@ -166,36 +166,37 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fi
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixBranchName string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixBranchName string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
-		return err
+		return
 	}
 	if isClean {
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	commitString := fmt.Sprintf("[🐸 Frogbot] Upgrade %s to %s", impactedPackage, fixVersionInfo.FixVersion)
+	commitMessage := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Running git add all and commit...")
-	err = cfp.gitManager.AddAllAndCommit(commitString)
+	err = cfp.gitManager.AddAllAndCommit(commitMessage)
 	if err != nil {
-		return err
+		return
 	}
 
 	log.Info("Pushing fix branch:", fixBranchName, "...")
 	err = cfp.gitManager.Push()
 	if err != nil {
-		return err
+		return
 	}
 
+	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
-	prBody := commitString + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, commitString, prBody)
+	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
+	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (fixBranchName string, err error) {
-	fixBranchName, err = generateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
+func (cfp *CreateFixPullRequestsCmd) createFixingBranch(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (fixBranchName string, err error) {
+	fixBranchName, err = cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
 	}
@@ -232,8 +233,8 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 }
 
 // Create fixVersionMap - a map with 'impacted package' as key and 'fix version' as value.
-func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*packagehandlers.FixVersionInfo, error) {
-	fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
+func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services.ScanResponse, isMultipleRoots bool) (map[string]*utils.FixVersionInfo, error) {
+	fixVersionsMap := map[string]*utils.FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
 			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
@@ -250,7 +251,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	return fixVersionsMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*packagehandlers.FixVersionInfo) error {
+func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*utils.FixVersionInfo) error {
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
@@ -261,14 +262,14 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
-		fixVersionInfo.UpdateFixVersion(vulnFixVersion)
+		fixVersionInfo.UpdateFixVersionIfMax(vulnFixVersion)
 	} else {
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
 		if err != nil {
 			return err
 		}
 		// First appearance of a version that fixes the current impacted package
-		fixVersionsMap[vulnerability.ImpactedDependencyName] = packagehandlers.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
+		fixVersionsMap[vulnerability.ImpactedDependencyName] = utils.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
 	}
 	return nil
 }
@@ -293,7 +294,7 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	return ""
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *packagehandlers.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
 		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
@@ -311,17 +312,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 	}
 	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
-}
-
-func generateFixBranchName(baseBranch, impactedPackage, fixVersion string) (string, error) {
-	uniqueString, err := utils.Md5Hash("frogbot", baseBranch, impactedPackage, fixVersion)
-	if err != nil {
-		return "", err
-	}
-	// Package names in Maven usually contain colons, which are not allowed in a branch name
-	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	// fixBranchName example: 'frogbot-gopkg.in/yaml.v3-cedc1e5462e504fc992318d24e343e48'
-	return fmt.Sprintf("%s-%s-%s", "frogbot", fixedPackageName, uniqueString), nil
 }
 
 // 1.0         --> 1.0 ≤ x

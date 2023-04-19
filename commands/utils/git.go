@@ -30,15 +30,30 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
+	// Custom naming formats
+	customTemplates CustomTemplates
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string) (*GitManager, error) {
+type CustomTemplates struct {
+	// New commit message template
+	commitMessageTemplate string
+	// New branch name template
+	branchNameTemplate string
+	// New pull request title template
+	pullRequestTitleTemplate string
+}
+
+func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
 	}
 	basicAuth := toBasicAuth(token, username)
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun}, nil
+	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+	if err != nil {
+		return nil, err
+	}
+	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -215,6 +230,56 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
+func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion string) string {
+	template := gm.customTemplates.commitMessageTemplate
+	if template == "" {
+		template = CommitMessageTemplate
+	}
+	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
+}
+
+func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
+	replacements := []struct {
+		placeholder string
+		value       string
+	}{
+		{PackagePlaceHolder, impactedPackage},
+		{FixVersionPlaceHolder, fixVersion},
+		{BranchHashPlaceHolder, hash},
+	}
+
+	for _, r := range replacements {
+		str = strings.Replace(str, r.placeholder, r.value, 1)
+	}
+	if !allowSpaces {
+		str = strings.ReplaceAll(str, " ", "_")
+	}
+	return str
+}
+
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
+	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
+	if err != nil {
+		return "", err
+	}
+	// Package names in Maven usually contain colons, which are not allowed in a branch name
+	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
+	branchFormat := gm.customTemplates.branchNameTemplate
+	if branchFormat == "" {
+		branchFormat = BranchNameTemplate
+	}
+	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, false), nil
+}
+
+func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
+	template := PullRequestTitleTemplate
+	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
+	if pullRequestFormat != "" {
+		template = pullRequestFormat
+	}
+	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
+}
+
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
@@ -253,4 +318,17 @@ func toBasicAuth(token, username string) *http.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
+}
+
+func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
+	template := CustomTemplates{
+		commitMessageTemplate:    commitMessageTemplate,
+		branchNameTemplate:       branchNameTemplate,
+		pullRequestTitleTemplate: pullRequestTitleTemplate,
+	}
+	err := validateBranchName(template.branchNameTemplate)
+	if err != nil {
+		return CustomTemplates{}, err
+	}
+	return template, nil
 }

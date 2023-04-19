@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"os"
 	"path/filepath"
@@ -25,7 +26,7 @@ type PythonPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(impactedPackage, fixVersionInfo)
@@ -38,7 +39,7 @@ func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *FixVersionInfo) error {
+func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) error {
 	// Install the desired fixed version
 	if err := py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo); err != nil {
 		return err
@@ -47,7 +48,7 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 }
 
-func (py *PythonPackageHandler) handlePip(impactedPackage string, info *FixVersionInfo) error {
+func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) error {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion
