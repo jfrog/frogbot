@@ -49,7 +49,7 @@
         "default": "",
         "examples": [
           "[Frogbot]",
-          "fix(dependency) update ${PACKAGE_NAME} to ${FIX_VERSION}"
+          "fix(dependency) update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
         ]
       },
       "branchNameTemplate": {
@@ -65,7 +65,7 @@
         "type": "string",
         "default": "",
         "examples": [
-          "[Frogbot]-${PACKAGE_NAME}",
+          "[Frogbot]-${IMPACTED_PACKAGE}",
           "[Security_Update]-${FIX_VERSION}",
           "[Feature]"
         ]
