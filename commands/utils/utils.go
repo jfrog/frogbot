@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
@@ -17,18 +19,56 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"regexp"
 	"strings"
 )
 
-const RootDir = "."
+const (
+	RootDir         = "."
+	branchNameRegex = `[~^:?\\\[\]@{}*]`
+
+	// Branch validation error messages
+	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	branchInvalidPrefix   = "branch name cannot start with '-' "
+	branchCharsMaxLength  = 255
+	branchInvalidLength   = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
+	invalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+)
 
 var (
-	TrueVal        = true
-	FrogbotVersion = "0.0.0"
+	TrueVal                 = true
+	FrogbotVersion          = "0.0.0"
+	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
 
 type ErrMissingEnv struct {
 	VariableName string
+}
+
+type ErrUnsupportedIndirectFix struct {
+	PackageName string
+}
+
+func (e *ErrUnsupportedIndirectFix) Error() string {
+	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+}
+
+// FixVersionInfo is a basic struct used to hold needed information about version fixing
+type FixVersionInfo struct {
+	FixVersion       string
+	PackageType      coreutils.Technology
+	DirectDependency bool
+}
+
+func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
+	return &FixVersionInfo{newFixVersion, packageType, directDependency}
+}
+
+func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
+	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
+		fvi.FixVersion = newFixVersion
+	}
 }
 
 func (m *ErrMissingEnv) Error() string {
@@ -185,4 +225,26 @@ func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) boo
 	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
 	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
 	return candidateMajorVersion != currentMajorVersion
+}
+
+func validateBranchName(branchName string) error {
+	// Default is "" which will be replaced with default template
+	if len(branchName) == 0 {
+		return nil
+	}
+	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
+	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
+		return fmt.Errorf(branchInvalidChars)
+	}
+	// Prefix cannot be '-'
+	if branchName[0] == '-' {
+		return fmt.Errorf(branchInvalidPrefix)
+	}
+	if len(branchName) > branchCharsMaxLength {
+		return fmt.Errorf(branchInvalidLength)
+	}
+	if !strings.Contains(branchName, BranchHashPlaceHolder) {
+		return fmt.Errorf(invalidBranchTemplate)
+	}
+	return nil
 }
