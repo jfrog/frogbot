@@ -39,7 +39,7 @@ type CustomTemplates struct {
 	commitMessageTemplate string
 	// New branch name template
 	branchNameTemplate string
-	// New pullRequestTitleTemplate title template
+	// New pull request title template
 	pullRequestTitleTemplate string
 }
 
@@ -326,7 +326,7 @@ func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 		branchNameTemplate:       branchNameTemplate,
 		pullRequestTitleTemplate: pullRequestTitleTemplate,
 	}
-	err := ValidateBranchName(template.branchNameTemplate)
+	err := validateBranchName(template.branchNameTemplate)
 	if err != nil {
 		return CustomTemplates{}, err
 	}

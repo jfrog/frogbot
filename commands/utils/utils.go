@@ -28,16 +28,17 @@ const (
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
-	BranchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
-	BranchInvalidPrefix   = "branch name cannot start with '-' "
-	BranchCharsMaxLength  = 255
-	BranchInvalidLength   = "branch name length exceeded " + string(rune(BranchCharsMaxLength)) + " chars"
-	InvalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	branchInvalidPrefix   = "branch name cannot start with '-' "
+	branchCharsMaxLength  = 255
+	branchInvalidLength   = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
+	invalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
 )
 
 var (
-	TrueVal        = true
-	FrogbotVersion = "0.0.0"
+	TrueVal                 = true
+	FrogbotVersion          = "0.0.0"
+	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
 
 type ErrMissingEnv struct {
@@ -226,24 +227,23 @@ func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) boo
 	return candidateMajorVersion != currentMajorVersion
 }
 
-func ValidateBranchName(branchName string) error {
+func validateBranchName(branchName string) error {
 	if len(branchName) == 0 {
 		return nil
 	}
-	invalidChars := regexp.MustCompile(branchNameRegex)
 	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
-	if invalidChars.MatchString(branchNameWithoutPlaceHolders) {
-		return fmt.Errorf(BranchInvalidChars)
+	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
+		return fmt.Errorf(branchInvalidChars)
 	}
 	// Prefix cannot be '-'
 	if branchName[0] == '-' {
-		return fmt.Errorf(BranchInvalidPrefix)
+		return fmt.Errorf(branchInvalidPrefix)
 	}
-	if len(branchName) > BranchCharsMaxLength {
-		return fmt.Errorf(BranchInvalidLength)
+	if len(branchName) > branchCharsMaxLength {
+		return fmt.Errorf(branchInvalidLength)
 	}
 	if !strings.Contains(branchName, BranchHashPlaceHolder) {
-		return fmt.Errorf(InvalidBranchTemplate)
+		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
 }
