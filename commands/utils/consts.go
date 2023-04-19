@@ -82,12 +82,13 @@ const (
 	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
 	FrogbotCreatorName      = "Frogbot"
 
-	// Placeholders for formats
-	PackagePlaceHolder    = "PACKAGE_NAME"
-	FixVersionPlaceHolder = "FIX_VERSION"
+	// Placeholders for templates
+	PackagePlaceHolder    = "${IMPACTED_PACKAGE}"
+	FixVersionPlaceHolder = "${FIX_VERSION}"
+	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
 
-	// Default naming formats
-	NewBranchesFormat = "frogbot-PACKAGE_NAME"
-	CommitTitleFormat = "Upgrade PACKAGE_NAME to FIX_VERSION"
-	PullRequestFormat = "[🐸 Frogbot] Upgrade PACKAGE_NAME to FIX_VERSION"
+	// Default naming templates
+	BranchNameTemplate       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	CommitTitleTemplate      = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	PullRequestTitleTemplate = "[🐸 Frogbot] Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 )

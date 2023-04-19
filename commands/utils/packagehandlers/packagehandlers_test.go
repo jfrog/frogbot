@@ -20,7 +20,7 @@ func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.expectedOutput, func(t *testing.T) {
-			tc.fixVersionInfo.UpdateFixVersion(tc.newFixVersion)
+			tc.fixVersionInfo.UpdateFixVersionIfMax(tc.newFixVersion)
 			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.FixVersion)
 		})
 	}

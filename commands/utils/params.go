@@ -123,16 +123,18 @@ type JFrogPlatform struct {
 }
 
 type Git struct {
-	GitProvider   vcsutils.VcsProvider
-	RepoName      string            `yaml:"repoName,omitempty"`
-	Branches      []string          `yaml:"branches,omitempty"`
-	CustomFormats map[string]string `yaml:"customFormats,omitempty"`
-	GitProject    string
-	RepoOwner     string
-	Token         string
-	ApiEndpoint   string
-	Username      string
-	PullRequestID int
+	GitProvider              vcsutils.VcsProvider
+	RepoName                 string   `yaml:"repoName,omitempty"`
+	Branches                 []string `yaml:"branches,omitempty"`
+	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
+	CommitTitleTemplate      string   `yaml:"commitTitleTemplate,omitempty"`
+	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	GitProject               string
+	RepoOwner                string
+	Token                    string
+	ApiEndpoint              string
+	Username                 string
+	PullRequestID            int
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
@@ -217,7 +219,9 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 	// Set git parameters and server details for each repository
 	for i := range result {
 		gitParams.RepoName = result[i].RepoName
-		gitParams.CustomFormats = result[i].CustomFormats
+		gitParams.PullRequestTitleTemplate = result[i].PullRequestTitleTemplate
+		gitParams.CommitTitleTemplate = result[i].CommitTitleTemplate
+		gitParams.BranchNameTemplate = result[i].BranchNameTemplate
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}

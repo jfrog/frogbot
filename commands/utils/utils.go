@@ -25,7 +25,14 @@ import (
 
 const (
 	RootDir         = "."
-	BranchNameRegex = `[~^:?\\\[\]@{}*]`
+	branchNameRegex = `[~^:?\\\[\]@{}*]`
+
+	// Branch validation error messages
+	BranchInvalidChars    = "Branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	BranchInvalidPrefix   = "Branch name cannot start with '-' "
+	BranchCharsMaxLength  = 255
+	BranchInvalidLength   = "Branch name length exceeded " + string(rune(BranchCharsMaxLength)) + " chars"
+	InvalidBranchTemplate = "Branch template must contain " + BranchHashPlaceHolder + " placeholder "
 )
 
 var (
@@ -56,7 +63,7 @@ func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, d
 	return &FixVersionInfo{newFixVersion, packageType, directDependency}
 }
 
-func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
+func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
 	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
 	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
 		fvi.FixVersion = newFixVersion
@@ -219,19 +226,24 @@ func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) boo
 	return candidateMajorVersion != currentMajorVersion
 }
 
-func IsValidBranchFormat(branchName string) error {
+func ValidateBranchName(branchName string) error {
 	if len(branchName) == 0 {
 		return nil
 	}
-	invalidChars := regexp.MustCompile(BranchNameRegex)
-	if invalidChars.MatchString(branchName) {
-		return fmt.Errorf("branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, } ")
+	invalidChars := regexp.MustCompile(branchNameRegex)
+	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
+	if invalidChars.MatchString(branchNameWithoutPlaceHolders) {
+		return fmt.Errorf(BranchInvalidChars)
 	}
+	// Prefix cannot be '-'
 	if branchName[0] == '-' {
-		return fmt.Errorf("branch name cannot start with '-' ")
+		return fmt.Errorf(BranchInvalidPrefix)
 	}
-	if len(branchName) > 255 {
-		return fmt.Errorf("branch name length exceeded 255 chars")
+	if len(branchName) > BranchCharsMaxLength {
+		return fmt.Errorf(BranchInvalidLength)
+	}
+	if !strings.Contains(branchName, BranchHashPlaceHolder) {
+		return fmt.Errorf(InvalidBranchTemplate)
 	}
 	return nil
 }

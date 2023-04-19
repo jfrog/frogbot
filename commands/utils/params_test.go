@@ -155,6 +155,10 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, *repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.JFrogProjectKey)
+		assert.Equal(t, "myPullRequests", repo.PullRequestTitleTemplate)
+		assert.Equal(t, "custom commit title", repo.CommitTitleTemplate)
+		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", repo.BranchNameTemplate)
+
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
 			testExtractAndAssertProjectParams(t, project)

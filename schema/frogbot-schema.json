@@ -30,7 +30,9 @@
         "type": "string",
         "title": "Repository Name",
         "description": "The name of the git repository to scan.",
-        "examples": ["repo-name"]
+        "examples": [
+          "repo-name"
+        ]
       },
       "branches": {
         "type": "array",
@@ -40,32 +42,45 @@
           "type": "string",
           "default": "master",
           "title": "Repository Branch",
-          "examples": ["master", "v1", "v2"]
+          "examples": [
+            "master",
+            "v1",
+            "v2"
+          ]
         },
-        "examples": [["master", "v1", "v2"]]
+        "examples": [
+          [
+            "master",
+            "v1",
+            "v2"
+          ]
+        ]
       },
-      "customFormats": {
-        "type": "object",
-        "title": "Custom formats",
-        "description": "Git custom formats for commit,branches and PR created by Frogbot.",
-        "additionalProperties": false,
-        "properties": {
-          "commitTitle": {
-            "type": "string",
-            "default": "",
-            "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]
-          },
-          "branchName": {
-            "type": "string",
-            "default": "",
-            "examples": ["Frogbot", "Security_Update", "Feature"]
-          },
-          "pullRequestTitle": {
-            "type": "string",
-            "default": "",
-            "examples": ["[Frogbot]", "[Security_Update]", "[Feature]"]
-          }
-        }
+      "commitTitleTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "[Frogbot]",
+          "fix(dependency) update ${PACKAGE_NAME} to ${FIX_VERSION}"
+        ]
+      },
+      "branchNameTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "Frogbot-${BRANCH_NAME_HASH}",
+          "Security_Update-${BRANCH_NAME_HASH}",
+          "${BRANCH_NAME_HASH}-Feature"
+        ]
+      },
+      "pullRequestTitleTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "[Frogbot]-${PACKAGE_NAME}",
+          "[Security_Update]-${FIX_VERSION}",
+          "[Feature]"
+        ]
       }
     },
     "examples": [

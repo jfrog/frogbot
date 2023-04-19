@@ -115,12 +115,12 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
 	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 	if err != nil {
-		return err
+		return
 	}
 
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
 	if err != nil {
-		return err
+		return
 	}
 	defer func() {
 		e1 := restoreBaseDir()
@@ -141,10 +141,10 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Info("Running git checkout to base branch:", cfp.details.Branch)
 		if err = cfp.gitManager.Checkout(cfp.details.Branch); err != nil {
-			return err
+			return
 		}
 	}
-	return nil
+	return
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
@@ -262,7 +262,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
-		fixVersionInfo.UpdateFixVersion(vulnFixVersion)
+		fixVersionInfo.UpdateFixVersionIfMax(vulnFixVersion)
 	} else {
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
 		if err != nil {

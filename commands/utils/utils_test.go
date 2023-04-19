@@ -196,153 +196,60 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	return
 }
 
-func TestGitManager_GenerateCommitMessage(t *testing.T) {
-	tests := []struct {
-		gitManager      GitManager
-		impactedPackage string
-		fixVersion      FixVersionInfo
-		expected        string
-		description     string
-	}{
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>: bump PACKAGE_NAME"}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "<type>: bump mquery",
-			description:     "Custom prefix",
-		},
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: "<type>[scope]: Upgrade package PACKAGE_NAME to FIX_VERSION"}},
-			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
-			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
-			description: "Default format",
-		}, {
-			gitManager:      GitManager{customFormats: CustomFormats{commitTitleFormat: ""}},
-			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
-			expected:    "Upgrade mquery to 3.4.5",
-			description: "Default format",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.expected, func(t *testing.T) {
-			commitMessage := test.gitManager.GenerateCommitTitle(test.impactedPackage, test.fixVersion.FixVersion)
-			assert.Equal(t, test.expected, commitMessage)
-		})
-	}
-}
-
-func TestGitManager_GenerateFixBranchName(t *testing.T) {
-	tests := []struct {
-		gitManager      GitManager
-		impactedPackage string
-		fixVersion      FixVersionInfo
-		expected        string
-		description     string
-	}{
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "[Feature]-PACKAGE_NAME"}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
-			description:     "Custom format",
-		},
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: ""}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
-			description:     "No format",
-		}, {
-			gitManager:      GitManager{customFormats: CustomFormats{branchNameFormat: "just-a-branch"}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
-			description:     "Custom format without inputs",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.expected, func(t *testing.T) {
-			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.FixVersion)
-			assert.NoError(t, err)
-			assert.Equal(t, test.expected, commitMessage)
-		})
-	}
-}
-
-func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
-	tests := []struct {
-		gitManager      GitManager
-		impactedPackage string
-		fixVersion      FixVersionInfo
-		expected        string
-		description     string
-	}{
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME to FIX_VERSION"}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[CustomPR] update mquery to 3.4.5",
-			description:     "Custom format",
-		},
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: "[CustomPR] update PACKAGE_NAME"}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[CustomPR] update mquery",
-			description:     "Custom format one var",
-		},
-		{
-			gitManager:      GitManager{customFormats: CustomFormats{pullRequestTitleFormat: ""}},
-			impactedPackage: "mquery",
-			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
-			description:     "No prefix",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.expected, func(t *testing.T) {
-			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.FixVersion)
-			assert.Equal(t, test.expected, titleOutput)
-		})
-	}
-}
-
 func TestIsValidBranchName(t *testing.T) {
 	tests := []struct {
 		branchName    string
 		expectedError bool
+		errorMessage  string
 	}{
 		{
 			branchName:    "thi?s-is-my-test",
 			expectedError: true,
+			errorMessage:  BranchInvalidChars,
 		}, {
 			branchName:    "thi^s-is-my-test",
 			expectedError: true,
+			errorMessage:  BranchInvalidChars,
 		}, {
 			branchName:    "thi~s-is-my-test",
 			expectedError: true,
+			errorMessage:  BranchInvalidChars,
 		}, {
 			branchName:    "this[]-is-my-test",
 			expectedError: true,
+			errorMessage:  BranchInvalidChars,
 		}, {
 			branchName:    "this@-is-my-test",
 			expectedError: true,
+			errorMessage:  BranchInvalidChars,
 		}, {
-			branchName:    "this is myt est",
+			branchName:    "this is myt est ${BRANCH_NAME_HASH}",
 			expectedError: false,
+			errorMessage:  "",
 		}, {
-			branchName:    "(Feature)New branch",
+			branchName:    "(Feature)New branch ${BRANCH_NAME_HASH}",
 			expectedError: false,
+			errorMessage:  "",
 		}, {
-			branchName:    "(frogbot)(feature) my name",
+			branchName:    "(frogbot)(feature) ${BRANCH_NAME_HASH} my name",
 			expectedError: false,
+			errorMessage:  "",
+		}, {
+			branchName:    "-this_should_not_work_prefix",
+			expectedError: true,
+			errorMessage:  BranchInvalidPrefix,
+		}, {
+			branchName:    "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et",
+			expectedError: true,
+			errorMessage:  BranchInvalidLength,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.branchName, func(t *testing.T) {
-			err := IsValidBranchFormat(test.branchName)
+			err := ValidateBranchName(test.branchName)
 			if test.expectedError {
 				assert.Error(t, err)
+				assert.Equal(t, err.Error(), test.errorMessage)
 			} else {
 				assert.NoError(t, err)
 			}
