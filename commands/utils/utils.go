@@ -228,6 +228,7 @@ func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) boo
 }
 
 func validateBranchName(branchName string) error {
+	// Default is "" which will be replaced with default template
 	if len(branchName) == 0 {
 		return nil
 	}
