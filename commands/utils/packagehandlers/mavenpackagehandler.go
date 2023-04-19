@@ -2,6 +2,7 @@ package packagehandlers
 
 import (
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os/exec"
 	"strings"
@@ -12,7 +13,7 @@ type MavenPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
 	// In Maven, fix only direct dependencies
 	if !fixVersionInfo.DirectDependency {
 		return nil

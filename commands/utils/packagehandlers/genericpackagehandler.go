@@ -3,37 +3,18 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os/exec"
 	"strings"
 )
 
-// FixVersionInfo is a basic struct used to hold needed information about version fixing
-type FixVersionInfo struct {
-	FixVersion       string
-	PackageType      coreutils.Technology
-	DirectDependency bool
-}
-
-func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
-	return &FixVersionInfo{newFixVersion, packageType, directDependency}
-}
-
-func (fvi *FixVersionInfo) UpdateFixVersion(newFixVersion string) {
-	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
-		fvi.FixVersion = newFixVersion
-	}
-}
-
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
-	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error
+	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Go:
 		return &GoPackageHandler{}
@@ -49,11 +30,15 @@ func GetCompatiblePackageHandler(fixVersionInfo *FixVersionInfo, pipfilePath *ut
 }
 
 type GenericPackageHandler struct {
-	FixVersionInfo *FixVersionInfo
+	FixVersionInfo *utils.FixVersionInfo
 }
 
 // UpdateImpactedPackage updates the impacted package to the fixed version
-func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *FixVersionInfo, extraArgs ...string) error {
+func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+	// Indirect package fix should we implemented for each package handler
+	if !fixVersionInfo.DirectDependency {
+		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
+	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}

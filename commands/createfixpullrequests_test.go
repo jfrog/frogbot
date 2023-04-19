@@ -147,19 +147,13 @@ func TestFixPackageVersion(t *testing.T) {
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
-				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, true)
+				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				assert.Contains(t, string(file), test.fixVersion)
 				// Verify that case-sensitive packages in python are lowered
 				assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
-			})
-			t.Run(test.technology.ToString(), func(t *testing.T) {
-				cfg := test.fixPackageVersionCmd(test)
-				// Fix indirect dependency for each technology
-				fixVersionInfo := packagehandlers.NewFixVersionInfo(test.fixVersion, test.technology, false)
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
 			})
 		}()
 	}
@@ -212,10 +206,10 @@ func TestGenerateFixBranchName(t *testing.T) {
 		{"master", "gopkg.in/yaml.v3", "3.0.0", "frogbot-gopkg.in/yaml.v3-41405528994061bd108e3bbd4c039a03"},
 		{"dev", "replace:colons:colons", "3.0.0", "frogbot-replace_colons_colons-89e555131b4a70a32fe9d9c44d6ff0fc"},
 	}
-
+	gitManager := utils.GitManager{}
 	for _, test := range tests {
 		t.Run(test.expectedName, func(t *testing.T) {
-			branchName, err := generateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion)
+			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
@@ -301,7 +295,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 	packageName := "pkg"
 	tests := []struct {
 		vulnerability *formats.VulnerabilityOrViolationRow
-		expected      map[string]*packagehandlers.FixVersionInfo
+		expected      map[string]*utils.FixVersionInfo
 		description   string
 	}{
 		{
@@ -310,7 +304,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.2.1",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.9.3", DirectDependency: true}},
 			description: "Get the bigger version",
 		}, {
 			vulnerability: &formats.VulnerabilityOrViolationRow{
@@ -318,7 +312,7 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.2.1",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "", DirectDependency: true}},
 			description: "Don't suggest major changes fixes",
 		}, {
 			vulnerability: &formats.VulnerabilityOrViolationRow{
@@ -326,13 +320,13 @@ func Test_createFixVersionsMap(t *testing.T) {
 				ImpactedDependencyVersion: "1.1.5",
 				ImpactedDependencyName:    packageName,
 				ImpactPaths:               [][]formats.ComponentRow{{}, {}},
-			}, expected: map[string]*packagehandlers.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
+			}, expected: map[string]*utils.FixVersionInfo{packageName: {FixVersion: "1.1.4", DirectDependency: true}},
 			description: "Suggest smallest downgrade",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			fixVersionsMap := map[string]*packagehandlers.FixVersionInfo{}
+			fixVersionsMap := map[string]*utils.FixVersionInfo{}
 			err := testScan.addVulnerabilityToFixVersionsMap(test.vulnerability, fixVersionsMap)
 			assert.NoError(t, err)
 			if len(fixVersionsMap) != 0 {
