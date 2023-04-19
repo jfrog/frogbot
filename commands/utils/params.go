@@ -127,7 +127,7 @@ type Git struct {
 	RepoName                 string   `yaml:"repoName,omitempty"`
 	Branches                 []string `yaml:"branches,omitempty"`
 	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
-	CommitTitleTemplate      string   `yaml:"commitTitleTemplate,omitempty"`
+	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	GitProject               string
 	RepoOwner                string
@@ -220,7 +220,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 	for i := range result {
 		gitParams.RepoName = result[i].RepoName
 		gitParams.PullRequestTitleTemplate = result[i].PullRequestTitleTemplate
-		gitParams.CommitTitleTemplate = result[i].CommitTitleTemplate
+		gitParams.CommitMessageTemplate = result[i].CommitMessageTemplate
 		gitParams.BranchNameTemplate = result[i].BranchNameTemplate
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches

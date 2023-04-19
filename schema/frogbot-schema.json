@@ -44,7 +44,7 @@
         },
         "examples": [["master", "v1", "v2"]]
       },
-      "commitTitleTemplate": {
+      "CommitMessageTemplate": {
         "type": "string",
         "default": "",
         "examples": [

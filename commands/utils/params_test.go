@@ -155,10 +155,10 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, true, repo.IncludeAllVulnerabilities)
 		assert.Equal(t, true, *repo.FailOnSecurityIssues)
 		assert.Equal(t, "proj", repo.JFrogProjectKey)
-		templates, err := loadCustomTemplates(repo.CommitTitleTemplate, repo.BranchNameTemplate, repo.PullRequestTitleTemplate)
+		templates, err := loadCustomTemplates(repo.CommitMessageTemplate, repo.BranchNameTemplate, repo.PullRequestTitleTemplate)
 		assert.NoError(t, err)
 		assert.Equal(t, "myPullRequests", templates.pullRequestTitleTemplate)
-		assert.Equal(t, "custom commit title", templates.commitTitleTemplate)
+		assert.Equal(t, "custom commit title", templates.commitMessageTemplate)
 		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", templates.branchNameTemplate)
 
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)

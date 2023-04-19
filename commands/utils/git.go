@@ -36,7 +36,7 @@ type GitManager struct {
 
 type CustomTemplates struct {
 	// New commit message template
-	commitTitleTemplate string
+	commitMessageTemplate string
 	// New branch name template
 	branchNameTemplate string
 	// New pullRequestTitleTemplate title template
@@ -49,7 +49,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 		return nil, err
 	}
 	basicAuth := toBasicAuth(token, username)
-	templates, err := loadCustomTemplates(g.CommitTitleTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -230,10 +230,10 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-func (gm *GitManager) GenerateCommitTitle(impactedPackage string, fixVersion string) string {
-	template := gm.customTemplates.commitTitleTemplate
+func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion string) string {
+	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = CommitTitleTemplate
+		template = CommitMessageTemplate
 	}
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
@@ -320,11 +320,11 @@ func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 
-func loadCustomTemplates(commitTitleFormat, branchNameFormat, pullRequestTitleFormat string) (CustomTemplates, error) {
+func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
 	template := CustomTemplates{
-		commitTitleTemplate:      commitTitleFormat,
-		branchNameTemplate:       branchNameFormat,
-		pullRequestTitleTemplate: pullRequestTitleFormat,
+		commitMessageTemplate:    commitMessageTemplate,
+		branchNameTemplate:       branchNameTemplate,
+		pullRequestTitleTemplate: pullRequestTitleTemplate,
 	}
 	err := ValidateBranchName(template.branchNameTemplate)
 	if err != nil {

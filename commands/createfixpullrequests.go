@@ -176,7 +176,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	commitTitle := cfp.gitManager.GenerateCommitTitle(impactedPackage, fixVersionInfo.FixVersion)
+	commitTitle := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitTitle)
 	if err != nil {

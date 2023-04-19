@@ -14,19 +14,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default template",
 		}, {
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: ""}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: ""}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
@@ -34,7 +34,7 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage := test.gitManager.GenerateCommitTitle(test.impactedPackage, test.fixVersion.FixVersion)
+			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, test.fixVersion.FixVersion)
 			assert.Equal(t, test.expected, commitMessage)
 		})
 	}

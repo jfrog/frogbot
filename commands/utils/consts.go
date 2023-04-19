@@ -89,6 +89,6 @@ const (
 
 	// Default naming templates
 	BranchNameTemplate       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
-	CommitTitleTemplate      = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	CommitMessageTemplate    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	PullRequestTitleTemplate = "[🐸 Frogbot] Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 )
