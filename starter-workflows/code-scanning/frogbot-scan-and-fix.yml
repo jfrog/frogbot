@@ -13,6 +13,9 @@ name: "Frogbot Scan and Fix"
 on:
   push:
     branches: [ $default-branch ]
+  schedule:
+    # The job will run once a day at 00:00 GMT.
+    - cron: "0 0 * * *"
 permissions:
   contents: write
   pull-requests: write
@@ -54,8 +57,6 @@ jobs:
           # in Artifactory, which proxies https://releases.jfrog.io
           # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           # JF_RELEASES_REPO: ""
-
-
 
           ##########################################################################
           ##   If you project uses a 'frogbot-config.yml' file, you can define    ##

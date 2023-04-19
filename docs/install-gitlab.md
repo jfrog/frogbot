@@ -19,10 +19,9 @@ frogbot-scan:
       variables:
         FROGBOT_CMD: "scan-pull-request"
         JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      # Creating fix pull requests will be triggered by any push to the default branch.
-      # You can change it to any other branch you want, for example:
-      # if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      # Repository scanning is triggered by any push to the default branch.
+      # If you'd like a different branch to be scanned, replace $CI_DEFAULT_BRANCH in the line below with the name of branch, wrapped with quotes (").
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
