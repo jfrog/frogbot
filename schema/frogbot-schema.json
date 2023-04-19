@@ -30,9 +30,7 @@
         "type": "string",
         "title": "Repository Name",
         "description": "The name of the git repository to scan.",
-        "examples": [
-          "repo-name"
-        ]
+        "examples": ["repo-name"]
       },
       "branches": {
         "type": "array",
@@ -42,9 +40,9 @@
           "type": "string",
           "default": "master",
           "title": "Repository Branch",
-          "examples": ["master","v1","v2"]
+          "examples": ["master", "v1", "v2"]
         },
-        "examples": [["master","v1","v2"]]
+        "examples": [["master", "v1", "v2"]]
       },
       "commitTitleTemplate": {
         "type": "string",
