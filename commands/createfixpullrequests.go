@@ -176,9 +176,9 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
 	}
 
-	commitTitle := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
+	commitMessage := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Running git add all and commit...")
-	err = cfp.gitManager.AddAllAndCommit(commitTitle)
+	err = cfp.gitManager.AddAllAndCommit(commitMessage)
 	if err != nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
-	prBody := commitTitle + "\n\n" + utils.WhatIsFrogbotMd
+	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
 	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
 }
 
