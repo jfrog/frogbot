@@ -36,11 +36,11 @@ type GitManager struct {
 
 type CustomTemplates struct {
 	// New commit message template
-	commitTitleFormat string
+	commitTitleTemplate string
 	// New branch name template
-	branchNameFormat string
-	// New pullRequestTitleFormat title template
-	pullRequestTitleFormat string
+	branchNameTemplate string
+	// New pullRequestTitleTemplate title template
+	pullRequestTitleTemplate string
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
@@ -54,7 +54,6 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 		return nil, err
 	}
 	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates}, nil
-
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -231,12 +230,12 @@ func (gm *GitManager) IsClean() (bool, error) {
 	return status.IsClean(), nil
 }
 
-func (gm *GitManager) GenerateCommitTitle(impactedPackage string, version string) string {
-	template := gm.customTemplates.commitTitleFormat
+func (gm *GitManager) GenerateCommitTitle(impactedPackage string, fixVersion string) string {
+	template := gm.customTemplates.commitTitleTemplate
 	if template == "" {
 		template = CommitTitleTemplate
 	}
-	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
+	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
 func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
@@ -258,23 +257,23 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 	return str
 }
 
-func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, version string) (string, error) {
-	uniqueString, err := Md5Hash("frogbot", branch, impactedPackage, version)
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
+	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
 	if err != nil {
 		return "", err
 	}
 	// Package names in Maven usually contain colons, which are not allowed in a branch name
 	fixedPackageName := strings.ReplaceAll(impactedPackage, ":", "_")
-	branchFormat := gm.customTemplates.branchNameFormat
+	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = BranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, version, uniqueString, false), nil
+	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, false), nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
 	template := PullRequestTitleTemplate
-	pullRequestFormat := gm.customTemplates.pullRequestTitleFormat
+	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
 	if pullRequestFormat != "" {
 		template = pullRequestFormat
 	}
@@ -323,11 +322,11 @@ func getFullBranchName(branchName string) plumbing.ReferenceName {
 
 func loadCustomTemplates(commitTitleFormat, branchNameFormat, pullRequestTitleFormat string) (CustomTemplates, error) {
 	template := CustomTemplates{
-		commitTitleFormat:      commitTitleFormat,
-		branchNameFormat:       branchNameFormat,
-		pullRequestTitleFormat: pullRequestTitleFormat,
+		commitTitleTemplate:      commitTitleFormat,
+		branchNameTemplate:       branchNameFormat,
+		pullRequestTitleTemplate: pullRequestTitleFormat,
 	}
-	err := ValidateBranchName(template.branchNameFormat)
+	err := ValidateBranchName(template.branchNameTemplate)
 	if err != nil {
 		return CustomTemplates{}, err
 	}

@@ -14,19 +14,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleFormat: "<type>: bump ${IMPACTED_PACKAGE}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleFormat: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default template",
 		}, {
-			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleFormat: ""}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitTitleTemplate: ""}},
 			impactedPackage: "mquery", fixVersion: FixVersionInfo{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
@@ -49,20 +49,20 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameFormat: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template",
 		},
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameFormat: ""}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: ""}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No template",
 		}, {
-			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameFormat: "just-a-branch-${BRANCH_NAME_HASH}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
@@ -87,21 +87,21 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		description     string
 	}{
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleFormat: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom template",
 		},
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleFormat: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
 			description:     "Custom template one var",
 		},
 		{
-			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleFormat: ""}},
+			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
