@@ -22,11 +22,7 @@ frogbot-scan:
       # Creating fix pull requests will be triggered by any push to the default branch.
       # You can change it to any other branch you want, for example:
       # if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      variables:
-        FROGBOT_CMD: "create-fix-pull-requests"
-        JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
