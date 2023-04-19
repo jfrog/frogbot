@@ -4,7 +4,7 @@
       branches:
         - master
       branchNameTemplate: "this is my branch ${BRANCH_NAME_HASH}"
-      CommitMessageTemplate: "custom commit title"
+      commitMessageTemplate: "custom commit title"
       pullRequestTitleTemplate: "myPullRequests"
     scan:
       includeAllVulnerabilities: true
