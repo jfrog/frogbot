@@ -170,7 +170,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
-		return err
+		return
 	}
 	if isClean {
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", impactedPackage)
@@ -180,13 +180,13 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitTitle)
 	if err != nil {
-		return err
+		return
 	}
 
 	log.Info("Pushing fix branch:", fixBranchName, "...")
 	err = cfp.gitManager.Push()
 	if err != nil {
-		return err
+		return
 	}
 
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
