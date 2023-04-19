@@ -28,11 +28,11 @@ const (
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
-	BranchInvalidChars    = "Branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
-	BranchInvalidPrefix   = "Branch name cannot start with '-' "
+	BranchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	BranchInvalidPrefix   = "branch name cannot start with '-' "
 	BranchCharsMaxLength  = 255
-	BranchInvalidLength   = "Branch name length exceeded " + string(rune(BranchCharsMaxLength)) + " chars"
-	InvalidBranchTemplate = "Branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	BranchInvalidLength   = "branch name length exceeded " + string(rune(BranchCharsMaxLength)) + " chars"
+	InvalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
 )
 
 var (
