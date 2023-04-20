@@ -43,6 +43,11 @@ const (
 	GitProjectEnv   = "JF_GIT_PROJECT"
 	GitUsernameEnv  = "JF_GIT_USERNAME"
 
+	// Git naming template environment variables
+	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
+	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
+	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
+
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
 	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"

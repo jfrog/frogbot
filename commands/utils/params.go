@@ -370,6 +370,12 @@ func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []by
 	return os.ReadFile(fullConfigDirPath)
 }
 
+func extractGitNamingTemplatesFromEnv(git *Git) {
+	git.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)
+	git.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
+	git.PullRequestTitleTemplate = getTrimmedEnv(PullRequestTitleTemplateEnv)
+}
+
 func extractProjectParamsFromEnv(project *Project) error {
 	workingDir := getTrimmedEnv(WorkingDirectoryEnv)
 	if workingDir == "" {
@@ -450,6 +456,7 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
 		return nil, err
 	}
+	extractGitNamingTemplatesFromEnv(&params.Git)
 	repo.JfrogReleasesRepo = releasesRepo
 	repo.Projects = append(repo.Projects, project)
 	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
