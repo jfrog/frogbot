@@ -313,11 +313,6 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	currVersion := version.NewVersion(currVersionStr)
 	for _, fixVersion := range fixVersions {
 		fixVersionCandidate := parseVersionChangeString(fixVersion)
-		// Don't allow major version changes
-		majorChanged := utils.IsMajorVersionChange(fixVersionCandidate, currVersionStr)
-		if majorChanged {
-			return ""
-		}
 		if currVersion.Compare(fixVersionCandidate) > 0 {
 			return fixVersionCandidate
 		}
