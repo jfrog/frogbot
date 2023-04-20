@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
@@ -122,6 +123,34 @@ func TestMd5Hash(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
 			hash, err := Md5Hash(test.values...)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedHash, hash)
+		})
+	}
+}
+func TestFixVersionsMapToMd5Hash(t *testing.T) {
+	tests := []struct {
+		fixVersionMap map[string]*FixVersionInfo
+		expectedHash  string
+	}{
+		{
+			fixVersionMap: map[string]*FixVersionInfo{
+				"pkg": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			expectedHash: "04d49626b6356d09bdf850feee943c0b",
+		}, {
+			fixVersionMap: map[string]*FixVersionInfo{
+				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false},
+				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false}},
+			expectedHash: "4dcc4f7ddd9c9b5cf9515c8920e0cb3e",
+		}, {
+			fixVersionMap: map[string]*FixVersionInfo{
+				"myNuget": {FixVersion: "0.2.33", PackageType: coreutils.Nuget, DirectDependency: false}},
+			expectedHash: "539fb10954b1c9ab3af68636046df2e5",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expectedHash, func(t *testing.T) {
+			hash, err := FixVersionsMapToMd5Hash(test.fixVersionMap)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
 		})

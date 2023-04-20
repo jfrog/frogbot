@@ -122,6 +122,7 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 		fixVersionMapFirst  map[string]*FixVersionInfo
 		fixVersionMapSecond map[string]*FixVersionInfo
 		equal               bool
+		desc                string
 	}{
 		{
 			fixVersionMapFirst: map[string]*FixVersionInfo{
@@ -149,6 +150,7 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 				},
 			},
 			equal: true,
+			desc:  "should be equal",
 		},
 		{
 			fixVersionMapFirst: map[string]*FixVersionInfo{
@@ -176,11 +178,12 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 				},
 			},
 			equal: false,
+			desc:  "should not be equal",
 		},
 	}
 	gitManager := GitManager{}
 	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
+		t.Run(test.desc, func(t *testing.T) {
 			titleOutput1, err := gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapFirst)
 			assert.NoError(t, err)
 			titleOutput2, err := gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapSecond)

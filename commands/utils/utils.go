@@ -149,6 +149,18 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+func FixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
+	h := crypto.MD5.New()
+	// Iterate over the keys in the map and add their MD5 hash to the overall hash
+	for key, value := range versionsMap {
+		_, err := fmt.Fprint(h, key, value)
+		if err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
 func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient, isMultipleRoots bool) error {
 	if repo.GitProvider.String() != vcsutils.GitHub.String() {
