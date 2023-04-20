@@ -311,7 +311,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
-func TestEExtractGitNamingTemplatesFromEnv(t *testing.T) {
+func TestExtractGitNamingTemplatesFromEnv(t *testing.T) {
 	git := Git{}
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
