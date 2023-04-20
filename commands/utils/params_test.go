@@ -319,9 +319,9 @@ func TestEExtractGitNamingTemplatesFromEnv(t *testing.T) {
 
 	// Test default values
 	extractGitNamingTemplatesFromEnv(&git)
-	assert.Equal(t, git.BranchNameTemplate, BranchNameTemplate)
-	assert.Equal(t, git.CommitMessageTemplate, CommitMessageTemplate)
-	assert.Equal(t, git.PullRequestTitleTemplate, PullRequestTitleTemplate)
+	assert.Empty(t, git.BranchNameTemplate)
+	assert.Empty(t, git.CommitMessageTemplate)
+	assert.Empty(t, git.PullRequestTitleTemplate)
 
 	// Test value extraction
 	SetEnvAndAssert(t, map[string]string{
