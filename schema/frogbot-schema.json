@@ -43,6 +43,32 @@
           "examples": ["master", "v1", "v2"]
         },
         "examples": [["master", "v1", "v2"]]
+      },
+      "commitMessageTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "[Frogbot]",
+          "fix(dependency) update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
+        ]
+      },
+      "branchNameTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "Frogbot-${BRANCH_NAME_HASH}",
+          "Security_Update-${BRANCH_NAME_HASH}",
+          "${BRANCH_NAME_HASH}-Feature"
+        ]
+      },
+      "pullRequestTitleTemplate": {
+        "type": "string",
+        "default": "",
+        "examples": [
+          "[Frogbot]-${IMPACTED_PACKAGE}",
+          "[Security_Update]-${FIX_VERSION}",
+          "[Feature]"
+        ]
       }
     },
     "examples": [
@@ -78,7 +104,7 @@
               "type": "string",
               "title": "Install Command",
               "description": "An installation command to run to resolve the project dependencies.",
-              "examples": ["npm i", "nuget restore", "dotnet restore"]
+              "examples": ["nuget restore", "dotnet restore"]
             },
             "workingDirs": {
               "type": "array",

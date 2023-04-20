@@ -21,7 +21,6 @@ should be provided as variables as part of the Frogbot workflows.
 When your Git repository includes multiple subprojects, and each subproject has its own descriptor file (package.json in the case of npm), the **frogbot-config.yml** file should 
 include the relative paths to the subprojects. Frogbot uses this configuration to scan each subproject separately. 
 In the following example, there are two subprojects under `path/to/project-1` and `path/to/project-2`.
-The dependencies of each subproject are downloaded using the `npm i` command.`  
 ```yaml
 - params:
     git:
@@ -30,13 +29,12 @@ The dependencies of each subproject are downloaded using the `npm i` command.`
         - master
     scan:
       projects:
-        - installCommand: npm i
-          workingDirs:
+        - workingDirs:
             - path/to/npm/project-1
             - path/to/npm/project-2
 ```
 
-Here's another example for a repository that uses the `npm i` command to download the dependencies of one subproject, and `nuget restore` to download the dependencies of the second.
+Here's another example. Notice that projects whuch use the nuget client to download the depedencies, the download command needs to be specified.
 ```yaml
 - params:
     git:
@@ -45,29 +43,11 @@ Here's another example for a repository that uses the `npm i` command to downloa
         - master
     scan:
       projects:
-        - installCommand: npm i
-          workingDirs:
+        - workingDirs:
             - path/to/node/project
         - installCommand: nuget restore
           workingDirs:
             - path/to/.net/project
-```
-
-The next example is for a repository that uses both `npm` and `mvn` to download the dependencies.
-Notice that for Maven projects, there's no need to set the `installCommand` property.
-```yaml
-- params:
-    git:
-      repoName: my-git-repo-name
-      branches:
-        - master
-    scan:
-      projects:
-        - installCommand: npm i
-          workingDirs:
-            - path/to/node/project
-        - workingDirs:
-            - path/to/maven/project
 ```
 
 See the full **frogbot-config.yml** structure [here](templates/.frogbot/frogbot-config.yml).
@@ -86,9 +66,6 @@ Here's an example for a **frogbot-config.yml** referencing multiple repositories
       repoName: repo-1
       branches:
         - master
-    scan:
-      projects:
-        - installCommand: npm i
 - params:
     git:
       repoName: repo-2
@@ -115,37 +92,4 @@ Frogbot expects the frogbot-config.yml file to be in the following path from the
 **IMPORTANT**: The `frogbot-config.yml` file must be pushed to the target branch before it can be used by Frogbot. This means that if, for example, a pull request includes the `frogbot-config.yml` and the target branch doesn't, the file will be ignored.
 
 ## The frogbot-config.yml file structure
-
-The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file has the following structure.
-
-### Params
-
-This section represents a single Git repository. It includes the **git**, **jfrogPlatform** and **scan** sections.
-
-#### git
-
-This section includes the git repository related parameters.
-
-- **repoName** - [Mandatory] The name of the Git repository to scan.
-- **branches** - [Mandatory] The branches to scan
-
-#### scan
-
-This section includes the scanning options for Frogbot.
-
-- **includeAllVulnerabilities** - [Default: false] Frogbot displays all the existing vulnerabilities, including the ones that were added by the pull request and the ones that are inside the target branch already.
-
-- **failOnSecurityIssues** - [Default: true] Frogbot fails the task if any security issue is found.
-- **projects** - List of sub-projects / project dirs.
-  - **workingDirs** - [Default: root directory] A list of relative path's inside the Git repository. Each path should point to the root of a sub-project to be scannedby Frogbot.
-  - **installCommand** - [Mandatory for projects which use npm, yarn 2, NuGet and .NET to download their dependencies] The command to download the projectdependencies. For example: 'npm install', 'nuget restore'.
-  - **pipRequirementsFile** [Mandatory for projects which use the pip package manager to download their dependencies, if pip requires the requirements file]
-  - **useWrapper** - [Default: true] Determines whether to use the Gradle Wrapper for projects which are using Gradle.
-  - **repository** - [Optional] Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from.
-
-#### jfrogPlatform
-
-The section includes the JFrog Platform settings
-
-- **jfrogProjectKey** - [Optional] The JFrog project key. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Projects).
-- **watches** - [Optional] The list of Xray watches. Learn more about it [here](https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches).
+See the complete content and stracture of the **frogbot-config.yml** file [here](templates/.frogbot/frogbot-config.yml).

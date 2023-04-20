@@ -12,6 +12,7 @@ async function main() {
                 await Utils.execScanPullRequest();
                 break;
             case "push":
+            case "schedule":
                 await Utils.execCreateFixPullRequests();
                 break;
             default:

@@ -43,6 +43,11 @@ const (
 	GitProjectEnv   = "JF_GIT_PROJECT"
 	GitUsernameEnv  = "JF_GIT_USERNAME"
 
+	// Git naming template environment variables
+	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
+	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
+	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
+
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv            = "JF_INSTALL_DEPS_CMD"
 	RequirementsFileEnv          = "JF_REQUIREMENTS_FILE"
@@ -74,11 +79,21 @@ const (
 	GitHubActionsEnv = "GITHUB_ACTIONS"
 
 	// When Frogbot periodically scans repositories, it skips scanning repositories for which the latest commit has already been scanned,
-	// unless the latest commit has been scanned more then 'SkipRepoScanDays' days ago.
+	// unless the latest commit was scanned more than 'SkipRepoScanDays' days ago.
 	SkipRepoScanDays = 4
 
 	// Used by Frogbot to create new commits statuses and recognize its own statuses.
 	CommitStatusDescription = "Scanned by Frogbot"
 	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
 	FrogbotCreatorName      = "Frogbot"
+
+	// Placeholders for templates
+	PackagePlaceHolder    = "${IMPACTED_PACKAGE}"
+	FixVersionPlaceHolder = "${FIX_VERSION}"
+	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
+
+	// Default naming templates
+	BranchNameTemplate       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	CommitMessageTemplate    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	PullRequestTitleTemplate = "[🐸 Frogbot] Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 )

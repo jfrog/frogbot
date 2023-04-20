@@ -5,7 +5,6 @@
         - master
     scan:
       projects:
-        - installCommand: npm i
-          workingDirs:
+        - workingDirs:
             - .
       failOnSecurityIssues: false

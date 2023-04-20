@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -138,6 +139,39 @@ func TestGetRelativeWd(t *testing.T) {
 	assert.Equal(t, "", GetRelativeWd(fullPath, baseWd))
 }
 
+func TestIsDirectDependency(t *testing.T) {
+	tests := []struct {
+		impactPath    [][]formats.ComponentRow
+		expected      bool
+		expectedError bool
+	}{
+		{
+			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack2", Version: "1.2.3"}}},
+			expected:      true,
+			expectedError: false,
+		}, {
+			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}, {{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack22", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
+			expected:      false,
+			expectedError: false,
+		}, {
+			impactPath:    [][]formats.ComponentRow{},
+			expected:      false,
+			expectedError: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			isDirect, err := IsDirectDependency(test.impactPath)
+			assert.Equal(t, test.expected, isDirect)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
 func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
@@ -160,4 +194,69 @@ func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 		})
 	}
 	return
+}
+
+func TestValidatedBranchName(t *testing.T) {
+	tests := []struct {
+		branchName    string
+		expectedError bool
+		errorMessage  string
+	}{
+		{
+			branchName:    "thi?s-is-my-test",
+			expectedError: true,
+			errorMessage:  branchInvalidChars,
+		}, {
+			branchName:    "thi^s-is-my-test",
+			expectedError: true,
+			errorMessage:  branchInvalidChars,
+		}, {
+			branchName:    "thi~s-is-my-test",
+			expectedError: true,
+			errorMessage:  branchInvalidChars,
+		}, {
+			branchName:    "this[]-is-my-test",
+			expectedError: true,
+			errorMessage:  branchInvalidChars,
+		}, {
+			branchName:    "this@-is-my-test",
+			expectedError: true,
+			errorMessage:  branchInvalidChars,
+		}, {
+			branchName:    "this is myt est ${BRANCH_NAME_HASH}",
+			expectedError: false,
+			errorMessage:  "",
+		}, {
+			branchName:    "(Feature)New branch ${BRANCH_NAME_HASH}",
+			expectedError: false,
+			errorMessage:  "",
+		}, {
+			branchName:    "(frogbot)(feature) ${BRANCH_NAME_HASH} my name",
+			expectedError: false,
+			errorMessage:  "",
+		}, {
+			branchName:    "-this_should_not_work_prefix",
+			expectedError: true,
+			errorMessage:  branchInvalidPrefix,
+		}, {
+			branchName:    "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc, quis gravida magna mi a libero. Fusce vulputate eleifend sapien. Vestibulum purus quam, scelerisque ut, mollis sed, nonummy id, metus. Nullam accumsan lorem in dui. Cras ultricies mi eu turpis hendrerit fringilla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et",
+			expectedError: true,
+			errorMessage:  branchInvalidLength,
+		}, {
+			branchName:    "",
+			expectedError: false,
+			errorMessage:  "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.branchName, func(t *testing.T) {
+			err := validateBranchName(test.branchName)
+			if test.expectedError {
+				assert.Error(t, err)
+				assert.Equal(t, err.Error(), test.errorMessage)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
