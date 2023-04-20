@@ -48,7 +48,7 @@ jobs:
           python-version: "3.x"
 
       - name: Install python components
-        run: pip3 install pipenv virtualenv poetry
+        run: python -m pip install pipenv poetry
 
       # Generate mocks
       - name: Generate mocks
