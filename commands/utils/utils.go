@@ -218,15 +218,6 @@ func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	return len(impactPath[0]) < 3, nil
 }
 
-// Assuming version comes in a.b.c format,without any prefixes.
-func IsMajorVersionChange(fixVersionCandidate string, currVersionStr string) bool {
-	index := 0
-	separator := "."
-	candidateMajorVersion := strings.Split(fixVersionCandidate, separator)[index]
-	currentMajorVersion := strings.Split(currVersionStr, separator)[index]
-	return candidateMajorVersion != currentMajorVersion
-}
-
 func validateBranchName(branchName string) error {
 	// Default is "" which will be replaced with default template
 	if len(branchName) == 0 {
