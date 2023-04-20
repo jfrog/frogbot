@@ -164,7 +164,7 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesSeparately(fixVersionsMap map[st
 
 func (cfp *CreateFixPullRequestsCmd) aggregateFixPackages(versionsMap map[string]*utils.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
-	log.Info("Start aggregated packages fix") // TODO log this better
+	log.Info("Start aggregated packages fix")
 	fixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(versionsMap)
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
@@ -174,7 +174,6 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixPackages(versionsMap map[string
 			return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
 		}
 	}
-	// TODO this method should also delete
 	if err = cfp.openAggregatedPullRequest(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
 	}

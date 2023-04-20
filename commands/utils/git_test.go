@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -112,6 +113,80 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.FixVersion)
 			assert.Equal(t, test.expected, titleOutput)
+		})
+	}
+}
+
+func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
+	tests := []struct {
+		fixVersionMapFirst  map[string]*FixVersionInfo
+		fixVersionMapSecond map[string]*FixVersionInfo
+		equal               bool
+	}{
+		{
+			fixVersionMapFirst: map[string]*FixVersionInfo{
+				"pkg": {
+					FixVersion:       "1.2.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+				"pkg2": {
+					FixVersion:       "1.5.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+			},
+			fixVersionMapSecond: map[string]*FixVersionInfo{
+				"pkg": {
+					FixVersion:       "1.2.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+				"pkg2": {
+					FixVersion:       "1.5.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+			},
+			equal: true,
+		},
+		{
+			fixVersionMapFirst: map[string]*FixVersionInfo{
+				"pkg": {
+					FixVersion:       "1.2.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+				"pkg2": {
+					FixVersion:       "1.5.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+			},
+			fixVersionMapSecond: map[string]*FixVersionInfo{
+				"pkgOther": {
+					FixVersion:       "1.2.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+				"pkg2": {
+					FixVersion:       "1.5.3",
+					PackageType:      coreutils.Npm,
+					DirectDependency: false,
+				},
+			},
+			equal: false,
+		},
+	}
+	gitManager := GitManager{}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			titleOutput1, err := gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapFirst)
+			assert.NoError(t, err)
+			titleOutput2, err := gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapSecond)
+			assert.NoError(t, err)
+			equal := titleOutput1 == titleOutput2
+			assert.Equal(t, test.equal, equal)
 		})
 	}
 }

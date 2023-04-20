@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -282,8 +284,20 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 
 // Generates unique branch name constructed from all the vulnerable package
 func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixVersionInfo) (fixBranchName string, err error) {
-	// TODO implement me!
-	return
+	h := md5.New()
+	// Iterate over the keys in the map and add their MD5 hash to the overall hash
+	for key, value := range versionsMap {
+		hash := md5.Sum([]byte(key + value.FixVersion))
+		h.Write(hash[:])
+	}
+	// Return the hex representation of the overall hash
+	hash := hex.EncodeToString(h.Sum(nil))
+	branchFormat := gm.customTemplates.branchNameTemplate
+	if branchFormat == "" {
+		branchFormat = BranchNameTemplate
+	}
+	// TODO this cause to "frogbot--hash" , decide if the put a place holder telling this is a aggregated or not..
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
