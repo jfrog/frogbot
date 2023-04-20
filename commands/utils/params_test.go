@@ -329,6 +329,7 @@ func TestEExtractGitNamingTemplatesFromEnv(t *testing.T) {
 		CommitMessageTemplateEnv:    "commit",
 		PullRequestTitleTemplateEnv: "title"})
 
+	extractGitNamingTemplatesFromEnv(&git)
 	assert.Equal(t, git.BranchNameTemplate, "branch")
 	assert.Equal(t, git.CommitMessageTemplate, "commit")
 	assert.Equal(t, git.PullRequestTitleTemplate, "title")
