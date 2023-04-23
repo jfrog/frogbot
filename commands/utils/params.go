@@ -292,6 +292,9 @@ func extractGitParamsFromEnv() (*Git, error) {
 	gitParams.Branches = append(gitParams.Branches, branch)
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		gitParams.PullRequestID, err = strconv.Atoi(pullRequestIDString)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// Non-mandatory git aggregate pull requests feature
 	aggregatePullRequestsEnv, err := getBoolEnv(GitAggregatePullRequestsEnv, false)
