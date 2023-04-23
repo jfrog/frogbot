@@ -69,6 +69,10 @@
           "[Security_Update]-${FIX_VERSION}",
           "[Feature]"
         ]
+      } ,
+      "aggregatePullRequests": {
+        "type": "boolean",
+        "default": "false"
       }
     },
     "examples": [

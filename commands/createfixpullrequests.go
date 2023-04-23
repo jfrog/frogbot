@@ -30,8 +30,8 @@ type CreateFixPullRequestsCmd struct {
 	projectWorkingDir string
 	// The git client the command performs git operations with
 	gitManager *utils.GitManager
-	// Decide if to fix each vulnerability separately or to aggregate to one pull request
-	aggregateVulnerabilitiesFixes bool
+	// Decide if to fix each vulnerability separately or to aggregate to one pull request at any given time
+	aggregatePullRequests bool
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -135,7 +135,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		}
 	}()
 
-	if cfp.aggregateVulnerabilitiesFixes {
+	if cfp.aggregatePullRequests {
 		err = cfp.fixPackagesAggregated(fixVersionsMap)
 	} else {
 		err = cfp.fixPackagesSeparately(fixVersionsMap)

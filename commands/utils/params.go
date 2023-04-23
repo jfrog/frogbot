@@ -129,6 +129,7 @@ type Git struct {
 	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	AggregatePullRequests    bool     `yaml:"aggregatePullRequests,omitempty"`
 	GitProject               string
 	RepoOwner                string
 	Token                    string
@@ -222,6 +223,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 		gitParams.PullRequestTitleTemplate = result[i].PullRequestTitleTemplate
 		gitParams.CommitMessageTemplate = result[i].CommitMessageTemplate
 		gitParams.BranchNameTemplate = result[i].BranchNameTemplate
+		gitParams.AggregatePullRequests = result[i].AggregatePullRequests
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}
@@ -291,6 +293,12 @@ func extractGitParamsFromEnv() (*Git, error) {
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		gitParams.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 	}
+	// Non-mandatory git aggregate pull requests feature
+	aggregatePullRequestsEnv, err := getBoolEnv(GitAggregatePullRequestsEnv, false)
+	if err != nil {
+		return nil, err
+	}
+	gitParams.AggregatePullRequests = aggregatePullRequestsEnv
 	return &gitParams, err
 }
 
@@ -370,10 +378,16 @@ func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []by
 	return os.ReadFile(fullConfigDirPath)
 }
 
-func extractGitNamingTemplatesFromEnv(git *Git) {
+func extractGitNamingTemplatesFromEnv(git *Git) (err error) {
 	git.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)
 	git.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
 	git.PullRequestTitleTemplate = getTrimmedEnv(PullRequestTitleTemplateEnv)
+	aggregatePrs, err := getBoolEnv(GitAggregatePullRequestsEnv, false)
+	if err != nil {
+		return
+	}
+	git.AggregatePullRequests = aggregatePrs
+	return
 }
 
 func extractProjectParamsFromEnv(project *Project) error {
@@ -456,7 +470,9 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 	if err := extractRepoParamsFromEnv(&repo); err != nil {
 		return nil, err
 	}
-	extractGitNamingTemplatesFromEnv(&params.Git)
+	if err := extractGitNamingTemplatesFromEnv(&params.Git); err != nil {
+		return nil, err
+	}
 	repo.JfrogReleasesRepo = releasesRepo
 	repo.Projects = append(repo.Projects, project)
 	repo.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)

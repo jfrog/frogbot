@@ -61,10 +61,11 @@ const (
 	WatchesDelimiter             = ","
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	GitTokenEnv         = "JF_GIT_TOKEN"
-	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
-	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
-	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
+	GitTokenEnv                 = "JF_GIT_TOKEN"
+	GitBaseBranchEnv            = "JF_GIT_BASE_BRANCH"
+	GitPullRequestIDEnv         = "JF_GIT_PULL_REQUEST_ID"
+	GitApiEndpointEnv           = "JF_GIT_API_ENDPOINT"
+	GitAggregatePullRequestsEnv = "JF_GIT_AGGREGATE_PRS"
 
 	// Comment
 	tableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +

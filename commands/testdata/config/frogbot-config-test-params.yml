@@ -6,6 +6,7 @@
       branchNameTemplate: "this is my branch ${BRANCH_NAME_HASH}"
       commitMessageTemplate: "custom commit title"
       pullRequestTitleTemplate: "myPullRequests"
+      aggregatePullRequests: true
     scan:
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
