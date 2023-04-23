@@ -297,7 +297,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*Fi
 	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }
 
-func (gm *GitManager) DeleteOutdatedBranches(ignoreBranchName string) (err error) {
+func (gm *GitManager) DeleteFrogbotOutdatedBranches(ignoreBranchName string) (err error) {
 	// Get the list of all remote references
 	refList, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {

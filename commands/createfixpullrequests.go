@@ -183,7 +183,7 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[st
 	}
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Clearing outdated Frogbot's branches...")
-	if err = cfp.gitManager.DeleteOutdatedBranches(aggregatedFixBranchName); err != nil {
+	if err = cfp.gitManager.DeleteFrogbotOutdatedBranches(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
 	}
 	return
