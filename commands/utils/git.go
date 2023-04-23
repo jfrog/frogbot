@@ -3,9 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"golang.org/x/exp/slices"
 	"os"
 	"strings"
 	"time"
@@ -18,6 +20,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
+
+var notAllowedToDeleteBranches = []string{"main", "master", "dev", "develop"}
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
@@ -171,8 +175,8 @@ func (gm *GitManager) commit(commitMessage string) error {
 	}
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "JFrog-Frogbot",
-			Email: "eco-system+frogbot@jfrog.com",
+			Name:  FrogbotAuthorName,
+			Email: FrogbotAuthorEmail,
 			When:  time.Now(),
 		},
 	})
@@ -288,10 +292,49 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*Fi
 	}
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
-		branchFormat = BranchNameTemplate
+		branchFormat = AggregatedBranchTemplate
 	}
-	// TODO revisit impactedPackage placeholder
-	return formatStringWithPlaceHolders(branchFormat, "update-dependencies", "", hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
+}
+
+func (gm *GitManager) DeleteOutdatedBranches(ignoreBranchName string) (err error) {
+	// Get the list of all remote references
+	refList, err := gm.repository.Remote(gm.remoteName)
+	if err != nil {
+		return
+	}
+	list, err := refList.List(&git.ListOptions{Auth: gm.auth})
+	if err != nil {
+		return err
+	}
+	for _, r := range list {
+		// Skip pull requests refs
+		if strings.Contains(r.Name().String(), "pull") {
+			continue
+		}
+		// Check head commit
+		commitObj, err := gm.repository.CommitObject(r.Hash())
+		if err != nil {
+			continue
+		}
+		// Get the author of the commit
+		author := commitObj.Author
+		deleteBranchName := r.Name().Short()
+		// Delete outdated Frogbot's branches
+		if isSafeToDelete(ignoreBranchName, deleteBranchName, author) {
+			err = refList.Push(&git.PushOptions{
+				RemoteName: gm.remoteName,
+				RefSpecs:   []config.RefSpec{config.RefSpec(":refs/heads/" + deleteBranchName)},
+				Auth:       gm.auth,
+			})
+			if err != nil {
+				log.Warn("Failed to delete branch:", deleteBranchName)
+				return err
+			}
+			log.Debug("Successfully deleted remote branch: ,", deleteBranchName)
+		}
+	}
+	return
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -345,4 +388,14 @@ func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 		return CustomTemplates{}, err
 	}
 	return template, nil
+}
+
+// Verify branch we are about to delete, Author must be Frogbot,
+// BranchToDelete cannot be one of the protected branches or the ignoreBranch
+func isSafeToDelete(ignoreBranchName string, branchToDelete string, author object.Signature) bool {
+	notAllowedToDeleteBranches = append(notAllowedToDeleteBranches, ignoreBranchName)
+	allowedToDeleteBranch := !slices.Contains(notAllowedToDeleteBranches, branchToDelete)
+	return author.Name == FrogbotAuthorName &&
+		author.Email == FrogbotAuthorEmail &&
+		allowedToDeleteBranch
 }

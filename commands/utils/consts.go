@@ -94,6 +94,10 @@ const (
 
 	// Default naming templates
 	BranchNameTemplate       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	AggregatedBranchTemplate = "frogobt-" + BranchHashPlaceHolder
 	CommitMessageTemplate    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	PullRequestTitleTemplate = "[🐸 Frogbot] Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	// Frogbot Git author details showed in commits
+	FrogbotAuthorName  = "JFrog-Frogbot"
+	FrogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
 )
