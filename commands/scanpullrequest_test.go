@@ -37,21 +37,21 @@ const (
 
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
-	params := createXrayScanParams(nil, "")
+	params := CreateXrayScanParams(nil, "")
 	assert.Empty(t, params.Watches)
 	assert.Equal(t, "", params.ProjectKey)
 	assert.True(t, params.IncludeVulnerabilities)
 	assert.False(t, params.IncludeLicenses)
 
 	// Watches
-	params = createXrayScanParams([]string{"watch-1", "watch-2"}, "")
+	params = CreateXrayScanParams([]string{"watch-1", "watch-2"}, "")
 	assert.Equal(t, []string{"watch-1", "watch-2"}, params.Watches)
 	assert.Equal(t, "", params.ProjectKey)
 	assert.False(t, params.IncludeVulnerabilities)
 	assert.False(t, params.IncludeLicenses)
 
 	// Project
-	params = createXrayScanParams(nil, "project")
+	params = CreateXrayScanParams(nil, "project")
 	assert.Empty(t, params.Watches)
 	assert.Equal(t, "project", params.ProjectKey)
 	assert.False(t, params.IncludeVulnerabilities)
@@ -413,7 +413,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup := utils.ScanDetails{
 		Project:                  utils.Project{},
-		FailOnInstallationErrors: true,
+		failOnInstallationErrors: true,
 	}
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
 	tmpDir, err := fileutils.CreateTempDir()
@@ -427,7 +427,7 @@ func TestRunInstallIfNeeded(t *testing.T) {
 
 	scanSetup.InstallCommandName = "not-exist"
 	scanSetup.InstallCommandArgs = []string{"1", "2"}
-	scanSetup.FailOnInstallationErrors = false
+	scanSetup.failOnInstallationErrors = false
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	params = &utils.Project{
@@ -435,7 +435,7 @@ func TestRunInstallIfNeeded(t *testing.T) {
 		InstallCommandArgs: []string{"1", "2"},
 	}
 	scanSetup.Project = *params
-	scanSetup.FailOnInstallationErrors = true
+	scanSetup.failOnInstallationErrors = true
 	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
 }
 

@@ -27,7 +27,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
-	github.com/andybalholm/brotli v1.0.1 // indirect
+	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -111,8 +111,10 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-//replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.13.2-0.20230404093739-610cb3af8862
+replace github.com/jfrog/jfrog-client-go => ../jfrog-client-go
 
-//replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.15.3-0.20230404095831-ce76a2622e41
+replace github.com/jfrog/jfrog-cli-core/v2 => ../jfrog-cli-core
+
+replace github.com/jfrog/gofrog => ../gofrog
 
 //replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230403064815-ea83b399ac8e

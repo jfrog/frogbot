@@ -9,6 +9,8 @@
     scan:
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
+      minSeverityFilter: "high"
+      withFixVersionFilter: true
       projects:
         - installCommand: nuget restore
           workingDirs:

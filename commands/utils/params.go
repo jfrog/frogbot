@@ -37,12 +37,13 @@ type FrogbotUtils struct {
 type FrogbotConfigAggregator []FrogbotRepoConfig
 
 // UnmarshalYaml uses the yaml.Unmarshaler interface to parse the yamlContent, and then sets default values if they weren't set by the user.
-func (fca FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result FrogbotConfigAggregator, err error) {
+func (fca *FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result FrogbotConfigAggregator, err error) {
 	var configFile *FrogbotConfigAggregator
 	if err := yaml.Unmarshal(yamlContent, &configFile); err != nil {
 		return nil, err
 	}
 	for _, repository := range *configFile {
+		repository.MinSeverityFilter = strings.ToLower(repository.MinSeverityFilter)
 		repository.Params, err = repository.Params.setDefaultsIfNeeded()
 		if err != nil {
 			return
@@ -97,7 +98,9 @@ func (p *Project) setDefaultsIfNeeded() *Project {
 
 type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
+	WithFixVersionFilter      bool      `yaml:"withFixVersionFilter,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	MinSeverityFilter         string    `yaml:"minSeverityFilter,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	JfrogReleasesRepo         string
 }
@@ -425,6 +428,9 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 		repo.Watches = strings.Split(watches, WatchesDelimiter)
 	}
 	_ = ReadParamFromEnv(jfrogProjectEnv, &repo.JFrogProjectKey)
+	// Results filtering environment variables
+	_ = ReadParamFromEnv(MinSeverityFilterEnv, &repo.MinSeverityFilter)
+	repo.WithFixVersionFilter, err = getBoolEnv(WithFixVersionFilterEnv, false)
 	return err
 }
 

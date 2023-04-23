@@ -27,7 +27,7 @@ const (
 	RootDir         = "."
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
-	// Branch validation error messages
+	// branch validation error messages
 	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
 	branchInvalidPrefix   = "branch name cannot start with '-' "
 	branchCharsMaxLength  = 255
@@ -81,17 +81,6 @@ type ErrMissingConfig struct {
 
 func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
-}
-
-type ScanDetails struct {
-	services.XrayGraphScanParams
-	Project
-	*config.ServerDetails
-	*Git
-	Client                   vcsclient.VcsClient
-	FailOnInstallationErrors bool
-	Branch                   string
-	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
