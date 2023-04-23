@@ -252,7 +252,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if isClean {
 		return fmt.Errorf("there were no changes in the fix branch '%s'", fixBranchName)
 	}
-	commitMessage := "Update vulnerable dependencies"
+	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitMessage)
 	if err != nil {

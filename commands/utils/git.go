@@ -242,6 +242,14 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
+func (gm *GitManager) GenerateAggregatedCommitMessage() string {
+	template := gm.customTemplates.commitMessageTemplate
+	if template == "" {
+		template = AggregatedCommitTemplate
+	}
+	return formatStringWithPlaceHolders(template, "", "", "", true)
+}
+
 func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
 	replacements := []struct {
 		placeholder string
