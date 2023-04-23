@@ -350,7 +350,6 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			return err
 		}
 		defer func() {
-			log.Info("hello i'm defreing")
 			e := restoreDir()
 			if err == nil {
 				err = e

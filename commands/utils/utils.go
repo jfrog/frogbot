@@ -151,7 +151,7 @@ func Md5Hash(values ...string) (string, error) {
 }
 
 // Generates MD5Hash from a FixVersionMap object
-// The map can return in different order from Xray, so we need to sort the strings before hashing.
+// The map can be returned in different order from Xray, so we need to sort the strings before hashing.
 func FixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
 	h := crypto.MD5.New()
 	// Sort the package names
