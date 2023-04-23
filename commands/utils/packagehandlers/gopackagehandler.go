@@ -2,7 +2,11 @@ package packagehandlers
 
 import (
 	"github.com/jfrog/frogbot/commands/utils"
-	"strings"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+)
+
+const (
+	GoPackage = "github.com/golang/go"
 )
 
 type GoPackageHandler struct {
@@ -10,6 +14,9 @@ type GoPackageHandler struct {
 }
 
 func (golang *GoPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
-	impactedPackage = strings.Trim(impactedPackage, "v")
+	if impactedPackage == GoPackage {
+		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your go.mod file. Update Go version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
+		return nil
+	}
 	return golang.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
 }
