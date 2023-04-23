@@ -20,6 +20,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -149,10 +150,17 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// Generates MD5Hash from a FixVersionMap object
+// The map can return in different order from Xray, so we need to sort the strings before hashing.
 func FixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
 	h := crypto.MD5.New()
-	// Iterate over the keys in the map and add their MD5 hash to the overall hash
-	for key, value := range versionsMap {
+	// Sort the package names
+	keys := make([]string, 0, len(versionsMap))
+	for k, v := range versionsMap {
+		keys = append(keys, k+v.FixVersion)
+	}
+	sort.Strings(keys)
+	for key, value := range keys {
 		_, err := fmt.Fprint(h, key, value)
 		if err != nil {
 			return "", err

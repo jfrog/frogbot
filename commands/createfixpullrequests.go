@@ -140,9 +140,6 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 	} else {
 		err = cfp.fixPackagesSeparately(fixVersionsMap)
 	}
-	if err != nil {
-		log.Warn(err)
-	}
 	return
 }
 
@@ -164,11 +161,11 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[st
 	successfullyFixedPackages := make(map[string]*utils.FixVersionInfo)
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
-	fixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
+	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
 	if err != nil {
 		return
 	}
-	if err = cfp.createFixingBranch(fixBranchName); err != nil {
+	if err = cfp.createFixingBranch(aggregatedFixBranchName); err != nil {
 		return
 	}
 	// Fix all packages in the same branch
@@ -180,7 +177,13 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[st
 			successfullyFixedPackages[impactedPackage] = fixVersionInfo
 		}
 	}
-	if err = cfp.openAggregatedPullRequest(fixBranchName, successfullyFixedPackages); err != nil {
+
+	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
+		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
+	}
+	log.Info("-----------------------------------------------------------------")
+	log.Info("Clearing outdated Frogbot's branches...")
+	if err = cfp.gitManager.DeleteOutdatedBranches(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
 	}
 	return
