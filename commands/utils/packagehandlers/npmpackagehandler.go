@@ -12,6 +12,7 @@ const (
 	packageLockName              = "package-lock.json"
 	supportedPackageLockVersion  = 3
 	lockFileVersionAttributeName = "lockfileVersion"
+	indirectDependencyPath       = "packages.node_modules/%s.dependencies.%s"
 )
 
 type NpmPackageHandler struct {
@@ -26,14 +27,16 @@ func (npm *NpmPackageHandler) UpdateImpactedPackage(impactedPackage string, fixV
 }
 
 // updateIndirectDependency attempts changing the indirect dependency version
+// The fix version should be compatible with the root package in order to fix the indirect package.
 // If fails, log the error and return nil to avoid crashing the whole operation.
+// See https://github.com/npm/node-semver#caret-ranges-123-025-004 for more info
 func (npm *NpmPackageHandler) updateIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	parsedJson, err := loadPackageLockFile()
 	if err != nil {
 		log.Error("Failed trying to load package-lock file: ", err)
 		return nil
 	}
-	if err = modifyIndirectDependency(impactedPackage, fixVersionInfo, parsedJson, err); err != nil {
+	if err = modifyIndirectDependency(impactedPackage, fixVersionInfo, parsedJson); err != nil {
 		log.Error("Failed trying to modify package-lock file: ", err)
 		return nil
 	}
@@ -54,15 +57,22 @@ func saveModifiedFile(parsedJson *gabs.Container) error {
 	return nil
 }
 
-func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, parsedJson *gabs.Container, err error) error {
+func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, parsedJson *gabs.Container) (err error) {
 	directDependencyName := fixVersionInfo.Vulnerability.ImpactPaths[0][1].Name
-	pathToModule := fmt.Sprintf("packages.node_modules/%s.dependencies.%s", directDependencyName, impactedPackage)
-	// TODO check constraint!
-	_, err = parsedJson.SetP(fixVersionInfo.FixVersion, pathToModule)
-	if err != nil {
-		return err
+	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, impactedPackage)
+	versionWithConstraint := parsedJson.Path(pathToModule).String()
+	validFix, err := checkCaret(versionWithConstraint, fixVersionInfo.FixVersion)
+	if err != nil || !validFix {
+		return fmt.Errorf("fix version does not match package constraints")
 	}
-	return nil
+	_, err = parsedJson.SetP(fixVersionInfo.FixVersion, pathToModule)
+	return
+}
+
+// Check that version is compatible with caret constraint
+func checkCaret(versionWithConstraint string, fixVersion string) (ok bool, err error) {
+	// TODO implement me!
+	return true, nil
 }
 
 func loadPackageLockFile() (*gabs.Container, error) {
