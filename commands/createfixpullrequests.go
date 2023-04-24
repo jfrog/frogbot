@@ -264,12 +264,8 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
 		fixVersionInfo.UpdateFixVersionIfMax(vulnFixVersion)
 	} else {
-		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
-		if err != nil {
-			return err
-		}
 		// First appearance of a version that fixes the current impacted package
-		fixVersionsMap[vulnerability.ImpactedDependencyName] = utils.NewFixVersionInfo(vulnFixVersion, vulnerability.Technology, isDirectDependency)
+		fixVersionsMap[vulnerability.ImpactedDependencyName] = utils.NewFixVersionInfo(vulnFixVersion, vulnerability)
 	}
 	return nil
 }

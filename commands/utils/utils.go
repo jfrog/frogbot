@@ -58,10 +58,16 @@ type FixVersionInfo struct {
 	FixVersion       string
 	PackageType      coreutils.Technology
 	DirectDependency bool
+	Vulnerability    *formats.VulnerabilityOrViolationRow
 }
 
-func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
-	return &FixVersionInfo{newFixVersion, packageType, directDependency}
+func NewFixVersionInfo(newFixVersion string, vul *formats.VulnerabilityOrViolationRow) *FixVersionInfo {
+	direct, err := IsDirectDependency(vul.ImpactPaths)
+	if err != nil {
+		log.Error("Failed to calculate impact paths")
+		return nil
+	}
+	return &FixVersionInfo{newFixVersion, vul.Technology, direct, vul}
 }
 
 func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
