@@ -291,7 +291,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 
 // Generates unique branch name constructed from all the vulnerable package
 func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixVersionInfo) (fixBranchName string, err error) {
-	hash, err := FixVersionsMapToMd5Hash(versionsMap)
+	hash, err := fixVersionsMapToMd5Hash(versionsMap)
 	if err != nil {
 		return
 	}

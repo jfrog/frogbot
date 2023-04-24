@@ -296,7 +296,7 @@ func extractGitParamsFromEnv() (*Git, error) {
 			return nil, err
 		}
 	}
-	// Non-mandatory git aggregate pull requests feature
+	// Non-mandatory pull requests aggregation option
 	aggregateFixesEnv, err := getBoolEnv(GitAggregateFixesEnv, false)
 	if err != nil {
 		return nil, err
