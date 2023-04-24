@@ -29,7 +29,7 @@
       # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
       # pullRequestTitleTemplate: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
 
-      # [Default: false]
+      # [Optional, Default: false]
       # If true, Frogbot creates a single pull request with all the fixes.
       # If false, Frogbot creates a separate pull request for each fix.
       # aggregateFixes: false
