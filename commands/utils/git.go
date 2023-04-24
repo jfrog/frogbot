@@ -305,7 +305,9 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*Fi
 	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }
 
-func (gm *GitManager) DeleteFrogbotOutdatedBranches(ignoreBranchName string) (err error) {
+// Deletes all the branches by Frogbot except the ignoreBranchName.
+// When the aggregate pull requests flag is on, there can be only one branch by Frogbot.
+func (gm *GitManager) DeleteFrogbotBranchesExcept(ignoreBranchName string) (err error) {
 	// Get the list of all remote references
 	refList, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
@@ -320,26 +322,25 @@ func (gm *GitManager) DeleteFrogbotOutdatedBranches(ignoreBranchName string) (er
 		if strings.Contains(r.Name().String(), "pull") {
 			continue
 		}
-		// Check head commit
 		commitObj, err := gm.repository.CommitObject(r.Hash())
 		if err != nil {
 			continue
 		}
 		// Get the author of the commit
 		author := commitObj.Author
-		deleteBranchName := r.Name().Short()
+		deleteCandidateBranch := r.Name().Short()
 		// Delete outdated Frogbot's branches
-		if isSafeToDelete(ignoreBranchName, deleteBranchName, author) {
+		if isSafeToDelete(ignoreBranchName, deleteCandidateBranch, author) {
 			err = refList.Push(&git.PushOptions{
 				RemoteName: gm.remoteName,
-				RefSpecs:   []config.RefSpec{config.RefSpec(":refs/heads/" + deleteBranchName)},
+				RefSpecs:   []config.RefSpec{config.RefSpec(":refs/heads/" + deleteCandidateBranch)},
 				Auth:       gm.auth,
 			})
 			if err != nil {
-				log.Warn("Failed to delete branch:", deleteBranchName)
+				log.Warn("Failed to delete branch:", deleteCandidateBranch)
 				return err
 			}
-			log.Debug("Successfully deleted remote branch: ,", deleteBranchName)
+			log.Debug("Successfully deleted remote branch:", deleteCandidateBranch)
 		}
 	}
 	return
@@ -401,8 +402,8 @@ func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 // Verify branch we are about to delete, Author must be Frogbot,
 // BranchToDelete cannot be one of the protected branches or the ignoreBranch
 func isSafeToDelete(ignoreBranchName string, branchToDelete string, author object.Signature) bool {
-	notAllowedToDeleteBranches = append(notAllowedToDeleteBranches, ignoreBranchName)
-	allowedToDeleteBranch := !slices.Contains(notAllowedToDeleteBranches, branchToDelete)
+	notAllowedBranches := append(notAllowedToDeleteBranches, ignoreBranchName)
+	allowedToDeleteBranch := !slices.Contains(notAllowedBranches, branchToDelete)
 	return author.Name == FrogbotAuthorName &&
 		author.Email == FrogbotAuthorEmail &&
 		allowedToDeleteBranch
