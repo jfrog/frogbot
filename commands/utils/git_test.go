@@ -171,3 +171,19 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 		})
 	}
 }
+
+func TestGitManager_GenerateAggregatedCommitTitle(t *testing.T) {
+	tests := []struct {
+		gitManager GitManager
+		expected   string
+	}{
+		{gitManager: GitManager{}, expected: AggregatedTitleTemplate},
+		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
+	}
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			commit := test.gitManager.GenerateAggregatedCommitTitle()
+			assert.Equal(t, commit, test.expected)
+		})
+	}
+}

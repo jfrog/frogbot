@@ -248,7 +248,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if isClean {
 		return fmt.Errorf("there were no changes in the fix branch '%s'", fixBranchName)
 	}
-	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
+	commitMessage := cfp.gitManager.GenerateAggregatedCommitTitle()
 	log.Info("Running git add all and commit...")
 	err = cfp.gitManager.AddAllAndCommit(commitMessage)
 	if err != nil {
