@@ -64,6 +64,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 	}
 	for _, project := range repository.Projects {
 		cfp.details.Project = project
+		cfp.aggregatePullRequests = repository.Git.AggregatePullRequests
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(project.WorkingDirs, baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
 			scanResults, isMultipleRoots, err := cfp.scan(cfp.details, fullPathWd)
@@ -165,7 +166,7 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[st
 	if err != nil {
 		return
 	}
-	if err = cfp.createFixingBranch(aggregatedFixBranchName); err != nil {
+	if err = cfp.createFixingBranch(aggregatedFixBranchName, false); err != nil {
 		return
 	}
 	// Fix all packages in the same branch
@@ -181,11 +182,6 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[st
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
 	}
-	log.Info("-----------------------------------------------------------------")
-	log.Info("Clearing Frogbot's branches")
-	if err = cfp.gitManager.DeleteFrogbotBranchesExcept(aggregatedFixBranchName); err != nil {
-		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
-	}
 	return
 }
 
@@ -196,7 +192,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return
 	}
-	err = cfp.createFixingBranch(fixBranchName)
+	err = cfp.createFixingBranch(fixBranchName, true)
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
@@ -230,7 +226,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	}
 
 	log.Info("Pushing fix branch:", fixBranchName, "...")
-	err = cfp.gitManager.Push()
+	err = cfp.gitManager.Push(false)
 	if err != nil {
 		return
 	}
@@ -241,8 +237,8 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
 }
 
-// Opens an aggregated pull request on remote and deletes old pull requests by Frgobot if they exist.
-// When aggregate mode is active, there can be only one updated pull request to contain all the available fixes
+// When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
+// In case of an already opened pull request, Frogbot will only update the branch.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, versionsMap map[string]*utils.FixVersionInfo) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
@@ -258,24 +254,32 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err != nil {
 		return
 	}
-	log.Info("Pushing fix branch:", fixBranchName, "...")
-	err = cfp.gitManager.Push()
+	exists, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
 	}
-	pullRequestTitle := "Update vulnerable dependencies title"
-	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
-	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
+	log.Info("Pushing fix branch:", fixBranchName, "...")
+	err = cfp.gitManager.Push(true)
+	if err != nil {
+		return
+	}
+	if !exists {
+		pullRequestTitle := utils.AggregatedTitleTemplate
+		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
+		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
+		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
+	}
+	log.Info("Pull Request branch:", fixBranchName, "has been updated")
+	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixingBranch(fixBranchName string) (err error) {
+func (cfp *CreateFixPullRequestsCmd) createFixingBranch(fixBranchName string, failOnExists bool) (err error) {
 	exists, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
 	}
 	log.Info("Creating branch", fixBranchName, "...")
-	if exists {
+	if failOnExists && exists {
 		return fmt.Errorf("branch %s already exists in the remote git repository", fixBranchName)
 	}
 	return cfp.gitManager.CreateBranchAndCheckout(fixBranchName)

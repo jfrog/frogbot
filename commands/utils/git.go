@@ -3,11 +3,9 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"golang.org/x/exp/slices"
 	"os"
 	"strings"
 	"time"
@@ -20,8 +18,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
-
-var notAllowedToDeleteBranches = []string{"main", "master", "dev", "develop"}
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
@@ -204,7 +200,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	return false, nil
 }
 
-func (gm *GitManager) Push() error {
+func (gm *GitManager) Push(force bool) error {
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
@@ -213,6 +209,7 @@ func (gm *GitManager) Push() error {
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
+		Force:      force,
 	})
 	if err != nil {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
@@ -245,7 +242,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage() string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = AggregatedCommitTemplate
+		template = AggregatedTitleTemplate
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -305,47 +302,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*Fi
 	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }
 
-// Deletes all the branches by Frogbot except the ignoreBranchName.
-// When the aggregate pull requests flag is on, there can be only one branch by Frogbot.
-func (gm *GitManager) DeleteFrogbotBranchesExcept(ignoreBranchName string) (err error) {
-	// Get the list of all remote references
-	refList, err := gm.repository.Remote(gm.remoteName)
-	if err != nil {
-		return
-	}
-	list, err := refList.List(&git.ListOptions{Auth: gm.auth})
-	if err != nil {
-		return err
-	}
-	for _, r := range list {
-		// Skip pull requests refs
-		if strings.Contains(r.Name().String(), "pull") {
-			continue
-		}
-		commitObj, err := gm.repository.CommitObject(r.Hash())
-		if err != nil {
-			continue
-		}
-		// Get the author of the commit
-		author := commitObj.Author
-		deleteCandidateBranch := r.Name().Short()
-		// Delete outdated Frogbot's branches
-		if isSafeToDelete(ignoreBranchName, deleteCandidateBranch, author) {
-			err = refList.Push(&git.PushOptions{
-				RemoteName: gm.remoteName,
-				RefSpecs:   []config.RefSpec{config.RefSpec(":refs/heads/" + deleteCandidateBranch)},
-				Auth:       gm.auth,
-			})
-			if err != nil {
-				log.Warn("Failed to delete branch:", deleteCandidateBranch)
-				return err
-			}
-			log.Debug("Successfully deleted remote branch:", deleteCandidateBranch)
-		}
-	}
-	return
-}
-
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
@@ -397,14 +353,4 @@ func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 		return CustomTemplates{}, err
 	}
 	return template, nil
-}
-
-// Verify branch we are about to delete, Author must be Frogbot,
-// BranchToDelete cannot be one of the protected branches or the ignoreBranch
-func isSafeToDelete(ignoreBranchName string, branchToDelete string, author object.Signature) bool {
-	notAllowedBranches := append(notAllowedToDeleteBranches, ignoreBranchName)
-	allowedToDeleteBranch := !slices.Contains(notAllowedBranches, branchToDelete)
-	return author.Name == FrogbotAuthorName &&
-		author.Email == FrogbotAuthorEmail &&
-		allowedToDeleteBranch
 }
