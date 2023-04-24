@@ -97,7 +97,7 @@ const (
 	BranchNameTemplate           = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
 	AggregatedBranchNameTemplate = "frogobt-" + BranchHashPlaceHolder
 	CommitMessageTemplate        = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
-	AggregatedTitleTemplate      = "Modify dependencies' versions"
+	AggregatedTitleTemplate      = "Modify dependencies versions"
 	PullRequestTitleTemplate     = "[🐸 Frogbot] Modify version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
