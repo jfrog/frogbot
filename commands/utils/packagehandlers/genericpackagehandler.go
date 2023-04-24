@@ -9,15 +9,27 @@ import (
 	"strings"
 )
 
+const (
+	goPackage  = "github.com/golang/go"
+	setuptools = "setuptools"
+	pip        = "pip"
+	wheel      = "wheel"
+)
+
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
 }
 
+var environmentPackages = map[string]struct{}{
+	setuptools: {},
+	pip:        {},
+	wheel:      {},
+	goPackage:  {},
+}
+
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
-	case coreutils.Go:
-		return &GoPackageHandler{}
 	case coreutils.Maven:
 		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
@@ -39,6 +51,9 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	if !fixVersionInfo.DirectDependency {
 		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
 	}
+	if isEnvironmentPackage(impactedPackage, fixVersionInfo.FixVersion) {
+		return nil
+	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
 	commandArgs := []string{fixVersionInfo.PackageType.GetPackageInstallOperator()}
@@ -47,6 +62,14 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	fixedPackage := impactedPackage + operator + fixVersionInfo.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
 	return runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
+}
+
+func isEnvironmentPackage(impactedPackage, fixVersion string) bool {
+	if _, exists := environmentPackages[impactedPackage]; exists {
+		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor. Update", impactedPackage, "version to", fixVersion, "to fix this vulnerability.")
+		return true
+	}
+	return false
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {

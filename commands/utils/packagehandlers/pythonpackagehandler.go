@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,16 +17,7 @@ const (
 	PythonPackageRegexPrefix = "(?i)"
 	// Match all possible operators and versions syntax
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
-	setuptools               = "setuptools"
-	pip                      = "pip"
-	wheel                    = "wheel"
 )
-
-var pipEnvironmentPackages = map[string]struct{}{
-	setuptools: {},
-	pip:        {},
-	wheel:      {},
-}
 
 // PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
@@ -36,6 +26,10 @@ type PythonPackageHandler struct {
 }
 
 func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+	if isEnvironmentPackage(impactedPackage, fixVersionInfo.FixVersion) {
+		return nil
+	}
+
 	switch fixVersionInfo.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(impactedPackage, fixVersionInfo)
@@ -44,7 +38,7 @@ func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	case coreutils.Pipenv:
 		return py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
 	default:
-		return fmt.Errorf("unknown python package manger: %s", fixVersionInfo.PackageType.GetPackageType())
+		return errors.New("unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
 	}
 }
 
@@ -58,10 +52,6 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 }
 
 func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) error {
-	if _, exists := pipEnvironmentPackages[impactedPackage]; exists {
-		log.Info("Skipping vulnerable", impactedPackage, "since it's not defined in the requirements.txt or setup.py. Update", impactedPackage, "with version", info.FixVersion, "to fix this vulnerability")
-		return nil
-	}
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion

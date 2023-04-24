@@ -153,9 +153,11 @@ func TestFixPackageVersion(t *testing.T) {
 				// Fix impacted package for each technology
 				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
 				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
-				if !test.shouldNotFix {
-					file, err := os.ReadFile(test.packageDescriptor)
-					assert.NoError(t, err)
+				file, err := os.ReadFile(test.packageDescriptor)
+				assert.NoError(t, err)
+				if test.shouldNotFix {
+					assert.NotContains(t, string(file), test.fixVersion)
+				} else {
 					assert.Contains(t, string(file), test.fixVersion)
 					// Verify that case-sensitive packages in python are lowered
 					assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
