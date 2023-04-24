@@ -30,7 +30,7 @@ type CreateFixPullRequestsCmd struct {
 	projectWorkingDir string
 	// The git client the command performs git operations with
 	gitManager *utils.GitManager
-	// Decide if to fix each vulnerability separately or to aggregate to one pull request at any given time
+	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request.
 	aggregatePullRequests bool
 }
 
@@ -64,7 +64,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 	}
 	for _, project := range repository.Projects {
 		cfp.details.Project = project
-		cfp.aggregatePullRequests = repository.Git.AggregatePullRequests
+		cfp.aggregatePullRequests = repository.Git.AggregateFixes
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(project.WorkingDirs, baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
 			scanResults, isMultipleRoots, err := cfp.scan(cfp.details, fullPathWd)
@@ -137,14 +137,14 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 	}()
 
 	if cfp.aggregatePullRequests {
-		err = cfp.fixPackagesAggregated(fixVersionsMap)
+		err = cfp.fixIssuesSinglePR(fixVersionsMap)
 	} else {
-		err = cfp.fixPackagesSeparately(fixVersionsMap)
+		err = cfp.fixIssuesSeparatePRs(fixVersionsMap)
 	}
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixPackagesSeparately(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.fixSinglePackageAndCreatePR(impactedPackage, fixVersionInfo); err != nil {
 			log.Warn(err)
@@ -158,7 +158,7 @@ func (cfp *CreateFixPullRequestsCmd) fixPackagesSeparately(fixVersionsMap map[st
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixPackagesAggregated(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
 	successfullyFixedPackages := make(map[string]*utils.FixVersionInfo)
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")

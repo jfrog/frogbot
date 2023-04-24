@@ -171,8 +171,8 @@ func (gm *GitManager) commit(commitMessage string) error {
 	}
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  FrogbotAuthorName,
-			Email: FrogbotAuthorEmail,
+			Name:  frogbotAuthorName,
+			Email: frogbotAuthorEmail,
 			When:  time.Now(),
 		},
 	})
@@ -297,7 +297,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*Fi
 	}
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
-		branchFormat = AggregatedBranchTemplate
+		branchFormat = AggregatedBranchNameTemplate
 	}
 	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }

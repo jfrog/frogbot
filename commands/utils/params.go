@@ -129,7 +129,7 @@ type Git struct {
 	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	AggregatePullRequests    bool     `yaml:"aggregatePullRequests,omitempty"`
+	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	GitProject               string
 	RepoOwner                string
 	Token                    string
@@ -223,7 +223,7 @@ func NewConfigAggregatorFromFile(configFileContent []byte, gitParams *Git, serve
 		gitParams.PullRequestTitleTemplate = result[i].PullRequestTitleTemplate
 		gitParams.CommitMessageTemplate = result[i].CommitMessageTemplate
 		gitParams.BranchNameTemplate = result[i].BranchNameTemplate
-		gitParams.AggregatePullRequests = result[i].AggregatePullRequests
+		gitParams.AggregateFixes = result[i].AggregateFixes
 		if result[i].Branches != nil {
 			gitParams.Branches = result[i].Branches
 		}
@@ -297,11 +297,11 @@ func extractGitParamsFromEnv() (*Git, error) {
 		}
 	}
 	// Non-mandatory git aggregate pull requests feature
-	aggregatePullRequestsEnv, err := getBoolEnv(GitAggregatePullRequestsEnv, false)
+	aggregateFixesEnv, err := getBoolEnv(GitAggregateFixesEnv, false)
 	if err != nil {
 		return nil, err
 	}
-	gitParams.AggregatePullRequests = aggregatePullRequestsEnv
+	gitParams.AggregateFixes = aggregateFixesEnv
 	return &gitParams, err
 }
 
@@ -385,11 +385,11 @@ func extractGitNamingTemplatesFromEnv(git *Git) (err error) {
 	git.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)
 	git.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
 	git.PullRequestTitleTemplate = getTrimmedEnv(PullRequestTitleTemplateEnv)
-	aggregatePrs, err := getBoolEnv(GitAggregatePullRequestsEnv, false)
+	aggregatePrs, err := getBoolEnv(GitAggregateFixesEnv, false)
 	if err != nil {
 		return
 	}
-	git.AggregatePullRequests = aggregatePrs
+	git.AggregateFixes = aggregatePrs
 	return
 }
 
