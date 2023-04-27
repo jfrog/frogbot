@@ -25,12 +25,11 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePa
 	case coreutils.Pip:
 		return &PythonPackageHandler{pipRequirementsFile: pipfilePath.PipRequirementsFile}
 	default:
-		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
+		return &GenericPackageHandler{}
 	}
 }
 
 type GenericPackageHandler struct {
-	FixVersionInfo *utils.FixVersionInfo
 }
 
 // UpdateImpactedPackage updates the impacted package to the fixed version
