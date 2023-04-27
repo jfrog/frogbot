@@ -161,8 +161,7 @@ func fixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, er
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
-		_, err := fmt.Fprint(h, key, value)
-		if err != nil {
+		if _, err := fmt.Fprint(h, key, value); err != nil {
 			return "", err
 		}
 	}

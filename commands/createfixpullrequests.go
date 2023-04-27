@@ -31,7 +31,7 @@ type CreateFixPullRequestsCmd struct {
 	// The git client the command performs git operations with
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request.
-	aggregatePullRequests bool
+	aggregateFixes bool
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -64,7 +64,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 	}
 	for _, project := range repository.Projects {
 		cfp.details.Project = project
-		cfp.aggregatePullRequests = repository.Git.AggregateFixes
+		cfp.aggregateFixes = repository.Git.AggregateFixes
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(project.WorkingDirs, baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
 			scanResults, isMultipleRoots, err := cfp.scan(cfp.details, fullPathWd)
@@ -136,7 +136,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		}
 	}()
 
-	if cfp.aggregatePullRequests {
+	if cfp.aggregateFixes {
 		err = cfp.fixIssuesSinglePR(fixVersionsMap)
 	} else {
 		err = cfp.fixIssuesSeparatePRs(fixVersionsMap)
@@ -255,14 +255,14 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err != nil {
 		return
 	}
-	log.Info("Pushing fix branch:", fixBranchName, "...")
+	log.Info("Pushing branch:", fixBranchName, "...")
 	if err = cfp.gitManager.Push(true); err != nil {
 		return
 	}
 	if !exists {
 		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, utils.AggregatedTitleTemplate, prBody)
+		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, utils.AggregatedPullRequestTitleTemplate, prBody)
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")
 	return

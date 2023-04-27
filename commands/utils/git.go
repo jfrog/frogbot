@@ -242,7 +242,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage() string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = AggregatedTitleTemplate
+		template = AggregatedPullRequestTitleTemplate
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
