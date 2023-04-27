@@ -5,27 +5,14 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"golang.org/x/exp/slices"
 	"os/exec"
 	"strings"
-)
-
-const (
-	goPackage  = "github.com/golang/go"
-	setuptools = "setuptools"
-	pip        = "pip"
-	wheel      = "wheel"
 )
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
-}
-
-var environmentPackages = map[string]struct{}{
-	setuptools: {},
-	pip:        {},
-	wheel:      {},
-	goPackage:  {},
 }
 
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
@@ -65,10 +52,12 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 }
 
 func isEnvironmentPackage(impactedPackage, fixVersion string) bool {
-	if _, exists := environmentPackages[impactedPackage]; exists {
+	environmentPackages := []string{"wheel", "pip", "setuptools", "github.com/golang/go"}
+	if slices.Contains(environmentPackages, impactedPackage) {
 		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor. Update", impactedPackage, "version to", fixVersion, "to fix this vulnerability.")
 		return true
 	}
+
 	return false
 }
 
