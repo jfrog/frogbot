@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -18,6 +19,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
+
+const refFormat = "refs/heads/%s:refs/heads/%[1]s"
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
@@ -200,7 +203,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	return false, nil
 }
 
-func (gm *GitManager) Push() error {
+func (gm *GitManager) Push(branchName string) error {
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
@@ -209,6 +212,7 @@ func (gm *GitManager) Push() error {
 	err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
+		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, branchName))},
 	})
 	if err != nil {
 		err = fmt.Errorf("git push failed with error: %s", err.Error())
