@@ -306,13 +306,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			}
 		}()
 	}
-	// Skip vulnerable environment packages, these cannot be fixed
-	if slices.Contains(utils.TechEnvironmentPackagesMap[fixVersionInfo.PackageType], impactedPackage) {
+	// Skip build tools dependencies (for example: pip) that are not defined by the descriptor file and cannot be fixed by PR.
+	if slices.Contains(utils.BuildToolsDependenciesMap[fixVersionInfo.PackageType], impactedPackage) {
 		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor.",
 			"Update", impactedPackage, "version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
 		return
 	}
-	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details.PipRequirementsFile, &cfp.mavenDepToPropertyMap)
+	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 }
 

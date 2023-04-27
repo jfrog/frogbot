@@ -41,7 +41,7 @@ var (
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
 
-var TechEnvironmentPackagesMap = map[coreutils.Technology][]string{
+var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Go:  {"github.com/golang/go"},
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
