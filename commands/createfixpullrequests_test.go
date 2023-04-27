@@ -26,7 +26,6 @@ type packageFixTest struct {
 	packageDescriptor    string
 	testPath             string
 	fixPackageVersionCmd FixPackagesTestFunc
-	shouldFix            bool
 }
 
 var packageFixTests = []packageFixTest{
