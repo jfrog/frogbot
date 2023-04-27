@@ -15,14 +15,19 @@ type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
+var techEnvironmentPackagesMap = map[coreutils.Technology][]string{
+	coreutils.Go:  {"github.com/golang/go"},
+	coreutils.Pip: {"pip", "setuptools", "wheel"},
+}
+
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipRequirementsFile string, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Maven:
 		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
 		return &PythonPackageHandler{}
 	case coreutils.Pip:
-		return &PythonPackageHandler{pipRequirementsFile: pipfilePath.PipRequirementsFile}
+		return &PythonPackageHandler{pipRequirementsFile: pipRequirementsFile}
 	default:
 		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
 	}
@@ -38,7 +43,7 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	if !fixVersionInfo.DirectDependency {
 		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
 	}
-	if isEnvironmentPackage(impactedPackage, fixVersionInfo.FixVersion) {
+	if isEnvironmentPackage(impactedPackage, fixVersionInfo.FixVersion, fixVersionInfo.PackageType) {
 		return nil
 	}
 	// Lower the package name to avoid duplicates
@@ -51,13 +56,13 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	return runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
 }
 
-func isEnvironmentPackage(impactedPackage, fixVersion string) bool {
-	environmentPackages := []string{"wheel", "pip", "setuptools", "github.com/golang/go"}
-	if slices.Contains(environmentPackages, impactedPackage) {
-		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor. Update", impactedPackage, "version to", fixVersion, "to fix this vulnerability.")
-		return true
+func isEnvironmentPackage(impactedPackage, fixVersion string, tech coreutils.Technology) bool {
+	if packagesList, exists := techEnvironmentPackagesMap[tech]; exists {
+		if slices.Contains(packagesList, impactedPackage) {
+			log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor. Update", impactedPackage, "version to", fixVersion, "to fix this vulnerability.")
+			return true
+		}
 	}
-
 	return false
 }
 

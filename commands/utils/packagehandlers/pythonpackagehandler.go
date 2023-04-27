@@ -26,10 +26,6 @@ type PythonPackageHandler struct {
 }
 
 func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
-	if isEnvironmentPackage(impactedPackage, fixVersionInfo.FixVersion) {
-		return nil
-	}
-
 	switch fixVersionInfo.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(impactedPackage, fixVersionInfo)
@@ -52,6 +48,9 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 }
 
 func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) error {
+	if isEnvironmentPackage(impactedPackage, info.FixVersion, coreutils.Pip) {
+		return nil
+	}
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion

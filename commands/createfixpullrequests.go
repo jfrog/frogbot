@@ -305,7 +305,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			}
 		}()
 	}
-	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
+	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details.PipRequirementsFile, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 }
 
