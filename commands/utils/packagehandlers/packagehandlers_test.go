@@ -16,6 +16,12 @@ type indirectPackageFixTest struct {
 	shouldFix       bool
 }
 
+type pythonIndirectPackages struct {
+	indirectPackageFixTest
+	requirementsPath     string
+	pythonPackageManager coreutils.Technology
+}
+
 func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 	type testCase struct {
 		fixVersionInfo utils.FixVersionInfo
@@ -85,6 +91,47 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	shouldFix, err := mvn.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
 	assert.NoError(t, err)
 	assert.Equal(t, test.shouldFix, shouldFix)
+}
+
+func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
+	testDataDir := getTestDataDir(t)
+	testcases := []pythonIndirectPackages{
+		{
+			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+				fixVersionInfo: &utils.FixVersionInfo{
+					FixVersion:       "1.25.9",
+					PackageType:      "pip",
+					DirectDependency: false}, shouldFix: false},
+			requirementsPath:     "requirements.txt",
+			pythonPackageManager: "pip",
+		}, {
+			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+				fixVersionInfo: &utils.FixVersionInfo{
+					FixVersion:       "1.25.9",
+					PackageType:      "poetry",
+					DirectDependency: false}, shouldFix: false},
+			requirementsPath:     "pyproejct.toml",
+			pythonPackageManager: "poetry",
+		}, {
+			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+				fixVersionInfo: &utils.FixVersionInfo{
+					FixVersion:       "1.25.9",
+					PackageType:      "pipenv",
+					DirectDependency: false}, shouldFix: false},
+			requirementsPath:     "Pipfile",
+			pythonPackageManager: "pipenv",
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.pythonPackageManager.ToString(), func(t *testing.T) {
+			packageHandler := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
+				Project: utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
+			cleanup := createTempFolderAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
+			defer cleanup()
+			shouldFix, _ := packageHandler.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
+			assert.Equal(t, test.shouldFix, shouldFix)
+		})
+	}
 }
 
 func getTestDataDir(t *testing.T) string {
