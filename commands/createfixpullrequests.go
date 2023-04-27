@@ -362,7 +362,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
-// fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now.
+// fixVersions is a sorted array. The function returns the first version in the array, that is larger than impactedPackageVersion.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
 	// Trim 'v' prefix in case of Go package
 	currVersionStr := strings.TrimPrefix(impactedPackageVersion, "v")
