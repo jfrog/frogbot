@@ -128,6 +128,7 @@ func TestMd5Hash(t *testing.T) {
 		})
 	}
 }
+
 func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	tests := []struct {
 		fixVersionMap map[string]*FixVersionInfo

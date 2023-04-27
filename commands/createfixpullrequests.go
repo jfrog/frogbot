@@ -166,21 +166,21 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
-	if err = cfp.createFixingBranch(aggregatedFixBranchName, false); err != nil {
+	if err = cfp.createFixBranch(aggregatedFixBranchName, false); err != nil {
 		return
 	}
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
-			log.Warn(err)
+			log.Error("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
 		} else {
-			log.Info("successfully fixed ", impactedPackage)
+			log.Info("Successfully fixed", impactedPackage)
 			successfullyFixedPackages[impactedPackage] = fixVersionInfo
 		}
 	}
 
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
-		return fmt.Errorf("failed while creating aggreagted pull request, error: \n%s", err.Error())
+		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
 	return
 }
@@ -192,7 +192,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return
 	}
-	err = cfp.createFixingBranch(fixBranchName, true)
+	err = cfp.createFixBranch(fixBranchName, true)
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
@@ -220,14 +220,12 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 
 	commitMessage := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
 	log.Info("Running git add all and commit...")
-	err = cfp.gitManager.AddAllAndCommit(commitMessage)
-	if err != nil {
+	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
 
 	log.Info("Pushing fix branch:", fixBranchName, "...")
-	err = cfp.gitManager.Push(false)
-	if err != nil {
+	if err = cfp.gitManager.Push(false); err != nil {
 		return
 	}
 
@@ -248,10 +246,9 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if isClean {
 		return fmt.Errorf("there were no changes in the fix branch '%s'", fixBranchName)
 	}
-	commitMessage := cfp.gitManager.GenerateAggregatedCommitTitle()
+	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
 	log.Info("Running git add all and commit...")
-	err = cfp.gitManager.AddAllAndCommit(commitMessage)
-	if err != nil {
+	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
 	exists, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
@@ -259,21 +256,19 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 		return
 	}
 	log.Info("Pushing fix branch:", fixBranchName, "...")
-	err = cfp.gitManager.Push(true)
-	if err != nil {
+	if err = cfp.gitManager.Push(true); err != nil {
 		return
 	}
 	if !exists {
-		pullRequestTitle := utils.AggregatedTitleTemplate
 		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
+		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, utils.AggregatedTitleTemplate, prBody)
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixingBranch(fixBranchName string, failOnExists bool) (err error) {
+func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string, failOnExists bool) (err error) {
 	exists, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
@@ -366,7 +361,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 }
 
-// getMinimalFixVersion that fixes the current impactedPackage
+// getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
 // fixVersions array is sorted, so we take the first index, unless it's version is older than what we have now.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
 	// Trim 'v' prefix in case of Go package

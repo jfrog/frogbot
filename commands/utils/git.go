@@ -239,7 +239,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitTitle() string {
+func (gm *GitManager) GenerateAggregatedCommitMessage() string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
 		template = AggregatedTitleTemplate
@@ -289,7 +289,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates unique branch name constructed from all the vulnerable package
+// Generates unique branch name constructed by all the vulnerable packages.
 func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixVersionInfo) (fixBranchName string, err error) {
 	hash, err := fixVersionsMapToMd5Hash(versionsMap)
 	if err != nil {

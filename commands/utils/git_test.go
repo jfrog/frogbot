@@ -172,7 +172,7 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	}
 }
 
-func TestGitManager_GenerateAggregatedCommitTitle(t *testing.T) {
+func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 	tests := []struct {
 		gitManager GitManager
 		expected   string
@@ -182,7 +182,7 @@ func TestGitManager_GenerateAggregatedCommitTitle(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commit := test.gitManager.GenerateAggregatedCommitTitle()
+			commit := test.gitManager.GenerateAggregatedCommitMessage()
 			assert.Equal(t, commit, test.expected)
 		})
 	}
