@@ -64,6 +64,29 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 }
 
+func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
+	testDataDir := getTestDataDir(t)
+	mvn := MavenPackageHandler{
+		mavenDepToPropertyMap: map[string][]string{
+			"junit": {"junit:junit", "3.8.1"},
+		},
+	}
+	test := indirectPackageFixTest{
+		impactedPackage: "junit",
+		fixVersionInfo: &utils.FixVersionInfo{
+			FixVersion:       "4.11",
+			PackageType:      "maven",
+			DirectDependency: false,
+		},
+		shouldFix: false,
+	}
+	cleanup := createTempFolderAndChDir(t, testDataDir, coreutils.Maven)
+	defer cleanup()
+	shouldFix, err := mvn.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
+	assert.NoError(t, err)
+	assert.Equal(t, test.shouldFix, shouldFix)
+}
+
 func getTestDataDir(t *testing.T) string {
 	testdataDir, err := filepath.Abs(filepath.Join("..", "..", "testdata/indirect-projects"))
 	assert.NoError(t, err)
