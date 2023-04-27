@@ -145,8 +145,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # JF_PULL_REQUEST_TITLE_TEMPLATE: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
 
             # [Optional, Default: "FALSE"]
-            # If true, Frogbot creates a single pull request with all the fixes.
-            # If false, Frogbot creates a separate pull request for each fix.
+            # If TRUE, Frogbot creates a single pull request with all the fixes.
+            # If FALSE, Frogbot creates a separate pull request for each fix.
             # JF_GIT_AGGREGATE_FIXES: "FALSE"
             
          inputs:

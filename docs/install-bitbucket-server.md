@@ -146,10 +146,10 @@
             // The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
             // JF_PULL_REQUEST_TITLE_TEMPLATE= "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
 
-            // # [Optional, Default: "FALSE"]
-            // # If true, Frogbot creates a single pull request with all the fixes.
-            // # If false, Frogbot creates a separate pull request for each fix.
-            // # JF_GIT_AGGREGATE_FIXES: "FALSE"
+            // [Optional, Default: "FALSE"]
+            // If TRUE, Frogbot creates a single pull request with all the fixes.
+            // If FALSE, Frogbot creates a separate pull request for each fix.
+            // JF_GIT_AGGREGATE_FIXES: "FALSE"
        }
       
        stages {
