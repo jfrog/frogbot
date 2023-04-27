@@ -12,16 +12,31 @@ func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 		newFixVersion  string
 		expectedOutput string
 	}
-
 	testCases := []testCase{
 		{fixVersionInfo: utils.FixVersionInfo{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
 		{fixVersionInfo: utils.FixVersionInfo{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
 	}
-
 	for _, tc := range testCases {
 		t.Run(tc.expectedOutput, func(t *testing.T) {
 			tc.fixVersionInfo.UpdateFixVersionIfMax(tc.newFixVersion)
 			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.FixVersion)
 		})
 	}
+}
+
+// TODO implement me!
+func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
+
+}
+
+func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
+
+}
+
+func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
+
+}
+
+func TestGenericPackageHandler_UpdateImpactedPackage(t *testing.T) {
+
 }

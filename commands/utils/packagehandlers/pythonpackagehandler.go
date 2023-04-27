@@ -26,7 +26,7 @@ type PythonPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(impactedPackage, fixVersionInfo)
@@ -35,20 +35,24 @@ func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	case coreutils.Pipenv:
 		return py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
 	default:
-		return errors.New("Unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
+		return false, errors.New("Unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) error {
+func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (shouldFix bool, err error) {
 	// Install the desired fixed version
-	if err := py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo); err != nil {
-		return err
+	shouldFix, err = py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
+	if err != nil {
+		return
 	}
-	// Update Poetry lock file as well
-	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
+	if shouldFix {
+		// Update Poetry lock file as well
+		return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
+	}
+	return
 }
 
-func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) error {
+func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) (shouldFix bool, err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion
@@ -57,15 +61,15 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.Fi
 	}
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return
 	}
 	fullPath := filepath.Join(wd, py.pipRequirementsFile)
 	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
-		return errors.New("wrong requirements file input")
+		return false, errors.New("wrong requirements file input")
 	}
 	data, err := os.ReadFile(filepath.Clean(py.pipRequirementsFile))
 	if err != nil {
-		return err
+		return
 	}
 	currentFile := string(data)
 
@@ -76,7 +80,10 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.Fi
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
 	if fixedFile == "" {
-		return fmt.Errorf("impacted package %s not found, fix failed", impactedPackage)
+		return false, fmt.Errorf("impacted package %s not found, fix failed", impactedPackage)
 	}
-	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
+	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
+		return
+	}
+	return true, nil
 }

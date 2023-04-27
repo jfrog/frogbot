@@ -26,6 +26,7 @@ type packageFixTest struct {
 	packageDescriptor    string
 	testPath             string
 	fixPackageVersionCmd FixPackagesTestFunc
+	shouldFix            bool
 }
 
 var packageFixTests = []packageFixTest{
@@ -128,7 +129,8 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
-func TestFixPackageVersion(t *testing.T) {
+// Tests direct dependence fix, indirect fixes should be tests under the corresponding package handler
+func TestFixPackageVersionDirect(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	defer func() {
 		assert.NoError(t, os.Chdir(currentDir))
@@ -142,12 +144,13 @@ func TestFixPackageVersion(t *testing.T) {
 			defer cleanup()
 			test.testPath = tmpProjectPath
 			assert.NoError(t, os.Chdir(tmpProjectPath))
-
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
 				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
+				shouldFix, err := cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo)
+				assert.NoError(t, err)
+				assert.Equal(t, true, shouldFix)
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				assert.Contains(t, string(file), test.fixVersion)

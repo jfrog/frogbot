@@ -154,14 +154,15 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackage(impactedPackage string, fi
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-
-	if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
+	shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
+	if err != nil {
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
 	}
-
-	if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
-		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
-			impactedPackage, fixVersionInfo.FixVersion, err.Error())
+	if shouldFix {
+		if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
+			return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
+				impactedPackage, fixVersionInfo.FixVersion, err.Error())
+		}
 	}
 	return
 }
@@ -289,12 +290,16 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 	return ""
 }
 
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
+// Updates vulnerable package to the fixed version
+// ShouldFix will return false in cases we won't want to update.
+// For example, indirect dependency without the proper technology implementation, or base packages.
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (shouldFix bool, err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
-		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
+		restoreDir, cdErr := utils.Chdir(cfp.projectWorkingDir)
+		err = cdErr
 		if err != nil {
-			return err
+			return false, err
 		}
 		defer func() {
 			e := restoreDir()

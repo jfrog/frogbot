@@ -11,7 +11,7 @@ import (
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
-	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
+	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error)
 }
 
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
@@ -34,10 +34,11 @@ type GenericPackageHandler struct {
 }
 
 // UpdateImpactedPackage updates the impacted package to the fixed version
-func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	// Indirect package fix should we implemented for each package handler
 	if !fixVersionInfo.DirectDependency {
-		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
+		log.Info("Since dependency", impactedPackage, " is indirect (transitive) its fix is skipped")
+		return false, nil
 	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
@@ -49,12 +50,12 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	return runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
 }
 
-func runPackageMangerCommand(commandName string, commandArgs []string) error {
+func runPackageMangerCommand(commandName string, commandArgs []string) (bool, error) {
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
-		return fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
+		return false, fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
 	}
-	return nil
+	return true, nil
 }
