@@ -48,9 +48,6 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 }
 
 func (py *PythonPackageHandler) handlePip(impactedPackage string, info *utils.FixVersionInfo) error {
-	if isEnvironmentPackage(impactedPackage, info.FixVersion, coreutils.Pip) {
-		return nil
-	}
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := impactedPackage + "==" + info.FixVersion
