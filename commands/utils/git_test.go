@@ -105,7 +105,7 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[🐸 Frogbot] Upgrade mquery to 3.4.5",
+			expected:        "[🐸 Frogbot] Update version of mquery to 3.4.5",
 			description:     "No prefix",
 		},
 	}
