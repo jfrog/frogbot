@@ -16,7 +16,7 @@ type MavenPackageHandler struct {
 func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	// In Maven, fix only direct dependencies
 	if !fixVersionInfo.DirectDependency {
-		log.Info("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
+		log.Debug("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
 		return false, nil
 	}
 	properties := mvn.mavenDepToPropertyMap[impactedPackage]
