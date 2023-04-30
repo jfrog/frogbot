@@ -14,16 +14,14 @@ type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error)
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, pipfilePath *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
-	case coreutils.Go:
-		return &GoPackageHandler{}
 	case coreutils.Maven:
 		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
 		return &PythonPackageHandler{}
 	case coreutils.Pip:
-		return &PythonPackageHandler{pipRequirementsFile: pipfilePath.PipRequirementsFile}
+		return &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	default:
 		return &GenericPackageHandler{}
 	}

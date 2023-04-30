@@ -41,6 +41,11 @@ var (
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
 
+var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
+	coreutils.Go:  {"github.com/golang/go"},
+	coreutils.Pip: {"pip", "setuptools", "wheel"},
+}
+
 type ErrMissingEnv struct {
 	VariableName string
 }

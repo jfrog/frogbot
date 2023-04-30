@@ -15,7 +15,6 @@ const (
 
 	// Package names are case-insensitive with this prefix
 	PythonPackageRegexPrefix = "(?i)"
-
 	// Match all possible operators and versions syntax
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 )

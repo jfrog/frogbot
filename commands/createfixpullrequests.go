@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"golang.org/x/exp/slices"
 	"os"
 	"strings"
 )
@@ -309,6 +310,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 				err = fmt.Errorf("%s\n%s", err.Error(), e.Error())
 			}
 		}()
+	}
+	// Skip build tools dependencies (for example, pip)
+	// That are not defined in the descriptor file and cannot be fixed by a PR.
+	if slices.Contains(utils.BuildToolsDependenciesMap[fixVersionInfo.PackageType], impactedPackage) {
+		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor file.",
+			"Update", impactedPackage, "version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
+		return
 	}
 	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
 	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
