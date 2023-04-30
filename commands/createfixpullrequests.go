@@ -167,7 +167,10 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
-	_, err = cfp.createFixBranch(aggregatedFixBranchName, false)
+	_, err = cfp.createFixBranch(aggregatedFixBranchName)
+	if err != nil {
+		return
+	}
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
@@ -193,12 +196,12 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return
 	}
-	exists, err := cfp.createFixBranch(fixBranchName, true)
+	existsOnRemote, err := cfp.createFixBranch(fixBranchName)
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-	if exists {
-		log.Info("branch:", fixBranchName, "already exists on remote, skipping ...")
+	if existsOnRemote {
+		log.Info("branch:", fixBranchName, "already existsOnRemote on remote, skipping ...")
 		return
 	}
 	shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
@@ -274,16 +277,14 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string, failOnExists bool) (exists bool, err error) {
-	exists, err = cfp.gitManager.BranchExistsInRemote(fixBranchName)
+// Creates a new branch and checkouts, returns also if the branch exists on remote
+func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string) (existsInRemote bool, err error) {
+	existsInRemote, err = cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
 	}
 	log.Info("Creating branch", fixBranchName, "...")
-	if failOnExists && exists {
-		return exists, nil
-	}
-	return exists, cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
+	return existsInRemote, cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
