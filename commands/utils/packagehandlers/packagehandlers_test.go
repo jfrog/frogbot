@@ -66,6 +66,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			shouldFix, err := pgk.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.shouldFix, shouldFix)
+			assert.NoError(t, os.Chdir(testdataDir))
 		})
 	}
 }
@@ -92,6 +93,7 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	shouldFix, err := mvn.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
 	assert.NoError(t, err)
 	assert.Equal(t, test.shouldFix, shouldFix)
+	assert.NoError(t, os.Chdir(testDataDir))
 }
 
 // Until implemented, Test we are not attempting to fix indirect dependencies in python
@@ -133,6 +135,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			shouldFix, err := packageHandler.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.shouldFix, shouldFix)
+			assert.NoError(t, os.Chdir(testDataDir))
 		})
 	}
 }
