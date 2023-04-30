@@ -70,7 +70,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 }
 
-// Until implemented, test we are not attempting to fix indirect dependencies in maven
+// Until implemented, Test we are not attempting to fix indirect dependencies in maven
 func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testDataDir := getTestDataDir(t)
 	mvn := MavenPackageHandler{
@@ -94,7 +94,7 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	assert.Equal(t, test.shouldFix, shouldFix)
 }
 
-// Until implemented, test we are not attempting to fix indirect dependencies in python
+// Until implemented, Test we are not attempting to fix indirect dependencies in python
 func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testDataDir := getTestDataDir(t)
 	testcases := []pythonIndirectDependencies{
