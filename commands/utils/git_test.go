@@ -91,14 +91,14 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[CustomPR] Update version of mquery to 3.4.5",
+			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
 			fixVersion:      FixVersionInfo{FixVersion: "3.4.5"},
-			expected:        "[CustomPR] Update version of mquery",
+			expected:        "[CustomPR] update mquery",
 			description:     "Custom template one var",
 		},
 		{
