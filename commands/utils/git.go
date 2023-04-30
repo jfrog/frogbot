@@ -174,8 +174,8 @@ func (gm *GitManager) commit(commitMessage string) error {
 	}
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "JFrog-Frogbot",
-			Email: "eco-system+frogbot@jfrog.com",
+			Name:  frogbotAuthorName,
+			Email: frogbotAuthorEmail,
 			When:  time.Now(),
 		},
 	})
@@ -203,7 +203,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	return false, nil
 }
 
-func (gm *GitManager) Push(branchName string) error {
+func (gm *GitManager) Push(force bool, branchName string) error {
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
@@ -212,6 +212,7 @@ func (gm *GitManager) Push(branchName string) error {
 	if err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
+		Force:      force,
 		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, branchName))},
 	}); err != nil {
 		return fmt.Errorf("git push failed with error: %s", err.Error())
@@ -239,6 +240,14 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 		template = CommitMessageTemplate
 	}
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
+}
+
+func (gm *GitManager) GenerateAggregatedCommitMessage() string {
+	template := gm.customTemplates.commitMessageTemplate
+	if template == "" {
+		template = AggregatedPullRequestTitleTemplate
+	}
+	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
 
 func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
@@ -281,6 +290,19 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 		template = pullRequestFormat
 	}
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
+}
+
+// Generates unique branch name constructed by all the vulnerable packages.
+func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixVersionInfo) (fixBranchName string, err error) {
+	hash, err := fixVersionsMapToMd5Hash(versionsMap)
+	if err != nil {
+		return
+	}
+	branchFormat := gm.customTemplates.branchNameTemplate
+	if branchFormat == "" {
+		branchFormat = AggregatedBranchNameTemplate
+	}
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.

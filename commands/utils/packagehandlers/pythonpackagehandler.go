@@ -15,7 +15,6 @@ const (
 
 	// Package names are case-insensitive with this prefix
 	PythonPackageRegexPrefix = "(?i)"
-
 	// Match all possible operators and versions syntax
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 )
@@ -35,7 +34,7 @@ func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	case coreutils.Pipenv:
 		return py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
 	default:
-		return errors.New("Unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
+		return errors.New("unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
 	}
 }
 

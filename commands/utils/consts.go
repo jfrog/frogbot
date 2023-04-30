@@ -61,10 +61,11 @@ const (
 	WatchesDelimiter             = ","
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	GitTokenEnv         = "JF_GIT_TOKEN"
-	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
-	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
-	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
+	GitTokenEnv          = "JF_GIT_TOKEN"
+	GitBaseBranchEnv     = "JF_GIT_BASE_BRANCH"
+	GitPullRequestIDEnv  = "JF_GIT_PULL_REQUEST_ID"
+	GitApiEndpointEnv    = "JF_GIT_API_ENDPOINT"
+	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
 
 	// Comment
 	tableHeader = "\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n" +
@@ -93,7 +94,12 @@ const (
 	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
 
 	// Default naming templates
-	BranchNameTemplate       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
-	CommitMessageTemplate    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
-	PullRequestTitleTemplate = "[🐸 Frogbot] Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	BranchNameTemplate                 = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	AggregatedBranchNameTemplate       = "frogobt-" + BranchHashPlaceHolder
+	CommitMessageTemplate              = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	AggregatedPullRequestTitleTemplate = "[🐸 Frogbot] Update dependencies versions"
+	PullRequestTitleTemplate           = "[🐸 Frogbot] Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	// Frogbot Git author details showed in commits
+	frogbotAuthorName  = "JFrog-Frogbot"
+	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
 )
