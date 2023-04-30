@@ -36,7 +36,7 @@ type GenericPackageHandler struct {
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	// Indirect package fix should be implemented for each package handler
 	if !fixVersionInfo.DirectDependency {
-		log.Info("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
+		log.Debug("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
 		return false, nil
 	}
 	// Lower the package name to avoid duplicates
@@ -46,15 +46,16 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	operator := fixVersionInfo.PackageType.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixVersionInfo.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
+	err = runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
+	return err == nil, err
 }
 
-func runPackageMangerCommand(commandName string, commandArgs []string) (bool, error) {
+func runPackageMangerCommand(commandName string, commandArgs []string) error {
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
-		return false, fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
+		return fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
 	}
-	return true, nil
+	return nil
 }

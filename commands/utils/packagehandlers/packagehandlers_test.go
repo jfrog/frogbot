@@ -10,14 +10,14 @@ import (
 	"testing"
 )
 
-type indirectPackageFixTest struct {
+type indirectDependencyFixTest struct {
 	impactedPackage string
 	fixVersionInfo  *utils.FixVersionInfo
 	shouldFix       bool
 }
 
-type pythonIndirectPackages struct {
-	indirectPackageFixTest
+type pythonIndirectDependencies struct {
+	indirectDependencyFixTest
 	requirementsPath     string
 	pythonPackageManager coreutils.Technology
 }
@@ -43,7 +43,7 @@ func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testdataDir := getTestDataDir(t)
 	pgk := GoPackageHandler{}
-	testcases := []indirectPackageFixTest{
+	testcases := []indirectDependencyFixTest{
 		{impactedPackage: "golang.org/x/crypto",
 			fixVersionInfo: &utils.FixVersionInfo{
 				FixVersion:       "0.0.0-20201216223049-8b5274cf687f",
@@ -61,11 +61,11 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(test.impactedPackage, func(t *testing.T) {
-			cleanup := createTempFolderAndChDir(t, testdataDir, coreutils.Go)
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Go)
 			defer cleanup()
 			shouldFix, err := pgk.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
-			assert.Equal(t, test.shouldFix, shouldFix)
 			assert.NoError(t, err)
+			assert.Equal(t, test.shouldFix, shouldFix)
 		})
 	}
 }
@@ -78,7 +78,7 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			"junit": {"junit:junit", "3.8.1"},
 		},
 	}
-	test := indirectPackageFixTest{
+	test := indirectDependencyFixTest{
 		impactedPackage: "junit",
 		fixVersionInfo: &utils.FixVersionInfo{
 			FixVersion:       "4.11",
@@ -87,7 +87,7 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 		},
 		shouldFix: false,
 	}
-	cleanup := createTempFolderAndChDir(t, testDataDir, coreutils.Maven)
+	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
 	defer cleanup()
 	shouldFix, err := mvn.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
 	assert.NoError(t, err)
@@ -97,9 +97,9 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 // Until implemented, test we are not attempting to fix indirect dependencies in python
 func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testDataDir := getTestDataDir(t)
-	testcases := []pythonIndirectPackages{
+	testcases := []pythonIndirectDependencies{
 		{
-			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+			indirectDependencyFixTest: indirectDependencyFixTest{impactedPackage: "urllib3",
 				fixVersionInfo: &utils.FixVersionInfo{
 					FixVersion:       "1.25.9",
 					PackageType:      "pip",
@@ -107,7 +107,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			requirementsPath:     "requirements.txt",
 			pythonPackageManager: "pip",
 		}, {
-			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+			indirectDependencyFixTest: indirectDependencyFixTest{impactedPackage: "urllib3",
 				fixVersionInfo: &utils.FixVersionInfo{
 					FixVersion:       "1.25.9",
 					PackageType:      "poetry",
@@ -115,7 +115,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			requirementsPath:     "pyproejct.toml",
 			pythonPackageManager: "poetry",
 		}, {
-			indirectPackageFixTest: indirectPackageFixTest{impactedPackage: "urllib3",
+			indirectDependencyFixTest: indirectDependencyFixTest{impactedPackage: "urllib3",
 				fixVersionInfo: &utils.FixVersionInfo{
 					FixVersion:       "1.25.9",
 					PackageType:      "pipenv",
@@ -128,9 +128,10 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 		t.Run(test.pythonPackageManager.ToString(), func(t *testing.T) {
 			packageHandler := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
 				Project: utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
-			cleanup := createTempFolderAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
+			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
 			defer cleanup()
-			shouldFix, _ := packageHandler.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
+			shouldFix, err := packageHandler.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
+			assert.NoError(t, err)
 			assert.Equal(t, test.shouldFix, shouldFix)
 		})
 	}
@@ -142,7 +143,7 @@ func getTestDataDir(t *testing.T) string {
 	return testdataDir
 }
 
-func createTempFolderAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology) func() {
+func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology) func() {
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech.ToString())
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)

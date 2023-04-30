@@ -128,7 +128,8 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
-// Tests direct dependence fix, indirect fixes should be tests under the corresponding package handler
+// Tests direct dependencies fix.
+// Indirect dependencies fixes should be tests under the corresponding package handler.
 func TestFixPackageVersionDirect(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	defer func() {

@@ -47,7 +47,7 @@ func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionI
 	}
 	if shouldFix {
 		// Update Poetry lock file as well
-		return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
+		return err == nil, runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 	}
 	return
 }
