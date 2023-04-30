@@ -201,7 +201,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
 	if existsOnRemote {
-		log.Info("branch:", fixBranchName, "already existsOnRemote on remote, skipping ...")
+		log.Info("Branch:", fixBranchName, "already exists on remote, skipping ...")
 		return
 	}
 	shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
