@@ -107,3 +107,8 @@ jobs:
           # [Optional, Default: "TRUE"]
           # Use Gradle wrapper.
           # JF_USE_WRAPPER: "FALSE"
+
+          # [Optional, Default: "FALSE"]
+          # If TRUE, Frogbot creates a single pull request with all the fixes.
+          # If FALSE, Frogbot creates a separate pull request for each fix.
+          # JF_GIT_AGGREGATE_FIXES: "FALSE"

@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"net/http"
 	"net/http/httptest"
@@ -122,6 +123,42 @@ func TestMd5Hash(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
 			hash, err := Md5Hash(test.values...)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedHash, hash)
+		})
+	}
+}
+
+func TestFixVersionsMapToMd5Hash(t *testing.T) {
+	tests := []struct {
+		fixVersionMap map[string]*FixVersionInfo
+		expectedHash  string
+	}{
+		{
+			fixVersionMap: map[string]*FixVersionInfo{
+				"pkg": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			expectedHash: "0aa066970b613b114f8e21d11c74ff94",
+		}, {
+			fixVersionMap: map[string]*FixVersionInfo{
+				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false},
+				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false}},
+			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
+		},
+		{
+			// The Same map with different order should be the same hash.
+			fixVersionMap: map[string]*FixVersionInfo{
+				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false},
+				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false}},
+			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
+		}, {
+			fixVersionMap: map[string]*FixVersionInfo{
+				"myNuget": {FixVersion: "0.2.33", PackageType: coreutils.Nuget, DirectDependency: false}},
+			expectedHash: "887ac2c931920c20956409702c0dfbc7",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.expectedHash, func(t *testing.T) {
+			hash, err := fixVersionsMapToMd5Hash(test.fixVersionMap)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
 		})
