@@ -306,9 +306,10 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			}
 		}()
 	}
-	// Skip build tools dependencies (for example: pip) that are not defined by the descriptor file and cannot be fixed by PR.
+	// Skip build tools dependencies (for example, pip)
+	// That are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixVersionInfo.PackageType], impactedPackage) {
-		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor.",
+		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor file.",
 			"Update", impactedPackage, "version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
 		return
 	}
