@@ -209,15 +209,14 @@ func (gm *GitManager) Push(branchName string) error {
 		return nil
 	}
 	// Pushing to remote
-	err := gm.repository.Push(&git.PushOptions{
+	if err := gm.repository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
 		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, branchName))},
-	})
-	if err != nil {
-		err = fmt.Errorf("git push failed with error: %s", err.Error())
+	}); err != nil {
+		return fmt.Errorf("git push failed with error: %s", err.Error())
 	}
-	return err
+	return nil
 }
 
 // IsClean returns true if all the files are in Unmodified status.
