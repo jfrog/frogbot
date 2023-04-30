@@ -159,7 +159,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		templates, err := loadCustomTemplates(repo.CommitMessageTemplate, repo.BranchNameTemplate, repo.PullRequestTitleTemplate)
 		assert.NoError(t, err)
 		assert.Equal(t, "myPullRequests", templates.pullRequestTitleTemplate)
-		assert.Equal(t, "custom commit message", templates.commitMessageTemplate)
+		assert.Equal(t, "custom commit title", templates.commitMessageTemplate)
 		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", templates.branchNameTemplate)
 		assert.Equal(t, true, repo.AggregateFixes)
 
