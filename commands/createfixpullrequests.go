@@ -167,9 +167,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
-	if err = cfp.createFixBranch(aggregatedFixBranchName, false); err != nil {
-		return
-	}
+	_, err = cfp.createFixBranch(aggregatedFixBranchName, false)
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
@@ -195,11 +193,14 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return
 	}
-	err = cfp.createFixBranch(fixBranchName, true)
+	exists, err := cfp.createFixBranch(fixBranchName, true)
 	if err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-
+	if exists {
+		log.Info("branch:", fixBranchName, "already exists on remote, skipping ...")
+		return
+	}
 	shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
 	if err != nil {
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
@@ -273,16 +274,16 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string, failOnExists bool) (err error) {
-	exists, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
+func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string, failOnExists bool) (exists bool, err error) {
+	exists, err = cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
 	}
 	log.Info("Creating branch", fixBranchName, "...")
 	if failOnExists && exists {
-		return fmt.Errorf("branch %s already exists in the remote git repository", fixBranchName)
+		return exists, nil
 	}
-	return cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
+	return exists, cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
