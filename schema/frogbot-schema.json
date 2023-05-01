@@ -104,11 +104,11 @@
         "title": "Minimum vulnerability severity to filter",
         "examples": ["low, medium, high, critical"]
       },
-      "withFixVersionFilter": {
+      "fixableOnly": {
         "type": "boolean",
         "default": ["false"],
-        "description": "Show vulnerabilities that has a fixing version only.",
-        "title": "Show vulnerabilities with fix version only"
+        "description": "Display vulnerabilities that has a fixing version only.",
+        "title": "Display vulnerabilities with fix version only"
       },
       "projects": {
         "type": ["array", "null"],

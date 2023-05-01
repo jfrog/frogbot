@@ -13,7 +13,7 @@ type ScanDetails struct {
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
-	withFixVersionFilter     bool
+	fixableOnly              bool
 	minSeverityFilter        string
 	branch                   string
 	releasesRepo             string
@@ -38,8 +38,8 @@ func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey 
 	return sc
 }
 
-func (sc *ScanDetails) SetWithFixVersionFilter(withFixVersionFilter bool) *ScanDetails {
-	sc.withFixVersionFilter = withFixVersionFilter
+func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
+	sc.fixableOnly = fixable
 	return sc
 }
 
@@ -74,8 +74,8 @@ func (sc *ScanDetails) FailOnInstallationErrors() bool {
 	return sc.failOnInstallationErrors
 }
 
-func (sc *ScanDetails) WithFixVersionFilter() bool {
-	return sc.withFixVersionFilter
+func (sc *ScanDetails) FixableOnly() bool {
+	return sc.fixableOnly
 }
 
 func (sc *ScanDetails) MinSeverityFilter() string {

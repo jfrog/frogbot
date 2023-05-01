@@ -82,7 +82,7 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 			SetMinSeverityFilter(repoConfig.MinSeverityFilter).
-			SetWithFixVersionFilter(repoConfig.WithFixVersionFilter)
+			SetFixableOnly(repoConfig.FixableOnly)
 		currentScan, isMultipleRoot, err := auditSource(scanDetails)
 		if err != nil {
 			return nil, err
@@ -255,7 +255,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 		SetReleasesRepo(scanSetup.ReleasesRepo()).
 		SetIgnoreConfigFile(true).
 		SetMinSeverityFilter(scanSetup.MinSeverityFilter()).
-		SetWithFixVersionFilter(scanSetup.WithFixVersionFilter())
+		SetFixableOnly(scanSetup.FixableOnly())
 	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
 	if err != nil {
 		return nil, false, err

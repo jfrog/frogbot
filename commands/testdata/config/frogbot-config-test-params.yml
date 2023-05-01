@@ -11,7 +11,7 @@
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
       minSeverityFilter: "high"
-      withFixVersionFilter: true
+      fixableOnly: true
       projects:
         - installCommand: nuget restore
           workingDirs:

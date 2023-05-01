@@ -59,7 +59,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetBranch(branch).
 		SetReleasesRepo(repository.JfrogReleasesRepo).
-		SetWithFixVersionFilter(repository.WithFixVersionFilter).
+		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverityFilter(repository.MinSeverityFilter)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	for i := range repository.Projects {

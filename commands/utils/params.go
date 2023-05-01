@@ -98,9 +98,9 @@ func (p *Project) setDefaultsIfNeeded() *Project {
 
 type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	WithFixVersionFilter      bool      `yaml:"withFixVersionFilter,omitempty"`
+	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	MinSeverityFilter         string    `yaml:"minSeverityFilter,omitempty"`
+	MinSeverityFilter         string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	JfrogReleasesRepo         string
 }
@@ -446,8 +446,8 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	}
 	_ = ReadParamFromEnv(jfrogProjectEnv, &repo.JFrogProjectKey)
 	// Results filtering environment variables
-	_ = ReadParamFromEnv(MinSeverityFilterEnv, &repo.MinSeverityFilter)
-	repo.WithFixVersionFilter, err = getBoolEnv(WithFixVersionFilterEnv, false)
+	_ = ReadParamFromEnv(MinSeverityEnv, &repo.MinSeverityFilter)
+	repo.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false)
 	return err
 }
 
