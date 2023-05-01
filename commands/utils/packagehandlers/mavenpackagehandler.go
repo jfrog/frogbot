@@ -13,10 +13,11 @@ type MavenPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	// In Maven, fix only direct dependencies
 	if !fixVersionInfo.DirectDependency {
-		return nil
+		log.Debug("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
+		return false, nil
 	}
 	properties := mvn.mavenDepToPropertyMap[impactedPackage]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
@@ -25,7 +26,7 @@ func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
 	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
-		return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
+		return false, fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updateVersionOutput)
 	}
 
 	// Update properties that represent this package's version.
@@ -35,8 +36,8 @@ func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
 		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204
 		if err != nil {
-			return fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
+			return false, fmt.Errorf("mvn command failed: %s\n%s", err.Error(), updatePropertyOutput)
 		}
 	}
-	return nil
+	return true, nil
 }

@@ -11,11 +11,13 @@ import (
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
-	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
+	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error)
 }
 
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
+	case coreutils.Go:
+		return &GoPackageHandler{}
 	case coreutils.Maven:
 		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
@@ -25,19 +27,19 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *
 	case coreutils.Npm:
 		return &NpmPackageHandler{}
 	default:
-		return &GenericPackageHandler{FixVersionInfo: fixVersionInfo}
+		return &GenericPackageHandler{}
 	}
 }
 
 type GenericPackageHandler struct {
-	FixVersionInfo *utils.FixVersionInfo
 }
 
 // UpdateImpactedPackage updates the impacted package to the fixed version
-func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
-	// Indirect package fix should we implemented for each package handler
+func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
+	// Indirect package fix should be implemented for each package handler
 	if !fixVersionInfo.DirectDependency {
-		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
+		log.Info("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
+		return false, nil
 	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)
@@ -46,7 +48,8 @@ func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 	operator := fixVersionInfo.PackageType.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixVersionInfo.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
+	err = runPackageMangerCommand(fixVersionInfo.PackageType.GetExecCommandName(), commandArgs)
+	return err == nil, err
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {

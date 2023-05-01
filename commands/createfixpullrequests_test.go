@@ -134,7 +134,9 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
-func TestFixPackageVersion(t *testing.T) {
+// Tests direct dependencies fix.
+// Indirect dependencies fixes should be tests under the corresponding package handler.
+func TestFixPackageVersionDirect(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	defer func() {
 		assert.NoError(t, os.Chdir(currentDir))
@@ -148,7 +150,6 @@ func TestFixPackageVersion(t *testing.T) {
 			defer cleanup()
 			test.testPath = tmpProjectPath
 			assert.NoError(t, os.Chdir(tmpProjectPath))
-
 			t.Run(test.technology.ToString(), func(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				directVulnerability := formats.VulnerabilityOrViolationRow{
@@ -157,7 +158,9 @@ func TestFixPackageVersion(t *testing.T) {
 				}
 				// Fix impacted package for each technology
 				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, &directVulnerability)
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
+				shouldFix, err := cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo)
+				assert.NoError(t, err)
+				assert.Equal(t, test.shouldNotFix, !shouldFix)
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				if test.shouldNotFix {
