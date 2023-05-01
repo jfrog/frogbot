@@ -128,16 +128,17 @@ func TestExtractGitParamsFromEnvErrors(t *testing.T) {
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogUserEnv:        "",
-		JFrogPasswordEnv:    "",
-		JFrogTokenEnv:       "token",
-		GitProvider:         string(GitHub),
-		GitRepoOwnerEnv:     "jfrog",
-		GitRepoEnv:          "frogbot",
-		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "dev",
-		GitPullRequestIDEnv: "1",
+		JFrogUrlEnv:          "http://127.0.0.1:8081",
+		JFrogUserEnv:         "",
+		JFrogPasswordEnv:     "",
+		JFrogTokenEnv:        "token",
+		GitProvider:          string(GitHub),
+		GitRepoOwnerEnv:      "jfrog",
+		GitRepoEnv:           "frogbot",
+		GitTokenEnv:          "123456789",
+		GitBaseBranchEnv:     "dev",
+		GitPullRequestIDEnv:  "1",
+		GitAggregateFixesEnv: "true",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -162,6 +163,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", templates.branchNameTemplate)
 		assert.Equal(t, "high", repo.MinSeverityFilter)
 		assert.True(t, repo.WithFixVersionFilter)
+		assert.Equal(t, true, repo.AggregateFixes)
+
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
 			testExtractAndAssertProjectParams(t, project)
@@ -316,28 +319,33 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
-func TestEExtractGitNamingTemplatesFromEnv(t *testing.T) {
+func TestExtractGitNamingTemplatesFromEnv(t *testing.T) {
 	git := Git{}
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
 	// Test default values
-	extractGitNamingTemplatesFromEnv(&git)
+	err := extractGitNamingTemplatesFromEnv(&git)
+	assert.NoError(t, err)
 	assert.Empty(t, git.BranchNameTemplate)
 	assert.Empty(t, git.CommitMessageTemplate)
 	assert.Empty(t, git.PullRequestTitleTemplate)
+	assert.Empty(t, git.AggregateFixes)
 
 	// Test value extraction
 	SetEnvAndAssert(t, map[string]string{
 		BranchNameTemplateEnv:       "branch",
 		CommitMessageTemplateEnv:    "commit",
-		PullRequestTitleTemplateEnv: "title"})
+		PullRequestTitleTemplateEnv: "title",
+		GitAggregateFixesEnv:        "true"})
 
-	extractGitNamingTemplatesFromEnv(&git)
+	err = extractGitNamingTemplatesFromEnv(&git)
+	assert.NoError(t, err)
 	assert.Equal(t, git.BranchNameTemplate, "branch")
 	assert.Equal(t, git.CommitMessageTemplate, "commit")
 	assert.Equal(t, git.PullRequestTitleTemplate, "title")
+	assert.Equal(t, git.AggregateFixes, true)
 }
 
 func TestExtractProjectParamsFromEnv(t *testing.T) {

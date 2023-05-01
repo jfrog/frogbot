@@ -88,9 +88,9 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 
 func (saf *ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash, description string) error {
 	if err := client.SetCommitStatus(context.Background(), state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl); err != nil {
-		return fmt.Errorf("failed to mark last commit as scanned due to: %s", err.Error())
+		return fmt.Errorf("failed to mark last commit build status due to: %s", err.Error())
 	}
-	log.Info("Commit '%s' in repo '%s', has successfully marked as scanned", commitHash, repoConfig.RepoName)
+	log.Info("Commit'", commitHash, "'in repo '", repoConfig.RepoName, "', has successfully marked as scanned")
 	return nil
 }
 
