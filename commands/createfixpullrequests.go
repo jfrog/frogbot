@@ -216,7 +216,8 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
 	}
 	if !shouldFix {
-		return
+		// If we are not supposed to fix, don't return an error, skip.
+		return nil
 	}
 	if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
