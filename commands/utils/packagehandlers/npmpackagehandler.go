@@ -21,11 +21,12 @@ type NpmPackageHandler struct {
 	GenericPackageHandler
 }
 
-func (npm *NpmPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
+func (npm *NpmPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (bool, error) {
 	if fixVersionInfo.DirectDependency {
 		return npm.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 	}
-	return npm.updateIndirectDependency(impactedPackage, fixVersionInfo)
+	err := npm.updateIndirectDependency(impactedPackage, fixVersionInfo)
+	return err != nil, err
 }
 
 // updateIndirectDependency attempts changing the indirect dependency version
@@ -33,17 +34,22 @@ func (npm *NpmPackageHandler) UpdateImpactedPackage(impactedPackage string, fixV
 // If fails, log the error and return nil to avoid crashing the whole operation.
 // See https://github.com/npm/node-semver#caret-ranges-123-025-004 for more info
 func (npm *NpmPackageHandler) updateIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
+	// TODO fix error handling
+	var failConstraint bool
 	parsedJson, err := loadPackageLockFile()
 	if err != nil {
-		log.Error("Failed trying to load package-lock file: ", err)
+		log.Debug("Failed trying to load package-lock file: ", err)
 		return nil
 	}
-	if err = modifyIndirectDependency(impactedPackage, fixVersionInfo, parsedJson); err != nil {
-		log.Error("Failed trying to modify package-lock file: ", err)
+	if failConstraint, err = modifyIndirectDependency(impactedPackage, fixVersionInfo, parsedJson); err != nil {
+		log.Debug("Failed trying to modify package-lock file: ", err)
 		return nil
+	}
+	if failConstraint {
+		return fmt.Errorf("consrraint failed")
 	}
 	if err = saveModifiedFile(parsedJson); err != nil {
-		log.Error("Failed trying to save package-lock file: ", err)
+		log.Debug("Failed trying to save package-lock file: ", err)
 		return nil
 	}
 	// Rewrites the package-lock file with updated hashes
@@ -59,18 +65,17 @@ func saveModifiedFile(parsedJson *gabs.Container) error {
 	return nil
 }
 
-func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, parsedJson *gabs.Container) (err error) {
+func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, parsedJson *gabs.Container) (constraint bool, err error) {
 	directDependencyName := fixVersionInfo.Vulnerability.ImpactPaths[0][1].Name
 	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, impactedPackage)
 	versionWithConstraint := parsedJson.Path(pathToModule).String()
-	log.Info(versionWithConstraint)
 	validFix, err := passesConstraint(versionWithConstraint, fixVersionInfo.FixVersion)
 	if err != nil || !validFix {
-		log.Info("fix version does not match package constraints")
+		log.Info("Cannot update indirect dependency due compatibility constraint, skipping ...")
 		return
 	}
 	_, err = parsedJson.SetP(fixVersionInfo.FixVersion, pathToModule)
-	return
+	return true, nil
 }
 
 // Check that version is compatible with caret constraint
@@ -78,7 +83,7 @@ func passesConstraint(versionWithConstraint string, fixVersion string) (valid bo
 	_, err = strconv.Atoi(string(versionWithConstraint[0]))
 	// No constraint, cant fix.
 	if err != nil {
-		return
+		return false, fmt.Errorf("no constraint")
 	}
 	a, err := semver.NewConstraint(versionWithConstraint)
 	if err != nil {
