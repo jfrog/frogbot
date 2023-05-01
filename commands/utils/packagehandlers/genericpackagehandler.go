@@ -34,7 +34,7 @@ type GenericPackageHandler struct {
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
 	// Indirect package fix should be implemented for each package handler
 	if !fixVersionInfo.DirectDependency {
-		log.Debug("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
+		log.Info("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
 		return false, nil
 	}
 	// Lower the package name to avoid duplicates

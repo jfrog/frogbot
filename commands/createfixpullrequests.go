@@ -167,7 +167,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
-	_, err = cfp.createFixBranch(aggregatedFixBranchName)
+	log.Info("Creating branch", aggregatedFixBranchName, "...")
+	err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName)
 	if err != nil {
 		return
 	}
@@ -189,6 +190,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	return
 }
 
+// Creates a branch for the fixed package and open pull request to main branch
+// In case branch already exists on remote, we skip it.
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.FixVersion)
@@ -196,29 +199,34 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	if err != nil {
 		return
 	}
-	existsOnRemote, err := cfp.createFixBranch(fixBranchName)
+	existsInRemote, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
-		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
+		return
 	}
-	if existsOnRemote {
+	if existsInRemote {
 		log.Info("Branch:", fixBranchName, "already exists on remote, skipping ...")
 		return
+	}
+	log.Info("Creating branch", fixBranchName, "...")
+	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
+		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
 	shouldFix, err := cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo)
 	if err != nil {
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
 	}
-	if shouldFix {
-		if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
-			return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
-				impactedPackage, fixVersionInfo.FixVersion, err.Error())
-		}
+	if !shouldFix {
+		return
+	}
+	if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
+		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
+			impactedPackage, fixVersionInfo.FixVersion, err.Error())
 	}
 	return
 }
 
 func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixBranchName string, fixVersionInfo *utils.FixVersionInfo) (err error) {
-	log.Info("Checking if there are changes to commit")
+	log.Debug("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
 		return
@@ -228,7 +236,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	}
 
 	commitMessage := cfp.gitManager.GenerateCommitMessage(impactedPackage, fixVersionInfo.FixVersion)
-	log.Info("Running git add all and commit...")
+	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -275,16 +283,6 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")
 	return
-}
-
-// Creates a new branch and checkouts, returns also if the branch exists on remote
-func (cfp *CreateFixPullRequestsCmd) createFixBranch(fixBranchName string) (existsInRemote bool, err error) {
-	existsInRemote, err = cfp.gitManager.BranchExistsInRemote(fixBranchName)
-	if err != nil {
-		return
-	}
-	log.Info("Creating branch", fixBranchName, "...")
-	return existsInRemote, cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
@@ -348,6 +346,10 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	return nil
 }
 
+// Updates impacted package
+// ShouldFix will return false when we don't want to update the package, for example,
+// 1. Not supported Indirect dependency fix
+// 2. Build tools dependencies
 func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (shouldFix bool, err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
@@ -364,15 +366,22 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			}
 		}()
 	}
+	if buildToolDependency := cfp.isBuildToolsDependency(impactedPackage, fixVersionInfo); buildToolDependency {
+		return
+	}
+	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
+	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
+}
+
+func (cfp *CreateFixPullRequestsCmd) isBuildToolsDependency(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) bool {
 	// Skip build tools dependencies (for example, pip)
 	// That are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixVersionInfo.PackageType], impactedPackage) {
 		log.Info("Skipping vulnerable package", impactedPackage, "since it is not defined in your package descriptor file.",
 			"Update", impactedPackage, "version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
-		return
+		return true
 	}
-	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
-	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
+	return false
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
