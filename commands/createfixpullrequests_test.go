@@ -1,7 +1,9 @@
 package commands
 
 import (
+	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +26,7 @@ type packageFixTest struct {
 	fixVersion           string
 	packageDescriptor    string
 	testPath             string
+	shouldNotFix         bool
 	fixPackageVersionCmd FixPackagesTestFunc
 }
 
@@ -31,6 +34,7 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
 	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Go, impactedPackaged: "github.com/golang/go", fixVersion: "1.20.3", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
 	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pipenv, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
@@ -39,6 +43,9 @@ var packageFixTests = []packageFixTest{
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "PyJwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
+	{technology: coreutils.Pip, impactedPackaged: "pip", fixVersion: "23.1", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
+	{technology: coreutils.Pip, impactedPackaged: "wheel", fixVersion: "2.3.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
+	{technology: coreutils.Pip, impactedPackaged: "setuptools", fixVersion: "66.6.6", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
 }
 
 var requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
@@ -127,35 +134,43 @@ func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequ
 	}
 }
 
-//	func TestFixPackageVersion(t *testing.T) {
-//		currentDir, testdataDir := getTestDataDir(t)
-//		defer func() {
-//			assert.NoError(t, os.Chdir(currentDir))
-//		}()
-//
-//		for _, test := range packageFixTests {
-//			func() {
-//				// Create temp technology project
-//				projectPath := filepath.Join(testdataDir, test.technology.ToString())
-//				tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
-//				defer cleanup()
-//				test.testPath = tmpProjectPath
-//				assert.NoError(t, os.Chdir(tmpProjectPath))
-//
-//				t.Run(test.technology.ToString(), func(t *testing.T) {
-//					cfg := test.fixPackageVersionCmd(test)
-//					// Fix impacted package for each technology
-//					fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.v)
-//					assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
-//					file, err := os.ReadFile(test.packageDescriptor)
-//					assert.NoError(t, err)
-//					assert.Contains(t, string(file), test.fixVersion)
-//					// Verify that case-sensitive packages in python are lowered
-//					assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
-//				})
-//			}()
-//		}
-//	}
+func TestFixPackageVersion(t *testing.T) {
+	currentDir, testdataDir := getTestDataDir(t)
+	defer func() {
+		assert.NoError(t, os.Chdir(currentDir))
+	}()
+	dummyDirectImpactPath := [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack2", Version: "1.2.3"}}}
+	for _, test := range packageFixTests {
+		func() {
+			// Create temp technology project
+			projectPath := filepath.Join(testdataDir, test.technology.ToString())
+			tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+			defer cleanup()
+			test.testPath = tmpProjectPath
+			assert.NoError(t, os.Chdir(tmpProjectPath))
+
+			t.Run(test.technology.ToString(), func(t *testing.T) {
+				cfg := test.fixPackageVersionCmd(test)
+				directVulnerability := formats.VulnerabilityOrViolationRow{
+					ImpactPaths: dummyDirectImpactPath,
+					Technology:  test.technology,
+				}
+				// Fix impacted package for each technology
+				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, &directVulnerability)
+				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
+				file, err := os.ReadFile(test.packageDescriptor)
+				assert.NoError(t, err)
+				if test.shouldNotFix {
+					assert.NotContains(t, string(file), test.fixVersion)
+				} else {
+					assert.Contains(t, string(file), test.fixVersion)
+					// Verify that case-sensitive packages in python are lowered
+					assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
+				}
+			})
+		}()
+	}
+}
 func getTestDataDir(t *testing.T) (string, string) {
 	currentDir, err := os.Getwd()
 	assert.NoError(t, err)

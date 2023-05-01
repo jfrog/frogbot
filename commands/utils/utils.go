@@ -20,6 +20,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -40,6 +41,11 @@ var (
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
+
+var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
+	coreutils.Go:  {"github.com/golang/go"},
+	coreutils.Pip: {"pip", "setuptools", "wheel"},
+}
 
 type ErrMissingEnv struct {
 	VariableName string
@@ -153,6 +159,24 @@ func Md5Hash(values ...string) (string, error) {
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// Generates MD5Hash from a FixVersionMap object
+// The map can be returned in different order from Xray, so we need to sort the strings before hashing.
+func fixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
+	h := crypto.MD5.New()
+	// Sort the package names
+	keys := make([]string, 0, len(versionsMap))
+	for k, v := range versionsMap {
+		keys = append(keys, k+v.FixVersion)
+	}
+	sort.Strings(keys)
+	for key, value := range keys {
+		if _, err := fmt.Fprint(h, key, value); err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
