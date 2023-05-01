@@ -158,7 +158,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
-	successfullyFixedPackages := make(map[string]*utils.FixVersionInfo)
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -172,9 +171,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
 			log.Error("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
-		} else {
-			log.Info("Successfully fixed", impactedPackage)
-			successfullyFixedPackages[impactedPackage] = fixVersionInfo
 		}
 	}
 
