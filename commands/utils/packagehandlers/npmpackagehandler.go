@@ -3,9 +3,11 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
+	"github.com/Masterminds/semver/v3"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
+	"strconv"
 )
 
 const (
@@ -61,18 +63,32 @@ func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixV
 	directDependencyName := fixVersionInfo.Vulnerability.ImpactPaths[0][1].Name
 	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, impactedPackage)
 	versionWithConstraint := parsedJson.Path(pathToModule).String()
-	validFix, err := checkCaret(versionWithConstraint, fixVersionInfo.FixVersion)
+	log.Info(versionWithConstraint)
+	validFix, err := passesConstraint(versionWithConstraint, fixVersionInfo.FixVersion)
 	if err != nil || !validFix {
-		return fmt.Errorf("fix version does not match package constraints")
+		log.Info("fix version does not match package constraints")
+		return
 	}
 	_, err = parsedJson.SetP(fixVersionInfo.FixVersion, pathToModule)
 	return
 }
 
 // Check that version is compatible with caret constraint
-func checkCaret(versionWithConstraint string, fixVersion string) (ok bool, err error) {
-	// TODO implement me!
-	return true, nil
+func passesConstraint(versionWithConstraint string, fixVersion string) (valid bool, err error) {
+	_, err = strconv.Atoi(string(versionWithConstraint[0]))
+	// No constraint, cant fix.
+	if err != nil {
+		return
+	}
+	a, err := semver.NewConstraint(versionWithConstraint)
+	if err != nil {
+		return
+	}
+	candidate, err := semver.NewVersion(fixVersion)
+	if err != nil {
+		return
+	}
+	return a.Check(candidate), nil
 }
 
 func loadPackageLockFile() (*gabs.Container, error) {
