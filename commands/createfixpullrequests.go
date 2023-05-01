@@ -178,7 +178,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		}
 	}
 
-	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
+	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
 	return
@@ -187,7 +187,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.FixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
 	}
@@ -236,7 +236,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
-func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, versionsMap map[string]*utils.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
@@ -261,7 +261,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if !exists {
 		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, utils.AggregatedPullRequestTitleTemplate, prBody)
+		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), utils.AggregatedPullRequestTitleTemplate, prBody)
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")
 	return
