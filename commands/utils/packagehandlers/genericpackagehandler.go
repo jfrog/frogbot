@@ -16,6 +16,8 @@ type PackageHandler interface {
 
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
 	switch fixVersionInfo.PackageType {
+	case coreutils.Go:
+		return &GoPackageHandler{}
 	case coreutils.Maven:
 		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	case coreutils.Poetry:
