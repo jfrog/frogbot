@@ -95,7 +95,7 @@
       "failOnSecurityIssues": {
         "type": "boolean",
         "description": "Set to true to fail the job if security issues were found.",
-        "title": "Fail on Security Issues",
+        "title": "Fail on Security Issues"
       },
       "minSeverityFilter": {
         "type": "string",
@@ -105,7 +105,7 @@
         "examples": ["low, medium, high, critical"]
       },
       "withFixVersionFilter": {
-        "type": "bool",
+        "type": "boolean",
         "default": ["false"],
         "description": "Show vulnerabilities that has a fixing version only.",
         "title": "Show vulnerabilities with fix version only"
