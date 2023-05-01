@@ -226,7 +226,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	}
 
 	log.Info("Pushing branch:", fixBranchName, "...")
-	if err = cfp.gitManager.Push(false); err != nil {
+	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
 
@@ -257,7 +257,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 		return
 	}
 	log.Info("Pushing branch:", fixBranchName, "...")
-	if err = cfp.gitManager.Push(true); err != nil {
+	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
 	if !exists {
