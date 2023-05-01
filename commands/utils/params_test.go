@@ -139,6 +139,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitBaseBranchEnv:     "dev",
 		GitPullRequestIDEnv:  "1",
 		GitAggregateFixesEnv: "true",
+		MinSeverityEnv:       "high",
+		FixableOnlyEnv:       "true",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())

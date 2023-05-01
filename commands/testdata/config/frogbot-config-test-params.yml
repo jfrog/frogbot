@@ -10,7 +10,7 @@
     scan:
       includeAllVulnerabilities: true
       failOnSecurityIssues: true
-      minSeverityFilter: "high"
+      minSeverity: high
       fixableOnly: true
       projects:
         - installCommand: nuget restore
