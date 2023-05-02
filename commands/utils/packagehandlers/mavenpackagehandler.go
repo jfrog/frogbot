@@ -10,18 +10,27 @@ import (
 
 type MavenPackageHandler struct {
 	mavenDepToPropertyMap map[string][]string
-	GenericPackageHandler
+	common
 }
 
-func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
-	// In Maven, fix only direct dependencies
-	if !fixVersionInfo.DirectDependency {
-		log.Debug("Since dependency", impactedPackage, "is indirect (transitive) its fix is skipped")
-		return false, nil
+func (mvn *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+	if fixDetails.DirectDependency {
+		return mvn.updateDirectDependency(fixDetails)
+	} else {
+		return mvn.updateIndirectDependency(fixDetails)
 	}
-	properties := mvn.mavenDepToPropertyMap[impactedPackage]
+}
+
+func (mvn *MavenPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+	// In Maven, fix only direct dependencies
+	log.Debug("Since dependency", fixDetails.ImpactedDependency, "is indirect (transitive) its fix is skipped")
+	return false, nil
+}
+
+func (mvn *MavenPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+	properties := mvn.mavenDepToPropertyMap[fixDetails.ImpactedDependency]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
-	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + impactedPackage, "-DdepVersion=" + fixVersionInfo.FixVersion, "-DgenerateBackupPoms=false"}
+	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + fixDetails.ImpactedDependency, "-DdepVersion=" + fixDetails.FixVersion, "-DgenerateBackupPoms=false"}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
 	updateVersionOutput, err := exec.Command("mvn", updateVersionArgs...).CombinedOutput() // #nosec G204
@@ -31,7 +40,7 @@ func (mvn *MavenPackageHandler) UpdateImpactedPackage(impactedPackage string, fi
 
 	// Update properties that represent this package's version.
 	for _, property := range properties {
-		updatePropertyArgs := []string{"-B", "versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixVersionInfo.FixVersion, "-DgenerateBackupPoms=false"}
+		updatePropertyArgs := []string{"-B", "versions:set-property", "-Dproperty=" + property, "-DnewVersion=" + fixDetails.FixVersion, "-DgenerateBackupPoms=false"}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
 		updatePropertyOutput, err := exec.Command("mvn", updatePropertyArgs...).CombinedOutput() // #nosec G204

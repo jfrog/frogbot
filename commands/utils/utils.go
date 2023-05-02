@@ -59,21 +59,26 @@ func (e *ErrUnsupportedIndirectFix) Error() string {
 	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
 }
 
-// FixVersionInfo is a basic struct used to hold needed information about version fixing
-type FixVersionInfo struct {
-	FixVersion       string
-	PackageType      coreutils.Technology
+// FixDetails is a basic struct used to hold needed information for fixing vulnerabilities
+type FixDetails struct {
+	// Package technology
+	PackageType coreutils.Technology
+	// Name of the impacted dependency
+	ImpactedDependency string
+	// Suggested fix version
+	FixVersion string
+	// Is the dependency direct or transitive?
 	DirectDependency bool
 }
 
-func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
-	return &FixVersionInfo{newFixVersion, packageType, directDependency}
+func NewFixDetails(fixVersion string, packageType coreutils.Technology, directDependency bool, impactedPackage string) *FixDetails {
+	return &FixDetails{packageType, impactedPackage, fixVersion, directDependency}
 }
 
-func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
+func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
 	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
-		fvi.FixVersion = newFixVersion
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(fixVersion) > 0 {
+		fvi.FixVersion = fixVersion
 	}
 }
 
@@ -157,7 +162,7 @@ func Md5Hash(values ...string) (string, error) {
 
 // Generates MD5Hash from a FixVersionMap object
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func fixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
+func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error) {
 	h := crypto.MD5.New()
 	// Sort the package names
 	keys := make([]string, 0, len(versionsMap))
