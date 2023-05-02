@@ -206,12 +206,12 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-	shouldFix, err := cfp.updatePackageToFixedVersion(fixDetails)
+	supportedFix, err := cfp.updatePackageToFixedVersion(fixDetails)
 	if err != nil {
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", fixDetails.ImpactedDependency, fixDetails.FixVersion, err.Error())
 	}
-	if !shouldFix {
-		// If we are not supposed to fix, don't return an error, skip.
+	if !supportedFix {
+		// If the fix is not supported, skip it.
 		return nil
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, fixDetails); err != nil {
@@ -346,7 +346,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 // ShouldFix will return false when we don't want to update the package, for example,
 // 1. Not supported Indirect dependency fix
 // 2. Build tools dependencies
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (shouldFix bool, err error) {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
 		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
@@ -363,13 +363,18 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 		}()
 	}
 	if buildToolDependency := cfp.isBuildToolsDependency(fixDetails); buildToolDependency {
+		log.Info("Cannot update build tools dependencies, skipping...")
 		return
 	}
 	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
 	if err != nil {
 		return
 	}
-	return packageHandler.UpdateDependency(fixDetails)
+	supportedFix, err = packageHandler.UpdateDependency(fixDetails)
+	if !supportedFix {
+		log.Info("Since dependency", fixDetails.ImpactedDependency, "is indirect its fix is skipped")
+	}
+	return
 }
 
 func (cfp *CreateFixPullRequestsCmd) isBuildToolsDependency(fixDetails *utils.FixDetails) bool {

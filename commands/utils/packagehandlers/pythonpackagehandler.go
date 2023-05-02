@@ -33,12 +33,12 @@ func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (
 	}
 }
 
-func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
 	// Indirect fixes are currently not supported
 	return false, nil
 }
 
-func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
 	switch fixDetails.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(fixDetails)
@@ -51,20 +51,20 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (shouldFix bool, err error) {
+func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
 	// Install the desired fixed version
-	shouldFix, err = py.common.UpdateDependency(fixDetails)
+	supportedFix, err = py.common.UpdateDependency(fixDetails)
 	if err != nil {
 		return
 	}
-	if shouldFix {
+	if supportedFix {
 		// Update Poetry lock file as well
 		return err == nil, runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 	}
 	return
 }
 
-func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (shouldFix bool, err error) {
+func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := fixDetails.ImpactedDependency + "==" + fixDetails.FixVersion

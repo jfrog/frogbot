@@ -153,9 +153,9 @@ func TestFixPackageVersionDirect(t *testing.T) {
 				cfg := test.fixPackageVersionCmd(test)
 				// Fix impacted package for each technology
 				fixDetails := utils.NewFixDetails(test.fixVersion, test.technology, true, test.impactedPackaged)
-				shouldFix, err := cfg.updatePackageToFixedVersion(fixDetails)
+				supportedFix, err := cfg.updatePackageToFixedVersion(fixDetails)
 				assert.NoError(t, err)
-				assert.Equal(t, test.shouldNotFix, !shouldFix)
+				assert.Equal(t, test.shouldNotFix, !supportedFix)
 				file, err := os.ReadFile(test.packageDescriptor)
 				assert.NoError(t, err)
 				if test.shouldNotFix {

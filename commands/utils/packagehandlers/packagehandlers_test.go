@@ -12,7 +12,7 @@ import (
 
 type indirectDependencyFixTest struct {
 	fixVersionInfo *utils.FixDetails
-	shouldFix      bool
+	supportedFix   bool
 }
 
 type pythonIndirectDependencies struct {
@@ -49,7 +49,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 				PackageType:        "go",
 				DirectDependency:   false,
 				ImpactedDependency: "golang.org/x/crypto",
-			}, shouldFix: true,
+			}, supportedFix: true,
 		},
 		{
 			fixVersionInfo: &utils.FixDetails{
@@ -57,16 +57,16 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 				PackageType:        "go",
 				DirectDependency:   true,
 				ImpactedDependency: "github.com/gin-gonic/gin",
-			}, shouldFix: true,
+			}, supportedFix: true,
 		},
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Go)
 			defer cleanup()
-			shouldFix, err := pgk.UpdateDependency(test.fixVersionInfo)
+			supportedFix, err := pgk.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
-			assert.Equal(t, test.shouldFix, shouldFix)
+			assert.Equal(t, test.supportedFix, supportedFix)
 			assert.NoError(t, os.Chdir(testdataDir))
 		})
 	}
@@ -87,13 +87,13 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			ImpactedDependency: "junit",
 			DirectDependency:   false,
 		},
-		shouldFix: false,
+		supportedFix: false,
 	}
 	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
 	defer cleanup()
-	shouldFix, err := mvn.UpdateDependency(test.fixVersionInfo)
+	supportedFix, err := mvn.UpdateDependency(test.fixVersionInfo)
 	assert.NoError(t, err)
-	assert.Equal(t, test.shouldFix, shouldFix)
+	assert.Equal(t, test.supportedFix, supportedFix)
 	assert.NoError(t, os.Chdir(testDataDir))
 }
 
@@ -107,7 +107,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 					FixVersion:         "1.25.9",
 					PackageType:        "pip",
 					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, shouldFix: false},
+					DirectDependency:   false}, supportedFix: false},
 			requirementsPath:     "requirements.txt",
 			pythonPackageManager: "pip",
 		}, {
@@ -116,7 +116,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 					FixVersion:         "1.25.9",
 					PackageType:        "poetry",
 					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, shouldFix: false},
+					DirectDependency:   false}, supportedFix: false},
 			requirementsPath:     "pyproejct.toml",
 			pythonPackageManager: "poetry",
 		}, {
@@ -125,7 +125,7 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 					FixVersion:         "1.25.9",
 					PackageType:        "pipenv",
 					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, shouldFix: false},
+					DirectDependency:   false}, supportedFix: false},
 			requirementsPath:     "Pipfile",
 			pythonPackageManager: "pipenv",
 		},
@@ -137,9 +137,9 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
 			defer cleanup()
-			shouldFix, err := packageHandler.UpdateDependency(test.fixVersionInfo)
+			supportedFix, err := packageHandler.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
-			assert.Equal(t, test.shouldFix, shouldFix)
+			assert.Equal(t, test.supportedFix, supportedFix)
 			assert.NoError(t, os.Chdir(testDataDir))
 		})
 	}

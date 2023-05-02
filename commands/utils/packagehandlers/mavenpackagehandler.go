@@ -20,13 +20,13 @@ func (mvn *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (
 	}
 }
 
-func (mvn *MavenPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+func (mvn *MavenPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
 	// In Maven, fix only direct dependencies
 	log.Debug("Since dependency", fixDetails.ImpactedDependency, "is indirect (transitive) its fix is skipped")
 	return false, nil
 }
 
-func (mvn *MavenPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (shouldFix bool, err error) {
+func (mvn *MavenPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
 	properties := mvn.mavenDepToPropertyMap[fixDetails.ImpactedDependency]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
 	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + fixDetails.ImpactedDependency, "-DdepVersion=" + fixDetails.FixVersion, "-DgenerateBackupPoms=false"}
