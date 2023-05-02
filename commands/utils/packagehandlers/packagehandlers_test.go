@@ -140,6 +140,28 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 }
 
+func TestNpmPackageHandler_passesConstraint(t *testing.T) {
+	type testCase struct {
+		constraintVersion string
+		candidateVersion  string
+		expected          bool
+	}
+	testCases := []testCase{
+		{constraintVersion: "^1.2.2", candidateVersion: "1.2.3", expected: true},
+		{constraintVersion: "^1.2.2", candidateVersion: "1.2.1", expected: false},
+		{constraintVersion: "~1.2.2", candidateVersion: "2.2.3", expected: false},
+		{constraintVersion: "~1.2.2", candidateVersion: "1.3.0", expected: false},
+		{constraintVersion: "1.x", candidateVersion: "1.2.3", expected: true},
+		{constraintVersion: "1.x", candidateVersion: "2.2.3", expected: false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.constraintVersion, func(t *testing.T) {
+			ok, err := passesConstraint(tc.constraintVersion, tc.candidateVersion)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, ok)
+		})
+	}
+}
 func getTestDataDir(t *testing.T) string {
 	testdataDir, err := filepath.Abs(filepath.Join("..", "..", "testdata/indirect-projects"))
 	assert.NoError(t, err)
