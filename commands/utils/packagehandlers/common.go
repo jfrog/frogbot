@@ -20,18 +20,18 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *util
 	switch fixVersionInfo.PackageType {
 	case coreutils.Go:
 		return &GoPackageHandler{}, nil
-	case coreutils.Maven:
-		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}, nil
 	case coreutils.Poetry:
 		return &PythonPackageHandler{}, nil
 	case coreutils.Pipenv:
 		return &PythonPackageHandler{}, nil
-	case coreutils.Pip:
-		return &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}, nil
 	case coreutils.Npm:
 		return &NpmPackageHandler{}, nil
 	case coreutils.Yarn:
 		return &YarnPackageHandler{}, nil
+	case coreutils.Pip:
+		return &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}, nil
+	case coreutils.Maven:
+		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}, nil
 	default:
 		return nil, fmt.Errorf("incompatiable package handler: %s", fixVersionInfo.PackageType)
 	}

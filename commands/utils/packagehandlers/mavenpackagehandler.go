@@ -10,7 +10,6 @@ import (
 
 type MavenPackageHandler struct {
 	mavenDepToPropertyMap map[string][]string
-	common
 }
 
 func (mvn *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
