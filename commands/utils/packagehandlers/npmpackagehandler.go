@@ -68,11 +68,14 @@ func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixV
 	// Get value
 	directDependencyName := fixVersionInfo.Vulnerability.ImpactPaths[0][1].Name
 	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, impactedPackage)
-	versionWithConstraint := parsedJson.Path(pathToModule).Data().(string)
+	versionWithConstraint := parsedJson.Path(pathToModule).Data()
+	if versionWithConstraint == nil {
+		return false, fmt.Errorf("failed to extract version with constratin from package-lock.json")
+	}
 	// Check constraints
-	validFix, caret, err := passesConstraint(versionWithConstraint, fixVersionInfo.FixVersion)
+	validFix, caret, err := passesConstraint(versionWithConstraint.(string), fixVersionInfo.FixVersion)
 	if err != nil || !validFix {
-		log.Info("Cannot update indirect dependency due compatibility constraint, skipping ...")
+		log.Info("Cannot update indirect dependency due constraint compatibility, skipping ...")
 		return false, nil
 	}
 	// Update fix version
