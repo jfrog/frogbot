@@ -186,6 +186,14 @@ func TestNpmPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			assert.NoError(t, os.Chdir(testdataDir))
 		})
 	}
+	t.Run("Validate package-lock version", func(t *testing.T) {
+		// Validate package lock version
+		cleanup := createTempDirAndChDir(t, testdataDir, "incompatible_npm")
+		defer cleanup()
+		shouldFix, err := npmHandler.UpdateImpactedPackage("", &utils.FixVersionInfo{})
+		assert.Error(t, err)
+		assert.Equal(t, false, shouldFix)
+	})
 }
 
 func TestNpmPackageHandler_passesConstraint(t *testing.T) {
