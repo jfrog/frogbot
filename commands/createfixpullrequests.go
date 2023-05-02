@@ -160,7 +160,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
-	successfullyFixedPackages := make(map[string]*utils.FixDetails)
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -174,17 +173,13 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	}
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
-		shouldFix, err := cfp.updatePackageToFixedVersion(fixVersionInfo)
+		_, err = cfp.updatePackageToFixedVersion(fixVersionInfo)
 		if err != nil {
 			log.Debug("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
 		}
-		if shouldFix {
-			log.Debug("Successfully fixed", impactedPackage)
-			successfullyFixedPackages[impactedPackage] = fixVersionInfo
-		}
 	}
 
-	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
+	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
 	return
@@ -255,7 +250,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
-func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, versionsMap map[string]*utils.FixDetails) (err error) {
+func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
