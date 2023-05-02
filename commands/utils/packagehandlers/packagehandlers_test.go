@@ -4,6 +4,7 @@ import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -40,6 +41,7 @@ func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 	}
 }
 
+// Go
 func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testdataDir := getTestDataDir(t)
 	pgk := GoPackageHandler{}
@@ -71,7 +73,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 }
 
-// Until implemented, Test we are not attempting to fix indirect dependencies in maven
+// Maven
 func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testDataDir := getTestDataDir(t)
 	mvn := MavenPackageHandler{
@@ -96,7 +98,7 @@ func TestMavenPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	assert.NoError(t, os.Chdir(testDataDir))
 }
 
-// Until implemented, Test we are not attempting to fix indirect dependencies in python
+// Python
 func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testDataDir := getTestDataDir(t)
 	testcases := []pythonIndirectDependencies{
@@ -140,6 +142,52 @@ func TestPythonPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	}
 }
 
+// Npm
+func TestNpmPackageHandler_UpdateImpactedPackage(t *testing.T) {
+	testdataDir := getTestDataDir(t)
+	npmHandler := NpmPackageHandler{}
+	testcases := []indirectDependencyFixTest{
+		{impactedPackage: "mpath",
+			fixVersionInfo: &utils.FixVersionInfo{
+				FixVersion:       "0.8.4",
+				PackageType:      "npm",
+				DirectDependency: false,
+				Vulnerability: &formats.VulnerabilityOrViolationRow{
+					ImpactPaths: [][]formats.ComponentRow{{{Name: "projectPackage", Version: "4.17.1"}, {Name: "mongoose", Version: "5.10.10"}, {Name: "mpath", Version: "0.7.0"}}},
+				},
+			}, shouldFix: false,
+		}, {impactedPackage: "mquery",
+			fixVersionInfo: &utils.FixVersionInfo{
+				FixVersion:       "3.2.3",
+				PackageType:      "npm",
+				DirectDependency: false,
+				Vulnerability: &formats.VulnerabilityOrViolationRow{
+					ImpactPaths: [][]formats.ComponentRow{{{Name: "projectPackage", Version: "4.17.1"}, {Name: "mongoose", Version: "5.10.10"}, {Name: "mquery", Version: "3.2.2"}}},
+				},
+			}, shouldFix: false,
+		}, {impactedPackage: "accepts",
+			fixVersionInfo: &utils.FixVersionInfo{
+				FixVersion:       "1.3.8",
+				PackageType:      "npm",
+				DirectDependency: false,
+				Vulnerability: &formats.VulnerabilityOrViolationRow{
+					ImpactPaths: [][]formats.ComponentRow{{{Name: "projectPackage", Version: "4.17.1"}, {Name: "express", Version: "4.17.1"}, {Name: "accepts", Version: "1.3.7"}}},
+				},
+			}, shouldFix: true,
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.impactedPackage, func(t *testing.T) {
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
+			defer cleanup()
+			shouldFix, err := npmHandler.UpdateImpactedPackage(test.impactedPackage, test.fixVersionInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, test.shouldFix, shouldFix)
+			assert.NoError(t, os.Chdir(testdataDir))
+		})
+	}
+}
+
 func TestNpmPackageHandler_passesConstraint(t *testing.T) {
 	type testCase struct {
 		constraintVersion string
@@ -153,14 +201,39 @@ func TestNpmPackageHandler_passesConstraint(t *testing.T) {
 		{constraintVersion: "~1.2.2", candidateVersion: "1.3.0", expected: false},
 		{constraintVersion: "1.x", candidateVersion: "1.2.3", expected: true},
 		{constraintVersion: "1.x", candidateVersion: "2.2.3", expected: false},
+		{constraintVersion: "~1.3.7", candidateVersion: "1.3.8", expected: true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.constraintVersion, func(t *testing.T) {
-			ok, err := passesConstraint(tc.constraintVersion, tc.candidateVersion)
+			ok, _, err := passesConstraint(tc.constraintVersion, tc.candidateVersion)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, ok)
 		})
 	}
+}
+
+func TestNpmPackageHandler_ExtractOriginalConstraint(t *testing.T) {
+	type testCase struct {
+		constraintVersion string
+		constraintString  string
+	}
+	testCases := []testCase{
+		{constraintVersion: "^1.2.2", constraintString: "^"},
+		{constraintVersion: "^1.2.2", constraintString: "^"},
+		{constraintVersion: "~1.2.2", constraintString: "~"},
+		{constraintVersion: "~1.2.2", constraintString: "~"},
+		{constraintVersion: ">=1.3.7", constraintString: ">="},
+		{constraintVersion: "<=1.3.7", constraintString: "<="},
+		{constraintVersion: "<1.3.7", constraintString: "<"},
+		{constraintVersion: "1.3.7", constraintString: ""},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.constraintVersion, func(t *testing.T) {
+			constraintString := extractOriginalConstraint(tc.constraintVersion)
+			assert.Equal(t, tc.constraintString, constraintString)
+		})
+	}
+
 }
 func getTestDataDir(t *testing.T) string {
 	testdataDir, err := filepath.Abs(filepath.Join("..", "..", "testdata/indirect-projects"))

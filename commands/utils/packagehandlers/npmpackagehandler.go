@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
+	"unicode"
 )
 
 const (
@@ -67,18 +68,19 @@ func modifyIndirectDependency(impactedPackage string, fixVersionInfo *utils.FixV
 	// Get value
 	directDependencyName := fixVersionInfo.Vulnerability.ImpactPaths[0][1].Name
 	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, impactedPackage)
-	versionWithConstraint := parsedJson.Path(pathToModule).String()
+	versionWithConstraint := parsedJson.Path(pathToModule).Data().(string)
 	// Check constraints
-	validFix, err := passesConstraint(versionWithConstraint, fixVersionInfo.FixVersion)
+	validFix, caret, err := passesConstraint(versionWithConstraint, fixVersionInfo.FixVersion)
 	if err != nil || !validFix {
 		log.Info("Cannot update indirect dependency due compatibility constraint, skipping ...")
 		return false, nil
 	}
 	// Update fix version
-	if _, err = parsedJson.SetP(fixVersionInfo.FixVersion, pathToModule); err != nil {
-		return true, nil
+	fixVersionWithOriginalConstraint := caret + fixVersionInfo.FixVersion
+	if _, err = parsedJson.SetP(fixVersionWithOriginalConstraint, pathToModule); err != nil {
+		return
 	}
-	return
+	return true, nil
 }
 
 func loadPackageLockFile() (*gabs.Container, error) {
@@ -98,7 +100,9 @@ func loadPackageLockFile() (*gabs.Container, error) {
 }
 
 // Check that version is compatible with semantic version constraint
-func passesConstraint(versionWithConstraint string, fixVersion string) (valid bool, err error) {
+// Returns is valid fix, the original constraint, so we can pass it to our fix.
+// Example ^1.2.3 -> 1.2.4 will result in True,'^'
+func passesConstraint(versionWithConstraint string, fixVersion string) (valid bool, originalConstraint string, err error) {
 	constraint, err := semver.NewConstraint(versionWithConstraint)
 	if err != nil {
 		return
@@ -107,5 +111,18 @@ func passesConstraint(versionWithConstraint string, fixVersion string) (valid bo
 	if err != nil {
 		return
 	}
-	return constraint.Check(candidate), nil
+	return constraint.Check(candidate), extractOriginalConstraint(versionWithConstraint), nil
+}
+
+func extractOriginalConstraint(versionWithConstraint string) string {
+	// No constraint
+	if unicode.IsNumber(rune(versionWithConstraint[0])) {
+		return ""
+	}
+	// Check constraint length
+	constraintLength := 1
+	if !unicode.IsNumber(rune(versionWithConstraint[1])) {
+		constraintLength += 1
+	}
+	return versionWithConstraint[:constraintLength]
 }
