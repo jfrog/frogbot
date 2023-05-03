@@ -148,6 +148,15 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # If TRUE, Frogbot creates a single pull request with all the fixes.
             # If FALSE, Frogbot creates a separate pull request for each fix.
             # JF_GIT_AGGREGATE_FIXES: "FALSE"
+
+            # [Optional, Default: "FALSE"]
+            # Handle vulnerabilities with fix versions only
+            # JF_FIXABLE_ONLY: "TRUE"
+
+            # [Optional]
+            # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
+            # The following values are accepted: Low, Medium, High or Critical
+            # JF_MIN_SEVERITY: ""
             
          inputs:
            script: |

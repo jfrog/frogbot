@@ -54,26 +54,24 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 	if err != nil {
 		return err
 	}
-	cfp.details = &utils.ScanDetails{
-		XrayGraphScanParams:      createXrayScanParams(repository.Watches, repository.JFrogProjectKey),
-		ServerDetails:            &repository.Server,
-		Git:                      &repository.Git,
-		Client:                   client,
-		FailOnInstallationErrors: *repository.FailOnSecurityIssues,
-		Branch:                   branch,
-		ReleasesRepo:             repository.JfrogReleasesRepo,
-	}
-	for _, project := range repository.Projects {
-		cfp.details.Project = project
-		cfp.aggregateFixes = repository.Git.AggregateFixes
-		projectFullPathWorkingDirs := getFullPathWorkingDirs(project.WorkingDirs, baseWd)
+	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
+		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
+		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
+		SetBranch(branch).
+		SetReleasesRepo(repository.JfrogReleasesRepo).
+		SetFixableOnly(repository.FixableOnly).
+		SetMinSeverity(repository.MinSeverity)
+	cfp.aggregateFixes = repository.Git.AggregateFixes
+	for i := range repository.Projects {
+		cfp.details.Project = &repository.Projects[i]
+		projectFullPathWorkingDirs := getFullPathWorkingDirs(cfp.details.Project.WorkingDirs, baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
 			scanResults, isMultipleRoots, err := cfp.scan(cfp.details, fullPathWd)
 			if err != nil {
 				return err
 			}
 
-			err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.Branch, cfp.details.Client, isMultipleRoots)
+			err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.Branch(), cfp.details.Client(), isMultipleRoots)
 			if err != nil {
 				log.Warn(err)
 			}
@@ -151,8 +149,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 			log.Warn(err)
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
-		log.Info("Running git checkout to base branch:", cfp.details.Branch)
-		if err = cfp.gitManager.Checkout(cfp.details.Branch); err != nil {
+		log.Info("Running git checkout to base branch:", cfp.details.Branch())
+		if err = cfp.gitManager.Checkout(cfp.details.Branch()); err != nil {
 			return
 		}
 	}
@@ -160,7 +158,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixVersionInfo) (err error) {
-	successfullyFixedPackages := make(map[string]*utils.FixVersionInfo)
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -174,13 +171,10 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
 			log.Error("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
-		} else {
-			log.Info("Successfully fixed", impactedPackage)
-			successfullyFixedPackages[impactedPackage] = fixVersionInfo
 		}
 	}
 
-	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, successfullyFixedPackages); err != nil {
+	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
 	return
@@ -189,7 +183,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start fixing", impactedPackage, "with", fixVersionInfo.FixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch, impactedPackage, fixVersionInfo.FixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), impactedPackage, fixVersionInfo.FixVersion)
 	if err != nil {
 		return
 	}
@@ -231,14 +225,14 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(impactedPackage, fixB
 	}
 
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(impactedPackage, fixVersionInfo.FixVersion)
-	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
+	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-	return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, pullRequestTitle, prBody)
+	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
 
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
-func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, versionsMap map[string]*utils.FixVersionInfo) (err error) {
+func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
 	log.Info("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
@@ -263,7 +257,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if !exists {
 		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
 		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
-		return cfp.details.Client.CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch, utils.AggregatedPullRequestTitleTemplate, prBody)
+		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), utils.AggregatedPullRequestTitleTemplate, prBody)
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")
 	return
@@ -290,8 +284,7 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 	log.Debug("Created temp working directory:", tempWd)
 
 	// Clone the content of the repo to the new working directory
-	err = cfp.gitManager.Clone(tempWd, cfp.details.Branch)
-	if err != nil {
+	if err = cfp.gitManager.Clone(tempWd, cfp.details.Branch()); err != nil {
 		return
 	}
 

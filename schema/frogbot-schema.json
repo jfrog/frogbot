@@ -97,6 +97,19 @@
         "description": "Set to true to fail the job if security issues were found.",
         "title": "Fail on Security Issues"
       },
+      "minSeverity": {
+        "type": "string",
+        "default": ["Show all severities"],
+        "description": "Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests.",
+        "title": "Minimum vulnerability severity to filter",
+        "examples": ["low, medium, high, critical"]
+      },
+      "fixableOnly": {
+        "type": "boolean",
+        "default": ["false"],
+        "description": "Handle vulnerabilities with fix versions only.",
+        "title": "Handle vulnerabilities with fix versions only"
+      },
       "projects": {
         "type": ["array", "null"],
         "title": "Projects in Git Repository",
