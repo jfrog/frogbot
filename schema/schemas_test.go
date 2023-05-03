@@ -64,7 +64,9 @@ func TestGitHubActionsTemplates(t *testing.T) {
 func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
 	response, err := http.Get("https://json.schemastore.org/" + schema)
 	assert.NoError(t, err)
-	defer response.Body.Close()
+	defer func() {
+		assert.NoError(t, response.Body.Close())
+	}()
 	// Check server response
 	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
 	schemaBytes, err := io.ReadAll(response.Body)
