@@ -226,8 +226,106 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 // Npm
+func TestNpmPackageHandler_updateIndirectDependency(t *testing.T) {
+	testdataDir := getTestDataDir(t, false)
+	npm := &NpmPackageHandler{}
+	testcases := []dependencyFixTest{
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "0.8.4",
+				PackageType:        coreutils.Npm,
+				DirectDependency:   false,
+				ImpactedDependency: "mpath",
+			}, supportedFix: false,
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
+			defer cleanup()
+			supportedFix, err := npm.UpdateDependency(test.fixVersionInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, test.supportedFix, supportedFix)
+			assert.NoError(t, os.Chdir(testdataDir))
+		})
+	}
+}
+func TestNpmPackageHandler_updateDirectDependency(t *testing.T) {
+	testdataDir := getTestDataDir(t, true)
+	pgk := &NpmPackageHandler{}
+	testcases := []dependencyFixTest{
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "3.0.2",
+				PackageType:        coreutils.Npm,
+				DirectDependency:   true,
+				ImpactedDependency: "minimatch",
+			}, supportedFix: true,
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
+			defer cleanup()
+			supportedFix, err := pgk.UpdateDependency(test.fixVersionInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, test.supportedFix, supportedFix)
+			assertFixVersionInPackageDescriptor(t, test, "package.json")
+			assert.NoError(t, os.Chdir(testdataDir))
+		})
+	}
+}
 
 // Yarn
+func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
+	testdataDir := getTestDataDir(t, false)
+	yarn := &YarnPackageHandler{}
+	testcases := []dependencyFixTest{
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "1.2.6",
+				PackageType:        coreutils.Yarn,
+				DirectDependency:   false,
+				ImpactedDependency: "minimist",
+			}, supportedFix: false,
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
+			defer cleanup()
+			supportedFix, err := yarn.UpdateDependency(test.fixVersionInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, test.supportedFix, supportedFix)
+			assert.NoError(t, os.Chdir(testdataDir))
+		})
+	}
+}
+func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
+	testdataDir := getTestDataDir(t, true)
+	yarn := &YarnPackageHandler{}
+	testcases := []dependencyFixTest{
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "1.2.6",
+				PackageType:        coreutils.Yarn,
+				DirectDependency:   true,
+				ImpactedDependency: "minimist",
+			}, supportedFix: true,
+		},
+	}
+	for _, test := range testcases {
+		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
+			defer cleanup()
+			supportedFix, err := yarn.UpdateDependency(test.fixVersionInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, test.supportedFix, supportedFix)
+			assertFixVersionInPackageDescriptor(t, test, "package.json")
+			assert.NoError(t, os.Chdir(testdataDir))
+		})
+	}
+}
 
 // Utils functions
 func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
@@ -247,7 +345,6 @@ func TestFixVersionInfo_UpdateFixVersion(t *testing.T) {
 		})
 	}
 }
-
 func getTestDataDir(t *testing.T, directDependency bool) string {
 	var projectDir string
 	if directDependency {
@@ -259,7 +356,6 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 	assert.NoError(t, err)
 	return testdataDir
 }
-
 func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology) func() {
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech.ToString())
@@ -267,7 +363,6 @@ func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Tech
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
 }
-
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
 	file, err := os.ReadFile(packageDescriptor)
 	assert.NoError(t, err)
