@@ -163,7 +163,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "myPullRequests", templates.pullRequestTitleTemplate)
 		assert.Equal(t, "custom commit title", templates.commitMessageTemplate)
 		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", templates.branchNameTemplate)
-		assert.Equal(t, "high", repo.MinSeverity)
+		assert.Equal(t, "High", repo.MinSeverity)
 		assert.True(t, repo.FixableOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 
@@ -296,7 +296,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
-	assert.Equal(t, "medium", repo.MinSeverity)
+	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
