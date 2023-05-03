@@ -47,10 +47,6 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
-type ErrMissingEnv struct {
-	VariableName string
-}
-
 type ErrUnsupportedIndirectFix struct {
 	PackageName string
 }
@@ -59,32 +55,50 @@ func (e *ErrUnsupportedIndirectFix) Error() string {
 	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
 }
 
-// FixVersionInfo is a basic struct used to hold needed information about version fixing
-type FixVersionInfo struct {
-	FixVersion       string
-	PackageType      coreutils.Technology
+// FixDetails is a basic struct used to hold needed information for fixing vulnerabilities
+type FixDetails struct {
+	// Package technology
+	PackageType coreutils.Technology
+	// Name of the impacted dependency
+	ImpactedDependency string
+	// Suggested fix version
+	FixVersion string
+	// Direct or transitive dependency
 	DirectDependency bool
-	Vulnerability    *formats.VulnerabilityOrViolationRow
+	// Name of the direct-impacted dependency
+	DirectDependencyName string
 }
 
-func NewFixVersionInfo(newFixVersion string, vul *formats.VulnerabilityOrViolationRow) *FixVersionInfo {
-	direct, err := IsDirectDependency(vul.ImpactPaths)
-	if err != nil {
-		log.Error("Failed to calculate impact paths")
-		return nil
+func NewFixDetails(fixVersion string, vulnerability *formats.VulnerabilityOrViolationRow) *FixDetails {
+	var directDependencyName string
+	directDependency := IsDirectDependency(vulnerability.ImpactPaths)
+	if directDependency {
+		directDependencyName = vulnerability.ImpactedDependencyName
+	} else {
+		directDependencyName = vulnerability.ImpactPaths[0][1].Name
 	}
-	return &FixVersionInfo{newFixVersion, vul.Technology, direct, vul}
+	return &FixDetails{vulnerability.Technology, vulnerability.ImpactedDependencyName,
+		fixVersion, directDependency, directDependencyName}
 }
 
-func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
+func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
 	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
-		fvi.FixVersion = newFixVersion
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(fixVersion) > 0 {
+		fvi.FixVersion = fixVersion
 	}
 }
 
-func (m *ErrMissingEnv) Error() string {
-	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
+type ErrMissingEnv struct {
+	VariableName string
+}
+
+func (e *ErrMissingEnv) Error() string {
+	return fmt.Sprintf("'%s' environment variable is missing", e.VariableName)
+}
+
+// IsMissingEnvErr returns true if err is a type of ErrMissingEnv, otherwise false
+func (e *ErrMissingEnv) IsMissingEnvErr(err error) bool {
+	return errors.As(err, &e)
 }
 
 type ErrMissingConfig struct {
@@ -93,17 +107,6 @@ type ErrMissingConfig struct {
 
 func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
-}
-
-type ScanDetails struct {
-	services.XrayGraphScanParams
-	Project
-	*config.ServerDetails
-	*Git
-	Client                   vcsclient.VcsClient
-	FailOnInstallationErrors bool
-	Branch                   string
-	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -163,7 +166,7 @@ func Md5Hash(values ...string) (string, error) {
 
 // Generates MD5Hash from a FixVersionMap object
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func fixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
+func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error) {
 	h := crypto.MD5.New()
 	// Sort the package names
 	keys := make([]string, 0, len(versionsMap))
@@ -241,11 +244,8 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 }
 
 // The impact graph of direct dependencies consists of only two elements.
-func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
-	if len(impactPath) == 0 {
-		return false, fmt.Errorf("invalid impact path provided")
-	}
-	return len(impactPath[0]) < 3, nil
+func IsDirectDependency(impactPath [][]formats.ComponentRow) bool {
+	return len(impactPath[0]) < 3
 }
 
 func validateBranchName(branchName string) error {

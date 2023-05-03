@@ -5,11 +5,22 @@ import (
 )
 
 type GoPackageHandler struct {
-	GenericPackageHandler
+	common
 }
 
-func (golang *GoPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
+func (golang *GoPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+	if fixDetails.DirectDependency {
+		return golang.updateDirectDependency(fixDetails)
+	} else {
+		return golang.updateIndirectDependency(fixDetails)
+	}
+}
+
+func (golang *GoPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+	return golang.common.UpdateDependency(fixDetails, extraArgs...)
+}
+
+func (golang *GoPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
 	// In Golang, we can address every package as direct because of the way that 'go get' works
-	fixVersionInfo.DirectDependency = true
-	return golang.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
+	return golang.common.UpdateDependency(fixDetails, extraArgs...)
 }

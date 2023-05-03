@@ -22,43 +22,52 @@ const (
 // PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
 	pipRequirementsFile string
-	GenericPackageHandler
+	common
 }
 
-func (py *PythonPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) (shouldFix bool, err error) {
-	switch fixVersionInfo.PackageType {
-	case coreutils.Poetry:
-		return py.handlePoetry(impactedPackage, fixVersionInfo)
-	case coreutils.Pip:
-		return py.handlePip(impactedPackage, fixVersionInfo)
-	case coreutils.Pipenv:
-		return py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo, extraArgs...)
-	default:
-		return false, errors.New("Unknown python package manger: " + fixVersionInfo.PackageType.GetPackageType())
+func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+	if fixDetails.DirectDependency {
+		return py.updateDirectDependency(fixDetails)
+	} else {
+		return py.updateIndirectDependency(fixDetails)
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (shouldFix bool, err error) {
+func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+	// Indirect fixes are currently not supported
+	return false, nil
+}
+
+func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+	switch fixDetails.PackageType {
+	case coreutils.Poetry:
+		return py.handlePoetry(fixDetails)
+	case coreutils.Pip:
+		return py.handlePip(fixDetails)
+	case coreutils.Pipenv:
+		return py.common.UpdateDependency(fixDetails, extraArgs...)
+	default:
+		return false, errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
+	}
+}
+
+func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
 	// Install the desired fixed version
-	shouldFix, err = py.GenericPackageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
+	supportedFix, err = py.common.UpdateDependency(fixDetails)
 	if err != nil {
 		return
 	}
-	if shouldFix {
+	if supportedFix {
 		// Update Poetry lock file as well
 		return err == nil, runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 	}
 	return
 }
 
-func (py *PythonPackageHandler) handlePip(impactedPackage string, fixVersionInfo *utils.FixVersionInfo) (shouldFix bool, err error) {
-	// Indirect fixes are currently not supported
-	if !fixVersionInfo.DirectDependency {
-		return false, nil
-	}
+func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
-	fixedPackage := impactedPackage + "==" + fixVersionInfo.FixVersion
+	fixedPackage := fixDetails.ImpactedDependency + "==" + fixDetails.FixVersion
 	if py.pipRequirementsFile == "" {
 		py.pipRequirementsFile = "setup.py"
 	}
@@ -78,12 +87,12 @@ func (py *PythonPackageHandler) handlePip(impactedPackage string, fixVersionInfo
 
 	// Check both original and lowered package name and replace to only one lowered result
 	// This regex will match the impactedPackage with it's pinned version e.py. PyJWT==1.7.1
-	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + impactedPackage + "|" + strings.ToLower(impactedPackage) + ")" + PythonPackageRegexSuffix)
+	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + fixDetails.ImpactedDependency + "|" + strings.ToLower(fixDetails.ImpactedDependency) + ")" + PythonPackageRegexSuffix)
 	if packageToReplace := re.FindString(currentFile); packageToReplace != "" {
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
 	if fixedFile == "" {
-		return false, fmt.Errorf("impacted package %s not found, fix failed", impactedPackage)
+		return false, fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
 	}
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
 		return

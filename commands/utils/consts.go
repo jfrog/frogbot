@@ -58,6 +58,8 @@ const (
 	FailOnSecurityIssuesEnv      = "JF_FAIL"
 	UseWrapperEnv                = "JF_USE_WRAPPER"
 	DepsRepoEnv                  = "JF_DEPS_REPO"
+	MinSeverityEnv               = "JF_MIN_SEVERITY"
+	FixableOnlyEnv               = "JF_FIXABLE_ONLY"
 	WatchesDelimiter             = ","
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
