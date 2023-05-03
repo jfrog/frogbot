@@ -57,7 +57,8 @@ func (n *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetail
 		return
 	}
 	// Rewrites the package-lock file with updated hashes
-	return true, runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{"install"})
+	err = runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{fixDetails.PackageType.GetPackageInstallOperator()})
+	return err == nil, err
 }
 
 func saveModifiedFile(parsedJson *gabs.Container) error {
