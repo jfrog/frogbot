@@ -139,6 +139,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitBaseBranchEnv:     "dev",
 		GitPullRequestIDEnv:  "1",
 		GitAggregateFixesEnv: "true",
+		MinSeverityEnv:       "high",
+		FixableOnlyEnv:       "true",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -161,6 +163,8 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "myPullRequests", templates.pullRequestTitleTemplate)
 		assert.Equal(t, "custom commit title", templates.commitMessageTemplate)
 		assert.Equal(t, "this is my branch ${BRANCH_NAME_HASH}", templates.branchNameTemplate)
+		assert.Equal(t, "High", repo.MinSeverity)
+		assert.True(t, repo.FixableOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
@@ -260,6 +264,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		DepsRepoEnv:                  "deps-remote",
 		IncludeAllVulnerabilitiesEnv: "true",
 		FailOnSecurityIssuesEnv:      "false",
+		MinSeverityEnv:               "medium",
+		FixableOnlyEnv:               "true",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -290,6 +296,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
+	assert.Equal(t, "Medium", repo.MinSeverity)
+	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)

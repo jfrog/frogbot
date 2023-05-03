@@ -47,10 +47,6 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
-type ErrMissingEnv struct {
-	VariableName string
-}
-
 type ErrUnsupportedIndirectFix struct {
 	PackageName string
 }
@@ -82,8 +78,17 @@ func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
 	}
 }
 
-func (m *ErrMissingEnv) Error() string {
-	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
+type ErrMissingEnv struct {
+	VariableName string
+}
+
+func (e *ErrMissingEnv) Error() string {
+	return fmt.Sprintf("'%s' environment variable is missing", e.VariableName)
+}
+
+// IsMissingEnvErr returns true if err is a type of ErrMissingEnv, otherwise false
+func (e *ErrMissingEnv) IsMissingEnvErr(err error) bool {
+	return errors.As(err, &e)
 }
 
 type ErrMissingConfig struct {
@@ -92,17 +97,6 @@ type ErrMissingConfig struct {
 
 func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
-}
-
-type ScanDetails struct {
-	services.XrayGraphScanParams
-	Project
-	*config.ServerDetails
-	*Git
-	Client                   vcsclient.VcsClient
-	FailOnInstallationErrors bool
-	Branch                   string
-	ReleasesRepo             string
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.

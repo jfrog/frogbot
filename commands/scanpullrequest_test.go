@@ -35,29 +35,6 @@ const (
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
 )
 
-func TestCreateXrayScanParams(t *testing.T) {
-	// Project
-	params := createXrayScanParams(nil, "")
-	assert.Empty(t, params.Watches)
-	assert.Equal(t, "", params.ProjectKey)
-	assert.True(t, params.IncludeVulnerabilities)
-	assert.False(t, params.IncludeLicenses)
-
-	// Watches
-	params = createXrayScanParams([]string{"watch-1", "watch-2"}, "")
-	assert.Equal(t, []string{"watch-1", "watch-2"}, params.Watches)
-	assert.Equal(t, "", params.ProjectKey)
-	assert.False(t, params.IncludeVulnerabilities)
-	assert.False(t, params.IncludeLicenses)
-
-	// Project
-	params = createXrayScanParams(nil, "project")
-	assert.Empty(t, params.Watches)
-	assert.Equal(t, "project", params.ProjectKey)
-	assert.False(t, params.IncludeVulnerabilities)
-	assert.False(t, params.IncludeLicenses)
-}
-
 func TestCreateVulnerabilitiesRows(t *testing.T) {
 	// Previous scan with only one violation - XRAY-1
 	previousScan := services.ScanResponse{
@@ -412,9 +389,9 @@ func TestCreatePullRequestMessage(t *testing.T) {
 
 func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup := utils.ScanDetails{
-		Project:                  utils.Project{},
-		FailOnInstallationErrors: true,
+		Project: &utils.Project{},
 	}
+	scanSetup.SetFailOnInstallationErrors(true)
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -422,20 +399,20 @@ func TestRunInstallIfNeeded(t *testing.T) {
 		InstallCommandName: "echo",
 		InstallCommandArgs: []string{"Hello"},
 	}
-	scanSetup.Project = *params
+	scanSetup.Project = params
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	scanSetup.InstallCommandName = "not-exist"
 	scanSetup.InstallCommandArgs = []string{"1", "2"}
-	scanSetup.FailOnInstallationErrors = false
+	scanSetup.SetFailOnInstallationErrors(false)
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
 
 	params = &utils.Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	scanSetup.Project = *params
-	scanSetup.FailOnInstallationErrors = true
+	scanSetup.Project = params
+	scanSetup.SetFailOnInstallationErrors(true)
 	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
 }
 

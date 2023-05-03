@@ -167,7 +167,7 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			packageHandler, err := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
-				Project: utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
+				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
 			defer cleanup()
@@ -201,7 +201,7 @@ func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			packageHandler, err := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
-				Project: utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
+				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
 			defer cleanup()

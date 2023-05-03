@@ -138,8 +138,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: services.XrayGraphScanParams{},
-				Project:             frogbotParams.Projects[0],
+				XrayGraphScanParams: &services.XrayGraphScanParams{},
+				Project:             &frogbotParams.Projects[0],
 				ServerDetails:       &frogbotParams.Server,
 			}
 			scanResponse, _, err := testScan.scan(&scanSetup, tmpDir)
