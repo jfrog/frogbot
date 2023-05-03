@@ -43,8 +43,8 @@ func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetMinSeverityFilter(minSeverityFilter string) *ScanDetails {
-	sc.minSeverityFilter = minSeverityFilter
+func (sc *ScanDetails) SetMinSeverity(minSeverity string) *ScanDetails {
+	sc.minSeverityFilter = minSeverity
 	return sc
 }
 
@@ -83,9 +83,10 @@ func (sc *ScanDetails) MinSeverityFilter() string {
 }
 
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
-	params = &services.XrayGraphScanParams{}
-	params.ScanType = services.Dependency
-	params.IncludeLicenses = false
+	params = &services.XrayGraphScanParams{
+		ScanType:        services.Dependency,
+		IncludeLicenses: false,
+	}
 	if len(watches) > 0 {
 		params.Watches = watches
 		return
@@ -94,7 +95,7 @@ func createXrayScanParams(watches []string, project string) (params *services.Xr
 		params.ProjectKey = project
 		return
 	}
-	// No context was supplied, request from Xray to return all known vulnerabilities.
+	// No context was supplied. We therefore request from Xray to return all known vulnerabilities.
 	params.IncludeVulnerabilities = true
 	return
 }

@@ -60,7 +60,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 		SetBranch(branch).
 		SetReleasesRepo(repository.JfrogReleasesRepo).
 		SetFixableOnly(repository.FixableOnly).
-		SetMinSeverityFilter(repository.MinSeverityFilter)
+		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
@@ -284,8 +284,7 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 	log.Debug("Created temp working directory:", tempWd)
 
 	// Clone the content of the repo to the new working directory
-	err = cfp.gitManager.Clone(tempWd, cfp.details.Branch())
-	if err != nil {
+	if err = cfp.gitManager.Clone(tempWd, cfp.details.Branch()); err != nil {
 		return
 	}
 

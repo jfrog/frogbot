@@ -97,18 +97,18 @@
         "description": "Set to true to fail the job if security issues were found.",
         "title": "Fail on Security Issues"
       },
-      "minSeverityFilter": {
+      "minSeverity": {
         "type": "string",
         "default": ["Show all severities"],
-        "description": "Set the minimum severity of vulnerabilities to be fixed and commented on in pull requests.",
+        "description": "Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests.",
         "title": "Minimum vulnerability severity to filter",
         "examples": ["low, medium, high, critical"]
       },
       "fixableOnly": {
         "type": "boolean",
         "default": ["false"],
-        "description": "Display vulnerabilities that has a fixing version only.",
-        "title": "Display vulnerabilities with fix version only"
+        "description": "Handle vulnerabilities with fix versions only.",
+        "title": "Handle vulnerabilities with fix versions only"
       },
       "projects": {
         "type": ["array", "null"],

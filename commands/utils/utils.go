@@ -28,7 +28,7 @@ const (
 	RootDir         = "."
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
-	// branch validation error messages
+	// Branch validation error messages
 	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
 	branchInvalidPrefix   = "branch name cannot start with '-' "
 	branchCharsMaxLength  = 255
@@ -45,10 +45,6 @@ var (
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Go:  {"github.com/golang/go"},
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
-}
-
-type ErrMissingEnv struct {
-	VariableName string
 }
 
 type ErrUnsupportedIndirectFix struct {
@@ -77,8 +73,17 @@ func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
 	}
 }
 
-func (m *ErrMissingEnv) Error() string {
-	return fmt.Sprintf("'%s' environment variable is missing", m.VariableName)
+type ErrMissingEnv struct {
+	VariableName string
+}
+
+func (e *ErrMissingEnv) Error() string {
+	return fmt.Sprintf("'%s' environment variable is missing", e.VariableName)
+}
+
+// IsMissingEnvErr returns true if err is a type of ErrMissingEnv, otherwise false
+func (e *ErrMissingEnv) IsMissingEnvErr(err error) bool {
+	return errors.As(err, &e)
 }
 
 type ErrMissingConfig struct {

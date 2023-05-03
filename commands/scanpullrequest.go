@@ -81,7 +81,7 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 			SetBranch(repoConfig.Branches[0]).
 			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
-			SetMinSeverityFilter(repoConfig.MinSeverityFilter).
+			SetMinSeverity(repoConfig.MinSeverity).
 			SetFixableOnly(repoConfig.FixableOnly)
 		currentScan, isMultipleRoot, err := auditSource(scanDetails)
 		if err != nil {
@@ -223,7 +223,7 @@ func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 
 func auditTarget(scanSetup *utils.ScanDetails) (res []services.ScanResponse, isMultipleRoot bool, err error) {
 	// First download the target repo to temp dir
-	log.Info("Auditing ", scanSetup.Git.RepoName, scanSetup.Branch())
+	log.Info("Auditing the", scanSetup.Git.RepoName, "repository on the", scanSetup.Branch(), "branch")
 	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client(), scanSetup.Branch(), scanSetup.Git)
 	if err != nil {
 		return

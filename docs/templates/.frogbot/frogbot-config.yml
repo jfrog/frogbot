@@ -44,6 +44,15 @@
       # Frogbot does not fail the task if security issues are found and this parameter is set to false
       # failOnSecurityIssues: false
 
+      # [Default: false]
+      # Handle vulnerabilities with fix versions only
+      # fixableOnly: true
+
+      # [Optional]
+      # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
+      # The following values are accepted: Low, Medium, High or Critical
+      # minSeverity: ""
+
       # List of subprojects / project dirs inside the Git repository
       projects:
       # [Mandatory if the two conditions below are met]
@@ -59,7 +68,7 @@
       #     - "."
 
       # [Mandatory for pip only if using requirements file, Default: pip install .]
-      # The requirements file name that used to install dependencies in case of pip package manager
+      # The requirements file name that is used to install dependencies in case of pip package manager
       #   pipRequirementsFile: ""
 
       # [Default: true]

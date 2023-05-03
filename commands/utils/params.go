@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -39,13 +40,14 @@ type FrogbotConfigAggregator []FrogbotRepoConfig
 // UnmarshalYaml uses the yaml.Unmarshaler interface to parse the yamlContent, and then sets default values if they weren't set by the user.
 func (fca *FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result FrogbotConfigAggregator, err error) {
 	var configFile *FrogbotConfigAggregator
-	if err := yaml.Unmarshal(yamlContent, &configFile); err != nil {
+	if err = yaml.Unmarshal(yamlContent, &configFile); err != nil {
 		return nil, err
 	}
 	for _, repository := range *configFile {
-		repository.MinSeverityFilter = strings.ToLower(repository.MinSeverityFilter)
-		repository.Params, err = repository.Params.setDefaultsIfNeeded()
-		if err != nil {
+		if repository.MinSeverity, err = xrutils.GetSeveritiesFormat(repository.MinSeverity); err != nil {
+			return
+		}
+		if repository.Params, err = repository.Params.setDefaultsIfNeeded(); err != nil {
 			return
 		}
 		result = append(result, repository)
@@ -100,7 +102,7 @@ type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	MinSeverityFilter         string    `yaml:"minSeverity,omitempty"`
+	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	JfrogReleasesRepo         string
 }
@@ -197,7 +199,7 @@ func getConfigAggregator(client vcsclient.VcsClient, server *coreconfig.ServerDe
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
-// If these variables are not set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
+// If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(client vcsclient.VcsClient) (configFileContent []byte, err error) {
 	var targetConfigContent []byte
 	configFileContent, err = readConfigFromTarget(client)
@@ -272,26 +274,35 @@ func extractGitParamsFromEnv() (*Git, error) {
 	var err error
 	gitParams := Git{}
 	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
-	_ = ReadParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint)
+	e := &ErrMissingEnv{}
+	if err = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
-	if err = ReadParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
+	if err = readParamFromEnv(GitRepoOwnerEnv, &gitParams.RepoOwner); err != nil {
 		return nil, err
 	}
-	if err = ReadParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
+	if err = readParamFromEnv(GitTokenEnv, &gitParams.Token); err != nil {
 		return nil, err
 	}
-	// Username is only mandatory for Bitbucket server on the scan-and-fix-repos command.
-	_ = ReadParamFromEnv(GitUsernameEnv, &gitParams.Username)
+	// Username is only mandatory for Bitbucket Server when using the scan-and-fix-repos command.
+	if err = readParamFromEnv(GitUsernameEnv, &gitParams.Username); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
 	// Repo name validation will be performed later, this env is mandatory in case there is no config file.
-	_ = ReadParamFromEnv(GitRepoEnv, &gitParams.RepoName)
-	if err := ReadParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
+	if err = readParamFromEnv(GitRepoEnv, &gitParams.RepoName); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
+	if err = readParamFromEnv(GitProjectEnv, &gitParams.GitProject); err != nil && gitParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
 	}
 	// Non-mandatory git branch and pr id.
 	var branch string
-	_ = ReadParamFromEnv(GitBaseBranchEnv, &branch)
+	if err = readParamFromEnv(GitBaseBranchEnv, &branch); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
 	gitParams.Branches = append(gitParams.Branches, branch)
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		gitParams.PullRequestID, err = strconv.Atoi(pullRequestIDString)
@@ -308,7 +319,7 @@ func extractGitParamsFromEnv() (*Git, error) {
 	return &gitParams, err
 }
 
-func ReadParamFromEnv(envKey string, paramValue *string) error {
+func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
 		return &ErrMissingEnv{envKey}
@@ -428,6 +439,7 @@ func setProjectInstallCommand(installCommand string, project *Project) {
 
 func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	var err error
+
 	if repo.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
 		return err
 	}
@@ -437,16 +449,26 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	}
 	repo.FailOnSecurityIssues = &failOnSecurityIssues
 	// Non-mandatory Xray context params
+	e := &ErrMissingEnv{}
 	var watches string
-	_ = ReadParamFromEnv(jfrogWatchesEnv, &watches)
+	if err = readParamFromEnv(jfrogWatchesEnv, &watches); err != nil && !e.IsMissingEnvErr(err) {
+		return err
+	}
 	if watches != "" {
 		// Remove spaces if exists
 		watches = strings.ReplaceAll(watches, " ", "")
 		repo.Watches = strings.Split(watches, WatchesDelimiter)
 	}
-	_ = ReadParamFromEnv(jfrogProjectEnv, &repo.JFrogProjectKey)
+	if err = readParamFromEnv(jfrogProjectEnv, &repo.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
+		return err
+	}
 	// Results filtering environment variables
-	_ = ReadParamFromEnv(MinSeverityEnv, &repo.MinSeverityFilter)
+	if err = readParamFromEnv(MinSeverityEnv, &repo.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
+		return err
+	}
+	if repo.MinSeverity, err = xrutils.GetSeveritiesFormat(repo.MinSeverity); err != nil {
+		return err
+	}
 	repo.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false)
 	return err
 }
@@ -464,7 +486,8 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// In case frogbot-config.yml does not exist, newConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
+// In case frogbot-config.yml doesn't exist,
+// newConfigAggregatorFromEnv generates a FrogbotConfigAggregator with the environment variables values.
 func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails, releasesRepo string) (FrogbotConfigAggregator, error) {
 	// The repo name must be set as a part of the envs.
 	if gitParams.RepoName == "" {
@@ -490,16 +513,25 @@ func newConfigAggregatorFromEnv(gitParams *Git, server *coreconfig.ServerDetails
 
 // readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
 func readConfigFromTarget(client vcsclient.VcsClient) (configContent []byte, err error) {
+	e := &ErrMissingEnv{}
 	var branch string
-	_ = ReadParamFromEnv(GitBaseBranchEnv, &branch)
+	if err = readParamFromEnv(GitBaseBranchEnv, &branch); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
 	var repo string
-	_ = ReadParamFromEnv(GitRepoEnv, &repo)
+	if err = readParamFromEnv(GitRepoEnv, &repo); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
 	var owner string
-	_ = ReadParamFromEnv(GitRepoOwnerEnv, &owner)
+	if err = readParamFromEnv(GitRepoOwnerEnv, &owner); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
+
 	if repo != "" && owner != "" {
 		if branch == "" {
 			log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
 		}
+
 		log.Debug("Downloading", FrogbotConfigFile, "from target", owner, "/", repo, "/", branch)
 		gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
 		var statusCode int
