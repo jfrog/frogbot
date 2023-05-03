@@ -23,14 +23,7 @@ func TestFrogbotSchema(t *testing.T) {
 	validateYamlSchema(t, schemaLoader, filepath.Join("..", "docs", "templates", ".frogbot", "frogbot-config.yml"), "")
 
 	// Validate all frogbot configs in commands/testdata/config
-	err = filepath.Walk(filepath.Join("..", "commands", "testdata", "config"), func(frogbotConfigFilePath string, info os.FileInfo, err error) error {
-		assert.NoError(t, err)
-		if !info.IsDir() {
-			validateYamlSchema(t, schemaLoader, frogbotConfigFilePath, "")
-		}
-		return nil
-	})
-	assert.NoError(t, err)
+	validateYamlsInDirectory(t, filepath.Join("..", "commands", "testdata", "config"), schemaLoader)
 }
 
 func TestBadFrogbotSchemas(t *testing.T) {
@@ -57,32 +50,17 @@ func TestBadFrogbotSchemas(t *testing.T) {
 
 func TestJFrogPipelinesTemplates(t *testing.T) {
 	schemaLoader := downloadFromSchemaStore(t, "jfrog-pipelines.json")
-
-	// Validate all JFrog Pipelines templates in docs/templates/jfrog-pipelines
-	err := filepath.Walk(filepath.Join("..", "docs", "templates", "jfrog-pipelines"), func(yamlFilePath string, info os.FileInfo, err error) error {
-		assert.NoError(t, err)
-		if !info.IsDir() {
-			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
-		}
-		return nil
-	})
-	assert.NoError(t, err)
+	validateYamlsInDirectory(t, filepath.Join("..", "docs", "templates", "jfrog-pipelines"), schemaLoader)
 }
 
 func TestGitHubActionsTemplates(t *testing.T) {
 	schemaLoader := downloadFromSchemaStore(t, "github-workflow.json")
-
-	// Validate all GitHub Actions templates in docs/templates/github-actions
-	err := filepath.Walk(filepath.Join("..", "docs", "templates", "github-actions"), func(yamlFilePath string, info os.FileInfo, err error) error {
-		assert.NoError(t, err)
-		if !info.IsDir() && strings.HasSuffix(info.Name(), "yml") {
-			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
-		}
-		return nil
-	})
-	assert.NoError(t, err)
+	validateYamlsInDirectory(t, filepath.Join("..", "docs", "templates", "github-actions"), schemaLoader)
 }
 
+// Download a Yaml schema from https://json.schemastore.org.
+// t      - Testing object
+// schema - The schema file to download
 func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
 	response, err := http.Get("https://json.schemastore.org/" + schema)
 	assert.NoError(t, err)
@@ -93,6 +71,21 @@ func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoade
 	assert.NoError(t, err)
 
 	return gojsonschema.NewBytesLoader(schemaBytes)
+}
+
+// Validate all yml files in the given directory against the input schema
+// t            - Testing object
+// schemaLoader - Frogbot config schema
+// path	         - Yaml directory path
+func validateYamlsInDirectory(t *testing.T, path string, schemaLoader gojsonschema.JSONLoader) {
+	err := filepath.Walk(path, func(frogbotConfigFilePath string, info os.FileInfo, err error) error {
+		assert.NoError(t, err)
+		if strings.HasSuffix(info.Name(), "yml") {
+			validateYamlSchema(t, schemaLoader, frogbotConfigFilePath, "")
+		}
+		return nil
+	})
+	assert.NoError(t, err)
 }
 
 // Validate a Yaml file against the input Yaml schema
