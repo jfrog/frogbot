@@ -1,8 +1,11 @@
 package schema
 
 import (
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,13 +20,13 @@ func TestFrogbotSchema(t *testing.T) {
 	schemaLoader := gojsonschema.NewBytesLoader(schema)
 
 	// Validate config in the docs
-	validateSchema(t, schemaLoader, filepath.Join("..", "docs", "templates", ".frogbot", "frogbot-config.yml"), "")
+	validateYamlSchema(t, schemaLoader, filepath.Join("..", "docs", "templates", ".frogbot", "frogbot-config.yml"), "")
 
 	// Validate all frogbot configs in commands/testdata/config
 	err = filepath.Walk(filepath.Join("..", "commands", "testdata", "config"), func(frogbotConfigFilePath string, info os.FileInfo, err error) error {
 		assert.NoError(t, err)
 		if !info.IsDir() {
-			validateSchema(t, schemaLoader, frogbotConfigFilePath, "")
+			validateYamlSchema(t, schemaLoader, frogbotConfigFilePath, "")
 		}
 		return nil
 	})
@@ -48,24 +51,68 @@ func TestBadFrogbotSchemas(t *testing.T) {
 		{"empty-repo", "Expected: string, given: null"},
 	}
 	for _, testCase := range testCases {
-		validateSchema(t, schemaLoader, filepath.Join("testdata", testCase.testName+".yml"), testCase.errorString)
+		validateYamlSchema(t, schemaLoader, filepath.Join("testdata", testCase.testName+".yml"), testCase.errorString)
 	}
 }
 
-// Validate frogbot config against the frogbot schema
-// t                     - Testing object
-// schemaLoader          - Frogbot config schema
-// frogbotConfigFilePath - Frogbot config file path
-// expectError           - Expected error or an empty string if error is not expected
-func validateSchema(t *testing.T, schemaLoader gojsonschema.JSONLoader, frogbotConfigFilePath, expectError string) {
-	t.Run(filepath.Base(frogbotConfigFilePath), func(t *testing.T) {
+func TestJFrogPipelinesTemplates(t *testing.T) {
+	response, err := http.Get("https://json.schemastore.org/jfrog-pipelines.json")
+	assert.NoError(t, err)
+	defer response.Body.Close()
+	// Check server response
+	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
+	schema, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	schemaLoader := gojsonschema.NewBytesLoader(schema)
+
+	// Validate all JFrog Pipelines templates in docs/templates/jfrog-pipelines
+	err = filepath.Walk(filepath.Join("..", "docs", "templates", "jfrog-pipelines"), func(yamlFilePath string, info os.FileInfo, err error) error {
+		assert.NoError(t, err)
+		if !info.IsDir() {
+			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+}
+
+func TestGitHubActionsTemplates(t *testing.T) {
+	response, err := http.Get("https://json.schemastore.org/github-workflow.json")
+	assert.NoError(t, err)
+	defer response.Body.Close()
+	// Check server response
+	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
+	schema, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	schemaLoader := gojsonschema.NewBytesLoader(schema)
+
+	// Validate all JFrog Pipelines templates in docs/templates/jfrog-pipelines
+	err = filepath.Walk(filepath.Join("..", "docs", "templates", "github-actions"), func(yamlFilePath string, info os.FileInfo, err error) error {
+		assert.NoError(t, err)
+		if !info.IsDir() && strings.HasSuffix(info.Name(), "yml") {
+			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+}
+
+// Validate a Yaml file against the input Yaml schema
+// t            - Testing object
+// schemaLoader - Frogbot config schema
+// yamlFilePath - Yaml file path
+// expectError  - Expected error or an empty string if error is not expected
+func validateYamlSchema(t *testing.T, schemaLoader gojsonschema.JSONLoader, yamlFilePath, expectError string) {
+	t.Run(filepath.Base(yamlFilePath), func(t *testing.T) {
 		// Read frogbot config
-		frogbotConfigFile, err := os.ReadFile(frogbotConfigFilePath)
+		yamlFile, err := os.ReadFile(yamlFilePath)
 		assert.NoError(t, err)
 
 		// Unmarshal frogbot config
 		var frogbotConfigYaml interface{}
-		err = yaml.Unmarshal(frogbotConfigFile, &frogbotConfigYaml)
+		err = yaml.Unmarshal(yamlFile, &frogbotConfigYaml)
 		assert.NoError(t, err)
 
 		// Convert the Yaml config to JSON config to help the json parser validate it.
@@ -93,6 +140,10 @@ func convertYamlToJson(yamlValue interface{}) interface{} {
 	case map[interface{}]interface{}:
 		jsonMapping := map[string]interface{}{}
 		for key, value := range yamlMapping {
+			if key == true {
+				// "on" is considered a true value for the Yaml Unmarshaler. To work around it, we set the true to be "on".
+				key = "on"
+			}
 			jsonMapping[key.(string)] = convertYamlToJson(value)
 		}
 		return jsonMapping
