@@ -2,13 +2,13 @@ resources:
   - name: cron_trigger
     type: CronTrigger
     configuration:
-      interval: '* */1 * * *'     # Run once an hour
+      interval: "* */1 * * *" # Run once per hour
 
   - name: frogbotGitRepo
     type: GitRepo
     configuration:
       gitProvider: gitIntegration
-      path: {{.jfrog-pipelines.sourceRepository}}
+      path: "{{.jfrog-pipelines.sourceRepository}}"
       branches:
         include: ^{{gitBranch}}$
       cloneProtocol: https
@@ -22,143 +22,144 @@ pipelines:
           integrations:
             - name: jfrogPlatform
             - name: gitIntegration
-        inputResources:
-          - name: cron_trigger
-          - name: frogbotGitRepo
-        runtime:
-          type: image
-          image:
-            auto:
-              language: java
-              version: "11"
-        environmentVariables:
+          inputResources:
+            - name: cron_trigger
+            - name: frogbotGitRepo
+          runtime:
+            type: image
+            image:
+              auto:
+                language: java
+                version: "11"
+          environmentVariables:
+            # [Mandatory]
+            # JFrog platform URL
+            JF_URL: $int_jfrogPlatform_url
 
-          # [Mandatory]
-          # JFrog platform URL
-          JF_URL: $int_jfrogPlatform_url
+            # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+            # JFrog access token with 'read' permissions for Xray
+            JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
 
-          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-          # JFrog access token with 'read' permissions for Xray
-          JF_ACCESS_TOKEN: $int_jfrogPlatform_accessToken
+            # [Mandatory for Bitbucket]
+            # Username of the git provider account
+            JF_GIT_USERNAME: ""
 
-          # [Mandatory for Bitbucket]
-          # Username of the git provider account
-          JF_GIT_USERNAME: ""
+            # [Mandatory]
+            # Git provider access token with minimal permissions according to the relevant integration type.
+            # Read more - https://www.jfrog.com/confluence/display/JFROG/Pipelines+Integrations
+            JF_GIT_TOKEN: $int_gitIntegration_token
 
-          # [Mandatory]
-          # Git provider access token with minimal permissions according to the relevant integration type.
-          # Read more - https://www.jfrog.com/confluence/display/JFROG/Pipelines+Integrations
-          JF_GIT_TOKEN: $int_gitIntegration_token
+            # [Mandatory]
+            # Name of your git provider: "bitbucketServer" or "github".
+            JF_GIT_PROVIDER: ""
 
-          # [Mandatory]
-          # Name of your git provider: "bitbucketServer" or "github".
-          JF_GIT_PROVIDER: ""
+            # [Mandatory]
+            # API endpoint to your git provider
+            JF_GIT_API_ENDPOINT: $int_gitIntegration_url
 
-          # [Mandatory]
-          # API endpoint to your git provider
-          JF_GIT_API_ENDPOINT: $int_gitIntegration_url
+            # [Mandatory]
+            # Git provider project owner.
+            JF_GIT_OWNER: ""
 
-          # [Mandatory]
-          # Git provider project owner.
-          JF_GIT_OWNER: ""
+            # [Mandatory]
+            # Git repository name
+            JF_GIT_REPO: ""
 
-          # [Mandatory]
-          # Git repository name
-          JF_GIT_REPO: $res_frogbotGitRepo_gitRepoFullName
+            # [Mandatory]
+            # Repository branch to scan
+            JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
 
-          # [Mandatory]
-          # Repository branch to scan
-          JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
+            # [Optional]
+            # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
+            # in Artifactory, which proxies https://releases.jfrog.io
+            # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+            # JF_RELEASES_REPO: ""
 
-          # [Optional]
-          # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-          # in Artifactory, which proxies https://releases.jfrog.io
-          # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
-          # JF_RELEASES_REPO: ""
+            ##########################################################################
+            ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
+            ##   the following variables inside the file, instead of here.          ##
+            ##########################################################################
 
+            # [Optional, default: "."]
+            # Relative path to the root of the project in the Git repository
+            # JF_WORKING_DIR: path/to/project/dir
 
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
+            # [Optional]
+            # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+            # JF_PROJECT: <project-key>
 
-          ##########################################################################
-          ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
-          ##   the following variables inside the file, instead of here.          ##
-          ##########################################################################
+            # [Optional, default: "FALSE"]
+            # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+            # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-          # [Optional, default: "."]
-          # Relative path to the root of the project in the Git repository
-          # JF_WORKING_DIR: path/to/project/dir
+            # [Optional]
+            # Frogbot will download the project dependencies if they're not cached locally. To download the
+            # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
+            # need to set this value, if it is set in the frogbot-config.yml file.
+            # JF_DEPS_REPO: ""
 
-          # [Optional]
-          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional, default: "."]
+            # Relative path to the project in the git repository
+            # JF_WORKING_DIR: path/to/project/dir
 
-          # [Optional]
-          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-          # JF_PROJECT: <project-key>
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-          # [Optional, default: "FALSE"]
-          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+            # [Optional, default: "TRUE"]
+            # Fails the Frogbot task if any security issue is found.
+            # JF_FAIL: "FALSE"
 
-          # [Optional]
-          # Frogbot will download the project dependencies if they're not cached locally. To download the
-          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
-          # need to set this value, if it is set in the frogbot-config.yml file.
-          # JF_DEPS_REPO: ""
+            # [Optional, default: "TRUE"]
+            # Use Gradle wrapper
+            # USE_WRAPPER: "FALSE"
 
-          # [Optional, default: "."]
-          # Relative path to the project in the git repository
-          # JF_WORKING_DIR: path/to/project/dir
+            # [Optional]
+            # Template for the branch name generated by Frogbot when creating pull requests with fixes.
+            # The template must include ${BRANCH_NAME_HASH}, to ensure that the generated branch name is unique.
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_BRANCH_NAME_TEMPLATE: "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"
 
-          # [Optional]
-          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional]
+            # Template for the commit message generated by Frogbot when creating pull requests with fixes
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_COMMIT_MESSAGE_TEMPLATE: "Upgrade ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
 
-          # [Optional, default: "TRUE"]
-          # Fails the Frogbot task if any security issue is found.
-          # JF_FAIL: "FALSE"
+            # [Optional]
+            # Template for the pull request title generated by Frogbot when creating pull requests with fixes.
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_PULL_REQUEST_TITLE_TEMPLATE: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
 
-          # [Optional, default: "TRUE"]
-          # Use Gradle wrapper
-          # USE_WRAPPER: "FALSE"
+            # [Optional, Default: "FALSE"]
+            # If TRUE, Frogbot creates a single pull request with all the fixes.
+            # If FALSE, Frogbot creates a separate pull request for each fix.
+            # JF_GIT_AGGREGATE_FIXES: "FALSE"
 
-          # [Optional]
-          # Template for the branch name generated by Frogbot when creating pull requests with fixes.
-          # The template must include ${BRANCH_NAME_HASH}, to ensure that the generated branch name is unique.
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_BRANCH_NAME_TEMPLATE: "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"
+            # [Optional, Default: "FALSE"]
+            # Handle vulnerabilities with fix versions only
+            # JF_FIXABLE_ONLY: "TRUE"
 
-          # [Optional]
-          # Template for the commit message generated by Frogbot when creating pull requests with fixes
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_COMMIT_MESSAGE_TEMPLATE: "Upgrade ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
+            # [Optional]
+            # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
+            # The following values are accepted: Low, Medium, High or Critical
+            # JF_MIN_SEVERITY: ""
 
-          # [Optional]
-          # Template for the pull request title generated by Frogbot when creating pull requests with fixes.
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_PULL_REQUEST_TITLE_TEMPLATE: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
-
-          # [Optional, Default: "FALSE"]
-          # If TRUE, Frogbot creates a single pull request with all the fixes.
-          # If FALSE, Frogbot creates a separate pull request for each fix.
-          # JF_GIT_AGGREGATE_FIXES: "FALSE"
-
-          # [Optional, Default: "FALSE"]
-          # Handle vulnerabilities with fix versions only
-          # JF_FIXABLE_ONLY: "TRUE"
-
-          # [Optional]
-          # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
-          # The following values are accepted: Low, Medium, High or Critical
-          # JF_MIN_SEVERITY: ""
-
-    execution:
-      onExecute:
-        - cd $res_frogbotGitRepo_resourcePath
-        - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-        - ./frogbot scan-pull-requests
-        - ./frogbot scan-and-fix-repos
-        # For Windows runner:
-        # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-        # - .\frogbot.exe scan-pull-requests
-        # - .\frogbot.exe scan-and-fix-repos
+        execution:
+          onExecute:
+            - cd $res_frogbotGitRepo_resourcePath
+            # For Linux/Mac runner:
+            - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            - restore_cache_files gradle_cache ~/.gradle/caches
+            - ./frogbot scan-pull-requests
+            - ./frogbot scan-and-fix-repos
+            - add_cache_files gradle_cache ~/.gradle/caches || true
+            # For Windows runner:
+            # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+            # - restore_cache_files gradle_cache "%userprofile%\.gradle\caches"
+            # - .\frogbot.exe scan-pull-requests
+            # - .\frogbot.exe scan-and-fix-repos
+            # - add_cache_files gradle_cache "%userprofile%\.gradle\caches" || true
