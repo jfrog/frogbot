@@ -56,18 +56,10 @@ func TestBadFrogbotSchemas(t *testing.T) {
 }
 
 func TestJFrogPipelinesTemplates(t *testing.T) {
-	response, err := http.Get("https://json.schemastore.org/jfrog-pipelines.json")
-	assert.NoError(t, err)
-	defer response.Body.Close()
-	// Check server response
-	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
-	schema, err := io.ReadAll(response.Body)
-	assert.NoError(t, err)
-
-	schemaLoader := gojsonschema.NewBytesLoader(schema)
+	schemaLoader := downloadFromSchemaStore(t, "jfrog-pipelines.json")
 
 	// Validate all JFrog Pipelines templates in docs/templates/jfrog-pipelines
-	err = filepath.Walk(filepath.Join("..", "docs", "templates", "jfrog-pipelines"), func(yamlFilePath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(filepath.Join("..", "docs", "templates", "jfrog-pipelines"), func(yamlFilePath string, info os.FileInfo, err error) error {
 		assert.NoError(t, err)
 		if !info.IsDir() {
 			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
@@ -78,18 +70,10 @@ func TestJFrogPipelinesTemplates(t *testing.T) {
 }
 
 func TestGitHubActionsTemplates(t *testing.T) {
-	response, err := http.Get("https://json.schemastore.org/github-workflow.json")
-	assert.NoError(t, err)
-	defer response.Body.Close()
-	// Check server response
-	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
-	schema, err := io.ReadAll(response.Body)
-	assert.NoError(t, err)
+	schemaLoader := downloadFromSchemaStore(t, "github-workflow.json")
 
-	schemaLoader := gojsonschema.NewBytesLoader(schema)
-
-	// Validate all JFrog Pipelines templates in docs/templates/jfrog-pipelines
-	err = filepath.Walk(filepath.Join("..", "docs", "templates", "github-actions"), func(yamlFilePath string, info os.FileInfo, err error) error {
+	// Validate all GitHub Actions templates in docs/templates/github-actions
+	err := filepath.Walk(filepath.Join("..", "docs", "templates", "github-actions"), func(yamlFilePath string, info os.FileInfo, err error) error {
 		assert.NoError(t, err)
 		if !info.IsDir() && strings.HasSuffix(info.Name(), "yml") {
 			validateYamlSchema(t, schemaLoader, yamlFilePath, "")
@@ -97,6 +81,18 @@ func TestGitHubActionsTemplates(t *testing.T) {
 		return nil
 	})
 	assert.NoError(t, err)
+}
+
+func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
+	response, err := http.Get("https://json.schemastore.org/" + schema)
+	assert.NoError(t, err)
+	defer response.Body.Close()
+	// Check server response
+	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
+	schemaBytes, err := io.ReadAll(response.Body)
+	assert.NoError(t, err)
+
+	return gojsonschema.NewBytesLoader(schemaBytes)
 }
 
 // Validate a Yaml file against the input Yaml schema
