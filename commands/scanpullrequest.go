@@ -74,20 +74,16 @@ func scanPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsCl
 }
 
 func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, error) {
-	xrayScanParams := createXrayScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey)
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	for _, project := range repoConfig.Projects {
-		scanSetup := &utils.ScanDetails{
-			XrayGraphScanParams:      xrayScanParams,
-			Project:                  project,
-			Client:                   client,
-			ServerDetails:            &repoConfig.Server,
-			Git:                      &repoConfig.Git,
-			FailOnInstallationErrors: false,
-			Branch:                   repoConfig.Branches[0],
-			ReleasesRepo:             repoConfig.JfrogReleasesRepo,
-		}
-		currentScan, isMultipleRoot, err := auditSource(scanSetup)
+	for i := range repoConfig.Projects {
+		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
+			SetProject(&repoConfig.Projects[i]).
+			SetBranch(repoConfig.Branches[0]).
+			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
+			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
+			SetMinSeverity(repoConfig.MinSeverity).
+			SetFixableOnly(repoConfig.FixableOnly)
+		currentScan, isMultipleRoot, err := auditSource(scanDetails)
 		if err != nil {
 			return nil, err
 		}
@@ -101,8 +97,8 @@ func auditPullRequest(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsC
 			continue
 		}
 		// Audit target code
-		scanSetup.FailOnInstallationErrors = *repoConfig.FailOnSecurityIssues
-		previousScan, isMultipleRoot, err := auditTarget(scanSetup)
+		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+		previousScan, isMultipleRoot, err := auditTarget(scanDetails)
 		if err != nil {
 			return nil, err
 		}
@@ -200,22 +196,6 @@ func createAllIssuesRows(currentScan []services.ScanResponse, isMultipleRoot boo
 	return getScanVulnerabilitiesRows(violations, vulnerabilities, isMultipleRoot)
 }
 
-func createXrayScanParams(watches []string, project string) (params services.XrayGraphScanParams) {
-	params.ScanType = services.Dependency
-	params.IncludeLicenses = false
-	if len(watches) > 0 {
-		params.Watches = watches
-		return
-	}
-	if project != "" {
-		params.ProjectKey = project
-		return
-	}
-	// No context was supplied, request from Xray to return all known vulnerabilities.
-	params.IncludeVulnerabilities = true
-	return
-}
-
 func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -243,8 +223,8 @@ func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 
 func auditTarget(scanSetup *utils.ScanDetails) (res []services.ScanResponse, isMultipleRoot bool, err error) {
 	// First download the target repo to temp dir
-	log.Info("Auditing ", scanSetup.Git.RepoName, scanSetup.Branch)
-	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client, scanSetup.Branch, scanSetup.Git)
+	log.Info("Auditing the", scanSetup.Git.RepoName, "repository on the", scanSetup.Branch(), "branch")
+	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client(), scanSetup.Branch(), scanSetup.Git)
 	if err != nil {
 		return
 	}
@@ -272,8 +252,10 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 		SetRequirementsFile(scanSetup.PipRequirementsFile).
 		SetWorkingDirs(workDirs).
 		SetDepsRepo(scanSetup.Repository).
-		SetReleasesRepo(scanSetup.ReleasesRepo).
-		SetIgnoreConfigFile(true)
+		SetReleasesRepo(scanSetup.ReleasesRepo()).
+		SetIgnoreConfigFile(true).
+		SetMinSeverityFilter(scanSetup.MinSeverityFilter()).
+		SetFixableOnly(scanSetup.FixableOnly())
 	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
 	if err != nil {
 		return nil, false, err
@@ -294,7 +276,7 @@ func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error
 	}()
 	log.Info(fmt.Sprintf("Executing '%s %s' at %s", scanSetup.InstallCommandName, scanSetup.InstallCommandArgs, workDir))
 	output, err := runInstallCommand(scanSetup)
-	if err != nil && !scanSetup.FailOnInstallationErrors {
+	if err != nil && !scanSetup.FailOnInstallationErrors() {
 		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
 		// failOnInstallationErrors set to 'false'
 		err = nil

@@ -97,7 +97,7 @@ func TestResolveDependencies(t *testing.T) {
 			tech: "npm",
 			scanSetup: &ScanDetails{
 				ServerDetails: &params,
-				Project: Project{
+				Project: &Project{
 					InstallCommandName: "npm",
 					InstallCommandArgs: []string{"install"},
 				}},
@@ -108,7 +108,7 @@ func TestResolveDependencies(t *testing.T) {
 			tech: "yarn",
 			scanSetup: &ScanDetails{
 				ServerDetails: &params,
-				Project: Project{
+				Project: &Project{
 					InstallCommandName: "yarn",
 					InstallCommandArgs: []string{"install"},
 				}},
@@ -119,7 +119,7 @@ func TestResolveDependencies(t *testing.T) {
 			tech: "dotnet",
 			scanSetup: &ScanDetails{
 				ServerDetails: &params,
-				Project: Project{
+				Project: &Project{
 					Repository:         "frogbot-nuget-remote-tests",
 					InstallCommandName: "dotnet",
 					InstallCommandArgs: []string{"restore"},
