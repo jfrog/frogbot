@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +22,27 @@ type pythonIndirectDependencies struct {
 	requirementsPath string
 }
 
+const requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
+
+type pipPackageRegexTest struct {
+	packageName         string
+	expectedRequirement string
+}
+
+var pipPackagesRegexTests = []pipPackageRegexTest{
+	{"oslo.config", "oslo.config>=1.12.1,<1.13"},
+	{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
+	{"paramiko", "paramiko==2.7.2"},
+	{"passlib", "passlib<=1.7.4"},
+	{"PassLib", "passlib<=1.7.4"},
+	{"prance", "prance>=0.9.0"},
+	{"prompt-toolkit", "prompt-toolkit~=1.0.15"},
+	{"pyinotify", "pyinotify>0.9.6"},
+	{"pyjwt", "pyjwt>1.7.1"},
+	{"PyJWT", "pyjwt>1.7.1"},
+	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
+}
+
 // Go handles direct and indirect the same, so we can have one test function
 func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 	testdataDir := getTestDataDir(t, false)
@@ -28,7 +51,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 		{
 			fixVersionInfo: &utils.FixDetails{
 				FixVersion:         "0.0.0-20201216223049-8b5274cf687f",
-				PackageType:        "go",
+				PackageType:        coreutils.Go,
 				DirectDependency:   false,
 				ImpactedDependency: "golang.org/x/crypto",
 			}, supportedFix: true,
@@ -36,9 +59,17 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 		{
 			fixVersionInfo: &utils.FixDetails{
 				FixVersion:         "1.7.7",
-				PackageType:        "go",
+				PackageType:        coreutils.Go,
 				DirectDependency:   true,
 				ImpactedDependency: "github.com/gin-gonic/gin",
+			}, supportedFix: true,
+		},
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "1.3.0",
+				PackageType:        coreutils.Go,
+				DirectDependency:   true,
+				ImpactedDependency: "github.com/google/uuid",
 			}, supportedFix: true,
 		},
 	}
@@ -49,6 +80,7 @@ func TestGoPackageHandler_UpdateImpactedPackage(t *testing.T) {
 			supportedFix, err := pgk.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.supportedFix, supportedFix)
+			assertFixVersionInPackageDescriptor(t, test, "go.mod")
 			assert.NoError(t, os.Chdir(testdataDir))
 		})
 	}
@@ -77,23 +109,26 @@ func TestMavenPackageHandler_updateIndirectDependency(t *testing.T) {
 	}
 }
 func TestMavenPackageHandler_updateDirectDependency(t *testing.T) {
-	// TODO fix crashing!
 	testDataDir := getTestDataDir(t, true)
-	mvn := MavenPackageHandler{mavenDepToPropertyMap: map[string][]string{"junit": {"junit:junit", "3.8.1"}}}
+	mavenDepToPropertyMap := map[string][]string{
+		"junit": {"junit:junit", "3.8.1"},
+	}
+	mvn := &MavenPackageHandler{mavenDepToPropertyMap: mavenDepToPropertyMap}
 	tests := []dependencyFixTest{
 		{fixVersionInfo: &utils.FixDetails{
 			FixVersion:         "4.11",
-			PackageType:        "maven",
+			PackageType:        coreutils.Maven,
 			ImpactedDependency: "junit",
-			DirectDependency:   true}, supportedFix: true}, {},
+			DirectDependency:   true}, supportedFix: true},
 	}
+	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
+	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-			defer cleanup()
 			supportedFix, err := mvn.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.supportedFix, supportedFix)
+			assertFixVersionInPackageDescriptor(t, test, "pom.xml")
 			assert.NoError(t, os.Chdir(testDataDir))
 		})
 	}
@@ -107,7 +142,7 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 			dependencyFixTest: dependencyFixTest{
 				fixVersionInfo: &utils.FixDetails{
 					FixVersion:         "1.25.9",
-					PackageType:        "pip",
+					PackageType:        coreutils.Pip,
 					ImpactedDependency: "urllib3",
 					DirectDependency:   false}, supportedFix: false},
 			requirementsPath: "requirements.txt",
@@ -115,7 +150,7 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 			dependencyFixTest: dependencyFixTest{
 				fixVersionInfo: &utils.FixDetails{
 					FixVersion:         "1.25.9",
-					PackageType:        "poetry",
+					PackageType:        coreutils.Poetry,
 					ImpactedDependency: "urllib3",
 					DirectDependency:   false}, supportedFix: false},
 			requirementsPath: "pyproejct.toml",
@@ -123,7 +158,7 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 			dependencyFixTest: dependencyFixTest{
 				fixVersionInfo: &utils.FixDetails{
 					FixVersion:         "1.25.9",
-					PackageType:        "pipenv",
+					PackageType:        coreutils.Pipenv,
 					ImpactedDependency: "urllib3",
 					DirectDependency:   false}, supportedFix: false},
 			requirementsPath: "Pipfile",
@@ -175,16 +210,20 @@ func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
+				assertFixVersionInPackageDescriptor(t, test.dependencyFixTest, test.requirementsPath)
 			}
 			assert.Equal(t, test.supportedFix, supportedFix)
 			assert.NoError(t, os.Chdir(testDataDir))
 		})
 	}
 }
-
-// Dotnet
-
-// Gradle
+func TestPipPackageRegex(t *testing.T) {
+	for _, pack := range pipPackagesRegexTests {
+		re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + pack.packageName + "|" + strings.ToLower(pack.packageName) + ")" + PythonPackageRegexSuffix)
+		found := re.FindString(requirementsFile)
+		assert.Equal(t, pack.expectedRequirement, strings.ToLower(found))
+	}
+}
 
 // Npm
 
@@ -227,4 +266,16 @@ func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Tech
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
+}
+
+func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
+	file, err := os.ReadFile(packageDescriptor)
+	assert.NoError(t, err)
+	if !test.supportedFix {
+		assert.NotContains(t, string(file), test.fixVersionInfo)
+	} else {
+		assert.Contains(t, string(file), test.fixVersionInfo.FixVersion)
+		// Verify that case-sensitive packages in python are lowered
+		assert.Contains(t, string(file), strings.ToLower(test.fixVersionInfo.ImpactedDependency))
+	}
 }
