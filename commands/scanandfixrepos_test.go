@@ -238,7 +238,7 @@ func createHttpHandler(t *testing.T, port *string, projectNames ...string) http.
 				return
 			}
 			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/pulls", projectName) {
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 			if r.RequestURI == fmt.Sprintf("/%s", projectName) {
