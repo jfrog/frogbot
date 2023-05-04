@@ -31,11 +31,7 @@ jobs:
         with:
           go-version: 1.19.x
 
-      # Generate mocks
-      - name: Generate mocks
-        run: go generate ./...
-
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: -exclude -exclude=G204,G301,G302,G304,G306 -exclude-dir=\.*test\.* ./...
+          args: -exclude G204,G301,G302,G304,G306 -tests -exclude-dir \.*test\.* ./...
