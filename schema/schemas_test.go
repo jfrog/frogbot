@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -135,7 +136,7 @@ func convertYamlToJson(yamlValue interface{}) interface{} {
 				// "on" is considered a true value for the Yaml Unmarshaler. To work around it, we set the true to be "on".
 				key = "on"
 			}
-			jsonMapping[key.(string)] = convertYamlToJson(value)
+			jsonMapping[fmt.Sprint(key)] = convertYamlToJson(value)
 		}
 		return jsonMapping
 	case []interface{}:

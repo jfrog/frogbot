@@ -169,7 +169,7 @@ func TestFixPackageVersion(t *testing.T) {
 func getTestDataDir(t *testing.T) (string, string) {
 	currentDir, err := os.Getwd()
 	assert.NoError(t, err)
-	testdataDir, err := filepath.Abs(filepath.Join("testdata/projects"))
+	testdataDir, err := filepath.Abs("testdata/projects")
 	assert.NoError(t, err)
 	return currentDir, testdataDir
 }
