@@ -16,9 +16,11 @@ jobs:
         run: go generate ./...
 
       - name: Static Code Analysis
-        uses: dominikh/staticcheck-action@v1
+        uses: golangci/golangci-lint-action@v3
         with:
-          install-go: false
+          args: |
+            --timeout 5m --out-${NO_FUTURE}format colored-line-number --enable errcheck,gosimple,govet,ineffassign,staticcheck,typecheck,unused,gocritic,asasalint,asciicheck,errchkjson,exportloopref,forcetypeassert,makezero,nilerr,unparam,unconvert,wastedassign,usestdlibvars 
+
   Go-Sec:
     runs-on: ubuntu-latest
     steps:
@@ -28,8 +30,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.x
-      - name: Install gosec
-        run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
-      - name: Run gosec
-        # Temporary ignoring G301,G302,G306
-        run: gosec -exclude=G204,G301,G302,G304,G306 -exclude-dir=\.*test\.* ./...
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: -exclude=G204,G301,G302,G304,G306 -exclude-dir=\.*test\.* ./...
