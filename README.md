@@ -15,7 +15,7 @@
   - [Table of contents](#table-of-contents)
   - [🤖 What is Frogbot?](#-what-is-frogbot)
   - [🖥️ Installing Frogbot](#️-installing-frogbot)
-  - [🚥 Using Frogbot](#️-using-frogbot)
+  - [🚥 Using Frogbot](#-using-frogbot)
     - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
       - [General](#general)
       - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
