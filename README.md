@@ -82,7 +82,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <div id="reporting-issues"></div>
 
 ## 🚥 Using Frogbot
-### Scan pull requests when they are opened
+### Scanning pull requests when they are opened
 #### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
