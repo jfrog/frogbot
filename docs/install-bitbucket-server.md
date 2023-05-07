@@ -166,10 +166,13 @@
                  steps {
                      // For Linux / MacOS runner:
                      sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-      
+                     // For Linux / MacOS runner using Artifactory remote repository:
+                     // sh """ curl -fLg "${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
                      // For Windows runner:
                      // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
-                  }
+                     // For Windows runner using Artifactory remote repository:
+                     // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                 }
               }
       
               stage('Scan Pull Requests') {

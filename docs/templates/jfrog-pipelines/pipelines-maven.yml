@@ -145,8 +145,23 @@ pipelines:
             - ./frogbot scan-pull-requests
             - ./frogbot scan-and-fix-repos
             - add_cache_files ~/.m2 maven_cache || true
+
+            # For Linux/Mac runner using Artifactory remote repository:
+            # - curl -fLg "$JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            # - restore_cache_files maven_cache ~/.m2
+            # - ./frogbot scan-pull-requests
+            # - ./frogbot scan-and-fix-repos
+            # - add_cache_files ~/.m2 maven_cache || true
+
             # For Windows runner:
             # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+            # - restore_cache_files maven_cache "%userprofile%\.m2"
+            # - .\frogbot.exe scan-pull-requests
+            # - .\frogbot.exe scan-and-fix-repos
+            # - add_cache_files "%userprofile%\.m2" maven_cache || true
+
+            # For Windows using Artifactory remote repository:
+            # - iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
             # - restore_cache_files maven_cache "%userprofile%\.m2"
             # - .\frogbot.exe scan-pull-requests
             # - .\frogbot.exe scan-and-fix-repos

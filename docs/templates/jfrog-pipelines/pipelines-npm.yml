@@ -168,8 +168,23 @@ pipelines:
             - ./frogbot scan-pull-requests
             - ./frogbot scan-and-fix-repos
             - add_cache_files ~/.npm npm_cache || true
+
+            # For Linux/Mac runner using Artifactory remote repository:
+            # - curl -fLg "$JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            # - restore_cache_files npm_cache ~/.npm
+            # - ./frogbot scan-pull-requests
+            # - ./frogbot scan-and-fix-repos
+            # - add_cache_files ~/.npm npm_cache || true
+
             # For Windows runner:
             # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+            # - restore_cache_files npm_cache "%AppData%/npm-cache"
+            # - .\frogbot.exe scan-pull-requests
+            # - .\frogbot.exe scan-and-fix-repos
+            # - add_cache_files "%AppData%/npm-cache" npm_cache || true
+
+            # For Windows using Artifactory remote repository:
+            # - iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
             # - restore_cache_files npm_cache "%AppData%/npm-cache"
             # - .\frogbot.exe scan-pull-requests
             # - .\frogbot.exe scan-and-fix-repos

@@ -154,7 +154,18 @@ pipelines:
             - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
             - ./frogbot scan-pull-requests
             - ./frogbot scan-and-fix-repos
+
+            # For Linux/Mac runner using Artifactory remote repository:
+            # - curl -fLg "$JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+            # - ./frogbot scan-pull-requests
+            # - ./frogbot scan-and-fix-repos
+
             # For Windows runner:
             # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
+            # - .\frogbot.exe scan-pull-requests
+            # - .\frogbot.exe scan-and-fix-repos
+
+            # For Windows using Artifactory remote repository:
+            # - iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
             # - .\frogbot.exe scan-pull-requests
             # - .\frogbot.exe scan-and-fix-repos

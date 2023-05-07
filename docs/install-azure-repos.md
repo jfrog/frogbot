@@ -161,6 +161,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
          inputs:
            script: |
              curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+             # For using Artifactory remote repository:
+             # curl -fLg "$(JF_URL)/artifactory/$(JF_RELEASES_REPO)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
              ./frogbot scan-pull-requests
              ./frogbot scan-and-fix-repos
  ```

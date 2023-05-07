@@ -141,6 +141,10 @@ frogbot-scan:
     # For Linux / MacOS runner:
     - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
     - ./frogbot ${FROGBOT_CMD}
+      
+    # For Linux / MacOS runner using Artifactory remote repository:
+    # - $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+    # - ./frogbot ${FROGBOT_CMD}
 
     # For Windows runner:
     # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
