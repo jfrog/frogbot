@@ -14,15 +14,16 @@
 - [Frogbot](#frogbot)
   - [Table of contents](#table-of-contents)
   - [🤖 What is Frogbot?](#-what-is-frogbot)
-  - [Scan pull requests when they are opened](#scan-pull-requests-when-they-are-opened)
-    - [General](#general)
-    - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
-    - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
-    - [Scan results](#scan-results)
-      - [👍 No issues](#-no-issues)
-      - [👎 Issues were found](#-issues-were-found)
-  - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
   - [🖥️ Installing Frogbot](#️-installing-frogbot)
+  - [🚥 Using Frogbot](#-using-frogbot)
+    - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
+      - [General](#general)
+      - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
+      - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
+      - [Scan results](#scan-results)
+        - [👍 No issues](#-no-issues)
+        - [👎 Issues were found](#-issues-were-found)
+    - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
   - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
   - [🔥 Reporting issues](#-reporting-issues)
   - [💻 Contributions](#-contributions)
@@ -33,11 +34,56 @@
 
 Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories following new commits.
 
-<a href="https://www.youtube.com/watch?v=aw-AAxtAVwY"><img width="30%" src="./images/frogbot-screencast.png"></a>
+## 🖥️ Installing Frogbot
 
-## Scan pull requests when they are opened
+<details>
+  <summary>Step 1 - Optionally set up a FREE JFrog Environment in the Cloud</summary>
 
-### General
+Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
+
+The commands will do the following:
+
+1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
+2. Create a FREE JFrog environment in the cloud for you.
+
+**For macOS and Linux, use curl**
+
+```
+curl -fL "https://getcli.jfrog.io?setup" | sh
+```
+
+**For Windows, use PowerShell**
+
+```
+powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
+```
+
+After the setup is complete, you'll receive an email with your JFrog environment connection details, which can be stored as secrets in Git.
+
+</details>
+
+<details>
+  <summary>Step 2 - Create the frogbot-config.yml file if needed</summary>
+
+- [Creating the frogbot-config.yml File](docs/frogbot-config.md)
+
+</details>
+
+<details>
+  <summary>Step 3 - Install Frogbot</summary>
+
+- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
+- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
+- [Installing Frogbot on GitHub repositories](docs/install-github.md)
+- [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
+
+</details>
+
+<div id="reporting-issues"></div>
+
+## 🚥 Using Frogbot
+### Scanning pull requests when they are opened
+#### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
@@ -61,7 +107,7 @@ Supported package management tools:
 - Poetry
 - Yarn 2
 
-### 🕵️‍♀️ How does Pull Request scanning work?
+#### 🕵️‍♀️ How does Pull Request scanning work?
 
 <details>
   <summary>Azure Repos</summary>
@@ -145,23 +191,23 @@ The Frogbot GitLab flow is as follows:
 
 </details>
 
-### 👮 Security note for pull requests scanning
+#### 👮 Security note for pull requests scanning
 
 When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's approval before scanning newly opened pull requests. Using Frogbot with these platforms, however, isn't recommended for open-source projects.
 
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
-### Scan results
+#### Scan results
 
 Frogbot adds the scan results to the pull request in the following format:
 
-#### 👍 No issues
+##### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
 
-#### 👎 Issues were found
+##### 👎 Issues were found
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
@@ -174,7 +220,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
 
-## Scanning repositories and fixing issues
+### Scanning repositories and fixing issues
 
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
 
@@ -201,53 +247,6 @@ Supported package management tools:
 </details>
 
 <div id="installing-frogbot"></div>
-
-## 🖥️ Installing Frogbot
-
-<details>
-  <summary>Step 1 - Optionally set up a FREE JFrog Environment in the Cloud</summary>
-
-Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
-
-The commands will do the following:
-
-1. Install [JFrog CLI](https://www.jfrog.com/confluence/display/CLI/JFrog+CLI) on your machine.
-2. Create a FREE JFrog environment in the cloud for you.
-
-**For macOS and Linux, use curl**
-
-```
-curl -fL "https://getcli.jfrog.io?setup" | sh
-```
-
-**For Windows, use PowerShell**
-
-```
-powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
-```
-
-After the setup is complete, you'll receive an email with your JFrog environment connection details, which can be stored as secrets in Git.
-
-</details>
-
-<details>
-  <summary>Step 2 - Create the frogbot-config.yml file if needed</summary>
-
-- [Creating the frogbot-config.yml File](docs/frogbot-config.md)
-
-</details>
-
-<details>
-  <summary>Step 3 - Install Frogbot</summary>
-
-- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
-- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
-- [Installing Frogbot on GitHub repositories](docs/install-github.md)
-- [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
-
-</details>
-
-<div id="reporting-issues"></div>
 
 ## 📛 Adding the Frogbot badge
 
