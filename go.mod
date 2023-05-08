@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.9.3
-	github.com/jfrog/froggit-go v1.7.1
+	github.com/jfrog/froggit-go v1.7.3
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.32.1
 	github.com/jfrog/jfrog-client-go v1.28.3
@@ -111,10 +111,10 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-//replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.15.3-0.20230501142220-e6a6becf0848
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230511073436-4307a87b5229
 
 //replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230430083747-590ae14f9dca
 
 //replace github.com/jfrog/gofrog => github.com/jfrog/gofrog v1.2.6-0.20230418122323-2bf299dd6d27
 
-//replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230403064815-ea83b399ac8e
+replace github.com/jfrog/build-info-go => github.com/omerzi/build-info-go v1.3.1-0.20230511062454-06121e473c7e

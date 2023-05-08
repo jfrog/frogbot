@@ -14,10 +14,10 @@ type PackageHandler interface {
 	UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) PackageHandler {
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixVersionInfo, details *utils.ScanDetails) PackageHandler {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Maven:
-		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
+		return &MavenPackageHandler{depsRepo: details.Repository, ServerDetails: details.ServerDetails}
 	case coreutils.Poetry:
 		return &PythonPackageHandler{}
 	case coreutils.Pip:
@@ -35,7 +35,7 @@ type GenericPackageHandler struct {
 func (g *GenericPackageHandler) UpdateImpactedPackage(impactedPackage string, fixVersionInfo *utils.FixVersionInfo, extraArgs ...string) error {
 	// Indirect package fix should we implemented for each package handler
 	if !fixVersionInfo.DirectDependency {
-		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage}
+		return &utils.ErrUnsupportedIndirectFix{PackageName: impactedPackage, FixedVersion: fixVersionInfo.FixVersion}
 	}
 	// Lower the package name to avoid duplicates
 	impactedPackage = strings.ToLower(impactedPackage)

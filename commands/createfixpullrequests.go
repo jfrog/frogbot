@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -18,9 +19,6 @@ import (
 )
 
 type CreateFixPullRequestsCmd struct {
-	// mavenDepToPropertyMap holds a map of direct dependencies found in pom.xml.
-	// Keys values are only set if the key version is a property.
-	mavenDepToPropertyMap map[string][]string
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
@@ -33,6 +31,8 @@ type CreateFixPullRequestsCmd struct {
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request.
 	aggregateFixes bool
+	// Stores all package manager handlers for detected issues
+	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -170,7 +170,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
-			log.Error("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
+			log.Error("could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
 		}
 	}
 
@@ -193,7 +193,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(impactedPackage
 	}
 
 	if err = cfp.updatePackageToFixedVersion(impactedPackage, fixVersionInfo); err != nil {
-		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
+		return fmt.Errorf("failed while fixing %s to version: %s with error: \n%s", impactedPackage, fixVersionInfo.FixVersion, err.Error())
 	}
 
 	if err = cfp.openFixingPullRequest(impactedPackage, fixBranchName, fixVersionInfo); err != nil {
@@ -358,8 +358,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(impactedPackage
 			"Update", impactedPackage, "version to", fixVersionInfo.FixVersion, "to fix this vulnerability.")
 		return
 	}
-	packageHandler := packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details, &cfp.mavenDepToPropertyMap)
-	return packageHandler.UpdateImpactedPackage(impactedPackage, fixVersionInfo)
+	if cfp.handlers == nil {
+		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
+	}
+	if cfp.handlers[fixVersionInfo.PackageType] == nil {
+		cfp.handlers[fixVersionInfo.PackageType] = packagehandlers.GetCompatiblePackageHandler(fixVersionInfo, cfp.details)
+	}
+	return cfp.handlers[fixVersionInfo.PackageType].UpdateImpactedPackage(impactedPackage, fixVersionInfo)
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
