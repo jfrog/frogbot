@@ -19,6 +19,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -279,18 +280,29 @@ func validateBranchName(branchName string) error {
 
 func LogRunParams(repository *FrogbotRepoConfig) {
 	log.Debug("-----------------------------------------------------------------")
-	log.Debug("Frogbot run params:")
 	log.Debug("Scan Params:")
-	log.Debug("FailOnSecurityIssues:", repository.Params.Scan.FailOnSecurityIssues)
-	log.Debug("IncludeAllVulnerabilities:", repository.Params.Scan.IncludeAllVulnerabilities)
-	log.Debug("FixableOnly:", repository.Params.Scan.FixableOnly)
-	log.Debug("MinSeverity:", repository.Params.Scan.MinSeverity)
+	debugLogExists("FailOnSecurityIssues", repository.Params.Scan.FailOnSecurityIssues)
+	debugLogExists("IncludeAllVulnerabilities", repository.Params.Scan.IncludeAllVulnerabilities)
+	debugLogExists("FixableOnly", repository.Params.Scan.FixableOnly)
+	debugLogExists("MinSeverity", repository.Params.Scan.MinSeverity)
 	log.Debug("-----------------------------------------------------------------")
 	log.Debug("Git Params:")
-	log.Debug("RepoName:", repository.Params.Git.RepoName)
-	log.Debug("AggregateFixes:", repository.Params.Git.AggregateFixes)
-	log.Debug("BranchNameTemplate:", repository.Params.Git.BranchNameTemplate)
-	log.Debug("CommitMessageTemplate:", repository.Params.Git.CommitMessageTemplate)
-	log.Debug("PullRequestTitleTemplate:", repository.Params.Git.PullRequestTitleTemplate)
+	debugLogExists("RepoName", repository.Params.Git.RepoName)
+	debugLogExists("AggregateFixes", repository.Params.Git.AggregateFixes)
+	debugLogExists("BranchNameTemplate", repository.Params.Git.BranchNameTemplate)
+	debugLogExists("PullRequestTitleTemplate", repository.Params.Git.PullRequestTitleTemplate)
 	log.Debug("-----------------------------------------------------------------")
+}
+
+// Log only if value is set
+func debugLogExists(name, value interface{}) {
+	valueType := reflect.TypeOf(value)
+	valueString := fmt.Sprintf("%v", value)
+	if valueType.Kind() == reflect.Ptr {
+		valueString = fmt.Sprintf("%v", reflect.ValueOf(value).Elem())
+	}
+	logString := fmt.Sprintf("%s: %s", name, valueString)
+	if value != "" {
+		log.Debug(logString)
+	}
 }
