@@ -276,3 +276,21 @@ func validateBranchName(branchName string) error {
 	}
 	return nil
 }
+
+func LogRunParams(repository *FrogbotRepoConfig) {
+	log.Debug("-----------------------------------------------------------------")
+	log.Debug("Frogbot run params:")
+	log.Debug("Scan Params:")
+	log.Debug("FailOnSecurityIssues:", repository.Params.Scan.FailOnSecurityIssues)
+	log.Debug("IncludeAllVulnerabilities:", repository.Params.Scan.IncludeAllVulnerabilities)
+	log.Debug("FixableOnly:", repository.Params.Scan.FixableOnly)
+	log.Debug("MinSeverity:", repository.Params.Scan.MinSeverity)
+	log.Debug("-----------------------------------------------------------------")
+	log.Debug("Git Params:")
+	log.Debug("RepoName:", repository.Params.Git.RepoName)
+	log.Debug("AggregateFixes:", repository.Params.Git.AggregateFixes)
+	log.Debug("BranchNameTemplate:", repository.Params.Git.BranchNameTemplate)
+	log.Debug("CommitMessageTemplate:", repository.Params.Git.CommitMessageTemplate)
+	log.Debug("PullRequestTitleTemplate:", repository.Params.Git.PullRequestTitleTemplate)
+	log.Debug("-----------------------------------------------------------------")
+}
