@@ -19,8 +19,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
+	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -282,4 +284,68 @@ func validateBranchName(branchName string) error {
 		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
+}
+
+// Logs all the fields in a generic struct, except for fields inside sensitiveFields
+// prefix - Current field name, used to print in context
+func logGenericStructWithIgnoreFields(genericStruct interface{}, prefix string, sensitiveFields map[string]bool) {
+	val := reflect.ValueOf(genericStruct)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if !val.IsValid() {
+		return
+	}
+	typ := val.Type()
+	// Iterate over each field
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+		if !fieldValue.IsValid() {
+			continue
+		}
+		if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.IsNil() {
+				continue
+			}
+			fieldValue = fieldValue.Elem()
+		}
+		switch fieldValue.Kind() {
+		// Handle different kind of nested objects
+		case reflect.Struct:
+			if prefix != "" {
+				log.Debug("-----------------------------------------------------------------")
+			}
+			logGenericStructWithIgnoreFields(fieldValue.Interface(), prefix+field.Name+".", sensitiveFields)
+		case reflect.Slice:
+			for j := 0; j < fieldValue.Len(); j++ {
+				itemValue := fieldValue.Index(j)
+				if !itemValue.IsValid() {
+					continue
+				}
+				if itemValue.Kind() == reflect.Ptr {
+					if itemValue.IsNil() {
+						continue
+					}
+					itemValue = itemValue.Elem()
+				}
+				if itemValue.Kind() == reflect.Struct {
+					logGenericStructWithIgnoreFields(itemValue.Interface(), prefix+field.Name+"["+strconv.Itoa(j)+"].", sensitiveFields)
+				} else if itemValue.Interface() != "" {
+					formattedLog := fmt.Sprintf("%s%s[%d]: %v", prefix, field.Name, j, itemValue.Interface())
+					log.Debug(formattedLog)
+				}
+			}
+		default:
+			// Avoid exposing sensitive info
+			if _, found := sensitiveFields[field.Name]; found {
+				continue
+			}
+			// Output the field and value
+			if fieldValue.Interface() != "" {
+				formattedLog := fmt.Sprintf("%s%s: %v", prefix, field.Name, fieldValue.Interface())
+				log.Debug(formattedLog)
+			}
+		}
+	}
 }

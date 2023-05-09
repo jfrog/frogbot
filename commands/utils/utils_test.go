@@ -288,3 +288,37 @@ func TestValidatedBranchName(t *testing.T) {
 		})
 	}
 }
+
+func TestDebugLogStruct(t *testing.T) {
+	// Verify debug logging does not panic
+	testConfig := FrogbotRepoConfig{}
+	testConfig.DebugLogConfig()
+	testConfig = FrogbotRepoConfig{
+		Params: Params{
+			Scan: Scan{
+				IncludeAllVulnerabilities: true,
+				FixableOnly:               false,
+				FailOnSecurityIssues:      nil,
+				MinSeverity:               "High",
+				Projects: []Project{
+					{
+						InstallCommand:     "pip install -r requirements.txt",
+						Repository:         "https://github.com/org/repo",
+						InstallCommandName: "pip",
+						InstallCommandArgs: []string{"install", "-r", "requirements.txt"},
+					},
+				},
+			},
+			Git: Git{
+				RepoName:    "repo",
+				Branches:    []string{"master", "dev"},
+				RepoOwner:   "org",
+				Token:       "secret",
+				ApiEndpoint: "https://github.com/api/v3",
+				Username:    "user",
+			},
+			JFrogPlatform: JFrogPlatform{},
+		},
+	}
+	testConfig.DebugLogConfig()
+}

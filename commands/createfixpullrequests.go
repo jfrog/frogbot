@@ -40,6 +40,9 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 		return err
 	}
 	repository := configAggregator[0]
+	if log.Logger.GetLogLevel() == log.DEBUG {
+		repository.DebugLogConfig()
+	}
 	for _, branch := range repository.Branches {
 		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
@@ -241,7 +244,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	}
 
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(fixDetails.ImpactedDependency, fixDetails.FixVersion)
-	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch)
+	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
