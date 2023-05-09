@@ -217,7 +217,7 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) er
 	// This project will be used in the source auditing phase - mimic a PR with a new vulnerable dependency.
 	// Second "download" will occur inside the first temp dir. Therefor the "test-proj" will be found and will
 	// be copied to the second (random) temp dir and will be used in the target auditing phase.
-	err := fileutils.CopyDir(filepath.Join(testProject), targetDir, true, []string{})
+	err := fileutils.CopyDir(testProject, targetDir, true, []string{})
 	if err != nil {
 		return err
 	}
