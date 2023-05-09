@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -278,31 +279,66 @@ func validateBranchName(branchName string) error {
 	return nil
 }
 
-func LogRunParams(repository *FrogbotRepoConfig) {
-	log.Debug("-----------------------------------------------------------------")
-	log.Debug("Scan Params:")
-	debugLogExists("FailOnSecurityIssues", repository.Params.Scan.FailOnSecurityIssues)
-	debugLogExists("IncludeAllVulnerabilities", repository.Params.Scan.IncludeAllVulnerabilities)
-	debugLogExists("FixableOnly", repository.Params.Scan.FixableOnly)
-	debugLogExists("MinSeverity", repository.Params.Scan.MinSeverity)
-	log.Debug("-----------------------------------------------------------------")
-	log.Debug("Git Params:")
-	debugLogExists("RepoName", repository.Params.Git.RepoName)
-	debugLogExists("AggregateFixes", repository.Params.Git.AggregateFixes)
-	debugLogExists("BranchNameTemplate", repository.Params.Git.BranchNameTemplate)
-	debugLogExists("PullRequestTitleTemplate", repository.Params.Git.PullRequestTitleTemplate)
-	log.Debug("-----------------------------------------------------------------")
-}
-
-// Log only if value is set
-func debugLogExists(name, value interface{}) {
-	valueType := reflect.TypeOf(value)
-	valueString := fmt.Sprintf("%v", value)
-	if valueType.Kind() == reflect.Ptr {
-		valueString = fmt.Sprintf("%v", reflect.ValueOf(value).Elem())
+// Logs all the fields in a generic struct, except for fields inside sensitiveFields
+// prefix - Current field name, used to print in context
+func logGenericStructWithIgnoreFields(genericStruct interface{}, prefix string, sensitiveFields map[string]bool) {
+	val := reflect.ValueOf(genericStruct)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
 	}
-	logString := fmt.Sprintf("%s: %s", name, valueString)
-	if value != "" {
-		log.Debug(logString)
+	if !val.IsValid() {
+		return
+	}
+	typ := val.Type()
+	// Iterate over each field
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+		if !fieldValue.IsValid() {
+			continue
+		}
+		if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.IsNil() {
+				continue
+			}
+			fieldValue = fieldValue.Elem()
+		}
+		switch fieldValue.Kind() {
+		// Handle different kind of nested objects
+		case reflect.Struct:
+			if prefix != "" {
+				log.Debug("-----------------------------------------------------------------")
+			}
+			logGenericStructWithIgnoreFields(fieldValue.Interface(), prefix+field.Name+".", sensitiveFields)
+		case reflect.Slice:
+			for j := 0; j < fieldValue.Len(); j++ {
+				itemValue := fieldValue.Index(j)
+				if !itemValue.IsValid() {
+					continue
+				}
+				if itemValue.Kind() == reflect.Ptr {
+					if itemValue.IsNil() {
+						continue
+					}
+					itemValue = itemValue.Elem()
+				}
+				if itemValue.Kind() == reflect.Struct {
+					logGenericStructWithIgnoreFields(itemValue.Interface(), prefix+field.Name+"["+strconv.Itoa(j)+"].", sensitiveFields)
+				} else if itemValue.Interface() != "" {
+					formattedLog := fmt.Sprintf("%s%s[%d]: %v", prefix, field.Name, j, itemValue.Interface())
+					log.Debug(formattedLog)
+				}
+			}
+		default:
+			// Avoid exposing sensitive info
+			if _, found := sensitiveFields[field.Name]; found {
+				continue
+			}
+			// Output the field and value
+			if fieldValue.Interface() != "" {
+				formattedLog := fmt.Sprintf("%s%s: %v", prefix, field.Name, fieldValue.Interface())
+				log.Debug(formattedLog)
+			}
+		}
 	}
 }

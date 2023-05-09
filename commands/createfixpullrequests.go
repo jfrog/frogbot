@@ -40,6 +40,9 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 		return err
 	}
 	repository := configAggregator[0]
+	if log.Logger.GetLogLevel() == log.DEBUG {
+		repository.DebugLogConfig()
+	}
 	for _, branch := range repository.Branches {
 		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
@@ -50,7 +53,6 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 }
 
 func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
-	utils.LogRunParams(repository)
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err
