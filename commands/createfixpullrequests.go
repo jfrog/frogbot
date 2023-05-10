@@ -183,7 +183,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	}
 	if !leastOneFix {
 		// No packages were updated, don't attempt open PR.
-		log.Info("Frogbot didn't find any packages the can be fixed ...")
 		return
 	}
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
@@ -379,7 +378,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 	supportedFix, err = packageHandler.UpdateDependency(fixDetails)
 	if !supportedFix {
 		logMessage := fmt.Sprintf("Since dependency '%s' is indirect its fix is skipped...", fixDetails.ImpactedDependency)
-		log.Debug(logMessage)
+		log.Info(logMessage)
 	}
 	return
 }
