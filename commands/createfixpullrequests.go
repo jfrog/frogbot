@@ -161,6 +161,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
+	leastOneFix := false
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -174,12 +175,17 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	}
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
-		_, err = cfp.updatePackageToFixedVersion(fixVersionInfo)
+		shouldFix, err := cfp.updatePackageToFixedVersion(fixVersionInfo)
+		leastOneFix = leastOneFix || shouldFix
 		if err != nil {
 			log.Debug("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
 		}
 	}
-
+	if !leastOneFix {
+		// No packages were updated, don't attempt open PR.
+		log.Info("Frogbot didn't find any packages the can be fixed ...")
+		return
+	}
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
@@ -372,7 +378,8 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 	}
 	supportedFix, err = packageHandler.UpdateDependency(fixDetails)
 	if !supportedFix {
-		log.Info("Since dependency", fixDetails.ImpactedDependency, "is indirect its fix is skipped")
+		logMessage := fmt.Sprintf("Since dependency '%s' is indirect its fix is skipped...", fixDetails.ImpactedDependency)
+		log.Debug(logMessage)
 	}
 	return
 }
