@@ -34,9 +34,6 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.FrogbotConfigAggregato
 		return err
 	}
 	repoConfig := &(configAggregator)[0]
-	if log.Logger.GetLogLevel() == log.DEBUG {
-		repoConfig.DebugLogConfig()
-	}
 	if repoConfig.GitProvider == vcsutils.GitHub {
 		if err := verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
 			return err

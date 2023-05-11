@@ -22,9 +22,6 @@ type ScanAndFixRepositories struct {
 func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		if log.Logger.GetLogLevel() == log.DEBUG {
-			configAggregator[repoNum].DebugLogConfig()
-		}
 		err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))

@@ -69,10 +69,6 @@ type FrogbotRepoConfig struct {
 	Server coreconfig.ServerDetails
 }
 
-func (config *FrogbotRepoConfig) DebugLogConfig() {
-	logGenericStructWithIgnoreFields(config, "", configSensitiveFields)
-}
-
 type Params struct {
 	Scan          `yaml:"scan,omitempty"`
 	Git           `yaml:"git,omitempty"`
@@ -149,7 +145,7 @@ type Git struct {
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	GitProject               string
 	RepoOwner                string
-	Token                    string
+	Token                    string `json:"-"`
 	ApiEndpoint              string
 	Username                 string
 	PullRequestID            int
