@@ -57,9 +57,6 @@ func (fca *FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result Fr
 	return
 }
 
-// IMPORTANT NOTE!
-// When adding a new field that contains sensitive info to this struct,
-// It should be added to configSensitiveFields in order to avoid logging sensitive info.
 type FrogbotRepoConfig struct {
 	Params `yaml:"params,omitempty"`
 	OutputWriter
@@ -142,7 +139,7 @@ type Git struct {
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	GitProject               string
 	RepoOwner                string
-	Token                    string `json:"-"`
+	Token                    string
 	ApiEndpoint              string
 	Username                 string
 	PullRequestID            int

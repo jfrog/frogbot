@@ -14,10 +14,10 @@ func (n *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool
 	}
 }
 
-func (n *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (n *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	return n.common.UpdateDependency(fixDetails, extraArgs...)
 }
 
-func (n *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (n *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	return false, nil
 }

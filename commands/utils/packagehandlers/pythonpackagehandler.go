@@ -33,12 +33,12 @@ func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (
 	}
 }
 
-func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	// Indirect fixes are currently not supported
 	return false, nil
 }
 
-func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	switch fixDetails.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(fixDetails)
@@ -51,20 +51,20 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (fixSupported bool, err error) {
 	// Install the desired fixed version
-	supportedFix, err = py.common.UpdateDependency(fixDetails)
+	fixSupported, err = py.common.UpdateDependency(fixDetails)
 	if err != nil {
 		return
 	}
-	if supportedFix {
+	if fixSupported {
 		// Update Poetry lock file as well
 		return err == nil, runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 	}
 	return
 }
 
-func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (fixSupported bool, err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := fixDetails.ImpactedDependency + "==" + fixDetails.FixVersion

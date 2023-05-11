@@ -16,11 +16,11 @@ func (golang *GoPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (
 	}
 }
 
-func (golang *GoPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (golang *GoPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	return golang.common.UpdateDependency(fixDetails, extraArgs...)
 }
 
-func (golang *GoPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
-	// In Golang, we can address every package as direct because of the way that 'go get' works
+func (golang *GoPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
+	// In Golang, we can address every dependency as a direct dependency.
 	return golang.common.UpdateDependency(fixDetails, extraArgs...)
 }

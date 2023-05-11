@@ -14,10 +14,10 @@ func (n *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (boo
 	}
 }
 
-func (n *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (n *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	return n.common.UpdateDependency(fixDetails, extraArgs...)
 }
 
-func (n *YarnPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (n *YarnPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	return false, nil
 }

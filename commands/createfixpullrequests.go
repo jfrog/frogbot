@@ -158,7 +158,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
-	leastOneFix := false
+	atLeastOneFix := false
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Start aggregated packages fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -173,12 +173,12 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	// Fix all packages in the same branch
 	for impactedPackage, fixVersionInfo := range fixVersionsMap {
 		shouldFix, err := cfp.updatePackageToFixedVersion(fixVersionInfo)
-		leastOneFix = leastOneFix || shouldFix
 		if err != nil {
-			log.Debug("Could not fix impacted package", impactedPackage, "as part of the PR. Skipping it. Cause:", err.Error())
+			log.Info("Skipped fixing impacted package", impactedPackage, "as part of the PR. Reason:", err.Error())
 		}
+		atLeastOneFix = atLeastOneFix || shouldFix
 	}
-	if !leastOneFix {
+	if !atLeastOneFix {
 		// No packages were updated, don't attempt open PR.
 		return
 	}
@@ -188,12 +188,13 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	return
 }
 
-// Creates a branch for the fixed package and open pull request to main branch
+// Creates a branch for the fixed package and open pull request against the target branch.
 // In case branch already exists on remote, we skip it.
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *utils.FixDetails) (err error) {
+	fixVersion := fixDetails.FixVersion
 	log.Info("-----------------------------------------------------------------")
-	log.Info("Start fixing", fixDetails.ImpactedDependency, "with", fixDetails.FixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), fixDetails.ImpactedDependency, fixDetails.FixVersion)
+	log.Info("Start fixing", fixDetails.ImpactedDependency, "with", fixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), fixDetails.ImpactedDependency, fixVersion)
 	if err != nil {
 		return
 	}
@@ -209,17 +210,17 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-	supportedFix, err := cfp.updatePackageToFixedVersion(fixDetails)
+	fixSupported, err := cfp.updatePackageToFixedVersion(fixDetails)
 	if err != nil {
-		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", fixDetails.ImpactedDependency, fixDetails.FixVersion, err.Error())
+		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", fixDetails.ImpactedDependency, fixVersion, err.Error())
 	}
-	if !supportedFix {
+	if !fixSupported {
 		// If the fix is not supported, skip it.
 		return nil
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, fixDetails); err != nil {
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
-			fixDetails.ImpactedDependency, fixDetails.FixVersion, err.Error())
+			fixDetails.ImpactedDependency, fixVersion, err.Error())
 	}
 	return
 }
@@ -346,9 +347,9 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 
 // Updates impacted package
 // ShouldFix will return false when we don't want to update the package, for example,
-// 1. Not supported Indirect dependency fix
+// 1. Unsupported fixes for Indirect dependencies for package managers
 // 2. Build tools dependencies
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (fixSupported bool, err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
 		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
@@ -365,17 +366,18 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 		}()
 	}
 	if buildToolDependency := cfp.isBuildToolsDependency(fixDetails); buildToolDependency {
-		log.Info("Cannot update build tools dependencies, skipping...")
+		logMessage := fmt.Sprintf("Should not update '%s:%s' as it is a  build tools dependency, skipping...", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+		log.Debug(logMessage)
 		return
 	}
 	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
 	if err != nil {
 		return
 	}
-	supportedFix, err = packageHandler.UpdateDependency(fixDetails)
-	if !supportedFix {
+	fixSupported, err = packageHandler.UpdateDependency(fixDetails)
+	if !fixSupported {
 		logMessage := fmt.Sprintf("Since dependency '%s' is indirect its fix is skipped...", fixDetails.ImpactedDependency)
-		log.Info(logMessage)
+		log.Debug(logMessage)
 	}
 	return
 }
