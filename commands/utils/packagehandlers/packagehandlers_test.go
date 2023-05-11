@@ -62,12 +62,12 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Go)
-			defer cleanup()
 			fixSupported, err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assertFixVersionInPackageDescriptor(t, test, "go.mod")
 			assert.NoError(t, os.Chdir(testdataDir))
+			cleanup()
 		})
 	}
 }
@@ -86,11 +86,11 @@ func TestMavenPackageHandler_updateIndirectDependency(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-			defer cleanup()
 			fixSupported, err := mavenPackageHandler.updateIndirectDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testDataDir))
+			cleanup()
 		})
 	}
 }
@@ -157,11 +157,11 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
-			defer cleanup()
 			fixSupported, err := pythonPackageHandler.updateIndirectDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testDataDir))
+			cleanup()
 		})
 	}
 }
@@ -192,7 +192,6 @@ func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
-			defer cleanup()
 			fixSupported, err := pythonPackageHandler.updateDirectDependency(test.fixVersionInfo)
 			if test.fixSupported {
 				assert.NoError(t, err)
@@ -202,6 +201,7 @@ func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
 			}
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testDataDir))
+			cleanup()
 		})
 	}
 }
@@ -244,11 +244,11 @@ func TestNpmPackageHandler_updateIndirectDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
-			defer cleanup()
 			fixSupported, err := npmPackageHandler.updateIndirectDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testdataDir))
+			cleanup()
 		})
 	}
 }
@@ -269,12 +269,12 @@ func TestNpmPackageHandler_updateDirectDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
-			defer cleanup()
 			fixSupported, err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assertFixVersionInPackageDescriptor(t, test, "package.json")
 			assert.NoError(t, os.Chdir(testdataDir))
+			cleanup()
 		})
 	}
 }
@@ -293,14 +293,14 @@ func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
 			}, fixSupported: false,
 		},
 	}
-	cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
-	defer cleanup()
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			fixSupported, err := yarnPackageHandler.updateDirectDependency(test.fixVersionInfo)
+			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
+			fixSupported, err := yarnPackageHandler.updateIndirectDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testdataDir))
+			cleanup()
 		})
 	}
 }
@@ -321,12 +321,12 @@ func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
 			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
-			defer cleanup()
 			fixSupported, err := yarnPackageHandler.updateDirectDependency(test.fixVersionInfo)
 			assert.NoError(t, err)
 			assert.Equal(t, test.fixSupported, fixSupported)
 			assertFixVersionInPackageDescriptor(t, test, "package.json")
 			assert.NoError(t, os.Chdir(testdataDir))
+			cleanup()
 		})
 	}
 }
