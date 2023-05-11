@@ -29,9 +29,6 @@ var (
 
 	// Possible Config file path's to Frogbot Management repository
 	osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
-
-	// Config sensitive fields that aren't allowed to be logged. True stands for skip log.
-	configSensitiveFields = map[string]bool{"Token": true, "Secret": true, "Password": true, "AccessToken": true}
 )
 
 type FrogbotUtils struct {
