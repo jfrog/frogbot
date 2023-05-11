@@ -104,4 +104,7 @@ const (
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
+
+	// Unified log format for unsupported fix message
+	UnSupportedDependencyFixLogFormat = "Skipping fixing dependency: '%s:%s' as it is not supported"
 )
