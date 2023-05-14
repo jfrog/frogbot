@@ -250,6 +250,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		}
 		var pp pomPath
 		if err = json.Unmarshal([]byte(jsonContent), &pp); err != nil {
+			log.Info(jsonContent)
 			return err
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
