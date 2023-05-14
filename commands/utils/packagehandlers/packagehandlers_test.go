@@ -265,5 +265,5 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	assert.NoError(t, mvnHandler.updateProperties(&pomDependencyDetails{properties: []string{"buildinfo.version"}}, "2.39.9"))
 	modifiedPom, err := os.ReadFile("pom.xml")
 	assert.NoError(t, err)
-	assert.Contains(t, fmt.Sprintf("%s", string(modifiedPom)), "2.39.9")
+	assert.Contains(t, string(modifiedPom), "2.39.9")
 }
