@@ -249,7 +249,9 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 			continue
 		}
 		var pp pomPath
-		if err = json.Unmarshal([]byte(jsonContent), &pp); err != nil {
+		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
+		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
+		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
 			log.Info(jsonContent)
 			return err
 		}
