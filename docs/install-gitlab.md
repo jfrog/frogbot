@@ -59,13 +59,10 @@ frogbot-scan:
     # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
     # JF_RELEASES_REPO: ""
 
-
-
-
-    ##########################################################################
-    ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
-    ##   the following variables inside the file, instead of here.          ##
-    ##########################################################################
+    ###########################################################################
+    ##   If your project uses a 'frogbot-config.yml' file, you should define ##
+    ##   the following variables inside the file, instead of here.           ##
+    ###########################################################################
 
     # [Mandatory if the two conditions below are met]
     # 1. The project uses yarn 2, NuGet or .NET to download its dependencies
