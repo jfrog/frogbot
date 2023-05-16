@@ -34,3 +34,8 @@ jobs:
           # [Mandatory]
           # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # [Optional]
+          # Specifies the branch to be scanned when this workflow is triggered by the schedule event.
+          # By default, it is set to the default branch defined in your repository.
+          # JF_CRON_TARGET_BRANCH: branch-name

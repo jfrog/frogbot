@@ -303,7 +303,15 @@ func extractGitParamsFromEnv() (*Git, error) {
 	if err = readParamFromEnv(GitBaseBranchEnv, &branch); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
-	gitParams.Branches = append(gitParams.Branches, branch)
+	// When no branch is set, it will resolve to repository-defined default branch.
+	// This optionally allows overwriting the default branch that will be scanned on a scheduled events.
+	cronScanTargetBranch := getTrimmedEnv(GitScheduledTargetBranch)
+	if branch == "" && cronScanTargetBranch != "" {
+		gitParams.Branches = append(gitParams.Branches, cronScanTargetBranch)
+	} else {
+		gitParams.Branches = append(gitParams.Branches, branch)
+	}
+
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
 		gitParams.PullRequestID, err = strconv.Atoi(pullRequestIDString)
 		if err != nil {

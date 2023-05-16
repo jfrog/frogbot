@@ -42,6 +42,8 @@ const (
 	GitRepoEnv      = "JF_GIT_REPO"
 	GitProjectEnv   = "JF_GIT_PROJECT"
 	GitUsernameEnv  = "JF_GIT_USERNAME"
+	// Allows overwriting default branch when running on a scheduled event
+	GitScheduledTargetBranch = "JF_CRON_TARGET_BRANCH"
 
 	// Git naming template environment variables
 	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
