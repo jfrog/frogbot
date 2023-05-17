@@ -11,8 +11,6 @@
 
 name: "Frogbot Scan and Fix"
 on:
-  push:
-    branches: [ $default-branch ]
   schedule:
     # The job will run once a day at 00:00 GMT.
     - cron: "0 0 * * *"
@@ -23,104 +21,110 @@ permissions:
 jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+    strategy:
+      matrix:
+        # Creating fix pull requests will be triggered periodically on the following branches.
+        branch: [ "dev","main" ]
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            ref: ${{ matrix.branch }}
 
-      #  IMPORTANT:
-      #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
-      #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
+        #  IMPORTANT:
+        #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
+        #  2. The structure of some projects require creating a frogbot-config.yml file. Read more about it here - https://github.com/jfrog/frogbot/blob/master/docs/frogbot-config.md
 
-      - uses: jfrog/frogbot@b03f17265a90e238f6c5fa6ab010357d56615381
-        env:
-          # [Mandatory]
-          # JFrog platform URL
-          JF_URL: ${{ secrets.JF_URL }}
+        - uses: jfrog/frogbot@b03f17265a90e238f6c5fa6ab010357d56615381
+          env:
+            # [Mandatory]
+            # JFrog platform URL
+            JF_URL: ${{ secrets.JF_URL }}
 
-          # [Mandatory if JF_USER and JF_PASSWORD are not provided]
-          # JFrog access token with 'read' permissions on Xray service
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+            # [Mandatory if JF_USER and JF_PASSWORD are not provided]
+            # JFrog access token with 'read' permissions on Xray service
+            JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
 
-          # [Mandatory if JF_ACCESS_TOKEN is not provided]
-          # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
-          # JF_USER: ${{ secrets.JF_USER }}
+            # [Mandatory if JF_ACCESS_TOKEN is not provided]
+            # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
+            # JF_USER: ${{ secrets.JF_USER }}
 
-          # [Mandatory if JF_ACCESS_TOKEN is not provided]
-          # JFrog password. Must be provided with JF_USER
-          # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+            # [Mandatory if JF_ACCESS_TOKEN is not provided]
+            # JFrog password. Must be provided with JF_USER
+            # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
-          # [Mandatory]
-          # The GitHub token automatically generated for the job
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # [Mandatory]
+            # The GitHub token automatically generated for the job
+            JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # [Optional]
-          # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-          # in Artifactory, which proxies https://releases.jfrog.io
-          # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
-          # JF_RELEASES_REPO: ""
+            # [Optional]
+            # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
+            # in Artifactory, which proxies https://releases.jfrog.io
+            # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+            # JF_RELEASES_REPO: ""
 
-          ##########################################################################
-          ##   If you project uses a 'frogbot-config.yml' file, you can define    ##
-          ##   the following variables inside the file, instead of here.          ##
-          ##########################################################################
+            ##########################################################################
+            ##   If you project uses a 'frogbot-config.yml' file, you can define    ##
+            ##   the following variables inside the file, instead of here.          ##
+            ##########################################################################
 
-          # [Mandatory if the two conditions below are met]
-          # 1. The project uses yarn 2, NuGet or .NET Core to download its dependencies
-          # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
-          #
-          # The command that installs the project dependencies (e.g "nuget restore")
-          # JF_INSTALL_DEPS_CMD: ""
+            # [Mandatory if the two conditions below are met]
+            # 1. The project uses yarn 2, NuGet or .NET Core to download its dependencies
+            # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+            #
+            # The command that installs the project dependencies (e.g "nuget restore")
+            # JF_INSTALL_DEPS_CMD: ""
 
-          # [Optional, default: "."]
-          # Relative path to the root of the project in the Git repository
-          # JF_WORKING_DIR: path/to/project/dir
+            # [Optional, default: "."]
+            # Relative path to the root of the project in the Git repository
+            # JF_WORKING_DIR: path/to/project/dir
 
-          # [Optional]
-          # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
-          # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
+            # [Optional]
+            # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
+            # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>
 
-          # [Optional]
-          # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
-          # JF_PROJECT: <project-key>
+            # [Optional]
+            # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
+            # JF_PROJECT: <project-key>
 
-          # [Optional, default: "FALSE"]
-          # Displays all existing vulnerabilities, including the ones that were added by the pull request.
-          # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
+            # [Optional, default: "FALSE"]
+            # Displays all existing vulnerabilities, including the ones that were added by the pull request.
+            # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
-          # [Optional, default: "TRUE"]
-          # Fails the Frogbot task if any security issue is found.
-          # JF_FAIL: "FALSE"
+            # [Optional, default: "TRUE"]
+            # Fails the Frogbot task if any security issue is found.
+            # JF_FAIL: "FALSE"
 
-          # [Optional]
-          # Frogbot will download the project dependencies, if they're not cached locally. To download the
-          # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
-          # need to set this value, if it is set in the frogbot-config.yml file.
-          # JF_DEPS_REPO: ""
+            # [Optional]
+            # Frogbot will download the project dependencies, if they're not cached locally. To download the
+            # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
+            # need to set this value, if it is set in the frogbot-config.yml file.
+            # JF_DEPS_REPO: ""
 
-          # [Optional]
-          # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
-          # JF_REQUIREMENTS_FILE: ""
+            # [Optional]
+            # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+            # JF_REQUIREMENTS_FILE: ""
 
-          # [Optional, Default: "TRUE"]
-          # Use Gradle wrapper.
-          # JF_USE_WRAPPER: "FALSE"
+            # [Optional, Default: "TRUE"]
+            # Use Gradle wrapper.
+            # JF_USE_WRAPPER: "FALSE"
 
-          # [Optional]
-          # Template for the branch name generated by Frogbot when creating pull requests with fixes.
-          # The template must include ${BRANCH_NAME_HASH}, to ensure that the generated branch name is unique.
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_BRANCH_NAME_TEMPLATE: "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"
+            # [Optional]
+            # Template for the branch name generated by Frogbot when creating pull requests with fixes.
+            # The template must include ${BRANCH_NAME_HASH}, to ensure that the generated branch name is unique.
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_BRANCH_NAME_TEMPLATE: "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"
 
-          # [Optional]
-          # Template for the commit message generated by Frogbot when creating pull requests with fixes
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_COMMIT_MESSAGE_TEMPLATE: "Upgrade ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
+            # [Optional]
+            # Template for the commit message generated by Frogbot when creating pull requests with fixes
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_COMMIT_MESSAGE_TEMPLATE: "Upgrade ${IMPACTED_PACKAGE} to ${FIX_VERSION}"
 
-          # [Optional]
-          # Template for the pull request title generated by Frogbot when creating pull requests with fixes.
-          # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
-          # JF_PULL_REQUEST_TITLE_TEMPLATE: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
+            # [Optional]
+            # Template for the pull request title generated by Frogbot when creating pull requests with fixes.
+            # The template can optionally include the ${IMPACTED_PACKAGE} and ${FIX_VERSION} variables.
+            # JF_PULL_REQUEST_TITLE_TEMPLATE: "[🐸 Frogbot] Upgrade ${IMPACTED_PACKAGE} to to ${FIX_VERSION}"
 
-          # [Optional, Default: "FALSE"]
-          # If TRUE, Frogbot creates a single pull request with all the fixes.
-          # If FALSE, Frogbot creates a separate pull request for each fix.
-          # JF_GIT_AGGREGATE_FIXES: "FALSE"
+            # [Optional, Default: "FALSE"]
+            # If TRUE, Frogbot creates a single pull request with all the fixes.
+            # If FALSE, Frogbot creates a separate pull request for each fix.
+            # JF_GIT_AGGREGATE_FIXES: "FALSE"
