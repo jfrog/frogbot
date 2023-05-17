@@ -187,8 +187,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-	extendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: scanResults}
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, extendedScanResults, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, &xrayutils.ExtendedScanResults{XrayResults: scanResults}, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}

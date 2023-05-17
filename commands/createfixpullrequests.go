@@ -298,8 +298,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	fixVersionsMap := map[string]*utils.FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
-			extendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: scanResults}
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, extendedScanResults, isMultipleRoots, true)
+			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, &xrayutils.ExtendedScanResults{XrayResults: scanResults}, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
