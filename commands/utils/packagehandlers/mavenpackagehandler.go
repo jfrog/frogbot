@@ -55,9 +55,9 @@ type mavenDependency struct {
 
 func (md *mavenDependency) collectMavenDependencies(foundInDependencyManagement bool) []gavCoordinate {
 	var result []gavCoordinate
-	if !md.gavCoordinate.isEmpty() {
-		md.gavCoordinate.foundInDependencyManagement = foundInDependencyManagement
-		result = append(result, *md.gavCoordinate.trimSpaces())
+	if !md.isEmpty() {
+		md.foundInDependencyManagement = foundInDependencyManagement
+		result = append(result, *md.trimSpaces())
 	}
 	for _, dependency := range md.Dependencies {
 		result = append(result, dependency.collectMavenDependencies(foundInDependencyManagement)...)
@@ -79,8 +79,8 @@ type mavenPlugin struct {
 
 func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 	var result []gavCoordinate
-	if !mp.gavCoordinate.isEmpty() {
-		result = append(result, *mp.gavCoordinate.trimSpaces())
+	if !mp.isEmpty() {
+		result = append(result, *mp.trimSpaces())
 	}
 	for _, plugin := range mp.NestedPlugins {
 		result = append(result, plugin.collectMavenPlugins()...)
@@ -88,10 +88,10 @@ func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 	return result
 }
 
-// fillDependenciesMap collects direct dependencies from the projectPath pom.xml file.
+// fillDependenciesMap collects direct dependencies from the pomPath pom.xml file.
 // If the version of a dependency is set in another property section, it is added as its value in the map.
-func (mph *MavenPackageHandler) fillDependenciesMap(projectPath string) error {
-	contentBytes, err := os.ReadFile(projectPath) // #nosec G304
+func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
+	contentBytes, err := os.ReadFile(pomPath) // #nosec G304
 	if err != nil {
 		return errors.New("couldn't read pom.xml file: " + err.Error())
 	}
@@ -108,10 +108,10 @@ func (mph *MavenPackageHandler) fillDependenciesMap(projectPath string) error {
 			mph.mavenDepToPropertyMap[depName] = pomDependencyDetails{foundInDependencyManagement: dependency.foundInDependencyManagement, currentVersion: dependency.Version}
 		}
 		if strings.HasPrefix(dependency.Version, "${") {
-			trimmedVersion := strings.TrimPrefix(strings.TrimSuffix(dependency.Version, "}"), "${")
+			trimmedVersion := strings.Trim(dependency.Version, "${}")
 			if !slices.Contains(mph.mavenDepToPropertyMap[depName].properties, trimmedVersion) {
 				mph.mavenDepToPropertyMap[depName] = pomDependencyDetails{
-					properties:                  append(mph.mavenDepToPropertyMap[depName].properties, strings.TrimPrefix(strings.TrimSuffix(dependency.Version, "}"), "${")),
+					properties:                  append(mph.mavenDepToPropertyMap[depName].properties, trimmedVersion),
 					currentVersion:              dependency.Version,
 					foundInDependencyManagement: dependency.foundInDependencyManagement,
 				}
@@ -197,14 +197,7 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 		return fmt.Errorf("failed to create a temp %s file: \n%s", mavenGavReader, err.Error())
 	}
 	defer func() {
-		e1 := mavenGavReaderFile.Close()
-		e2 := os.Remove(mavenGavReaderFile.Name())
-		if err == nil {
-			err = e1
-			if err == nil {
-				err = e2
-			}
-		}
+		err = errors.Join(err, mavenGavReaderFile.Close(), os.Remove(mavenGavReaderFile.Name()))
 	}()
 	gavReaderFolder := path.Dir(mavenGavReaderFile.Name())
 	currentWd, err := os.Getwd()
@@ -252,7 +245,6 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			log.Info(jsonContent)
 			return err
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
@@ -276,8 +268,8 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 	return
 }
 
+// Update properties that represent this package's version.
 func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
-	// Update properties that represent this package's version.
 	for _, property := range depDetails.properties {
 		updatePropertyArgs := []string{
 			"-B", "versions:set-property", "-Dproperty=" + property,
@@ -317,8 +309,6 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []by
 	}
 
 	readerOutput = make([]byte, buf.Len())
-	if _, err = io.ReadFull(&buf, readerOutput); err != nil {
-		return
-	}
+	_, err = io.ReadFull(&buf, readerOutput)
 	return
 }
