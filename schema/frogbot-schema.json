@@ -110,6 +110,11 @@
         "description": "Handle vulnerabilities with fix versions only.",
         "title": "Handle vulnerabilities with fix versions only"
       },
+      "npmIgnoreDevDependencies": {
+        "type": "boolean",
+        "description": "Allow the option to ignore dev dependencies while scanning npm projects.",
+        "title": "Ignore Npm dev dependencies while scanning"
+      },
       "projects": {
         "type": ["array", "null"],
         "title": "Projects in Git Repository",

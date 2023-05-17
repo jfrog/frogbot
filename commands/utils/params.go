@@ -104,6 +104,7 @@ type Scan struct {
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
+	NpmIgnoreDevDependencies  bool      `yaml:"npmIgnoreDevDependencies,omitempty"`
 	JfrogReleasesRepo         string
 }
 
@@ -466,6 +467,11 @@ func extractRepoParamsFromEnv(repo *FrogbotRepoConfig) error {
 	if err = readParamFromEnv(MinSeverityEnv, &repo.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
 		return err
 	}
+	npmIgnoreDevDependencies, err := getBoolEnv(IgnoreNpmDevDependencies, true)
+	if err != nil {
+		return err
+	}
+	repo.NpmIgnoreDevDependencies = npmIgnoreDevDependencies
 	if repo.MinSeverity, err = xrutils.GetSeveritiesFormat(repo.MinSeverity); err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
@@ -17,6 +18,8 @@ type ScanDetails struct {
 	minSeverityFilter        string
 	branch                   string
 	releasesRepo             string
+	npmDependenciesScope     string
+	ExtendedResults          *xrayutils.ExtendedScanResults
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -58,6 +61,13 @@ func (sc *ScanDetails) SetReleasesRepo(releasesRepo string) *ScanDetails {
 	return sc
 }
 
+func (sc *ScanDetails) SetNpmDependenciesScope(ignoreDev bool) *ScanDetails {
+	if ignoreDev {
+		sc.npmDependenciesScope = "prodOnly"
+	}
+	return sc
+}
+
 func (sc *ScanDetails) Client() vcsclient.VcsClient {
 	return sc.client
 }
@@ -80,6 +90,10 @@ func (sc *ScanDetails) FixableOnly() bool {
 
 func (sc *ScanDetails) MinSeverityFilter() string {
 	return sc.minSeverityFilter
+}
+
+func (sc *ScanDetails) NpmDependenciesScope() string {
+	return sc.npmDependenciesScope
 }
 
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {

@@ -61,6 +61,7 @@ const (
 	MinSeverityEnv               = "JF_MIN_SEVERITY"
 	FixableOnlyEnv               = "JF_FIXABLE_ONLY"
 	WatchesDelimiter             = ","
+	IgnoreNpmDevDependencies     = "JF_NPM_IGNORE_DEV_DEPENDENCIES"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv          = "JF_GIT_TOKEN"

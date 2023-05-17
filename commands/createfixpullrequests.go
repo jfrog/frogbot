@@ -60,7 +60,8 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 		SetBranch(branch).
 		SetReleasesRepo(repository.JfrogReleasesRepo).
 		SetFixableOnly(repository.FixableOnly).
-		SetMinSeverity(repository.MinSeverity)
+		SetMinSeverity(repository.MinSeverity).
+		SetNpmDependenciesScope(repository.NpmIgnoreDevDependencies)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
@@ -298,7 +299,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	fixVersionsMap := map[string]*utils.FixVersionInfo{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
+			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, nil, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
