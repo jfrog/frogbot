@@ -179,7 +179,7 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 }
 
 // Create vulnerabilities rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities []services.Vulnerability, extendedScanResults *xrayutils.ExtendedScanResults, isMultipleRoot bool) ([]formats.VulnerabilityOrViolationRow, error) {
+func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities []services.Vulnerability, isMultipleRoot bool, extendedScanResults *xrayutils.ExtendedScanResults) ([]formats.VulnerabilityOrViolationRow, error) {
 	if len(violations) > 0 {
 		violationsRows, _, _, err := xrayutils.PrepareViolations(violations, extendedScanResults, isMultipleRoot, true)
 		return violationsRows, err
@@ -194,7 +194,7 @@ func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities
 func createAllIssuesRows(currentScan []services.ScanResponse, isMultipleRoot bool) ([]formats.VulnerabilityOrViolationRow, error) {
 	violations, vulnerabilities, _ := xrayutils.SplitScanResults(currentScan)
 	extendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: currentScan}
-	return getScanVulnerabilitiesRows(violations, vulnerabilities, extendedScanResults, isMultipleRoot)
+	return getScanVulnerabilitiesRows(violations, vulnerabilities, isMultipleRoot, extendedScanResults)
 }
 
 func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, error) {
@@ -246,19 +246,22 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 			return nil, false, err
 		}
 	}
+	// GraphBasicParams
+	graphBasicParams := &xrayutils.GraphBasicParams{}
+	graphBasicParams.
+		SetPipRequirementsFile(scanSetup.PipRequirementsFile).
+		SetUseWrapper(*scanSetup.UseWrapper).
+		SetDepsRepo(scanSetup.Repository).
+		SetIgnoreConfigFile(true).
+		SetServerDetails(scanSetup.ServerDetails)
+
 	// Params
 	auditParams := audit.NewAuditParams().
+		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
+		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(scanSetup.MinSeverityFilter()).
 		SetFixableOnly(scanSetup.FixableOnly()).
-		SetWorkingDirs(workDirs).
 		SetReleasesRepo(scanSetup.ReleasesRepo()).
-		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams)
-	// GraphBasicParams
-	auditParams.GraphBasicParams = &xrayutils.GraphBasicParams{}
-	auditParams.SetServerDetails(scanSetup.ServerDetails).
-		SetUseWrapper(*scanSetup.UseWrapper).
-		SetIgnoreConfigFile(true).
-		SetPipRequirementsFile(scanSetup.PipRequirementsFile).
 		SetNpmScope(scanSetup.NpmDependenciesScope())
 
 	results, isMultipleRoot, err = audit.GenericAudit(auditParams)
@@ -304,16 +307,16 @@ func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
 
 func getNewViolations(previousScan, currentScan services.ScanResponse, isMultipleRoot bool) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	previousExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
-	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, previousExtendedScanResults, isMultipleRoot, true)
+	previousScanExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
+	violationsRows, _, _, err := xrayutils.PrepareViolations(previousScan.Violations, previousScanExtendedScanResults, isMultipleRoot, true)
 	if err != nil {
 		return violationsRows, err
 	}
 	for _, violation := range violationsRows {
 		existsViolationsMap[getUniqueID(violation)] = violation
 	}
-	currentExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
-	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, currentExtendedScanResults, isMultipleRoot, true)
+	currentScanExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}
+	violationsRows, _, _, err = xrayutils.PrepareViolations(currentScan.Violations, currentScanExtendedScanResults, isMultipleRoot, true)
 	if err != nil {
 		return newViolationsRows, err
 	}
@@ -327,16 +330,16 @@ func getNewViolations(previousScan, currentScan services.ScanResponse, isMultipl
 
 func getNewVulnerabilities(previousScan, currentScan services.ScanResponse, isMultipleRoot bool) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	previousExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
-	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, previousExtendedScanResults, isMultipleRoot, true)
+	previousScanExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
+	vulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(previousScan.Vulnerabilities, previousScanExtendedScanResults, isMultipleRoot, true)
 	if err != nil {
 		return newVulnerabilitiesRows, err
 	}
 	for _, vulnerability := range vulnerabilitiesRows {
 		existsVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
 	}
-	currentExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}
-	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, currentExtendedScanResults, isMultipleRoot, true)
+	currentScanExtendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}
+	vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(currentScan.Vulnerabilities, currentScanExtendedScanResults, isMultipleRoot, true)
 	if err != nil {
 		return newVulnerabilitiesRows, err
 	}
