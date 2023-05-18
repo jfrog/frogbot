@@ -47,12 +47,13 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
-type ErrUnsupportedIndirectFix struct {
+type ErrUnsupportedFix struct {
 	PackageName string
+	Reason      string
 }
 
-func (e *ErrUnsupportedIndirectFix) Error() string {
-	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+func (err *ErrUnsupportedFix) Error() string {
+	return fmt.Sprintf("Dependecy '%s' could not be updated, reason: %s ", err.PackageName, err.Reason)
 }
 
 // FixDetails is a basic struct used to hold needed information for fixing vulnerabilities

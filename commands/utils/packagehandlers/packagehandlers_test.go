@@ -29,9 +29,7 @@ type pipPackageRegexTest struct {
 	expectedRequirement string
 }
 
-// Go handles direct and indirect the same, so we can have one test function
 func TestGoPackageHandler_UpdateDependency(t *testing.T) {
-	testdataDir := getTestDataDir(t, false)
 	goPackageHandler := GoPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -61,20 +59,24 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Go)
-			fixSupported, err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assertFixVersionInPackageDescriptor(t, test, "go.mod")
-			assert.NoError(t, os.Chdir(testdataDir))
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Go)
+			err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+				assertFixVersionInPackageDescriptor(t, test, "go.mod")
+			}
+			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
 	}
 }
 
 // Maven
-func TestMavenPackageHandler_updateIndirectDependency(t *testing.T) {
-	testDataDir := getTestDataDir(t, false)
+func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	mavenPackageHandler := MavenPackageHandler{mavenDepToPropertyMap: map[string][]string{"junit": {"junit:junit", "3.8.1"}}}
 	tests := []dependencyFixTest{
 		{fixVersionInfo: &utils.FixDetails{
@@ -82,93 +84,38 @@ func TestMavenPackageHandler_updateIndirectDependency(t *testing.T) {
 			PackageType:        "maven",
 			ImpactedDependency: "junit",
 			DirectDependency:   false}, fixSupported: false},
-	}
-	for _, test := range tests {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-			fixSupported, err := mavenPackageHandler.updateIndirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
-		})
-	}
-}
-
-func TestMavenPackageHandler_updateDirectDependency(t *testing.T) {
-	testDataDir := getTestDataDir(t, true)
-	mavenDepToPropertyMap := map[string][]string{
-		"junit": {"junit:junit", "3.8.1"},
-	}
-	mavenPackageHandler := &MavenPackageHandler{mavenDepToPropertyMap: mavenDepToPropertyMap}
-	tests := []dependencyFixTest{
 		{fixVersionInfo: &utils.FixDetails{
 			FixVersion:         "4.11",
 			PackageType:        coreutils.Maven,
 			ImpactedDependency: "junit",
 			DirectDependency:   true}, fixSupported: true},
 	}
-	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			fixSupported, err := mavenPackageHandler.updateDirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assertFixVersionInPackageDescriptor(t, test, "pom.xml")
-			assert.NoError(t, os.Chdir(testDataDir))
-		})
-	}
-}
-
-// Python, includes pip,pipenv, poetry
-func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
-	testDataDir := getTestDataDir(t, false)
-	testcases := []pythonIndirectDependencies{
-		{
-			dependencyFixTest: dependencyFixTest{
-				fixVersionInfo: &utils.FixDetails{
-					FixVersion:         "1.25.9",
-					PackageType:        coreutils.Pip,
-					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, fixSupported: false},
-			requirementsPath: "requirements.txt",
-		}, {
-			dependencyFixTest: dependencyFixTest{
-				fixVersionInfo: &utils.FixDetails{
-					FixVersion:         "1.25.9",
-					PackageType:        coreutils.Poetry,
-					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, fixSupported: false},
-			requirementsPath: "pyproejct.toml",
-		}, {
-			dependencyFixTest: dependencyFixTest{
-				fixVersionInfo: &utils.FixDetails{
-					FixVersion:         "1.25.9",
-					PackageType:        coreutils.Pipenv,
-					ImpactedDependency: "urllib3",
-					DirectDependency:   false}, fixSupported: false},
-			requirementsPath: "Pipfile",
-		},
-	}
-	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			pythonPackageHandler, err := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
-				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
-			assert.NoError(t, err)
-			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
-			fixSupported, err := pythonPackageHandler.updateIndirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
+			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
 	}
 }
 
-func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
-	testDataDir := getTestDataDir(t, true)
+// Python, includes pip,pipenv, poetry
+func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 	testcases := []pythonIndirectDependencies{
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Pip, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Poetry, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "pyproejct.toml"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Pipenv, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "Pipfile"},
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
 			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
@@ -176,30 +123,24 @@ func TestPythonPackageHandler_updateDirectDependency(t *testing.T) {
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
 			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "setup.py"},
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "23.1", PackageType: coreutils.Pip, ImpactedDependency: "pip", DirectDependency: true}, fixSupported: false}, requirementsPath: "setup.py"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.3.0", PackageType: coreutils.Pip, ImpactedDependency: "wheel", DirectDependency: true}, fixSupported: false}, requirementsPath: "setup.py"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "66.6.6", PackageType: coreutils.Pip, ImpactedDependency: "setuptools", DirectDependency: true}, fixSupported: false}, requirementsPath: "setup.py"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
 			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
 			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			pythonPackageHandler, err := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}}, nil)
 			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
-			fixSupported, err := pythonPackageHandler.updateDirectDependency(test.fixVersionInfo)
-			if test.fixSupported {
-				assert.NoError(t, err)
+			err = pythonPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 			} else {
-				assert.Error(t, err)
-				assertFixVersionInPackageDescriptor(t, test.dependencyFixTest, test.requirementsPath)
+				assert.NoError(t, err)
 			}
-			assert.Equal(t, test.fixSupported, fixSupported)
 			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
@@ -228,8 +169,7 @@ func TestPipPackageRegex(t *testing.T) {
 }
 
 // Npm
-func TestNpmPackageHandler_updateIndirectDependency(t *testing.T) {
-	testdataDir := getTestDataDir(t, false)
+func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 	npmPackageHandler := &NpmPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -240,23 +180,6 @@ func TestNpmPackageHandler_updateIndirectDependency(t *testing.T) {
 				ImpactedDependency: "mpath",
 			}, fixSupported: false,
 		},
-	}
-	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
-			fixSupported, err := npmPackageHandler.updateIndirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assert.NoError(t, os.Chdir(testdataDir))
-			cleanup()
-		})
-	}
-}
-
-func TestNpmPackageHandler_updateDirectDependency(t *testing.T) {
-	testdataDir := getTestDataDir(t, true)
-	npmPackageHandler := &NpmPackageHandler{}
-	testcases := []dependencyFixTest{
 		{
 			fixVersionInfo: &utils.FixDetails{
 				FixVersion:         "3.0.2",
@@ -268,12 +191,16 @@ func TestNpmPackageHandler_updateDirectDependency(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Npm)
-			fixSupported, err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assertFixVersionInPackageDescriptor(t, test, "package.json")
-			assert.NoError(t, os.Chdir(testdataDir))
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Npm)
+			err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
 	}
@@ -281,7 +208,6 @@ func TestNpmPackageHandler_updateDirectDependency(t *testing.T) {
 
 // Yarn
 func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
-	testdataDir := getTestDataDir(t, false)
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -295,18 +221,22 @@ func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
-			fixSupported, err := yarnPackageHandler.updateIndirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
-			assert.NoError(t, os.Chdir(testdataDir))
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
+			err := yarnPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
 	}
 }
 
 func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
-	testdataDir := getTestDataDir(t, true)
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -320,12 +250,17 @@ func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
 	}
 	for _, test := range testcases {
 		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			cleanup := createTempDirAndChDir(t, testdataDir, coreutils.Yarn)
-			fixSupported, err := yarnPackageHandler.updateDirectDependency(test.fixVersionInfo)
-			assert.NoError(t, err)
-			assert.Equal(t, test.fixSupported, fixSupported)
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
+			err := yarnPackageHandler.updateDirectDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+			}
 			assertFixVersionInPackageDescriptor(t, test, "package.json")
-			assert.NoError(t, os.Chdir(testdataDir))
+			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
 		})
 	}

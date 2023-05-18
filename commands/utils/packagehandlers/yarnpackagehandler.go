@@ -6,18 +6,17 @@ type YarnPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
 		return yarn.updateDirectDependency(fixDetails)
 	} else {
-		return yarn.updateIndirectDependency(fixDetails)
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason:      utils.IndirectDependencyNotSupported,
+		}
 	}
 }
 
-func (yarn *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
+func (yarn *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
 	return yarn.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
-}
-
-func (yarn *YarnPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
-	return false, nil
 }

@@ -169,6 +169,20 @@ func TestGetMinimalFixVersion(t *testing.T) {
 	}
 }
 
+// Verifies unsupported packages return specific error
+// Other logic is implemented inside each package-handler.
+func TestUpdatePackageToFixedVersion(t *testing.T) {
+	var testScan CreateFixPullRequestsCmd
+	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
+		for _, impactedDependency := range buildToolsDependencies {
+			fixDetails := &utils.FixDetails{FixVersion: "3.3.3", PackageType: tech, ImpactedDependency: impactedDependency, DirectDependency: true}
+			err := testScan.updatePackageToFixedVersion(fixDetails)
+			assert.Error(t, err, "Expected error to occur")
+			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+		}
+	}
+}
+
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {

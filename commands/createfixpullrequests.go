@@ -148,7 +148,12 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 	log.Info("-----------------------------------------------------------------")
 	for _, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.fixSinglePackageAndCreatePR(fixVersionInfo); err != nil {
-			errList.WriteString(err.Error())
+			if customErr, ok := err.(*utils.ErrUnsupportedFix); ok {
+				log.Debug(customErr.Error())
+				continue
+			} else {
+				errList.WriteString(err.Error())
+			}
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
@@ -166,7 +171,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
-	atLeastOneFix := false
+	amountOfFixePackage := 0
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -178,22 +183,24 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
+
 	// Fix all packages in the same branch
 	for _, fixDetails := range fixVersionsMap {
-		shouldFix, err := cfp.updatePackageToFixedVersion(fixDetails)
+		err := cfp.updatePackageToFixedVersion(fixDetails)
+		if customErr, ok := err.(*utils.ErrUnsupportedFix); ok {
+			log.Debug(customErr.Error())
+			continue
+		}
 		if err != nil {
 			errList.WriteString(err.Error())
 		}
-		if !shouldFix {
-			logMessage := fmt.Sprintf(utils.UnSupportedDependencyFixLogFormat, fixDetails.ImpactedDependency, fixDetails.FixVersion)
-			log.Debug(logMessage)
-		} else {
-			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-			log.Info(logMessage)
-		}
-		atLeastOneFix = atLeastOneFix || shouldFix
+
+		logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+		log.Info(logMessage)
+		amountOfFixePackage += 1
 	}
-	if !atLeastOneFix {
+	// Verify fixes were made
+	if amountOfFixePackage == 0 {
 		// No packages were updated, don't attempt open PR.
 		log.Debug("Couldn't fix any of the impacted dependencies")
 		return
@@ -231,15 +238,14 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-	fixSupported, err := cfp.updatePackageToFixedVersion(fixDetails)
+	err = cfp.updatePackageToFixedVersion(fixDetails)
 	if err != nil {
+		// Custom error
+		if err, ok := err.(*utils.ErrUnsupportedFix); ok {
+			return err
+		}
+		// Unexpected error
 		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", fixDetails.ImpactedDependency, fixVersion, err.Error())
-	}
-	if !fixSupported {
-		// If the fix is not supported, skip it.
-		logMessage := fmt.Sprintf(utils.UnSupportedDependencyFixLogFormat, fixDetails.ImpactedDependency, fixDetails.FixVersion)
-		log.Debug(logMessage)
-		return nil
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, fixDetails); err != nil {
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
@@ -371,16 +377,13 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	return nil
 }
 
-// Updates impacted package
-// ShouldFix will return false when we don't want to update the package, for example,
-// 1. Unsupported fixes for Indirect dependencies for package managers
-// 2. Build tools dependencies
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (fixSupported bool, err error) {
+// Updates impacted package, can return ErrUnsupportedFix.
+func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *utils.FixDetails) (err error) {
 	// 'CD' into the relevant working directory
 	if cfp.projectWorkingDir != "" {
 		restoreDir, err := utils.Chdir(cfp.projectWorkingDir)
 		if err != nil {
-			return false, err
+			return err
 		}
 		defer func() {
 			e := restoreDir()
@@ -391,32 +394,29 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 			}
 		}()
 	}
-	if buildToolDependency := cfp.isBuildToolsDependency(fixDetails); buildToolDependency {
-		logMessage := fmt.Sprintf("Should not update '%s:%s' as it is a  build tools dependency, skipping...", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-		log.Debug(logMessage)
+	err = isBuildToolsDependency(fixDetails)
+	if err != nil {
 		return
 	}
 	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
 	if err != nil {
 		return
 	}
-	fixSupported, err = packageHandler.UpdateDependency(fixDetails)
-	if !fixSupported {
-		logMessage := fmt.Sprintf("Since dependency '%s' is indirect its fix is skipped...", fixDetails.ImpactedDependency)
-		log.Debug(logMessage)
-	}
-	return
+	return packageHandler.UpdateDependency(fixDetails)
 }
 
-func (cfp *CreateFixPullRequestsCmd) isBuildToolsDependency(fixDetails *utils.FixDetails) bool {
+func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
 	// Skip build tools dependencies (for example, pip)
 	// That are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixDetails.PackageType], fixDetails.ImpactedDependency) {
-		log.Info("Skipping vulnerable package", fixDetails.ImpactedDependency, "since it is not defined in your package descriptor file.",
-			"Update", fixDetails.ImpactedDependency, "version to", fixDetails.FixVersion, "to fix this vulnerability.")
-		return true
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason: fmt.Sprintf("Skipping vulnerable package %s since it is not defined in your package descriptor file. "+
+				"Update %s version to %s to fix this vulnerability.",
+				fixDetails.ImpactedDependency, fixDetails.ImpactedDependency, fixDetails.FixVersion),
+		}
 	}
-	return false
+	return nil
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;

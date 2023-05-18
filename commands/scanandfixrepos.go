@@ -44,7 +44,9 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			log.Info(fmt.Sprintf("Commit '%s' in repo '%s', branch '%s' has already been scanned. Skipping the scan.", checkedCommit, repoConfig.RepoName, branch))
 			continue
 		}
-		if err = saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
+		err = saf.downloadAndRunScanAndFix(repoConfig, branch, client)
+
+		if _, isCustomError := err.(*utils.ErrUnsupportedFix); err != nil && !isCustomError {
 			// Scan failed, mark commit status failed with error info
 			e := saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
 			if e != nil {
@@ -52,6 +54,7 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			}
 			return err
 		}
+		// Mark successful run
 		if err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, utils.CommitStatusDescription); err != nil {
 			return err
 		}

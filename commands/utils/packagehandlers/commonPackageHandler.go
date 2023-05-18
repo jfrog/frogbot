@@ -11,9 +11,7 @@ import (
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
-	UpdateDependency(details *utils.FixDetails) (bool, error)
-	updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error)
-	updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error)
+	UpdateDependency(details *utils.FixDetails) error
 }
 
 func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) (handler PackageHandler, err error) {
@@ -42,7 +40,7 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *util
 type CommonPackageHandler struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
-func (cph *CommonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
+func (cph *CommonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(fixDetails.ImpactedDependency)
 	commandArgs := []string{fixDetails.PackageType.GetPackageInstallOperator()}
@@ -50,8 +48,7 @@ func (cph *CommonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails, 
 	operator := fixDetails.PackageType.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + fixDetails.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
-	err = runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), commandArgs)
-	return err == nil, err
+	return runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), commandArgs)
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {

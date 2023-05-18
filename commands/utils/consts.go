@@ -107,4 +107,6 @@ const (
 
 	// Unified log format for an unsupported fix messages
 	UnSupportedDependencyFixLogFormat = "Skipping fixing dependency: '%s:%s' as it's fix is currently not supported"
+
+	IndirectDependencyNotSupported = "Indirect vulnerability fix is not supported"
 )
