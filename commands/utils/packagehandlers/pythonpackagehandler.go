@@ -22,7 +22,7 @@ const (
 // PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
 	pipRequirementsFile string
-	common
+	CommonPackageHandler
 }
 
 func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
@@ -45,7 +45,7 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 	case coreutils.Pip:
 		return py.handlePip(fixDetails)
 	case coreutils.Pipenv:
-		return py.common.UpdateDependency(fixDetails, extraArgs...)
+		return py.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 	default:
 		return false, errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
 	}
@@ -53,7 +53,7 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 
 func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (fixSupported bool, err error) {
 	// Install the desired fixed version
-	fixSupported, err = py.common.UpdateDependency(fixDetails)
+	fixSupported, err = py.CommonPackageHandler.UpdateDependency(fixDetails)
 	if err != nil {
 		return
 	}

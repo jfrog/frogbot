@@ -16,31 +16,33 @@ type PackageHandler interface {
 	updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error)
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) (PackageHandler, error) {
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) (handler PackageHandler, err error) {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Go:
-		return &GoPackageHandler{}, nil
+		handler = &GoPackageHandler{}
 	case coreutils.Poetry:
-		return &PythonPackageHandler{}, nil
+		handler = &PythonPackageHandler{}
 	case coreutils.Pipenv:
-		return &PythonPackageHandler{}, nil
+		handler = &PythonPackageHandler{}
 	case coreutils.Npm:
-		return &NpmPackageHandler{}, nil
+		handler = &NpmPackageHandler{}
 	case coreutils.Yarn:
-		return &YarnPackageHandler{}, nil
+		handler = &YarnPackageHandler{}
 	case coreutils.Pip:
-		return &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}, nil
+		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	case coreutils.Maven:
-		return &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}, nil
+		handler = &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
 	default:
-		return nil, fmt.Errorf("incompatiable package handler: %s", fixVersionInfo.PackageType)
+		err = fmt.Errorf("incompatiable package handler: %s", fixVersionInfo.PackageType)
+		return
 	}
+	return
 }
 
-type common struct{}
+type CommonPackageHandler struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
-func (g *common) UpdateDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
+func (cph *CommonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(fixDetails.ImpactedDependency)
 	commandArgs := []string{fixDetails.PackageType.GetPackageInstallOperator()}

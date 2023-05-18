@@ -5,7 +5,7 @@ import (
 )
 
 type GoPackageHandler struct {
-	common
+	CommonPackageHandler
 }
 
 func (golang *GoPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
@@ -17,10 +17,10 @@ func (golang *GoPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (
 }
 
 func (golang *GoPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
-	return golang.common.UpdateDependency(fixDetails, extraArgs...)
+	return golang.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 }
 
 func (golang *GoPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (fixSupported bool, err error) {
 	// In Golang, we can address every dependency as a direct dependency.
-	return golang.common.UpdateDependency(fixDetails, extraArgs...)
+	return golang.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 }
