@@ -197,7 +197,14 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 		return fmt.Errorf("failed to create a temp %s file: \n%s", mavenGavReader, err.Error())
 	}
 	defer func() {
-		err = errors.Join(err, mavenGavReaderFile.Close(), os.Remove(mavenGavReaderFile.Name()))
+		closeError := mavenGavReaderFile.Close()
+		deleteError := os.Remove(mavenGavReaderFile.Name())
+		if err == nil {
+			err = closeError
+			if err == nil {
+				err = deleteError
+			}
+		}
 	}()
 	gavReaderFolder := path.Dir(mavenGavReaderFile.Name())
 	currentWd, err := os.Getwd()
