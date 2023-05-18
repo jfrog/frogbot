@@ -111,7 +111,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 		return nil
 	}
 
-	log.Info("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
+	log.Debug("Found", len(fixVersionsMap), "vulnerable dependencies with fix versions")
 	return cfp.fixVulnerablePackages(fixVersionsMap)
 }
 
@@ -151,8 +151,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 			errList.WriteString(err.Error())
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
-		log.Info("Running git checkout to base branch:", cfp.details.Branch())
-		log.Info("-----------------------------------------------------------------")
+		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
+		log.Debug("-----------------------------------------------------------------")
 		if err = cfp.gitManager.Checkout(cfp.details.Branch()); err != nil {
 			return
 		}
@@ -160,6 +160,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 	if errList.String() != "" {
 		return errors.New(errList.String())
 	}
+	log.Info("-----------------------------------------------------------------")
 	return
 }
 
@@ -172,7 +173,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err != nil {
 		return
 	}
-	log.Info("Creating branch", aggregatedFixBranchName, "...")
+	log.Debug("Creating branch", aggregatedFixBranchName, "...")
 	err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName)
 	if err != nil {
 		return
@@ -185,16 +186,16 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		}
 		if !shouldFix {
 			logMessage := fmt.Sprintf(utils.UnSupportedDependencyFixLogFormat, fixDetails.ImpactedDependency, fixDetails.FixVersion)
-			log.Info(logMessage)
+			log.Debug(logMessage)
 		} else {
-			logMessage := fmt.Sprintf("Updating dependency: '%s' to version %s ...", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 			log.Info(logMessage)
 		}
 		atLeastOneFix = atLeastOneFix || shouldFix
 	}
 	if !atLeastOneFix {
 		// No packages were updated, don't attempt open PR.
-		log.Info("Couldn't fix any of the impacted dependencies")
+		log.Debug("Couldn't fix any of the impacted dependencies")
 		return
 	}
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
@@ -212,7 +213,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 // In case branch already exists on remote, we skip it.
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *utils.FixDetails) (err error) {
 	fixVersion := fixDetails.FixVersion
-	log.Info("Start fixing", fixDetails.ImpactedDependency, "with", fixVersion)
+	log.Debug("Start fixing", fixDetails.ImpactedDependency, "with", fixVersion)
 	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), fixDetails.ImpactedDependency, fixVersion)
 	if err != nil {
 		return
@@ -222,10 +223,11 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 		return
 	}
 	if existsInRemote {
-		log.Info("Branch:", fixBranchName, "already exists on remote, skipping ...")
+		logMessage := fmt.Sprintf("A Pull Request updating dependency '%s' to version '%s' already exists.", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+		log.Info(logMessage)
 		return
 	}
-	log.Info("Creating branch", fixBranchName, "...")
+	log.Debug("Creating branch", fixBranchName, "...")
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
@@ -236,13 +238,15 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 	if !fixSupported {
 		// If the fix is not supported, skip it.
 		logMessage := fmt.Sprintf(utils.UnSupportedDependencyFixLogFormat, fixDetails.ImpactedDependency, fixDetails.FixVersion)
-		log.Info(logMessage)
+		log.Debug(logMessage)
 		return nil
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, fixDetails); err != nil {
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
 			fixDetails.ImpactedDependency, fixVersion, err.Error())
 	}
+	logMessage := fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+	log.Info(logMessage)
 	return
 }
 
@@ -262,13 +266,14 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 		return
 	}
 
-	log.Info("Pushing branch:", fixBranchName, "...")
+	log.Debug("Pushing branch:", fixBranchName, "...")
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
 
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(fixDetails.ImpactedDependency, fixDetails.FixVersion)
-	log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
+	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
+
 	prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
@@ -276,7 +281,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
-	log.Info("Checking if there are changes to commit")
+	log.Debug("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
 		return
@@ -285,7 +290,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 		return fmt.Errorf("there were no changes in the fix branch '%s'", fixBranchName)
 	}
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
-	log.Info("Running git add all and commit...")
+	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -293,12 +298,12 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err != nil {
 		return
 	}
-	log.Info("Pushing branch:", fixBranchName, "...")
+	log.Debug("Pushing branch:", fixBranchName, "...")
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
 	if !exists {
-		log.Info("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
+		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
 		prBody := commitMessage + "\n\n" + utils.WhatIsFrogbotMd
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), utils.AggregatedPullRequestTitleTemplate, prBody)
 	}

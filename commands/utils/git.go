@@ -97,7 +97,7 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
 		branchName = "master"
 	}
-	log.Info(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,
