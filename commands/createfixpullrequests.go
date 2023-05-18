@@ -238,14 +238,8 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
 	}
-	err = cfp.updatePackageToFixedVersion(fixDetails)
-	if err != nil {
-		// Custom error
-		if err, ok := err.(*utils.ErrUnsupportedFix); ok {
-			return err
-		}
-		// Unexpected error
-		return fmt.Errorf("failed while fixing %s with version: %s with error: \n%s", fixDetails.ImpactedDependency, fixVersion, err.Error())
+	if err = cfp.updatePackageToFixedVersion(fixDetails); err != nil {
+		return
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, fixDetails); err != nil {
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
