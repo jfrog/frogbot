@@ -13,11 +13,11 @@ jobs:
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
-        branch: [ "master", "main" ]
+        branches: [ "dev" ]
       steps:
         - uses: actions/checkout@v3
           with:
-            ref: ${{ matrix.branch }}
+            ref: ${{ matrix.branches }}
 
         # Install prerequisites
         - name: Setup NodeJS
