@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
-        branch: [ "dev","main" ]
+        branch: [ "master", "main" ]
       steps:
         - uses: actions/checkout@v3
           with:
@@ -24,7 +24,7 @@ jobs:
           uses: actions/setup-java@v3
           with:
             java-version: "11"
-            distribution: "temurin"
+            distribution: "adopt"
 
         - uses: jfrog/frogbot@v2
           env:
