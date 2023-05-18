@@ -24,11 +24,11 @@ jobs:
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
-        branches: [ "dev" ]
+        branch: [ "dev" ]
       steps:
         - uses: actions/checkout@v3
           with:
-            ref: ${{ matrix.branches }}
+            ref: ${{ matrix.branch }}
 
         #  IMPORTANT:
         #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
