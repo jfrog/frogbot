@@ -245,14 +245,12 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 			return nil, false, err
 		}
 	}
-	// GraphBasicParams
 	graphBasicParams := &xrayutils.GraphBasicParams{}
 	graphBasicParams.SetPipRequirementsFile(scanSetup.PipRequirementsFile).
 		SetUseWrapper(*scanSetup.UseWrapper).
 		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(scanSetup.ServerDetails)
-	// Params
 	auditParams := audit.NewAuditParams()
 	auditParams.SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
