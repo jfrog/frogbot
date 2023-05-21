@@ -148,8 +148,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 	log.Info("-----------------------------------------------------------------")
 	for _, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.fixSinglePackageAndCreatePR(fixVersionInfo); err != nil {
-			log.Debug(err.Error())
-			errList.WriteString(err.Error())
+			cfp.handleUpdatePackageErrors(err, errList)
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
@@ -158,9 +157,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 			return
 		}
 	}
-	if errList.String() != "" {
-		return errors.New(errList.String())
-	}
+	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
 	return
 }
@@ -180,12 +177,11 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	// Fix all packages in the same branch if expected error accrued, log and continue.
 	for _, fixDetails := range fixVersionsMap {
 		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
-			log.Debug(err.Error())
-			errList.WriteString(err.Error())
-			continue
+			cfp.handleUpdatePackageErrors(err, errList)
+		} else {
+			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
+			log.Info(logMessage)
 		}
-		logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-		log.Info(logMessage)
 	}
 	// When no updates were made,don't attempt to open PR.
 	log.Debug("Checking if there are changes to commit")
@@ -201,12 +197,20 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
-	// Log fix attempts errors
-	if errList.String() != "" {
-		log.Error(errors.New(errList.String()))
-	}
+	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
 	return
+}
+
+// Handles possible error of update package operation
+// When the expected custom error occurs, log to debug.
+// else, append to errList string
+func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error, errList strings.Builder) {
+	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
+		log.Debug(err.Error())
+	} else {
+		errList.WriteString(err.Error() + "\n")
+	}
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
@@ -427,4 +431,13 @@ func parseVersionChangeString(fixVersion string) string {
 	latestVersion = strings.Trim(latestVersion, "[")
 	latestVersion = strings.Trim(latestVersion, "]")
 	return latestVersion
+}
+
+// During the operation of updating packages, there could be some errors,
+// In order to not fail the whole run, we store the errors in strings.builder and log them at the end.
+func logAppendedErrorsIfExists(errList strings.Builder) {
+	if errList.String() != "" {
+		log.Error("During fixing packages operations the following errors occurred:")
+		log.Error(errors.New(errList.String()))
+	}
 }
