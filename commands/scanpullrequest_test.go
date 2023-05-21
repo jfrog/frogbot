@@ -42,6 +42,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 			IssueId:       "XRAY-1",
 			Summary:       "summary-1",
 			Severity:      "high",
+			Cves:          []services.Cve{},
 			ViolationType: "security",
 			Components:    map[string]services.Component{"component-A": {}, "component-B": {}},
 		}},
