@@ -70,16 +70,19 @@ type FixDetails struct {
 	DirectDependencyName string
 }
 
-func NewFixDetails(fixVersion string, vulnerability *formats.VulnerabilityOrViolationRow) *FixDetails {
+func NewFixDetails(fixVersion string, vulnerability *formats.VulnerabilityOrViolationRow) (*FixDetails, error) {
 	var directDependencyName string
-	directDependency := IsDirectDependency(vulnerability.ImpactPaths)
+	directDependency, err := IsDirectDependency(vulnerability.ImpactPaths)
+	if err != nil {
+		return nil, err
+	}
 	if directDependency {
 		directDependencyName = vulnerability.ImpactedDependencyName
 	} else {
 		directDependencyName = vulnerability.ImpactPaths[0][1].Name
 	}
 	return &FixDetails{vulnerability.Technology, vulnerability.ImpactedDependencyName,
-		fixVersion, directDependency, directDependencyName}
+		fixVersion, directDependency, directDependencyName}, nil
 }
 
 func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
@@ -259,8 +262,11 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 }
 
 // The impact graph of direct dependencies consists of only two elements.
-func IsDirectDependency(impactPath [][]formats.ComponentRow) bool {
-	return len(impactPath[0]) < 3
+func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
+	if len(impactPath) == 0 {
+		return false, fmt.Errorf("invalid impact path provided")
+	}
+	return len(impactPath[0]) < 3, nil
 }
 
 func validateBranchName(branchName string) error {

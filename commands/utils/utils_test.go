@@ -178,24 +178,22 @@ func TestGetRelativeWd(t *testing.T) {
 
 func TestIsDirectDependency(t *testing.T) {
 	tests := []struct {
-		impactPath    [][]formats.ComponentRow
-		expected      bool
-		expectedError bool
+		impactPath     [][]formats.ComponentRow
+		expectedResult bool
 	}{
 		{
-			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack2", Version: "1.2.3"}}},
-			expected:      true,
-			expectedError: false,
+			impactPath:     [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack2", Version: "1.2.3"}}},
+			expectedResult: true,
 		}, {
-			impactPath:    [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}, {{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack22", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
-			expected:      false,
-			expectedError: false,
+			impactPath:     [][]formats.ComponentRow{{{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack21", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}, {{Name: "jfrog:pack1", Version: "1.2.3"}, {Name: "jfrog:pack22", Version: "1.2.3"}, {Name: "jfrog:pack3", Version: "1.2.3"}}},
+			expectedResult: false,
 		},
 	}
 	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			isDirect := IsDirectDependency(test.impactPath)
-			assert.Equal(t, test.expected, isDirect)
+		t.Run(test.impactPath[0][0].Name, func(t *testing.T) {
+			isDirect, err := IsDirectDependency(test.impactPath)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedResult, isDirect)
 		})
 	}
 }

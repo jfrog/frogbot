@@ -24,9 +24,8 @@ type NpmPackageHandler struct {
 func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
 		return npm.updateDirectDependency(fixDetails)
-	} else {
-		return npm.updateIndirectDependency(fixDetails)
 	}
+	return npm.updateIndirectDependency(fixDetails)
 }
 
 func (npm *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails) (err error) {
@@ -55,13 +54,12 @@ func (npm *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDeta
 	return runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{fixDetails.PackageType.GetPackageInstallOperator()})
 }
 
-func saveModifiedFile(parsedJson *gabs.Container) error {
+func saveModifiedFile(parsedJson *gabs.Container) (err error) {
 	bytes := parsedJson.Bytes()
-	err := os.WriteFile(packageLockName, bytes, 0644)
-	if err != nil {
-		return err
+	if err = os.WriteFile(packageLockName, bytes, 0644); err != nil {
+		return
 	}
-	return nil
+	return
 }
 
 func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Container) (err error) {
@@ -124,11 +122,11 @@ func passesConstraint(versionWithConstraint string, fixVersion string) (valid bo
 }
 
 func extractOriginalConstraint(versionWithConstraint string) string {
-	// No constraint
-	if unicode.IsNumber(rune(versionWithConstraint[0])) {
+	// No constraint exists
+	if versionWithConstraint == "" || len(versionWithConstraint) == 0 || unicode.IsNumber(rune(versionWithConstraint[0])) {
 		return ""
 	}
-	// Check constraint length
+	// Check constraint char length, i.e "<" or "<="
 	constraintLength := 1
 	if !unicode.IsNumber(rune(versionWithConstraint[1])) {
 		constraintLength += 1

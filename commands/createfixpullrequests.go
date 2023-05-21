@@ -324,20 +324,22 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 				return nil, err
 			}
 			for i := range vulnerabilities {
-				cfp.addVulnerabilityToFixVersionsMap(&vulnerabilities[i], fixVersionsMap)
+				if err = cfp.addVulnerabilityToFixVersionsMap(&vulnerabilities[i], fixVersionsMap); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
 	return fixVersionsMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*utils.FixDetails) {
+func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*utils.FixDetails) error {
+	var vulnFixVersion string
 	if len(vulnerability.FixedVersions) == 0 {
-		return
+		return nil
 	}
-	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
-	if vulnFixVersion == "" {
-		return
+	if vulnFixVersion = getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions); vulnFixVersion == "" {
+		return nil
 	}
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
@@ -345,8 +347,13 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 		fixVersionInfo.UpdateFixVersionIfMax(vulnFixVersion)
 	} else {
 		// First appearance of a version that fixes the current impacted package
-		fixVersionsMap[vulnerability.ImpactedDependencyName] = utils.NewFixDetails(vulnFixVersion, vulnerability)
+		fixDetails, err := utils.NewFixDetails(vulnFixVersion, vulnerability)
+		if err != nil {
+			return err
+		}
+		fixVersionsMap[vulnerability.ImpactedDependencyName] = fixDetails
 	}
+	return nil
 }
 
 // Updates impacted package, can return ErrUnsupportedFix.

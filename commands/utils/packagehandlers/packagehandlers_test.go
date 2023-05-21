@@ -325,6 +325,7 @@ func TestNpmPackageHandler_ExtractOriginalConstraint(t *testing.T) {
 		{constraintVersion: "<=1.3.7", constraintString: "<="},
 		{constraintVersion: "<1.3.7", constraintString: "<"},
 		{constraintVersion: "1.3.7", constraintString: ""},
+		{constraintVersion: "", constraintString: ""},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.constraintVersion, func(t *testing.T) {
