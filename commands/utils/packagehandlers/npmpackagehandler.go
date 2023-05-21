@@ -65,15 +65,15 @@ func saveModifiedFile(parsedJson *gabs.Container) error {
 }
 
 func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Container) (err error) {
-	// Get value
-	directDependencyName := fixDetails.DirectDependencyName
-	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, fixDetails.ImpactedDependency)
-	versionWithConstraint := parsedJson.Path(pathToModule).Data()
-	if versionWithConstraint == nil {
+	pathToModule := fmt.Sprintf(indirectDependencyPath, fixDetails.DirectDependencyName, fixDetails.ImpactedDependency)
+	// Get current value
+	rawVersionWithConstraint := parsedJson.Path(pathToModule).Data()
+	versionWithConstraintStr, ok := rawVersionWithConstraint.(string)
+	if !ok {
 		return fmt.Errorf("failed to extract version with constratin from package-lock.json")
 	}
 	// Check constraints
-	validFix, caret, err := passesConstraint(versionWithConstraint.(string), fixDetails.FixVersion)
+	validFix, caret, err := passesConstraint(versionWithConstraintStr, fixDetails.FixVersion)
 	if err != nil || !validFix {
 		return &utils.ErrUnsupportedFix{
 			PackageName: fixDetails.ImpactedDependency,
