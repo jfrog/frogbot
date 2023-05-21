@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -19,9 +20,6 @@ import (
 )
 
 type CreateFixPullRequestsCmd struct {
-	// mavenDepToPropertyMap holds a map of direct dependencies found in pom.xml.
-	// Keys values are only set if the key version is a property.
-	mavenDepToPropertyMap map[string][]string
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
@@ -34,6 +32,8 @@ type CreateFixPullRequestsCmd struct {
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request.
 	aggregateFixes bool
+	// Stores all package manager handlers for detected issues
+	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -326,7 +326,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	fixVersionsMap := map[string]*utils.FixDetails{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
+			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
@@ -383,11 +383,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 	if err = isBuildToolsDependency(fixDetails); err != nil {
 		return
 	}
-	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
-	if err != nil {
-		return
+	if cfp.handlers == nil {
+		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
-	return packageHandler.UpdateDependency(fixDetails)
+	if cfp.handlers[fixDetails.PackageType] == nil {
+		cfp.handlers[fixDetails.PackageType] = packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details)
+	}
+	return cfp.handlers[fixDetails.PackageType].UpdateDependency(fixDetails)
 }
 
 func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
