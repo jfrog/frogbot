@@ -8,7 +8,8 @@ const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Errors
-	errUnsupportedMultiRepo = "multi repository configuration isn't supported. only one repository configuration is allowed"
+	errUnsupportedMultiRepo        = "multi repository configuration isn't supported. only one repository configuration is allowed"
+	IndirectDependencyNotSupported = "Indirect vulnerability fix is not supported"
 
 	// Images
 	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"
@@ -104,9 +105,4 @@ const (
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
-
-	// Unified log format for an unsupported fix messages
-	UnSupportedDependencyFixLogFormat = "Skipping fixing dependency: '%s:%s' as it's fix is currently not supported"
-
-	IndirectDependencyNotSupported = "Indirect vulnerability fix is not supported"
 )

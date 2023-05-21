@@ -148,12 +148,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 	log.Info("-----------------------------------------------------------------")
 	for _, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.fixSinglePackageAndCreatePR(fixVersionInfo); err != nil {
-			if customErr, ok := err.(*utils.ErrUnsupportedFix); ok {
-				log.Debug(customErr.Error())
-				continue
-			} else {
-				errList.WriteString(err.Error())
-			}
+			log.Debug(err.Error())
+			errList.WriteString(err.Error())
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
@@ -171,7 +167,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
-	amountOfFixePackage := 0
+	shouldOpenPR := false
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -184,24 +180,19 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		return
 	}
 
-	// Fix all packages in the same branch
+	// Fix all packages in the same branch if expected error accrued, log and continue.
 	for _, fixDetails := range fixVersionsMap {
-		err := cfp.updatePackageToFixedVersion(fixDetails)
-		if customErr, ok := err.(*utils.ErrUnsupportedFix); ok {
-			log.Debug(customErr.Error())
+		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
+			log.Debug(err.Error())
+			errList.WriteString(err.Error())
 			continue
 		}
-		if err != nil {
-			errList.WriteString(err.Error())
-		}
-
 		logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 		log.Info(logMessage)
-		amountOfFixePackage += 1
+		shouldOpenPR = true
 	}
-	// Verify fixes were made
-	if amountOfFixePackage == 0 {
-		// No packages were updated, don't attempt open PR.
+	// When no updates were made,don't attempt to open PR.
+	if shouldOpenPR {
 		log.Debug("Couldn't fix any of the impacted dependencies")
 		return
 	}
@@ -388,8 +379,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 			}
 		}()
 	}
-	err = isBuildToolsDependency(fixDetails)
-	if err != nil {
+	if err = isBuildToolsDependency(fixDetails); err != nil {
 		return
 	}
 	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
