@@ -347,7 +347,6 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 		// First appearance of a version that fixes the current impacted package
 		fixVersionsMap[vulnerability.ImpactedDependencyName] = utils.NewFixDetails(vulnFixVersion, vulnerability)
 	}
-	return
 }
 
 // Updates impacted package, can return ErrUnsupportedFix.

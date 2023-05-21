@@ -97,9 +97,13 @@ func loadPackageLockFile() (*gabs.Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	packageLockVersion := container.Path(lockFileVersionAttributeName).Data().(float64)
+	packageLockVersionRaw := container.Path(lockFileVersionAttributeName).Data()
+	packageLockVersion, ok := packageLockVersionRaw.(float64)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert packagelock version")
+	}
 	if packageLockVersion < supportedPackageLockVersion {
-		return nil, fmt.Errorf("unsupported version of package lock file %f", packageLockVersion)
+		return nil, fmt.Errorf("unsupported version of package lock file %f", packageLockVersionRaw)
 	}
 	return container, nil
 }
