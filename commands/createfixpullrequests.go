@@ -164,7 +164,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
-	var atleastOneFix bool
+	var atLeastOneFix bool
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -182,11 +182,11 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		} else {
 			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 			log.Info(logMessage)
-			atleastOneFix = true
+			atLeastOneFix = true
 		}
 	}
 
-	if atleastOneFix {
+	if atLeastOneFix {
 		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 		}
