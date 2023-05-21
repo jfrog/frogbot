@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot
 
-go 1.19
+go 1.20
 
 require (
 	github.com/go-git/go-git/v5 v5.6.1
@@ -114,3 +114,7 @@ require (
 //replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230521154339-4d1c76bd8a25
 
 //replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230518114837-fe6a826d5001
+
+//replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230430083747-590ae14f9dca
+
+//replace github.com/jfrog/gofrog => github.com/jfrog/gofrog v1.2.6-0.20230418122323-2bf299dd6d27
