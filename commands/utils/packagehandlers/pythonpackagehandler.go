@@ -51,8 +51,7 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 
 func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (err error) {
 	// Install the desired fixed version
-	err = py.CommonPackageHandler.UpdateDependency(fixDetails)
-	if err != nil {
+	if err = py.CommonPackageHandler.UpdateDependency(fixDetails); err != nil {
 		return
 	}
 	// Update Poetry lock file as well

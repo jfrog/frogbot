@@ -23,7 +23,7 @@ func (mvn *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	}
 }
 
-func (mvn *MavenPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
+func (mvn *MavenPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails) (err error) {
 	properties := mvn.mavenDepToPropertyMap[fixDetails.ImpactedDependency]
 	// Update the package version. This command updates it only if the version is not a reference to a property.
 	updateVersionArgs := []string{"-B", "versions:use-dep-version", "-Dincludes=" + fixDetails.ImpactedDependency, "-DdepVersion=" + fixDetails.FixVersion, "-DgenerateBackupPoms=false"}

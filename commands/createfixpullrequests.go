@@ -167,7 +167,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
-	shouldOpenPR := false
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -175,11 +174,9 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		return
 	}
 	log.Debug("Creating branch", aggregatedFixBranchName, "...")
-	err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName)
-	if err != nil {
+	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
-
 	// Fix all packages in the same branch if expected error accrued, log and continue.
 	for _, fixDetails := range fixVersionsMap {
 		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
@@ -189,13 +186,18 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		}
 		logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 		log.Info(logMessage)
-		shouldOpenPR = true
 	}
 	// When no updates were made,don't attempt to open PR.
-	if shouldOpenPR {
+	log.Debug("Checking if there are changes to commit")
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
+	if !isClean {
 		log.Debug("Couldn't fix any of the impacted dependencies")
 		return
 	}
+
 	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
 	}
@@ -272,14 +274,6 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
-	log.Debug("Checking if there are changes to commit")
-	isClean, err := cfp.gitManager.IsClean()
-	if err != nil {
-		return
-	}
-	if isClean {
-		return fmt.Errorf("there were no changes in the fix branch '%s'", fixBranchName)
-	}
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
 	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
