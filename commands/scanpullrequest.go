@@ -249,8 +249,8 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (resul
 		SetUseWrapper(*scanSetup.UseWrapper).
 		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(scanSetup.ServerDetails)
-	graphBasicParams.ReleasesRepo = scanSetup.ReleasesRepo()
+		SetServerDetails(scanSetup.ServerDetails).
+		SetReleasesRepo(scanSetup.ReleasesRepo())
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
