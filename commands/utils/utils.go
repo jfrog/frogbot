@@ -188,7 +188,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		return nil
 	}
 
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}
