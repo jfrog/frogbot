@@ -30,7 +30,6 @@ type packageFixTest struct {
 }
 
 var packageFixTests = []packageFixTest{
-	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
 	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
 	{technology: coreutils.Go, impactedPackaged: "github.com/golang/go", fixVersion: "1.20.3", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
@@ -121,19 +120,7 @@ func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
 	}
 }
 
-func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequestsCmd {
-	return func(test packageFixTest) CreateFixPullRequestsCmd {
-		mavenDepToPropertyMap := map[string][]string{
-			test.impactedPackaged: {"junit:junit", "3.8.1"},
-		}
-		cfp := CreateFixPullRequestsCmd{
-			mavenDepToPropertyMap: mavenDepToPropertyMap,
-		}
-		return cfp
-	}
-}
-
-func TestFixPackageVersion(t *testing.T) {
+func TestGenericFixPackageVersion(t *testing.T) {
 	currentDir, testdataDir := getTestDataDir(t)
 	defer func() {
 		assert.NoError(t, os.Chdir(currentDir))
@@ -141,7 +128,7 @@ func TestFixPackageVersion(t *testing.T) {
 
 	for _, test := range packageFixTests {
 		func() {
-			// Create temp technology project
+			// Create a temp technology project
 			projectPath := filepath.Join(testdataDir, test.technology.ToString())
 			tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 			defer cleanup()
