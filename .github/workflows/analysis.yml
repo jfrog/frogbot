@@ -4,8 +4,6 @@ on:
     tags-ignore:
       - '**'
   pull_request:
-    tags-ignore:
-      - '**'
 jobs:
   Static-Check:
     runs-on: ubuntu-latest
