@@ -437,7 +437,7 @@ func parseVersionChangeString(fixVersion string) string {
 // In order to not fail the whole run, we store the errors in strings.builder and log them at the end.
 func logAppendedErrorsIfExists(errList strings.Builder) {
 	if errList.String() != "" {
-		log.Error("During fixing packages operations the following errors occurred:")
-		log.Error(errors.New(errList.String()))
+		log.Warn("During fixing packages operations the following errors occurred:")
+		log.Warn(errors.New(errList.String()))
 	}
 }

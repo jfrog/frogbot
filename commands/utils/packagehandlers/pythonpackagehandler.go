@@ -88,8 +88,5 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err err
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
 	}
-	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
-		return
-	}
-	return nil
+	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
 }
