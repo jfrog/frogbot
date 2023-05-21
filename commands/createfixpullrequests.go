@@ -164,6 +164,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
+	var atleastOneFix bool
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -181,21 +182,14 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		} else {
 			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 			log.Info(logMessage)
+			atleastOneFix = true
 		}
 	}
-	// When no updates were made,don't attempt to open PR.
-	log.Debug("Checking if there are changes to commit")
-	isClean, err := cfp.gitManager.IsClean()
-	if err != nil {
-		return
-	}
-	if !isClean {
-		log.Debug("Couldn't fix any of the impacted dependencies")
-		return
-	}
 
-	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
-		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+	if atleastOneFix {
+		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
+			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+		}
 	}
 	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
@@ -278,6 +272,15 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
+	log.Debug("Checking if there are changes to commit")
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
+	if !isClean {
+		log.Debug("Couldn't fix any of the impacted dependencies")
+		return
+	}
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
 	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
