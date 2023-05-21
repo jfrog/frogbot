@@ -12,7 +12,7 @@ func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	} else {
 		return &utils.ErrUnsupportedFix{
 			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.IndirectDependencyNotSupported,
+			Reason:      utils.DependencyFixNotSupported,
 		}
 	}
 }

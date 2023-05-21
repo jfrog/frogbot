@@ -31,7 +31,7 @@ func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	} else {
 		return &utils.ErrUnsupportedFix{
 			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.IndirectDependencyNotSupported,
+			Reason:      utils.DependencyFixNotSupported,
 		}
 	}
 }
@@ -45,7 +45,7 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 	case coreutils.Pipenv:
 		return py.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 	default:
-		return errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
+		return errors.New("unknown python package manger: " + fixDetails.PackageType.GetPackageType())
 	}
 }
 

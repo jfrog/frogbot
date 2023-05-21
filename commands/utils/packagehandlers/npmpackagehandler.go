@@ -12,7 +12,7 @@ func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) err
 	} else {
 		return &utils.ErrUnsupportedFix{
 			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.IndirectDependencyNotSupported,
+			Reason:      utils.DependencyFixNotSupported,
 		}
 	}
 }
