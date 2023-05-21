@@ -29,11 +29,12 @@ const (
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
-	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
-	branchInvalidPrefix   = "branch name cannot start with '-' "
-	branchCharsMaxLength  = 255
-	branchInvalidLength   = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
-	invalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	branchInvalidPrefix            = "branch name cannot start with '-' "
+	branchCharsMaxLength           = 255
+	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
+	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	SkipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
 )
 
 var (
@@ -48,11 +49,12 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 }
 
 type ErrUnsupportedIndirectFix struct {
-	PackageName string
+	PackageName  string
+	FixedVersion string
 }
 
 func (e *ErrUnsupportedIndirectFix) Error() string {
-	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+	return fmt.Sprintf(SkipIndirectVulnerabilitiesMsg, e.PackageName, e.FixedVersion)
 }
 
 // FixVersionInfo is a basic struct used to hold needed information about version fixing
