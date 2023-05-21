@@ -6,7 +6,9 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -15,12 +17,17 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-const refFormat = "refs/heads/%s:refs/heads/%[1]s"
+const (
+	refFormat = "refs/heads/%s:refs/heads/%[1]s"
+
+	// Timout is seconds for the git operations performed by the go-git client.
+	goGitTimeoutSeconds = 60
+)
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
@@ -28,7 +35,7 @@ type GitManager struct {
 	// remoteName is name of the Git remote server
 	remoteName string
 	// The authentication struct consisting a username/password
-	auth *http.BasicAuth
+	auth *githttp.BasicAuth
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
@@ -47,6 +54,7 @@ type CustomTemplates struct {
 }
 
 func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
+	setGoGitCustomClient()
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
 		return nil, err
@@ -89,7 +97,7 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
 		branchName = "master"
 	}
-	log.Info(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           repoURL,
 		Auth:          gm.auth,
@@ -326,14 +334,14 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	return nil
 }
 
-func toBasicAuth(token, username string) *http.BasicAuth {
+func toBasicAuth(token, username string) *githttp.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {
 		username = "username"
 	}
 	// Bitbucket server username starts with ~ prefix as the project key. We need to trim it for the authentication
 	username = strings.TrimPrefix(username, "~")
-	return &http.BasicAuth{
+	return &githttp.BasicAuth{
 		Username: username,
 		Password: token,
 	}
@@ -356,4 +364,14 @@ func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 		return CustomTemplates{}, err
 	}
 	return template, nil
+}
+
+func setGoGitCustomClient() {
+	log.Debug("Setting timeout for go-git to", goGitTimeoutSeconds, "seconds ...")
+	customClient := &http.Client{
+		Timeout: goGitTimeoutSeconds * time.Second,
+	}
+
+	client.InstallProtocol("http", githttp.NewClient(customClient))
+	client.InstallProtocol("https", githttp.NewClient(customClient))
 }

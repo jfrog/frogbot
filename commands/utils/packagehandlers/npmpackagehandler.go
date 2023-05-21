@@ -18,47 +18,41 @@ const (
 )
 
 type NpmPackageHandler struct {
-	common
+	CommonPackageHandler
 }
 
-func (n *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
-		return n.updateDirectDependency(fixDetails)
+		return npm.updateDirectDependency(fixDetails)
 	} else {
-		return n.updateIndirectDependency(fixDetails)
+		return npm.updateIndirectDependency(fixDetails)
 	}
 }
 
-func (n *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
-	return n.common.UpdateDependency(fixDetails, extraArgs...)
+func (npm *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails) (err error) {
+	return npm.CommonPackageHandler.UpdateDependency(fixDetails)
 }
 
 // updateIndirectDependency attempts changing the indirect dependency version
 // The fix version should be compatible with the root package in order to fix the indirect package.
 // If fails, log the error and return nil to avoid crashing the whole operation.
 // See https://github.com/npm/node-semver#caret-ranges-123-025-004 for more info
-func (n *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (npm *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails) (err error) {
 	parsedJson, err := loadPackageLockFile()
 	if err != nil {
 		log.Debug("Failed trying to load package-lock file: ", err)
 		return
 	}
-	shouldFix, err := modifyIndirectDependency(fixDetails, parsedJson)
-	if err != nil {
-		log.Debug("Failed trying to modify package-lock file: ", err)
+	if err = modifyIndirectDependency(fixDetails, parsedJson); err != nil {
+		log.Debug("Failed while trying to modify package-lock file: ", err.Error())
 		return
-	}
-	if !shouldFix {
-		log.Debug("Cannot update as fixed version does not match constraint")
-		return false, nil
 	}
 	if err = saveModifiedFile(parsedJson); err != nil {
 		log.Debug("Failed trying to save package-lock file: ", err)
 		return
 	}
 	// Rewrites the package-lock file with updated hashes
-	err = runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{fixDetails.PackageType.GetPackageInstallOperator()})
-	return err == nil, err
+	return runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{fixDetails.PackageType.GetPackageInstallOperator()})
 }
 
 func saveModifiedFile(parsedJson *gabs.Container) error {
@@ -70,26 +64,28 @@ func saveModifiedFile(parsedJson *gabs.Container) error {
 	return nil
 }
 
-func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Container) (shouldFix bool, err error) {
+func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Container) (err error) {
 	// Get value
 	directDependencyName := fixDetails.DirectDependencyName
 	pathToModule := fmt.Sprintf(indirectDependencyPath, directDependencyName, fixDetails.ImpactedDependency)
 	versionWithConstraint := parsedJson.Path(pathToModule).Data()
 	if versionWithConstraint == nil {
-		return false, fmt.Errorf("failed to extract version with constratin from package-lock.json")
+		return fmt.Errorf("failed to extract version with constratin from package-lock.json")
 	}
 	// Check constraints
 	validFix, caret, err := passesConstraint(versionWithConstraint.(string), fixDetails.FixVersion)
 	if err != nil || !validFix {
-		log.Info("Cannot update indirect dependency due constraint compatibility, skipping ...")
-		return false, nil
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason:      "Cannot update indirect dependency due constraint compatibility",
+		}
 	}
 	// Update fix version
 	fixVersionWithOriginalConstraint := caret + fixDetails.FixVersion
 	if _, err = parsedJson.SetP(fixVersionWithOriginalConstraint, pathToModule); err != nil {
 		return
 	}
-	return true, nil
+	return
 }
 
 func loadPackageLockFile() (*gabs.Container, error) {

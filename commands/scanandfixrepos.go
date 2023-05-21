@@ -22,9 +22,6 @@ type ScanAndFixRepositories struct {
 func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
-		if log.Logger.GetLogLevel() == log.DEBUG {
-			configAggregator[repoNum].DebugLogConfig()
-		}
 		err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client)
 		if err != nil {
 			errList.WriteString(fmt.Sprintf("repository %s returned the following error: \n%s\n", configAggregator[repoNum].RepoName, err.Error()))
@@ -48,13 +45,16 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 			continue
 		}
 		if err = saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
-			// Scan failed, mark commit status failed with error info
-			e := saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
-			if e != nil {
-				return errors.New(err.Error() + "\n" + e.Error())
+			if !errors.Is(err, &utils.ErrUnsupportedFix{}) {
+				// Scan failed, mark commit status failed with error info
+				e := saf.setCommitBuildStatus(client, repoConfig, vcsclient.Fail, checkedCommit, fmt.Sprintf("Frogbot error: %s", err))
+				if e != nil {
+					return errors.New(err.Error() + "\n" + e.Error())
+				}
+				return err
 			}
-			return err
 		}
+		// Mark successful run
 		if err = saf.setCommitBuildStatus(client, repoConfig, vcsclient.Pass, checkedCommit, utils.CommitStatusDescription); err != nil {
 			return err
 		}

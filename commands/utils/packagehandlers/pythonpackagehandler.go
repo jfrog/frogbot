@@ -22,49 +22,43 @@ const (
 // PythonPackageHandler Handles all the python package mangers as they share behavior
 type PythonPackageHandler struct {
 	pipRequirementsFile string
-	common
+	CommonPackageHandler
 }
 
-func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
 		return py.updateDirectDependency(fixDetails)
 	} else {
-		return py.updateIndirectDependency(fixDetails)
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason:      utils.IndirectDependencyNotSupported,
+		}
 	}
 }
 
-func (py *PythonPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
-	// Indirect fixes are currently not supported
-	return false, nil
-}
-
-func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
 	switch fixDetails.PackageType {
 	case coreutils.Poetry:
 		return py.handlePoetry(fixDetails)
 	case coreutils.Pip:
 		return py.handlePip(fixDetails)
 	case coreutils.Pipenv:
-		return py.common.UpdateDependency(fixDetails, extraArgs...)
+		return py.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 	default:
-		return false, errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
+		return errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (err error) {
 	// Install the desired fixed version
-	supportedFix, err = py.common.UpdateDependency(fixDetails)
-	if err != nil {
+	if err = py.CommonPackageHandler.UpdateDependency(fixDetails); err != nil {
 		return
 	}
-	if supportedFix {
-		// Update Poetry lock file as well
-		return err == nil, runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
-	}
-	return
+	// Update Poetry lock file as well
+	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 }
 
-func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (supportedFix bool, err error) {
+func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := fixDetails.ImpactedDependency + "==" + fixDetails.FixVersion
@@ -77,7 +71,7 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (support
 	}
 	fullPath := filepath.Join(wd, py.pipRequirementsFile)
 	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
-		return false, errors.New("wrong requirements file input")
+		return errors.New("wrong requirements file input")
 	}
 	data, err := os.ReadFile(filepath.Clean(py.pipRequirementsFile))
 	if err != nil {
@@ -92,10 +86,10 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (support
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
 	if fixedFile == "" {
-		return false, fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
+		return fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
 	}
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
 		return
 	}
-	return true, nil
+	return nil
 }

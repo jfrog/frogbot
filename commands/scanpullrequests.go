@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"sort"
 	"strings"
 
@@ -19,9 +18,6 @@ type ScanAllPullRequestsCmd struct {
 
 func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
 	for _, config := range configAggregator {
-		if log.Logger.GetLogLevel() == log.DEBUG {
-			config.DebugLogConfig()
-		}
 		err := scanAllPullRequests(config, client)
 		if err != nil {
 			return err

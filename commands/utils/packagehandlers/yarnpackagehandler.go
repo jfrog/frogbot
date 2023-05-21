@@ -3,21 +3,20 @@ package packagehandlers
 import "github.com/jfrog/frogbot/commands/utils"
 
 type YarnPackageHandler struct {
-	common
+	CommonPackageHandler
 }
 
-func (n *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) (bool, error) {
+func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
-		return n.updateDirectDependency(fixDetails)
+		return yarn.updateDirectDependency(fixDetails)
 	} else {
-		return n.updateIndirectDependency(fixDetails)
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason:      utils.IndirectDependencyNotSupported,
+		}
 	}
 }
 
-func (n *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
-	return n.common.UpdateDependency(fixDetails, extraArgs...)
-}
-
-func (n *YarnPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (supportedFix bool, err error) {
-	return false, nil
+func (yarn *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
+	return yarn.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 }

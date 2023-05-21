@@ -29,9 +29,6 @@ var (
 
 	// Possible Config file path's to Frogbot Management repository
 	osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
-
-	// Config sensitive fields that aren't allowed to be logged. True stands for skip log.
-	configSensitiveFields = map[string]bool{"Token": true, "Secret": true, "Password": true, "AccessToken": true}
 )
 
 type FrogbotUtils struct {
@@ -60,17 +57,10 @@ func (fca *FrogbotConfigAggregator) UnmarshalYaml(yamlContent []byte) (result Fr
 	return
 }
 
-// IMPORTANT NOTE!
-// When adding a new field that contains sensitive info to this struct,
-// It should be added to configSensitiveFields in order to avoid logging sensitive info.
 type FrogbotRepoConfig struct {
 	Params `yaml:"params,omitempty"`
 	OutputWriter
 	Server coreconfig.ServerDetails
-}
-
-func (config *FrogbotRepoConfig) DebugLogConfig() {
-	logGenericStructWithIgnoreFields(config, "", configSensitiveFields)
 }
 
 type Params struct {
