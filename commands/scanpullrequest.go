@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -178,7 +178,7 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 }
 
 // Create vulnerabilities rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities []services.Vulnerability, isMultipleRoot bool, extendedScanResults *xrayutils.ExtendedScanResults) ([]formats.VulnerabilityOrViolationRow, error) {
+func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities []services.Vulnerability, isMultipleRoot bool) ([]formats.VulnerabilityOrViolationRow, error) {
 	if len(violations) > 0 {
 		violationsRows, _, _, err := xrayutils.PrepareViolations(violations, &xrayutils.ExtendedScanResults{}, isMultipleRoot, true)
 		return violationsRows, err
@@ -192,8 +192,7 @@ func getScanVulnerabilitiesRows(violations []services.Violation, vulnerabilities
 // Create vulnerabilities rows. The rows should contain all the issues that were found in this PR
 func createAllIssuesRows(currentScan []services.ScanResponse, isMultipleRoot bool) ([]formats.VulnerabilityOrViolationRow, error) {
 	violations, vulnerabilities, _ := xrayutils.SplitScanResults(currentScan)
-	extendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: currentScan}
-	return getScanVulnerabilitiesRows(violations, vulnerabilities, isMultipleRoot, extendedScanResults)
+	return getScanVulnerabilitiesRows(violations, vulnerabilities, isMultipleRoot)
 }
 
 func auditSource(scanSetup *utils.ScanDetails) ([]services.ScanResponse, bool, error) {
