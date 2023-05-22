@@ -14,7 +14,7 @@ type PackageHandler interface {
 	UpdateDependency(details *utils.FixDetails) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails, mavenPropertyMap *map[string][]string) (handler PackageHandler, err error) {
+func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails) (handler PackageHandler) {
 	switch fixVersionInfo.PackageType {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
@@ -29,10 +29,7 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *util
 	case coreutils.Pip:
 		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	case coreutils.Maven:
-		handler = &MavenPackageHandler{mavenDepToPropertyMap: *mavenPropertyMap}
-	default:
-		err = fmt.Errorf("incompatiable package handler: %s", fixVersionInfo.PackageType)
-		return
+		handler = &MavenPackageHandler{depsRepo: details.Repository, ServerDetails: details.ServerDetails}
 	}
 	return
 }

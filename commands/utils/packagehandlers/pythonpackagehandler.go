@@ -30,8 +30,9 @@ func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 		return py.updateDirectDependency(fixDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.IndirectDependencyNotSupported,
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }
@@ -45,7 +46,7 @@ func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDeta
 	case coreutils.Pipenv:
 		return py.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
 	default:
-		return errors.New("Unknown python package manger: " + fixDetails.PackageType.GetPackageType())
+		return errors.New("unknown python package manger: " + fixDetails.PackageType.GetPackageType())
 	}
 }
 
@@ -88,8 +89,5 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err err
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
 	}
-	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
-		return
-	}
-	return nil
+	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
 }

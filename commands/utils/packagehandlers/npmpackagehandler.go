@@ -74,8 +74,9 @@ func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Con
 	validFix, caret, err := passesConstraint(versionWithConstraintStr, fixDetails.FixVersion)
 	if err != nil || !validFix {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      "Cannot update indirect dependency due constraint compatibility",
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 	// Update fix version

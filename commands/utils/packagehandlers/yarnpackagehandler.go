@@ -11,8 +11,9 @@ func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 		return yarn.updateDirectDependency(fixDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.IndirectDependencyNotSupported,
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }

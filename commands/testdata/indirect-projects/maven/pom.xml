@@ -8,10 +8,6 @@
     <packaging>pom</packaging>
     <name>Simple Multi Modules Build</name>
 
-    <modules>
-        <module>multi1</module>
-    </modules>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>

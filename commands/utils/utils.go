@@ -29,11 +29,14 @@ const (
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
-	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
-	branchInvalidPrefix   = "branch name cannot start with '-' "
-	branchCharsMaxLength  = 255
-	branchInvalidLength   = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
-	invalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	branchInvalidPrefix            = "branch name cannot start with '-' "
+	branchCharsMaxLength           = 255
+	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
+	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	SkipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
+	SkipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
+		"Update %s version to %s to fix this vulnerability."
 )
 
 var (
@@ -48,12 +51,22 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 }
 
 type ErrUnsupportedFix struct {
-	PackageName string
-	Reason      string
+	PackageName  string
+	FixedVersion string
+	ErrorType    UnsupportedErrorType
 }
 
+// Custom error for unsupported fixes
+// Currently we hold two unsupported reasons, indirect and build tools dependencies.
 func (err *ErrUnsupportedFix) Error() string {
-	return fmt.Sprintf("Dependecy '%s' could not be updated, reason: %s ", err.PackageName, err.Reason)
+	switch err.ErrorType {
+	case IndirectDependencyFixNotSupported:
+		return fmt.Sprintf(SkipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
+	case BuildToolsDependencyFixNotSupported:
+		return fmt.Sprintf(SkipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
+	default:
+		panic("Incompatible custom error!")
+	}
 }
 
 // FixDetails is a basic struct used to hold needed information for fixing vulnerabilities
@@ -207,7 +220,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		return nil
 	}
 
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}

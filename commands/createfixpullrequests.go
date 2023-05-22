@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -19,9 +20,6 @@ import (
 )
 
 type CreateFixPullRequestsCmd struct {
-	// mavenDepToPropertyMap holds a map of direct dependencies found in pom.xml.
-	// Keys values are only set if the key version is a property.
-	mavenDepToPropertyMap map[string][]string
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
@@ -34,6 +32,8 @@ type CreateFixPullRequestsCmd struct {
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request.
 	aggregateFixes bool
+	// Stores all package manager handlers for detected issues
+	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -164,6 +164,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
+	var atLeastOneFix bool
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(fixVersionsMap)
@@ -181,21 +182,14 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		} else {
 			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
 			log.Info(logMessage)
+			atLeastOneFix = true
 		}
 	}
-	// When no updates were made,don't attempt to open PR.
-	log.Debug("Checking if there are changes to commit")
-	isClean, err := cfp.gitManager.IsClean()
-	if err != nil {
-		return
-	}
-	if !isClean {
-		log.Debug("Couldn't fix any of the impacted dependencies")
-		return
-	}
 
-	if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
-		return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+	if atLeastOneFix {
+		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
+			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+		}
 	}
 	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
@@ -278,6 +272,15 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 // When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
 // In case of an already opened pull request, Frogbot will only update the branch.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string) (err error) {
+	log.Debug("Checking if there are changes to commit")
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
+	if !isClean {
+		log.Debug("Couldn't fix any of the impacted dependencies")
+		return
+	}
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
 	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
@@ -323,7 +326,7 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 	fixVersionsMap := map[string]*utils.FixDetails{}
 	for _, scanResult := range scanResults {
 		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, isMultipleRoots, true)
+			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
@@ -380,11 +383,13 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 	if err = isBuildToolsDependency(fixDetails); err != nil {
 		return
 	}
-	packageHandler, err := packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details, &cfp.mavenDepToPropertyMap)
-	if err != nil {
-		return
+	if cfp.handlers == nil {
+		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
-	return packageHandler.UpdateDependency(fixDetails)
+	if cfp.handlers[fixDetails.PackageType] == nil {
+		cfp.handlers[fixDetails.PackageType] = packagehandlers.GetCompatiblePackageHandler(fixDetails, cfp.details)
+	}
+	return cfp.handlers[fixDetails.PackageType].UpdateDependency(fixDetails)
 }
 
 func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
@@ -392,10 +397,9 @@ func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
 	// That are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixDetails.PackageType], fixDetails.ImpactedDependency) {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason: fmt.Sprintf("Skipping vulnerable package %s since it is not defined in your package descriptor file. "+
-				"Update %s version to %s to fix this vulnerability.",
-				fixDetails.ImpactedDependency, fixDetails.ImpactedDependency, fixDetails.FixVersion),
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.BuildToolsDependencyFixNotSupported,
 		}
 	}
 	return nil
@@ -437,7 +441,7 @@ func parseVersionChangeString(fixVersion string) string {
 // In order to not fail the whole run, we store the errors in strings.builder and log them at the end.
 func logAppendedErrorsIfExists(errList strings.Builder) {
 	if errList.String() != "" {
-		log.Error("During fixing packages operations the following errors occurred:")
-		log.Error(errors.New(errList.String()))
+		log.Warn("During fixing packages operations the following errors occurred:")
+		log.Warn(errors.New(errList.String()))
 	}
 }
