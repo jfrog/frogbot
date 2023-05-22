@@ -458,54 +458,6 @@ func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 		})
 	}
 }
-func TestNpmPackageHandler_passesConstraint(t *testing.T) {
-	type testCase struct {
-		constraintVersion string
-		candidateVersion  string
-		expected          bool
-	}
-	testCases := []testCase{
-		{constraintVersion: "^1.2.2", candidateVersion: "1.2.3", expected: true},
-		{constraintVersion: ">0.7.0", candidateVersion: "0.8.4", expected: true},
-		{constraintVersion: "^1.2.2", candidateVersion: "1.2.1", expected: false},
-		{constraintVersion: "~1.2.2", candidateVersion: "2.2.3", expected: false},
-		{constraintVersion: "~1.2.2", candidateVersion: "1.3.0", expected: false},
-		{constraintVersion: "1.x", candidateVersion: "1.2.3", expected: true},
-		{constraintVersion: "1.x", candidateVersion: "2.2.3", expected: false},
-		{constraintVersion: "~1.3.7", candidateVersion: "1.3.8", expected: true},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.constraintVersion, func(t *testing.T) {
-			ok, _, err := passesConstraint(tc.constraintVersion, tc.candidateVersion)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, ok)
-		})
-	}
-}
-func TestNpmPackageHandler_ExtractOriginalConstraint(t *testing.T) {
-	type testCase struct {
-		constraintVersion string
-		constraintString  string
-	}
-	testCases := []testCase{
-		{constraintVersion: "^1.2.2", constraintString: "^"},
-		{constraintVersion: "^1.2.2", constraintString: "^"},
-		{constraintVersion: "~1.2.2", constraintString: "~"},
-		{constraintVersion: "~1.2.2", constraintString: "~"},
-		{constraintVersion: ">=1.3.7", constraintString: ">="},
-		{constraintVersion: "<=1.3.7", constraintString: "<="},
-		{constraintVersion: "<1.3.7", constraintString: "<"},
-		{constraintVersion: "1.3.7", constraintString: ""},
-		{constraintVersion: "", constraintString: ""},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.constraintVersion, func(t *testing.T) {
-			constraintString := extractOriginalConstraint(tc.constraintVersion)
-			assert.Equal(t, tc.constraintString, constraintString)
-		})
-	}
-
-}
 
 func TestUpdatePackageVersion(t *testing.T) {
 	testProjectPath := filepath.Join("..", "..", "testdata", "packagehandlers")

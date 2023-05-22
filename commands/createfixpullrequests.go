@@ -145,6 +145,9 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[string]*utils.FixDetails) (err error) {
 	var errList strings.Builder
+	if len(fixVersionsMap) == 0 {
+		return
+	}
 	log.Info("-----------------------------------------------------------------")
 	for _, fixVersionInfo := range fixVersionsMap {
 		if err = cfp.fixSinglePackageAndCreatePR(fixVersionInfo); err != nil {
@@ -152,7 +155,6 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
-		log.Debug("-----------------------------------------------------------------")
 		if err = cfp.gitManager.Checkout(cfp.details.Branch()); err != nil {
 			return
 		}
@@ -180,12 +182,10 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string
 		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
 			cfp.handleUpdatePackageErrors(err, errList)
 		} else {
-			logMessage := fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-			log.Info(logMessage)
+			log.Info(fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion))
 			atLeastOneFix = true
 		}
 	}
-
 	if atLeastOneFix {
 		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
 			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
@@ -221,8 +221,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 		return
 	}
 	if existsInRemote {
-		logMessage := fmt.Sprintf("A Pull Request updating dependency '%s' to version '%s' already exists.", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-		log.Info(logMessage)
+		log.Info(fmt.Sprintf("A Pull Request updating dependency '%s' to version '%s' already exists.", fixDetails.ImpactedDependency, fixDetails.FixVersion))
 		return
 	}
 	log.Debug("Creating branch", fixBranchName, "...")
@@ -236,8 +235,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(fixDetails *uti
 		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
 			fixDetails.ImpactedDependency, fixVersion, err.Error())
 	}
-	logMessage := fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion)
-	log.Info(logMessage)
+	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion))
 	return
 }
 
@@ -341,11 +339,11 @@ func (cfp *CreateFixPullRequestsCmd) createFixVersionsMap(scanResults []services
 }
 
 func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, fixVersionsMap map[string]*utils.FixDetails) error {
-	var vulnFixVersion string
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	if vulnFixVersion = getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions); vulnFixVersion == "" {
+	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
+	if vulnFixVersion == "" {
 		return nil
 	}
 	if fixVersionInfo, exists := fixVersionsMap[vulnerability.ImpactedDependencyName]; exists {
@@ -394,7 +392,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 
 func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
 	// Skip build tools dependencies (for example, pip)
-	// That are not defined in the descriptor file and cannot be fixed by a PR.
+	// that are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixDetails.PackageType], fixDetails.ImpactedDependency) {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  fixDetails.ImpactedDependency,
@@ -438,10 +436,9 @@ func parseVersionChangeString(fixVersion string) string {
 }
 
 // During the operation of updating packages, there could be some errors,
-// In order to not fail the whole run, we store the errors in strings.builder and log them at the end.
+// in order to not fail the whole run, we store the errors in strings.builder and log them at the end.
 func logAppendedErrorsIfExists(errList strings.Builder) {
 	if errList.String() != "" {
-		log.Warn("During fixing packages operations the following errors occurred:")
-		log.Warn(errors.New(errList.String()))
+		log.Error("During fixing dependencies operations the following errors occurred:\n", errors.New(errList.String()))
 	}
 }
