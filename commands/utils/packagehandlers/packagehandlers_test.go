@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -61,7 +62,7 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Go)
 			err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
@@ -79,7 +80,7 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 }
 
 // Python, includes pip,pipenv, poetry
-func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
+func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []pythonIndirectDependencies{
 		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
 			FixVersion: "1.25.9", PackageType: coreutils.Pip, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "requirements.txt"},
@@ -99,7 +100,7 @@ func TestPythonPackageHandler_updateIndirectDependency(t *testing.T) {
 			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			pythonPackageHandler := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
@@ -160,7 +161,7 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Npm)
 			err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
@@ -188,9 +189,17 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 				ImpactedDependency: "minimist",
 			}, fixSupported: false,
 		},
+		{
+			fixVersionInfo: &utils.FixDetails{
+				FixVersion:         "1.2.6",
+				PackageType:        coreutils.Yarn,
+				DirectDependency:   true,
+				ImpactedDependency: "minimist",
+			}, fixSupported: true,
+		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
 			err := yarnPackageHandler.UpdateDependency(test.fixVersionInfo)
@@ -223,7 +232,7 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 			DirectDependency:   true}, fixSupported: true},
 	}
 	for _, test := range tests {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
 			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
@@ -239,36 +248,7 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
-	yarnPackageHandler := &YarnPackageHandler{}
-	testcases := []dependencyFixTest{
-		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "1.2.6",
-				PackageType:        coreutils.Yarn,
-				DirectDependency:   true,
-				ImpactedDependency: "minimist",
-			}, fixSupported: true,
-		},
-	}
-	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
-			err := yarnPackageHandler.updateDirectDependency(test.fixVersionInfo)
-			if !test.fixSupported {
-				assert.Error(t, err, "Expected error to occur")
-				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
-			} else {
-				assert.NoError(t, err)
-			}
-			assertFixVersionInPackageDescriptor(t, test, "package.json")
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
-		})
-	}
-}
-
+// Maven utils functions
 func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
 	testCases := []string{`<dependency> 
 	<groupId>org.apache.commons</groupId>
@@ -458,7 +438,7 @@ func TestMavenGavReader(t *testing.T) {
 	assert.Len(t, mvnHandler.pomPaths, 2)
 }
 
-// Utils functions
+// General Utils functions
 func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 	type testCase struct {
 		fixVersionInfo utils.FixDetails
