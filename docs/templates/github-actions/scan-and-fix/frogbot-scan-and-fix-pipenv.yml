@@ -1,13 +1,7 @@
 name: "Frogbot Scan and Fix"
 on:
-  push:
-    # Creating fix pull requests will be triggered by any push to one of these branches.
-    # You can add or replace to any branch you want to open fix pull requests for.
-    branches:
-      - "main"
-      - "master"
   schedule:
-    # The job will run once a day at 00:00 GMT.
+    # The repository will be scanned once a day at 00:00 GMT.
     - cron: "0 0 * * *"
 permissions:
   contents: write
@@ -16,8 +10,14 @@ permissions:
 jobs:
   create-fix-pull-requests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The repository scanning will be triggered periodically on the following branches.
+        branch: [ "dev" ]
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ matrix.branch }}
 
       # Install prerequisites
       - name: Setup Python
@@ -26,7 +26,7 @@ jobs:
           python-version: '3.9'
           cache: 'pipenv'
       - name: Install pipenv
-        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+        run: python -m pip install pipenv
       - run: pipenv install
       - uses: jfrog/frogbot@v2
         env:

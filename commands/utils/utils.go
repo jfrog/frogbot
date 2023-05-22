@@ -29,11 +29,14 @@ const (
 	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
-	branchInvalidChars    = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
-	branchInvalidPrefix   = "branch name cannot start with '-' "
-	branchCharsMaxLength  = 255
-	branchInvalidLength   = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
-	invalidBranchTemplate = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
+	branchInvalidPrefix            = "branch name cannot start with '-' "
+	branchCharsMaxLength           = 255
+	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
+	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
+	skipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
+	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
+		"Update %s version to %s to fix this vulnerability."
 )
 
 var (
@@ -47,29 +50,45 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
-type ErrUnsupportedIndirectFix struct {
-	PackageName string
+type ErrUnsupportedFix struct {
+	PackageName  string
+	FixedVersion string
+	ErrorType    UnsupportedErrorType
 }
 
-func (e *ErrUnsupportedIndirectFix) Error() string {
-	return fmt.Sprintf("Since dependecy '%s' is indirect (transitive) its fix is skipped", e.PackageName)
+// Custom error for unsupported fixes
+// Currently we hold two unsupported reasons, indirect and build tools dependencies.
+func (err *ErrUnsupportedFix) Error() string {
+	switch err.ErrorType {
+	case IndirectDependencyFixNotSupported:
+		return fmt.Sprintf(skipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
+	case BuildToolsDependencyFixNotSupported:
+		return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
+	default:
+		panic("Incompatible custom error!")
+	}
 }
 
-// FixVersionInfo is a basic struct used to hold needed information about version fixing
-type FixVersionInfo struct {
-	FixVersion       string
-	PackageType      coreutils.Technology
+// FixDetails is a basic struct used to hold needed information for fixing vulnerabilities
+type FixDetails struct {
+	// Package technology
+	PackageType coreutils.Technology
+	// Name of the impacted dependency
+	ImpactedDependency string
+	// Suggested fix version
+	FixVersion string
+	// Is the dependency direct or transitive?
 	DirectDependency bool
 }
 
-func NewFixVersionInfo(newFixVersion string, packageType coreutils.Technology, directDependency bool) *FixVersionInfo {
-	return &FixVersionInfo{newFixVersion, packageType, directDependency}
+func NewFixDetails(fixVersion string, packageType coreutils.Technology, directDependency bool, impactedPackage string) *FixDetails {
+	return &FixDetails{packageType, impactedPackage, fixVersion, directDependency}
 }
 
-func (fvi *FixVersionInfo) UpdateFixVersionIfMax(newFixVersion string) {
+func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
 	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(newFixVersion) > 0 {
-		fvi.FixVersion = newFixVersion
+	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(fixVersion) > 0 {
+		fvi.FixVersion = fixVersion
 	}
 }
 
@@ -165,7 +184,7 @@ func CommitStatusToString(status vcsclient.CommitStatus) string {
 
 // Generates MD5Hash from a FixVersionMap object
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func fixVersionsMapToMd5Hash(versionsMap map[string]*FixVersionInfo) (string, error) {
+func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error) {
 	h := crypto.MD5.New()
 	// Sort the package names
 	keys := make([]string, 0, len(versionsMap))
@@ -187,8 +206,8 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-	extendedScanResults := &xrayutils.ExtendedScanResults{XrayResults: scanResults}
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, extendedScanResults, isMultipleRoots, true)
+
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
 	if err != nil {
 		return err
 	}

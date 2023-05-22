@@ -1,72 +1,17 @@
 package commands
 
 import (
-	testdatautils "github.com/jfrog/build-info-go/build/testdata"
-	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
-
-type FixPackagesTestFunc func(test packageFixTest) CreateFixPullRequestsCmd
-
-type packageFixTest struct {
-	technology           coreutils.Technology
-	impactedPackaged     string
-	fixVersion           string
-	packageDescriptor    string
-	testPath             string
-	shouldNotFix         bool
-	fixPackageVersionCmd FixPackagesTestFunc
-}
-
-var packageFixTests = []packageFixTest{
-	{technology: coreutils.Maven, impactedPackaged: "junit", fixVersion: "4.11", packageDescriptor: "pom.xml", fixPackageVersionCmd: getMavenFixPackageVersionFunc()},
-	{technology: coreutils.Npm, impactedPackaged: "minimatch", fixVersion: "3.0.2", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Go, impactedPackaged: "github.com/google/uuid", fixVersion: "1.3.0", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Go, impactedPackaged: "github.com/golang/go", fixVersion: "1.20.3", packageDescriptor: "go.mod", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
-	{technology: coreutils.Yarn, impactedPackaged: "minimist", fixVersion: "1.2.6", packageDescriptor: "package.json", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pipenv, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pipenv, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "Pipfile", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Poetry, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Poetry, impactedPackaged: "Pyjwt", fixVersion: "2.4.0", packageDescriptor: "pyproject.toml", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "PyJwt", fixVersion: "2.4.0", packageDescriptor: "requirements.txt", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "pyjwt", fixVersion: "2.4.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc()},
-	{technology: coreutils.Pip, impactedPackaged: "pip", fixVersion: "23.1", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
-	{technology: coreutils.Pip, impactedPackaged: "wheel", fixVersion: "2.3.0", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
-	{technology: coreutils.Pip, impactedPackaged: "setuptools", fixVersion: "66.6.6", packageDescriptor: "setup.py", fixPackageVersionCmd: getGenericFixPackageVersionFunc(), shouldNotFix: true},
-}
-
-var requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
-
-type pipPackageRegexTest struct {
-	packageName         string
-	expectedRequirement string
-}
-
-var pipPackagesRegexTests = []pipPackageRegexTest{
-	{"oslo.config", "oslo.config>=1.12.1,<1.13"},
-	{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
-	{"paramiko", "paramiko==2.7.2"},
-	{"passlib", "passlib<=1.7.4"},
-	{"PassLib", "passlib<=1.7.4"},
-	{"prance", "prance>=0.9.0"},
-	{"prompt-toolkit", "prompt-toolkit~=1.0.15"},
-	{"pyinotify", "pyinotify>0.9.6"},
-	{"pyjwt", "pyjwt>1.7.1"},
-	{"PyJWT", "pyjwt>1.7.1"},
-	{"urllib3", "urllib3 > 1.1.9, < 1.5.*"},
-}
 
 var testPackagesData = []struct {
 	packageType coreutils.Technology
@@ -106,72 +51,6 @@ var testPackagesData = []struct {
 	{
 		packageType: coreutils.Poetry,
 	},
-}
-
-func getGenericFixPackageVersionFunc() FixPackagesTestFunc {
-	return func(test packageFixTest) CreateFixPullRequestsCmd {
-		return CreateFixPullRequestsCmd{
-			details: &utils.ScanDetails{
-				Project: &utils.Project{
-					PipRequirementsFile: test.packageDescriptor,
-					WorkingDirs:         []string{test.testPath},
-				},
-			},
-		}
-	}
-}
-
-func getMavenFixPackageVersionFunc() func(test packageFixTest) CreateFixPullRequestsCmd {
-	return func(test packageFixTest) CreateFixPullRequestsCmd {
-		mavenDepToPropertyMap := map[string][]string{
-			test.impactedPackaged: {"junit:junit", "3.8.1"},
-		}
-		cfp := CreateFixPullRequestsCmd{
-			mavenDepToPropertyMap: mavenDepToPropertyMap,
-		}
-		return cfp
-	}
-}
-
-func TestFixPackageVersion(t *testing.T) {
-	currentDir, testdataDir := getTestDataDir(t)
-	defer func() {
-		assert.NoError(t, os.Chdir(currentDir))
-	}()
-
-	for _, test := range packageFixTests {
-		func() {
-			// Create temp technology project
-			projectPath := filepath.Join(testdataDir, test.technology.ToString())
-			tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
-			defer cleanup()
-			test.testPath = tmpProjectPath
-			assert.NoError(t, os.Chdir(tmpProjectPath))
-
-			t.Run(test.technology.ToString(), func(t *testing.T) {
-				cfg := test.fixPackageVersionCmd(test)
-				// Fix impacted package for each technology
-				fixVersionInfo := utils.NewFixVersionInfo(test.fixVersion, test.technology, true)
-				assert.NoError(t, cfg.updatePackageToFixedVersion(test.impactedPackaged, fixVersionInfo))
-				file, err := os.ReadFile(test.packageDescriptor)
-				assert.NoError(t, err)
-				if test.shouldNotFix {
-					assert.NotContains(t, string(file), test.fixVersion)
-				} else {
-					assert.Contains(t, string(file), test.fixVersion)
-					// Verify that case-sensitive packages in python are lowered
-					assert.Contains(t, string(file), strings.ToLower(test.impactedPackaged))
-				}
-			})
-		}()
-	}
-}
-func getTestDataDir(t *testing.T) (string, string) {
-	currentDir, err := os.Getwd()
-	assert.NoError(t, err)
-	testdataDir, err := filepath.Abs("testdata/projects")
-	assert.NoError(t, err)
-	return currentDir, testdataDir
 }
 
 // /      1.0         --> 1.0 ≤ x
@@ -221,14 +100,6 @@ func TestGenerateFixBranchName(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
-	}
-}
-
-func TestPipPackageRegex(t *testing.T) {
-	for _, pack := range pipPackagesRegexTests {
-		re := regexp.MustCompile(packagehandlers.PythonPackageRegexPrefix + "(" + pack.packageName + "|" + strings.ToLower(pack.packageName) + ")" + packagehandlers.PythonPackageRegexSuffix)
-		found := re.FindString(requirementsFile)
-		assert.Equal(t, pack.expectedRequirement, strings.ToLower(found))
 	}
 }
 
@@ -295,6 +166,20 @@ func TestGetMinimalFixVersion(t *testing.T) {
 			expected := getMinimalFixVersion(test.impactedVersionPackage, test.fixVersions)
 			assert.Equal(t, test.expected, expected)
 		})
+	}
+}
+
+// Verifies unsupported packages return specific error
+// Other logic is implemented inside each package-handler.
+func TestUpdatePackageToFixedVersion(t *testing.T) {
+	var testScan CreateFixPullRequestsCmd
+	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
+		for _, impactedDependency := range buildToolsDependencies {
+			fixDetails := &utils.FixDetails{FixVersion: "3.3.3", PackageType: tech, ImpactedDependency: impactedDependency, DirectDependency: true}
+			err := testScan.updatePackageToFixedVersion(fixDetails)
+			assert.Error(t, err, "Expected error to occur")
+			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+		}
 	}
 }
 
