@@ -30,8 +30,9 @@ func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 		return py.updateDirectDependency(fixDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.DependencyFixNotSupported,
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }

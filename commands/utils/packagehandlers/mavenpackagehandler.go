@@ -179,8 +179,9 @@ func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	impactedDependency := fixDetails.ImpactedDependency
 	if depDetails, exists = mph.mavenDepToPropertyMap[impactedDependency]; !exists {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.DependencyFixNotSupported,
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 	if len(depDetails.properties) > 0 {

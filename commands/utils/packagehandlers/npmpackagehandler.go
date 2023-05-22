@@ -11,8 +11,9 @@ func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) err
 		return npm.updateDirectDependency(fixDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason:      utils.DependencyFixNotSupported,
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }

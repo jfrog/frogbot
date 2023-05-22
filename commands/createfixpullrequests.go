@@ -397,10 +397,9 @@ func isBuildToolsDependency(fixDetails *utils.FixDetails) error {
 	// That are not defined in the descriptor file and cannot be fixed by a PR.
 	if slices.Contains(utils.BuildToolsDependenciesMap[fixDetails.PackageType], fixDetails.ImpactedDependency) {
 		return &utils.ErrUnsupportedFix{
-			PackageName: fixDetails.ImpactedDependency,
-			Reason: fmt.Sprintf("Skipping vulnerable package %s since it is not defined in your package descriptor file. "+
-				"Update %s version to %s to fix this vulnerability.",
-				fixDetails.ImpactedDependency, fixDetails.ImpactedDependency, fixDetails.FixVersion),
+			PackageName:  fixDetails.ImpactedDependency,
+			FixedVersion: fixDetails.FixVersion,
+			ErrorType:    utils.BuildToolsDependencyFixNotSupported,
 		}
 	}
 	return nil
