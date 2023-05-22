@@ -131,27 +131,27 @@ func TestMd5Hash(t *testing.T) {
 
 func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	tests := []struct {
-		fixVersionMap map[string]*FixVersionInfo
+		fixVersionMap map[string]*FixDetails
 		expectedHash  string
 	}{
 		{
-			fixVersionMap: map[string]*FixVersionInfo{
+			fixVersionMap: map[string]*FixDetails{
 				"pkg": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false}},
 			expectedHash: "0aa066970b613b114f8e21d11c74ff94",
 		}, {
-			fixVersionMap: map[string]*FixVersionInfo{
+			fixVersionMap: map[string]*FixDetails{
 				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false},
 				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		},
 		{
 			// The Same map with different order should be the same hash.
-			fixVersionMap: map[string]*FixVersionInfo{
+			fixVersionMap: map[string]*FixDetails{
 				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false},
 				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		}, {
-			fixVersionMap: map[string]*FixVersionInfo{
+			fixVersionMap: map[string]*FixDetails{
 				"myNuget": {FixVersion: "0.2.33", PackageType: coreutils.Nuget, DirectDependency: false}},
 			expectedHash: "887ac2c931920c20956409702c0dfbc7",
 		},
