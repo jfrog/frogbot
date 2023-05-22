@@ -4,42 +4,50 @@
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
-[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme) [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/test.yml) [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
+
+| Branch |                                                                                                                                                                                    Status                                                                                                                                                                                    |
+|:------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| master | [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/jfrog/frogbot/actions/workflows/test.yml?branch=master)  [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg?branch=master)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml?branch=master) |
+|  dev   |                [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/jfrog/frogbot/actions/workflows/test.yml?branch=dev)  [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg?branch=dev)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml?branch=dev)                |
 
 </div>
 
 ## Table of contents
 
 - [Frogbot](#frogbot)
-  - [Table of contents](#table-of-contents)
-  - [🤖 What is Frogbot?](#-what-is-frogbot)
-  - [🖥️ Installing Frogbot](#️-installing-frogbot)
-  - [🚥 Using Frogbot](#-using-frogbot)
-    - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
-      - [General](#general)
-      - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
-      - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
-      - [Scan results](#scan-results)
-        - [👍 No issues](#-no-issues)
-        - [👎 Issues were found](#-issues-were-found)
-    - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
-  - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
-  - [🔥 Reporting issues](#-reporting-issues)
-  - [💻 Contributions](#-contributions)
+    - [Table of contents](#table-of-contents)
+    - [🤖 What is Frogbot?](#-what-is-frogbot)
+    - [🖥️ Installing Frogbot](#️-installing-frogbot)
+    - [🚥 Using Frogbot](#-using-frogbot)
+        - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
+            - [General](#general)
+            - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
+            - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
+            - [Scan results](#scan-results)
+                - [👍 No issues](#-no-issues)
+                - [👎 Issues were found](#-issues-were-found)
+        - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
+    - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
+    - [🔥 Reporting issues](#-reporting-issues)
+    - [💻 Contributions](#-contributions)
 
 <div id="what-is-frogbot"></div>
 
 ## 🤖 What is Frogbot?
 
-Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories following new commits.
+Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull
+requests when they are opened, and Git repositories following new commits.
 
 ## 🖥️ Installing Frogbot
 
 <details>
   <summary>Step 1 - Optionally set up a FREE JFrog Environment in the Cloud</summary>
 
-Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
+Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free
+environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in
+less than a minute.
 
 The commands will do the following:
 
@@ -58,7 +66,8 @@ curl -fL "https://getcli.jfrog.io?setup" | sh
 powershell "Start-Process -Wait -Verb RunAs powershell '-NoProfile iwr https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf/[RELEASE]/jfrog-cli-windows-amd64/jf.exe -OutFile $env:SYSTEMROOT\system32\jf.exe'" ; jf setup
 ```
 
-After the setup is complete, you'll receive an email with your JFrog environment connection details, which can be stored as secrets in Git.
+After the setup is complete, you'll receive an email with your JFrog environment connection details, which can be stored
+as secrets in Git.
 
 </details>
 
@@ -82,10 +91,14 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <div id="reporting-issues"></div>
 
 ## 🚥 Using Frogbot
+
 ### Scanning pull requests when they are opened
+
 #### General
 
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
+Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It
+adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a
+comment, confirming this.
 
 Supported platforms:
 
@@ -150,7 +163,8 @@ The Frogbot scan on Bitbucket Server workflow:
 <details>
   <summary>GitHub</summary>
 
-After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request from the pull request UI.
+After you create a new pull request, the maintainer of the Git repository can trigger Frogbot to scan the pull request
+from the pull request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
 > Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
@@ -161,11 +175,14 @@ After you create a new pull request, the maintainer of the Git repository can tr
 The Frogbot GitHub scan workflow is:
 
 1. The developer opens a pull request.
-2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
+2. The Frogbot workflow automatically gets triggered and
+   a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
+   named `frogbot` becomes pending for the maintainer's approval.
 
 [![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
 
-3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
+3. The maintainer of the repository reviews the pull request and approves the
+   scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
 
 </details>
@@ -173,7 +190,8 @@ The Frogbot GitHub scan workflow is:
 <details>
   <summary>GitLab</summary>
 
-After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request from the merge request UI.
+After you create a new merge request, the maintainer of the Git repository can trigger Frogbot to scan the merge request
+from the merge request UI.
 
 > **_NOTE:_** The scan output will include only new vulnerabilities added by the merge request.
 > Vulnerabilities that aren't new, and existed in the code before the merge request was created, will not be included in
@@ -184,7 +202,8 @@ After you create a new merge request, the maintainer of the Git repository can t
 The Frogbot GitLab flow is as follows:
 
 1. The developer opens a merge request.
-2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual _frogbot-scan_ job.
+2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual
+   _frogbot-scan_ job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
    [GitLab CI Run Button](./images/gitlab-run-button.png)
@@ -193,9 +212,14 @@ The Frogbot GitLab flow is as follows:
 
 #### 👮 Security note for pull requests scanning
 
-When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's approval before scanning newly opened pull requests. Using Frogbot with these platforms, however, isn't recommended for open-source projects.
+When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's
+approval before scanning newly opened pull requests. Using Frogbot with these platforms, however, isn't recommended for
+open-source projects.
 
-When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
+When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is
+approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't
+introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with
+GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
 #### Scan results
 
@@ -213,26 +237,30 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
-| SEVERITY | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
-:--: | -- | -- | -- | -- |:-----------------:| --
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview | v0.1.20 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | magic-streaming-server | v0.21.10 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154  
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
+|                                                SEVERITY                                                | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE            
+:------------------------------------------------------------------------------------------------------:|------------------------|------------------------------------|--------------------------------|-----------------------------------|:-----------------:|----------------
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview           | v0.1.20                            | ten-webpack                    | v4.75.0                           |     [v4.76.0]     | CVE-2023-28154 
+|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | magic-streaming-server | v0.21.10                           | ten-webpack                    | v4.75.0                           |     [v4.76.0]     | CVE-2023-28154 
+|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | jump-archiver          | v3.5.1                             | quicksilver                    | v5.75.0                           |     [v5.76.0]     | CVE-2023-28154 
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium   | expense-calculator     | v6.6.0                             | cve-alpha                      | v1.10.0                           |     [v1.10.1]     | CVE-2023-28154 
 
 ### Scanning repositories and fixing issues
 
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
+Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a
+version with a fix.
 
 ![](./images/fix-pr.png)
 
-For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
+For GitHub repositories, Frogbot also
+adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository)
+which you can view in the GitHub UI:
 
 ![](./images/github-code-scanning.png)
 
 ![](./images/github-code-scanning-content.png)
 
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository.
+Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that
+are pushed to the repository.
 
 Supported package management tools:
 
@@ -255,6 +283,7 @@ You can show people that your repository is scanned by Frogbot by adding a badge
 [![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
 
 You can add this badge by copying the following markdown snippet and pasting it into your repository's README.md file.
+
 ```
 [![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://github.com/jfrog/frogbot#readme)
 ```
@@ -267,4 +296,5 @@ Please help us improve Frogbot by [reporting issues](https://github.com/jfrog/fr
 
 ## 💻 Contributions
 
-We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
+We welcome pull requests from the community. To help us improve this project, please read
+our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
