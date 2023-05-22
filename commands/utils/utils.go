@@ -34,8 +34,8 @@ const (
 	branchCharsMaxLength           = 255
 	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
 	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
-	SkipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
-	SkipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
+	skipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
+	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 )
 
@@ -61,9 +61,9 @@ type ErrUnsupportedFix struct {
 func (err *ErrUnsupportedFix) Error() string {
 	switch err.ErrorType {
 	case IndirectDependencyFixNotSupported:
-		return fmt.Sprintf(SkipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
+		return fmt.Sprintf(skipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
 	case BuildToolsDependencyFixNotSupported:
-		return fmt.Sprintf(SkipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
+		return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
 	default:
 		panic("Incompatible custom error!")
 	}
