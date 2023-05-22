@@ -221,15 +221,15 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	mavenPackageHandler := MavenPackageHandler{}
 	tests := []dependencyFixTest{
 		{fixVersionInfo: &utils.FixDetails{
-			FixVersion:         "4.11",
-			PackageType:        "maven",
-			ImpactedDependency: "commons-fileupload:commonss",
-			DirectDependency:   false}, fixSupported: false},
-		{fixVersionInfo: &utils.FixDetails{
-			FixVersion:         "1.5",
+			FixVersion:         "2.7",
 			PackageType:        coreutils.Maven,
-			ImpactedDependency: "commons-fileupload:commons",
+			ImpactedDependency: "commons-io:commons-io",
 			DirectDependency:   true}, fixSupported: true},
+		{fixVersionInfo: &utils.FixDetails{
+			FixVersion:         "4.3.20",
+			PackageType:        coreutils.Maven,
+			ImpactedDependency: "org.springframework:spring-core",
+			DirectDependency:   false}, fixSupported: false},
 	}
 	for _, test := range tests {
 		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
