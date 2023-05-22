@@ -23,17 +23,15 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 }
 
 func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
-	commonArgs := npm.CommonArgs{}
-	commonArgs.SetServerDetails(scanSetup.ServerDetails)
-	commonArgs.SetCmdName(scanSetup.InstallCommandArgs[0])
-	if err = commonArgs.PreparePrerequisites(scanSetup.Repository, true); err != nil {
+	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
+	if err = npmCmd.PreparePrerequisites(scanSetup.Repository); err != nil {
 		return nil, err
 	}
-	if err = commonArgs.CreateTempNpmrc(); err != nil {
+	if err = npmCmd.CreateTempNpmrc(); err != nil {
 		return nil, err
 	}
 	defer func() {
-		restoreNpmrc := commonArgs.GetRestoreNpmrcFunc()
+		restoreNpmrc := npmCmd.RestoreNpmrcFunc()
 		if err == nil {
 			err = restoreNpmrc()
 		}

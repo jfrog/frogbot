@@ -38,7 +38,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
        - cron: "* */1 * * *"
          branches: 
            include: 
-             - "*"
+             - "main"
+             - "master"
   pool:
        vmImage: ubuntu-latest
        

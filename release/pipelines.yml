@@ -13,10 +13,9 @@ pipelines:
       runtime:
         type: image
         image:
-          auto:
-            language: go
-            versions:
-              - "1.19"
+          custom:
+            name: releases-docker.jfrog.io/jfrog-ecosystem-integration-env
+            tag: latest
       environmentVariables:
         readOnly:
           NEXT_VERSION: 0.0.0
