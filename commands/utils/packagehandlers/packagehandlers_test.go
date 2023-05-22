@@ -177,8 +177,7 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 }
 
 // Yarn
-// TODO combine to one test
-func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
+func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -208,37 +207,37 @@ func TestYarnPackageHandler_updateIndirectDependency(t *testing.T) {
 }
 
 // Maven
-// TODO fix tests
-//func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
-//	mavenPackageHandler := MavenPackageHandler{mavenDepToPropertyMap: map[string][]string{"junit": {"junit:junit", "3.8.1"}}}
-//	tests := []dependencyFixTest{
-//		{fixVersionInfo: &utils.FixDetails{
-//			FixVersion:         "4.11",
-//			PackageType:        "maven",
-//			ImpactedDependency: "junit",
-//			DirectDependency:   false}, fixSupported: false},
-//		{fixVersionInfo: &utils.FixDetails{
-//			FixVersion:         "4.11",
-//			PackageType:        coreutils.Maven,
-//			ImpactedDependency: "junit",
-//			DirectDependency:   true}, fixSupported: true},
-//	}
-//	for _, test := range tests {
-//		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
-//			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
-//			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-//			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
-//			if !test.fixSupported {
-//				assert.Error(t, err, "Expected error to occur")
-//				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
-//			} else {
-//				assert.NoError(t, err)
-//			}
-//			assert.NoError(t, os.Chdir(testDataDir))
-//			cleanup()
-//		})
-//	}
-//}
+// TODO fix this
+func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
+	mavenPackageHandler := MavenPackageHandler{}
+	tests := []dependencyFixTest{
+		{fixVersionInfo: &utils.FixDetails{
+			FixVersion:         "4.11",
+			PackageType:        "maven",
+			ImpactedDependency: "commons-fileupload:commonss",
+			DirectDependency:   false}, fixSupported: false},
+		{fixVersionInfo: &utils.FixDetails{
+			FixVersion:         "1.5",
+			PackageType:        coreutils.Maven,
+			ImpactedDependency: "commons-fileupload:commons",
+			DirectDependency:   true}, fixSupported: true},
+	}
+	for _, test := range tests {
+		t.Run(test.fixVersionInfo.ImpactedDependency, func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
+			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
+			if !test.fixSupported {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.NoError(t, os.Chdir(testDataDir))
+			cleanup()
+		})
+	}
+}
 
 func TestYarnPackageHandler_updateDirectDependency(t *testing.T) {
 	yarnPackageHandler := &YarnPackageHandler{}

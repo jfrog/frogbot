@@ -178,14 +178,16 @@ func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	// Check if the impacted package is a direct dependency
 	impactedDependency := fixDetails.ImpactedDependency
 	if depDetails, exists = mph.mavenDepToPropertyMap[impactedDependency]; !exists {
-		return fmt.Errorf(utils.SkipIndirectVulnerabilitiesMsg, impactedDependency, fixDetails.FixVersion)
+		return &utils.ErrUnsupportedFix{
+			PackageName: fixDetails.ImpactedDependency,
+			Reason:      utils.DependencyFixNotSupported,
+		}
 	}
-
 	if len(depDetails.properties) > 0 {
 		return mph.updateProperties(&depDetails, fixDetails.FixVersion)
 	}
 
-	return mph.updatePackageVersion(impactedDependency, fixDetails.FixVersion, depDetails.foundInDependencyManagement)
+	return mph.updatePackageVersion(fixDetails.ImpactedDependency, fixDetails.FixVersion, depDetails.foundInDependencyManagement)
 }
 
 func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
