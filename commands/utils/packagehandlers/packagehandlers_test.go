@@ -216,9 +216,7 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 }
 
 // Maven
-// TODO fix this
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
-	mavenPackageHandler := MavenPackageHandler{}
 	tests := []dependencyFixTest{
 		{fixVersionInfo: &utils.FixDetails{
 			FixVersion:         "2.7",
@@ -233,6 +231,7 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
+			mavenPackageHandler := MavenPackageHandler{}
 			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
 			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
