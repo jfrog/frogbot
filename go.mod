@@ -8,7 +8,7 @@ require (
 	github.com/jfrog/build-info-go v1.9.6
 	github.com/jfrog/froggit-go v1.7.3
 	github.com/jfrog/gofrog v1.3.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.34.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.34.4
 	github.com/jfrog/jfrog-client-go v1.29.1
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/pkg/errors v0.9.1
@@ -112,7 +112,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/talarian1/jfrog-cli-core/v2 v2.0.0-20230524145930-3dd3ef840712
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230524155422-b3ac4175049a
 
 //replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230518114837-fe6a826d5001
 
