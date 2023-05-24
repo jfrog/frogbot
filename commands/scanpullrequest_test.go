@@ -33,6 +33,7 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
+	testProjConfigPathNoNewVul       = "testdata/config/frogbot-config-test-proj-no-vul.yml"
 )
 
 func TestCreateVulnerabilitiesRows(t *testing.T) {
@@ -439,6 +440,45 @@ func TestScanPullRequestMultiWorkDir(t *testing.T) {
 
 func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
 	testScanPullRequest(t, testMultiDirProjConfigPathNoFail, "multi-dir-test-proj", false)
+}
+
+func TestScanPullRequestCurrentDiff(t *testing.T) {
+	testCases := []struct {
+		projectName string
+		description string
+		configPath  string
+		expected    string
+	}{
+		{
+			projectName: "test-proj",
+			description: "Test added new vulnerability",
+			configPath:  testProjConfigPathNoFail,
+			expected:    "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n\n| SEVERITY | DIRECT DEPENDENCIES | DIRECT DEPENDENCIES VERSIONS | IMPACTED DEPENDENCY NAME | IMPACTED DEPENDENCY VERSION | FIXED VERSIONS | CVE\n:--: | -- | -- | -- | -- | :--: | --\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | minimist | 1.2.5 | minimist | 1.2.5 | [0.2.4]<br>[1.2.6] | CVE-2021-44906 ",
+		},
+		{
+			projectName: "test-proj-no-vul",
+			description: "Test no added new vulnerability",
+			configPath:  testProjConfigPathNoNewVul,
+			expected:    "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](https://github.com/jfrog/frogbot#readme)\n\n[What is Frogbot?](https://github.com/jfrog/frogbot#readme)\n",
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.description, func(t *testing.T) {
+			params, _ := verifyEnv(t)
+			// Create mock GitLab server
+			server := httptest.NewServer(createGitLabHandler(t, tt.projectName))
+			configAggregator, client := prepareConfigAndClient(t, tt.configPath, server, params)
+			_, cleanUp := utils.PrepareTestEnvironment(t, tt.projectName, "scanpullrequest")
+			repoConfig := configAggregator[0]
+			vulnerabilityRows, err := auditPullRequest(&repoConfig, client)
+			assert.NoError(t, err)
+			message := createPullRequestMessage(vulnerabilityRows, repoConfig.OutputWriter)
+			assert.Equal(t, tt.expected, message)
+
+			server.Close()
+			cleanUp()
+		})
+	}
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
