@@ -16,28 +16,42 @@
 
 ## Table of contents
 
-- [Frogbot](#frogbot)
-  - [Table of contents](#table-of-contents)
-  - [🤖 What is Frogbot?](#-what-is-frogbot)
-  - [🖥️ Installing Frogbot](#️-installing-frogbot)
-  - [🚥 Using Frogbot](#-using-frogbot)
-    - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
-      - [General](#general)
-      - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
-      - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
-      - [Scan results](#scan-results)
-        - [👍 No issues](#-no-issues)
-        - [👎 Issues were found](#-issues-were-found)
-    - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
-  - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
-  - [🔥 Reporting issues](#-reporting-issues)
-  - [💻 Contributions](#-contributions)
+- [🤖 About JFrog Frogbot?](#-about-jfrog-frogbot)
+- [🖥️ Installing Frogbot](#️-installing-frogbot)
+- [🚥 Using Frogbot](#-using-frogbot)
+  - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
+    - [General](#general)
+    - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
+    - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
+    - [Scan results](#scan-results)
+      - [👍 No issues](#-no-issues)
+      - [👎 Issues were found](#-issues-were-found)
+  - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
+- [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
+- [🔥 Reporting issues](#-reporting-issues)
+- [💻 Contributions](#-contributions)
 
 <div id="what-is-frogbot"></div>
 
-## 🤖 What is Frogbot?
+## 🤖 About JFrog Frogbot
+### Overview
 
-Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities. You can scan pull requests when they are opened, and Git repositories following new commits.
+JFrog Frogbot is a Git bot that scans your git repositories for security vulnerabilities.
+- Frogbot scans pull requests right after they are opened, but before they are merged. This unique capability ensures that the code is scanned and can be fixed even before vulnerabilities are introduced in the code base.
+- Frogbot scans the Git repository periodically and creates pull requests with fixes for vulnerabilities that are detected.
+
+Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
+
+Frogbot supports Azure Repos, Bitbucket Server, GitHub and GitLab.
+
+### What's needed for the set up?
+
+- Frogbot uses a JFrog environment to scan your Git repositories. If you don't have a JFrog environment, you can set up one for free, and use it with no limits.
+- Frogbot also requires a runtime environment for the scanning. The following environments are supported:
+  - GitHub Actions
+  - JFrog Pipelines
+  - Jenkins
+  - Azure Pipelines 
 
 ## 🖥️ Installing Frogbot
 
