@@ -19,13 +19,7 @@
 - [🤖 About JFrog Frogbot?](#-about-jfrog-frogbot)
 - [🖥️ Installing Frogbot](#️-installing-frogbot)
 - [🚥 Using Frogbot](#-using-frogbot)
-  - [Scanning pull requests when they are opened](#scanning-pull-requests-when-they-are-opened)
-    - [General](#general)
-    - [🕵️‍♀️ How does Pull Request scanning work?](#️️-how-does-pull-request-scanning-work)
-    - [👮 Security note for pull requests scanning](#-security-note-for-pull-requests-scanning)
-    - [Scan results](#scan-results)
-      - [👍 No issues](#-no-issues)
-      - [👎 Issues were found](#-issues-were-found)
+  - [Scanning pull requests](#scanning-pull-requests)
   - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
 - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
 - [🔥 Reporting issues](#-reporting-issues)
@@ -42,7 +36,11 @@ JFrog Frogbot is a Git bot that scans your git repositories for security vulnera
 
 Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 
-Frogbot supports Azure Repos, Bitbucket Server, GitHub and GitLab.
+Frogbot supports:
+- Azure Repos
+- Bitbucket Server
+- GitHub
+- GitLab.
 
 ### What's needed for the set up?
 
@@ -101,7 +99,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <div id="reporting-issues"></div>
 
 ## 🚥 Using Frogbot
-### Scanning pull requests when they are opened
+### Scanning pull requests
 #### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
