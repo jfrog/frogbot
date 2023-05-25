@@ -19,9 +19,9 @@
 
       **Important**
       - Make sure all the build tools that are used to build the project are installed on the build agent.
-      </details>
-      <details>
-         <summary>Install Frogbot Using Jenkins</summary>
+   </details>
+   <details>
+      <summary>Install Frogbot Using Jenkins</summary>
      
    - Make sure you have the connection details of your JFrog environment. 
    - Save the JFrog connection details as Credentials in Jenkins with the following Credential IDs: **JF_URL**,
@@ -193,12 +193,10 @@
    }
    ```
      
-      **Important**
+   **Important**
 
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
-
-      </details>
 
   </details>
 

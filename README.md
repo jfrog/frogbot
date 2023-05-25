@@ -36,7 +36,7 @@ JFrog Frogbot is a Git bot that scans your git repositories for security vulnera
 
 Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 
-Frogbot supports:
+Frogbot supports the following Git providers:
 - Azure Repos
 - Bitbucket Server
 - GitHub
