@@ -46,6 +46,7 @@ Frogbot supports:
 
 - Frogbot uses a JFrog environment to scan your Git repositories. If you don't have a JFrog environment, you can set up one for free, and use it with no limits.
 - Frogbot also requires a runtime environment for the scanning. The following environments are supported:
+
   - GitHub Actions
   - JFrog Pipelines
   - Jenkins
@@ -103,13 +104,6 @@ After the setup is complete, you'll receive an email with your JFrog environment
 #### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
-
-Supported platforms:
-
-- Azure Repos
-- Bitbucket Server
-- GitHub
-- GitLab
 
 Supported package management tools:
 
