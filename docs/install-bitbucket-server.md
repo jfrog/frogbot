@@ -28,11 +28,13 @@
       **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
       and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**). 
    - Save your Bitbucket access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID. 
-   - Create a Jenkinsfile with the below content under the root of your **Frogbot Management Repository**.
+   - Create a Jenkinsfile with the template content under the root of your **Frogbot Management Repository**.
    - In the Jenkinsfile, set the values of all the mandatory variables.
    - In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
    - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
+   <details>
+          <summary>Template</summary>
    ```groovy
    // Run the job once an hour 
    CRON_SETTINGS = '''* */1 * * *'''
@@ -197,7 +199,7 @@
 
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
-
-  </details>
+   </details>
+</details>
 
 
