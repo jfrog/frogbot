@@ -33,8 +33,9 @@
    - In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
    - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
-   <details>
-          <summary>Template</summary>
+      <details>
+            <summary>Template</summary>
+
    ```groovy
    // Run the job once an hour 
    CRON_SETTINGS = '''* */1 * * *'''
@@ -199,7 +200,7 @@
 
    - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
    - Make sure that all the build tools that are used to build the project are installed on the Jenkins agent.
+      </details>
    </details>
-</details>
 
 
