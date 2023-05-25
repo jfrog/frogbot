@@ -16,7 +16,7 @@
 
 ## Table of contents
 
-- [🤖 About JFrog Frogbot?](#-about-jfrog-frogbot)
+- [🤖 About JFrog Frogbot](#-about-jfrog-frogbot)
 - [🖥️ Installing Frogbot](#️-installing-frogbot)
 - [🚥 Using Frogbot](#-using-frogbot)
   - [Scanning pull requests](#scanning-pull-requests)
@@ -118,7 +118,7 @@ Supported package management tools:
 - Poetry
 - Yarn 2
 
-#### 🕵️‍♀️ How does Pull Request scanning work?
+#### 🕵️‍♀️ How to uuse Pull Request scanning?
 
 <details>
   <summary>Azure Repos</summary>
