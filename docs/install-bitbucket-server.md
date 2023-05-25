@@ -13,7 +13,7 @@
       named **jfrogPlatform**. 
    * Save your Bitbucket access token in a [Bitbucket Server Integration](https://www.jfrog.com/confluence/display/JFROG/Bitbucket+Server+Integration) named
       **gitIntegration**. 
-   * Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file to your Frogbot Management Git repository under a directory named `.jfrog-pipelines`. 
+   * Create a **pipelines.yml** file using one of the available [templates](templates/jfrog-pipelines) and push the file into one of your Git repositories, under a directory named `.jfrog-pipelines`. 
    * In the **pipelines.yml**, make sure to set values for all the mandatory variables. 
    * In the **pipelines.yml**, if you're using a Windows agent, modify the code inside the onExecute sections as described in the template comments.
 
@@ -28,10 +28,10 @@
       **JF_USER** and **JF_PASSWORD** (You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of  **JF_URL**
       and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**). 
    - Save your Bitbucket access token as a Credential in Jenkins with the `FROGBOT_GIT_TOKEN` Credential ID. 
-   - Create a Jenkinsfile with the template content under the root of your **Frogbot Management Repository**.
+   - Create a Jenkinsfile with the below template content, and push it to root of one of your Git repositories.
    - In the Jenkinsfile, set the values of all the mandatory variables.
    - In the Jenkinsfile, modify the code inside the `Download Frogbot` and `Scan Pull Requests` according to the Jenkins agent operating system.
-   - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
+   - Create a Pipeline job in Jenkins pointing to the Jenkinsfile in your Git repository.
 
       <details>
             <summary>Template</summary>
