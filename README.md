@@ -42,7 +42,7 @@ Frogbot supports the following Git providers:
 - GitHub
 - GitLab.
 
-### What's needed for the set up?
+### What's needed for the setup?
 
 - Frogbot uses a JFrog environment to scan your Git repositories. If you don't have a JFrog environment, you can set up one for free, and use it with no limits.
 - Frogbot also requires a runtime environment for the scanning. The following environments are supported:
