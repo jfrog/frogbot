@@ -192,14 +192,14 @@ type Git struct {
 
 func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 	g.ClientInfo = *clientInfo
-	if g.ClientInfo.RepoName == "" {
+	if g.RepoName == "" {
 		if clientInfo.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
 		}
-		g.ClientInfo.RepoName = clientInfo.RepoName
+		g.RepoName = clientInfo.RepoName
 	}
-	if len(g.ClientInfo.Branches) == 0 {
-		g.ClientInfo.Branches = append(g.ClientInfo.Branches, clientInfo.Branches...)
+	if len(g.Branches) == 0 {
+		g.Branches = append(g.Branches, clientInfo.Branches...)
 	}
 	if g.BranchNameTemplate == "" {
 		g.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)

@@ -41,7 +41,7 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.RepoAggregator, 
 		return err
 	}
 	repository := configAggregator[0]
-	for _, branch := range repository.ClientInfo.Branches {
+	for _, branch := range repository.Branches {
 		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
 			return err
@@ -107,7 +107,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 
 	// Nothing to fix, return
 	if len(fixVersionsMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.details.ClientInfo.RepoName)
+		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.details.RepoName)
 		return nil
 	}
 
@@ -116,7 +116,7 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[string]*utils.FixDetails) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.ClientInfo.Token, cfp.details.ClientInfo.Username, cfp.details.Git)
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 	if err != nil {
 		return
 	}

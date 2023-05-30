@@ -198,11 +198,11 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
 	for _, configParams := range configFile {
-		assert.Equal(t, vcsutils.BitbucketServer, configParams.ClientInfo.GitProvider)
-		assert.Equal(t, "jfrog", configParams.ClientInfo.RepoOwner)
-		assert.Equal(t, "frogbot", configParams.ClientInfo.RepoName)
-		assert.Equal(t, "123456789", configParams.ClientInfo.Token)
-		assert.Equal(t, "dev", configParams.ClientInfo.Branches[0])
+		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
+		assert.Equal(t, "jfrog", configParams.RepoOwner)
+		assert.Equal(t, "frogbot", configParams.RepoName)
+		assert.Equal(t, "123456789", configParams.Token)
+		assert.Equal(t, "dev", configParams.Branches[0])
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
@@ -286,18 +286,18 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	repoAggregator, err := BuildRepoAggregator(nil, clientInfo, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
-	assert.Equal(t, "repoName", repo.ClientInfo.RepoName)
+	assert.Equal(t, "repoName", repo.RepoName)
 	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, clientInfo.RepoOwner, repo.ClientInfo.RepoOwner)
-	assert.Equal(t, clientInfo.Token, repo.ClientInfo.Token)
-	assert.Equal(t, clientInfo.APIEndpoint, repo.ClientInfo.APIEndpoint)
-	assert.ElementsMatch(t, clientInfo.Branches, repo.ClientInfo.Branches)
+	assert.Equal(t, clientInfo.RepoOwner, repo.RepoOwner)
+	assert.Equal(t, clientInfo.Token, repo.Token)
+	assert.Equal(t, clientInfo.APIEndpoint, repo.APIEndpoint)
+	assert.ElementsMatch(t, clientInfo.Branches, repo.Branches)
 	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, clientInfo.GitProvider, repo.ClientInfo.GitProvider)
+	assert.Equal(t, clientInfo.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
 	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
@@ -357,19 +357,19 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	configAggregator, err := unmarshalFrogbotConfigYaml(fileContent)
 	assert.NoError(t, err)
 	firstRepo := configAggregator[0]
-	assert.Equal(t, "npm-repo", firstRepo.ClientInfo.RepoName)
-	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.ClientInfo.Branches)
+	assert.Equal(t, "npm-repo", firstRepo.RepoName)
+	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]
 	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
 	assert.False(t, *firstRepoProject.UseWrapper)
 	assert.Equal(t, "test-repo", firstRepoProject.Repository)
 	secondRepo := configAggregator[1]
-	assert.Equal(t, "mvn-repo", secondRepo.ClientInfo.RepoName)
-	assert.Equal(t, []string{"dev"}, secondRepo.ClientInfo.Branches)
+	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
+	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
 	thirdRepo := configAggregator[2]
-	assert.Equal(t, "pip-repo", thirdRepo.ClientInfo.RepoName)
-	assert.Equal(t, []string{"test"}, thirdRepo.ClientInfo.Branches)
+	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
+	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
 	assert.True(t, *thirdRepo.FailOnSecurityIssues)
 	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
 	thirdRepoProject := thirdRepo.Projects[0]
