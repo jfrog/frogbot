@@ -191,7 +191,9 @@ type Git struct {
 }
 
 func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
-	g.ClientInfo = *clientInfo
+	g.RepoOwner = clientInfo.RepoOwner
+	g.GitProvider = clientInfo.GitProvider
+	g.VcsInfo = clientInfo.VcsInfo
 	if g.RepoName == "" {
 		if clientInfo.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
