@@ -1,0 +1,17 @@
+- params:
+    git:
+      repoName: frogbot
+      branches:
+        - master
+      branchNameTemplate: "this is my branch ${BRANCH_NAME_HASH}"
+      pullRequestTitleTemplate: "myPullRequests"
+      aggregateFixes: true
+    scan:
+      includeAllVulnerabilities: true
+      minSeverity: high
+      fixableOnly: true
+      projects:
+        - workingDirs:
+            - a/b
+    jfrogPlatform:
+      jfrogProjectKey: proj

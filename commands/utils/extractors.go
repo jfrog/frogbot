@@ -33,11 +33,7 @@ func (ed *extractorDetails) downloadFromPath() string {
 }
 
 // downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
-func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath string) (releasesRepo string, err error) {
-	if releasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv); releasesRepo == "" {
-		return
-	}
-	// Download extractors if remote repo environment variable is set
+func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath, releasesRepo string) (err error) {
 	log.Info("Checking whether the build-info extractors exist locally")
 	if extractorsLocalPath == "" {
 		extractorsLocalPath, err = config.GetJfrogDependenciesPath()
@@ -52,7 +48,7 @@ func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extracto
 		fileName:      fmt.Sprintf(build.MavenExtractorFileName, build.MavenExtractorDependencyVersion),
 		remotePath:    fmt.Sprintf(build.MavenExtractorRemotePath, build.MavenExtractorDependencyVersion),
 	}
-	return releasesRepo, downloadExtractor(releasesRepo, server, mavenExtractor)
+	return downloadExtractor(releasesRepo, server, mavenExtractor)
 }
 
 func downloadExtractor(remoteRepoName string, server *config.ServerDetails, extractor extractorDetails) (err error) {

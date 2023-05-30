@@ -201,9 +201,9 @@ func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error)
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient, isMultipleRoots bool) error {
-	if repo.GitProvider.String() != vcsutils.GitHub.String() {
-		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
+func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *Repository, branch string, client vcsclient.VcsClient, isMultipleRoots bool) error {
+	if repo.ClientInfo.GitProvider.String() != vcsutils.GitHub.String() {
+		log.Debug("Upload Scan to " + repo.ClientInfo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
 
@@ -211,7 +211,7 @@ func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *FrogbotR
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.ClientInfo.RepoOwner, repo.ClientInfo.RepoName, branch, scan)
 	if err != nil {
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
@@ -228,15 +228,15 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 		return fileutils.RemoveTempDir(wd)
 	}
 	log.Debug("Created temp working directory: ", wd)
-	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
+	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.ClientInfo.RepoOwner, git.ClientInfo.RepoName, branch, wd))
+	if err = client.DownloadRepository(context.Background(), git.ClientInfo.RepoOwner, git.ClientInfo.RepoName, branch, wd); err != nil {
 		return
 	}
 	log.Debug("Repository download completed")
 	return
 }
 
-func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
+func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
 	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)

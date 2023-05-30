@@ -19,7 +19,7 @@ type ScanAndFixRepositories struct {
 	dryRunRepoPath string
 }
 
-func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	var errList strings.Builder
 	for repoNum := range configAggregator {
 		if err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client); err != nil {
@@ -32,7 +32,7 @@ func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggre
 	return nil
 }
 
-func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
 	for _, branch := range repoConfig.Branches {
 		shouldScan, checkedCommit, err := saf.shouldScanLatestCommit(context.Background(), repoConfig, client, branch)
 		if err != nil {
@@ -61,7 +61,7 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 	return nil
 }
 
-func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
+func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 	return cfp.scanAndFixRepository(repository, branch, client)
 }
 
-func (saf *ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash, description string) error {
+func (saf *ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.Repository, state vcsclient.CommitStatus, commitHash, description string) error {
 	if err := client.SetCommitStatus(context.Background(), state, repoConfig.RepoOwner, repoConfig.RepoName, commitHash, utils.FrogbotCreatorName, description, utils.CommitStatusDetailsUrl); err != nil {
 		return fmt.Errorf("failed to mark last commit build status due to: %s", err.Error())
 	}
@@ -98,7 +98,7 @@ func (saf *ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClie
 
 // Returns true if the latest commit hasn't been scanned
 // or the time passed from the last scan exceeded the configured value.
-func (saf *ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
+func (saf *ScanAndFixRepositories) shouldScanLatestCommit(ctx context.Context, repoConfig *utils.Repository, client vcsclient.VcsClient, branch string) (shouldScan bool, commitHash string, err error) {
 	owner := repoConfig.RepoOwner
 	repo := repoConfig.RepoName
 	latestCommit, err := client.GetLatestCommit(ctx, owner, repo, branch)

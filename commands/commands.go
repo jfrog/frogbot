@@ -10,7 +10,7 @@ import (
 
 type FrogbotCommand interface {
 	// Run the command
-	Run(config utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error
+	Run(config utils.RepoAggregator, client vcsclient.VcsClient) error
 }
 
 func Exec(command FrogbotCommand, name string) error {
@@ -25,7 +25,7 @@ func Exec(command FrogbotCommand, name string) error {
 	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
-	err = command.Run(frogbotUtils.ConfigAggregator, frogbotUtils.Client)
+	err = command.Run(frogbotUtils.Repositories, frogbotUtils.Client)
 	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
 	if err == nil {

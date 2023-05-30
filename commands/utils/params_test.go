@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -20,11 +20,11 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "",
 	})
-	_, err := extractJFrogParamsFromEnv()
+	_, err := extractJFrogCredentialsFromEnv()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
-	_, err = extractJFrogParamsFromEnv()
+	_, err = extractJFrogCredentialsFromEnv()
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
@@ -104,26 +104,21 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
 }
 
-func TestExtractGitParamsFromEnvErrors(t *testing.T) {
+func TestExtractClientInfo(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitParamsFromEnv()
+	_, err := extractClientInfo()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitParamsFromEnv()
+	_, err = extractClientInfo()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitParamsFromEnv()
+	_, err = extractClientInfo()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
-
-	SetEnvAndAssert(t, map[string]string{GitPullRequestIDEnv: "illegal-id", GitTokenEnv: "123456", GitRepoEnv: "JfrogRepo"})
-	_, err = extractGitParamsFromEnv()
-	_, ok := err.(*strconv.NumError)
-	assert.True(t, ok)
 }
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
@@ -145,11 +140,11 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	server, gitParams, err := extractEnvParams()
+	server, gitParams, err := extractClientServerParams()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := NewConfigAggregatorFromFile(configFileContent, gitParams, server, "")
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -182,9 +177,9 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	server, gitParams, err := extractEnvParams()
+	server, gitParams, err := extractClientServerParams()
 	assert.NoError(t, err)
-	configFile, err := newConfigAggregatorFromEnv(gitParams, server, "")
+	configFile, err := BuildRepoAggregator(nil, gitParams, server)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -203,11 +198,11 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
 	for _, configParams := range configFile {
-		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
-		assert.Equal(t, "jfrog", configParams.RepoOwner)
-		assert.Equal(t, "frogbot", configParams.RepoName)
-		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "dev", configParams.Branches[0])
+		assert.Equal(t, vcsutils.BitbucketServer, configParams.ClientInfo.GitProvider)
+		assert.Equal(t, "jfrog", configParams.ClientInfo.RepoOwner)
+		assert.Equal(t, "frogbot", configParams.ClientInfo.RepoName)
+		assert.Equal(t, "123456789", configParams.ClientInfo.Token)
+		assert.Equal(t, "dev", configParams.ClientInfo.Branches[0])
 		assert.Equal(t, 1, configParams.PullRequestID)
 	}
 }
@@ -217,32 +212,32 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	params := &Project{}
-	err := extractProjectParamsFromEnv(params)
+	project := &Project{}
+	err := project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.Empty(t, params.InstallCommandName)
-	assert.Empty(t, params.InstallCommandArgs)
+	assert.Empty(t, project.InstallCommandName)
+	assert.Empty(t, project.InstallCommandArgs)
 
+	project = &Project{}
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
-	params = &Project{}
-	err = extractProjectParamsFromEnv(params)
+	err = project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Empty(t, params.InstallCommandArgs)
+	assert.Equal(t, "a", project.InstallCommandName)
+	assert.Empty(t, project.InstallCommandArgs)
 
+	project = &Project{}
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
-	params = &Project{}
-	err = extractProjectParamsFromEnv(params)
+	err = project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Equal(t, []string{"b"}, params.InstallCommandArgs)
+	assert.Equal(t, "a", project.InstallCommandName)
+	assert.Equal(t, []string{"b"}, project.InstallCommandArgs)
 
+	project = &Project{}
 	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
-	params = &Project{}
-	err = extractProjectParamsFromEnv(params)
+	err = project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.Equal(t, "a", params.InstallCommandName)
-	assert.Equal(t, []string{"b", "--flagName=flagValue"}, params.InstallCommandArgs)
+	assert.Equal(t, "a", project.InstallCommandName)
+	assert.Equal(t, []string{"b", "--flagName=flagValue"}, project.InstallCommandArgs)
 }
 
 func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
@@ -266,22 +261,21 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FailOnSecurityIssuesEnv:      "false",
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
+		jfrogReleasesRepoEnv:         "releases-remote",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	gitParams := Git{
-		GitProvider:              vcsutils.GitHub,
-		RepoOwner:                "jfrog",
-		Token:                    "123456789",
-		RepoName:                 "repoName",
-		Branches:                 []string{"master"},
-		ApiEndpoint:              "endpoint.com",
-		PullRequestID:            1,
-		BranchNameTemplate:       "branch",
-		CommitMessageTemplate:    "commit",
-		PullRequestTitleTemplate: "pr-title",
+	clientInfo := &ClientInfo{
+		GitProvider: vcsutils.GitHub,
+		VcsInfo: vcsclient.VcsInfo{
+			APIEndpoint: "endpoint.com",
+			Token:       "123456789",
+		},
+		RepoName:  "repoName",
+		Branches:  []string{"master"},
+		RepoOwner: "jfrog",
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -289,24 +283,24 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	configAggregator, err := newConfigAggregatorFromEnv(&gitParams, &server, "releases-remote")
+	repoAggregator, err := BuildRepoAggregator(nil, clientInfo, &server)
 	assert.NoError(t, err)
-	repo := configAggregator[0]
-	assert.Equal(t, "repoName", repo.RepoName)
+	repo := repoAggregator[0]
+	assert.Equal(t, "repoName", repo.ClientInfo.RepoName)
 	assert.Equal(t, "releases-remote", repo.JfrogReleasesRepo)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitParams.Token, repo.Token)
-	assert.Equal(t, gitParams.ApiEndpoint, repo.ApiEndpoint)
-	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
-	assert.Equal(t, gitParams.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
-	assert.Equal(t, gitParams.BranchNameTemplate, repo.BranchNameTemplate)
-	assert.Equal(t, gitParams.CommitMessageTemplate, repo.CommitMessageTemplate)
-	assert.Equal(t, gitParams.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
+	assert.Equal(t, clientInfo.RepoOwner, repo.ClientInfo.RepoOwner)
+	assert.Equal(t, clientInfo.Token, repo.ClientInfo.Token)
+	assert.Equal(t, clientInfo.APIEndpoint, repo.ClientInfo.APIEndpoint)
+	assert.ElementsMatch(t, clientInfo.Branches, repo.ClientInfo.Branches)
+	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
+	assert.Equal(t, clientInfo.GitProvider, repo.ClientInfo.GitProvider)
+	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
+	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
+	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
 	assert.Equal(t, server.User, repo.Server.User)
@@ -321,87 +315,62 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "deps-remote", project.Repository)
 }
 
-func TestExtractGitNamingTemplatesFromEnv(t *testing.T) {
-	git := Git{}
-	defer func() {
-		assert.NoError(t, SanitizeEnv())
-	}()
-
-	// Test default values
-	err := extractGitNamingTemplatesFromEnv(&git)
-	assert.NoError(t, err)
-	assert.Empty(t, git.BranchNameTemplate)
-	assert.Empty(t, git.CommitMessageTemplate)
-	assert.Empty(t, git.PullRequestTitleTemplate)
-	assert.Empty(t, git.AggregateFixes)
-
-	// Test value extraction
-	SetEnvAndAssert(t, map[string]string{
-		BranchNameTemplateEnv:       "branch",
-		CommitMessageTemplateEnv:    "commit",
-		PullRequestTitleTemplateEnv: "title",
-		GitAggregateFixesEnv:        "true"})
-
-	err = extractGitNamingTemplatesFromEnv(&git)
-	assert.NoError(t, err)
-	assert.Equal(t, git.BranchNameTemplate, "branch")
-	assert.Equal(t, git.CommitMessageTemplate, "commit")
-	assert.Equal(t, git.PullRequestTitleTemplate, "title")
-	assert.Equal(t, git.AggregateFixes, true)
-}
-
 func TestExtractProjectParamsFromEnv(t *testing.T) {
-	params := Project{}
+	project := &Project{}
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
 	// Test default values
-	err := extractProjectParamsFromEnv(&params)
+	err := project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.True(t, *params.UseWrapper)
-	assert.Equal(t, []string{RootDir}, params.WorkingDirs)
-	assert.Equal(t, "", params.PipRequirementsFile)
-	assert.Equal(t, "", params.InstallCommandName)
-	assert.Equal(t, []string(nil), params.InstallCommandArgs)
+	assert.True(t, *project.UseWrapper)
+	assert.Equal(t, []string{RootDir}, project.WorkingDirs)
+	assert.Equal(t, "", project.PipRequirementsFile)
+	assert.Equal(t, "", project.InstallCommandName)
+	assert.Equal(t, []string(nil), project.InstallCommandArgs)
 
 	// Test value extraction
 	SetEnvAndAssert(t, map[string]string{
 		WorkingDirectoryEnv: "b/c",
 		RequirementsFileEnv: "r.txt",
 		UseWrapperEnv:       "false",
-		InstallCommandEnv:   "nuget restore"})
+		InstallCommandEnv:   "nuget restore",
+		DepsRepoEnv:         "repository",
+	})
 
-	err = extractProjectParamsFromEnv(&params)
+	project = &Project{}
+	err = project.setDefaultsIfNeeded()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"b/c"}, params.WorkingDirs)
-	assert.Equal(t, "r.txt", params.PipRequirementsFile)
-	assert.False(t, *params.UseWrapper)
-	assert.Equal(t, "nuget", params.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, params.InstallCommandArgs)
+	assert.Equal(t, []string{"b/c"}, project.WorkingDirs)
+	assert.Equal(t, "r.txt", project.PipRequirementsFile)
+	assert.False(t, *project.UseWrapper)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
+	assert.Equal(t, "repository", project.Repository)
 }
 
-func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
+func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	configAggregator := FrogbotConfigAggregator{}
-	configAggregator, err = configAggregator.UnmarshalYaml(fileContent)
+	configAggregator := RepoAggregator{}
+	configAggregator, err = unmarshalFrogbotConfigYaml(fileContent)
 	assert.NoError(t, err)
 	firstRepo := configAggregator[0]
-	assert.Equal(t, "npm-repo", firstRepo.RepoName)
-	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
+	assert.Equal(t, "npm-repo", firstRepo.ClientInfo.RepoName)
+	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.ClientInfo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]
 	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
 	assert.False(t, *firstRepoProject.UseWrapper)
 	assert.Equal(t, "test-repo", firstRepoProject.Repository)
 	secondRepo := configAggregator[1]
-	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
-	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
+	assert.Equal(t, "mvn-repo", secondRepo.ClientInfo.RepoName)
+	assert.Equal(t, []string{"dev"}, secondRepo.ClientInfo.Branches)
 	thirdRepo := configAggregator[2]
-	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
-	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
+	assert.Equal(t, "pip-repo", thirdRepo.ClientInfo.RepoName)
+	assert.Equal(t, []string{"test"}, thirdRepo.ClientInfo.Branches)
 	assert.True(t, *thirdRepo.FailOnSecurityIssues)
 	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
 	thirdRepoProject := thirdRepo.Projects[0]
@@ -409,4 +378,55 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
+}
+
+func TestBuildMergedRepoAggregator(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		RequirementsFileEnv:          "r.txt",
+		UseWrapperEnv:                "false",
+		InstallCommandEnv:            "nuget restore",
+		IncludeAllVulnerabilitiesEnv: "false",
+		DepsRepoEnv:                  "repository",
+		CommitMessageTemplateEnv:     "commit-msg",
+		FailOnSecurityIssuesEnv:      "true",
+		jfrogWatchesEnv:              "watch-1,watch-2",
+	})
+	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
+	fileContent, err := os.ReadFile(testFilePath)
+	assert.NoError(t, err)
+	clientInfo := &ClientInfo{
+		GitProvider: vcsutils.GitHub,
+		VcsInfo: vcsclient.VcsInfo{
+			APIEndpoint: "endpoint.com",
+			Token:       "123456789",
+		},
+		RepoName:  "repoName",
+		Branches:  []string{"master"},
+		RepoOwner: "jfrog",
+	}
+	server := config.ServerDetails{
+		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
+		XrayUrl:        "http://127.0.0.1:8081/xray",
+		User:           "admin",
+		Password:       "password",
+	}
+	repoAggregator, err := BuildRepoAggregator(fileContent, clientInfo, &server)
+	assert.NoError(t, err)
+	repo := repoAggregator[0]
+	assert.True(t, repo.AggregateFixes)
+	assert.True(t, repo.IncludeAllVulnerabilities)
+	assert.True(t, repo.FixableOnly)
+	assert.True(t, *repo.FailOnSecurityIssues)
+	assert.Equal(t, "High", repo.MinSeverity)
+	assert.Equal(t, "commit-msg", repo.CommitMessageTemplate)
+	assert.Equal(t, "proj", repo.JFrogProjectKey)
+	assert.Equal(t, "myPullRequests", repo.PullRequestTitleTemplate)
+	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, repo.Watches)
+	project := repo.Projects[0]
+	assert.ElementsMatch(t, []string{"a/b"}, project.WorkingDirs)
+	assert.Equal(t, "r.txt", project.PipRequirementsFile)
+	assert.Equal(t, "repository", project.Repository)
+	assert.Equal(t, "nuget", project.InstallCommandName)
+	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
+	assert.False(t, *project.UseWrapper)
 }
