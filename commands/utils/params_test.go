@@ -354,8 +354,7 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	configAggregator := RepoAggregator{}
-	configAggregator, err = unmarshalFrogbotConfigYaml(fileContent)
+	configAggregator, err := unmarshalFrogbotConfigYaml(fileContent)
 	assert.NoError(t, err)
 	firstRepo := configAggregator[0]
 	assert.Equal(t, "npm-repo", firstRepo.ClientInfo.RepoName)
