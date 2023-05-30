@@ -60,7 +60,7 @@ func downloadExtractor(remoteRepoName string, server *config.ServerDetails, extr
 
 	log.Info("Downloading", extractor.extractorType, "extractor to path:", extractor.localPath)
 	remoteServer := getRemoteServer(server, remoteRepoName)
-	return utils.DownloadExtractor(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath())
+	return utils.DownloadDependency(remoteServer, extractor.downloadFromPath(), extractor.downloadToPath(), false)
 }
 
 func getRemoteServer(server *config.ServerDetails, remoteName string) *config.ServerDetails {
