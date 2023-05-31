@@ -20,7 +20,7 @@ func Exec(command FrogbotCommand, name string) error {
 	if err != nil {
 		return err
 	}
-	// Send usage report
+	// Send a usage report
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 	// Invoke the command interface

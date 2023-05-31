@@ -248,6 +248,9 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 	}
 
 	configAggregator, err := getConfigAggregator(client, clientInfo, server)
+	if err != nil {
+		return nil, err
+	}
 	return &FrogbotUtils{Repositories: configAggregator, Client: client, ServerDetails: server}, err
 }
 
@@ -257,7 +260,7 @@ func getConfigAggregator(client vcsclient.VcsClient, clientInfo *ClientInfo, ser
 	// Don't return error in case of a missing frogbot-config.yml file
 	// If an error occurs due to a missing file,
 	// Attempt to generate an environment variable-based configuration aggregator as an alternative.
-	if _, missingConfigErr := err.(*ErrMissingConfig); !missingConfigErr {
+	if _, missingConfigErr := err.(*ErrMissingConfig); !missingConfigErr && len(configFileContent) == 0 {
 		return nil, err
 	}
 	return BuildRepoAggregator(configFileContent, clientInfo, server)
@@ -267,7 +270,6 @@ func getConfigAggregator(client vcsclient.VcsClient, clientInfo *ClientInfo, ser
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (configFileContent []byte, err error) {
-	var targetConfigContent []byte
 	configFileContent, err = readConfigFromTarget(client, clientInfo)
 	_, missingConfigErr := err.(*ErrMissingConfig)
 	if err != nil && !missingConfigErr {
@@ -275,7 +277,7 @@ func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (c
 	}
 
 	// Read the config from the current working dir
-	if targetConfigContent == nil && err == nil {
+	if len(configFileContent) == 0 && err == nil {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 	}
 	return
