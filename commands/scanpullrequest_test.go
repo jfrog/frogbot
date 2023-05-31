@@ -532,6 +532,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 			APIEndpoint: server.URL,
 		},
 	}
+	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
