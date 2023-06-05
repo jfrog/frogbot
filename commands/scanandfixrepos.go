@@ -6,7 +6,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type ScanAndFixRepositories struct {
@@ -62,30 +61,4 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 
 	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: filepath.Join(saf.dryRunRepoPath, repository.RepoName)}
 	return cfp.scanAndFixRepository(repository, branch, client)
-}
-
-// Returns true if the latest commit status by Frogbot is not successful
-// OR it's older than SkipRepoScanDays.
-func shouldScanCommitByStatus(statuses []vcsclient.CommitStatusInfo) bool {
-	for _, status := range statuses {
-		if status.Creator == utils.FrogbotCreatorName && status.Description == utils.CommitStatusDescription {
-			return status.State != vcsclient.Pass || statusTimestampElapsed(status)
-		}
-	}
-	return true
-}
-
-// Checks if a commit status is older than SkipRepoScanDays number of days.
-func statusTimestampElapsed(latestStatus vcsclient.CommitStatusInfo) bool {
-	if latestStatus.CreatedAt.IsZero() && latestStatus.LastUpdatedAt.IsZero() {
-		// In case non were initialized, address this as expired date
-		return true
-	}
-	statusLastUpdatedTime := latestStatus.LastUpdatedAt
-	if statusLastUpdatedTime.IsZero() {
-		// Fallback to creation time
-		statusLastUpdatedTime = latestStatus.CreatedAt
-	}
-	passDueDate := time.Now().UTC().AddDate(0, 0, -utils.SkipRepoScanDays)
-	return statusLastUpdatedTime.Before(passDueDate)
 }
