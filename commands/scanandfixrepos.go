@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"path/filepath"
-	"strings"
 )
 
 type ScanAndFixRepositories struct {
@@ -16,24 +16,28 @@ type ScanAndFixRepositories struct {
 }
 
 func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	var errList strings.Builder
+	// Don't fail the whole run if there is an error on one repo, aggregate errors and log at the end.
+	var totalErrors error
 	for repoNum := range configAggregator {
-		saf.scanAndFixSingleRepository(&configAggregator[repoNum], client, errList)
+		if err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client); err != nil {
+			totalErrors = errors.Join(err)
+		}
 	}
-	if errList.String() != "" {
-		return errors.New(errList.String())
-	}
-	return nil
+	return totalErrors
 }
 
-func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient, errList strings.Builder) {
+func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+	var totalErrors error
 	for _, branch := range repoConfig.Branches {
 		if err := saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
 			if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
-				errList.WriteString(err.Error())
+				log.Debug(err.Error())
+			} else {
+				totalErrors = errors.Join(err)
 			}
 		}
 	}
+	return totalErrors
 }
 
 func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
