@@ -11,7 +11,7 @@ type SimplifiedOutput struct {
 }
 
 func (smo *SimplifiedOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createTableRow(vulnerability, ", ", smo.entitledForJas)
+	return createTableRow(vulnerability, smo)
 }
 
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
@@ -27,7 +27,7 @@ func (smo *SimplifiedOutput) Header() string {
 	if smo.entitledForJas {
 		header = tableHeaderWithJas
 	}
-	return header + "\n\n---"
+	return header
 }
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
@@ -46,22 +46,24 @@ func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.Vulnerability
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
+---
 ### Summary
-
-%s
-
 ---
 
-### Details
+%s %s
 
-`, getTableContent(vulnerabilitiesRows, smo)))
+---
+### Details
+---
+
+`,
+		smo.Header(),
+		getTableContent(vulnerabilitiesRows, smo)))
 	for _, vulnerability := range vulnerabilitiesRows {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s %s
 
 %s
-
----
 
 `,
 			vulnerability.ImpactedDependencyName,
@@ -74,4 +76,12 @@ func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.Vulnerability
 
 func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n\n---\n%s", CommentGeneratedByFrogbot)
+}
+
+func (smo *SimplifiedOutput) Seperator() string {
+	return ", "
+}
+
+func (smo *SimplifiedOutput) FormattedSeverity(severity string) string {
+	return severity
 }

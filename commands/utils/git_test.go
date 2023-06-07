@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -127,34 +128,34 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	}{
 		{
 			fixVersionMapFirst: map[string]*VulnerabilityDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false}},
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			fixVersionMapSecond: map[string]*VulnerabilityDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false}},
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal: true, desc: "should be equal",
 			gitManager: GitManager{},
 		},
 		{
 			fixVersionMapFirst: map[string]*VulnerabilityDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false},
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
 			fixVersionMapSecond: map[string]*VulnerabilityDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false}},
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      false,
 			desc:       "should not be equal",
 			gitManager: GitManager{},
 		},
 		{
 			fixVersionMapFirst: map[string]*VulnerabilityDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false},
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
 			fixVersionMapSecond: map[string]*VulnerabilityDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, IsDirectDependency: false}},
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      true,
 			desc:       "should be equal with template",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "custom"}},

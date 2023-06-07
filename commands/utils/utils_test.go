@@ -136,23 +136,23 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}{
 		{
 			fixVersionMap: map[string]*VulnerabilityDetails{
-				"pkg": {FixVersion: "1.2.3", PackageType: coreutils.Npm, IsDirectDependency: false}},
+				"pkg": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			expectedHash: "0aa066970b613b114f8e21d11c74ff94",
 		}, {
 			fixVersionMap: map[string]*VulnerabilityDetails{
-				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, IsDirectDependency: false},
-				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, IsDirectDependency: false}},
+				"pkg":  {FixVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		},
 		{
 			// The Same map with different order should be the same hash.
 			fixVersionMap: map[string]*VulnerabilityDetails{
-				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, IsDirectDependency: false},
-				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, IsDirectDependency: false}},
+				"pkg2": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false},
+				"pkg":  {FixVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		}, {
 			fixVersionMap: map[string]*VulnerabilityDetails{
-				"myNuget": {FixVersion: "0.2.33", PackageType: coreutils.Nuget, IsDirectDependency: false}},
+				"myNuget": {FixVersion: "0.2.33", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget}, IsDirectDependency: false}},
 			expectedHash: "887ac2c931920c20956409702c0dfbc7",
 		},
 	}

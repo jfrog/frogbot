@@ -339,7 +339,7 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 {
-		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas())
+		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle() + writer.Header() + writer.Content(vulnerabilitiesRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+	return writer.VulnerabiltiesTitle() + writer.Content(vulnerabilitiesRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
 }

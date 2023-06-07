@@ -32,6 +32,7 @@ const vulnerabilityDetailsCommentWithJas = `
 %s
 
 **Remediation:**
+
 %s
 `
 
@@ -44,6 +45,8 @@ type OutputWriter interface {
 	Header() string
 	Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
 	Footer() string
+	Seperator() string
+	FormattedSeverity(severity string) string
 	IsFrogbotResultComment(comment string) bool
 	SetEntitledForJas(entitled bool)
 	EntitledForJas() bool
@@ -59,7 +62,7 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 func JasMsg(entitled bool) string {
 	msg := ""
 	if !entitled {
-		msg = "\n* **Frogbot** also supports the [‘Contextual Analysis’](https://jfrog.com/security-and-compliance/) feature, which is included as part of the ‘Advanced Security’ package.\nThis package isn't enabled on your system."
+		msg = "\n\n --- \n* **Frogbot** also supports the [‘Contextual Analysis’](https://jfrog.com/security-and-compliance/) feature, which is included as part of the ‘Advanced Security’ package.\nThis package isn't enabled on your system."
 	}
 	return msg
 }
@@ -69,7 +72,10 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 	for _, cve := range vulnerabilityDetails.Cves {
 		cves = append(cves, cve.Id)
 	}
-	if vulnerabilityDetails.Applicable != "" {
+	if vulnerabilityDetails.JfrogResearchInformation == nil {
+		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
+	}
+	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
 		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
 			utils.GetSeverity(vulnerabilityDetails.Severity, vulnerabilityDetails.Applicable).Emoji(),
 			vulnerabilityDetails.Severity,
@@ -92,22 +98,22 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 		vulnerabilityDetails.JfrogResearchInformation.Details)
 }
 
-func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, seperator string, entitledForJas bool) string {
+func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var directDependencies strings.Builder
 	if len(vulnerability.Components) > 0 {
 		for _, dependency := range vulnerability.Components {
-			directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, seperator))
+			directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, writer.Seperator()))
 		}
 	}
 
-	row := fmt.Sprintf("| %s%8s | ", GetSeverityTag(IconName(vulnerability.Severity)), vulnerability.Severity)
-	if entitledForJas {
-		row += vulnerability.Applicable + " "
+	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity))
+	if writer.EntitledForJas() {
+		row += vulnerability.Applicable + " |"
 	}
-	row += fmt.Sprintf("| %s | %s | %s |",
-		strings.TrimSuffix(directDependencies.String(), seperator),
+	row += fmt.Sprintf("%s | %s | %s |",
+		strings.TrimSuffix(directDependencies.String(), writer.Seperator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, seperator),
+		strings.Join(vulnerability.FixedVersions, writer.Seperator()),
 	)
 	return row
 }
@@ -115,7 +121,7 @@ func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, seperator
 func getTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var tableContent string
 	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += writer.TableRow(vulnerability)
+		tableContent += "\n" + writer.TableRow(vulnerability)
 	}
 	return tableContent
 }

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -176,7 +177,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan CreateFixPullRequestsCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			vulnDetails := &utils.VulnerabilityDetails{FixVersion: "3.3.3", PackageType: tech, ImpactedDependency: impactedDependency, IsDirectDependency: true}
+			vulnDetails := &utils.VulnerabilityDetails{FixVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
 			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")

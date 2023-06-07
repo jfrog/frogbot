@@ -11,15 +11,15 @@ type StandardOutput struct {
 }
 
 func (so *StandardOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createTableRow(vulnerability, "<br>", so.entitledForJas)
+	return createTableRow(vulnerability, so)
 }
 
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
-	return GetBanner(NoVulnerabilityBannerSource) + CommentGeneratedByFrogbot
+	return GetBanner(NoVulnerabilityBannerSource)
 }
 
 func (so *StandardOutput) VulnerabiltiesTitle() string {
-	return GetBanner(VulnerabilitiesBannerSource) + CommentGeneratedByFrogbot
+	return GetBanner(VulnerabilitiesBannerSource)
 }
 
 func (so *StandardOutput) Header() string {
@@ -48,8 +48,9 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 ## Summary
 
 <div align="center">
-%s
-%s
+
+%s %s
+
 </div>
 
 ## Details
@@ -61,6 +62,7 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 	for _, vulnerability := range vulnerabilitiesRows {
 		if len(vulnerabilitiesRows) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
+
 %s
 
 `, createVulnerabilityDescription(&vulnerability)))
@@ -69,7 +71,7 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 		contentBuilder.WriteString(fmt.Sprintf(`
 <details>
 <summary> <b>%s %s</b> </summary>
-
+<br>
 %s
 
 </details>
@@ -92,4 +94,12 @@ func (so *StandardOutput) Footer() string {
 
 </div>
 `, CommentGeneratedByFrogbot)
+}
+
+func (so *StandardOutput) Seperator() string {
+	return "<br>"
+}
+
+func (so *StandardOutput) FormattedSeverity(severity string) string {
+	return fmt.Sprintf("%s%8s", GetSeverityTag(IconName(severity)), severity)
 }

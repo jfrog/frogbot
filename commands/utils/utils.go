@@ -76,8 +76,6 @@ type VulnerabilityDetails struct {
 	FixVersion string
 	// States whether the dependency is direct or transitive
 	IsDirectDependency bool
-	// States whether the dependency has been updated to the fixed version
-	IsFixed bool
 	// Cves as a list of string
 	Cves []string
 }
