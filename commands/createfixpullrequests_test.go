@@ -58,7 +58,7 @@ var testPackagesData = []struct {
 	},
 }
 
-func TestCreateFixPullRequestsAggregateFixes(t *testing.T) {
+func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 	tests := []struct {
 		repoName           string
 		testDir            string
@@ -91,6 +91,14 @@ func TestCreateFixPullRequestsAggregateFixes(t *testing.T) {
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
 		},
+		{
+			repoName:           "non-aggregate",
+			testDir:            "createfixpullrequests/non-aggregate",
+			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-non-aggregate.yml"),
+			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
+			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			dependencyFileName: "package.json",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.repoName, func(t *testing.T) {
@@ -112,14 +120,14 @@ func TestCreateFixPullRequestsAggregateFixes(t *testing.T) {
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: filepath.Join("testdata", test.testDir)}
 			err = cmd.Run(configAggregator, client)
 			assert.NoError(t, err)
-			resultDiff := verifyPackageJsonDiff(t, "main", test.expectedBranchName, test.dependencyFileName)
+			resultDiff := verifyDependencyFileDiff(t, "main", test.expectedBranchName, test.dependencyFileName)
 			assert.Equal(t, test.expectedDiff, resultDiff)
 		})
 	}
 }
 
-// Running git diff and making sure expected changes to the package.json file
-func verifyPackageJsonDiff(t *testing.T, rootBranch string, fixBranch string, dependencyFilename string) string {
+// Running git diff and making sure expected changes to the dependency file
+func verifyDependencyFileDiff(t *testing.T, rootBranch string, fixBranch string, dependencyFilename string) string {
 	defer func() {
 		currWd, err := os.Getwd()
 		assert.NoError(t, err)

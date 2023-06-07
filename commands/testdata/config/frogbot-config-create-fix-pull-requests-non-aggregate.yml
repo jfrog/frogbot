@@ -1,0 +1,5 @@
+- params:
+    git:
+      repoName: non-aggregate
+      branches:
+        - main
