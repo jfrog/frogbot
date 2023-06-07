@@ -16,28 +16,28 @@ type ScanAndFixRepositories struct {
 }
 
 func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
-	// Don't fail the whole run if there is an error on one repo, aggregate errors and log at the end.
-	var totalErrors error
+	// Aggregate errors and log at the end rather than failing the entire run if there is an error on one repository.
+	var aggregatedErrors error
 	for repoNum := range configAggregator {
 		if err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client); err != nil {
-			totalErrors = errors.Join(err)
+			aggregatedErrors = errors.Join(err)
 		}
 	}
-	return totalErrors
+	return aggregatedErrors
 }
 
 func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
-	var totalErrors error
+	var aggregatedErrors error
 	for _, branch := range repoConfig.Branches {
 		if err := saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
 			if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 				log.Debug(err.Error())
 			} else {
-				totalErrors = errors.Join(err)
+				aggregatedErrors = errors.Join(err)
 			}
 		}
 	}
-	return totalErrors
+	return aggregatedErrors
 }
 
 func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
