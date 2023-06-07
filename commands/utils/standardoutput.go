@@ -6,45 +6,90 @@ import (
 	"strings"
 )
 
-type StandardOutput struct{}
+type StandardOutput struct {
+	entitledForJas bool
+}
 
 func (so *StandardOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	var cveId string
-	if len(vulnerability.Cves) > 0 {
-		cveId = vulnerability.Cves[0].Id
-	}
-
-	var directDependencies, directDependenciesVersions strings.Builder
-	if len(vulnerability.Components) > 0 {
-		for _, dependency := range vulnerability.Components {
-			directDependencies.WriteString(fmt.Sprintf("%s<br>", dependency.Name))
-			directDependenciesVersions.WriteString(fmt.Sprintf("%s<br>", dependency.Version))
-		}
-	}
-
-	return fmt.Sprintf("\n| %s%8s | %s | %s | %s | %s | %s | %s ",
-		GetSeverityTag(IconName(vulnerability.Severity)),
-		vulnerability.Severity,
-		strings.TrimSuffix(directDependencies.String(), "<br>"),
-		strings.TrimSuffix(directDependenciesVersions.String(), "<br>"),
-		vulnerability.ImpactedDependencyName,
-		vulnerability.ImpactedDependencyVersion,
-		strings.Join(vulnerability.FixedVersions, "<br>"),
-		cveId)
+	return createTableRow(vulnerability, "<br>", so.entitledForJas)
 }
 
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
-	return GetBanner(NoVulnerabilityBannerSource) + WhatIsFrogbotMd
+	return GetBanner(NoVulnerabilityBannerSource) + CommentGeneratedByFrogbot
 }
 
 func (so *StandardOutput) VulnerabiltiesTitle() string {
-	return GetBanner(VulnerabilitiesBannerSource) + WhatIsFrogbotMd
+	return GetBanner(VulnerabilitiesBannerSource) + CommentGeneratedByFrogbot
 }
 
-func (so *StandardOutput) TableHeader() string {
+func (so *StandardOutput) Header() string {
+	if so.entitledForJas {
+		return tableHeaderWithJas
+	}
 	return tableHeader
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.Contains(comment, GetIconTag(NoVulnerabilityBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesBannerSource))
+}
+
+func (so *StandardOutput) SetEntitledForJas(entitledForJas bool) {
+	so.entitledForJas = entitledForJas
+}
+
+func (so *StandardOutput) EntitledForJas() bool {
+	return so.entitledForJas
+}
+
+func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+	var contentBuilder strings.Builder
+	// Write summary table part
+	contentBuilder.WriteString(fmt.Sprintf(`
+## Summary
+
+<div align="center">
+%s
+%s
+</div>
+
+## Details
+
+`,
+		so.Header(),
+		getTableContent(vulnerabilitiesRows, so)))
+	// Write details for each vulnerability
+	for _, vulnerability := range vulnerabilitiesRows {
+		if len(vulnerabilitiesRows) == 1 {
+			contentBuilder.WriteString(fmt.Sprintf(`
+%s
+
+`, createVulnerabilityDescription(&vulnerability)))
+			break
+		}
+		contentBuilder.WriteString(fmt.Sprintf(`
+<details>
+<summary> <b>%s %s</b> </summary>
+
+%s
+
+</details>
+
+`,
+			vulnerability.ImpactedDependencyName,
+			vulnerability.ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerability)))
+	}
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) Footer() string {
+	return fmt.Sprintf(`
+---
+
+<div align="center">
+
+%s
+
+</div>
+`, CommentGeneratedByFrogbot)
 }

@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	utils2 "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -69,7 +71,10 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.Equal(t, "XRAY-2", rows[0].IssueId)
@@ -122,7 +127,10 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.ElementsMatch(t, expected, rows)
@@ -154,7 +162,10 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
 }
@@ -202,7 +213,7 @@ func TestGetAllVulnerabilities(t *testing.T) {
 	}
 
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows, err := createAllIssuesRows([]services.ScanResponse{currentScan}, false)
+	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}})
 	assert.NoError(t, err)
 	assert.Len(t, rows, 4)
 	assert.ElementsMatch(t, expected, rows)
@@ -251,7 +262,10 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.ElementsMatch(t, expected, rows)
@@ -295,7 +309,10 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.ElementsMatch(t, expected, rows)
@@ -326,7 +343,10 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	rows, err := createNewIssuesRows([]services.ScanResponse{previousScan}, []services.ScanResponse{currentScan}, false)
+	rows, err := createNewIssuesRows(
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
 }

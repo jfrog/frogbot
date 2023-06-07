@@ -6,40 +6,72 @@ import (
 	"strings"
 )
 
-type SimplifiedOutput struct{}
+type SimplifiedOutput struct {
+	entitledForJas bool
+}
 
 func (smo *SimplifiedOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	var cveId string
-	if len(vulnerability.Cves) > 0 {
-		cveId = vulnerability.Cves[0].Id
-	}
-	var directDependencies strings.Builder
-	if len(vulnerability.Components) > 0 {
-		for _, dependency := range vulnerability.Components {
-			directDependencies.WriteString(fmt.Sprintf("%s:%s, ", dependency.Name, dependency.Version))
-		}
-	}
-	return fmt.Sprintf("\n| %s | %s | %s | %s | %s | %s |",
-		vulnerability.Severity,
-		strings.TrimSuffix(directDependencies.String(), ", "),
-		vulnerability.ImpactedDependencyName,
-		vulnerability.ImpactedDependencyVersion,
-		strings.Join(vulnerability.FixedVersions, " "),
-		cveId)
+	return createTableRow(vulnerability, ", ", smo.entitledForJas)
 }
 
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
-	return GetSimplifiedTitle(NoVulnerabilityBannerSource) + WhatIsFrogbotMd
+	return GetSimplifiedTitle(NoVulnerabilityBannerSource)
 }
 
 func (smo *SimplifiedOutput) VulnerabiltiesTitle() string {
-	return GetSimplifiedTitle(VulnerabilitiesBannerSource) + WhatIsFrogbotMd
+	return GetSimplifiedTitle(VulnerabilitiesBannerSource)
 }
 
-func (smo *SimplifiedOutput) TableHeader() string {
-	return simplifiedTableHeader
+func (smo *SimplifiedOutput) Header() string {
+	header := tableHeader
+	if smo.entitledForJas {
+		header = tableHeaderWithJas
+	}
+	return header + "\n\n---"
 }
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesBannerSource))
+}
+
+func (smo *SimplifiedOutput) SetEntitledForJas(entitledForJas bool) {
+	smo.entitledForJas = entitledForJas
+}
+
+func (smo *SimplifiedOutput) EntitledForJas() bool {
+	return smo.entitledForJas
+}
+
+func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+	var contentBuilder strings.Builder
+	// Write summary table part
+	contentBuilder.WriteString(fmt.Sprintf(`
+### Summary
+
+%s
+
+---
+
+### Details
+
+`, getTableContent(vulnerabilitiesRows, smo)))
+	for _, vulnerability := range vulnerabilitiesRows {
+		contentBuilder.WriteString(fmt.Sprintf(`
+#### %s %s
+
+%s
+
+---
+
+`,
+			vulnerability.ImpactedDependencyName,
+			vulnerability.ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerability)))
+	}
+
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) Footer() string {
+	return fmt.Sprintf("\n\n---\n%s", CommentGeneratedByFrogbot)
 }

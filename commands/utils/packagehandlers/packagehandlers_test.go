@@ -16,7 +16,7 @@ import (
 )
 
 type dependencyFixTest struct {
-	fixVersionInfo *utils.FixDetails
+	fixVersionInfo *utils.VulnerabilityDetails
 	fixSupported   bool
 }
 
@@ -37,33 +37,33 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	goPackageHandler := GoPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "0.0.0-20201216223049-8b5274cf687f",
 				PackageType:        coreutils.Go,
-				DirectDependency:   false,
+				IsDirectDependency: false,
 				ImpactedDependency: "golang.org/x/crypto",
 			}, fixSupported: true,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "1.7.7",
 				PackageType:        coreutils.Go,
-				DirectDependency:   true,
+				IsDirectDependency: true,
 				ImpactedDependency: "github.com/gin-gonic/gin",
 			}, fixSupported: true,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "1.3.0",
 				PackageType:        coreutils.Go,
-				DirectDependency:   true,
+				IsDirectDependency: true,
 				ImpactedDependency: "github.com/google/uuid",
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Go)
 			err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
 			if !test.fixSupported {
@@ -82,26 +82,26 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 // Python, includes pip,pipenv, poetry
 func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []pythonIndirectDependencies{
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Pip, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Poetry, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "pyproejct.toml"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Pipenv, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "Pipfile"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "Pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "setup.py"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Pip, ImpactedDependency: "urllib3", IsDirectDependency: false}, fixSupported: false}, requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Poetry, ImpactedDependency: "urllib3", IsDirectDependency: false}, fixSupported: false}, requirementsPath: "pyproejct.toml"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "1.25.9", PackageType: coreutils.Pipenv, ImpactedDependency: "urllib3", IsDirectDependency: false}, fixSupported: false}, requirementsPath: "Pipfile"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", IsDirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "Pyjwt", IsDirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", IsDirectDependency: true}, fixSupported: true}, requirementsPath: "setup.py"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", IsDirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
+		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.VulnerabilityDetails{
+			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", IsDirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.IsDirectDependency)
 			pythonPackageHandler := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
 			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
@@ -144,25 +144,25 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 	npmPackageHandler := &NpmPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "0.8.4",
 				PackageType:        coreutils.Npm,
-				DirectDependency:   false,
+				IsDirectDependency: false,
 				ImpactedDependency: "mpath",
 			}, fixSupported: false,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "3.0.2",
 				PackageType:        coreutils.Npm,
-				DirectDependency:   true,
+				IsDirectDependency: true,
 				ImpactedDependency: "minimatch",
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Npm)
 			err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
 			if !test.fixSupported {
@@ -182,25 +182,25 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "1.2.6",
 				PackageType:        coreutils.Yarn,
-				DirectDependency:   false,
+				IsDirectDependency: false,
 				ImpactedDependency: "minimist",
 			}, fixSupported: false,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
+			fixVersionInfo: &utils.VulnerabilityDetails{
 				FixVersion:         "1.2.6",
 				PackageType:        coreutils.Yarn,
-				DirectDependency:   true,
+				IsDirectDependency: true,
 				ImpactedDependency: "minimist",
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
 			err := yarnPackageHandler.UpdateDependency(test.fixVersionInfo)
 			if !test.fixSupported {
@@ -218,21 +218,21 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 // Maven
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	tests := []dependencyFixTest{
-		{fixVersionInfo: &utils.FixDetails{
+		{fixVersionInfo: &utils.VulnerabilityDetails{
 			FixVersion:         "2.7",
 			PackageType:        coreutils.Maven,
 			ImpactedDependency: "commons-io:commons-io",
-			DirectDependency:   true}, fixSupported: true},
-		{fixVersionInfo: &utils.FixDetails{
+			IsDirectDependency: true}, fixSupported: true},
+		{fixVersionInfo: &utils.VulnerabilityDetails{
 			FixVersion:         "4.3.20",
 			PackageType:        coreutils.Maven,
 			ImpactedDependency: "org.springframework:spring-core",
-			DirectDependency:   false}, fixSupported: false},
+			IsDirectDependency: false}, fixSupported: false},
 	}
 	for _, test := range tests {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
+		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.IsDirectDependency), func(t *testing.T) {
 			mavenPackageHandler := MavenPackageHandler{}
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			testDataDir := getTestDataDir(t, test.fixVersionInfo.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
 			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
 			if !test.fixSupported {
@@ -440,14 +440,14 @@ func TestMavenGavReader(t *testing.T) {
 // General Utils functions
 func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 	type testCase struct {
-		fixVersionInfo utils.FixDetails
+		fixVersionInfo utils.VulnerabilityDetails
 		newFixVersion  string
 		expectedOutput string
 	}
 
 	testCases := []testCase{
-		{fixVersionInfo: utils.FixDetails{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
-		{fixVersionInfo: utils.FixDetails{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
+		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", PackageType: "pkg", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
+		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", PackageType: "pkg", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
 	}
 
 	for _, tc := range testCases {

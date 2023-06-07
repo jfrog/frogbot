@@ -25,44 +25,44 @@ type PythonPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
-	if fixDetails.DirectDependency {
-		return py.updateDirectDependency(fixDetails)
+func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if vulnDetails.IsDirectDependency {
+		return py.updateDirectDependency(vulnDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.FixVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }
 
-func (py *PythonPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
-	switch fixDetails.PackageType {
+func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+	switch vulnDetails.Technology {
 	case coreutils.Poetry:
-		return py.handlePoetry(fixDetails)
+		return py.handlePoetry(vulnDetails)
 	case coreutils.Pip:
-		return py.handlePip(fixDetails)
+		return py.handlePip(vulnDetails)
 	case coreutils.Pipenv:
-		return py.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
+		return py.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
 	default:
-		return errors.New("unknown python package manger: " + fixDetails.PackageType.GetPackageType())
+		return errors.New("unknown python package manger: " + vulnDetails.Technology.GetPackageType())
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(fixDetails *utils.FixDetails) (err error) {
+func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// Install the desired fixed version
-	if err = py.CommonPackageHandler.UpdateDependency(fixDetails); err != nil {
+	if err = py.CommonPackageHandler.UpdateDependency(vulnDetails); err != nil {
 		return
 	}
 	// Update Poetry lock file as well
 	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
 }
 
-func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err error) {
+func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
-	fixedPackage := fixDetails.ImpactedDependency + "==" + fixDetails.FixVersion
+	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.FixVersion
 	if py.pipRequirementsFile == "" {
 		py.pipRequirementsFile = "setup.py"
 	}
@@ -82,12 +82,12 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err err
 
 	// Check both original and lowered package name and replace to only one lowered result
 	// This regex will match the impactedPackage with it's pinned version e.py. PyJWT==1.7.1
-	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + fixDetails.ImpactedDependency + "|" + strings.ToLower(fixDetails.ImpactedDependency) + ")" + PythonPackageRegexSuffix)
+	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + vulnDetails.ImpactedDependencyName + "|" + strings.ToLower(vulnDetails.ImpactedDependencyName) + ")" + PythonPackageRegexSuffix)
 	if packageToReplace := re.FindString(currentFile); packageToReplace != "" {
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
 	if fixedFile == "" {
-		return fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
+		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
 	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
 }

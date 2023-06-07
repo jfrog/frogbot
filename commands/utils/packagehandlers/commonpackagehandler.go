@@ -11,11 +11,11 @@ import (
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
-	UpdateDependency(details *utils.FixDetails) error
+	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
 
-func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *utils.ScanDetails) (handler PackageHandler) {
-	switch fixVersionInfo.PackageType {
+func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+	switch vulnDetails.Technology {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
 	case coreutils.Poetry:
@@ -37,15 +37,15 @@ func GetCompatiblePackageHandler(fixVersionInfo *utils.FixDetails, details *util
 type CommonPackageHandler struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
-func (cph *CommonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
+func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
-	impactedPackage := strings.ToLower(fixDetails.ImpactedDependency)
-	commandArgs := []string{fixDetails.PackageType.GetPackageInstallOperator()}
+	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
+	commandArgs := []string{vulnDetails.Technology.GetPackageInstallOperator()}
 	commandArgs = append(commandArgs, extraArgs...)
-	operator := fixDetails.PackageType.GetPackageOperator()
-	fixedPackage := impactedPackage + operator + fixDetails.FixVersion
+	operator := vulnDetails.Technology.GetPackageOperator()
+	fixedPackage := impactedPackage + operator + vulnDetails.FixVersion
 	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), commandArgs)
+	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
 }
 
 func runPackageMangerCommand(commandName string, commandArgs []string) error {
