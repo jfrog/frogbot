@@ -34,6 +34,8 @@ type CreateFixPullRequestsCmd struct {
 	aggregateFixes bool
 	// Stores all package manager handlers for detected issues
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
+	// Folder containing the modified repo, used for testing.
+	testFolderPath string
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -126,14 +128,14 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 		return
 	}
 	defer func() {
+		if cfp.dryRun {
+			// Don't delete on dryRun as we want to check the results
+			cfp.testFolderPath = clonedRepoDir
+			return
+		}
 		e1 := restoreBaseDir()
 		e2 := fileutils.RemoveTempDir(clonedRepoDir)
-		if err == nil {
-			err = e1
-			if err == nil {
-				err = e2
-			}
-		}
+		err = errors.Join(e1, e2)
 	}()
 	if cfp.aggregateFixes {
 		err = cfp.fixIssuesSinglePR(fixVersionsMap)

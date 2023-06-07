@@ -1,0 +1,6 @@
+- params:
+    git:
+      repoName: aggregate
+      branches:
+        - main
+      aggregateFixes: true

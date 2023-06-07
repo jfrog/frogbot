@@ -1,0 +1,6 @@
+- params:
+    git:
+      repoName: aggregate-no-vul
+      branches:
+        - main
+      aggregateFixes: true

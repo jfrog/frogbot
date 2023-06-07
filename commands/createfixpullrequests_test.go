@@ -1,11 +1,16 @@
 package commands
 
 import (
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/frogbot/commands/utils"
@@ -51,6 +56,79 @@ var testPackagesData = []struct {
 	{
 		packageType: coreutils.Poetry,
 	},
+}
+
+func TestCreateFixPullRequestsAggregateFixes(t *testing.T) {
+	tests := []struct {
+		repoName           string
+		testDir            string
+		configPath         string
+		expectedBranchName string
+		expectedDiff       string
+		dependencyFileName string
+	}{
+		{
+			repoName:           "aggregate",
+			testDir:            "createfixpullrequests/aggregate",
+			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate.yml"),
+			expectedBranchName: "frogobt-ba1cfdc506c8ce3c8d4709ac9f47b40a",
+			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			dependencyFileName: "package.json",
+		},
+		{
+			repoName:           "aggregate-no-vul",
+			testDir:            "createfixpullrequests/aggregate-no-vul",
+			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-no-vul.yml"),
+			expectedBranchName: "", // No branch should be created
+			dependencyFileName: "package.json",
+			expectedDiff:       "",
+		},
+		{
+			repoName:           "aggregate-cant-fix",
+			testDir:            "createfixpullrequests/aggregate-cant-fix",
+			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-cant-fix.yml"),
+			expectedBranchName: "frogobt-464ee0967f7fadd03a83b3be1362aaa2",
+			expectedDiff:       "",         // No diff expected
+			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.repoName, func(t *testing.T) {
+			serverParams, restoreEnv := verifyEnv(t)
+			defer restoreEnv()
+			var port string
+			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
+			defer server.Close()
+			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
+			gitTestParams := &utils.Git{GitProvider: vcsutils.GitHub, RepoOwner: "jfrog", Token: "123456", ApiEndpoint: server.URL, PullRequestID: 1}
+			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
+			assert.NoError(t, err)
+			configData, err := utils.ReadConfigFromFileSystem(test.configPath)
+			assert.NoError(t, err)
+			_, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
+			defer cleanUp()
+			configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
+			assert.NoError(t, err)
+			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: filepath.Join("testdata", test.testDir)}
+			err = cmd.Run(configAggregator, client)
+			assert.NoError(t, err)
+			resultDiff := verifyPackageJsonDiff(t, "main", test.expectedBranchName, test.dependencyFileName)
+			assert.Equal(t, test.expectedDiff, resultDiff)
+		})
+	}
+}
+
+// Running git diff and making sure expected changes to the package.json file
+func verifyPackageJsonDiff(t *testing.T, rootBranch string, fixBranch string, dependencyFilename string) string {
+	defer func() {
+		currWd, err := os.Getwd()
+		assert.NoError(t, err)
+		err = fileutils.RemoveTempDir(currWd)
+		assert.NoError(t, err)
+	}()
+	cmd := exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	output, _ := cmd.Output()
+	return string(output)
 }
 
 // /      1.0         --> 1.0 ≤ x

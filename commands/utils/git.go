@@ -194,6 +194,9 @@ func (gm *GitManager) commit(commitMessage string) error {
 }
 
 func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
+	if gm.dryRun {
+		return false, nil
+	}
 	remote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
 		return false, errorutils.CheckError(err)

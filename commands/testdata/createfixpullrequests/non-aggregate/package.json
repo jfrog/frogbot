@@ -1,0 +1,28 @@
+{
+  "name": "non-aggregate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no tsest specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@apollo/client": "^3.7.11",
+    "graphql": "^16.6.0",
+    "json5": "^1.0.2",
+    "jsonwebtoken": "^9.0.0",
+    "ldapjs": "^3.0.1",
+    "primeflex": "^3.3.0",
+    "primeicons": "^6.0.1",
+    "primereact": "^9.2.1",
+    "sass": "^1.59.3",
+    "scss": "^0.2.4",
+    "typescript": "5.0.2",
+    "uuid": "^9.0.0",
+    "moment": "2.29.1",
+    "lodash": "4.16.4",
+    "mongoose":"5.10.10"
+  }
+}
