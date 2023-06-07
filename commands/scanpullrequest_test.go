@@ -417,6 +417,8 @@ func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup.Project = params
 	scanSetup.SetFailOnInstallationErrors(true)
 	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
+	err = fileutils.RemoveTempDir(tmpDir)
+	assert.NoError(t, err)
 }
 
 func TestScanPullRequest(t *testing.T) {

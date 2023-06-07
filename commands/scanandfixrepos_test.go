@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -60,6 +61,10 @@ func TestScanAndFixRepos(t *testing.T) {
 
 	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
 	assert.NoError(t, cmd.Run(configAggregator, client))
+	for _, dir := range cmd.testFolderPath {
+		err = fileutils.RemoveTempDir(dir)
+		assert.NoError(t, err)
+	}
 }
 
 func TestShouldScanBranchByStatus(t *testing.T) {

@@ -17,6 +17,7 @@ type ScanAndFixRepositories struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
+	testFolderPath []string
 }
 
 func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -85,7 +86,12 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Fr
 	}()
 
 	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: filepath.Join(saf.dryRunRepoPath, repository.RepoName)}
-	return cfp.scanAndFixRepository(repository, branch, client)
+	err = cfp.scanAndFixRepository(repository, branch, client)
+	// Save dry run paths to delete
+	if cfp.dryRun {
+		saf.testFolderPath = append(saf.testFolderPath, cfp.testFolderPath)
+	}
+	return err
 }
 
 func (saf *ScanAndFixRepositories) setCommitBuildStatus(client vcsclient.VcsClient, repoConfig *utils.FrogbotRepoConfig, state vcsclient.CommitStatus, commitHash, description string) error {
