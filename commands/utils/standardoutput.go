@@ -59,13 +59,13 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 		so.Header(),
 		getTableContent(vulnerabilitiesRows, so)))
 	// Write details for each vulnerability
-	for _, vulnerability := range vulnerabilitiesRows {
+	for i := range vulnerabilitiesRows {
 		if len(vulnerabilitiesRows) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
 
 %s
 
-`, createVulnerabilityDescription(&vulnerability)))
+`, createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -77,9 +77,9 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 </details>
 
 `,
-			vulnerability.ImpactedDependencyName,
-			vulnerability.ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerability)))
+			vulnerabilitiesRows[i].ImpactedDependencyName,
+			vulnerabilitiesRows[i].ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 	}
 	return contentBuilder.String()
 }

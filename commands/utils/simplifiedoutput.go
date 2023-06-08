@@ -59,16 +59,16 @@ func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.Vulnerability
 `,
 		smo.Header(),
 		getTableContent(vulnerabilitiesRows, smo)))
-	for _, vulnerability := range vulnerabilitiesRows {
+	for i := range vulnerabilitiesRows {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s %s
 
 %s
 
 `,
-			vulnerability.ImpactedDependencyName,
-			vulnerability.ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerability)))
+			vulnerabilitiesRows[i].ImpactedDependencyName,
+			vulnerabilitiesRows[i].ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 	}
 
 	return contentBuilder.String()
