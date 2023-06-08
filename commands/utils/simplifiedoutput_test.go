@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -101,4 +102,123 @@ func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestSimplifiedOutput_Content(t *testing.T) {
+	// Create a new instance of StandardOutput
+	so := &SimplifiedOutput{}
+
+	// Create some sample vulnerabilitiesRows for testing
+	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyName:    "Dependency1",
+			FixedVersions:             []string{"2.2.3"},
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
+			ImpactedDependencyVersion: "1.0.0",
+		},
+		{
+			ImpactedDependencyName:    "Dependency2",
+			FixedVersions:             []string{"2.2.3"},
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
+			ImpactedDependencyVersion: "2.0.0",
+		},
+	}
+
+	// Set the expected content string based on the sample data
+	expectedContent := fmt.Sprintf(`
+---
+### Summary
+---
+
+%s %s
+
+---
+### Details
+---
+
+
+#### %s %s
+
+%s
+
+
+#### %s %s
+
+%s
+
+`,
+		so.Header(),
+		getTableContent(vulnerabilitiesRows, so),
+		vulnerabilitiesRows[0].ImpactedDependencyName,
+		vulnerabilitiesRows[0].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		vulnerabilitiesRows[1].ImpactedDependencyName,
+		vulnerabilitiesRows[1].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+	)
+
+	actualContent := so.Content(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
+}
+
+func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
+	// Create a new instance of StandardOutput
+	so := &SimplifiedOutput{entitledForJas: true}
+
+	// Create some sample vulnerabilitiesRows for testing
+	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyName:    "Dependency1",
+			ImpactedDependencyVersion: "1.0.0",
+			FixedVersions:             []string{"2.2.3"},
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
+			Applicable:                "Applicable",
+		},
+		{
+			ImpactedDependencyName:    "Dependency2",
+			ImpactedDependencyVersion: "2.0.0",
+			FixedVersions:             []string{"2.2.3"},
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
+			Applicable:                "Not Applicable",
+		},
+	}
+
+	// Set the expected content string based on the sample data
+	expectedContent := fmt.Sprintf(`
+---
+### Summary
+---
+
+%s %s
+
+---
+### Details
+---
+
+
+#### %s %s
+
+%s
+
+
+#### %s %s
+
+%s
+
+`,
+		so.Header(),
+		getTableContent(vulnerabilitiesRows, so),
+		vulnerabilitiesRows[0].ImpactedDependencyName,
+		vulnerabilitiesRows[0].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		vulnerabilitiesRows[1].ImpactedDependencyName,
+		vulnerabilitiesRows[1].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+	)
+
+	actualContent := so.Content(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
+	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
+	assert.Contains(t, actualContent, "**Contextual Analysis:** Applicable")
+	assert.Contains(t, actualContent, "**Contextual Analysis:** Not Applicable")
 }

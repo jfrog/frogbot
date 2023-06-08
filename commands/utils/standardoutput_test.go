@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -106,4 +107,127 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 		result := so.IsFrogbotResultComment(test.comment)
 		assert.Equal(t, test.expected, result)
 	}
+}
+
+func TestStandardOutput_Content(t *testing.T) {
+	// Create a new instance of StandardOutput
+	so := &StandardOutput{}
+
+	// Create some sample vulnerabilitiesRows for testing
+	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyName:    "Dependency1",
+			ImpactedDependencyVersion: "1.0.0",
+		},
+		{
+			ImpactedDependencyName:    "Dependency2",
+			ImpactedDependencyVersion: "2.0.0",
+		},
+	}
+
+	// Set the expected content string based on the sample data
+	expectedContent := fmt.Sprintf(`
+## Summary
+
+<div align="center">
+
+%s %s
+
+</div>
+
+## Details
+
+
+<details>
+<summary> <b>%s %s</b> </summary>
+<br>
+%s
+
+</details>
+
+
+<details>
+<summary> <b>%s %s</b> </summary>
+<br>
+%s
+
+</details>
+
+`,
+		so.Header(),
+		getTableContent(vulnerabilitiesRows, so),
+		vulnerabilitiesRows[0].ImpactedDependencyName,
+		vulnerabilitiesRows[0].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		vulnerabilitiesRows[1].ImpactedDependencyName,
+		vulnerabilitiesRows[1].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+	)
+
+	actualContent := so.Content(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
+}
+
+func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
+	// Create a new instance of StandardOutput
+	so := &StandardOutput{entitledForJas: true}
+
+	// Create some sample vulnerabilitiesRows for testing
+	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyName:    "Dependency1",
+			ImpactedDependencyVersion: "1.0.0",
+			Applicable:                "Applicable",
+		},
+		{
+			ImpactedDependencyName:    "Dependency2",
+			ImpactedDependencyVersion: "2.0.0",
+			Applicable:                "Not Applicable",
+		},
+	}
+
+	// Set the expected content string based on the sample data
+	expectedContent := fmt.Sprintf(`
+## Summary
+
+<div align="center">
+
+%s %s
+
+</div>
+
+## Details
+
+
+<details>
+<summary> <b>%s %s</b> </summary>
+<br>
+%s
+
+</details>
+
+
+<details>
+<summary> <b>%s %s</b> </summary>
+<br>
+%s
+
+</details>
+
+`,
+		so.Header(),
+		getTableContent(vulnerabilitiesRows, so),
+		vulnerabilitiesRows[0].ImpactedDependencyName,
+		vulnerabilitiesRows[0].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		vulnerabilitiesRows[1].ImpactedDependencyName,
+		vulnerabilitiesRows[1].ImpactedDependencyVersion,
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+	)
+
+	actualContent := so.Content(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
+	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
+	assert.Contains(t, actualContent, "**Contextual Analysis:** Applicable")
+	assert.Contains(t, actualContent, "**Contextual Analysis:** Not Applicable")
 }
