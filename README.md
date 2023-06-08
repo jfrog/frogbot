@@ -118,7 +118,7 @@ Supported package management tools:
 - Poetry
 - Yarn 2
 
-#### How to uuse Pull Request scanning?
+#### How to use Pull Request scanning?
 
   <details>
     <summary>Azure Repos</summary>
