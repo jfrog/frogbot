@@ -71,10 +71,10 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Frog
 		projectFullPathWorkingDirs := getFullPathWorkingDirs(cfp.details.Project.WorkingDirs, baseWd)
 		for _, fullPathWd := range projectFullPathWorkingDirs {
 			scanResults, err := cfp.scan(fullPathWd)
-			cfp.OutputWriter.SetEntitledForJas(scanResults.ExtendedScanResults.EntitledForJas)
 			if err != nil {
 				return err
 			}
+			cfp.OutputWriter.SetEntitledForJas(scanResults.ExtendedScanResults.EntitledForJas)
 
 			err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.Branch(), cfp.details.Client())
 			if err != nil {

@@ -62,7 +62,7 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 func JasMsg(entitled bool) string {
 	msg := ""
 	if !entitled {
-		msg = "\n\n --- \n* **Frogbot** also supports the [‘Contextual Analysis’](https://jfrog.com/security-and-compliance/) feature, which is included as part of the ‘Advanced Security’ package.\nThis package isn't enabled on your system."
+		msg = "\n\n--- \n* **Frogbot** also supports the [‘Contextual Analysis’](https://jfrog.com/security-and-compliance/) feature, which is included as part of the ‘Advanced Security’ package.\nThis package isn't enabled on your system."
 	}
 	return msg
 }

@@ -256,7 +256,9 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (audit
 		SetGraphBasicParams(graphBasicParams)
 
 	auditResults, err = audit.RunAudit(auditParams)
-	err = errors.Join(err, auditResults.AuditError)
+	if auditResults != nil {
+		err = errors.Join(err, auditResults.AuditError)
+	}
 	return
 }
 

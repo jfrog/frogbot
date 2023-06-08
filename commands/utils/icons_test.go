@@ -20,7 +20,7 @@ func TestGetVulnerabilitiesBanners(t *testing.T) {
 }
 
 func TestGetSimplifiedTitle(t *testing.T) {
-	assert.Equal(t, "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n", GetSimplifiedTitle(NoVulnerabilityBannerSource))
-	assert.Equal(t, "Frogbot scanned this pull request and found the issues blow: \n", GetSimplifiedTitle(VulnerabilitiesBannerSource))
+	assert.Equal(t, "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.** \n", GetSimplifiedTitle(NoVulnerabilityBannerSource))
+	assert.Equal(t, "**🚨 Frogbot scanned this pull request and found the below:**\n", GetSimplifiedTitle(VulnerabilitiesBannerSource))
 	assert.Equal(t, "", GetSimplifiedTitle("none"))
 }

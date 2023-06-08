@@ -28,7 +28,7 @@ func TestSimplifiedOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-0001"},
 				},
 			},
-			expectedOutput: "\n| High | dep1:1.0.0 | impacted_dep | 2.0.0 | 3.0.0 | CVE-2022-0001 |",
+			expectedOutput: "| High | dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
 		},
 		{
 			name: "No CVE and multiple direct dependencies",
@@ -43,7 +43,7 @@ func TestSimplifiedOutput_TableRow(t *testing.T) {
 				FixedVersions:             []string{"4.0.0"},
 				Cves:                      []formats.CveRow{},
 			},
-			expectedOutput: "\n| Low | dep1:1.0.0, dep2:2.0.0 | impacted_dep | 3.0.0 | 4.0.0 |  |",
+			expectedOutput: "| Low | dep1:1.0.0, dep2:2.0.0 | impacted_dep:3.0.0 | 4.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
@@ -58,7 +58,7 @@ func TestSimplifiedOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-0003"},
 				},
 			},
-			expectedOutput: "\n| Critical |  | impacted_dep | 4.0.0 | 5.0.0 6.0.0 | CVE-2022-0002 |",
+			expectedOutput: "| Critical |  | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
 		},
 	}
 
@@ -79,12 +79,12 @@ func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
 	}{
 		{
 			name:     "Starts with No Vulnerability Banner",
-			comment:  "Frogbot scanned this pull request and found that it did not add vulnerable dependencies. \n",
+			comment:  "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.** \n",
 			expected: true,
 		},
 		{
 			name:     "Starts with Vulnerabilities Banner",
-			comment:  "Frogbot scanned this pull request and found the issues blow: \n",
+			comment:  "**🚨 Frogbot scanned this pull request and found the below:**\n",
 			expected: true,
 		},
 		{

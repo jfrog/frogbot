@@ -21,7 +21,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				FixedVersions:             []string{"2.0.0"},
 				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
-			expected: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical |  |  | testdep | 1.0.0 | 2.0.0 | CVE-2022-1234 ",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
@@ -35,7 +35,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-5678"},
 				},
 			},
-			expected: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High |  |  | testdep2 | 1.0.0 | 2.0.0<br>3.0.0 | CVE-2022-1234 ",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br>3.0.0 |",
 		},
 		{
 			name: "Single CVE and direct dependencies",
@@ -50,7 +50,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Name: "dep2", Version: "2.0.0"},
 				},
 			},
-			expected: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/lowSeverity.png)<br>     Low | dep1<br>dep2 | 1.0.0<br>2.0.0 | testdep3 | 1.0.0 | 2.0.0 | CVE-2022-1234 ",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/lowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
@@ -68,7 +68,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				ImpactedDependencyVersion: "3.0.0",
 				FixedVersions:             []string{"4.0.0", "5.0.0"},
 			},
-			expected: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | dep1<br>dep2 | 1.0.0<br>2.0.0 | impacted | 3.0.0 | 4.0.0<br>5.0.0 | CVE-1 ",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 |",
 		},
 	}
 
