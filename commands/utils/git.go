@@ -129,7 +129,8 @@ func (gm *GitManager) getRemoteUrl() (string, error) {
 	if strings.HasPrefix(remoteUrl, "https://") {
 		return remoteUrl, nil
 	}
-	return gm.convertSSHtoHTTPS()
+	// Handle SSH clone urls
+	return gm.generateHTTPSCloneUrl()
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
@@ -353,9 +354,10 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	return nil
 }
 
-// Frogbot uses git access token which sufficient permissions,
-// in the case the remote url is defined as SSH we convert to HTTPS
-func (gm *GitManager) convertSSHtoHTTPS() (url string, err error) {
+// Construct HTTPS clone url from the provided git info.
+// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
+// in case we encounter SSH clone url, we generate HTTPS url instead.
+func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 	switch gm.git.GitProvider {
 	case vcsutils.GitHub:
 		return fmt.Sprintf(githubHttpsFormat, gm.git.RepoOwner, gm.git.RepoName), nil

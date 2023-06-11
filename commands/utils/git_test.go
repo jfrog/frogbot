@@ -230,7 +230,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 	for _, test := range testsCases {
 		t.Run(test.vcsProvider.String(), func(t *testing.T) {
 			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, GitProject: test.projectName, ApiEndpoint: test.apiEndpoint}}
-			remoteUrl, err := gm.convertSSHtoHTTPS()
+			remoteUrl, err := gm.generateHTTPSCloneUrl()
 			if remoteUrl == "" {
 				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
 			} else {
