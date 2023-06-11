@@ -216,7 +216,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 			vcsProvider: vcsutils.AzureRepos,
 		}, {
 			repoName:    "npmexample",
-			repoOwner:   "bitbucketServerOwner",
+			repoOwner:   "~bitbucketServerOwner", // Bitbucket server owners with ~ prefix.
 			apiEndpoint: "git.company.info",
 			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmexample.git",
 			vcsProvider: vcsutils.BitbucketServer,
