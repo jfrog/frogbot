@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -134,7 +135,14 @@ func verifyDependencyFileDiff(t *testing.T, rootBranch string, fixBranch string,
 		err = fileutils.RemoveTempDir(currWd)
 		assert.NoError(t, err)
 	}()
-	cmd := exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		// On Windows, use "cmd.exe" to execute the command
+		cmd = exec.Command("cmd", "/D", "git diff", rootBranch, fixBranch, "--", dependencyFilename)
+	} else {
+		// On Linux and other Unix-like systems, directly execute the command
+		cmd = exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	}
 	output, _ := cmd.Output()
 	return string(output)
 }
