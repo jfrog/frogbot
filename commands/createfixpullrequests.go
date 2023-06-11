@@ -34,8 +34,6 @@ type CreateFixPullRequestsCmd struct {
 	aggregateFixes bool
 	// Stores all package manager handlers for detected issues
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
-	// Folder containing the modified repo, used for testing.
-	testFolderPath string
 }
 
 func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
@@ -129,8 +127,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(fixVersionsMap map[st
 	}
 	defer func() {
 		if cfp.dryRun {
-			// Don't delete on dryRun as we want to check the results
-			cfp.testFolderPath = clonedRepoDir
+			// On dry runs temp folders are nested inside the main temp folder
 			return
 		}
 		e1 := restoreBaseDir()
@@ -304,12 +301,17 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
-	// Create temp working directory
-	tempWd, err = fileutils.CreateTempDir()
-	if err != nil {
-		return
+	// On dry run, create the temp folder nested in the current folder
+	if cfp.dryRunRepoPath != "" {
+		tempWd, _ = os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
+	} else {
+		// Create temp working directory
+		tempWd, err = fileutils.CreateTempDir()
+		if err != nil {
+			return
+		}
+		log.Debug("Created temp working directory:", tempWd)
 	}
-	log.Debug("Created temp working directory:", tempWd)
 
 	// Clone the content of the repo to the new working directory
 	if err = cfp.gitManager.Clone(tempWd, cfp.details.Branch()); err != nil {

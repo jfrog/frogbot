@@ -12,7 +12,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/mholt/archiver/v3"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -59,12 +58,8 @@ func TestScanAndFixRepos(t *testing.T) {
 	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
 	assert.NoError(t, err)
 
-	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
+	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: tmpDir}
 	assert.NoError(t, cmd.Run(configAggregator, client))
-	for _, dir := range cmd.testFolderPath {
-		err = fileutils.RemoveTempDir(dir)
-		assert.NoError(t, err)
-	}
 }
 
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {

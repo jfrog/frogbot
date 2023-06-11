@@ -113,11 +113,11 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 			configData, err := utils.ReadConfigFromFileSystem(test.configPath)
 			assert.NoError(t, err)
-			_, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
+			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
 			defer cleanUp()
 			configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
 			assert.NoError(t, err)
-			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: filepath.Join("testdata", test.testDir)}
+			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
 			err = cmd.Run(configAggregator, client)
 			assert.NoError(t, err)
 			resultDiff := verifyDependencyFileDiff(t, "main", test.expectedBranchName, test.dependencyFileName)
