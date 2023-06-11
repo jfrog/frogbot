@@ -136,18 +136,16 @@ frogbot-scan:
     # JF_MIN_SEVERITY: ""
   script:
     # For Linux / MacOS runner:
-    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-    - ./frogbot ${FROGBOT_CMD}
-      
-    # For Linux / MacOS runner using Artifactory remote repository:
-    # - $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-    # - ./frogbot ${FROGBOT_CMD}
+    - |
+      getFrogbotScriptPath=$(if [ -z "$JF_RELEASES_REPO" ]; then echo "https://releases.jfrog.io"; else echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}"; fi)
+      curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+      ./frogbot scan-pull-requests
+      ./frogbot scan-and-fix-repos
 
     # For Windows runner:
-    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe ${FROGBOT_CMD}
-
-    # For Windows runner using Artifactory remote repository:
-    # iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe ${FROGBOT_CMD}
+    # |
+    # $getFrogbotScriptPath = $(if ([string]::IsNullOrEmpty($env:JF_RELEASES_REPO)) { "https://releases.jfrog.io" } else { "$($env:JF_URL)/artifactory/$($env:JF_RELEASES_REPO)" })
+    # Invoke-WebRequest -Uri "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" -UseBasicParsing | ForEach-Object { & $_.Content }
+    # .\frogbot scan-pull-requests
+    # .\frogbot scan-and-fix-repos
 ```
