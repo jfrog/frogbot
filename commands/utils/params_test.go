@@ -205,7 +205,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	}
 	for _, configParams := range configFile {
 		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
-		assert.Equal(t, "jfrog", configParams.RepoOwner)
+		assert.Equal(t, "~jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		assert.Equal(t, "dev", configParams.Branches[0])
