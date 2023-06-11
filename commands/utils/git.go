@@ -32,7 +32,7 @@ const (
 	// Https clone url formats for each service provider
 	githubHttpsFormat          = "https://github.com/%s/%s.git"
 	gitLabHttpsFormat          = "https://gitlab.com/%s/%s.git"
-	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git" //Endpoint should contain https scheme
+	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git" // Endpoint should contain https scheme
 	azureDevopsHttpsFormat     = "https://%s@dev.azure.com/%s/%s/_git/%s"
 )
 
