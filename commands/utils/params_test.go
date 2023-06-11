@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"path/filepath"
@@ -409,4 +410,41 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
+}
+
+func TestVerifyBitBucketServerOwnerPrefix(t *testing.T) {
+	testsCases := []struct {
+		owner         string
+		expected      string
+		endpointUrl   string
+		expectedError error
+	}{
+		{
+			owner:       "name",
+			expected:    `~name`,
+			endpointUrl: "https://git.company.info",
+		},
+		{
+			owner:       "~name",
+			expected:    "~name",
+			endpointUrl: "https://git.company.info",
+		},
+		{
+			owner:         "~name",
+			expected:      "~name",
+			endpointUrl:   "git.company.info",
+			expectedError: errors.New("missing api endpoint scheme"),
+		},
+	}
+	for _, test := range testsCases {
+		t.Run(test.owner, func(t *testing.T) {
+			err := verifyBitBucketServerParams(&test.owner, &test.endpointUrl)
+			if test.expectedError != nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, test.owner, test.expected)
+		})
+	}
 }

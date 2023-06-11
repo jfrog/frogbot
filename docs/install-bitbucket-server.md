@@ -67,7 +67,7 @@
                JF_GIT_PROVIDER= "bitbucketServer"
                
                // [Mandatory]
-               // Username of the Bitbucket account
+               // Username of the account associated with the token
                JF_GIT_USERNAME= ""
                
                // [Mandatory]

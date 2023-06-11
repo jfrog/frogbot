@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	frogbotConfigDir  = ".frogbot"
-	FrogbotConfigFile = "frogbot-config.yml"
+	frogbotConfigDir           = ".frogbot"
+	FrogbotConfigFile          = "frogbot-config.yml"
+	bitbucketServerOwnerPrefix = "~"
 )
 
 var (
@@ -318,7 +319,25 @@ func extractGitParamsFromEnv() (*Git, error) {
 		return nil, err
 	}
 	gitParams.AggregateFixes = aggregateFixesEnv
+
+	// Validate specific bitbucket server params
+	if gitParams.GitProvider == vcsutils.BitbucketServer {
+		err = verifyBitBucketServerParams(&gitParams.RepoOwner, &gitParams.ApiEndpoint)
+	}
 	return &gitParams, err
+}
+
+// These Bitbucket server params are curial for current functionality
+// Owner has to start with ~ prefix.
+// Endpoint url must contain https scheme.
+func verifyBitBucketServerParams(owner *string, endpoint *string) error {
+	if !strings.HasPrefix(*owner, bitbucketServerOwnerPrefix) {
+		*owner = bitbucketServerOwnerPrefix + *owner
+	}
+	if !strings.HasPrefix(*endpoint, "https://") {
+		return errors.New("missing api endpoint scheme")
+	}
+	return nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
