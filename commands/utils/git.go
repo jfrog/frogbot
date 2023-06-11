@@ -88,7 +88,8 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	if len(gitRemote.Config().URLs) < 1 {
 		return errors.New("failed to find git remote URL")
 	}
-	repoURL := gitRemote.Config().URLs[0]
+	// TODO check remote if it is SSH or not
+	//repoURL := gm.convertSSHToHTTPS(gitRemote.Config().URLs[0])
 
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
