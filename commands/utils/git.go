@@ -366,7 +366,7 @@ func (gm *GitManager) convertSSHtoHTTPS() (url string, err error) {
 	case vcsutils.AzureRepos:
 		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, gm.git.RepoOwner, gm.git.GitProject, gm.git.RepoName), nil
 	default:
-		return "", errors.New(fmt.Sprintf("unsupported version control provider: %s", gm.git.GitProvider.String()))
+		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
 	}
 }
 
