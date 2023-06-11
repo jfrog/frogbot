@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -184,6 +185,58 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage()
 			assert.Equal(t, commit, test.expected)
+		})
+	}
+}
+
+func TestConvertSSHtoHTTPS(t *testing.T) {
+	testsCases := []struct {
+		repoName    string
+		repoOwner   string
+		projectName string
+		expected    string
+		apiEndpoint string
+		vcsProvider vcsutils.VcsProvider
+	}{
+		{
+			repoName:    "npmexample",
+			repoOwner:   "repoOwner",
+			expected:    "https://github.com/repoOwner/npmexample.git",
+			vcsProvider: vcsutils.GitHub,
+		}, {
+			repoName:    "npmproject",
+			projectName: "mytest5551218",
+			expected:    "https://gitlab.com/mytest5551218/npmproject.git",
+			vcsProvider: vcsutils.GitLab,
+		}, {
+			repoName:    "npmexample",
+			projectName: "firstProject",
+			repoOwner:   "azureReposOwner",
+			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmexample",
+			vcsProvider: vcsutils.AzureRepos,
+		}, {
+			repoName:    "npmexample",
+			repoOwner:   "bitbucketServerOwner",
+			apiEndpoint: "git.company.info",
+			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmexample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "notSupported",
+			repoOwner:   "cloudOwner",
+			expected:    "",
+			vcsProvider: vcsutils.BitbucketCloud,
+		},
+	}
+	for _, test := range testsCases {
+		t.Run(test.vcsProvider.String(), func(t *testing.T) {
+			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, GitProject: test.projectName, ApiEndpoint: test.apiEndpoint}}
+			remoteUrl, err := gm.convertSSHtoHTTPS()
+			if remoteUrl == "" {
+				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, remoteUrl)
+			}
 		})
 	}
 }
