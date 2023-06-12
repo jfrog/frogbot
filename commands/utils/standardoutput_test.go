@@ -171,7 +171,7 @@ func TestStandardOutput_Content(t *testing.T) {
 
 func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
-	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.BitbucketServer}
+	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.GitHub}
 
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
@@ -229,6 +229,6 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	actualContent := so.Content(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
-	assert.Contains(t, actualContent, "**Contextual Analysis:** Applicable")
-	assert.Contains(t, actualContent, "**Contextual Analysis:** Not Applicable")
+	assert.Contains(t, actualContent, "Applicable")
+	assert.Contains(t, actualContent, "Not Applicable")
 }
