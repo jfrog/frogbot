@@ -36,6 +36,12 @@ const vulnerabilityDetailsCommentWithJas = `
 %s
 `
 
+var applicabilityColorMap = map[string]string{
+	"applicable":     "#FF7377",
+	"not applicable": "#3CB371",
+	"undetermined":   "orange",
+}
+
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
@@ -48,15 +54,19 @@ type OutputWriter interface {
 	Seperator() string
 	FormattedSeverity(severity string) string
 	IsFrogbotResultComment(comment string) bool
-	SetEntitledForJas(entitled bool)
 	EntitledForJas() bool
+	SetEntitledForJas(entitled bool)
+	VcsProvider() vcsutils.VcsProvider
+	SetVcsProvider(provider vcsutils.VcsProvider)
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
-	if provider == vcsutils.BitbucketServer {
-		return &SimplifiedOutput{}
+	switch provider {
+	case vcsutils.BitbucketServer:
+		return &SimplifiedOutput{vcsProvider: provider}
+	default:
+		return &StandardOutput{vcsProvider: provider}
 	}
-	return &StandardOutput{}
 }
 
 func JasMsg(entitled bool) string {
@@ -67,7 +77,7 @@ func JasMsg(entitled bool) string {
 	return msg
 }
 
-func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow) string {
+func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
 	var cves []string
 	for _, cve := range vulnerabilityDetails.Cves {
 		cves = append(cves, cve.Id)
@@ -79,7 +89,7 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
 			utils.GetSeverity(vulnerabilityDetails.Severity, vulnerabilityDetails.Applicable).Emoji(),
 			vulnerabilityDetails.Severity,
-			vulnerabilityDetails.Applicable,
+			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
 			vulnerabilityDetails.ImpactedDependencyName,
 			vulnerabilityDetails.ImpactedDependencyVersion,
 			strings.Join(vulnerabilityDetails.FixedVersions, ","),
@@ -108,7 +118,7 @@ func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer Ou
 
 	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity))
 	if writer.EntitledForJas() {
-		row += vulnerability.Applicable + " |"
+		row += formattedApplicabilityText(vulnerability.Applicable, writer.VcsProvider()) + " |"
 	}
 	row += fmt.Sprintf("%s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), writer.Seperator()),
@@ -124,4 +134,18 @@ func getTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, 
 		tableContent += "\n" + writer.TableRow(vulnerability)
 	}
 	return tableContent
+}
+
+func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) string {
+	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
+	formattedText := ""
+	switch provider {
+	case vcsutils.GitHub, vcsutils.GitLab:
+		formattedText = fmt.Sprintf("$\\color{%s}{\\textsf{%s}}$", applicabilityColor, text)
+	case vcsutils.AzureRepos:
+		formattedText = fmt.Sprintf("<span style=\"color: %s;\">%s</span>", applicabilityColor, text)
+	default:
+		formattedText = strings.ToUpper(fmt.Sprintf("**%s**", text))
+	}
+	return formattedText
 }

@@ -2,12 +2,14 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"strings"
 )
 
 type StandardOutput struct {
 	entitledForJas bool
+	vcsProvider    vcsutils.VcsProvider
 }
 
 func (so *StandardOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
@@ -31,6 +33,14 @@ func (so *StandardOutput) Header() string {
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.Contains(comment, GetIconTag(NoVulnerabilityBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesBannerSource))
+}
+
+func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
+	so.vcsProvider = provider
+}
+
+func (so *StandardOutput) VcsProvider() vcsutils.VcsProvider {
+	return so.vcsProvider
 }
 
 func (so *StandardOutput) SetEntitledForJas(entitledForJas bool) {
@@ -65,7 +75,7 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+`, createVulnerabilityDescription(&vulnerabilitiesRows[i], so.vcsProvider)))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -79,7 +89,7 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 `,
 			vulnerabilitiesRows[i].ImpactedDependencyName,
 			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+			createVulnerabilityDescription(&vulnerabilitiesRows[i], so.vcsProvider)))
 	}
 	return contentBuilder.String()
 }

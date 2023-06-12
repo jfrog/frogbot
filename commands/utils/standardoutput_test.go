@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -158,10 +159,10 @@ func TestStandardOutput_Content(t *testing.T) {
 		getTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
 	actualContent := so.Content(vulnerabilitiesRows)
@@ -170,7 +171,7 @@ func TestStandardOutput_Content(t *testing.T) {
 
 func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
-	so := &StandardOutput{entitledForJas: true}
+	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.BitbucketServer}
 
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
@@ -219,10 +220,10 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 		getTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
 	actualContent := so.Content(vulnerabilitiesRows)

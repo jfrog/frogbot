@@ -2,12 +2,14 @@ package utils
 
 import (
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"strings"
 )
 
 type SimplifiedOutput struct {
 	entitledForJas bool
+	vcsProvider    vcsutils.VcsProvider
 }
 
 func (smo *SimplifiedOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
@@ -32,6 +34,14 @@ func (smo *SimplifiedOutput) Header() string {
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesBannerSource))
+}
+
+func (smo *SimplifiedOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
+	smo.vcsProvider = provider
+}
+
+func (smo *SimplifiedOutput) VcsProvider() vcsutils.VcsProvider {
+	return smo.vcsProvider
 }
 
 func (smo *SimplifiedOutput) SetEntitledForJas(entitledForJas bool) {
@@ -68,7 +78,7 @@ func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.Vulnerability
 `,
 			vulnerabilitiesRows[i].ImpactedDependencyName,
 			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+			createVulnerabilityDescription(&vulnerabilitiesRows[i], smo.vcsProvider)))
 	}
 
 	return contentBuilder.String()
