@@ -49,7 +49,7 @@ type GitManager struct {
 	dryRunRepoPath string
 	// Custom naming formats
 	customTemplates CustomTemplates
-
+	// Git details
 	git *Git
 }
 

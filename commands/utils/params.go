@@ -20,9 +20,8 @@ import (
 )
 
 const (
-	frogbotConfigDir           = ".frogbot"
-	FrogbotConfigFile          = "frogbot-config.yml"
-	bitbucketServerOwnerPrefix = "~"
+	frogbotConfigDir  = ".frogbot"
+	FrogbotConfigFile = "frogbot-config.yml"
 )
 
 var (
