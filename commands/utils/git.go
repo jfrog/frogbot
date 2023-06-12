@@ -27,7 +27,7 @@ const (
 	refFormat = "refs/heads/%s:refs/heads/%[1]s"
 
 	// Timout is seconds for the git operations performed by the go-git client.
-	goGitTimeoutSeconds = 60
+	goGitTimeoutSeconds = 120
 
 	// Https clone url formats for each service provider
 	githubHttpsFormat          = "%s/%s/%s.git"

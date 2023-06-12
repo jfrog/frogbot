@@ -327,7 +327,7 @@ func extractGitParamsFromEnv() (*Git, error) {
 // Endpoint should empty for default values or start with https scheme.
 func verifyValidApiEndpoint(apiEndpoint string) error {
 	if apiEndpoint != "" && !strings.HasPrefix(apiEndpoint, "https://") {
-		return &ErrMissingEnv{VariableName: GitApiEndpointEnv}
+		return errors.New("invalid api endpoint")
 	}
 	return nil
 }
