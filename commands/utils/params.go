@@ -280,7 +280,7 @@ func extractGitParamsFromEnv() (*Git, error) {
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
-	if err = verifyValidApiEndpoint(&gitParams.ApiEndpoint); err != nil {
+	if err = verifyValidApiEndpoint(gitParams.ApiEndpoint); err != nil {
 		return nil, err
 	}
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
@@ -325,9 +325,9 @@ func extractGitParamsFromEnv() (*Git, error) {
 }
 
 // Endpoint should empty for default values or start with https scheme.
-func verifyValidApiEndpoint(endpoint *string) error {
-	if *endpoint != "" && !strings.HasPrefix(*endpoint, "https://") {
-		return errors.New("missing api endpoint scheme")
+func verifyValidApiEndpoint(apiEndpoint string) error {
+	if apiEndpoint != "" && !strings.HasPrefix(apiEndpoint, "https://") {
+		return &ErrMissingEnv{VariableName: GitApiEndpointEnv}
 	}
 	return nil
 }

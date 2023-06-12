@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"path/filepath"
@@ -412,18 +411,18 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
 
-func TestVerifyBitBucketServerOwnerPrefix(t *testing.T) {
+func TestVerifyValidApiEndpoint(t *testing.T) {
 	testsCases := []struct {
 		endpointUrl   string
 		expectedError error
 	}{
 		{endpointUrl: "https://git.company.info"},
 		{endpointUrl: ""},
-		{endpointUrl: "git.company.info", expectedError: errors.New("missing api endpoint scheme")},
+		{endpointUrl: "git.company.info", expectedError: &ErrMissingEnv{VariableName: GitApiEndpointEnv}},
 	}
 	for _, test := range testsCases {
 		t.Run(test.endpointUrl, func(t *testing.T) {
-			err := verifyValidApiEndpoint(&test.endpointUrl)
+			err := verifyValidApiEndpoint(test.endpointUrl)
 			if test.expectedError != nil {
 				assert.Error(t, err)
 			} else {

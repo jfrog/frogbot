@@ -202,23 +202,54 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 			repoName:    "npmexample",
 			repoOwner:   "repoOwner",
 			expected:    "https://github.com/repoOwner/npmexample.git",
+			apiEndpoint: "https://github.com",
 			vcsProvider: vcsutils.GitHub,
 		}, {
+			repoName:    "npmexample",
+			repoOwner:   "repoOwner",
+			expected:    "https://api.github.com/repoOwner/npmexample.git",
+			apiEndpoint: "https://api.github.com",
+			vcsProvider: vcsutils.GitHub,
+		},
+		{
 			repoName:    "npmproject",
 			projectName: "mytest5551218",
+			apiEndpoint: "https://gitlab.com",
 			expected:    "https://gitlab.com/mytest5551218/npmproject.git",
 			vcsProvider: vcsutils.GitLab,
 		}, {
+			repoName:    "onPremProject",
+			projectName: "mytest5551218",
+			apiEndpoint: "http://gitlab.example.com",
+			expected:    "http://gitlab.example.com/mytest5551218/onPremProject.git",
+			vcsProvider: vcsutils.GitLab,
+		},
+		{
 			repoName:    "npmexample",
 			projectName: "firstProject",
 			repoOwner:   "azureReposOwner",
+			apiEndpoint: "https://dev.azure.com/azureReposOwner/",
 			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmexample",
 			vcsProvider: vcsutils.AzureRepos,
 		}, {
 			repoName:    "npmexample",
-			repoOwner:   "~bitbucketServerOwner", // Bitbucket server owners with ~ prefix.
+			projectName: "onPremProject",
+			repoOwner:   "organization",
+			apiEndpoint: "https://your-server-name:port/organization/",
+			expected:    "https://organization@your-server-name:port/organization/onPremProject/_git/npmexample",
+			vcsProvider: vcsutils.AzureRepos,
+		},
+		{
+			repoName:    "npmexample",
+			repoOwner:   "~bitbucketServerOwner", // Bitbucket server private projects owners start with ~ prefix.
 			apiEndpoint: "https://git.company.info",
 			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmexample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "npmexample",
+			repoOwner:   "bitbucketServerOwner", // Public on prem repo
+			apiEndpoint: "https://git.company.info",
+			expected:    "https://git.company.info/scm/bitbucketServerOwner/npmexample.git",
 			vcsProvider: vcsutils.BitbucketServer,
 		}, {
 			repoName:    "notSupported",
