@@ -205,7 +205,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	}
 	for _, configParams := range configFile {
 		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
-		assert.Equal(t, "~jfrog", configParams.RepoOwner)
+		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		assert.Equal(t, "dev", configParams.Branches[0])
@@ -414,37 +414,21 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 
 func TestVerifyBitBucketServerOwnerPrefix(t *testing.T) {
 	testsCases := []struct {
-		owner         string
-		expected      string
 		endpointUrl   string
 		expectedError error
 	}{
-		{
-			owner:       "name",
-			expected:    `~name`,
-			endpointUrl: "https://git.company.info",
-		},
-		{
-			owner:       "~name",
-			expected:    "~name",
-			endpointUrl: "https://git.company.info",
-		},
-		{
-			owner:         "~name",
-			expected:      "~name",
-			endpointUrl:   "git.company.info",
-			expectedError: errors.New("missing api endpoint scheme"),
-		},
+		{endpointUrl: "https://git.company.info"},
+		{endpointUrl: ""},
+		{endpointUrl: "git.company.info", expectedError: errors.New("missing api endpoint scheme")},
 	}
 	for _, test := range testsCases {
-		t.Run(test.owner, func(t *testing.T) {
-			err := verifyBitBucketServerParams(&test.owner, &test.endpointUrl)
+		t.Run(test.endpointUrl, func(t *testing.T) {
+			err := verifyValidApiEndpoint(&test.endpointUrl)
 			if test.expectedError != nil {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, test.owner, test.expected)
 		})
 	}
 }

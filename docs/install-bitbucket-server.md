@@ -72,6 +72,7 @@
                
                // [Mandatory]
                // Bitbucket project namespace
+               // Private projects should start with ~ prefix
                JF_GIT_OWNER= ""
                
                // [Mandatory]

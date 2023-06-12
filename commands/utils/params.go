@@ -281,6 +281,9 @@ func extractGitParamsFromEnv() (*Git, error) {
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
+	if err = verifyValidApiEndpoint(&gitParams.ApiEndpoint); err != nil {
+		return nil, err
+	}
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
@@ -319,21 +322,11 @@ func extractGitParamsFromEnv() (*Git, error) {
 		return nil, err
 	}
 	gitParams.AggregateFixes = aggregateFixesEnv
-
-	// Validate specific bitbucket server params
-	if gitParams.GitProvider == vcsutils.BitbucketServer {
-		err = verifyBitBucketServerParams(&gitParams.RepoOwner, &gitParams.ApiEndpoint)
-	}
 	return &gitParams, err
 }
 
-// These Bitbucket server params are curial for current functionality
-// Owner has to start with ~ prefix.
-// Endpoint url must contain https scheme.
-func verifyBitBucketServerParams(owner *string, endpoint *string) error {
-	if !strings.HasPrefix(*owner, bitbucketServerOwnerPrefix) {
-		*owner = bitbucketServerOwnerPrefix + *owner
-	}
+// Endpoint should empty for default values or start with https scheme.
+func verifyValidApiEndpoint(endpoint *string) error {
 	if *endpoint != "" && !strings.HasPrefix(*endpoint, "https://") {
 		return errors.New("missing api endpoint scheme")
 	}
