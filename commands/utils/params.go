@@ -334,7 +334,7 @@ func verifyBitBucketServerParams(owner *string, endpoint *string) error {
 	if !strings.HasPrefix(*owner, bitbucketServerOwnerPrefix) {
 		*owner = bitbucketServerOwnerPrefix + *owner
 	}
-	if !strings.HasPrefix(*endpoint, "https://") {
+	if *endpoint != "" && !strings.HasPrefix(*endpoint, "https://") {
 		return errors.New("missing api endpoint scheme")
 	}
 	return nil
