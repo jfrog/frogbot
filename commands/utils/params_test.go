@@ -414,16 +414,18 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 func TestVerifyValidApiEndpoint(t *testing.T) {
 	testsCases := []struct {
 		endpointUrl   string
-		expectedError error
+		expectedError bool
 	}{
 		{endpointUrl: "https://git.company.info"},
+		{endpointUrl: "http://git.company.info"},
+		{endpointUrl: "justAString", expectedError: true},
 		{endpointUrl: ""},
-		{endpointUrl: "git.company.info", expectedError: &ErrMissingEnv{VariableName: GitApiEndpointEnv}},
+		{endpointUrl: "git.company.info", expectedError: true},
 	}
 	for _, test := range testsCases {
 		t.Run(test.endpointUrl, func(t *testing.T) {
 			err := verifyValidApiEndpoint(test.endpointUrl)
-			if test.expectedError != nil {
+			if test.expectedError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -324,10 +325,17 @@ func extractGitParamsFromEnv() (*Git, error) {
 	return &gitParams, err
 }
 
-// Endpoint should empty for default values or start with https scheme.
 func verifyValidApiEndpoint(apiEndpoint string) error {
-	if apiEndpoint != "" && !strings.HasPrefix(apiEndpoint, "https://") {
-		return errors.New("invalid api endpoint")
+	// Empty string will resolve to default values.
+	if apiEndpoint == "" {
+		return nil
+	}
+	parsedUrl, err := url.Parse(apiEndpoint)
+	if err != nil {
+		return err
+	}
+	if parsedUrl.Scheme == "" {
+		return errors.New("the given API endpoint is invalid. Please note that the API endpoint format should be provided with the 'HTTPS' protocol as a prefix")
 	}
 	return nil
 }
