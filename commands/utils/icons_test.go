@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetSeverityTag(t *testing.T) {
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.svg)<br>", GetSeverityTag("Critical", "Undetermined"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>", GetSeverityTag("Critical", "Undetermined"))
 	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.svg)<br>", GetSeverityTag("HiGh", "Undetermined"))
 	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.svg)<br>", GetSeverityTag("meDium", "Undetermined"))
 	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/lowSeverity.svg)<br>", GetSeverityTag("low", "Applicable"))

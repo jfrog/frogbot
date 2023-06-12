@@ -13,7 +13,7 @@ const (
 	// Images
 	NoVulnerabilityBannerSource         ImageSource = "noVulnerabilityBanner.png"
 	VulnerabilitiesBannerSource         ImageSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource              ImageSource = "criticalSeverity.svg"
+	criticalSeveritySource              ImageSource = "criticalSeverity.png"
 	notApplicableCriticalSeveritySource ImageSource = "notApplicableCritical.svg"
 	highSeveritySource                  ImageSource = "highSeverity.svg"
 	notApplicableHighSeveritySource     ImageSource = "notApplicableHigh.svg"

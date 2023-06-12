@@ -23,7 +23,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				FixedVersions:             []string{"2.0.0"},
 				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.svg)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
