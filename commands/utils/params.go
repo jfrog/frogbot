@@ -5,6 +5,7 @@ import (
 	"fmt"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -280,6 +281,9 @@ func extractGitParamsFromEnv() (*Git, error) {
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitParams.ApiEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
+	if err = verifyValidApiEndpoint(gitParams.ApiEndpoint); err != nil {
+		return nil, err
+	}
 	if gitParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
@@ -319,6 +323,21 @@ func extractGitParamsFromEnv() (*Git, error) {
 	}
 	gitParams.AggregateFixes = aggregateFixesEnv
 	return &gitParams, err
+}
+
+func verifyValidApiEndpoint(apiEndpoint string) error {
+	// Empty string will resolve to default values.
+	if apiEndpoint == "" {
+		return nil
+	}
+	parsedUrl, err := url.Parse(apiEndpoint)
+	if err != nil {
+		return err
+	}
+	if parsedUrl.Scheme == "" {
+		return errors.New("the given API endpoint is invalid. Please note that the API endpoint format should be provided with the 'HTTPS' protocol as a prefix")
+	}
+	return nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
