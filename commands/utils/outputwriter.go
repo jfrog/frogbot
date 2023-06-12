@@ -52,7 +52,7 @@ type OutputWriter interface {
 	Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
 	Footer() string
 	Seperator() string
-	FormattedSeverity(severity string) string
+	FormattedSeverity(severity, applicability string) string
 	IsFrogbotResultComment(comment string) bool
 	EntitledForJas() bool
 	SetEntitledForJas(entitled bool)
@@ -116,7 +116,7 @@ func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer Ou
 		}
 	}
 
-	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity))
+	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	if writer.EntitledForJas() {
 		row += formattedApplicabilityText(vulnerability.Applicable, writer.VcsProvider()) + " |"
 	}

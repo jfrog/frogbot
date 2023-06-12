@@ -11,12 +11,18 @@ const (
 	errUnsupportedMultiRepo = "multi repository configuration isn't supported. only one repository configuration is allowed"
 
 	// Images
-	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"
-	VulnerabilitiesBannerSource ImageSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource      ImageSource = "criticalSeverity.png"
-	highSeveritySource          ImageSource = "highSeverity.png"
-	mediumSeveritySource        ImageSource = "mediumSeverity.png"
-	lowSeveritySource           ImageSource = "lowSeverity.png"
+	NoVulnerabilityBannerSource         ImageSource = "noVulnerabilityBanner.png"
+	VulnerabilitiesBannerSource         ImageSource = "vulnerabilitiesBanner.png"
+	criticalSeveritySource              ImageSource = "criticalSeverity.svg"
+	notApplicableCriticalSeveritySource ImageSource = "notApplicableCritical.svg"
+	highSeveritySource                  ImageSource = "highSeverity.svg"
+	notApplicableHighSeveritySource     ImageSource = "notApplicableHigh.svg"
+	mediumSeveritySource                ImageSource = "mediumSeverity.svg"
+	notApplicableMediumSeveritySource   ImageSource = "notApplicableMedium.svg"
+	lowSeveritySource                   ImageSource = "lowSeverity.svg"
+	notApplicableLowSeveritySource      ImageSource = "notApplicableLow.svg"
+	unknownSeveritySource               ImageSource = "unknownSeverity.svg"
+	notApplicableUnknownSeveritySource  ImageSource = "notApplicableUnknown.svg"
 
 	// VCS providers params
 	GitHub          vcsProvider = "github"
@@ -79,15 +85,6 @@ const (
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
-
-	// When Frogbot periodically scans repositories, it skips scanning repositories for which the latest commit has already been scanned,
-	// unless the latest commit was scanned more than 'SkipRepoScanDays' days ago.
-	SkipRepoScanDays = 4
-
-	// Used by Frogbot to create new commits statuses and recognize its own statuses.
-	CommitStatusDescription = "Scanned by Frogbot"
-	CommitStatusDetailsUrl  = "https://github.com/jfrog/frogbot#readme"
-	FrogbotCreatorName      = "Frogbot"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "${IMPACTED_PACKAGE}"

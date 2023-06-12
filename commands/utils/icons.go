@@ -5,7 +5,28 @@ import (
 	"strings"
 )
 
-func GetSeverityTag(iconName IconName) string {
+func GetSeverityTag(iconName IconName, applicability string) string {
+	if applicability == "Not Applicable" {
+		return getNotApplicableIconTags(iconName)
+	}
+	return getApplicableIconTags(iconName)
+}
+
+func getNotApplicableIconTags(iconName IconName) string {
+	switch strings.ToLower(string(iconName)) {
+	case "critical":
+		return GetIconTag(notApplicableCriticalSeveritySource) + "<br>"
+	case "high":
+		return GetIconTag(notApplicableHighSeveritySource) + "<br>"
+	case "medium":
+		return GetIconTag(notApplicableMediumSeveritySource) + "<br>"
+	case "low":
+		return GetIconTag(notApplicableLowSeveritySource) + "<br>"
+	}
+	return GetIconTag(notApplicableUnknownSeveritySource) + "<br>"
+}
+
+func getApplicableIconTags(iconName IconName) string {
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
 		return GetIconTag(criticalSeveritySource) + "<br>"
@@ -16,7 +37,7 @@ func GetSeverityTag(iconName IconName) string {
 	case "low":
 		return GetIconTag(lowSeveritySource) + "<br>"
 	}
-	return ""
+	return GetIconTag(unknownSeveritySource) + "<br>"
 }
 
 func GetBanner(banner ImageSource) string {

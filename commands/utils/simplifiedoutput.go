@@ -92,6 +92,6 @@ func (smo *SimplifiedOutput) Seperator() string {
 	return ", "
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity string) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
 }
