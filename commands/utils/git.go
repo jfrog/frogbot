@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
@@ -27,7 +28,13 @@ const (
 	refFormat = "refs/heads/%s:refs/heads/%[1]s"
 
 	// Timout is seconds for the git operations performed by the go-git client.
-	goGitTimeoutSeconds = 60
+	goGitTimeoutSeconds = 120
+
+	// Https clone url formats for each service provider
+	githubHttpsFormat          = "%s/%s/%s.git"
+	gitLabHttpsFormat          = "%s/%s/%s.git"
+	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
+	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
 )
 
 type GitManager struct {
@@ -43,6 +50,8 @@ type GitManager struct {
 	dryRunRepoPath string
 	// Custom naming formats
 	customTemplates CustomTemplates
+	// Git details
+	git *Git
 }
 
 type CustomTemplates struct {
@@ -65,7 +74,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates}, nil
+	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -81,16 +90,10 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		// "Clone" the repository from the testdata folder
 		return gm.dryRunClone(destinationPath)
 	}
-	// Gets the remote repo url from the current .git dir
-	gitRemote, err := gm.repository.Remote(gm.remoteName)
+	gitRemoteUrl, err := gm.getRemoteUrl()
 	if err != nil {
-		return fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
+		return err
 	}
-	if len(gitRemote.Config().URLs) < 1 {
-		return errors.New("failed to find git remote URL")
-	}
-	repoURL := gitRemote.Config().URLs[0]
-
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
@@ -98,20 +101,37 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
 		branchName = "master"
 	}
-	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", repoURL, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
-		URL:           repoURL,
+		URL:           gitRemoteUrl,
 		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
 		ReferenceName: getFullBranchName(branchName),
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, repoURL, err.Error())
+		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, gitRemoteUrl, err.Error())
 	}
 	gm.repository = repo
-	log.Debug(fmt.Sprintf("Project cloned from %s to %s", repoURL, destinationPath))
+	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gitRemoteUrl, destinationPath))
 	return nil
+}
+
+func (gm *GitManager) getRemoteUrl() (string, error) {
+	// Gets the remote repo url from the current .git dir
+	gitRemote, err := gm.repository.Remote(gm.remoteName)
+	if err != nil {
+		return "", fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
+	}
+	if len(gitRemote.Config().URLs) < 1 {
+		return "", errors.New("failed to find git remote URL")
+	}
+	remoteUrl := gitRemote.Config().URLs[0]
+	if strings.HasPrefix(remoteUrl, "https://") {
+		return remoteUrl, nil
+	}
+	// Handle SSH clone urls
+	return gm.generateHTTPSCloneUrl()
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
@@ -337,6 +357,25 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	}
 	gm.repository = repo
 	return nil
+}
+
+// Construct HTTPS clone url from the provided git info.
+// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
+// in case we encounter SSH clone url, we generate HTTPS url instead.
+func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
+	switch gm.git.GitProvider {
+	case vcsutils.GitHub:
+		return fmt.Sprintf(githubHttpsFormat, gm.git.ApiEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+	case vcsutils.GitLab:
+		return fmt.Sprintf(gitLabHttpsFormat, gm.git.ApiEndpoint, gm.git.GitProject, gm.git.RepoName), nil
+	case vcsutils.BitbucketServer:
+		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.ApiEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+	case vcsutils.AzureRepos:
+		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.ApiEndpoint, "https://")[1:], "")
+		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.GitProject, gm.git.RepoName), nil
+	default:
+		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
+	}
 }
 
 func toBasicAuth(token, username string) *githttp.BasicAuth {
