@@ -138,7 +138,7 @@ func getTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, 
 
 func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) string {
 	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
-	formattedText := ""
+	var formattedText string
 	switch provider {
 	case vcsutils.GitHub, vcsutils.GitLab:
 		formattedText = fmt.Sprintf("$\\color{%s}{\\textsf{%s}}$", applicabilityColor, text)
