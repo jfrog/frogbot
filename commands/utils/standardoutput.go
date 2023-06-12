@@ -111,5 +111,5 @@ func (so *StandardOutput) Seperator() string {
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
-	return fmt.Sprintf("%s%8s", GetSeverityTag(IconName(severity), applicability), severity)
+	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
 }

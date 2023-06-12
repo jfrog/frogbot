@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func GetSeverityTag(iconName IconName, applicability string) string {
+func getSeverityTag(iconName IconName, applicability string) string {
 	if applicability == "Not Applicable" {
 		return getNotApplicableIconTags(iconName)
 	}

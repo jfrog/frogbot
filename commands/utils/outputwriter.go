@@ -87,8 +87,8 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 	}
 	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
 		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
-			utils.GetSeverity(vulnerabilityDetails.Severity, vulnerabilityDetails.Applicable).Emoji(),
 			vulnerabilityDetails.Severity,
+			utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
 			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
 			vulnerabilityDetails.ImpactedDependencyName,
 			vulnerabilityDetails.ImpactedDependencyVersion,
@@ -98,9 +98,8 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 			vulnerabilityDetails.JfrogResearchInformation.Remediation)
 	}
 	return fmt.Sprintf(vulnerabilityDetailsComment,
-		// When JAS isn't enabled, we want the Emoji that is related to applicable vulnerabilities.
-		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
 		vulnerabilityDetails.Severity,
+		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
 		vulnerabilityDetails.ImpactedDependencyName,
 		vulnerabilityDetails.ImpactedDependencyVersion,
 		strings.Join(vulnerabilityDetails.FixedVersions, ","),

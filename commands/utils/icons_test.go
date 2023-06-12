@@ -7,19 +7,19 @@ import (
 )
 
 func TestGetSeverityTag(t *testing.T) {
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>", GetSeverityTag("Critical", "Undetermined"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>", GetSeverityTag("HiGh", "Undetermined"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>", GetSeverityTag("meDium", "Undetermined"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/lowSeverity.png)<br>", GetSeverityTag("low", "Applicable"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/unknownSeverity.png)<br>", GetSeverityTag("none", "Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>", getSeverityTag("Critical", "Undetermined"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>", getSeverityTag("HiGh", "Undetermined"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>", getSeverityTag("meDium", "Undetermined"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/lowSeverity.png)<br>", getSeverityTag("low", "Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/unknownSeverity.png)<br>", getSeverityTag("none", "Applicable"))
 }
 
 func TestGetSeverityTagNotApplicable(t *testing.T) {
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableCritical.png)<br>", GetSeverityTag("Critical", "Not Applicable"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableHigh.png)<br>", GetSeverityTag("HiGh", "Not Applicable"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableMedium.png)<br>", GetSeverityTag("meDium", "Not Applicable"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableLow.png)<br>", GetSeverityTag("low", "Not Applicable"))
-	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableUnknown.png)<br>", GetSeverityTag("none", "Not Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableCritical.png)<br>", getSeverityTag("Critical", "Not Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableHigh.png)<br>", getSeverityTag("HiGh", "Not Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableMedium.png)<br>", getSeverityTag("meDium", "Not Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableLow.png)<br>", getSeverityTag("low", "Not Applicable"))
+	assert.Equal(t, "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/notApplicableUnknown.png)<br>", getSeverityTag("none", "Not Applicable"))
 }
 
 func TestGetVulnerabilitiesBanners(t *testing.T) {
