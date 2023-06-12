@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -103,6 +102,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.repoName, func(t *testing.T) {
+			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
 			defer restoreEnv()
 			var port string
@@ -118,33 +118,15 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			defer cleanUp()
 			configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
 			assert.NoError(t, err)
+			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
 			err = cmd.Run(configAggregator, client)
+			// Validate
 			assert.NoError(t, err)
-			resultDiff := verifyDependencyFileDiff(t, "main", test.expectedBranchName, test.dependencyFileName)
+			resultDiff := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
 			assert.Equal(t, test.expectedDiff, resultDiff)
 		})
 	}
-}
-
-// Running git diff and making sure expected changes to the dependency file
-func verifyDependencyFileDiff(t *testing.T, rootBranch string, fixBranch string, dependencyFilename string) string {
-	defer func() {
-		currWd, err := os.Getwd()
-		assert.NoError(t, err)
-		err = fileutils.RemoveTempDir(currWd)
-		assert.NoError(t, err)
-	}()
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		// On Windows, use "cmd.exe" to execute the command
-		cmd = exec.Command("cmd", "/D", "git diff", rootBranch, fixBranch, "--", dependencyFilename)
-	} else {
-		// On Linux and other Unix-like systems, directly execute the command
-		cmd = exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
-	}
-	output, _ := cmd.Output()
-	return string(output)
 }
 
 // /      1.0         --> 1.0 ≤ x
@@ -283,4 +265,11 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)
 		}
 	}
+}
+
+// Running git diff and making sure expected changes to the dependency file
+func verifyDependencyFileDiff(rootBranch string, fixBranch string, dependencyFilename string) string {
+	cmd := exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	output, _ := cmd.Output()
+	return string(output)
 }
