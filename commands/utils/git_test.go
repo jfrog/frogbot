@@ -215,7 +215,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 			repoName:    "npmProject",
 			projectName: "myTest5551218",
 			apiEndpoint: "https://gitlab.com",
-			expected:    "https://gitlab.com/mytest5551218/npmProject.git",
+			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
 			vcsProvider: vcsutils.GitLab,
 		}, {
 			repoName:    "onPremProject",
