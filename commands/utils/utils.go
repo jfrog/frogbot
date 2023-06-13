@@ -168,20 +168,6 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func CommitStatusToString(status vcsclient.CommitStatus) string {
-	switch status {
-	case 0:
-		return "passed"
-	case 1:
-		return "failed"
-	case 2:
-		return "error"
-	case 3:
-		return "in progress"
-	}
-	return ""
-}
-
 // Generates MD5Hash from a FixVersionMap object
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
 func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error) {

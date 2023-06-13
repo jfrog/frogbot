@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -184,6 +185,89 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage()
 			assert.Equal(t, commit, test.expected)
+		})
+	}
+}
+
+func TestConvertSSHtoHTTPS(t *testing.T) {
+	testsCases := []struct {
+		repoName    string
+		repoOwner   string
+		projectName string
+		expected    string
+		apiEndpoint string
+		vcsProvider vcsutils.VcsProvider
+	}{
+		{
+			repoName:    "npmExample",
+			repoOwner:   "repoOwner",
+			expected:    "https://github.com/repoOwner/npmExample.git",
+			apiEndpoint: "https://github.com",
+			vcsProvider: vcsutils.GitHub,
+		}, {
+			repoName:    "npmExample",
+			repoOwner:   "repoOwner",
+			expected:    "https://api.github.com/repoOwner/npmExample.git",
+			apiEndpoint: "https://api.github.com",
+			vcsProvider: vcsutils.GitHub,
+		},
+		{
+			repoName:    "npmProject",
+			projectName: "myTest5551218",
+			apiEndpoint: "https://gitlab.com",
+			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
+			vcsProvider: vcsutils.GitLab,
+		}, {
+			repoName:    "onPremProject",
+			projectName: "myTest5551218",
+			apiEndpoint: "https://gitlab.example.com",
+			expected:    "https://gitlab.example.com/myTest5551218/onPremProject.git",
+			vcsProvider: vcsutils.GitLab,
+		},
+		{
+			repoName:    "npmExample",
+			projectName: "firstProject",
+			repoOwner:   "azureReposOwner",
+			apiEndpoint: "https://dev.azure.com/azureReposOwner/",
+			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmExample",
+			vcsProvider: vcsutils.AzureRepos,
+		}, {
+			repoName:    "npmExample",
+			projectName: "onPremProject",
+			repoOwner:   "organization",
+			apiEndpoint: "https://your-server-name:port/organization/",
+			expected:    "https://organization@your-server-name:port/organization/onPremProject/_git/npmExample",
+			vcsProvider: vcsutils.AzureRepos,
+		},
+		{
+			repoName:    "npmExample",
+			repoOwner:   "~bitbucketServerOwner", // Bitbucket server private projects owners start with ~ prefix.
+			apiEndpoint: "https://git.company.info",
+			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmExample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "npmExample",
+			repoOwner:   "bitbucketServerOwner", // Public on prem repo
+			apiEndpoint: "https://git.company.info",
+			expected:    "https://git.company.info/scm/bitbucketServerOwner/npmExample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "notSupported",
+			repoOwner:   "cloudOwner",
+			expected:    "",
+			vcsProvider: vcsutils.BitbucketCloud,
+		},
+	}
+	for _, test := range testsCases {
+		t.Run(test.vcsProvider.String(), func(t *testing.T) {
+			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, GitProject: test.projectName, ApiEndpoint: test.apiEndpoint}}
+			remoteUrl, err := gm.generateHTTPSCloneUrl()
+			if remoteUrl == "" {
+				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, remoteUrl)
+			}
 		})
 	}
 }

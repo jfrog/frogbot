@@ -275,7 +275,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err != nil {
 		return
 	}
-	if !isClean {
+	if isClean {
 		log.Debug("Couldn't fix any of the impacted dependencies")
 		return
 	}

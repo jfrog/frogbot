@@ -379,6 +379,29 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
 
+func TestVerifyValidApiEndpoint(t *testing.T) {
+	testsCases := []struct {
+		endpointUrl   string
+		expectedError bool
+	}{
+		{endpointUrl: "https://git.company.info"},
+		{endpointUrl: "http://git.company.info"},
+		{endpointUrl: "justAString", expectedError: true},
+		{endpointUrl: ""},
+		{endpointUrl: "git.company.info", expectedError: true},
+	}
+	for _, test := range testsCases {
+		t.Run(test.endpointUrl, func(t *testing.T) {
+			err := verifyValidApiEndpoint(test.endpointUrl)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestBuildMergedRepoAggregator(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		RequirementsFileEnv:          "r.txt",

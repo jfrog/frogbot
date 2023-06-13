@@ -67,11 +67,12 @@
                JF_GIT_PROVIDER= "bitbucketServer"
                
                // [Mandatory]
-               // Username of the Bitbucket account
+               // Username of the account associated with the token
                JF_GIT_USERNAME= ""
                
                // [Mandatory]
                // Bitbucket project namespace
+               // Private projects should start with the prefix: "~"
                JF_GIT_OWNER= ""
                
                // [Mandatory]
@@ -84,13 +85,18 @@
                // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
                // JF_RELEASES_REPO= ""
                
-               
-               
-               
-               //////////////////////////////////////////////////////////////////////////
-               //   If your project uses a 'frogbot-config.yml' file, you can define   //
-               //   the following variables inside the file, instead of here.          //
-               //////////////////////////////////////////////////////////////////////////
+               ///////////////////////////////////////////////////////////////////////////
+            //   If your project uses a 'frogbot-config.yml' file, you should define //
+            //   the following variables inside the file, instead of here.           //
+            ///////////////////////////////////////////////////////////////////////////
+
+            // [Mandatory]
+            // The name of the repository
+            JF_GIT_REPO: ""
+ 
+            // [Mandatory]
+            // The name of the branch on which Frogbot will perform the scan
+            JF_GIT_BASE_BRANCH: ""
                
                // [Mandatory if the two conditions below are met]
                // 1. The project uses yarn 2, NuGet or .NET to download its dependencies
@@ -167,35 +173,41 @@
          stages {
                stage('Download Frogbot') {
                   steps {
-                        // For Linux / MacOS runner:
-                        sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-         
-                        // For Windows runner:
-                        // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                        if (env.JF_RELEASES_REPO == "") {
+                         // For Linux / MacOS runner:
+                         sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                         // For Windows runner:
+                         // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""  
+                     } else {
+                         // For Linux / MacOS air gapped environments:
+                         sh """ curl -fLg "${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                         // For Windows air gapped environments:
+                         // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                      }
-               }
-         
-               stage('Scan Pull Requests') {
-                     steps {
-                        sh "./frogbot scan-pull-requests"
-         
-                        // For Windows runner:
-                        // powershell """.\frogbot.exe scan-pull-requests"""
-                     }
-               }
-         
-                  stage('Scan and Fix Repos') {
-                     steps {
-                        sh "./frogbot scan-and-fix-repos"
-         
-                        // For Windows runner:
-                        // powershell """.\frogbot.exe scan-and-fix-repos"""
-                     }
-               }
-            }
-      }
-      ```
+                 }
+              }
       
+              stage('Scan Pull Requests') {
+                  steps {
+                      sh "./frogbot scan-pull-requests"
+      
+                      // For Windows runner:
+                      // powershell """.\frogbot.exe scan-pull-requests"""
+                  }
+              }
+      
+               stage('Scan and Fix Repos') {
+                  steps {
+                      sh "./frogbot scan-and-fix-repos"
+      
+                      // For Windows runner:
+                      // powershell """.\frogbot.exe scan-and-fix-repos"""
+                  }
+              }
+         }
+   }
+   ```
+     
       **Important**
 
       - Make sure that either **JF_USER** and **JF_PASSWORD** or **JF_ACCESS_TOKEN** are set in the Jenkinsfile, but not both.
