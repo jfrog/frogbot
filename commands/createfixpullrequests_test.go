@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -269,7 +270,18 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 
 // Running git diff and making sure expected changes to the dependency file
 func verifyDependencyFileDiff(rootBranch string, fixBranch string, dependencyFilename string) string {
-	cmd := exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
-	output, _ := cmd.Output()
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		print("Executing windows...")
+		cmd = exec.Command("cmd", "/c", "git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	} else {
+		print("Executing linux/mac...")
+		cmd = exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+	}
+	output, err := cmd.Output()
+	if err != nil {
+		log.Error(err)
+	}
+
 	return string(output)
 }
