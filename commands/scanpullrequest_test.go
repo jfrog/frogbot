@@ -397,6 +397,10 @@ func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup.SetFailOnInstallationErrors(true)
 	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
 	tmpDir, err := fileutils.CreateTempDir()
+	defer func() {
+		err = fileutils.RemoveTempDir(tmpDir)
+		assert.NoError(t, err)
+	}()
 	assert.NoError(t, err)
 	params := &utils.Project{
 		InstallCommandName: "echo",
@@ -417,8 +421,6 @@ func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup.Project = params
 	scanSetup.SetFailOnInstallationErrors(true)
 	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
-	err = fileutils.RemoveTempDir(tmpDir)
-	assert.NoError(t, err)
 }
 
 func TestScanPullRequest(t *testing.T) {
