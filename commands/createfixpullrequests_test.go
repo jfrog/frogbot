@@ -272,17 +272,10 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 func verifyDependencyFileDiff(rootBranch string, fixBranch string, dependencyFilename string) string {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		print("Executing windows...\n")
 		cmd = exec.Command("cmd", "/c", "git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
 	} else {
-		print("Executing linux/mac...\n")
 		cmd = exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
 	}
-	output, err := cmd.Output()
-	if err != nil {
-		print("error in git diff output:")
-		log.Error(err)
-	}
-
+	output, _ := cmd.Output()
 	return string(output)
 }
