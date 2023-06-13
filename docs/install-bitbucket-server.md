@@ -67,11 +67,12 @@
                JF_GIT_PROVIDER= "bitbucketServer"
                
                // [Mandatory]
-               // Username of the Bitbucket account
+               // Username of the account associated with the token
                JF_GIT_USERNAME= ""
                
                // [Mandatory]
                // Bitbucket project namespace
+               // Private projects should start with the prefix: "~"
                JF_GIT_OWNER= ""
                
                // [Mandatory]
