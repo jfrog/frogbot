@@ -81,8 +81,8 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			testDir:            "createfixpullrequests/aggregate-no-vul",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-no-vul.yml"),
 			expectedBranchName: "main", // No branch should be created
-			dependencyFileName: "package.json",
 			expectedDiff:       "",
+			dependencyFileName: "package.json",
 		},
 		{
 			repoName:           "aggregate-cant-fix",
@@ -270,12 +270,12 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Running git diff and making sure expected changes to the dependency file
-func verifyDependencyFileDiff(rootBranch string, fixBranch string, dependencyFilename string) (string, error) {
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) (string, error) {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+		cmd = exec.Command("cmd", "/c", "git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	} else {
-		cmd = exec.Command("git", "diff", rootBranch, fixBranch, "--", dependencyFilename)
+		cmd = exec.Command("git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	}
 	output, err := cmd.Output()
 	if err != nil {
