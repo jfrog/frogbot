@@ -39,7 +39,6 @@ const vulnerabilityDetailsCommentWithJas = `
 var applicabilityColorMap = map[string]string{
 	"applicable":     "#FF7377",
 	"not applicable": "#3CB371",
-	"undetermined":   "orange",
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
