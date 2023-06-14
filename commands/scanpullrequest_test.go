@@ -33,7 +33,6 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
-	testProjConfigPathNoNewVul       = "testdata/config/frogbot-config-test-proj-no-vul.yml"
 	testSameBranchProjConfigPath     = "testdata/config/frogbot-config-test-same-branch-fail.yml"
 )
 
