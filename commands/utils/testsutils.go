@@ -38,7 +38,7 @@ func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, 
 	assert.NoError(t, err)
 	err = fileutils.CopyDir(filepath.Join("testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
-	// Copy git folder if exists
+	// Copy Git folder as .git if exists
 	currentDir := filepath.Join(tmpDir, projectName)
 	gitPath := filepath.Join(currentDir, "git")
 	if exists, err := fileutils.IsDirExists(gitPath, false); exists && err == nil {
