@@ -299,8 +299,8 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
-	// On dry run, create the temp folder nested in the current folder
 	if cfp.dryRunRepoPath != "" {
+		// On dry run, create the temp folder nested in the current folder
 		tempWd, err = os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
 	} else {
 		// Create temp working directory
