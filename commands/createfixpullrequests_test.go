@@ -126,7 +126,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 			resultDiff, err := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
 			assert.NoError(t, err)
-			assert.Equal(t, test.expectedDiff, resultDiff)
+			assert.Equal(t, test.expectedDiff, string(resultDiff))
 		})
 	}
 }
@@ -270,16 +270,12 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Running git diff and making sure expected changes to the dependency file
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) (string, error) {
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/c", "git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	} else {
 		cmd = exec.Command("git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	}
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
+	return cmd.Output()
 }
