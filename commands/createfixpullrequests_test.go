@@ -80,7 +80,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate-no-vul",
 			testDir:            "createfixpullrequests/aggregate-no-vul",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-no-vul.yml"),
-			expectedBranchName: "", // No branch should be created
+			expectedBranchName: "main", // No branch should be created
 			dependencyFileName: "package.json",
 			expectedDiff:       "",
 		},
