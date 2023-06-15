@@ -42,7 +42,7 @@ const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 class Utils {
     static addToPath() {
-        var _a, _b;
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let fileName = Utils.getExecutableName();
             let version = core.getInput(Utils.VERSION_ARG);
@@ -61,11 +61,27 @@ class Utils {
             const releasesRepo = (_a = process.env.JF_RELEASES_REPO) !== null && _a !== void 0 ? _a : '';
             let url = Utils.getCliUrl(major, version, fileName, releasesRepo);
             core.debug('Downloading Frogbot from ' + url);
-            let auth = releasesRepo ? ((_b = process.env.JF_ACCESS_TOKEN) !== null && _b !== void 0 ? _b : '') : '';
+            let auth = this.generateAuthString(releasesRepo);
             let downloadDir = yield toolCache.downloadTool(url, '', auth);
             // Cache 'frogbot' executable
             yield this.cacheAndAddPath(downloadDir, version, fileName);
         });
+    }
+    static generateAuthString(releasesRepo) {
+        var _a, _b, _c;
+        if (!releasesRepo) {
+            return '';
+        }
+        let accessToken = (_a = process.env.JF_ACCESS_TOKEN) !== null && _a !== void 0 ? _a : '';
+        let username = (_b = process.env.JF_USER) !== null && _b !== void 0 ? _b : '';
+        let password = (_c = process.env.JF_PASSWORD) !== null && _c !== void 0 ? _c : '';
+        if (accessToken) {
+            return 'Bearer ' + Buffer.from(accessToken).toString();
+        }
+        else if (username && password) {
+            return 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+        }
+        return '';
     }
     static setFrogbotEnv() {
         core.exportVariable('JF_GIT_PROVIDER', 'github');

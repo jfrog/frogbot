@@ -59,6 +59,34 @@ describe('Frogbot Action Tests', () => {
         });
     });
 
+    describe('generateAuthString', () => {
+        it('should return an empty string if releasesRepo is falsy', () => {
+            const result = Utils.generateAuthString('');
+            expect(result).toBe('');
+        });
+
+        it('should generate a Bearer token if accessToken is provided', () => {
+            process.env.JF_ACCESS_TOKEN = 'yourAccessToken';
+            const result = Utils.generateAuthString('yourReleasesRepo');
+            expect(result).toBe('Bearer yourAccessToken');
+            delete process.env.JF_ACCESS_TOKEN;
+        });
+
+        it('should generate a Basic token if username and password are provided', () => {
+            process.env.JF_USER = 'yourUsername';
+            process.env.JF_PASSWORD = 'yourPassword';
+            const result = Utils.generateAuthString('yourReleasesRepo');
+            expect(result).toBe('Basic eW91clVzZXJuYW1lOnlvdXJQYXNzd29yZA==');
+            delete process.env.JF_USER;
+            delete process.env.JF_PASSWORD;
+        });
+
+        it('should return an empty string if no credentials are provided', () => {
+            const result = Utils.generateAuthString('yourReleasesRepo');
+            expect(result).toBe('');
+        });
+    });
+
     it('Repository env tests', () => {
         process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
         process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
