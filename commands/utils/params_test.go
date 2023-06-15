@@ -410,3 +410,26 @@ func TestFrogbotConfigAggregator_UnmarshalYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
 }
+
+func TestVerifyValidApiEndpoint(t *testing.T) {
+	testsCases := []struct {
+		endpointUrl   string
+		expectedError bool
+	}{
+		{endpointUrl: "https://git.company.info"},
+		{endpointUrl: "http://git.company.info"},
+		{endpointUrl: "justAString", expectedError: true},
+		{endpointUrl: ""},
+		{endpointUrl: "git.company.info", expectedError: true},
+	}
+	for _, test := range testsCases {
+		t.Run(test.endpointUrl, func(t *testing.T) {
+			err := verifyValidApiEndpoint(test.endpointUrl)
+			if test.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
