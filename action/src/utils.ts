@@ -27,10 +27,11 @@ export class Utils {
         }
 
         // Download Frogbot
-        let url: string = Utils.getCliUrl(major, version, fileName);
+        const releasesRepo: string = process.env.JF_RELEASES_REPO ?? '';
+        let url: string = Utils.getCliUrl(major, version, fileName, releasesRepo);
         core.debug('Downloading Frogbot from ' + url);
-        let downloadDir: string = await toolCache.downloadTool(url);
-
+        let auth: string = releasesRepo ? (process.env.JF_ACCESS_TOKEN ?? '') : '';
+        let downloadDir: string = await toolCache.downloadTool(url, '', auth);
         // Cache 'frogbot' executable
         await this.cacheAndAddPath(downloadDir, version, fileName);
     }
@@ -96,8 +97,17 @@ export class Utils {
         core.addPath(cliDir);
     }
 
-    public static getCliUrl(major: string, version: string, fileName: string): string {
+    public static getCliUrl(major: string, version: string, fileName: string, releasesRepo: string): string {
         let architecture: string = 'frogbot-' + Utils.getArchitecture();
+        if (releasesRepo) {
+            let platformUrl: string = process.env.JF_URL ?? '';
+            if (!platformUrl) {
+                throw new Error('failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            // Remove trailing slash if exists
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+        }
         return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
     }
 
