@@ -151,7 +151,7 @@ class Utils {
         if (releasesRepo) {
             let platformUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
             if (!platformUrl) {
-                throw new Error('failed while downloading Frogbot from Artifactory, JF_URL must be set');
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
             }
             // Remove trailing slash if exists
             platformUrl = platformUrl.replace(/\/$/, '');

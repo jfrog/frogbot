@@ -4,6 +4,16 @@ import { Utils } from '../src/utils';
 jest.mock('os');
 
 describe('Frogbot Action Tests', () => {
+    afterEach(() => {
+        delete process.env.JF_ACCESS_TOKEN;
+        delete process.env.JF_USER;
+        delete process.env.PASSWORD;
+        delete process.env.JF_GIT_PROVIDER;
+        delete process.env.JF_GIT_OWNER;
+        delete process.env.GITHUB_REPOSITORY_OWNER;
+        delete process.env.GITHUB_REPOSITORY;
+    })
+
     describe('Frogbot URL Tests', () => {
         const myOs: jest.Mocked<typeof os> = os as any;
         let cases: string[][] = [
@@ -59,29 +69,26 @@ describe('Frogbot Action Tests', () => {
         });
     });
 
-    describe('generateAuthString', () => {
-        it('should return an empty string if releasesRepo is falsy', () => {
+    describe('Generate auth string', () => {
+        it('Should return an empty string if releasesRepo is falsy', () => {
             const result = Utils.generateAuthString('');
             expect(result).toBe('');
         });
 
-        it('should generate a Bearer token if accessToken is provided', () => {
+        it('Should generate a Bearer token if accessToken is provided', () => {
             process.env.JF_ACCESS_TOKEN = 'yourAccessToken';
             const result = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('Bearer yourAccessToken');
-            delete process.env.JF_ACCESS_TOKEN;
         });
 
-        it('should generate a Basic token if username and password are provided', () => {
+        it('Should generate a Basic token if username and password are provided', () => {
             process.env.JF_USER = 'yourUsername';
             process.env.JF_PASSWORD = 'yourPassword';
             const result = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('Basic eW91clVzZXJuYW1lOnlvdXJQYXNzd29yZA==');
-            delete process.env.JF_USER;
-            delete process.env.JF_PASSWORD;
         });
 
-        it('should return an empty string if no credentials are provided', () => {
+        it('Should return an empty string if no credentials are provided', () => {
             const result = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('');
         });
