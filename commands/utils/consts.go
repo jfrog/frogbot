@@ -97,7 +97,7 @@ const (
 
 	// Default naming templates
 	BranchNameTemplate                 = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
-	AggregatedBranchNameTemplate       = "frogobt-" + BranchHashPlaceHolder
+	AggregatedBranchNameTemplate       = "frogobt-Update-dependencies"
 	CommitMessageTemplate              = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	AggregatedPullRequestTitleTemplate = "[🐸 Frogbot] Update dependencies versions"
 	PullRequestTitleTemplate           = "[🐸 Frogbot] Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder

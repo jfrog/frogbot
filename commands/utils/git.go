@@ -320,17 +320,13 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates unique branch name constructed by all the vulnerable packages.
-func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixDetails) (fixBranchName string, err error) {
-	hash, err := fixVersionsMapToMd5Hash(versionsMap)
-	if err != nil {
-		return
-	}
+// Generates consistent branch name to allow branch updates
+func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
-		branchFormat = AggregatedBranchNameTemplate
+		return AggregatedBranchNameTemplate, nil
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", "", false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
