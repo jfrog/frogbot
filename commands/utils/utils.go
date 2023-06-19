@@ -174,8 +174,8 @@ func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error)
 	h := crypto.MD5.New()
 	// Sort the package names
 	keys := make([]string, 0, len(versionsMap))
-	for k, v := range versionsMap {
-		keys = append(keys, k+v.FixVersion)
+	for k, _ := range versionsMap {
+		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for key, value := range keys {

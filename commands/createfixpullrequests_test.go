@@ -72,7 +72,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate",
 			testDir:            "createfixpullrequests/aggregate",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate.yml"),
-			expectedBranchName: "frogobt-ba1cfdc506c8ce3c8d4709ac9f47b40a",
+			expectedBranchName: "frogobt-b371dfb6a09ce867624ff27a8c069c50",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 		},
@@ -88,7 +88,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate-cant-fix",
 			testDir:            "createfixpullrequests/aggregate-cant-fix",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-cant-fix.yml"),
-			expectedBranchName: "frogobt-464ee0967f7fadd03a83b3be1362aaa2",
+			expectedBranchName: "frogobt-9e636d7e3dfa13c96e213ca243758525",
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
 		},
