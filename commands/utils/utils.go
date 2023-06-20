@@ -191,7 +191,7 @@ func fixVersionsMapToMd5Hash(versionsMap map[string]*VulnerabilityDetails) (stri
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults *audit.Results, repo *FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
+func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
 	if repo.GitProvider.String() != vcsutils.GitHub.String() {
 		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
@@ -226,7 +226,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 	return
 }
 
-func ValidateSingleRepoConfiguration(configAggregator *FrogbotConfigAggregator) error {
+func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
 	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)

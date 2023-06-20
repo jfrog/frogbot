@@ -11,7 +11,6 @@ require (
 	github.com/jfrog/jfrog-cli-core/v2 v2.34.5
 	github.com/jfrog/jfrog-client-go v1.30.0
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.1
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -77,6 +76,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
