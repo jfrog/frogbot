@@ -32,8 +32,11 @@ func (ed *extractorDetails) downloadFromPath() string {
 	return filepath.Join(extractorsRepositoryPath, ed.remotePath, ed.fileName)
 }
 
-// downloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
-func downloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath, releasesRepo string) (err error) {
+// DownloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
+func DownloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath, releasesRepo string) (err error) {
+	if releasesRepo == "" {
+		return nil
+	}
 	log.Info("Checking whether the build-info extractors exist locally")
 	if extractorsLocalPath == "" {
 		extractorsLocalPath, err = config.GetJfrogDependenciesPath()

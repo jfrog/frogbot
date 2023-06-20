@@ -20,6 +20,11 @@ func Exec(command FrogbotCommand, name string) error {
 	if err != nil {
 		return err
 	}
+	// Download extractors if the jfrog releases repo environment variable is set
+	releasesRepo := frogbotUtils.Repositories[0].JfrogReleasesRepo
+	if err = utils.DownloadExtractorsFromRemoteIfNeeded(frogbotUtils.ServerDetails, "", releasesRepo); err != nil {
+		return err
+	}
 	// Send a usage report
 	usageReportSent := make(chan error)
 	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)

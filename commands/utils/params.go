@@ -169,6 +169,7 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
+		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
 	}
 	return
@@ -259,8 +260,7 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 func getConfigAggregator(client vcsclient.VcsClient, clientInfo *ClientInfo, server *coreconfig.ServerDetails) (RepoAggregator, error) {
 	configFileContent, err := getConfigFileContent(client, clientInfo)
 	// Don't return error in case of a missing frogbot-config.yml file
-	// If an error occurs due to a missing file,
-	// Attempt to generate an environment variable-based configuration aggregator as an alternative.
+	// If an error occurs due to a missing file, attempt to generate an environment variable-based configuration aggregator as an alternative.
 	if _, missingConfigErr := err.(*ErrMissingConfig); !missingConfigErr && len(configFileContent) == 0 {
 		return nil, err
 	}
@@ -292,19 +292,11 @@ func BuildRepoAggregator(configFileContent []byte, clientInfo *ClientInfo, serve
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
 		return
 	}
-	extractorDownloaded := false
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
 		repository.OutputWriter = GetCompatibleOutputWriter(clientInfo.GitProvider)
 		if err = repository.Params.setDefaultsIfNeeded(clientInfo); err != nil {
 			return
-		}
-		if repository.JfrogReleasesRepo != "" && !extractorDownloaded {
-			// Download extractors if the jfrog releases repo environment variable is set
-			if err = downloadExtractorsFromRemoteIfNeeded(server, "", repository.JfrogReleasesRepo); err != nil {
-				return
-			}
-			extractorDownloaded = true
 		}
 		resultAggregator = append(resultAggregator, repository)
 	}
@@ -324,19 +316,19 @@ func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err 
 
 func extractJFrogCredentialsFromEnv() (coreconfig.ServerDetails, error) {
 	server := coreconfig.ServerDetails{}
-	url := strings.TrimSuffix(getTrimmedEnv(JFrogUrlEnv), "/")
+	platformUrl := strings.TrimSuffix(getTrimmedEnv(JFrogUrlEnv), "/")
 	xrUrl := strings.TrimSuffix(getTrimmedEnv(jfrogXrayUrlEnv), "/")
 	rtUrl := strings.TrimSuffix(getTrimmedEnv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
 		server.XrayUrl = xrUrl + "/"
 		server.ArtifactoryUrl = rtUrl + "/"
 	} else {
-		if url == "" {
+		if platformUrl == "" {
 			return server, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
-		server.Url = url + "/"
-		server.XrayUrl = url + "/xray/"
-		server.ArtifactoryUrl = url + "/artifactory/"
+		server.Url = platformUrl + "/"
+		server.XrayUrl = platformUrl + "/xray/"
+		server.ArtifactoryUrl = platformUrl + "/artifactory/"
 	}
 
 	password := getTrimmedEnv(JFrogPasswordEnv)
@@ -542,10 +534,7 @@ func readConfigFromTarget(client vcsclient.VcsClient, clientInfo *ClientInfo) (c
 			// If .frogbot/frogbot-config.yml isn't found, we'll try to run Frogbot using environment variables
 			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
 		}
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	return configContent, nil
+	return configContent, err
 }
