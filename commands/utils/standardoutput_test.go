@@ -77,7 +77,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			smo := &StandardOutput{}
-			actualOutput := smo.TableRow(tc.vulnerability)
+			actualOutput := smo.VulnerabilitiesTableRow(tc.vulnerability)
 			assert.Equal(t, tc.expected, actualOutput)
 		})
 	}
@@ -91,11 +91,11 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 		expected bool
 	}{
 		{
-			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityBannerSource) + " icon",
+			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityPrBannerSource) + " icon",
 			expected: true,
 		},
 		{
-			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesBannerSource) + " icon",
+			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesPrBannerSource) + " icon",
 			expected: true,
 		},
 		{
@@ -110,7 +110,7 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 	}
 }
 
-func TestStandardOutput_Content(t *testing.T) {
+func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create a new instance of StandardOutput
 	so := &StandardOutput{}
 
@@ -128,7 +128,9 @@ func TestStandardOutput_Content(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
-## Summary
+## 📦 Vulnerable Dependencies 
+
+### ✍️ Summary
 
 <div align="center">
 
@@ -136,7 +138,7 @@ func TestStandardOutput_Content(t *testing.T) {
 
 </div>
 
-## Details
+## 👇 Details
 
 
 <details>
@@ -155,8 +157,8 @@ func TestStandardOutput_Content(t *testing.T) {
 </details>
 
 `,
-		so.Header(),
-		getTableContent(vulnerabilitiesRows, so),
+		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
 		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
@@ -165,7 +167,7 @@ func TestStandardOutput_Content(t *testing.T) {
 		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
-	actualContent := so.Content(vulnerabilitiesRows)
+	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 }
 
@@ -189,7 +191,9 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
-## Summary
+## 📦 Vulnerable Dependencies 
+
+### ✍️ Summary
 
 <div align="center">
 
@@ -197,7 +201,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 </div>
 
-## Details
+## 👇 Details
 
 
 <details>
@@ -216,8 +220,8 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 </details>
 
 `,
-		so.Header(),
-		getTableContent(vulnerabilitiesRows, so),
+		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
 		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
@@ -226,7 +230,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
-	actualContent := so.Content(vulnerabilitiesRows)
+	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
 	assert.Contains(t, actualContent, "Applicable")

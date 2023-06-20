@@ -261,7 +261,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion)
 	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 
-	prBody := cfp.OutputWriter.Content([]formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
+	prBody := cfp.OutputWriter.VulnerabilitiesContent([]formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
 
@@ -292,7 +292,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	}
 	if !exists {
 		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
-		prBody := cfp.OutputWriter.Content(vulnerabilities)
+		prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), utils.AggregatedPullRequestTitleTemplate, prBody)
 	}
 	log.Info("Pull Request branch:", fixBranchName, "has been updated")

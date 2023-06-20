@@ -197,7 +197,7 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *FrogbotRepoConfig
 		return nil
 	}
 
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true, "JFrog Frogbot", "https://github.com/jfrog/frogbot")
 	if err != nil {
 		return err
 	}

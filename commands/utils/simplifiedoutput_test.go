@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSimplifiedOutput_TableRow(t *testing.T) {
+func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 	type testCase struct {
 		name           string
 		vulnerability  formats.VulnerabilityOrViolationRow
@@ -67,7 +67,7 @@ func TestSimplifiedOutput_TableRow(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			smo := &SimplifiedOutput{}
-			actualOutput := smo.TableRow(tc.vulnerability)
+			actualOutput := smo.VulnerabilitiesTableRow(tc.vulnerability)
 			assert.Equal(t, tc.expectedOutput, actualOutput)
 		})
 	}
@@ -105,7 +105,7 @@ func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
 	}
 }
 
-func TestSimplifiedOutput_Content(t *testing.T) {
+func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create a new instance of StandardOutput
 	so := &SimplifiedOutput{}
 
@@ -128,13 +128,15 @@ func TestSimplifiedOutput_Content(t *testing.T) {
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
 ---
-### Summary
+## 📦 Vulnerable Dependencies
 ---
+
+### ✍️ Summary 
 
 %s %s
 
 ---
-### Details
+### 👇 Details
 ---
 
 
@@ -148,8 +150,8 @@ func TestSimplifiedOutput_Content(t *testing.T) {
 %s
 
 `,
-		so.Header(),
-		getTableContent(vulnerabilitiesRows, so),
+		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
 		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
@@ -158,7 +160,7 @@ func TestSimplifiedOutput_Content(t *testing.T) {
 		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
-	actualContent := so.Content(vulnerabilitiesRows)
+	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 }
 
@@ -187,13 +189,15 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
 ---
-### Summary
+## 📦 Vulnerable Dependencies
 ---
+
+### ✍️ Summary 
 
 %s %s
 
 ---
-### Details
+### 👇 Details
 ---
 
 
@@ -207,8 +211,8 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 %s
 
 `,
-		so.Header(),
-		getTableContent(vulnerabilitiesRows, so),
+		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
 		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
@@ -217,7 +221,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
 	)
 
-	actualContent := so.Content(vulnerabilitiesRows)
+	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
 	assert.Contains(t, actualContent, "**APPLICABLE**")

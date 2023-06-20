@@ -39,17 +39,18 @@ const vulnerabilityDetailsCommentWithJas = `
 var applicabilityColorMap = map[string]string{
 	"applicable":     "#FF7377",
 	"not applicable": "#3CB371",
-	"undetermined":   "#FFFFFFFF",
+	"undetermined":   "",
 }
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
-	TableRow(vulnerability formats.VulnerabilityOrViolationRow) string
+	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
-	VulnerabiltiesTitle() string
-	Header() string
-	Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
+	VulnerabiltiesTitle(isComment bool) string
+	VulnerabilitiesTableHeader() string
+	VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
+	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
 	Seperator() string
 	FormattedSeverity(severity, applicability string) string
@@ -107,7 +108,15 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 		vulnerabilityDetails.JfrogResearchInformation.Details)
 }
 
-func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	var tableContent string
+	for _, vulnerability := range vulnerabilitiesRows {
+		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
+	}
+	return tableContent
+}
+
+func createVulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var directDependencies strings.Builder
 	if len(vulnerability.Components) > 0 {
 		for _, dependency := range vulnerability.Components {
@@ -127,10 +136,10 @@ func createTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer Ou
 	return row
 }
 
-func getTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getIacTableContent(iacRows []formats.IacSecretsRow) string {
 	var tableContent string
-	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += "\n" + writer.TableRow(vulnerability)
+	for _, iac := range iacRows {
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s |", iac.Severity, iac.File, iac.LineColumn, iac.Text, iac.Type)
 	}
 	return tableContent
 }

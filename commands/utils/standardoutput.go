@@ -12,27 +12,41 @@ type StandardOutput struct {
 	vcsProvider    vcsutils.VcsProvider
 }
 
-func (so *StandardOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createTableRow(vulnerability, so)
+func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
+	return createVulnerabilitiesTableRow(vulnerability, so)
 }
 
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
-	return GetBanner(NoVulnerabilityBannerSource)
-}
-
-func (so *StandardOutput) VulnerabiltiesTitle() string {
-	return GetBanner(VulnerabilitiesBannerSource)
-}
-
-func (so *StandardOutput) Header() string {
-	if so.entitledForJas {
-		return tableHeaderWithJas
+	if so.vcsProvider == vcsutils.GitLab {
+		return GetBanner(NoVulnerabilityMrBannerSource)
 	}
-	return tableHeader
+	return GetBanner(NoVulnerabilityPrBannerSource)
+}
+
+func (so *StandardOutput) VulnerabiltiesTitle(isComment bool) string {
+	var banner string
+	switch {
+	case isComment && so.vcsProvider == vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesMrBannerSource)
+	case isComment && so.vcsProvider != vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesPrBannerSource)
+	case !isComment && so.vcsProvider == vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesFixMrBannerSource)
+	case !isComment && so.vcsProvider != vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
+	}
+	return banner
+}
+
+func (so *StandardOutput) VulnerabilitiesTableHeader() string {
+	if so.entitledForJas {
+		return vulnerabilitiesTableHeaderWithJas
+	}
+	return vulnerabilitiesTableHeader
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.Contains(comment, GetIconTag(NoVulnerabilityBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesBannerSource))
+	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource))
 }
 
 func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
@@ -51,11 +65,13 @@ func (so *StandardOutput) EntitledForJas() bool {
 	return so.entitledForJas
 }
 
-func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
-## Summary
+## 📦 Vulnerable Dependencies 
+
+### ✍️ Summary
 
 <div align="center">
 
@@ -63,11 +79,11 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 
 </div>
 
-## Details
+## 👇 Details
 
 `,
-		so.Header(),
-		getTableContent(vulnerabilitiesRows, so)))
+		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilitiesRows {
 		if len(vulnerabilitiesRows) == 1 {
@@ -92,6 +108,25 @@ func (so *StandardOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrV
 			createVulnerabilityDescription(&vulnerabilitiesRows[i], so.vcsProvider)))
 	}
 	return contentBuilder.String()
+}
+
+func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+	if len(iacRows) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+## 🛠️ Infrastructure as Code 
+
+<div align="center">
+
+%s %s
+
+</div>
+
+`,
+		iacTableHeader,
+		getIacTableContent(iacRows))
 }
 
 func (so *StandardOutput) Footer() string {
