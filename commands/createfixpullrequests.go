@@ -38,7 +38,7 @@ type CreateFixPullRequestsCmd struct {
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
-func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.FrogbotConfigAgg
 	return nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) error {
+func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repository, branch string, client vcsclient.VcsClient) error {
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err
