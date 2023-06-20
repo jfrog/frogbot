@@ -13,6 +13,7 @@ async function main() {
                 break;
             case "push":
             case "schedule":
+            case "workflow_dispatch":
                 await Utils.execCreateFixPullRequests();
                 break;
             default:
