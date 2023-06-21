@@ -289,6 +289,8 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 // Running git diff and making sure expected changes to the dependency file
 func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
 	var cmd *exec.Cmd
+	// Suppress condition always false warning
+	//goland:noinspection ALL
 	if runtime.GOOS == "windows" {
 		cmd = exec.Command("cmd", "/c", "git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	} else {
