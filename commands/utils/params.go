@@ -137,6 +137,9 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	if s.MinSeverity, err = xrutils.GetSeveritiesFormat(s.MinSeverity); err != nil {
 		return
 	}
+	if len(s.Projects) == 0 {
+		s.Projects = append(s.Projects, Project{})
+	}
 	for i := range s.Projects {
 		if err = s.Projects[i].setDefaultsIfNeeded(); err != nil {
 			return

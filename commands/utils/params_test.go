@@ -11,7 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var configParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
+var (
+	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
+	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
+)
 
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
@@ -167,6 +170,43 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 			testExtractAndAssertProjectParams(t, project)
 		}
 	}
+}
+
+func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:     "http://127.0.0.1:8081",
+		JFrogTokenEnv:   "token",
+		GitProvider:     string(GitHub),
+		GitRepoOwnerEnv: "jfrog",
+		GitRepoEnv:      "frogbot",
+		GitTokenEnv:     "123456789",
+	})
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+	server, gitParams, err := extractClientServerParams()
+	assert.NoError(t, err)
+	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
+	assert.NoError(t, err)
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
+	assert.NoError(t, err)
+	assert.Len(t, configAggregator, 1)
+	assert.False(t, configAggregator[0].AggregateFixes)
+	scan := configAggregator[0].Scan
+	assert.False(t, scan.IncludeAllVulnerabilities)
+	assert.False(t, scan.FixableOnly)
+	assert.Empty(t, scan.MinSeverity)
+	assert.Empty(t, scan.JfrogReleasesRepo)
+	assert.True(t, *scan.FailOnSecurityIssues)
+	assert.Len(t, scan.Projects, 1)
+	project := scan.Projects[0]
+	assert.Empty(t, project.InstallCommandName)
+	assert.Empty(t, project.InstallCommandArgs)
+	assert.Empty(t, project.PipRequirementsFile)
+	assert.Empty(t, project.Repository)
+	assert.Len(t, project.WorkingDirs, 1)
+	assert.Equal(t, RootDir, project.WorkingDirs[0])
+	assert.True(t, *project.UseWrapper)
 }
 
 func testExtractAndAssertProjectParams(t *testing.T, project Project) {
