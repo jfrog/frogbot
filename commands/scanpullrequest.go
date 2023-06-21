@@ -49,7 +49,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 // Verifies current branch and target branch are not the same.
 // The Current branch is the branch the action is triggered on.
 // The Default branch is the branch to open pull request to.
-func (cmd *ScanPullRequestCmd) verifyDifferentBranches(repoConfig *utils.FrogbotRepoConfig) error {
+func (cmd *ScanPullRequestCmd) verifyDifferentBranches(repoConfig *utils.Repository) error {
 	repo, err := git.PlainOpen(".")
 	if err != nil {
 		return err

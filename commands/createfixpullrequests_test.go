@@ -67,6 +67,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		expectedBranchName string
 		expectedDiff       string
 		dependencyFileName string
+		aggregateFixes     bool
 	}{
 		{
 			repoName:           "aggregate",
@@ -75,6 +76,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			expectedBranchName: "frogobt-b371dfb6a09ce867624ff27a8c069c50",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
+			aggregateFixes:     true,
 		},
 		{
 			repoName:           "aggregate-no-vul",
@@ -83,6 +85,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			expectedBranchName: "main", // No branch should be created
 			expectedDiff:       "",
 			dependencyFileName: "package.json",
+			aggregateFixes:     true,
 		},
 		{
 			repoName:           "aggregate-cant-fix",
@@ -91,6 +94,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			expectedBranchName: "frogobt-9e636d7e3dfa13c96e213ca243758525",
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
+			aggregateFixes:     true,
 		},
 		{
 			repoName:           "non-aggregate",
@@ -99,25 +103,35 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
+			aggregateFixes:     false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.repoName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
-			defer restoreEnv()
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
-			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := &utils.Git{GitProvider: vcsutils.GitHub, RepoOwner: "jfrog", Token: "123456", ApiEndpoint: server.URL, PullRequestID: 1}
+			gitTestParams := utils.Git{
+				ClientInfo: utils.ClientInfo{
+					GitProvider: vcsutils.GitHub,
+					VcsInfo: vcsclient.VcsInfo{
+						Token:       "123456",
+						APIEndpoint: server.URL,
+					},
+					RepoName: test.repoName,
+				},
+				PullRequestID:  0,
+				AggregateFixes: test.aggregateFixes,
+			}
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 			configData, err := utils.ReadConfigFromFileSystem(test.configPath)
 			assert.NoError(t, err)
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
 			defer cleanUp()
-			configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
+			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams.ClientInfo, &serverParams)
 			assert.NoError(t, err)
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
@@ -127,6 +141,9 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			resultDiff, err := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedDiff, string(resultDiff))
+			// Defers
+			restoreEnv()
+			server.Close()
 		})
 	}
 }

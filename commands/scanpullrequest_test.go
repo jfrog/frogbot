@@ -652,10 +652,11 @@ func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func(
 	server.AccessToken = token
 	restoreFunc = func() {
 		utils.SetEnvAndAssert(t, map[string]string{
-			utils.JFrogUrlEnv:      url,
-			utils.JFrogTokenEnv:    token,
-			utils.JFrogUserEnv:     username,
-			utils.JFrogPasswordEnv: password,
+			utils.JFrogUrlEnv:          url,
+			utils.JFrogTokenEnv:        token,
+			utils.JFrogUserEnv:         username,
+			utils.JFrogPasswordEnv:     password,
+			utils.GitAggregateFixesEnv: "FALSE",
 		})
 	}
 	return
