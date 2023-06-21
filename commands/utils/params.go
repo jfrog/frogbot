@@ -232,6 +232,10 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 }
 
 func validateHashPlaceHolder(template string) bool {
+	if template == "" {
+		// Empty template is valid, will be replaced with default.
+		return true
+	}
 	return strings.Contains(template, BranchHashPlaceHolder)
 }
 

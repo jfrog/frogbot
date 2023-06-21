@@ -443,7 +443,7 @@ func (cfp *CreateFixPullRequestsCmd) compareScanResults(fixVersionsMap map[strin
 		return
 	}
 	if currentScanHash == remoteBranchScanHash {
-		log.Info("Aggregate fixes has no new vulnerabilities, finishing run...") // TODO change this
+		log.Info("Scan results hasn't change since last Frogbot run...")
 		return true, err
 	}
 	return
