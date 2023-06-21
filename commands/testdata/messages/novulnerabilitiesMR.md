@@ -1,4 +1,4 @@
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)
 
 --- 
 * **Frogbot** also supports the [‘Contextual Analysis’](https://jfrog.com/security-and-compliance/) feature, which is included as part of the ‘Advanced Security’ package.
