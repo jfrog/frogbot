@@ -712,6 +712,91 @@ func TestGetFullPathWorkingDirs(t *testing.T) {
 	}
 }
 
+func TestCreateNewIacRows(t *testing.T) {
+	testCases := []struct {
+		name                            string
+		targetIacResults                []utils2.IacOrSecretResult
+		sourceIacResults                []utils2.IacOrSecretResult
+		expectedAddedIacVulnerabilities []formats.IacSecretsRow
+	}{
+		{
+			name: "No vulnerabilities in source IaC results",
+			targetIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			sourceIacResults:                []utils2.IacOrSecretResult{},
+			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{},
+		},
+		{
+			name:             "No vulnerabilities in target IaC results",
+			targetIacResults: []utils2.IacOrSecretResult{},
+			sourceIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					File:             "file1",
+					LineColumn:       "1:10",
+					Type:             "Secret",
+					Text:             "Sensitive information",
+					SeverityNumValue: 3,
+				},
+			},
+		},
+		{
+			name: "Some new vulnerabilities in source IaC results",
+			targetIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			sourceIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "Medium",
+					File:       "file2",
+					LineColumn: "2:5",
+					Type:       "Secret",
+					Text:       "Confidential data",
+				},
+			},
+			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "Medium",
+					SeverityNumValue: 2,
+					File:             "file2",
+					LineColumn:       "2:5",
+					Text:             "Confidential data",
+					Type:             "Secret",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			addedIacVulnerabilities := createNewIacRows(tc.targetIacResults, tc.sourceIacResults)
+			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
+		})
+	}
+}
+
 // Set new logger with output redirection to a null logger. This is useful for negative tests.
 // Caller is responsible to set the old log back.
 func redirectLogOutputToNil() (previousLog log.Log) {

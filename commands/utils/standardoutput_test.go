@@ -236,3 +236,61 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	assert.Contains(t, actualContent, "Applicable")
 	assert.Contains(t, actualContent, "Not Applicable")
 }
+
+func TestStandardOutput_IacContent(t *testing.T) {
+	testCases := []struct {
+		name           string
+		iacRows        []formats.IacSecretsRow
+		expectedOutput string
+	}{
+		{
+			name:           "Empty IAC rows",
+			iacRows:        []formats.IacSecretsRow{},
+			expectedOutput: "",
+		},
+		{
+			name: "Single IAC row",
+			iacRows: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					SeverityNumValue: 3,
+					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
+					LineColumn:       "11:1",
+					Text:             "Missing Periodic patching was detected",
+					Type:             "azure_redis_patch",
+				},
+			},
+			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       | SCANNER                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected | azure_redis_patch |\n\n</div>\n\n",
+		},
+		{
+			name: "Multiple IAC rows",
+			iacRows: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					SeverityNumValue: 3,
+					File:             "applicable/req_sw_terraform_azure_redis_patch.tf",
+					LineColumn:       "11:1",
+					Text:             "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+					Type:             "azure_redis_no_public",
+				},
+				{
+					Severity:         "High",
+					SeverityNumValue: 3,
+					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
+					LineColumn:       "11:1",
+					Text:             "Missing Periodic patching was detected",
+					Type:             "azure_redis_patch",
+				},
+			},
+			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       | SCANNER                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected | azure_redis_no_public |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected | azure_redis_patch |\n\n</div>\n\n",
+		},
+	}
+
+	writer := &StandardOutput{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := writer.IacContent(tc.iacRows)
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}
