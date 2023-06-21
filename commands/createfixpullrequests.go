@@ -165,10 +165,10 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 }
 
 func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsMap map[string]*utils.FixDetails, aggregatedFixBranchName string) (err error) {
-	log.Info("-----------------------------------------------------------------")
-	log.Info("Starting aggregated dependencies fix")
 	var errList strings.Builder
 	var atLeastOneFix bool
+	log.Info("-----------------------------------------------------------------")
+	log.Info("Starting aggregated dependencies fix")
 	log.Debug("Creating branch", aggregatedFixBranchName, "...")
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
