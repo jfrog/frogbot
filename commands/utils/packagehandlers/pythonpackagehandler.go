@@ -28,12 +28,12 @@ type PythonPackageHandler struct {
 func (py *PythonPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
 	if fixDetails.DirectDependency {
 		return py.updateDirectDependency(fixDetails)
-	} else {
-		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
-			ErrorType:    utils.IndirectDependencyFixNotSupported,
-		}
+	}
+
+	return &utils.ErrUnsupportedFix{
+		PackageName:  fixDetails.ImpactedDependency,
+		FixedVersion: fixDetails.FixVersion,
+		ErrorType:    utils.IndirectDependencyFixNotSupported,
 	}
 }
 
@@ -76,7 +76,7 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err err
 	}
 	data, err := os.ReadFile(filepath.Clean(py.pipRequirementsFile))
 	if err != nil {
-		return
+		return errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
 	}
 	currentFile := string(data)
 
@@ -89,5 +89,8 @@ func (py *PythonPackageHandler) handlePip(fixDetails *utils.FixDetails) (err err
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", fixDetails.ImpactedDependency)
 	}
-	return os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600)
+	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", fixDetails.FixVersion, err.Error())
+	}
+	return
 }

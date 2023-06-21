@@ -37,12 +37,13 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer server.Close()
 	port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
-	gitTestParams := &utils.Git{
-		GitProvider:   vcsutils.GitHub,
-		RepoOwner:     "jfrog",
-		Token:         "123456",
-		ApiEndpoint:   server.URL,
-		PullRequestID: 1,
+	gitTestParams := &utils.ClientInfo{
+		GitProvider: vcsutils.GitHub,
+		RepoOwner:   "jfrog",
+		VcsInfo: vcsclient.VcsInfo{
+			Token:       "123456",
+			APIEndpoint: server.URL,
+		},
 	}
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
@@ -55,7 +56,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer cleanUp()
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
-	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
+	configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
 	assert.NoError(t, err)
 
 	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: tmpDir}

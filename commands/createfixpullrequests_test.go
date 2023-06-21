@@ -189,7 +189,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	params := utils.Params{
 		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
 	}
-	var frogbotParams = utils.FrogbotRepoConfig{
+	var frogbotParams = utils.Repository{
 		Server: environmentVars,
 		Params: params,
 	}
