@@ -34,6 +34,9 @@ const (
 	gitLabHttpsFormat          = "%s/%s/%s.git"
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
+
+	// Hash for aggregated branch names to replace in templates.
+	ConstAggregatedHash = "0"
 )
 
 type GitManager struct {
@@ -326,9 +329,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, e
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	// Const hash for aggregated branch names to replace in the templates.
-	aggregateHash := "0"
-	return formatStringWithPlaceHolders(branchFormat, "", "", aggregateHash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", ConstAggregatedHash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
