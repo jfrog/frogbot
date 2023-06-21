@@ -324,9 +324,11 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
-		return AggregatedBranchNameTemplate, nil
+		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", "", false), nil
+	// Const hash for aggregated branch names to replace in the templates.
+	aggregateHash := "0"
+	return formatStringWithPlaceHolders(branchFormat, "", "", aggregateHash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
