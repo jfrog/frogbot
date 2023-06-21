@@ -191,6 +191,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
+	assert.False(t, configAggregator[0].AggregateFixes)
 	scan := configAggregator[0].Scan
 	assert.False(t, scan.IncludeAllVulnerabilities)
 	assert.False(t, scan.FixableOnly)
