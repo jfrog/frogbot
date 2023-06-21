@@ -269,7 +269,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 // Update the package version. Updates it only if the version is not a reference to a property.
 func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersion string, foundInDependencyManagement bool) (err error) {
 	updateVersionArgs := []string{
-		"-B", "versions:use-dep-version", "-Dincludes=" + impactedPackage,
+		"-B", "org.codehaus.mojo:versions-maven-plugin:use-dep-version", "-Dincludes=" + impactedPackage,
 		"-DdepVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
 		fmt.Sprintf("-DprocessDependencies=%t", !foundInDependencyManagement),
 		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
@@ -283,7 +283,7 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
 	for _, property := range depDetails.properties {
 		updatePropertyArgs := []string{
-			"-B", "versions:set-property", "-Dproperty=" + property,
+			"-B", "org.codehaus.mojo:versions-maven-plugin:set-property", "-Dproperty=" + property,
 			"-DnewVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
 			fmt.Sprintf("-DprocessDependencies=%t", !depDetails.foundInDependencyManagement),
 			fmt.Sprintf("-DprocessDependencyManagement=%t", depDetails.foundInDependencyManagement)}

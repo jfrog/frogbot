@@ -15,18 +15,18 @@ type ScanAndFixRepositories struct {
 	dryRunRepoPath string
 }
 
-func (saf *ScanAndFixRepositories) Run(configAggregator utils.FrogbotConfigAggregator, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	// Aggregate errors and log at the end rather than failing the entire run if there is an error on one repository.
 	var aggregatedErrors error
-	for repoNum := range configAggregator {
-		if err := saf.scanAndFixSingleRepository(&configAggregator[repoNum], client); err != nil {
+	for repoNum := range repoAggregator {
+		if err := saf.scanAndFixSingleRepository(&repoAggregator[repoNum], client); err != nil {
 			aggregatedErrors = errors.Join(err)
 		}
 	}
 	return aggregatedErrors
 }
 
-func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.FrogbotRepoConfig, client vcsclient.VcsClient) error {
+func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
 	var aggregatedErrors error
 	for _, branch := range repoConfig.Branches {
 		if err := saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
@@ -40,7 +40,7 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 	return aggregatedErrors
 }
 
-func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.FrogbotRepoConfig, branch string, client vcsclient.VcsClient) (err error) {
+func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
 	if err != nil {
 		return err

@@ -15,13 +15,15 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )
 
-var gitParams = &utils.FrogbotRepoConfig{
+var gitParams = &utils.Repository{
 	OutputWriter: &utils.SimplifiedOutput{},
 	Params: utils.Params{
 		Git: utils.Git{
-			RepoOwner: "repo-owner",
-			Branches:  []string{"master"},
-			RepoName:  "repo-name",
+			ClientInfo: utils.ClientInfo{
+				RepoOwner: "repo-owner",
+				Branches:  []string{"master"},
+				RepoName:  "repo-name",
+			},
 		},
 	},
 }
@@ -122,7 +124,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
 	}
 
-	configAggregator := utils.FrogbotConfigAggregator{
+	configAggregator := utils.RepoAggregator{
 		{
 			OutputWriter: &utils.SimplifiedOutput{},
 			Server:       server,
@@ -171,12 +173,12 @@ func TestScanAllPullRequests(t *testing.T) {
 		},
 		Git: gitParams.Git,
 	}
-	repoParams := &utils.FrogbotRepoConfig{
+	repoParams := &utils.Repository{
 		OutputWriter: &utils.SimplifiedOutput{},
 		Server:       server,
 		Params:       params,
 	}
-	paramsAggregator := utils.FrogbotConfigAggregator{}
+	paramsAggregator := utils.RepoAggregator{}
 	paramsAggregator = append(paramsAggregator, *repoParams)
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})

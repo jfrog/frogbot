@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
@@ -193,13 +194,13 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 		},
 		{
 			repoName:    "npmProject",
-			projectName: "myTest5551218",
+			repoOwner:   "myTest5551218",
 			apiEndpoint: "https://gitlab.com",
 			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
 			vcsProvider: vcsutils.GitLab,
 		}, {
 			repoName:    "onPremProject",
-			projectName: "myTest5551218",
+			repoOwner:   "myTest5551218",
 			apiEndpoint: "https://gitlab.example.com",
 			expected:    "https://gitlab.example.com/myTest5551218/onPremProject.git",
 			vcsProvider: vcsutils.GitLab,
@@ -240,7 +241,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 	}
 	for _, test := range testsCases {
 		t.Run(test.vcsProvider.String(), func(t *testing.T) {
-			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, GitProject: test.projectName, ApiEndpoint: test.apiEndpoint}}
+			gm := GitManager{git: &Git{ClientInfo: ClientInfo{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}}
 			remoteUrl, err := gm.generateHTTPSCloneUrl()
 			if remoteUrl == "" {
 				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")

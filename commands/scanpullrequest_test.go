@@ -512,8 +512,10 @@ func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 }
 
 func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
-	repoConfig := &utils.FrogbotRepoConfig{
-		Params: utils.Params{Git: utils.Git{ApiEndpoint: "https://acme.vcs.io"}},
+	repoConfig := &utils.Repository{
+		Params: utils.Params{Git: utils.Git{ClientInfo: utils.ClientInfo{
+			VcsInfo: vcsclient.VcsInfo{APIEndpoint: "https://acme.vcs.io"}}},
+		},
 	}
 
 	// Run verifyGitHubFrogbotEnvironment
@@ -521,18 +523,20 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.FrogbotConfigAggregator, vcsclient.VcsClient) {
-	git := &utils.Git{
-		GitProvider:   vcsutils.GitLab,
-		RepoOwner:     "jfrog",
-		Token:         "123456",
-		ApiEndpoint:   server.URL,
-		PullRequestID: 1,
+func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
+	git := &utils.ClientInfo{
+		GitProvider: vcsutils.GitHub,
+		RepoOwner:   "jfrog",
+		VcsInfo: vcsclient.VcsInfo{
+			Token:       "123456",
+			APIEndpoint: server.URL,
+		},
 	}
+	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, git, &serverParams, "")
+	configAggregator, err := utils.BuildRepoAggregator(configData, git, &serverParams)
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()

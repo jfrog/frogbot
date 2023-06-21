@@ -356,14 +356,14 @@ func (gm *GitManager) dryRunClone(destination string) error {
 func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 	switch gm.git.GitProvider {
 	case vcsutils.GitHub:
-		return fmt.Sprintf(githubHttpsFormat, gm.git.ApiEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+		return fmt.Sprintf(githubHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
 	case vcsutils.GitLab:
-		return fmt.Sprintf(gitLabHttpsFormat, gm.git.ApiEndpoint, gm.git.GitProject, gm.git.RepoName), nil
+		return fmt.Sprintf(gitLabHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
 	case vcsutils.BitbucketServer:
-		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.ApiEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
 	case vcsutils.AzureRepos:
-		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.ApiEndpoint, "https://")[1:], "")
-		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.GitProject, gm.git.RepoName), nil
+		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.APIEndpoint, "https://")[1:], "")
+		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.Project, gm.git.RepoName), nil
 	default:
 		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
 	}
