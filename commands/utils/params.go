@@ -206,7 +206,12 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 		g.Branches = append(g.Branches, clientInfo.Branches...)
 	}
 	if g.BranchNameTemplate == "" {
-		g.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)
+		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
+		if ok := validateHashPlaceHolder(branchTemplate); ok {
+			g.BranchNameTemplate = branchTemplate
+		} else {
+			return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
+		}
 	}
 	if g.CommitMessageTemplate == "" {
 		g.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
@@ -224,6 +229,10 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 		}
 	}
 	return
+}
+
+func validateHashPlaceHolder(template string) bool {
+	return strings.Contains(template, BranchHashPlaceHolder)
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
