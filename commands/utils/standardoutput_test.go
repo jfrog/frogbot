@@ -294,3 +294,60 @@ func TestStandardOutput_IacContent(t *testing.T) {
 		})
 	}
 }
+
+func TestStandardOutput_GetIacTableContent(t *testing.T) {
+	testCases := []struct {
+		name           string
+		iacRows        []formats.IacSecretsRow
+		expectedOutput string
+	}{
+		{
+			name:           "Empty IAC rows",
+			iacRows:        []formats.IacSecretsRow{},
+			expectedOutput: "",
+		},
+		{
+			name: "Single IAC row",
+			iacRows: []formats.IacSecretsRow{
+				{
+					Severity:         "Medium",
+					SeverityNumValue: 2,
+					File:             "file1",
+					LineColumn:       "1:10",
+					Text:             "Public access to MySQL was detected",
+					Type:             "azure_mysql_no_public",
+				},
+			},
+			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |",
+		},
+		{
+			name: "Multiple IAC rows",
+			iacRows: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					SeverityNumValue: 3,
+					File:             "file1",
+					LineColumn:       "1:10",
+					Text:             "Public access to MySQL was detected",
+					Type:             "azure_mysql_no_public",
+				},
+				{
+					Severity:         "Medium",
+					SeverityNumValue: 2,
+					File:             "file2",
+					LineColumn:       "2:5",
+					Text:             "Public access to MySQL was detected",
+					Type:             "azure_mysql_no_public",
+				},
+			},
+			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected | azure_mysql_no_public |",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := getIacTableContent(tc.iacRows, &StandardOutput{})
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}

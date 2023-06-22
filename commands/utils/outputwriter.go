@@ -88,8 +88,8 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 	}
 	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
 		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
-			vulnerabilityDetails.Severity,
 			utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
+			vulnerabilityDetails.Severity,
 			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
 			vulnerabilityDetails.ImpactedDependencyName,
 			vulnerabilityDetails.ImpactedDependencyVersion,
@@ -99,8 +99,8 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 			vulnerabilityDetails.JfrogResearchInformation.Remediation)
 	}
 	return fmt.Sprintf(vulnerabilityDetailsComment,
-		vulnerabilityDetails.Severity,
 		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
+		vulnerabilityDetails.Severity,
 		vulnerabilityDetails.ImpactedDependencyName,
 		vulnerabilityDetails.ImpactedDependencyVersion,
 		strings.Join(vulnerabilityDetails.FixedVersions, ","),
@@ -136,10 +136,10 @@ func createVulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolatio
 	return row
 }
 
-func getIacTableContent(iacRows []formats.IacSecretsRow) string {
+func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s |", iac.Severity, iac.File, iac.LineColumn, iac.Text, iac.Type)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text, iac.Type)
 	}
 	return tableContent
 }

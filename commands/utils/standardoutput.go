@@ -126,7 +126,7 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 
 `,
 		iacTableHeader,
-		getIacTableContent(iacRows))
+		getIacTableContent(iacRows, so))
 }
 
 func (so *StandardOutput) Footer() string {

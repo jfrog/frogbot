@@ -101,7 +101,7 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 
 `,
 		iacTableHeader,
-		getIacTableContent(iacRows))
+		getIacTableContent(iacRows, smo))
 }
 
 func (smo *SimplifiedOutput) Footer() string {
