@@ -35,7 +35,7 @@ const (
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
 
-	// Hash for aggregated branch names to replace in templates.
+	// Mimics hash for aggregated branch names to replace in templates.
 	ConstAggregatedHash = "0"
 )
 
@@ -324,6 +324,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 }
 
 // Generates consistent branch name to allow branch updates
+// And to make sure there is only one Frogbot branch on aggreagated mode.
 func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {

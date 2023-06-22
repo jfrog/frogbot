@@ -164,32 +164,26 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(fixVersionsMap map[str
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsMap map[string]*utils.FixDetails, aggregatedFixBranchName string) (err error) {
-	var errList strings.Builder
-	var atLeastOneFix bool
-	log.Info("-----------------------------------------------------------------")
-	log.Info("Starting aggregated dependencies fix")
-	log.Debug("Creating branch", aggregatedFixBranchName, "...")
-	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
+// Fix all the issues in one pull request.
+// In case of existing aggregated fix, check for different scan results
+// if scan results are the same, do nothing.
+// Else, force push to the same branch to update
+// Only one aggregated pull request should be open at all times.
+func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
+	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName()
+	if err != nil {
 		return
 	}
-	// Fix all packages in the same branch if expected error accrued, log and continue.
-	for _, fixDetails := range fixVersionsMap {
-		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
-			cfp.handleUpdatePackageErrors(err, errList)
-		} else {
-			log.Info(fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion))
-			atLeastOneFix = true
+	pullRequestExists, err := cfp.checkActivePullRequestByBranchName(aggregatedFixBranchName)
+	if err != nil {
+		return
+	}
+	if pullRequestExists {
+		if identicalScanResults, err := cfp.compareScanResults(fixVersionsMap, aggregatedFixBranchName); identicalScanResults || err != nil {
+			return err
 		}
 	}
-	if atLeastOneFix {
-		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
-			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
-		}
-	}
-	logAppendedErrorsIfExists(errList)
-	log.Info("-----------------------------------------------------------------")
-	return
+	return cfp.aggregateFixAndOpenPullRequest(fixVersionsMap, aggregatedFixBranchName)
 }
 
 // Handles possible error of update package operation
@@ -410,26 +404,32 @@ func (cfp *CreateFixPullRequestsCmd) checkActivePullRequestByBranchName(branchNa
 	return false, nil
 }
 
-// Fix all the issues in one pull request.
-// In case of existing aggregated fix, check for different scan results
-// if scan results are the same, do nothing.
-// Else, force push to the same branch to update
-// Only one aggregated pull request should be open at all times.
-func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(fixVersionsMap map[string]*utils.FixDetails) (err error) {
-	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName()
-	if err != nil {
+func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsMap map[string]*utils.FixDetails, aggregatedFixBranchName string) (err error) {
+	var errList strings.Builder
+	var atLeastOneFix bool
+	log.Info("-----------------------------------------------------------------")
+	log.Info("Starting aggregated dependencies fix")
+	log.Debug("Creating branch", aggregatedFixBranchName, "...")
+	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
-	pullRequestExists, err := cfp.checkActivePullRequestByBranchName(aggregatedFixBranchName)
-	if err != nil {
-		return
-	}
-	if pullRequestExists {
-		if identicalScanResults, err := cfp.compareScanResults(fixVersionsMap, aggregatedFixBranchName); identicalScanResults || err != nil {
-			return err
+	// Fix all packages in the same branch if expected error accrued, log and continue.
+	for _, fixDetails := range fixVersionsMap {
+		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
+			cfp.handleUpdatePackageErrors(err, errList)
+		} else {
+			log.Info(fmt.Sprintf("Updated dependency '%s' to version '%s'", fixDetails.ImpactedDependency, fixDetails.FixVersion))
+			atLeastOneFix = true
 		}
 	}
-	return cfp.aggregateFixAndOpenPullRequest(fixVersionsMap, aggregatedFixBranchName)
+	if atLeastOneFix {
+		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName); err != nil {
+			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+		}
+	}
+	logAppendedErrorsIfExists(errList)
+	log.Info("-----------------------------------------------------------------")
+	return
 }
 
 // Compare scan results by MD5 hashing the resulted fixVersionMap of the current branch and the target branch

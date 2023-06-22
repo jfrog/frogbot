@@ -131,7 +131,7 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 		},
 		{
 			expected:   "[feature]-0",
-			desc:       "No template",
+			desc:       "Custom template hash only",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		},
 	}
