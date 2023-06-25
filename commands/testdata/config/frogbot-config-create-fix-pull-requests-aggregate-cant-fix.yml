@@ -1,6 +1,0 @@
-- params:
-    git:
-      repoName: aggregate-cant-fix
-      branches:
-        - main
-      aggregateFixes: true

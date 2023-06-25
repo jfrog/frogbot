@@ -73,7 +73,6 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "aggregate",
 			testDir:            "createfixpullrequests/aggregate",
-			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate.yml"),
 			expectedBranchName: "frogbot-update-dependencies-0",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
@@ -82,7 +81,6 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "aggregate-no-vul",
 			testDir:            "createfixpullrequests/aggregate-no-vul",
-			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-no-vul.yml"),
 			expectedBranchName: "main", // No branch should be created
 			expectedDiff:       "",
 			dependencyFileName: "package.json",
@@ -91,7 +89,6 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "aggregate-cant-fix",
 			testDir:            "createfixpullrequests/aggregate-cant-fix",
-			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-cant-fix.yml"),
 			expectedBranchName: "frogbot-update-dependencies-0",
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
@@ -100,7 +97,6 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "non-aggregate",
 			testDir:            "createfixpullrequests/non-aggregate",
-			configPath:         "",
 			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
@@ -141,7 +137,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
 			defer cleanUp()
-			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams.ClientInfo, &serverParams)
+			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}

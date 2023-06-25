@@ -400,10 +400,11 @@ func (cfp *CreateFixPullRequestsCmd) checkActivePullRequestByBranchName(branchNa
 	}
 	for _, pr := range list {
 		if pr.Source.Name == branchName {
-			return true, nil
+			exists = true
+			return
 		}
 	}
-	return false, nil
+	return
 }
 
 func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsMap map[string]*utils.FixDetails, aggregatedFixBranchName string) (err error) {

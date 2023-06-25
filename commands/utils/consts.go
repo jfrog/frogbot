@@ -96,6 +96,8 @@ const (
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
+
+	AggregateFixesDefaultValue = false
 )
 
 type UnsupportedErrorType string
