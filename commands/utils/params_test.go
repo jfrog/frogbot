@@ -479,7 +479,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	repoAggregator, err := BuildRepoAggregator(fileContent, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
-	assert.True(t, repo.AggregateFixes)
+	assert.Equal(t, repo.AggregateFixes, AggregateFixesDefaultValue)
 	assert.True(t, repo.IncludeAllVulnerabilities)
 	assert.True(t, repo.FixableOnly)
 	assert.True(t, *repo.FailOnSecurityIssues)

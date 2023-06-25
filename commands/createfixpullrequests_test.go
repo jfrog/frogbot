@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
@@ -243,9 +244,10 @@ func TestPackageTypeFromScan(t *testing.T) {
 				Project:             &frogbotParams.Projects[0],
 				ServerDetails:       &frogbotParams.Server,
 			}
-			scanResponse, _, err := testScan.scan(&scanSetup, tmpDir)
+			testScan.details = &scanSetup
+			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
-			verifyTechnologyNaming(t, scanResponse, pkg.packageType)
+			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
 		})
 	}
 }
@@ -276,8 +278,8 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan CreateFixPullRequestsCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			fixDetails := &utils.FixDetails{FixVersion: "3.3.3", PackageType: tech, ImpactedDependency: impactedDependency, DirectDependency: true}
-			err := testScan.updatePackageToFixedVersion(fixDetails)
+			vulnDetails := &utils.VulnerabilityDetails{FixVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
+			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 		}
