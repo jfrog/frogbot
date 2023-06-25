@@ -224,12 +224,12 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
 
-| SEVERITY | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
-:--: | -- | -- | -- | -- |:-----------------:| --
+|                                                SEVERITY                                                | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
+:------------------------------------------------------------------------------------------------------:| -- | -- | -- | -- |:-----------------:| --
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview | v0.1.20 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | magic-streaming-server | v0.21.10 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154  
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
+|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | magic-streaming-server | v0.21.10 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154  
+|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium   | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
 
 ### Scanning repositories and fixing issues
 

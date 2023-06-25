@@ -6,18 +6,18 @@ type NpmPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
-	if fixDetails.DirectDependency {
-		return npm.updateDirectDependency(fixDetails)
+func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if vulnDetails.IsDirectDependency {
+		return npm.updateDirectDependency(vulnDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.FixVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }
 
-func (npm *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
-	return npm.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
+func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
 }
