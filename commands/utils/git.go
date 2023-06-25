@@ -35,6 +35,10 @@ const (
 	gitLabHttpsFormat          = "%s/%s/%s.git"
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
+
+	// Aggregate branches should always be the same name.
+	// Use a const to replace in the branch template ${BRANCH_NAME_HASH}
+	constAggregatedHash = "0"
 )
 
 type GitManager struct {
@@ -324,17 +328,14 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates unique branch name constructed by all the vulnerable packages.
-func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*FixDetails) (fixBranchName string, err error) {
-	hash, err := fixVersionsMapToMd5Hash(versionsMap)
-	if err != nil {
-		return
-	}
+// Generates consistent branch name to allow branch updates
+// and to make sure there is only one Frogbot branch on aggreagated mode.
+func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.

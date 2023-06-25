@@ -3,7 +3,6 @@ package utils
 import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -121,55 +120,26 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 
 func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	tests := []struct {
-		fixVersionMapFirst  map[string]*FixDetails
-		fixVersionMapSecond map[string]*FixDetails
-		gitManager          GitManager
-		equal               bool
-		desc                string
+		gitManager GitManager
+		expected   string
+		desc       string
 	}{
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			equal: true, desc: "should be equal",
+			expected:   "frogbot-update-dependencies-0",
+			desc:       "No template",
 			gitManager: GitManager{},
 		},
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
-			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			equal:      false,
-			desc:       "should not be equal",
-			gitManager: GitManager{},
-		},
-		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
-			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			equal:      true,
-			desc:       "should be equal with template",
-			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "custom"}},
+			expected:   "[feature]-0",
+			desc:       "Custom template hash only",
+			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			titleOutput1, err := test.gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapFirst)
+			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName()
 			assert.NoError(t, err)
-			titleOutput2, err := test.gitManager.GenerateAggregatedFixBranchName(test.fixVersionMapSecond)
-			assert.NoError(t, err)
-			equal := titleOutput1 == titleOutput2
-			assert.Equal(t, test.equal, equal)
+			assert.Equal(t, test.expected, titleOutput)
 		})
 	}
 }
