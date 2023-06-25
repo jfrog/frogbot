@@ -286,7 +286,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 	}
 }
 
-// Running git diff and making sure expected changes to the dependency file
+// Executing git diff to ensure that the intended changes to the dependent file have been made
 func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
 	var cmd *exec.Cmd
 	// Suppress condition always false warning

@@ -8,8 +8,8 @@ const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
 
 	// Errors
-	errUnsupportedMultiRepo        = "multi repository configuration isn't supported. only one repository configuration is allowed"
-	ErrScanPullRequestSameBranches = "can pull request triggered on the same branch: %s, Please check your configuration"
+	errUnsupportedMultiRepo        = "multi repository configuration isn't supported. Only one repository configuration is allowed"
+	ErrScanPullRequestSameBranches = "scan pull request command triggered on the same branch: %s, Please check your configuration"
 
 	// Images
 	NoVulnerabilityBannerSource ImageSource = "noVulnerabilityBanner.png"

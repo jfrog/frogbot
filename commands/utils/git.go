@@ -347,8 +347,7 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	// Copy all the current directory content to the destination path
 	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
 	exclude := []string{filepath.Base(destination)}
-	err = fileutils.CopyDir(baseWd, destination, true, exclude)
-	if err != nil {
+	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
 		return err
 	}
 	// Set the git repository to the new destination .git folder
