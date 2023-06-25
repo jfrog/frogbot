@@ -415,7 +415,7 @@ func (cfp *CreateFixPullRequestsCmd) checkActivePullRequestByBranchName(branchNa
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabitles map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string) (err error) {
+func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilities map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string) (err error) {
 	var errList strings.Builder
 	var atLeastOneFix bool
 	log.Info("-----------------------------------------------------------------")
@@ -424,17 +424,16 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabitle
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
+	// Fix all packages in the same branch if expected error accrued, log and continue.
 	var fixedVulnerabilities []formats.VulnerabilityOrViolationRow
-	// Fix all packages in the same branch.
-	// If expected error accrued, log and continue.
-	for _, vulnDetails := range vulnerabitles {
-		if err := cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
+	for _, vulnDetails := range vulnerabilities {
+		if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
 			cfp.handleUpdatePackageErrors(err, errList)
 		} else {
-			atLeastOneFix = true
 			vulnDetails.FixedVersions = []string{vulnDetails.FixVersion}
 			fixedVulnerabilities = append(fixedVulnerabilities, *vulnDetails.VulnerabilityOrViolationRow)
 			log.Info(fmt.Sprintf("Updated dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion))
+			atLeastOneFix = true
 		}
 	}
 	if atLeastOneFix {
