@@ -13,15 +13,15 @@ const (
 	// Images
 	NoVulnerabilityBannerSource         ImageSource = "noVulnerabilityBanner.png"
 	VulnerabilitiesBannerSource         ImageSource = "vulnerabilitiesBanner.png"
-	criticalSeveritySource              ImageSource = "criticalSeverity.png"
+	criticalSeveritySource              ImageSource = "applicableCriticalSeverity.png"
 	notApplicableCriticalSeveritySource ImageSource = "notApplicableCritical.png"
-	highSeveritySource                  ImageSource = "highSeverity.png"
+	highSeveritySource                  ImageSource = "applicableHighSeverity.png"
 	notApplicableHighSeveritySource     ImageSource = "notApplicableHigh.png"
-	mediumSeveritySource                ImageSource = "mediumSeverity.png"
+	mediumSeveritySource                ImageSource = "applicableMediumSeverity.png"
 	notApplicableMediumSeveritySource   ImageSource = "notApplicableMedium.png"
-	lowSeveritySource                   ImageSource = "lowSeverity.png"
+	lowSeveritySource                   ImageSource = "applicableLowSeverity.png"
 	notApplicableLowSeveritySource      ImageSource = "notApplicableLow.png"
-	unknownSeveritySource               ImageSource = "unknownSeverity.png"
+	unknownSeveritySource               ImageSource = "applicableUnknownSeverity.png"
 	notApplicableUnknownSeveritySource  ImageSource = "notApplicableUnknown.png"
 
 	// VCS providers params
