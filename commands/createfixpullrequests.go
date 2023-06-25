@@ -367,7 +367,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(fixDetails *uti
 	return cfp.handlers[fixDetails.PackageType].UpdateDependency(fixDetails)
 }
 
-// Calculates the MD5 hash fo the scan results of a remote branch
+// Computes the MD5 hash of a FixVersionMap object originated from the remote branch's scan results
 func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(remoteBranchName string) (hash string, err error) {
 	scanDetails := utils.NewScanDetails(cfp.details.Client(), cfp.details.ServerDetails, cfp.details.Git).
 		SetProject(cfp.details.Project).
@@ -413,7 +413,8 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsM
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
-	// Fix all packages in the same branch if expected error accrued, log and continue.
+	// Fix all packages in the same branch.
+	// If expected error accrued, log and continue.
 	for _, fixDetails := range fixVersionsMap {
 		if err := cfp.updatePackageToFixedVersion(fixDetails); err != nil {
 			cfp.handleUpdatePackageErrors(err, errList)
@@ -432,7 +433,7 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(fixVersionsM
 	return
 }
 
-// Compare scan results by MD5 hashing the resulted fixVersionMap of the current branch and the target branch
+// Compares the scan results of a remote branch by computing the MD5 hash of the created FixVersionMap.
 func (cfp *CreateFixPullRequestsCmd) compareScanResults(fixVersionsMap map[string]*utils.FixDetails, aggregatedFixBranchName string) (identical bool, err error) {
 	currentScanHash, err := utils.FixVersionsMapToMd5Hash(fixVersionsMap)
 	if err != nil {
@@ -443,8 +444,9 @@ func (cfp *CreateFixPullRequestsCmd) compareScanResults(fixVersionsMap map[strin
 		return
 	}
 	if currentScanHash == remoteBranchScanHash {
-		log.Info("Scan results hasn't change since last Frogbot run...")
-		return true, err
+		log.Info("The scan results have not changed since the last Frogbot run.")
+		identical = true
+		return
 	}
 	return
 }

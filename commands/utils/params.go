@@ -210,7 +210,7 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
-		if branchTemplateErr := enforceHashPlaceHolder(branchTemplate); branchTemplateErr != nil {
+		if branchTemplateErr := validateHashPlaceHolder(branchTemplate); branchTemplateErr != nil {
 			return branchTemplateErr
 		}
 		g.BranchNameTemplate = branchTemplate
@@ -233,7 +233,7 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 	return
 }
 
-func enforceHashPlaceHolder(template string) error {
+func validateHashPlaceHolder(template string) error {
 	if template == "" {
 		// Empty template is valid, will be replaced with default.
 		return nil
