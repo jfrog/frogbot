@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -73,7 +74,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate",
 			testDir:            "createfixpullrequests/aggregate",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate.yml"),
-			expectedBranchName: "frogobt-b371dfb6a09ce867624ff27a8c069c50",
+			expectedBranchName: "frogbot-update-dependencies-0",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 			aggregateFixes:     true,
@@ -91,7 +92,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate-cant-fix",
 			testDir:            "createfixpullrequests/aggregate-cant-fix",
 			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-aggregate-cant-fix.yml"),
-			expectedBranchName: "frogobt-9e636d7e3dfa13c96e213ca243758525",
+			expectedBranchName: "frogbot-update-dependencies-0",
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
 			aggregateFixes:     true,
@@ -99,7 +100,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "non-aggregate",
 			testDir:            "createfixpullrequests/non-aggregate",
-			configPath:         filepath.Join("testdata", "config", "frogbot-config-create-fix-pull-requests-non-aggregate.yml"),
+			configPath:         "",
 			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
@@ -122,13 +123,22 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 					},
 					RepoName: test.repoName,
 				},
-				PullRequestID:  0,
 				AggregateFixes: test.aggregateFixes,
 			}
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
-			configData, err := utils.ReadConfigFromFileSystem(test.configPath)
-			assert.NoError(t, err)
+
+			// Read config or resolve to default
+			var configData []byte
+			if test.configPath != "" {
+				configData, err = utils.ReadConfigFromFileSystem(test.configPath)
+				assert.NoError(t, err)
+			} else {
+				configData = []byte{}
+				// Manual set of "JF_GIT_BASE_BRANCH"
+				gitTestParams.Branches = []string{"main"}
+			}
+
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
 			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams.ClientInfo, &serverParams)
@@ -289,6 +299,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
 func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
 	var cmd *exec.Cmd
+	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
 	if runtime.GOOS == "windows" {

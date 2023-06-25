@@ -42,13 +42,10 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
 	if err != nil {
-		return err
+		return
 	}
 	defer func() {
-		e := cleanup()
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, cleanup())
 	}()
 
 	restoreDir, err := utils.Chdir(wd)
@@ -56,13 +53,9 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Re
 		return err
 	}
 	defer func() {
-		e := restoreDir()
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, restoreDir())
 	}()
 
 	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: saf.dryRunRepoPath}
-	err = cfp.scanAndFixRepository(repository, branch, client)
-	return err
+	return cfp.scanAndFixRepository(repository, branch, client)
 }
