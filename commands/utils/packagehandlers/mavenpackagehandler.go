@@ -156,7 +156,7 @@ type MavenPackageHandler struct {
 	depsRepo string
 }
 
-func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
+func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if err := mph.installMavenGavReader(); err != nil {
 		return err
 	}
@@ -176,19 +176,19 @@ func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	var depDetails pomDependencyDetails
 	var exists bool
 	// Check if the impacted package is a direct dependency
-	impactedDependency := fixDetails.ImpactedDependency
+	impactedDependency := vulnDetails.ImpactedDependencyName
 	if depDetails, exists = mph.mavenDepToPropertyMap[impactedDependency]; !exists {
 		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.FixVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 	if len(depDetails.properties) > 0 {
-		return mph.updateProperties(&depDetails, fixDetails.FixVersion)
+		return mph.updateProperties(&depDetails, vulnDetails.FixVersion)
 	}
 
-	return mph.updatePackageVersion(fixDetails.ImpactedDependency, fixDetails.FixVersion, depDetails.foundInDependencyManagement)
+	return mph.updatePackageVersion(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion, depDetails.foundInDependencyManagement)
 }
 
 func (mph *MavenPackageHandler) installMavenGavReader() (err error) {

@@ -4,6 +4,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,25 +13,25 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
-			impactedPackage: "mquery", fixVersion: FixDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: ""}},
-			impactedPackage: "mquery", fixVersion: FixDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
 		},
@@ -47,27 +48,27 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template without inputs",
 		},
@@ -85,28 +86,28 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
 			description:     "Custom template one var",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Update version of mquery to 3.4.5",
 			description:     "No prefix",
 		},
@@ -121,42 +122,42 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 
 func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	tests := []struct {
-		fixVersionMapFirst  map[string]*FixDetails
-		fixVersionMapSecond map[string]*FixDetails
+		fixVersionMapFirst  map[string]*VulnerabilityDetails
+		fixVersionMapSecond map[string]*VulnerabilityDetails
 		gitManager          GitManager
 		equal               bool
 		desc                string
 	}{
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal: true, desc: "should be equal",
 			gitManager: GitManager{},
 		},
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      false,
 			desc:       "should not be equal",
 			gitManager: GitManager{},
 		},
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      true,
 			desc:       "should be equal with template",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "custom"}},

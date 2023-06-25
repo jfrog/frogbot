@@ -12,12 +12,12 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os"
 	"regexp"
 	"sort"
@@ -69,26 +69,40 @@ func (err *ErrUnsupportedFix) Error() string {
 	}
 }
 
-// FixDetails is a basic struct used to hold needed information for fixing vulnerabilities
-type FixDetails struct {
-	// Package technology
-	PackageType coreutils.Technology
-	// Name of the impacted dependency
-	ImpactedDependency string
+// VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
+type VulnerabilityDetails struct {
+	*formats.VulnerabilityOrViolationRow
 	// Suggested fix version
 	FixVersion string
-	// Is the dependency direct or transitive?
-	DirectDependency bool
+	// States whether the dependency is direct or transitive
+	IsDirectDependency bool
+	// Cves as a list of string
+	Cves []string
 }
 
-func NewFixDetails(fixVersion string, packageType coreutils.Technology, directDependency bool, impactedPackage string) *FixDetails {
-	return &FixDetails{packageType, impactedPackage, fixVersion, directDependency}
+func NewVulnerabilityDetails(vulnerability *formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
+	vulnDetails := &VulnerabilityDetails{
+		VulnerabilityOrViolationRow: vulnerability,
+		FixVersion:                  fixVersion,
+	}
+	vulnDetails.SetCves(vulnerability.Cves)
+	return vulnDetails
 }
 
-func (fvi *FixDetails) UpdateFixVersionIfMax(fixVersion string) {
-	// Update fvi.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if fvi.FixVersion == "" || version.NewVersion(fvi.FixVersion).Compare(fixVersion) > 0 {
-		fvi.FixVersion = fixVersion
+func (vd *VulnerabilityDetails) SetIsDirectDependency(isDirectDependency bool) {
+	vd.IsDirectDependency = isDirectDependency
+}
+
+func (vd *VulnerabilityDetails) SetCves(cves []formats.CveRow) {
+	for _, cve := range cves {
+		vd.Cves = append(vd.Cves, cve.Id)
+	}
+}
+
+func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
+	// Update vd.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
+	if vd.FixVersion == "" || version.NewVersion(vd.FixVersion).Compare(fixVersion) > 0 {
+		vd.FixVersion = fixVersion
 	}
 }
 
@@ -111,16 +125,6 @@ type ErrMissingConfig struct {
 
 func (e *ErrMissingConfig) Error() string {
 	return fmt.Sprintf("config file is missing: %s", e.missingReason)
-}
-
-// The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
-// Some git providers support markdown only partially, whereas others support it fully.
-type OutputWriter interface {
-	TableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	NoVulnerabilitiesTitle() string
-	VulnerabiltiesTitle() string
-	TableHeader() string
-	IsFrogbotResultComment(comment string) bool
 }
 
 func Chdir(dir string) (cbk func() error, err error) {
@@ -170,7 +174,7 @@ func Md5Hash(values ...string) (string, error) {
 
 // Generates MD5Hash from a FixVersionMap object
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error) {
+func fixVersionsMapToMd5Hash(versionsMap map[string]*VulnerabilityDetails) (string, error) {
 	h := crypto.MD5.New()
 	// Sort the package names
 	keys := make([]string, 0, len(versionsMap))
@@ -187,13 +191,13 @@ func fixVersionsMapToMd5Hash(versionsMap map[string]*FixDetails) (string, error)
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults []services.ScanResponse, repo *Repository, branch string, client vcsclient.VcsClient, isMultipleRoots bool) error {
+func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
 	if repo.GitProvider.String() != vcsutils.GitHub.String() {
 		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
 
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults, &xrayutils.ExtendedScanResults{}, isMultipleRoots, true)
+	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true)
 	if err != nil {
 		return err
 	}
@@ -238,13 +242,6 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 	}
 
 	return strings.TrimPrefix(fullPathWd, baseWd+string(os.PathSeparator))
-}
-
-func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
-	if provider == vcsutils.BitbucketServer {
-		return &SimplifiedOutput{}
-	}
-	return &StandardOutput{}
 }
 
 // The impact graph of direct dependencies consists of only two elements.
