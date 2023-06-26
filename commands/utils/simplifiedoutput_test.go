@@ -131,7 +131,7 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
-### ✍️ Summary
+### ✍️ Summary 
 
 %s %s
 
@@ -192,7 +192,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
-### ✍️ Summary
+### ✍️ Summary 
 
 %s %s
 

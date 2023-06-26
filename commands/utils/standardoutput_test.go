@@ -130,7 +130,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	expectedContent := fmt.Sprintf(`
 ## 📦 Vulnerable Dependencies
 
-### ✍️ Summary
+### ✍️ Summary 
 
 <div align="center">
 
@@ -193,7 +193,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	expectedContent := fmt.Sprintf(`
 ## 📦 Vulnerable Dependencies
 
-### ✍️ Summary
+### ✍️ Summary 
 
 <div align="center">
 
