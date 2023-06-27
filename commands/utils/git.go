@@ -142,6 +142,10 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
 		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+		// Don't fail on dryRuns as we operate on local repositories,branch could be existing.
+		if gm.dryRun {
+			return nil
+		}
 	}
 	return err
 }

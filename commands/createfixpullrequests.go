@@ -81,11 +81,11 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 			}
 			cfp.OutputWriter.SetEntitledForJas(scanResults.ExtendedScanResults.EntitledForJas)
 
-			err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.Branch(), cfp.details.Client())
-			if err != nil {
-				log.Warn(err)
+			if !cfp.dryRun {
+				if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.Branch(), cfp.details.Client()); err != nil {
+					log.Warn(err)
+				}
 			}
-
 			// Update the working directory to the project current working directory
 			cfp.projectWorkingDir = utils.GetRelativeWd(fullPathWd, baseWd)
 			// Fix and create PRs

@@ -1,12 +1,16 @@
 package commands
 
 import (
+	"context"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"os"
@@ -15,10 +19,11 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+)
 
-	"github.com/jfrog/frogbot/commands/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/xray/services"
+const (
+	aggregatedBranchConstName = "frogbot-update-dependencies-0"
+	mockUpdatePrBody          = "\n## Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableCriticalSeverity.png)<br>Critical | $\\color{#FFFFFFFF}{\\textsf{Undetermined}}$ |mongoose:5.10.10 | mongoose:5.10.10 | 5.13.15 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableCriticalSeverity.png)<br>Critical | $\\color{#FFFFFFFF}{\\textsf{Undetermined}}$ |mpath:0.7.0 | mpath:0.7.0 | 0.8.4 |\n\n</div>\n\n## Details\n\n\n<details>\n<summary> <b>mongoose 5.10.10</b> </summary>\n<br>\n\n- **Severity:** Critical 💀\n- **Package Name:** mongoose\n- **Current Version:** 5.10.10\n- **Fixed Version:** 5.13.15\n- **CVEs:** CVE-2022-2564\n\n**Description:**\n\nPrototype Pollution in GitHub repository automattic/mongoose prior to 6.4.6.\n\n\n</details>\n\n\n<details>\n<summary> <b>mpath 0.7.0</b> </summary>\n<br>\n\n- **Severity:** Critical 💀\n- **Package Name:** mpath\n- **Current Version:** 0.7.0\n- **Fixed Version:** 0.8.4\n- **CVEs:** CVE-2021-23438\n\n**Description:**\n\nThis affects the package mpath before 0.8.4. A type confusion vulnerability can lead to a bypass of CVE-2018-16490. In particular, the condition ignoreProperties.indexOf(parts[i]) !== -1 returns -1 if parts[i] is ['__proto__']. This is because the method that has been called if the input is an array is Array.prototype.indexOf() and not String.prototype.indexOf(). They behave differently depending on the type of the input.\n\n\n</details>\n\n"
 )
 
 var testPackagesData = []struct {
@@ -74,7 +79,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "aggregate",
 			testDir:            "createfixpullrequests/aggregate",
-			expectedBranchName: "frogbot-update-dependencies-0",
+			expectedBranchName: aggregatedBranchConstName,
 			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 			aggregateFixes:     true,
@@ -90,7 +95,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "aggregate-cant-fix",
 			testDir:            "createfixpullrequests/aggregate-cant-fix",
-			expectedBranchName: "frogbot-update-dependencies-0",
+			expectedBranchName: aggregatedBranchConstName,
 			expectedDiff:       "",         // No diff expected
 			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
 			aggregateFixes:     true,
@@ -146,6 +151,88 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			// Validate
 			assert.NoError(t, err)
 			resultDiff, err := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedDiff, string(resultDiff))
+			// Defers
+			restoreEnv()
+			server.Close()
+		})
+	}
+}
+
+// Tests the lifecycle of aggregated pull request
+// No open pull request -> Open
+// Pull request already active  ->
+//
+//			Compare scan results for current and remote branch
+//	   	 	 Same scan results -> does thing.
+//	   	     Different scan results -> Update the pull request branch & body.
+func TestAggregatePullRequestLifecycle(t *testing.T) {
+	mockPrId := int64(1)
+	tests := []struct {
+		repoName                string
+		testDir                 string
+		expectedDiff            string
+		mockPullRequestResponse []vcsclient.PullRequestInfo
+	}{
+		{
+			repoName:     "aggregate-dont-update-pr",
+			testDir:      "createfixpullrequests/aggregate-dont-update-pr",
+			expectedDiff: "",
+			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
+				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Target: vcsclient.BranchInfo{Name: "main"},
+			}},
+		},
+		{
+			repoName:     "aggregate-update-pr",
+			testDir:      "createfixpullrequests/aggregate-update-pr",
+			expectedDiff: "diff --git a/package.json b/package.json\nindex cf91c35..1ed85f0 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,7 +9,7 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mpath\": \"0.7.0\",\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
+				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Target: vcsclient.BranchInfo{Name: "main"},
+			}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.repoName, func(t *testing.T) {
+			// Prepare
+			serverParams, restoreEnv := verifyEnv(t)
+			var port string
+			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
+			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
+			gitTestParams := utils.Git{ClientInfo: utils.ClientInfo{
+				GitProvider: vcsutils.GitHub,
+				VcsInfo: vcsclient.VcsInfo{
+					Token:       "123456",
+					APIEndpoint: server.URL,
+				}, RepoName: test.repoName,
+			}, AggregateFixes: true,
+			}
+			// Set up mock VCS responses
+			client := mockVcsClient(t)
+			if test.mockPullRequestResponse != nil {
+				client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
+			}
+			// If were expecting a diff, we expect a call to update pull request.
+			if test.expectedDiff != "" {
+				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, mockUpdatePrBody, "", int(mockPrId), vcsutils.Open).Return(nil)
+			}
+			// Load default configurations
+			var configData []byte
+			// Manual set of "JF_GIT_BASE_BRANCH"
+			gitTestParams.Branches = []string{"main"}
+			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
+			defer cleanUp()
+			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
+			assert.NoError(t, err)
+
+			// Run
+			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
+			err = cmd.Run(configAggregator, client)
+			assert.NoError(t, err)
+			// Validate
+			resultDiff, err := verifyDependencyFileDiff("main", aggregatedBranchConstName, "package.json")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedDiff, string(resultDiff))
 			// Defers
