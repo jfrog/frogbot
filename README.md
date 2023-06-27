@@ -216,21 +216,18 @@ Frogbot adds the scan results to the pull request in the following format:
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBanner.png)](#-no-issues)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBanner.png)](#-no-issues)
 
 ##### 👎 Issues were found
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/vulnerabilitiesBanner.png)](#-issues-were-found)
-
-|                                                SEVERITY                                                | DIRECT<br>DEPENDENCIES | DIRECT<br>DEPENDENCIES<br>VERSIONS | IMPACTED<br>DEPENDENCY<br>NAME | IMPACTED<br>DEPENDENCY<br>VERSION | FIXED<br>VERSIONS | CVE
-:------------------------------------------------------------------------------------------------------:| -- | -- | -- | -- |:-----------------:| --
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/criticalSeverity.png)<br>Critical | lion-webview | v0.1.20 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154
-|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | magic-streaming-server | v0.21.10 | ten-webpack | v4.75.0 |     [v4.76.0]     | CVE-2023-28154  
-|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/highSeverity.png)<br>High     | jump-archiver | v3.5.1 | quicksilver | v5.75.0 |     [v5.76.0]     | CVE-2023-28154
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/mediumSeverity.png)<br>Medium   | expense-calculator | v6.6.0 | cve-alpha | v1.10.0 |     [v1.10.1]     | CVE-2023-28154 
-
+|                                                      SEVERITY                                                       | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
+|:-------------------------------------------------------------------------------------------------------------------:| :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | $\color{}{\textsf{Undetermined}}$ |vconsole:3.15.0 | vconsole:3.15.0 |  |
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | $\color{#3CB371}{\textsf{Not Applicable}}$ |minimist:1.2.5 | minimist:1.2.5 | [0.2.4]<br>[1.2.6] |
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | $\color{#FF7377}{\textsf{Applicable}}$ |protobufjs:6.11.2 | protobufjs:6.11.2 | [6.11.3] |
+|     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High      | $\color{#3CB371}{\textsf{Not Applicable}}$ |lodash:4.17.19 | lodash:4.17.19 | [4.17.21] |
 ### Scanning repositories and fixing issues
 
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
@@ -242,6 +239,10 @@ For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github
 ![](./images/github-code-scanning.png)
 
 ![](./images/github-code-scanning-content.png)
+
+![](./images/github-code-scanning-secrets-content.png)
+
+![](./images/github-code-scanning-iac-content.png)
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository.
 

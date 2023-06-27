@@ -3,17 +3,16 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestChdir(t *testing.T) {
