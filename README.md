@@ -240,9 +240,9 @@ For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github
 
 ![](./images/github-code-scanning-content.png)
 
-![](github-code-scanning-secrets-content.png)
+![](./images/github-code-scanning-secrets-content.png)
 
-![](github-code-scanning-iac-content.png)
+![](./images/github-code-scanning-iac-content.png)
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository.
 
