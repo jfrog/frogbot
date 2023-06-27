@@ -168,11 +168,11 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 	return
 }
 
-// Fix all the vulnerabilities in one aggregated pull request.
-// In case of existing aggregated fix, check for different scan results
-// if scan results are the same, do nothing.
-// Else, force push to the same branch and reopen PR in case closed.
-// Only one aggregated pull request should be open at all times.
+// fixIssuesSinglePR fixes all the vulnerabilities in a single aggregated pull request.
+// If an existing aggregated fix is present, it checks for different scan results.
+// If the scan results are the same, no action is taken.
+// Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
+// Only one aggregated pull request should remain open at all times.
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[string]*utils.VulnerabilityDetails) (err error) {
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName()
 	if err != nil {
@@ -262,23 +262,26 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
 
-// When aggregate mode is active, there can be only one updated pull request to contain all the available fixes.
-// In case of an already opened pull request, Frogbot will only update the branch and the pull request body.
-// NOTE:
-// It is unnecessary to check for a clean git state
-// as we will always want to force push when we have different scan results.
-// There are some exceptional scenarios where the git will be clean, but the scan results changed.
-// In such cases, we need to update the pull request body with the updated information.
+// openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
+// If a pull request is already open, Frogbot will update the branch and the pull request body.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, existingPullRequestId int64, vulnerabilities []formats.VulnerabilityOrViolationRow) (err error) {
-	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
-	log.Debug("Running git add all and commit...")
-	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
+	log.Debug("Checking if there are changes to commit")
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
 		return
 	}
-	log.Debug("Pushing branch:", fixBranchName, "...")
-	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
-		return
+	if !isClean {
+		commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
+		log.Debug("Running git add all and commit...")
+		if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
+			return
+		}
+		log.Debug("Pushing branch:", fixBranchName, "...")
+		if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
+			return
+		}
 	}
+	// Even if the git state is clean, there are cases where we still need to update the pull request body.
 	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)
 	pullRequestTitle := utils.AggregatedPullRequestTitleTemplate
 	if existingPullRequestId == PullRequestNotFound {
