@@ -6,18 +6,18 @@ type YarnPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (yarn *YarnPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
-	if fixDetails.DirectDependency {
-		return yarn.updateDirectDependency(fixDetails)
+func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if vulnDetails.IsDirectDependency {
+		return yarn.updateDirectDependency(vulnDetails)
 	} else {
 		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.FixVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 }
 
-func (yarn *YarnPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails, extraArgs ...string) (err error) {
-	return yarn.CommonPackageHandler.UpdateDependency(fixDetails, extraArgs...)
+func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+	return yarn.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
 }

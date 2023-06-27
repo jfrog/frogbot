@@ -27,12 +27,28 @@ export class Utils {
         }
 
         // Download Frogbot
-        let url: string = Utils.getCliUrl(major, version, fileName);
+        const releasesRepo: string = process.env.JF_RELEASES_REPO ?? '';
+        let url: string = Utils.getCliUrl(major, version, fileName, releasesRepo);
         core.debug('Downloading Frogbot from ' + url);
-        let downloadDir: string = await toolCache.downloadTool(url);
-
+        let auth: string = this.generateAuthString(releasesRepo);
+        let downloadDir: string = await toolCache.downloadTool(url, '', auth);
         // Cache 'frogbot' executable
         await this.cacheAndAddPath(downloadDir, version, fileName);
+    }
+
+    public static generateAuthString(releasesRepo: string): string {
+        if (!releasesRepo) {
+            return ''
+        }
+        let accessToken: string = process.env.JF_ACCESS_TOKEN ?? '';
+        let username: string = process.env.JF_USER ?? '';
+        let password: string = process.env.JF_PASSWORD ?? '';
+        if (accessToken) {
+            return 'Bearer ' + Buffer.from(accessToken).toString();
+        } else if (username && password) {
+            return 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+        }
+        return '';
     }
 
     public static setFrogbotEnv() {
@@ -96,8 +112,17 @@ export class Utils {
         core.addPath(cliDir);
     }
 
-    public static getCliUrl(major: string, version: string, fileName: string): string {
+    public static getCliUrl(major: string, version: string, fileName: string, releasesRepo: string): string {
         let architecture: string = 'frogbot-' + Utils.getArchitecture();
+        if (releasesRepo) {
+            let platformUrl: string = process.env.JF_URL ?? '';
+            if (!platformUrl) {
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            // Remove trailing slash if exists
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+        }
         return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
     }
 

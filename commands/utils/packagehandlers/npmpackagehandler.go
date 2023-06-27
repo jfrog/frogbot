@@ -21,26 +21,22 @@ type NpmPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (npm *NpmPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
-	if fixDetails.DirectDependency {
-		return npm.updateDirectDependency(fixDetails)
+func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if vulnDetails.IsDirectDependency {
+		return npm.CommonPackageHandler.UpdateDependency(vulnDetails)
 	}
-	return npm.updateIndirectDependency(fixDetails)
-}
-
-func (npm *NpmPackageHandler) updateDirectDependency(fixDetails *utils.FixDetails) (err error) {
-	return npm.CommonPackageHandler.UpdateDependency(fixDetails)
+	return npm.updateIndirectDependency(vulnDetails)
 }
 
 // Attempts modifying indirect dependency in the package-lock file, and run npm install.
 // The fix version should be compatible with the root package version constraints in order to fix the indirect package.
-func (npm *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDetails) (err error) {
+func (npm *NpmPackageHandler) updateIndirectDependency(vulDetails *utils.VulnerabilityDetails) (err error) {
 	parsedJson, err := loadPackageLockFile()
 	if err != nil {
 		log.Debug("Failed trying to load package-lock file:", err)
 		return
 	}
-	if err = modifyIndirectDependency(fixDetails, parsedJson); err != nil {
+	if err = modifyIndirectDependency(vulDetails, parsedJson); err != nil {
 		log.Debug("Failed while trying to modify package-lock file:", err.Error())
 		return
 	}
@@ -49,7 +45,7 @@ func (npm *NpmPackageHandler) updateIndirectDependency(fixDetails *utils.FixDeta
 		return
 	}
 	// Rewrites the package-lock file with updated hashes
-	return runPackageMangerCommand(fixDetails.PackageType.GetExecCommandName(), []string{fixDetails.PackageType.GetPackageInstallOperator()})
+	return runPackageMangerCommand(vulDetails.Technology.GetExecCommandName(), []string{vulDetails.Technology.GetPackageInstallOperator()})
 }
 
 func saveModifiedFile(parsedJson *gabs.Container) (err error) {
@@ -60,8 +56,8 @@ func saveModifiedFile(parsedJson *gabs.Container) (err error) {
 	return
 }
 
-func modifyIndirectDependency(fixDetails *utils.FixDetails, parsedJson *gabs.Container) (err error) {
-	pathToModule := fmt.Sprintf(indirectDependencyPath, fixDetails.DirectDependencyName, fixDetails.ImpactedDependency)
+func modifyIndirectDependency(fixDetails *utils.VulnerabilityDetails, parsedJson *gabs.Container) (err error) {
+	pathToModule := fmt.Sprintf(indirectDependencyPath, fixDetails.DirectDependencyName, fixDetails.ImpactedDependencyName)
 	// Get current value
 	rawVersionWithConstraint := parsedJson.Path(pathToModule).Data()
 	versionWithConstraintStr, ok := rawVersionWithConstraint.(string)

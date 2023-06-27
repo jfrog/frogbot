@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -10,25 +13,25 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
-			impactedPackage: "mquery", fixVersion: FixDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: ""}},
-			impactedPackage: "mquery", fixVersion: FixDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
 		},
@@ -45,27 +48,27 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template without inputs",
 		},
@@ -83,28 +86,28 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 	tests := []struct {
 		gitManager      GitManager
 		impactedPackage string
-		fixVersion      FixDetails
+		fixVersion      VulnerabilityDetails
 		expected        string
 		description     string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
 			description:     "Custom template one var",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      FixDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Update version of mquery to 3.4.5",
 			description:     "No prefix",
 		},
@@ -119,42 +122,42 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 
 func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	tests := []struct {
-		fixVersionMapFirst  map[string]*FixDetails
-		fixVersionMapSecond map[string]*FixDetails
+		fixVersionMapFirst  map[string]*VulnerabilityDetails
+		fixVersionMapSecond map[string]*VulnerabilityDetails
 		gitManager          GitManager
 		equal               bool
 		desc                string
 	}{
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal: true, desc: "should be equal",
 			gitManager: GitManager{},
 		},
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      false,
 			desc:       "should not be equal",
 			gitManager: GitManager{},
 		},
 		{
-			fixVersionMapFirst: map[string]*FixDetails{
-				"pkg":  {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2": {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false},
+			fixVersionMapFirst: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
 			},
-			fixVersionMapSecond: map[string]*FixDetails{
-				"pkgOther": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false},
-				"pkg2":     {FixVersion: "1.5.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMapSecond: map[string]*VulnerabilityDetails{
+				"pkgOther": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false},
+				"pkg2":     {FixVersion: "1.5.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			equal:      true,
 			desc:       "should be equal with template",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "custom"}},
@@ -184,6 +187,89 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage()
 			assert.Equal(t, commit, test.expected)
+		})
+	}
+}
+
+func TestConvertSSHtoHTTPS(t *testing.T) {
+	testsCases := []struct {
+		repoName    string
+		repoOwner   string
+		projectName string
+		expected    string
+		apiEndpoint string
+		vcsProvider vcsutils.VcsProvider
+	}{
+		{
+			repoName:    "npmExample",
+			repoOwner:   "repoOwner",
+			expected:    "https://github.com/repoOwner/npmExample.git",
+			apiEndpoint: "https://github.com",
+			vcsProvider: vcsutils.GitHub,
+		}, {
+			repoName:    "npmExample",
+			repoOwner:   "repoOwner",
+			expected:    "https://api.github.com/repoOwner/npmExample.git",
+			apiEndpoint: "https://api.github.com",
+			vcsProvider: vcsutils.GitHub,
+		},
+		{
+			repoName:    "npmProject",
+			repoOwner:   "myTest5551218",
+			apiEndpoint: "https://gitlab.com",
+			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
+			vcsProvider: vcsutils.GitLab,
+		}, {
+			repoName:    "onPremProject",
+			repoOwner:   "myTest5551218",
+			apiEndpoint: "https://gitlab.example.com",
+			expected:    "https://gitlab.example.com/myTest5551218/onPremProject.git",
+			vcsProvider: vcsutils.GitLab,
+		},
+		{
+			repoName:    "npmExample",
+			projectName: "firstProject",
+			repoOwner:   "azureReposOwner",
+			apiEndpoint: "https://dev.azure.com/azureReposOwner/",
+			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmExample",
+			vcsProvider: vcsutils.AzureRepos,
+		}, {
+			repoName:    "npmExample",
+			projectName: "onPremProject",
+			repoOwner:   "organization",
+			apiEndpoint: "https://your-server-name:port/organization/",
+			expected:    "https://organization@your-server-name:port/organization/onPremProject/_git/npmExample",
+			vcsProvider: vcsutils.AzureRepos,
+		},
+		{
+			repoName:    "npmExample",
+			repoOwner:   "~bitbucketServerOwner", // Bitbucket server private projects owners start with ~ prefix.
+			apiEndpoint: "https://git.company.info",
+			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmExample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "npmExample",
+			repoOwner:   "bitbucketServerOwner", // Public on prem repo
+			apiEndpoint: "https://git.company.info",
+			expected:    "https://git.company.info/scm/bitbucketServerOwner/npmExample.git",
+			vcsProvider: vcsutils.BitbucketServer,
+		}, {
+			repoName:    "notSupported",
+			repoOwner:   "cloudOwner",
+			expected:    "",
+			vcsProvider: vcsutils.BitbucketCloud,
+		},
+	}
+	for _, test := range testsCases {
+		t.Run(test.vcsProvider.String(), func(t *testing.T) {
+			gm := GitManager{git: &Git{ClientInfo: ClientInfo{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}}
+			remoteUrl, err := gm.generateHTTPSCloneUrl()
+			if remoteUrl == "" {
+				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, remoteUrl)
+			}
 		})
 	}
 }

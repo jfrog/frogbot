@@ -3,17 +3,16 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestChdir(t *testing.T) {
@@ -131,28 +130,28 @@ func TestMd5Hash(t *testing.T) {
 
 func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	tests := []struct {
-		fixVersionMap map[string]*FixDetails
+		fixVersionMap map[string]*VulnerabilityDetails
 		expectedHash  string
 	}{
 		{
-			fixVersionMap: map[string]*FixDetails{
-				"pkg": {FixVersion: "1.2.3", PackageType: coreutils.Npm, DirectDependency: false}},
+			fixVersionMap: map[string]*VulnerabilityDetails{
+				"pkg": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm}, IsDirectDependency: false}},
 			expectedHash: "0aa066970b613b114f8e21d11c74ff94",
 		}, {
-			fixVersionMap: map[string]*FixDetails{
-				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false},
-				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false}},
+			fixVersionMap: map[string]*VulnerabilityDetails{
+				"pkg":  {FixVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false},
+				"pkg2": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		},
 		{
 			// The Same map with different order should be the same hash.
-			fixVersionMap: map[string]*FixDetails{
-				"pkg2": {FixVersion: "1.2.3", PackageType: coreutils.Go, DirectDependency: false},
-				"pkg":  {FixVersion: "5.2.3", PackageType: coreutils.Go, DirectDependency: false}},
+			fixVersionMap: map[string]*VulnerabilityDetails{
+				"pkg2": {FixVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false},
+				"pkg":  {FixVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
 		}, {
-			fixVersionMap: map[string]*FixDetails{
-				"myNuget": {FixVersion: "0.2.33", PackageType: coreutils.Nuget, DirectDependency: false}},
+			fixVersionMap: map[string]*VulnerabilityDetails{
+				"myNuget": {FixVersion: "0.2.33", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget}, IsDirectDependency: false}},
 			expectedHash: "887ac2c931920c20956409702c0dfbc7",
 		},
 	}

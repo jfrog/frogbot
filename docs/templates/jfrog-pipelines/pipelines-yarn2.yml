@@ -68,6 +68,17 @@ pipelines:
             # Git provider project owner.
             JF_GIT_OWNER: ""
 
+            # [Optional]
+            # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
+            # in Artifactory, which proxies https://releases.jfrog.io
+            # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+            # JF_RELEASES_REPO: ""
+
+            ###########################################################################
+            ##   If your project uses a 'frogbot-config.yml' file, you should define ##
+            ##   the following variables inside the file, instead of here.           ##
+            ###########################################################################
+
             # [Mandatory]
             # Git repository name
             JF_GIT_REPO: ""
@@ -75,17 +86,6 @@ pipelines:
             # [Mandatory]
             # Repository branch to scan
             JF_GIT_BASE_BRANCH: $res_frogbotGitRepo_gitRepoSourceDefaultBranch
-
-            # [Optional]
-            # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-            # in Artifactory, which proxies https://releases.jfrog.io
-            # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
-            # JF_RELEASES_REPO: ""
-
-            ##########################################################################
-            ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
-            ##   the following variables inside the file, instead of here.          ##
-            ##########################################################################
 
             # [Optional]
             # JFrog project. Learn more about it here: https://www.jfrog.com/confluence/display/JFROG/Projects
@@ -146,13 +146,24 @@ pipelines:
         execution:
           onExecute:
             - cd $res_frogbotGitRepo_resourcePath
-            - npm install -g yarn
-            - yarn set version berry
-            # For Linux/Mac runner:
-            - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-            - ./frogbot scan-pull-requests
-            - ./frogbot scan-and-fix-repos
+            - |
+              npm install -g yarn
+              yarn set version berry
+              getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
+              curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+              ./frogbot scan-pull-requests
+              ./frogbot scan-and-fix-repos
+
             # For Windows runner:
-            # - iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-            # - .\frogbot.exe scan-pull-requests
-            # - .\frogbot.exe scan-and-fix-repos
+            # - |
+            #   if (-not $env:JF_RELEASES_REPO) {
+            #       $getFrogbotScriptPath = "https://releases.jfrog.io"
+            #   } else {
+            #       $getFrogbotScriptPath = "$($env:JF_URL)/artifactory/$($env:JF_RELEASES_REPO)"
+            #   }
+            #
+            #   $scriptUrl = "$($getFrogbotScriptPath)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh"
+            #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
+            #   .\frogbot.exe scan-pull-requests
+            #   .\frogbot.exe scan-and-fix-repos
+

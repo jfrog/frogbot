@@ -5,6 +5,7 @@ import (
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -16,8 +17,8 @@ import (
 )
 
 type dependencyFixTest struct {
-	fixVersionInfo *utils.FixDetails
-	fixSupported   bool
+	vulnDetails  *utils.VulnerabilityDetails
+	fixSupported bool
 }
 
 type pythonIndirectDependencies struct {
@@ -37,35 +38,32 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	goPackageHandler := GoPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "0.0.0-20201216223049-8b5274cf687f",
-				PackageType:        coreutils.Go,
-				DirectDependency:   false,
-				ImpactedDependency: "golang.org/x/crypto",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "0.0.0-20201216223049-8b5274cf687f",
+				IsDirectDependency:          false,
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
 			}, fixSupported: true,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "1.7.7",
-				PackageType:        coreutils.Go,
-				DirectDependency:   true,
-				ImpactedDependency: "github.com/gin-gonic/gin",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.7.7",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
 			}, fixSupported: true,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "1.3.0",
-				PackageType:        coreutils.Go,
-				DirectDependency:   true,
-				ImpactedDependency: "github.com/google/uuid",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.3.0",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Go)
-			err := goPackageHandler.UpdateDependency(test.fixVersionInfo)
+			err := goPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -82,30 +80,63 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 // Python, includes pip,pipenv, poetry
 func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []pythonIndirectDependencies{
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Pip, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Poetry, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "pyproejct.toml"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "1.25.9", PackageType: coreutils.Pipenv, ImpactedDependency: "urllib3", DirectDependency: false}, fixSupported: false}, requirementsPath: "Pipfile"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "Pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "requirements.txt"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Pip, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "setup.py"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
-		{dependencyFixTest: dependencyFixTest{fixVersionInfo: &utils.FixDetails{
-			FixVersion: "2.4.0", PackageType: coreutils.Poetry, ImpactedDependency: "pyjwt", DirectDependency: true}, fixSupported: true}, requirementsPath: "pyproject.toml"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.25.9",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
+			}}, requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.25.9",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"}}},
+			requirementsPath: "pyproejct.toml"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.25.9",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"}}},
+			requirementsPath: "Pipfile"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "2.4.0",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+				IsDirectDependency:          true},
+			fixSupported: true},
+			requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "2.4.0",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
+				IsDirectDependency:          true},
+			fixSupported: true},
+			requirementsPath: "requirements.txt"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "2.4.0",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+				IsDirectDependency:          true}, fixSupported: true},
+			requirementsPath: "setup.py"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "2.4.0",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
+				IsDirectDependency:          true},
+			fixSupported: true},
+			requirementsPath: "pyproject.toml"},
+		{dependencyFixTest: dependencyFixTest{
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "2.4.0",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
+				IsDirectDependency:          true},
+			fixSupported: true},
+			requirementsPath: "pyproject.toml"},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
-			pythonPackageHandler := GetCompatiblePackageHandler(test.fixVersionInfo, &utils.ScanDetails{
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
+			pythonPackageHandler := GetCompatiblePackageHandler(test.vulnDetails, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
-			cleanup := createTempDirAndChDir(t, testDataDir, test.fixVersionInfo.PackageType)
-			err := pythonPackageHandler.UpdateDependency(test.fixVersionInfo)
+			cleanup := createTempDirAndChDir(t, testDataDir, test.vulnDetails.Technology)
+			err := pythonPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -144,28 +175,25 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 	npmPackageHandler := &NpmPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:           "0.8.4",
-				PackageType:          coreutils.Npm,
-				DirectDependency:     false,
-				ImpactedDependency:   "mpath",
-				DirectDependencyName: "mongoose",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "0.8.4",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "mpath"},
+				DirectDependencyName:        "mongoose",
 			}, fixSupported: true,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "3.0.2",
-				PackageType:        coreutils.Npm,
-				DirectDependency:   true,
-				ImpactedDependency: "minimatch",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "3.0.2",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "minimatch"},
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Npm)
-			err := npmPackageHandler.UpdateDependency(test.fixVersionInfo)
+			err := npmPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -183,27 +211,24 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "1.2.6",
-				PackageType:        coreutils.Yarn,
-				DirectDependency:   false,
-				ImpactedDependency: "minimist",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.2.6",
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
 			}, fixSupported: false,
 		},
 		{
-			fixVersionInfo: &utils.FixDetails{
-				FixVersion:         "1.2.6",
-				PackageType:        coreutils.Yarn,
-				DirectDependency:   true,
-				ImpactedDependency: "minimist",
+			vulnDetails: &utils.VulnerabilityDetails{
+				FixVersion:                  "1.2.6",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
 			}, fixSupported: true,
 		},
 	}
 	for _, test := range testcases {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
-			err := yarnPackageHandler.UpdateDependency(test.fixVersionInfo)
+			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -219,23 +244,21 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 // Maven
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	tests := []dependencyFixTest{
-		{fixVersionInfo: &utils.FixDetails{
-			FixVersion:         "2.7",
-			PackageType:        coreutils.Maven,
-			ImpactedDependency: "commons-io:commons-io",
-			DirectDependency:   true}, fixSupported: true},
-		{fixVersionInfo: &utils.FixDetails{
-			FixVersion:         "4.3.20",
-			PackageType:        coreutils.Maven,
-			ImpactedDependency: "org.springframework:spring-core",
-			DirectDependency:   false}, fixSupported: false},
+		{vulnDetails: &utils.VulnerabilityDetails{
+			FixVersion:                  "2.7",
+			VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
+			IsDirectDependency:          true}, fixSupported: true},
+		{vulnDetails: &utils.VulnerabilityDetails{
+			FixVersion:                  "4.3.20",
+			VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
+			IsDirectDependency:          false}, fixSupported: false},
 	}
 	for _, test := range tests {
-		t.Run(test.fixVersionInfo.ImpactedDependency+" direct:"+strconv.FormatBool(test.fixVersionInfo.DirectDependency), func(t *testing.T) {
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			mavenPackageHandler := MavenPackageHandler{}
-			testDataDir := getTestDataDir(t, test.fixVersionInfo.DirectDependency)
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
-			err := mavenPackageHandler.UpdateDependency(test.fixVersionInfo)
+			err := mavenPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -250,13 +273,13 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 
 // Maven utils functions
 func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
-	testCases := []string{`<dependency> 
+	testCases := []string{`<dependency>
 	<groupId>org.apache.commons</groupId>
 	<artifactId>commons-email</artifactId>
 	<version>1.1</version>
 	<scope>compile</scope>
 </dependency>`,
-		`<dependency> 
+		`<dependency>
 	<groupId> 	org.apache.commons</groupId>
 	<artifactId>commons-email	 </artifactId>
 	<version>  1.1  </version>
@@ -278,19 +301,19 @@ func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
 func TestGetDependenciesFromPomXmlMultiDependency(t *testing.T) {
 	testCases := []string{`
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-email</artifactId>
-            <version>1.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-utils</artifactId>
-            <version>1.5.1</version>
-        </dependency>
+       <dependency>
+           <groupId>org.apache.commons</groupId>
+           <artifactId>commons-email</artifactId>
+           <version>1.1</version>
+           <scope>compile</scope>
+       </dependency>
+       <dependency>
+           <groupId>org.codehaus.plexus</groupId>
+           <artifactId>plexus-utils</artifactId>
+           <version>1.5.1</version>
+       </dependency>
 	</dependencies>
 </project>`,
 	}
@@ -314,43 +337,43 @@ func TestGetPluginsFromPomXml(t *testing.T) {
 	testCase :=
 		`<project>
 			<build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.5.3.0</version>
-                <configuration>
-                    <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
-                    <plugins>
-                        <plugin>
-                            <groupId>com.h3xstream.findsecbugs</groupId>
-                            <artifactId>findsecbugs-plugin</artifactId>
-                            <version>1.12.0</version>
-                        </plugin>
-                    </plugins>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.1</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!--This will disable JenkinsRule timeout-->
-                        <maven.surefire.debug>true</maven.surefire.debug>
-                    </systemPropertyVariables>
-                    <excludes>
-                        <exclude>**/InjectedTest.java</exclude>
-                        <exclude>**/*ITest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+       <plugins>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-source-plugin</artifactId>
+           </plugin>
+           <plugin>
+               <groupId>com.github.spotbugs</groupId>
+               <artifactId>spotbugs-maven-plugin</artifactId>
+               <version>4.5.3.0</version>
+               <configuration>
+                   <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
+                   <plugins>
+                       <plugin>
+                           <groupId>com.h3xstream.findsecbugs</groupId>
+                           <artifactId>findsecbugs-plugin</artifactId>
+                           <version>1.12.0</version>
+                       </plugin>
+                   </plugins>
+               </configuration>
+           </plugin>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-surefire-plugin</artifactId>
+               <version>2.22.1</version>
+               <configuration>
+                   <systemPropertyVariables>
+                       <!--This will disable JenkinsRule timeout-->
+                       <maven.surefire.debug>true</maven.surefire.debug>
+                   </systemPropertyVariables>
+                   <excludes>
+                       <exclude>**/InjectedTest.java</exclude>
+                       <exclude>**/*ITest.java</exclude>
+                   </excludes>
+               </configuration>
+           </plugin>
+       </plugins>
+   </build>
 	</project>
 		`
 	plugins, err := getMavenDependencies([]byte(testCase))
@@ -371,44 +394,44 @@ func TestGetPluginsFromPomXml(t *testing.T) {
 func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 	testCase := `
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
-                <version>1607.va_c1576527071</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>2.13.4</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.13.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>2.13.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>4.4.15</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkins-ci.plugins.workflow</groupId>
-                <artifactId>workflow-durable-task-step</artifactId>
-                <version>1190.vc93d7d457042</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+   <dependencyManagement>
+       <dependencies>
+           <dependency>
+               <groupId>io.jenkins.tools.bom</groupId>
+               <artifactId>bom-2.346.x</artifactId>
+               <version>1607.va_c1576527071</version>
+               <scope>import</scope>
+               <type>pom</type>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-core</artifactId>
+               <version>2.13.4</version>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-databind</artifactId>
+               <version>2.13.4.2</version>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-annotations</artifactId>
+               <version>2.13.4</version>
+           </dependency>
+           <dependency>
+               <groupId>org.apache.httpcomponents</groupId>
+               <artifactId>httpcore</artifactId>
+               <version>4.4.15</version>
+           </dependency>
+           <dependency>
+               <groupId>org.jenkins-ci.plugins.workflow</groupId>
+               <artifactId>workflow-durable-task-step</artifactId>
+               <version>1190.vc93d7d457042</version>
+               <scope>test</scope>
+           </dependency>
+       </dependencies>
+   </dependencyManagement>
 </project>
 `
 	dependencies, err := getMavenDependencies([]byte(testCase))
@@ -441,14 +464,14 @@ func TestMavenGavReader(t *testing.T) {
 // General Utils functions
 func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 	type testCase struct {
-		fixVersionInfo utils.FixDetails
+		fixVersionInfo utils.VulnerabilityDetails
 		newFixVersion  string
 		expectedOutput string
 	}
 
 	testCases := []testCase{
-		{fixVersionInfo: utils.FixDetails{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
-		{fixVersionInfo: utils.FixDetails{FixVersion: "1.2.3", PackageType: "pkg", DirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
+		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
+		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
 	}
 
 	for _, tc := range testCases {
@@ -532,10 +555,10 @@ func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, p
 	file, err := os.ReadFile(packageDescriptor)
 	assert.NoError(t, err)
 	if !test.fixSupported {
-		assert.NotContains(t, string(file), test.fixVersionInfo)
+		assert.NotContains(t, string(file), test.vulnDetails)
 	} else {
-		assert.Contains(t, string(file), test.fixVersionInfo.FixVersion)
+		assert.Contains(t, string(file), test.vulnDetails.FixVersion)
 		// Verify that case-sensitive packages in python are lowered
-		assert.Contains(t, string(file), strings.ToLower(test.fixVersionInfo.ImpactedDependency))
+		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
 	}
 }
