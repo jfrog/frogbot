@@ -119,4 +119,4 @@ replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v
 
 replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230611131847-a3b84a9004c3
 
-replace github.com/jfrog/froggit-go => ../froggit-go
+replace github.com/jfrog/froggit-go => github.com/eyaldelarea/froggit-go v1.6.1-0.20230627101411-0cb6ec41ddfc
