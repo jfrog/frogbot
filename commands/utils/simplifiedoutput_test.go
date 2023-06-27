@@ -307,7 +307,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 					Type:             "azure_mysql_no_public",
 				},
 			},
-			expectedOutput: "\n| Medium | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |",
+			expectedOutput: "\n| Medium | file1 | 1:10 | Public access to MySQL was detected |",
 		},
 		{
 			name: "Multiple IAC rows",
@@ -329,7 +329,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 					Type:             "azure_mysql_no_public",
 				},
 			},
-			expectedOutput: "\n| High | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |\n| Medium | file2 | 2:5 | Public access to MySQL was detected | azure_mysql_no_public |",
+			expectedOutput: "\n| High | file1 | 1:10 | Public access to MySQL was detected |\n| Medium | file2 | 2:5 | Public access to MySQL was detected |",
 		},
 	}
 
