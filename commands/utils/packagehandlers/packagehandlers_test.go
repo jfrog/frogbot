@@ -272,13 +272,13 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 
 // Maven utils functions
 func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
-	testCases := []string{`<dependency> 
+	testCases := []string{`<dependency>
 	<groupId>org.apache.commons</groupId>
 	<artifactId>commons-email</artifactId>
 	<version>1.1</version>
 	<scope>compile</scope>
 </dependency>`,
-		`<dependency> 
+		`<dependency>
 	<groupId> 	org.apache.commons</groupId>
 	<artifactId>commons-email	 </artifactId>
 	<version>  1.1  </version>
@@ -300,19 +300,19 @@ func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
 func TestGetDependenciesFromPomXmlMultiDependency(t *testing.T) {
 	testCases := []string{`
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-email</artifactId>
-            <version>1.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.plexus</groupId>
-            <artifactId>plexus-utils</artifactId>
-            <version>1.5.1</version>
-        </dependency>
+       <dependency>
+           <groupId>org.apache.commons</groupId>
+           <artifactId>commons-email</artifactId>
+           <version>1.1</version>
+           <scope>compile</scope>
+       </dependency>
+       <dependency>
+           <groupId>org.codehaus.plexus</groupId>
+           <artifactId>plexus-utils</artifactId>
+           <version>1.5.1</version>
+       </dependency>
 	</dependencies>
 </project>`,
 	}
@@ -336,43 +336,43 @@ func TestGetPluginsFromPomXml(t *testing.T) {
 	testCase :=
 		`<project>
 			<build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.5.3.0</version>
-                <configuration>
-                    <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
-                    <plugins>
-                        <plugin>
-                            <groupId>com.h3xstream.findsecbugs</groupId>
-                            <artifactId>findsecbugs-plugin</artifactId>
-                            <version>1.12.0</version>
-                        </plugin>
-                    </plugins>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.1</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!--This will disable JenkinsRule timeout-->
-                        <maven.surefire.debug>true</maven.surefire.debug>
-                    </systemPropertyVariables>
-                    <excludes>
-                        <exclude>**/InjectedTest.java</exclude>
-                        <exclude>**/*ITest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+       <plugins>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-source-plugin</artifactId>
+           </plugin>
+           <plugin>
+               <groupId>com.github.spotbugs</groupId>
+               <artifactId>spotbugs-maven-plugin</artifactId>
+               <version>4.5.3.0</version>
+               <configuration>
+                   <excludeFilterFile>spotbugs-security-exclude.xml</excludeFilterFile>
+                   <plugins>
+                       <plugin>
+                           <groupId>com.h3xstream.findsecbugs</groupId>
+                           <artifactId>findsecbugs-plugin</artifactId>
+                           <version>1.12.0</version>
+                       </plugin>
+                   </plugins>
+               </configuration>
+           </plugin>
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-surefire-plugin</artifactId>
+               <version>2.22.1</version>
+               <configuration>
+                   <systemPropertyVariables>
+                       <!--This will disable JenkinsRule timeout-->
+                       <maven.surefire.debug>true</maven.surefire.debug>
+                   </systemPropertyVariables>
+                   <excludes>
+                       <exclude>**/InjectedTest.java</exclude>
+                       <exclude>**/*ITest.java</exclude>
+                   </excludes>
+               </configuration>
+           </plugin>
+       </plugins>
+   </build>
 	</project>
 		`
 	plugins, err := getMavenDependencies([]byte(testCase))
@@ -393,44 +393,44 @@ func TestGetPluginsFromPomXml(t *testing.T) {
 func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 	testCase := `
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
-                <version>1607.va_c1576527071</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>2.13.4</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.13.4.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>2.13.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>4.4.15</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkins-ci.plugins.workflow</groupId>
-                <artifactId>workflow-durable-task-step</artifactId>
-                <version>1190.vc93d7d457042</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+   <dependencyManagement>
+       <dependencies>
+           <dependency>
+               <groupId>io.jenkins.tools.bom</groupId>
+               <artifactId>bom-2.346.x</artifactId>
+               <version>1607.va_c1576527071</version>
+               <scope>import</scope>
+               <type>pom</type>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-core</artifactId>
+               <version>2.13.4</version>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-databind</artifactId>
+               <version>2.13.4.2</version>
+           </dependency>
+           <dependency>
+               <groupId>com.fasterxml.jackson.core</groupId>
+               <artifactId>jackson-annotations</artifactId>
+               <version>2.13.4</version>
+           </dependency>
+           <dependency>
+               <groupId>org.apache.httpcomponents</groupId>
+               <artifactId>httpcore</artifactId>
+               <version>4.4.15</version>
+           </dependency>
+           <dependency>
+               <groupId>org.jenkins-ci.plugins.workflow</groupId>
+               <artifactId>workflow-durable-task-step</artifactId>
+               <version>1190.vc93d7d457042</version>
+               <scope>test</scope>
+           </dependency>
+       </dependencies>
+   </dependencyManagement>
 </project>
 `
 	dependencies, err := getMavenDependencies([]byte(testCase))
