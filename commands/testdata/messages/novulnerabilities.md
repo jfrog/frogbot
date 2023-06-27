@@ -1,7 +1,7 @@
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)
 
 --- 
-* **Frogbot** also supports the **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
+* **Frogbot** also supports **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
 ---
 
 <div align="center">

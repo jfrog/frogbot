@@ -66,7 +66,6 @@ func TestReportUsageError(t *testing.T) {
 }
 
 // Create HTTP handler to mock an Artifactory server suitable for report usage requests
-
 func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/api/system/version" {

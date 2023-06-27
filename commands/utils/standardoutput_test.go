@@ -23,7 +23,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				FixedVersions:             []string{"2.0.0"},
 				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
@@ -37,7 +37,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-5678"},
 				},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br>3.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br>3.0.0 |",
 		},
 		{
 			name: "Single CVE and direct dependencies",
@@ -52,7 +52,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Name: "dep2", Version: "2.0.0"},
 				},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
@@ -70,7 +70,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				ImpactedDependencyVersion: "3.0.0",
 				FixedVersions:             []string{"4.0.0", "5.0.0"},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 |",
 		},
 	}
 
@@ -257,10 +257,9 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
 					LineColumn:       "11:1",
 					Text:             "Missing Periodic patching was detected",
-					Type:             "azure_redis_patch",
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       | SCANNER                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected | azure_redis_patch |\n\n</div>\n\n",
+			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
 		},
 		{
 			name: "Multiple IAC rows",
@@ -271,7 +270,6 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					File:             "applicable/req_sw_terraform_azure_redis_patch.tf",
 					LineColumn:       "11:1",
 					Text:             "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
-					Type:             "azure_redis_no_public",
 				},
 				{
 					Severity:         "High",
@@ -279,10 +277,9 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
 					LineColumn:       "11:1",
 					Text:             "Missing Periodic patching was detected",
-					Type:             "azure_redis_patch",
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       | SCANNER                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected | azure_redis_no_public |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected | azure_redis_patch |\n\n</div>\n\n",
+			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
 		},
 	}
 
@@ -318,7 +315,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					Type:             "azure_mysql_no_public",
 				},
 			},
-			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |",
+			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected |",
 		},
 		{
 			name: "Multiple IAC rows",
@@ -340,7 +337,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					Type:             "azure_mysql_no_public",
 				},
 			},
-			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected | azure_mysql_no_public |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected | azure_mysql_no_public |",
+			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected |",
 		},
 	}
 

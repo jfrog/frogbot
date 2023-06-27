@@ -73,7 +73,7 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 func JasMsg(entitled bool) string {
 	msg := ""
 	if !entitled {
-		msg = "\n\n--- \n* **Frogbot** also supports the **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+		msg = "\n\n--- \n* **Frogbot** also supports **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
 	}
 	return msg
 }
@@ -139,7 +139,7 @@ func createVulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolatio
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text, iac.Type)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
 	}
 	return tableContent
 }
