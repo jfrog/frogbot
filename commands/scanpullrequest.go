@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/gofrog/datastructures"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,13 +54,13 @@ func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) e
 	}
 
 	// Audit PR code
-	vulnerabilitiesRows, err := auditPullRequest(repoConfig, client)
+	vulnerabilitiesRows, iacRows, err := auditPullRequest(repoConfig, client)
 	if err != nil {
 		return err
 	}
 
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, repoConfig.OutputWriter)
+	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
 
 	// Add comment to the pull request
 	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
@@ -73,8 +74,9 @@ func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) e
 	return err
 }
 
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
+	var iacRows []formats.IacSecretsRow
 	for i := range repoConfig.Projects {
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
@@ -84,32 +86,50 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 			SetFixableOnly(repoConfig.FixableOnly)
 		sourceResults, err := auditSource(scanDetails)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		repoConfig.SetEntitledForJas(sourceResults.ExtendedScanResults.EntitledForJas)
 		if repoConfig.IncludeAllVulnerabilities {
 			log.Info("Frogbot is configured to show all vulnerabilities")
 			allIssuesRows, err := getScanVulnerabilitiesRows(sourceResults)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
+			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)...)
 			continue
 		}
 		// Audit target code
 		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).SetBranch(repoConfig.Branches[0])
 		targetResults, err := auditTarget(scanDetails)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		newIssuesRows, err := createNewIssuesRows(targetResults, sourceResults)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
+		iacRows = append(iacRows, createNewIacRows(targetResults.ExtendedScanResults.IacScanResults, sourceResults.ExtendedScanResults.IacScanResults)...)
 	}
 	log.Info("Xray scan completed")
-	return vulnerabilitiesRows, nil
+	return vulnerabilitiesRows, iacRows, nil
+}
+
+func createNewIacRows(targetIacResults, sourceIacResults []xrayutils.IacOrSecretResult) []formats.IacSecretsRow {
+	targetIacRows := xrayutils.PrepareIacs(targetIacResults)
+	sourceIacRows := xrayutils.PrepareIacs(sourceIacResults)
+	targetIacVulnerabilitiesKeys := datastructures.MakeSet[string]()
+	for _, row := range targetIacRows {
+		targetIacVulnerabilitiesKeys.Add(row.File + row.Text)
+	}
+	var addedIacVulnerabilities []formats.IacSecretsRow
+	for _, row := range sourceIacRows {
+		if !targetIacVulnerabilitiesKeys.Exists(row.File + row.Text) {
+			addedIacVulnerabilities = append(addedIacVulnerabilities, row)
+		}
+	}
+	return addedIacVulnerabilities
 }
 
 // Verify that the 'frogbot' GitHub environment was properly configured on the repository
@@ -339,9 +359,9 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer utils.OutputWriter) string {
-	if len(vulnerabilitiesRows) == 0 {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
+	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
 		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle() + writer.Content(vulnerabilitiesRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
 }

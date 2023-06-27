@@ -12,28 +12,31 @@ type SimplifiedOutput struct {
 	vcsProvider    vcsutils.VcsProvider
 }
 
-func (smo *SimplifiedOutput) TableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createTableRow(vulnerability, smo)
+func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
+	return createVulnerabilitiesTableRow(vulnerability, smo)
 }
 
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
-	return GetSimplifiedTitle(NoVulnerabilityBannerSource)
+	return GetSimplifiedTitle(NoVulnerabilityPrBannerSource)
 }
 
-func (smo *SimplifiedOutput) VulnerabiltiesTitle() string {
-	return GetSimplifiedTitle(VulnerabilitiesBannerSource)
+func (smo *SimplifiedOutput) VulnerabiltiesTitle(isComment bool) string {
+	if !isComment {
+		return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
+	}
+	return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
 }
 
-func (smo *SimplifiedOutput) Header() string {
-	header := tableHeader
+func (smo *SimplifiedOutput) VulnerabilitiesTableHeader() string {
+	header := vulnerabilitiesTableHeader
 	if smo.entitledForJas {
-		header = tableHeaderWithJas
+		header = vulnerabilitiesTableHeaderWithJas
 	}
 	return header
 }
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesBannerSource))
+	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityPrBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesPrBannerSource))
 }
 
 func (smo *SimplifiedOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
@@ -52,23 +55,25 @@ func (smo *SimplifiedOutput) EntitledForJas() bool {
 	return smo.entitledForJas
 }
 
-func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
 ---
-### Summary
+## 📦 Vulnerable Dependencies
 ---
+
+### ✍️ Summary 
 
 %s %s
 
 ---
-### Details
+### 👇 Details
 ---
 
 `,
-		smo.Header(),
-		getTableContent(vulnerabilitiesRows, smo)))
+		smo.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, smo)))
 	for i := range vulnerabilitiesRows {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s %s
@@ -82,6 +87,21 @@ func (smo *SimplifiedOutput) Content(vulnerabilitiesRows []formats.Vulnerability
 	}
 
 	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+	if len(iacRows) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+## 🛠️ Infrastructure as Code 
+
+%s %s
+
+`,
+		iacTableHeader,
+		getIacTableContent(iacRows, smo))
 }
 
 func (smo *SimplifiedOutput) Footer() string {
