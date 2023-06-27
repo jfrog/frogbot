@@ -35,8 +35,8 @@ const (
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
 
-	// Aggregate branches should always be the same name.
-	// Use a const to replace in the branch template ${BRANCH_NAME_HASH}
+	// Aggregate branches name should always be the same name.
+	// We use a const to replace in the branch template ${BRANCH_NAME_HASH}
 	constAggregatedHash = "0"
 )
 
@@ -324,8 +324,8 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates consistent branch name to allow branch updates
-// and to make sure there is only one Frogbot branch on aggreagated mode.
+// GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
+// and to ensure that there is only one Frogbot branch in aggregated mode.
 func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
@@ -377,7 +377,7 @@ func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
 	var checkoutConfig *git.CheckoutOptions
 	if gm.dryRun {
-		// On dry runs we mimic remote locally
+		// On dry runs we mimic remote as local branches.
 		checkoutConfig = &git.CheckoutOptions{
 			Branch: plumbing.NewBranchReferenceName(branchName),
 			Force:  true,
