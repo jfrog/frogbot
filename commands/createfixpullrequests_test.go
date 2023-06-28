@@ -226,7 +226,6 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
-
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
 			err = cmd.Run(configAggregator, client)
