@@ -106,7 +106,8 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <div id="reporting-issues"></div>
 
 ## 🚥 Using Frogbot
-### Scanning pull requests
+<details>
+  <summary>Scanning pull requests</summary>
 #### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
@@ -234,6 +235,9 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | $\color{#3CB371}{\textsf{Not Applicable}}$ |minimist:1.2.5 | minimist:1.2.5 | [0.2.4]<br>[1.2.6] |
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | $\color{#FF7377}{\textsf{Applicable}}$ |protobufjs:6.11.2 | protobufjs:6.11.2 | [6.11.3] |
 |     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High      | $\color{#3CB371}{\textsf{Not Applicable}}$ |lodash:4.17.19 | lodash:4.17.19 | [4.17.21] |
+
+<details>
+
 ### Scanning repositories and fixing issues
 
 Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
