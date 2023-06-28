@@ -234,12 +234,8 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 }
 
 func validateHashPlaceHolder(template string) error {
-	if template == "" {
-		// Empty template is valid, will be replaced with default.
-		return nil
-	}
-	if !strings.Contains(template, BranchHashPlaceHolder) {
-		return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
+	if template != "" && !strings.Contains(template, BranchHashPlaceHolder) {
+		return &ErrMissingEnv{VariableName: BranchHashPlaceHolder, Description: "Branch name templates must contain place holder for hash"}
 	}
 	return nil
 }
@@ -432,7 +428,7 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
-		return &ErrMissingEnv{envKey}
+		return &ErrMissingEnv{VariableName: envKey}
 	}
 	return nil
 }

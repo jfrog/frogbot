@@ -283,10 +283,9 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if existingPullRequestId == PullRequestNotFound {
 		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
-	} else {
-		log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
-		return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(existingPullRequestId), vcsutils.Open)
 	}
+	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
+	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(existingPullRequestId), vcsutils.Open)
 }
 
 func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
