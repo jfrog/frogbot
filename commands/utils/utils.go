@@ -108,7 +108,6 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 
 type ErrMissingEnv struct {
 	VariableName string
-	Description  string
 }
 
 func (e *ErrMissingEnv) Error() string {
