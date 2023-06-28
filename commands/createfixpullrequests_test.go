@@ -2,9 +2,11 @@ package commands
 
 import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
@@ -167,6 +169,137 @@ func TestGetMinimalFixVersion(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			expected := getMinimalFixVersion(test.impactedVersionPackage, test.fixVersions)
 			assert.Equal(t, test.expected, expected)
+		})
+	}
+}
+
+func TestCreateVulnerabilitiesMap(t *testing.T) {
+	cfp := &CreateFixPullRequestsCmd{} // Replace with your struct initialization
+
+	testCases := []struct {
+		name            string
+		scanResults     *xrayutils.ExtendedScanResults
+		isMultipleRoots bool
+		expectedMap     map[string]*utils.VulnerabilityDetails
+	}{
+		{
+			name: "Scan results with no violations and vulnerabilities",
+			scanResults: &xrayutils.ExtendedScanResults{
+				XrayResults: []services.ScanResponse{},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{},
+		},
+		{
+			name: "Scan results with vulnerabilities and no violations",
+			scanResults: &xrayutils.ExtendedScanResults{
+				XrayResults: []services.ScanResponse{
+					{
+						Vulnerabilities: []services.Vulnerability{
+							{
+								Cves: []services.Cve{
+									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+								},
+								Severity: "Critical",
+								Components: map[string]services.Component{
+									"vuln1": {
+										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+									},
+								},
+							},
+							{
+								Cves: []services.Cve{
+									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+								},
+								Severity: "High",
+								Components: map[string]services.Component{
+									"vuln2": {
+										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"vuln1": {
+					FixVersion:         "1.9.1",
+					IsDirectDependency: true,
+					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+				},
+				"vuln2": {
+					FixVersion: "2.4.1",
+					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+				},
+			},
+		},
+		{
+			name: "Scan results with violations and no vulnerabilities",
+			scanResults: &xrayutils.ExtendedScanResults{
+				XrayResults: []services.ScanResponse{
+					{
+						Violations: []services.Violation{
+							{
+								ViolationType: "security",
+								Cves: []services.Cve{
+									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+								},
+								Severity: "Critical",
+								Components: map[string]services.Component{
+									"viol1": {
+										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+									},
+								},
+							},
+							{
+								ViolationType: "security",
+								Cves: []services.Cve{
+									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+								},
+								Severity: "High",
+								Components: map[string]services.Component{
+									"viol2": {
+										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"viol1": {
+					FixVersion:         "1.9.1",
+					IsDirectDependency: true,
+					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+				},
+				"viol2": {
+					FixVersion: "2.4.1",
+					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, testCase.isMultipleRoots)
+			assert.NoError(t, err)
+			for name, expectedVuln := range testCase.expectedMap {
+				actualVuln, exists := fixVersionsMap[name]
+				require.True(t, exists)
+				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
+				assert.Equal(t, expectedVuln.FixVersion, actualVuln.FixVersion)
+				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
+			}
 		})
 	}
 }

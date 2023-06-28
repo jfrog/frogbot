@@ -331,6 +331,16 @@ func (cfp *CreateFixPullRequestsCmd) createVulnerabilitiesMap(scanResults *xrayu
 					return nil, err
 				}
 			}
+		} else if len(scanResult.Violations) > 0 {
+			violations, _, _, err := xrayutils.PrepareViolations(scanResult.Violations, scanResults, isMultipleRoots, true)
+			if err != nil {
+				return nil, err
+			}
+			for i := range violations {
+				if err = cfp.addVulnerabilityToFixVersionsMap(&violations[i], fixVersionsMap); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 	return fixVersionsMap, nil
@@ -356,7 +366,6 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 		// First appearance of a version that fixes the current impacted package
 		newVulnDetails := utils.NewVulnerabilityDetails(vulnerability, vulnFixVersion)
 		newVulnDetails.SetIsDirectDependency(isDirectDependency)
-		newVulnDetails.SetCves(vulnerability.Cves)
 		vulnerabilitiesMap[vulnerability.ImpactedDependencyName] = newVulnDetails
 	}
 	// Set the fixed version array to the relevant fixed version so that only that specific fixed version will be displayed
