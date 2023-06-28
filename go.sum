@@ -224,8 +224,8 @@ github.com/jfrog/froggit-go v1.7.3 h1:ZOXbFsdmtM6+uDbo1U+elV7sPZ4EN6grDck9aHqKyn
 github.com/jfrog/froggit-go v1.7.3/go.mod h1:xfsfQXzSaAM04RV9IyU5heBiRrsm2oS6rFCfEofQr6U=
 github.com/jfrog/gofrog v1.3.0 h1:o4zgsBZE4QyDbz2M7D4K6fXPTBJht+8lE87mS9bw7Gk=
 github.com/jfrog/gofrog v1.3.0/go.mod h1:IFMc+V/yf7rA5WZ74CSbXe+Lgf0iApEQLxRZVzKRUR0=
-github.com/jfrog/jfrog-client-go v1.28.1-0.20230611131847-a3b84a9004c3 h1:bIpljSo/bnilaRky2mtXcljC0JmONgc97AEy1YG6rXE=
-github.com/jfrog/jfrog-client-go v1.28.1-0.20230611131847-a3b84a9004c3/go.mod h1:qEJxoe68sUtqHJ1YhXv/7pKYP/9p1D5tJrruzJKYeoI=
+github.com/jfrog/jfrog-client-go v1.30.1 h1:wASYBrFkpWzQHTNnCIIfqpDLtQF5oNcwQK9rrv8I8AA=
+github.com/jfrog/jfrog-client-go v1.30.1/go.mod h1:qEJxoe68sUtqHJ1YhXv/7pKYP/9p1D5tJrruzJKYeoI=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
@@ -288,8 +288,6 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230613074724-7f63e2e314bc h1:cAc2kbRt3uqfS1qu203CU355njJpI7LOJQhFHfqvx/4=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230613074724-7f63e2e314bc/go.mod h1:Kzh4oTlJu1iYFNQcgAHgKIMvsvgC5LN2DlV/NHWCXZM=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.1.3 h1:1guchw824yg1CwjredY8pnzcE0SG+sfNzFY5CUYWgE4=
 github.com/owenrumney/go-sarif/v2 v2.1.3/go.mod h1:MSqMMx9WqlBSY7pXoOZWgEsVB4FDNfhcaXDA1j6Sr+w=

@@ -1,11 +1,15 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	clitool "github.com/urfave/cli/v2"
+	"os"
 )
 
 type FrogbotCommand interface {
@@ -13,17 +17,29 @@ type FrogbotCommand interface {
 	Run(config utils.RepoAggregator, client vcsclient.VcsClient) error
 }
 
-func Exec(command FrogbotCommand, name string) error {
-	// Get frogbotUtils the contains the config, server and VCS client
+func Exec(command FrogbotCommand, name string) (err error) {
+	// Get frogbotUtils that contains the config, server and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
 	frogbotUtils, err := utils.GetFrogbotUtils()
 	if err != nil {
 		return err
 	}
-	// Download extractors if the jfrog releases repo environment variable is set
-	releasesRepo := frogbotUtils.Repositories[0].JfrogReleasesRepo
-	if err = utils.DownloadExtractorsFromRemoteIfNeeded(frogbotUtils.ServerDetails, "", releasesRepo); err != nil {
+	// Build the server configuration file
+	previousJfrogHomeDir, currentJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotUtils.ServerDetails)
+	if err != nil {
 		return err
+	}
+	defer func() {
+		err = errors.Join(err, os.Setenv(utils.JfrogHomeDirEnv, previousJfrogHomeDir), fileutils.RemoveTempDir(currentJFrogHomeDir))
+	}()
+	previousReleasesRepoEnv := os.Getenv(coreutils.ReleasesRemoteEnv)
+	if frogbotUtils.Repositories[0].JfrogReleasesRepo != "" {
+		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotUtils.Repositories[0].JfrogReleasesRepo)); err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, os.Setenv(coreutils.ReleasesRemoteEnv, previousReleasesRepoEnv))
+		}()
 	}
 	// Send a usage report
 	usageReportSent := make(chan error)
