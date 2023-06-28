@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.9.6
-	github.com/jfrog/froggit-go v1.7.3
+	github.com/jfrog/froggit-go v1.8.0
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.36.0
 	github.com/jfrog/jfrog-client-go v1.30.1
@@ -38,7 +38,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/forPelevin/gomoji v1.1.8 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f // indirect
+	github.com/gfleury/go-bitbucket-v1 v0.0.0-20230626192437-8d7be5866751 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/gocarina/gocsv v0.0.0-20230406101422-6445c2b15027 // indirect
@@ -118,5 +118,3 @@ require (
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230518114837-fe6a826d5001
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230611131847-a3b84a9004c3
-
-// replace github.com/jfrog/gofrog => github.com/jfrog/gofrog v1.2.6-0.20230418122323-2bf299dd6d27
