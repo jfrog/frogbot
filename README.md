@@ -255,7 +255,8 @@ Supported package management tools:
 ![](./images/fix-pr.png)
 
 ### Adding Security Alerts
-For GitHub repositories, issues that are found during Frogbot's periodic scans are also added to the [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) view in the UI. The following alert types are supported:
+For GitHub repositories, issues that are found during Frogbot's periodic scans are also added to the [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) view in the UI. 
+The following alert types are supported:
 
 #### 1. CVEs on vulnerable depedencies
 ![](./images/github-code-scanning.png)
