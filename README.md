@@ -19,8 +19,6 @@
 - [🤖 About JFrog Frogbot](#-about-jfrog-frogbot)
 - [🖥️ Installing Frogbot](#️-installing-frogbot)
 - [🚥 Using Frogbot](#-using-frogbot)
-  - [Scanning pull requests](#scanning-pull-requests)
-  - [Scanning repositories and fixing issues](#scanning-repositories-and-fixing-issues)
 - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
 - [🔥 Reporting issues](#-reporting-issues)
 - [💻 Contributions](#-contributions)
@@ -109,7 +107,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <details>
   <summary>Scanning pull requests</summary>
 
-#### General
+### General
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
@@ -126,7 +124,7 @@ Supported package management tools:
 - Poetry
 - Yarn 2
 
-#### How to use Pull Request scanning?
+### How to use Pull Request scanning?
 
   <details>
     <summary>Azure Repos</summary>
@@ -210,23 +208,23 @@ Supported package management tools:
 
   </details>
 
-#### 👮 Security note for pull requests scanning
+### 👮 Security note for pull requests scanning
 
 When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's approval before scanning newly opened pull requests. Using Frogbot with these platforms, however, isn't recommended for open-source projects.
 
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
-#### Scan results
+### Scan results
 
 Frogbot adds the scan results to the pull request in the following format:
 
-##### 👍 No issues
+#### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBanner.png)](#-no-issues)
 
-##### 👎 Issues were found
+#### 👎 Issues were found
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
@@ -240,24 +238,10 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 </details>
 
 <details>
-  <summary>Scanning repositories and fixing issues</summary>
+  <summary>Scanning repositories</summary>
 
-Frogbot scans your Git repository and automatically opens pull requests for upgrading vulnerable dependencies to a version with a fix.
-
-![](./images/fix-pr.png)
-
-For GitHub repositories, Frogbot also adds [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) which you can view in the GitHub UI:
-
-![](./images/github-code-scanning.png)
-
-![](./images/github-code-scanning-content.png)
-
-![](./images/github-code-scanning-secrets-content.png)
-
-![](./images/github-code-scanning-iac-content.png)
-
-Frogbot uses [JFrog Xray](https://jfrog.com/xray/) for the scanning. The scanning is triggered following commits that are pushed to the repository.
-
+### Automatic pull requests creation
+Frogbot scans your Git repositories periodically and automatically creates pull requests for upgrading vulnerable dependencies to a version with a fix.
 Supported package management tools:
 
 - Go
@@ -267,6 +251,22 @@ Supported package management tools:
 - Pipenv
 - Poetry
 - Yarn 2
+
+![](./images/fix-pr.png)
+
+### Adding Security Alerts
+For GitHub repositories, issues that are found during Frogbot's periodic scans are also added to the [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) view in the UI. The following alert types are supported:
+
+#### 1. CVEs on vulnerable depedencies
+![](./images/github-code-scanning.png)
+
+![](./images/github-code-scanning-content.png)
+
+#### 2. Secrets that are exposed in the code (for GitHub only))
+![](./images/github-code-scanning-iac-content.png)
+
+#### 3. Infrastructure as Code issues  
+![](./images/github-code-scanning-secrets-content.png)
 
 </details>
 
