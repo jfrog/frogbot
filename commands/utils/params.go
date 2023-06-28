@@ -211,8 +211,8 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
-		if branchTemplateErr := validateHashPlaceHolder(branchTemplate); branchTemplateErr != nil {
-			return branchTemplateErr
+		if err = validateHashPlaceHolder(branchTemplate); err != nil {
+			return
 		}
 		g.BranchNameTemplate = branchTemplate
 	}
@@ -236,11 +236,7 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 }
 
 func validateHashPlaceHolder(template string) error {
-	if template == "" {
-		// Empty template is valid, will be replaced with default.
-		return nil
-	}
-	if !strings.Contains(template, BranchHashPlaceHolder) {
+	if template != "" && !strings.Contains(template, BranchHashPlaceHolder) {
 		return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
 	}
 	return nil
@@ -434,7 +430,7 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
-		return &ErrMissingEnv{envKey}
+		return &ErrMissingEnv{VariableName: envKey}
 	}
 	return nil
 }
