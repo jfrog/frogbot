@@ -98,7 +98,6 @@ func (p *Project) setDefaultsIfNeeded() error {
 	if p.Repository == "" {
 		p.Repository = getTrimmedEnv(DepsRepoEnv)
 	}
-
 	return nil
 }
 
@@ -478,7 +477,6 @@ func extractClientServerParams() (*coreconfig.ServerDetails, *Git, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
 	git := Git{
 		ClientInfo:     *clientInfo,
 		AggregateFixes: AggregateFixesDefaultValue,

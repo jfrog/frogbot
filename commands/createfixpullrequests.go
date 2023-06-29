@@ -270,8 +270,6 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 	}
 	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
-	log.Info("THIS IS BODY1!")
-	log.Info(prBody)
 	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
 }
 
