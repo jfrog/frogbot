@@ -196,7 +196,6 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.False(t, scan.IncludeAllVulnerabilities)
 	assert.False(t, scan.FixableOnly)
 	assert.Empty(t, scan.MinSeverity)
-	assert.Empty(t, scan.JfrogReleasesRepo)
 	assert.True(t, *scan.FailOnSecurityIssues)
 	assert.Len(t, scan.Projects, 1)
 	project := scan.Projects[0]

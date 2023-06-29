@@ -32,9 +32,10 @@ func Exec(command FrogbotCommand, name string) (err error) {
 	defer func() {
 		err = errors.Join(err, os.Setenv(utils.JfrogHomeDirEnv, previousJfrogHomeDir), fileutils.RemoveTempDir(currentJFrogHomeDir))
 	}()
+	// Set releases remote repository env if needed
 	previousReleasesRepoEnv := os.Getenv(coreutils.ReleasesRemoteEnv)
-	if frogbotUtils.Repositories[0].JfrogReleasesRepo != "" {
-		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotUtils.Repositories[0].JfrogReleasesRepo)); err != nil {
+	if frogbotUtils.ReleasesRepo != "" {
+		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotUtils.ReleasesRepo)); err != nil {
 			return
 		}
 		defer func() {

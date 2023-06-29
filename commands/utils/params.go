@@ -35,6 +35,7 @@ type FrogbotUtils struct {
 	Repositories  RepoAggregator
 	ServerDetails *coreconfig.ServerDetails
 	Client        vcsclient.VcsClient
+	ReleasesRepo  string
 }
 
 type RepoAggregator []Repository
@@ -107,7 +108,6 @@ type Scan struct {
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
-	JfrogReleasesRepo         string
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -145,7 +145,6 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-	s.JfrogReleasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv)
 	return
 }
 
@@ -256,7 +255,7 @@ func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return &FrogbotUtils{Repositories: configAggregator, Client: client, ServerDetails: server}, err
+	return &FrogbotUtils{Repositories: configAggregator, Client: client, ServerDetails: server, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}, err
 }
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
