@@ -11,7 +11,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -358,9 +357,7 @@ func (gm *GitManager) dryRunClone(destination string) error {
 		return err
 	}
 	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
+	if err = fileutils.CopyDir(baseWd, destination, true, nil); err != nil {
 		return err
 	}
 	// Set the git repository to the new destination .git folder

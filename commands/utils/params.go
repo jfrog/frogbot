@@ -477,10 +477,7 @@ func extractClientServerParams() (*coreconfig.ServerDetails, *Git, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	git := Git{
-		ClientInfo:     *clientInfo,
-		AggregateFixes: AggregateFixesDefaultValue,
-	}
+	git := Git{ClientInfo: *clientInfo}
 	return &server, &git, nil
 }
 

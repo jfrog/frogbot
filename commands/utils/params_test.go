@@ -317,7 +317,6 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 			Branches:  []string{"master"},
 			RepoOwner: "jfrog",
 		},
-		AggregateFixes: AggregateFixesDefaultValue,
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -468,7 +467,6 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 			Branches:  []string{"master"},
 			RepoOwner: "jfrog",
 		},
-		AggregateFixes: AggregateFixesDefaultValue,
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -479,7 +477,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	repoAggregator, err := BuildRepoAggregator(fileContent, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
-	assert.Equal(t, repo.AggregateFixes, AggregateFixesDefaultValue)
+	assert.Equal(t, repo.AggregateFixes, false)
 	assert.True(t, repo.IncludeAllVulnerabilities)
 	assert.True(t, repo.FixableOnly)
 	assert.True(t, *repo.FailOnSecurityIssues)

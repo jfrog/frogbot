@@ -9,3 +9,7 @@ a6ac563174f69aeeda08c168df3ff3e9ec83c542 5a322ee37b9de0a98c723d7ac4cb580a36d0651
 df038a44930d2bbd645c1d71e6e318c33de56e28 5a322ee37b9de0a98c723d7ac4cb580a36d0651b delarea <eyalde@jfrog.com> 1687873794 +0300	checkout: moving from main to frogbot-update-depedencies-0
 5a322ee37b9de0a98c723d7ac4cb580a36d0651b 5a322ee37b9de0a98c723d7ac4cb580a36d0651b delarea <eyalde@jfrog.com> 1687873810 +0300	checkout: moving from frogbot-update-depedencies-0 to frogbot-update-dependencies-0
 5a322ee37b9de0a98c723d7ac4cb580a36d0651b df038a44930d2bbd645c1d71e6e318c33de56e28 delarea <eyalde@jfrog.com> 1687873818 +0300	checkout: moving from frogbot-update-dependencies-0 to main
+df038a44930d2bbd645c1d71e6e318c33de56e28 da8ddd8a58701fce64f21b0944e2b73c1031adf4 delarea <eyalde@jfrog.com> 1688039501 +0300	commit: add lock
+da8ddd8a58701fce64f21b0944e2b73c1031adf4 5a322ee37b9de0a98c723d7ac4cb580a36d0651b delarea <eyalde@jfrog.com> 1688039580 +0300	checkout: moving from main to frogbot-update-dependencies-0
+5a322ee37b9de0a98c723d7ac4cb580a36d0651b 273d9e5b579dec4cb75bade720c6521c202a3d0a delarea <eyalde@jfrog.com> 1688039600 +0300	commit: add lock
+273d9e5b579dec4cb75bade720c6521c202a3d0a da8ddd8a58701fce64f21b0944e2b73c1031adf4 delarea <eyalde@jfrog.com> 1688039601 +0300	checkout: moving from frogbot-update-dependencies-0 to main
