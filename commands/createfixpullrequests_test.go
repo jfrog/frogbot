@@ -190,7 +190,7 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			expectedDiff: "diff --git a/package.json b/package.json\nindex cf91c35..1ed85f0 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,7 +9,7 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mpath\": \"0.7.0\",\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
 				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
-				Target: vcsclient.BranchInfo{Name: "main"},
+				Target: vcsclient.BranchInfo{Name: "remoteMain"},
 			}},
 		},
 	}
@@ -211,9 +211,8 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			}
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
-			if test.mockPullRequestResponse != nil {
-				client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
-			}
+			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
+
 			// If were expecting a diff, we expect a call to update pull request.
 			if test.expectedDiff != "" {
 				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, mockUpdatePrBody, "", int(mockPrId), vcsutils.Open).Return(nil)
