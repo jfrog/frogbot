@@ -222,7 +222,7 @@ Frogbot adds the scan results to the pull request in the following format:
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.pn)](#-no-issues)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](#-no-issues)
 
 #### 👎 Issues were found
 
