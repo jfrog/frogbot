@@ -304,9 +304,6 @@ func TestPackageTypeFromScan(t *testing.T) {
 		t.Run(pkg.packageType.ToString(), func(t *testing.T) {
 			tmpDir, err := fileutils.CreateTempDir()
 			assert.NoError(t, err)
-			defer func() {
-				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-			}()
 			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
 			if pkg.packageType == coreutils.Gradle {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
@@ -329,6 +326,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
+			assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 		})
 	}
 }
