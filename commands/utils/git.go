@@ -141,11 +141,11 @@ func (gm *GitManager) getRemoteUrl() (string, error) {
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
-		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 		// Don't fail on dryRuns as we operate on local repositories,branch could be existing.
 		if gm.dryRun {
 			return nil
 		}
+		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
 	return err
 }
@@ -164,6 +164,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 }
 
 func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
 	if err != nil {
 		return err
@@ -244,12 +245,19 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) Push(force bool, branchName string) error {
+	log.Debug("Pushing branch:", branchName, "...")
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
 	}
+	// Convert SSH urls to HTTPS if needed
+	remoteUrl, err := gm.getRemoteUrl()
+	if err != nil {
+		return err
+	}
 	// Pushing to remote
 	if err := gm.repository.Push(&git.PushOptions{
+		RemoteURL:  remoteUrl,
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
 		Force:      force,

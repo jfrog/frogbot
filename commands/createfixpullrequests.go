@@ -231,18 +231,13 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	if isClean {
 		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", vulnDetails.ImpactedDependencyName)
 	}
-
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion)
-	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
-
-	log.Debug("Pushing branch:", fixBranchName, "...")
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion)
 	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 
@@ -254,11 +249,9 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
 func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []formats.VulnerabilityOrViolationRow) (err error) {
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage()
-	log.Debug("Running git add all and commit...")
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
-	log.Debug("Pushing branch:", fixBranchName, "...")
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
