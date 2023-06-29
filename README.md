@@ -29,7 +29,7 @@
 ### Overview
 
 JFrog Frogbot is a Git bot that scans your git repositories for security vulnerabilities.
-1. It scans pull requests right after they are opened, but before they are merged. This unique capability ensures that the code is scanned and can be fixed even before vulnerabilities are introduced in the code base.
+1. It scans pull requests immediately after they are opened but before they are merged. This process notifies you if the pull request is about to introduce new vulnerabilities to your code. This unique capability ensures that the code is scanned and can be fixed even before vulnerabilities are introduced into the codebase.
 2. It scans the Git repository periodically and creates pull requests with fixes for vulnerabilities that are detected.
 
 It supports the following Git providers:
@@ -40,7 +40,7 @@ It supports the following Git providers:
 
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data that is provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
-- **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for python and javascript code.
+- **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
 - **Secrets Detection**: For GitHUb repositories, detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
@@ -263,7 +263,7 @@ The following alert types are supported:
 
 ![](./images/github-code-scanning-content.png)
 
-#### 2. Secrets that are exposed in the code (for GitHub only))
+#### 2. Secrets that are exposed in the code (for GitHub only)
 ![](./images/github-code-scanning-iac-content.png)
 
 #### 3. Infrastructure as Code issues  
