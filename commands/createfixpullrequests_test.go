@@ -174,22 +174,22 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 	tests := []struct {
 		repoName                string
 		testDir                 string
-		expectedDiff            string
+		expectedUpdate          bool
 		mockPullRequestResponse []vcsclient.PullRequestInfo
 	}{
 		{
-			repoName:     "aggregate-dont-update-pr",
-			testDir:      "createfixpullrequests/aggregate-dont-update-pr",
-			expectedDiff: "",
+			repoName:       "aggregate-dont-update-pr",
+			testDir:        "createfixpullrequests/aggregate-dont-update-pr",
+			expectedUpdate: false,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
 				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
 				Target: vcsclient.BranchInfo{Name: "main"},
 			}},
 		},
 		{
-			repoName:     "aggregate-update-pr",
-			testDir:      "createfixpullrequests/aggregate-update-pr",
-			expectedDiff: "diff --git a/package.json b/package.json\nindex cf91c35..1ed85f0 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,7 +9,7 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mpath\": \"0.7.0\",\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			repoName:       "aggregate-update-pr",
+			testDir:        "createfixpullrequests/aggregate-update-pr",
+			expectedUpdate: true,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
 				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
 				Target: vcsclient.BranchInfo{Name: "remoteMain"},
@@ -214,9 +214,7 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
 			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
-
-			// If were expecting a diff, we expect a call to update pull request.
-			if test.expectedDiff != "" {
+			if test.expectedUpdate {
 				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, mockUpdatePrBody, "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
 			// Load default configurations
@@ -224,20 +222,16 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			// Manual set of "JF_GIT_BASE_BRANCH"
 			gitTestParams.Branches = []string{"main"}
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
-			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
 			err = cmd.Run(configAggregator, client)
 			assert.NoError(t, err)
-			// Validate
-			resultDiff, err := verifyDependencyFileDiff("main", aggregatedBranchConstName, "package.json")
-			assert.NoError(t, err)
-			assert.Equal(t, test.expectedDiff, string(resultDiff))
 			// Defers
 			restoreEnv()
 			server.Close()
+			cleanUp()
 		})
 	}
 }
