@@ -228,6 +228,7 @@ If no new vulnerabilities are found, Frogbot automatically adds the following co
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](#-issues)
 |                                                      SEVERITY                                                       | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
 |:-------------------------------------------------------------------------------------------------------------------:| :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | $\color{#3CB371}{\textsf{Not Applicable}}$ |minimist:1.2.5 | minimist:1.2.5 | [0.2.4]<br>[1.2.6] |
