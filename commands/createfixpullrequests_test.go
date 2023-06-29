@@ -174,7 +174,7 @@ func TestGetMinimalFixVersion(t *testing.T) {
 }
 
 func TestCreateVulnerabilitiesMap(t *testing.T) {
-	cfp := &CreateFixPullRequestsCmd{} // Replace with your struct initialization
+	cfp := &CreateFixPullRequestsCmd{}
 
 	testCases := []struct {
 		name            string

@@ -66,7 +66,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	setGoGitCustomClient()
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
 	}
 	basicAuth := toBasicAuth(token, username)
 	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
