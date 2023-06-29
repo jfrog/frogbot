@@ -209,7 +209,11 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 		g.Branches = append(g.Branches, clientInfo.Branches...)
 	}
 	if g.BranchNameTemplate == "" {
-		g.BranchNameTemplate = getTrimmedEnv(BranchNameTemplateEnv)
+		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
+		if err = validateHashPlaceHolder(branchTemplate); err != nil {
+			return
+		}
+		g.BranchNameTemplate = branchTemplate
 	}
 	if g.CommitMessageTemplate == "" {
 		g.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
@@ -227,6 +231,13 @@ func (g *Git) setDefaultsIfNeeded(clientInfo *ClientInfo) (err error) {
 		}
 	}
 	return
+}
+
+func validateHashPlaceHolder(template string) error {
+	if template != "" && !strings.Contains(template, BranchHashPlaceHolder) {
+		return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
+	}
+	return nil
 }
 
 func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
@@ -417,7 +428,7 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
-		return &ErrMissingEnv{envKey}
+		return &ErrMissingEnv{VariableName: envKey}
 	}
 	return nil
 }

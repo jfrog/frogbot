@@ -34,6 +34,10 @@ const (
 	gitLabHttpsFormat          = "%s/%s/%s.git"
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
+
+	// Aggregate branches name should always be the same name.
+	// We use a const to replace in the branch template ${BRANCH_NAME_HASH}
+	constAggregatedHash = "0"
 )
 
 type GitManager struct {
@@ -76,7 +80,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
 }
 
-func (gm *GitManager) Checkout(branchName string) error {
+func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, false)
 	if err != nil {
 		err = fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
@@ -320,17 +324,14 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates unique branch name constructed by all the vulnerable packages.
-func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*VulnerabilityDetails) (fixBranchName string, err error) {
-	hash, err := fixVersionsMapToMd5Hash(versionsMap)
-	if err != nil {
-		return
-	}
+// GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
+// and to ensure that there is only one Frogbot branch in aggregated mode.
+func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -371,6 +372,27 @@ func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 	default:
 		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
 	}
+}
+
+func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
+	var checkoutConfig *git.CheckoutOptions
+	if gm.dryRun {
+		// On dry runs we mimic remote as local branches.
+		checkoutConfig = &git.CheckoutOptions{
+			Branch: plumbing.NewBranchReferenceName(branchName),
+			Force:  true,
+		}
+	} else {
+		checkoutConfig = &git.CheckoutOptions{
+			Branch: plumbing.NewRemoteReferenceName(gm.remoteName, branchName),
+			Force:  true,
+		}
+	}
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(checkoutConfig)
 }
 
 func toBasicAuth(token, username string) *githttp.BasicAuth {
