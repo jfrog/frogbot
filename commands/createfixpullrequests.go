@@ -250,10 +250,8 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion)
+	pullRequestTitle, prBody := cfp.preparePullRequestDetails([]formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
 	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
-
-	prBody := cfp.OutputWriter.VulnerabilitiesContent([]formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
 
@@ -267,7 +265,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle, prBody := cfp.prepareAggregatedPullRequestDetails(vulnerabilities)
+	pullRequestTitle, prBody := cfp.preparePullRequestDetails(vulnerabilities)
 	if pullRequestInfo == nil {
 		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
@@ -276,12 +274,18 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
 }
 
-func (cfp *CreateFixPullRequestsCmd) prepareAggregatedPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (pullRequestTitle string, prBody string) {
-	pullRequestTitle = utils.AggregatedPullRequestTitleTemplate
-	if cfp.dryRun {
-		return
+func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (pullRequestTitle string, prBody string) {
+	if cfp.dryRun && cfp.aggregateFixes {
+		// For testings, don't compare pull request body as order changes.
+		return utils.AggregatedPullRequestTitleTemplate, ""
 	}
 	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)
+	if cfp.aggregateFixes {
+		pullRequestTitle = utils.AggregatedPullRequestTitleTemplate
+	} else {
+		vulnDetails := vulnerabilities[0]
+		pullRequestTitle = cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixedVersions[0])
+	}
 	return
 }
 
