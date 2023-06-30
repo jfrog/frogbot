@@ -25,7 +25,6 @@ import (
 
 const (
 	aggregatedBranchConstName = "frogbot-update-dependencies-0"
-	mockUpdatePrBody          = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | $\\color{}{\\textsf{Undetermined}}$ |mpath:0.7.0 | mpath:0.7.0 | 0.8.4 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | $\\color{}{\\textsf{Undetermined}}$ |mongoose:5.10.10 | mongoose:5.10.10 | 5.13.15 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>mpath 0.7.0</b> </summary>\n<br>\n\n- **Severity:** 💀 Critical\n- **Package Name:** mpath\n- **Current Version:** 0.7.0\n- **Fixed Version:** 0.8.4\n- **CVEs:** CVE-2021-23438\n\n**Description:**\n\nThis affects the package mpath before 0.8.4. A type confusion vulnerability can lead to a bypass of CVE-2018-16490. In particular, the condition ignoreProperties.indexOf(parts[i]) !== -1 returns -1 if parts[i] is ['__proto__']. This is because the method that has been called if the input is an array is Array.prototype.indexOf() and not String.prototype.indexOf(). They behave differently depending on the type of the input.\n\n\n</details>\n\n\n<details>\n<summary> <b>mongoose 5.10.10</b> </summary>\n<br>\n\n- **Severity:** 💀 Critical\n- **Package Name:** mongoose\n- **Current Version:** 5.10.10\n- **Fixed Version:** 5.13.15\n- **CVEs:** CVE-2022-2564\n\n**Description:**\n\nPrototype Pollution in GitHub repository automattic/mongoose prior to 6.4.6.\n\n\n</details>\n\n"
 )
 
 var testPackagesData = []struct {
@@ -164,11 +163,9 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 
 // Tests the lifecycle of aggregated pull request
 // No open pull request -> Open
-// Pull request already active  ->
-//
-//			Compare scan results for current and remote branch
-//	   	 	 Same scan results -> does thing.
-//	   	     Different scan results -> Update the pull request branch & body.
+// If Pull request already active, compare scan results for current and remote branch
+// Same scan results -> do nothing.
+// Different scan results -> Update the pull request branch & body.
 func TestAggregatePullRequestLifecycle(t *testing.T) {
 	mockPrId := int64(1)
 	tests := []struct {
@@ -200,8 +197,12 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 		t.Run(test.repoName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
+			defer restoreEnv()
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
+			defer func() {
+				server.Close()
+			}()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 			gitTestParams := utils.Git{ClientInfo: utils.ClientInfo{
 				GitProvider: vcsutils.GitHub,
@@ -215,23 +216,20 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			client := mockVcsClient(t)
 			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
-				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, mockUpdatePrBody, "", int(mockPrId), vcsutils.Open).Return(nil)
+				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, "", "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
 			// Load default configurations
 			var configData []byte
 			// Manual set of "JF_GIT_BASE_BRANCH"
 			gitTestParams.Branches = []string{"main"}
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
+			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
 			err = cmd.Run(configAggregator, client)
 			assert.NoError(t, err)
-			// Defers
-			restoreEnv()
-			server.Close()
-			cleanUp()
 		})
 	}
 }
@@ -326,7 +324,6 @@ func TestPackageTypeFromScan(t *testing.T) {
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
-			assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 		})
 	}
 }
