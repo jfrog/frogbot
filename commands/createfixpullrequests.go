@@ -173,13 +173,13 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 	if err != nil {
 		return
 	}
-	prInfo, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
+	existingPullRequestDetails, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 	if err != nil {
 		return
 	}
-	if prInfo != nil {
+	if existingPullRequestDetails != nil {
 		log.Info("Pull requests already exists, comparing scan results...")
-		identicalScanResults, err := cfp.compareScanResults(vulnerabilityDetails, prInfo)
+		identicalScanResults, err := cfp.compareScanResults(vulnerabilityDetails, existingPullRequestDetails)
 		if err != nil {
 			return err
 		}
@@ -189,7 +189,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 		}
 		log.Info("Scan results have changed since last run, updating existing pull request...")
 	}
-	return cfp.aggregateFixAndOpenPullRequest(vulnerabilityDetails, aggregatedFixBranchName, prInfo)
+	return cfp.aggregateFixAndOpenPullRequest(vulnerabilityDetails, aggregatedFixBranchName, existingPullRequestDetails)
 }
 
 // Handles possible error of update package operation
@@ -276,7 +276,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 
 func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (pullRequestTitle string, prBody string) {
 	if cfp.dryRun && cfp.aggregateFixes {
-		// For testings, don't compare pull request body as order changes.
+		// For testings, don't compare pull request body as scan results order changes.
 		return utils.AggregatedPullRequestTitleTemplate, ""
 	}
 	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)

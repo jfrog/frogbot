@@ -252,14 +252,8 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 		// On dry run do not push to any remote
 		return nil
 	}
-	// Convert SSH urls to HTTPS if needed
-	remoteUrl, err := gm.getRemoteUrl()
-	if err != nil {
-		return err
-	}
 	// Pushing to remote
 	if err := gm.repository.Push(&git.PushOptions{
-		RemoteURL:  remoteUrl,
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
 		Force:      force,
