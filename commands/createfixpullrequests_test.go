@@ -307,6 +307,9 @@ func TestPackageTypeFromScan(t *testing.T) {
 		projectPath := filepath.Join("testdata", "projects", pkg.packageType.ToString())
 		t.Run(pkg.packageType.ToString(), func(t *testing.T) {
 			tmpDir, err := fileutils.CreateTempDir()
+			defer func() {
+				err = fileutils.RemoveTempDir(tmpDir)
+			}()
 			assert.NoError(t, err)
 			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
 			if pkg.packageType == coreutils.Gradle {
