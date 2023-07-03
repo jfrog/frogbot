@@ -39,7 +39,18 @@ func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, 
 	err = fileutils.CopyDir(filepath.Join("testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 
-	restoreDir, err := Chdir(filepath.Join(tmpDir, projectName))
+	// Renames test git folder to .git
+	currentDir := filepath.Join(tmpDir, projectName)
+	testGitFolderPath := filepath.Join(currentDir, "git")
+	exists, err := fileutils.IsDirExists(testGitFolderPath, false)
+	assert.NoError(t, err)
+	if exists {
+		err = fileutils.CopyDir(testGitFolderPath, filepath.Join(currentDir, ".git"), true, []string{})
+		assert.NoError(t, err)
+		err = fileutils.RemoveTempDir(testGitFolderPath)
+		assert.NoError(t, err)
+	}
+	restoreDir, err := Chdir(currentDir)
 	assert.NoError(t, err)
 	return tmpDir, func() {
 		assert.NoError(t, restoreDir())

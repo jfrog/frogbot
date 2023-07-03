@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -85,6 +86,7 @@ func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
 	if err != nil {
 		err = fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
 	}
+	log.Debug("Running git checkout to local branch:", branchName)
 	return err
 }
 
@@ -138,8 +140,13 @@ func (gm *GitManager) getRemoteUrl() (string, error) {
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
+	log.Debug("Creating branch", branchName, "...")
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
+		// Don't fail on dryRuns as we operate on local repositories,branch could be existing.
+		if gm.dryRun {
+			return nil
+		}
 		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
 	return err
@@ -159,6 +166,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 }
 
 func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
 	if err != nil {
 		return err
@@ -218,6 +226,9 @@ func (gm *GitManager) commit(commitMessage string) error {
 }
 
 func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
+	if gm.dryRun {
+		return false, nil
+	}
 	remote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
 		return false, errorutils.CheckError(err)
@@ -236,6 +247,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) Push(force bool, branchName string) error {
+	log.Debug("Pushing branch:", branchName, "...")
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
@@ -342,8 +354,9 @@ func (gm *GitManager) dryRunClone(destination string) error {
 		return err
 	}
 	// Copy all the current directory content to the destination path
-	err = fileutils.CopyDir(baseWd, destination, true, nil)
-	if err != nil {
+	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
+	exclude := []string{filepath.Base(destination)}
+	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
 		return err
 	}
 	// Set the git repository to the new destination .git folder
@@ -388,6 +401,7 @@ func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
 			Force:  true,
 		}
 	}
+	log.Debug("Running git checkout to remote branch:", branchName)
 	worktree, err := gm.repository.Worktree()
 	if err != nil {
 		return err
