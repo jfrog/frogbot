@@ -1,0 +1,9 @@
+- params:
+    git:
+      repoName: test-proj-no-vul
+      branches:
+        - master
+    scan:
+      projects:
+        - workingDirs:
+            - .
