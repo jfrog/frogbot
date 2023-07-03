@@ -178,16 +178,16 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 		return
 	}
 	if existingPullRequestDetails != nil {
-		log.Info("Pull requests already exists, comparing scan results...")
+		log.Info("Aggregated pull request already exists, verifying if update is needed...")
 		identicalScanResults, err := cfp.compareScanResults(vulnerabilityDetails, existingPullRequestDetails)
 		if err != nil {
 			return err
 		}
 		if identicalScanResults {
-			log.Info("The scan results have not changed since the last Frogbot run")
-			return nil
+			log.Info("The existing pull request is in sync with the latest Xray scan, and no further updates are required.")
+			return err
 		}
-		log.Info("Scan results have changed since last run, updating existing pull request...")
+		log.Info("The existing pull request is not in sync with the latest Xray scan, updating pull request...")
 	}
 	return cfp.aggregateFixAndOpenPullRequest(vulnerabilityDetails, aggregatedFixBranchName, existingPullRequestDetails)
 }
@@ -276,7 +276,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 
 func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (pullRequestTitle string, prBody string) {
 	if cfp.dryRun && cfp.aggregateFixes {
-		// For testings, don't compare pull request body as scan results order changes.
+		// For testings, don't compare pull request body as scan results order may change.
 		return utils.AggregatedPullRequestTitleTemplate, ""
 	}
 	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)
@@ -394,6 +394,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *ut
 
 // Computes the MD5 hash of a vulnerabilitiesMap originated from the remote branch scan results
 func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(remoteBranchName string) (hash string, err error) {
+	log.Debug("Scanning remote branch", remoteBranchName)
 	if err = cfp.gitManager.CheckoutRemoteBranch(remoteBranchName); err != nil {
 		return
 	}
@@ -424,9 +425,11 @@ func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName
 	}
 	for _, pr := range list {
 		if pr.Source.Name == branchName {
+			log.Debug("Found pull request from source branch ", branchName)
 			return &pr, nil
 		}
 	}
+	log.Debug("No pull request found from source branch ", branchName)
 	return nil, nil
 }
 
