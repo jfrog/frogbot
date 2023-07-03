@@ -67,6 +67,12 @@ var testPackagesData = []struct {
 	},
 }
 
+// These tests utilize pre-prepared git folders that correspond to specific use cases.
+// To modify these tests, you can change the folder name from "git"
+// to ".git",make the necessary changes,and then rename it back to "git".
+// Afterward, add the changes to the main repository.
+// It is crucial to maintain the desired state of the git repository.
+// Make sure it is checked out to the main branch, replicating an actual run.
 func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 	tests := []struct {
 		repoName           string

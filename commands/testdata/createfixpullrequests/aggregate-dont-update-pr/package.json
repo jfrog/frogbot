@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "uuid": "^9.0.0",
-    "mongoose":"5.10.10",
     "mpath": "0.7.0"
   }
 }
