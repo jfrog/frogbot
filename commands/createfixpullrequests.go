@@ -416,8 +416,6 @@ func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(remoteBranchName st
 	return utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesMap)
 }
 
-// Retrieves the ID of an open pull request by source branch name.
-// Returns -1 if there is no open pull request.
 func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName string) (prInfo *vcsclient.PullRequestInfo, err error) {
 	list, err := cfp.details.Client().ListOpenPullRequests(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
 	if err != nil {
