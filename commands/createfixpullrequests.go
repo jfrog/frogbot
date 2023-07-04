@@ -152,8 +152,8 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
-		if err = cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); err != nil {
-			return
+		if e := cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); e != nil {
+			return errors.Join(err, e)
 		}
 	}
 	return

@@ -112,12 +112,14 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
+			Severity:                  "Critical",
 			ImpactedDependencyName:    "Dependency1",
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			ImpactedDependencyVersion: "1.0.0",
 		},
 		{
+			Severity:                  "High",
 			ImpactedDependencyName:    "Dependency2",
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},

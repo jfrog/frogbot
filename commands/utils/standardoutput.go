@@ -151,9 +151,10 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !so.entitledForJas {
 		msg =
-			`<div align="center">
+			`
+<div align="center">
 
-**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
 
 </div>
 `

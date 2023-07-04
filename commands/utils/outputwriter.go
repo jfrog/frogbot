@@ -8,34 +8,6 @@ import (
 	"strings"
 )
 
-const vulnerabilityDetailsComment = `
-- **Severity:** %s %s
-- **Package Name:** %s
-- **Current Version:** %s
-- **Fixed Version:** %s
-- **CVEs:** %s
-
-**Description:**
-
-%s
-`
-const vulnerabilityDetailsCommentWithJas = `
-- **Severity:** %s %s
-- **Contextual Analysis:** %s
-- **Package Name:** %s
-- **Current Version:** %s
-- **Fixed Version:** %s
-- **CVEs:** %s
-
-**Description:**
-
-%s
-
-**Remediation:**
-
-%s
-`
-
 var applicabilityColorMap = map[string]string{
 	"applicable":     "#FF7377",
 	"not applicable": "#3CB371",
@@ -71,6 +43,11 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	}
 }
 
+type descriptionBullet struct {
+	title string
+	value string
+}
+
 func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
 	var cves []string
 	for _, cve := range vulnerabilityDetails.Cves {
@@ -79,26 +56,36 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 	if vulnerabilityDetails.JfrogResearchInformation == nil {
 		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
 	}
-	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
-		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
-			utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-			vulnerabilityDetails.Severity,
-			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
-			vulnerabilityDetails.ImpactedDependencyName,
-			vulnerabilityDetails.ImpactedDependencyVersion,
-			strings.Join(vulnerabilityDetails.FixedVersions, ","),
-			strings.Join(cves, ", "),
-			vulnerabilityDetails.JfrogResearchInformation.Details,
-			vulnerabilityDetails.JfrogResearchInformation.Remediation)
+
+	descriptionBullets := []descriptionBullet{
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(), vulnerabilityDetails.Severity)},
+		{title: "**Contextual Analysis:**", value: formattedApplicabilityText(vulnerabilityDetails.Applicable, provider)},
+		{title: "**Package Name:**", value: vulnerabilityDetails.ImpactedDependencyName},
+		{title: "**Current Version:**", value: vulnerabilityDetails.ImpactedDependencyVersion},
+		{title: "**Fixed Version:**", value: strings.Join(vulnerabilityDetails.FixedVersions, ",")},
+		{title: "**CVEs:**", value: strings.Join(cves, ", ")},
 	}
-	return fmt.Sprintf(vulnerabilityDetailsComment,
-		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-		vulnerabilityDetails.Severity,
-		vulnerabilityDetails.ImpactedDependencyName,
-		vulnerabilityDetails.ImpactedDependencyVersion,
-		strings.Join(vulnerabilityDetails.FixedVersions, ","),
-		strings.Join(cves, ", "),
-		vulnerabilityDetails.JfrogResearchInformation.Details)
+
+	var descriptionBuilder strings.Builder
+	descriptionBuilder.WriteString("\n")
+	// Write the bullets of the description
+	for _, bullet := range descriptionBullets {
+		if strings.TrimSpace(bullet.value) != "" {
+			descriptionBuilder.WriteString(fmt.Sprintf("- %s %s\n", bullet.title, bullet.value))
+		}
+	}
+
+	// Write description if exists:
+	if vulnerabilityDetails.JfrogResearchInformation.Details != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnerabilityDetails.JfrogResearchInformation.Details))
+	}
+
+	// Write remediation if exists
+	if vulnerabilityDetails.JfrogResearchInformation.Remediation != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnerabilityDetails.JfrogResearchInformation.Remediation))
+	}
+
+	return descriptionBuilder.String()
 }
 
 func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
@@ -138,6 +125,9 @@ func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) st
 }
 
 func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) string {
+	if text == "" {
+		return ""
+	}
 	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
 	var formattedText string
 	switch provider {
