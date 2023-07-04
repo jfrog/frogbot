@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/froggit-go v1.8.1
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.36.0
-	github.com/jfrog/jfrog-client-go v1.30.1
+	github.com/jfrog/jfrog-client-go v1.31.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.1
@@ -113,6 +113,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => ../jfrog-cli-core
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230704060517-45dd4f9bdda9
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230611131847-a3b84a9004c3
