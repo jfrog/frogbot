@@ -400,6 +400,7 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	assert.NoError(t, err)
 	firstRepo := configAggregator[0]
 	assert.Equal(t, "npm-repo", firstRepo.RepoName)
+	assert.Equal(t, "myemail@jfrog.com", firstRepo.EmailAuthor)
 	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]
