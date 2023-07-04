@@ -291,9 +291,8 @@ func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (c
 	if err != nil && !missingConfigErr {
 		return nil, err
 	}
-
 	// Read the config from the current working dir
-	if len(configFileContent) == 0 && err == nil {
+	if len(configFileContent) == 0 {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 	}
 	return
