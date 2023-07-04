@@ -266,8 +266,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (audit
 		SetUseWrapper(*scanSetup.UseWrapper).
 		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(scanSetup.ServerDetails).
-		SetReleasesRepo(scanSetup.ReleasesRepo())
+		SetServerDetails(scanSetup.ServerDetails)
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
@@ -361,7 +360,7 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
-		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }

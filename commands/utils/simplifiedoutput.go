@@ -105,7 +105,7 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("\n\n---\n%s", CommentGeneratedByFrogbot)
+	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Seperator() string {
@@ -114,4 +114,12 @@ func (smo *SimplifiedOutput) Seperator() string {
 
 func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
+}
+
+func (smo *SimplifiedOutput) UntitledForJasMsg() string {
+	msg := ""
+	if !smo.entitledForJas {
+		msg = "\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+	}
+	return msg
 }

@@ -131,8 +131,6 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
----
-
 <div align="center">
 
 %s
@@ -147,4 +145,18 @@ func (so *StandardOutput) Seperator() string {
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
 	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+}
+
+func (so *StandardOutput) UntitledForJasMsg() string {
+	msg := ""
+	if !so.entitledForJas {
+		msg =
+			`<div align="center">
+
+**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+
+</div>
+`
+	}
+	return msg
 }

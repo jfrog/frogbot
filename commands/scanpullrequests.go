@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"sort"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 )
 
-var errPullRequestScan = "pull Request number %d in repository %s returned the following error: \n%s\n"
+var errPullRequestScan = "pull request %d in the %s repository returned the following error: \n%s"
 
 type ScanAllPullRequestsCmd struct {
 }
@@ -49,6 +50,8 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 			if e != nil {
 				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 			}
+		} else {
+			log.Info("Pull Request", pr.ID, "has already been scanned before. If you wish to scan it again, please comment \"rescan\".")
 		}
 	}
 

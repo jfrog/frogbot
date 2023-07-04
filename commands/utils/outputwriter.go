@@ -59,6 +59,7 @@ type OutputWriter interface {
 	SetEntitledForJas(entitled bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
+	UntitledForJasMsg() string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -68,14 +69,6 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	default:
 		return &StandardOutput{vcsProvider: provider}
 	}
-}
-
-func JasMsg(entitled bool) string {
-	msg := ""
-	if !entitled {
-		msg = "\n\n--- \n* **Frogbot** also supports **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
-	}
-	return msg
 }
 
 func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
