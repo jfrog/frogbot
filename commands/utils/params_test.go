@@ -287,7 +287,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
 		JFrogUserEnv:                 "admin",
 		JFrogPasswordEnv:             "password",
-		BranchNameTemplateEnv:        "branch",
+		BranchNameTemplateEnv:        "branch-${BRANCH_NAME_HASH}",
 		CommitMessageTemplateEnv:     "commit",
 		PullRequestTitleTemplateEnv:  "pr-title",
 		InstallCommandEnv:            "nuget restore",
@@ -306,15 +306,17 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	clientInfo := &ClientInfo{
-		GitProvider: vcsutils.GitHub,
-		VcsInfo: vcsclient.VcsInfo{
-			APIEndpoint: "endpoint.com",
-			Token:       "123456789",
+	gitParams := Git{
+		ClientInfo: ClientInfo{
+			GitProvider: vcsutils.GitHub,
+			VcsInfo: vcsclient.VcsInfo{
+				APIEndpoint: "endpoint.com",
+				Token:       "123456789",
+			},
+			RepoName:  "repoName",
+			Branches:  []string{"master"},
+			RepoOwner: "jfrog",
 		},
-		RepoName:  "repoName",
-		Branches:  []string{"master"},
-		RepoOwner: "jfrog",
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -322,7 +324,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, clientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -330,12 +332,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, clientInfo.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, clientInfo.Token, repo.Token)
-	assert.Equal(t, clientInfo.APIEndpoint, repo.APIEndpoint)
-	assert.ElementsMatch(t, clientInfo.Branches, repo.Branches)
+	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
+	assert.Equal(t, gitParams.Token, repo.Token)
+	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
+	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
 	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, clientInfo.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
 	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
@@ -454,15 +456,17 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	clientInfo := &ClientInfo{
-		GitProvider: vcsutils.GitHub,
-		VcsInfo: vcsclient.VcsInfo{
-			APIEndpoint: "endpoint.com",
-			Token:       "123456789",
+	gitParams := Git{
+		ClientInfo: ClientInfo{
+			GitProvider: vcsutils.GitHub,
+			VcsInfo: vcsclient.VcsInfo{
+				APIEndpoint: "endpoint.com",
+				Token:       "123456789",
+			},
+			RepoName:  "repoName",
+			Branches:  []string{"master"},
+			RepoOwner: "jfrog",
 		},
-		RepoName:  "repoName",
-		Branches:  []string{"master"},
-		RepoOwner: "jfrog",
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -470,10 +474,10 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, clientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(fileContent, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
-	assert.True(t, repo.AggregateFixes)
+	assert.Equal(t, repo.AggregateFixes, false)
 	assert.True(t, repo.IncludeAllVulnerabilities)
 	assert.True(t, repo.FixableOnly)
 	assert.True(t, *repo.FailOnSecurityIssues)

@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -34,6 +35,10 @@ const (
 	gitLabHttpsFormat          = "%s/%s/%s.git"
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
+
+	// Aggregate branches name should always be the same name.
+	// We use a const to replace in the branch template ${BRANCH_NAME_HASH}
+	constAggregatedHash = "0"
 )
 
 type GitManager struct {
@@ -66,7 +71,7 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	setGoGitCustomClient()
 	repository, err := git.PlainOpen(projectPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
 	}
 	basicAuth := toBasicAuth(token, username)
 	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
@@ -76,11 +81,12 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
 }
 
-func (gm *GitManager) Checkout(branchName string) error {
+func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
 	err := gm.createBranchAndCheckout(branchName, false)
 	if err != nil {
 		err = fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
 	}
+	log.Debug("Running git checkout to local branch:", branchName)
 	return err
 }
 
@@ -134,8 +140,13 @@ func (gm *GitManager) getRemoteUrl() (string, error) {
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
+	log.Debug("Creating branch", branchName, "...")
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
+		// Don't fail on dryRuns as we operate on local repositories,branch could be existing.
+		if gm.dryRun {
+			return nil
+		}
 		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
 	return err
@@ -155,6 +166,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 }
 
 func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
 	if err != nil {
 		return err
@@ -214,6 +226,9 @@ func (gm *GitManager) commit(commitMessage string) error {
 }
 
 func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
+	if gm.dryRun {
+		return false, nil
+	}
 	remote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
 		return false, errorutils.CheckError(err)
@@ -232,6 +247,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) Push(force bool, branchName string) error {
+	log.Debug("Pushing branch:", branchName, "...")
 	if gm.dryRun {
 		// On dry run do not push to any remote
 		return nil
@@ -320,17 +336,14 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-// Generates unique branch name constructed by all the vulnerable packages.
-func (gm *GitManager) GenerateAggregatedFixBranchName(versionsMap map[string]*VulnerabilityDetails) (fixBranchName string, err error) {
-	hash, err := fixVersionsMapToMd5Hash(versionsMap)
-	if err != nil {
-		return
-	}
+// GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
+// and to ensure that there is only one Frogbot branch in aggregated mode.
+func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -341,8 +354,9 @@ func (gm *GitManager) dryRunClone(destination string) error {
 		return err
 	}
 	// Copy all the current directory content to the destination path
-	err = fileutils.CopyDir(baseWd, destination, true, nil)
-	if err != nil {
+	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
+	exclude := []string{filepath.Base(destination)}
+	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
 		return err
 	}
 	// Set the git repository to the new destination .git folder
@@ -371,6 +385,28 @@ func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 	default:
 		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
 	}
+}
+
+func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
+	var checkoutConfig *git.CheckoutOptions
+	if gm.dryRun {
+		// On dry runs we mimic remote as local branches.
+		checkoutConfig = &git.CheckoutOptions{
+			Branch: plumbing.NewBranchReferenceName(branchName),
+			Force:  true,
+		}
+	} else {
+		checkoutConfig = &git.CheckoutOptions{
+			Branch: plumbing.NewRemoteReferenceName(gm.remoteName, branchName),
+			Force:  true,
+		}
+	}
+	log.Debug("Running git checkout to remote branch:", branchName)
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(checkoutConfig)
 }
 
 func toBasicAuth(token, username string) *githttp.BasicAuth {

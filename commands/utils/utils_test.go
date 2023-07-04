@@ -157,7 +157,7 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
-			hash, err := fixVersionsMapToMd5Hash(test.fixVersionMap)
+			hash, err := VulnerabilityDetailsToMD5Hash(test.fixVersionMap)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
 		})
