@@ -502,6 +502,42 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	}
 }
 
+func TestPreparePullRequestDetails(t *testing.T) {
+	cfp := CreateFixPullRequestsCmd{OutputWriter: &utils.StandardOutput{}, gitManager: &utils.GitManager{}}
+	vulnerabilities := []formats.VulnerabilityOrViolationRow{
+		{
+			Summary:                   "summary",
+			Severity:                  "High",
+			ImpactedDependencyName:    "package1",
+			ImpactedDependencyVersion: "1.0.0",
+			FixedVersions:             []string{"1.0.0", "2.0.0"},
+			Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
+		},
+	}
+	expectedPrBody := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVEs:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	prTitle, prBody := cfp.preparePullRequestDetails(vulnerabilities)
+	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+	vulnerabilities = append(vulnerabilities, formats.VulnerabilityOrViolationRow{
+		Summary:                   "summary",
+		Severity:                  "Critical",
+		ImpactedDependencyName:    "package2",
+		ImpactedDependencyVersion: "2.0.0",
+		FixedVersions:             []string{"2.0.0", "3.0.0"},
+		Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
+	})
+	cfp.aggregateFixes = true
+	expectedPrBody = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVEs:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n<details>\n<summary> <b>package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Version:** 2.0.0,3.0.0\n- **CVEs:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	prTitle, prBody = cfp.preparePullRequestDetails(vulnerabilities)
+	assert.Equal(t, "[🐸 Frogbot] Update dependencies versions", prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+	cfp.OutputWriter = &utils.SimplifiedOutput{}
+	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary \n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High |  | package1:1.0.0 | 1.0.0, 2.0.0 |\n| Critical |  | package2:2.0.0 | 2.0.0, 3.0.0 |\n\n---\n### 👇 Details\n---\n\n\n#### package1 1.0.0\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVEs:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n#### package2 2.0.0\n\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Version:** 2.0.0,3.0.0\n- **CVEs:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	prTitle, prBody = cfp.preparePullRequestDetails(vulnerabilities)
+	assert.Equal(t, "[🐸 Frogbot] Update dependencies versions", prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+}
+
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {

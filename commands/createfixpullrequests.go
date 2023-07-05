@@ -276,7 +276,7 @@ func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities [
 		// For testings, don't compare pull request body as scan results order may change.
 		return utils.AggregatedPullRequestTitleTemplate, ""
 	}
-	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities) + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
+	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
 		pullRequestTitle = utils.AggregatedPullRequestTitleTemplate
 	} else {
