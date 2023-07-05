@@ -174,11 +174,13 @@ func Md5Hash(values ...string) (string, error) {
 
 // Generates MD5Hash from a vulnerabilityDetails
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func VulnerabilityDetailsToMD5Hash(vulnerabilityDetails map[string]*VulnerabilityDetails) (string, error) {
+func VulnerabilityDetailsToMD5Hash(vulnerabilitiesMap map[string]map[string]*VulnerabilityDetails) (string, error) {
 	h := crypto.MD5.New()
-	keys := make([]string, 0, len(vulnerabilityDetails))
-	for k, v := range vulnerabilityDetails {
-		keys = append(keys, k+v.FixVersion)
+	var keys []string
+	for _, vulnerabilityDetails := range vulnerabilitiesMap {
+		for k, v := range vulnerabilityDetails {
+			keys = append(keys, k+v.FixVersion)
+		}
 	}
 	sort.Strings(keys)
 	for key, value := range keys {

@@ -502,6 +502,101 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	}
 }
 
+func TestGetRemoteBranchScanHash(t *testing.T) {
+	prBody := `
+[//]: <> (Hash: myhash4321)
+
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
+## 📦 Vulnerable Dependencies 
+
+### ✍️ Summary
+
+<div align="center">
+
+| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
+| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |
+
+</div>
+
+## 👇 Details
+
+
+<details>
+<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
+<br>
+
+- **Severity** 🔥 High
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/nats-io/nats-streaming-server
+- **Current Version:** v0.21.0
+- **Fixed Version:** [0.24.1]
+- **CVEs:** CVE-2022-24450
+
+
+</details>
+
+
+<details>
+<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>
+<br>
+
+- **Severity** 🔥 High
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/mholt/archiver/v3
+- **Current Version:** v3.5.1
+
+
+</details>
+
+
+<details>
+<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
+<br>
+
+- **Severity** 🎃 Medium
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/nats-io/nats-streaming-server
+- **Current Version:** v0.21.0
+- **Fixed Version:** [0.24.3]
+- **CVEs:** CVE-2022-26652
+
+
+</details>
+
+
+## 🛠️ Infrastructure as Code 
+
+<div align="center">
+
+
+| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |
+| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |
+
+</div>
+
+
+<div align="center">
+
+[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
+
+</div>
+`
+	cfp := &CreateFixPullRequestsCmd{}
+	result, err := cfp.getRemoteBranchScanHash(prBody)
+	assert.NoError(t, err)
+	assert.Equal(t, "myhash4321", result)
+	prBody = `
+random body
+`
+	result, err = cfp.getRemoteBranchScanHash(prBody)
+	assert.Error(t, err)
+}
+
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {

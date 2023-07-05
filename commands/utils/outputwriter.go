@@ -157,3 +157,7 @@ func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) stri
 	}
 	return formattedText
 }
+
+func MarkdownComment(text string) string {
+	return fmt.Sprintf("[comment]: <> (%s)\n", text)
+}
