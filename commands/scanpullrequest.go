@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"github.com/jfrog/gofrog/datastructures"
 	"os"
 	"os/exec"
@@ -27,7 +26,11 @@ const (
 	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 )
 
-type ScanPullRequestCmd struct{}
+type ScanPullRequestCmd struct {
+	gitManager     *utils.GitManager
+	dryRun         bool
+	dryRunRepoPath string
+}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -41,44 +44,25 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
-	if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
-		return err
-	}
-	return scanPullRequest(repoConfig, client)
-}
-
-// Verifies current branch and target branch are not the same.
-// The Current branch is the branch the action is triggered on.
-// The Target branch is the branch to open pull request to.
-func (cmd *ScanPullRequestCmd) verifyDifferentBranches(repoConfig *utils.Repository) error {
-	repo, err := git.PlainOpen(".")
+	gitManager, err := utils.NewGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
 	if err != nil {
 		return err
 	}
-	ref, err := repo.Head()
-	if err != nil {
+	cmd.gitManager = gitManager
+	pullRequestDetails, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
+	if err != nil || (pullRequestDetails.ID == 0 && pullRequestDetails.Target.Name == "") {
 		return err
 	}
-	currentBranch := ref.Name().Short()
-	defaultBranch := repoConfig.Branches[0]
-	if currentBranch == defaultBranch {
-		return fmt.Errorf(utils.ErrScanPullRequestSameBranches, currentBranch)
-	}
-	return nil
+	return cmd.scanPullRequest(repoConfig, &pullRequestDetails, client)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
-	// Validate scan params
-	if len(repoConfig.Branches) == 0 {
-		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
-	}
-
+func (cmd *ScanPullRequestCmd) scanPullRequest(repoConfig *utils.Repository, pullRequestDetails *vcsclient.PullRequestInfo, client vcsclient.VcsClient) error {
 	// Audit PR code
-	vulnerabilitiesRows, iacRows, err := auditPullRequest(repoConfig, client)
+	vulnerabilitiesRows, iacRows, err := cmd.auditPullRequest(repoConfig, pullRequestDetails, client)
 	if err != nil {
 		return err
 	}
@@ -98,22 +82,25 @@ func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) e
 	return err
 }
 
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
+func (cmd *ScanPullRequestCmd) auditPullRequest(repoConfig *utils.Repository, pullRequestDetails *vcsclient.PullRequestInfo, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	var iacRows []formats.IacSecretsRow
-	targetBranch := repoConfig.Branches[0]
+	targetBranch := pullRequestDetails.Target.Name
+	sourceBranch := pullRequestDetails.Source.Name
 	for i := range repoConfig.Projects {
+		// Prepare scan details
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
 			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 			SetMinSeverity(repoConfig.MinSeverity).
 			SetFixableOnly(repoConfig.FixableOnly)
-		sourceResults, err := auditSource(scanDetails)
+		// Audit source
+		sourceResults, err := cmd.scanByBranch(repoConfig, sourceBranch, scanDetails)
 		if err != nil {
 			return nil, nil, err
 		}
-		repoConfig.SetEntitledForJas(sourceResults.ExtendedScanResults.EntitledForJas)
+		// Handle includes all vulnerabilities
 		if repoConfig.IncludeAllVulnerabilities {
 			log.Info("Frogbot is configured to show all vulnerabilities")
 			allIssuesRows, err := getScanVulnerabilitiesRows(sourceResults)
@@ -125,8 +112,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 			continue
 		}
 		// Audit target code
-		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).SetBranch(targetBranch)
-		targetResults, err := auditTarget(scanDetails)
+		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+		targetResults, err := cmd.scanByBranch(repoConfig, targetBranch, scanDetails)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -139,6 +126,18 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	}
 	log.Info("Xray scan completed")
 	return vulnerabilitiesRows, iacRows, nil
+}
+
+func (cmd *ScanPullRequestCmd) scanByBranch(repoConfig *utils.Repository, branch string, scanDetails *utils.ScanDetails) (results *audit.Results, err error) {
+	if err = cmd.gitManager.CheckoutRemoteBranch(branch); err != nil {
+		return
+	}
+	results, err = auditSource(scanDetails)
+	if err != nil {
+		return
+	}
+	repoConfig.SetEntitledForJas(results.ExtendedScanResults.EntitledForJas)
+	return
 }
 
 func createNewIacRows(targetIacResults, sourceIacResults []xrayutils.IacOrSecretResult) []formats.IacSecretsRow {
@@ -259,24 +258,6 @@ func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 		fullPathWds = append(fullPathWds, baseWd)
 	}
 	return fullPathWds
-}
-
-func auditTarget(scanSetup *utils.ScanDetails) (auditResults *audit.Results, err error) {
-	// First download the target repo to temp dir
-	log.Info("Auditing the", scanSetup.Git.RepoName, "repository on the", scanSetup.Branch(), "branch")
-	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client(), scanSetup.Branch(), scanSetup.Git)
-	if err != nil {
-		return
-	}
-	// Cleanup
-	defer func() {
-		e := cleanup()
-		if err == nil {
-			err = e
-		}
-	}()
-	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
-	return runInstallAndAudit(scanSetup, fullPathWds...)
 }
 
 func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (auditResults *audit.Results, err error) {

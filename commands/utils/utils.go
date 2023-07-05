@@ -221,7 +221,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
 		return
 	}
-	log.Debug("Repository download completed")
+	log.Debug("repository download completed")
 	return
 }
 

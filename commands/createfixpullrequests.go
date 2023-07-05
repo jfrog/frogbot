@@ -13,7 +13,6 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
 	"os"
@@ -44,6 +43,12 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.RepoAggregator, 
 		return err
 	}
 	repository := configAggregator[0]
+
+	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, &repository.Git)
+	if err != nil {
+		return err
+	}
+	cfp.gitManager = gitManager
 	for _, branch := range repository.Branches {
 		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
@@ -121,21 +126,6 @@ func (cfp *CreateFixPullRequestsCmd) fixImpactedPackagesAndCreatePRs(scanResults
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) (err error) {
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
-	if err != nil {
-		return
-	}
-	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
-	if err != nil {
-		return
-	}
-	defer func() {
-		// On dry run don't delete the folder as we want to validate results.
-		if !cfp.dryRun {
-			err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
-		}
-	}()
-
 	if cfp.aggregateFixes {
 		return cfp.fixIssuesSinglePR(vulnerabilitiesMap)
 	}
@@ -286,29 +276,6 @@ func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities [
 		vulnDetails := vulnerabilities[0]
 		pullRequestTitle = cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixedVersions[0])
 	}
-	return
-}
-
-func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
-	if cfp.dryRunRepoPath != "" {
-		// On dry run, create the temp folder nested in the current folder
-		tempWd, err = os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
-	} else {
-		// Create temp working directory
-		tempWd, err = fileutils.CreateTempDir()
-	}
-	if err != nil {
-		return
-	}
-	log.Debug("Created temp working directory:", tempWd)
-
-	// Clone the content of the repo to the new working directory
-	if err = cfp.gitManager.Clone(tempWd, cfp.details.Branch()); err != nil {
-		return
-	}
-
-	// 'CD' into the temp working directory
-	restoreDir, err = utils.Chdir(tempWd)
 	return
 }
 

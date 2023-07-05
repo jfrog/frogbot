@@ -144,5 +144,7 @@ func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Reposit
 		Server:       repo.Server,
 		Params:       params,
 	}
-	return scanPullRequest(frogbotParams, client)
+
+	spr := ScanPullRequestCmd{}
+	return spr.scanPullRequest(frogbotParams, nil, client)
 }

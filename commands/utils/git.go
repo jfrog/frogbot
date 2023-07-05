@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -67,18 +65,74 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
+// NewGitManager initialize git manager in the current working dir
+// Checks if the current working dir is already a git repo
+// if not, attempts to clone from the provided info.
+func NewGitManager(dryRun bool, clonedRepoPath string, g *Git) (gm *GitManager, err error) {
 	setGoGitCustomClient()
-	repository, err := git.PlainOpen(projectPath)
+	basicAuth := toBasicAuth(g.Token, g.Username)
+	repository, err := git.PlainOpen(".")
+
+	// Not already cloned inside the repository.
 	if err != nil {
-		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
+		if err.Error() != "repository does not exist" {
+			return
+		}
+		if dryRun {
+			repo, cleanUp, err := g.dryRunClone(clonedRepoPath)
+			if err != nil {
+				return nil, err
+			}
+			defer func() {
+				err = cleanUp()
+			}()
+			repository = repo
+		} else {
+			cloneUrl, err := g.generateHTTPSCloneUrl()
+			if err != nil {
+				return nil, err
+			}
+			cloneOptions := &git.CloneOptions{
+				URL:  cloneUrl,
+				Auth: basicAuth,
+			}
+			repository, err = git.PlainClone(".", false, cloneOptions)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	basicAuth := toBasicAuth(token, username)
 	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
+	gm = &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: "origin", auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}
+	return
+}
+
+// dryRunClone clones an existing Repository from our testdata folder into the destination folder for testing purposes.
+// We should call this function when the current working directory is the Repository we want to clone.
+func (g *Git) dryRunClone(destination string) (*git.Repository, func() error, error) {
+	baseWd, err := os.Getwd()
+	if err != nil {
+		return nil, nil, err
+	}
+	// Copy all the current directory content to the destination path
+	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
+	exclude := []string{filepath.Base(destination)}
+	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
+		return nil, nil, err
+	}
+	// Set the git repository to the new destination .git folder
+	repository, err := git.PlainOpen(destination)
+	if err != nil {
+		return nil, nil, err
+	}
+	cleanUp := func() error {
+		restore, err := Chdir(baseWd)
+		return errors.Join(err, restore(), fileutils.RemoveTempDir(destination))
+	}
+	return repository, cleanUp, err
 }
 
 func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
@@ -88,55 +142,6 @@ func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
 	}
 	log.Debug("Running git checkout to local branch:", branchName)
 	return err
-}
-
-func (gm *GitManager) Clone(destinationPath, branchName string) error {
-	if gm.dryRun {
-		// "Clone" the repository from the testdata folder
-		return gm.dryRunClone(destinationPath)
-	}
-	gitRemoteUrl, err := gm.getRemoteUrl()
-	if err != nil {
-		return err
-	}
-	transport.UnsupportedCapabilities = []capability.Capability{
-		capability.ThinPack,
-	}
-	if branchName == "" {
-		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
-		branchName = "master"
-	}
-	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
-	cloneOptions := &git.CloneOptions{
-		URL:           gitRemoteUrl,
-		Auth:          gm.auth,
-		RemoteName:    gm.remoteName,
-		ReferenceName: getFullBranchName(branchName),
-	}
-	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
-	if err != nil {
-		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, gitRemoteUrl, err.Error())
-	}
-	gm.repository = repo
-	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gitRemoteUrl, destinationPath))
-	return nil
-}
-
-func (gm *GitManager) getRemoteUrl() (string, error) {
-	// Gets the remote repo url from the current .git dir
-	gitRemote, err := gm.repository.Remote(gm.remoteName)
-	if err != nil {
-		return "", fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
-	}
-	if len(gitRemote.Config().URLs) < 1 {
-		return "", errors.New("failed to find git remote URL")
-	}
-	remoteUrl := gitRemote.Config().URLs[0]
-	if strings.HasPrefix(remoteUrl, "https://") {
-		return remoteUrl, nil
-	}
-	// Handle SSH clone urls
-	return gm.generateHTTPSCloneUrl()
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
@@ -344,28 +349,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, e
 		branchFormat = AggregatedBranchNameTemplate
 	}
 	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
-}
-
-// dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
-// We should call this function when the current working directory is the repository we want to clone.
-func (gm *GitManager) dryRunClone(destination string) error {
-	baseWd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-		return err
-	}
-	// Set the git repository to the new destination .git folder
-	repo, err := git.PlainOpen(destination)
-	if err != nil {
-		return err
-	}
-	gm.repository = repo
-	return nil
 }
 
 // Construct HTTPS clone url from the provided git info.

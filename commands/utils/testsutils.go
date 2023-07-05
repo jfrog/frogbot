@@ -36,21 +36,24 @@ func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, 
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	err = fileutils.CopyDir(filepath.Join("testdata", testDir), tmpDir, true, []string{})
+	err = fileutils.CopyDir(filepath.Join("testdata", testDir+"/"+projectName), tmpDir, true, []string{})
 	assert.NoError(t, err)
 
 	// Renames test git folder to .git
-	currentDir := filepath.Join(tmpDir, projectName)
-	testGitFolderPath := filepath.Join(currentDir, "git")
+	testGitFolderPath := filepath.Join(tmpDir, "git")
 	exists, err := fileutils.IsDirExists(testGitFolderPath, false)
 	assert.NoError(t, err)
 	if exists {
-		err = fileutils.CopyDir(testGitFolderPath, filepath.Join(currentDir, ".git"), true, []string{})
+		err = fileutils.CopyDir(testGitFolderPath, filepath.Join(tmpDir, ".git"), true, []string{})
 		assert.NoError(t, err)
 		err = fileutils.RemoveTempDir(testGitFolderPath)
 		assert.NoError(t, err)
 	}
-	restoreDir, err := Chdir(currentDir)
+	baseWd, err := os.Getwd()
+	assert.NoError(t, err)
+	restoreDir, err := Chdir(baseWd)
+	assert.NoError(t, err)
+	err = os.Chdir(tmpDir)
 	assert.NoError(t, err)
 	return tmpDir, func() {
 		assert.NoError(t, restoreDir())

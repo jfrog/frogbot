@@ -32,7 +32,7 @@ func (ed *extractorDetails) downloadFromPath() string {
 	return filepath.Join(extractorsRepositoryPath, ed.remotePath, ed.fileName)
 }
 
-// DownloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote repository, if they do not yet exist on the file system.
+// DownloadExtractorsFromRemoteIfNeeded downloads build-info-extractors from a remote Repository, if they do not yet exist on the file system.
 func DownloadExtractorsFromRemoteIfNeeded(server *config.ServerDetails, extractorsLocalPath, releasesRepo string) (err error) {
 	if releasesRepo == "" {
 		return nil

@@ -199,6 +199,7 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	g.RepoOwner = git.RepoOwner
 	g.GitProvider = git.GitProvider
 	g.VcsInfo = git.VcsInfo
+	g.APIEndpoint = g.getDefaultApiEndpoint()
 	if g.RepoName == "" {
 		if git.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
@@ -232,6 +233,39 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		}
 	}
 	return
+}
+
+// Construct HTTPS clone url from the provided git info.
+// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
+// in case we encounter SSH clone url, we generate HTTPS url instead.
+func (g *Git) generateHTTPSCloneUrl() (url string, err error) {
+	switch g.GitProvider {
+	case vcsutils.GitHub:
+		return fmt.Sprintf(githubHttpsFormat, g.APIEndpoint, g.RepoOwner, g.RepoName), nil
+	case vcsutils.GitLab:
+		return fmt.Sprintf(gitLabHttpsFormat, g.APIEndpoint, g.RepoOwner, g.RepoName), nil
+	case vcsutils.BitbucketServer:
+		return fmt.Sprintf(bitbucketServerHttpsFormat, g.APIEndpoint, g.RepoOwner, g.RepoName), nil
+	case vcsutils.AzureRepos:
+		azureEndpointWithoutHttps := strings.Join(strings.Split(g.APIEndpoint, "https://")[1:], "")
+		return fmt.Sprintf(azureDevopsHttpsFormat, g.RepoOwner, azureEndpointWithoutHttps, g.Project, g.RepoName), nil
+	default:
+		return "", fmt.Errorf("unsupported version control provider: %s", g.GitProvider.String())
+	}
+}
+
+func (g *Git) getDefaultApiEndpoint() string {
+	switch g.GitProvider {
+	case vcsutils.GitHub:
+		return "https://github.com"
+	case vcsutils.GitLab:
+		return "https://gitlab.com"
+	case vcsutils.AzureRepos:
+		return "https://dev.azurerepos.com"
+	default:
+		// Bitbucket server, for example, doesn't have a default as this is on perm
+		return ""
+	}
 }
 
 func validateHashPlaceHolder(template string) error {
@@ -283,7 +317,7 @@ func getConfigAggregator(client vcsclient.VcsClient, gitParams *Git, server *cor
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
-// If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
+// If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target Repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (configFileContent []byte, err error) {
 	configFileContent, err = readConfigFromTarget(client, clientInfo)
@@ -320,7 +354,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParams *Git, server *corec
 }
 
 // unmarshalFrogbotConfigYaml uses the yaml.Unmarshaler interface to parse the yamlContent.
-// If there is no config file, the function returns a RepoAggregator with an empty repository.
+// If there is no config file, the function returns a RepoAggregator with an empty Repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
 		return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}, nil
@@ -530,7 +564,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
+// readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target Repository
 func readConfigFromTarget(client vcsclient.VcsClient, clientInfo *ClientInfo) (configContent []byte, err error) {
 	if clientInfo.RepoName != "" && clientInfo.RepoOwner != "" {
 		log.Debug("Downloading", FrogbotConfigFile, "from target", clientInfo.RepoOwner, "/", clientInfo.RepoName)

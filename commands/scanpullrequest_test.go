@@ -493,32 +493,6 @@ func TestScanPullRequest(t *testing.T) {
 	testScanPullRequest(t, testProjConfigPath, "test-proj", true)
 }
 
-func TestScanPullRequestSameBranchFail(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
-	defer restoreEnv()
-
-	// Create mock GitLab server
-	projectName := "test-same-branch-fail"
-
-	server := httptest.NewServer(createGitLabHandler(t, projectName))
-	defer server.Close()
-
-	configAggregator, client := prepareConfigAndClient(t, testSameBranchProjConfigPath, server, params)
-	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
-	defer cleanUp()
-
-	// Run "frogbot scan pull request"
-	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(configAggregator, client)
-	exceptedError := fmt.Errorf(utils.ErrScanPullRequestSameBranches, "main")
-	assert.Equal(t, exceptedError, err)
-
-	// Check env sanitize
-	err = utils.SanitizeEnv()
-	assert.NoError(t, err)
-	utils.AssertSanitizedEnv(t)
-}
-
 func TestScanPullRequestNoFail(t *testing.T) {
 	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
 }
@@ -547,9 +521,14 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
+	configAggregator, _ := prepareConfigAndClient(t, configPath, server, params)
 	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
+
+	// TODO this will require to create branch of pull requests in the test data
+	// TODO now this works on only mocks, change to work on gits.
+	client := mockVcsClient(t)
+	client.EXPECT().GetPullRequestByID(context.Background(), "jfrog", projectName, 1).Return(vcsclient.PullRequestInfo{}, nil)
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
