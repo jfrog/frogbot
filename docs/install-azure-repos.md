@@ -170,6 +170,10 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
             # The following values are accepted: Low, Medium, High or Critical
             # JF_MIN_SEVERITY: ""
+
+            # [Optional, Default: eco-system+frogbot@jfrog.com]
+            # Set the email of the commit author
+            # JF_GIT_EMAIL_AUTHOR: ""
          displayName: 'Download and Run Frogbot'   
          inputs:
            script: |

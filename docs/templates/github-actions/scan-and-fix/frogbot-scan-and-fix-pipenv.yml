@@ -1,5 +1,6 @@
 name: "Frogbot Scan and Fix"
 on:
+  workflow_dispatch:
   schedule:
     # The repository will be scanned once a day at 00:00 GMT.
     - cron: "0 0 * * *"
