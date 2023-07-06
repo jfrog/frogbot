@@ -8,8 +8,8 @@ require (
 	github.com/jfrog/build-info-go v1.9.6
 	github.com/jfrog/froggit-go v1.8.1
 	github.com/jfrog/gofrog v1.3.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.36.0
-	github.com/jfrog/jfrog-client-go v1.30.1
+	github.com/jfrog/jfrog-cli-core/v2 v2.37.1
+	github.com/jfrog/jfrog-client-go v1.31.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.1

@@ -137,6 +137,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitBaseBranchEnv:     "dev",
 		GitPullRequestIDEnv:  "1",
 		GitAggregateFixesEnv: "true",
+		GitEmailAuthorEnv:    "myemail@jfrog.com",
 		MinSeverityEnv:       "high",
 		FixableOnlyEnv:       "true",
 	})
@@ -164,7 +165,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "High", repo.MinSeverity)
 		assert.True(t, repo.FixableOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
-
+		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		for _, project := range repo.Projects {
 			testExtractAndAssertProjectParams(t, project)
@@ -191,6 +192,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
+	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
 	assert.False(t, configAggregator[0].AggregateFixes)
 	scan := configAggregator[0].Scan
 	assert.False(t, scan.IncludeAllVulnerabilities)
@@ -398,6 +400,7 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	assert.NoError(t, err)
 	firstRepo := configAggregator[0]
 	assert.Equal(t, "npm-repo", firstRepo.RepoName)
+	assert.Equal(t, "myemail@jfrog.com", firstRepo.EmailAuthor)
 	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
 	assert.False(t, *firstRepo.FailOnSecurityIssues)
 	firstRepoProject := firstRepo.Projects[0]

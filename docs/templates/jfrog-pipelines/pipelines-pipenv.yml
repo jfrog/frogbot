@@ -140,6 +140,10 @@ pipelines:
             # The following values are accepted: Low, Medium, High or Critical
             # JF_MIN_SEVERITY: ""
 
+            # [Optional, Default: eco-system+frogbot@jfrog.com]
+            # Set the email of the commit author
+            # JF_GIT_EMAIL_AUTHOR: ""
+
         execution:
           onExecute:
             - cd $res_frogbotGitRepo_resourcePath
