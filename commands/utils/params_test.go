@@ -310,7 +310,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		ClientInfo: ClientInfo{
 			GitProvider: vcsutils.GitHub,
 			VcsInfo: vcsclient.VcsInfo{
-				APIEndpoint: "endpoint.com",
+				APIEndpoint: "https://github.com",
 				Token:       "123456789",
 			},
 			RepoName:  "repoName",

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
@@ -65,74 +64,57 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-// NewGitManager initialize git manager in the current working dir
-// Checks if the current working dir is already a git repo
-// if not, attempts to clone from the provided info.
-func NewGitManager(dryRun bool, clonedRepoPath string, g *Git) (gm *GitManager, err error) {
+// InitGitManager clones the repository based on the provided Git information if needed.
+// On dryRuns, will mimic the operation by changing dir to the clonedRepoPath.
+func InitGitManager(dryRun bool, testFolderPath string, gitInfo *Git) (gm *GitManager, err error) {
 	setGoGitCustomClient()
-	basicAuth := toBasicAuth(g.Token, g.Username)
-	repository, err := git.PlainOpen(".")
+	repository, valid := validGitRepository(dryRun)
 
-	// Not already cloned inside the repository.
-	if err != nil {
-		if err.Error() != "repository does not exist" {
-			return
-		}
-		if dryRun {
-			repo, cleanUp, err := g.dryRunClone(clonedRepoPath)
-			if err != nil {
-				return nil, err
-			}
-			defer func() {
-				err = cleanUp()
-			}()
-			repository = repo
-		} else {
-			cloneUrl, err := g.generateHTTPSCloneUrl()
-			if err != nil {
-				return nil, err
-			}
-			cloneOptions := &git.CloneOptions{
-				URL:  cloneUrl,
-				Auth: basicAuth,
-			}
-			repository, err = git.PlainClone(".", false, cloneOptions)
-			if err != nil {
-				return nil, err
-			}
+	if !valid {
+		repository, err = CloneRepositoryAndChDir(dryRun, gitInfo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clone repository: %s", err.Error())
 		}
 	}
-	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+
+	templates, err := loadCustomTemplates(gitInfo.CommitMessageTemplate, gitInfo.BranchNameTemplate, gitInfo.PullRequestTitleTemplate)
 	if err != nil {
 		return
 	}
-	gm = &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: "origin", auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}
+	gm = &GitManager{repository: repository, dryRunRepoPath: testFolderPath, remoteName: "origin", auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}
 	return
 }
 
-// dryRunClone clones an existing Repository from our testdata folder into the destination folder for testing purposes.
-// We should call this function when the current working directory is the Repository we want to clone.
-func (g *Git) dryRunClone(destination string) (*git.Repository, func() error, error) {
+// CloneRepositoryAndChDir clones the repository provided from the git info.
+func CloneRepositoryAndChDir(dryRun bool, gitInfo *Git) (repository *git.Repository, err error) {
 	baseWd, err := os.Getwd()
 	if err != nil {
-		return nil, nil, err
+		return
 	}
-	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-		return nil, nil, err
+	expectedWorkingDir := filepath.Join(baseWd, gitInfo.RepoName)
+
+	if dryRun {
+		// Used for testings
+		repository, err = gitInfo.dryRunClone(expectedWorkingDir)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Clone using HTTPS clone urls
+		cloneUrl, err := gitInfo.generateHTTPSCloneUrl()
+		if err != nil {
+			return nil, err
+		}
+		cloneOptions := &git.CloneOptions{
+			URL:  cloneUrl,
+			Auth: toBasicAuth(gitInfo.Token, gitInfo.Username),
+		}
+		repository, err = git.PlainClone(expectedWorkingDir, false, cloneOptions)
+		if err != nil {
+			return nil, err
+		}
 	}
-	// Set the git repository to the new destination .git folder
-	repository, err := git.PlainOpen(destination)
-	if err != nil {
-		return nil, nil, err
-	}
-	cleanUp := func() error {
-		restore, err := Chdir(baseWd)
-		return errors.Join(err, restore(), fileutils.RemoveTempDir(destination))
-	}
-	return repository, cleanUp, err
+	return repository, os.Chdir(expectedWorkingDir)
 }
 
 func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
@@ -157,19 +139,6 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 	return err
 }
 
-func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
-	checkoutConfig := &git.CheckoutOptions{
-		Create: create,
-		Branch: getFullBranchName(branchName),
-		Force:  true,
-	}
-	worktree, err := gm.repository.Worktree()
-	if err != nil {
-		return err
-	}
-	return worktree.Checkout(checkoutConfig)
-}
-
 func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
 	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
@@ -177,57 +146,6 @@ func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
 		return err
 	}
 	return gm.commit(commitMessage)
-}
-
-func (gm *GitManager) addAll() error {
-	worktree, err := gm.repository.Worktree()
-	if err != nil {
-		return err
-	}
-
-	// AddWithOptions doesn't exclude files in .gitignore, so we add their contents as exclusions explicitly.
-	ignorePatterns, err := gitignore.ReadPatterns(worktree.Filesystem, nil)
-	if err != nil {
-		return err
-	}
-	worktree.Excludes = append(worktree.Excludes, ignorePatterns...)
-	status, err := worktree.Status()
-	if err != nil {
-		return err
-	}
-
-	err = worktree.AddWithOptions(&git.AddOptions{All: true})
-	if err != nil {
-		return fmt.Errorf("git add failed with error: %s", err.Error())
-	}
-	// go-git add all using AddWithOptions doesn't include deleted files, that's why we need to double-check
-	for fileName, fileStatus := range status {
-		if fileStatus.Worktree == git.Deleted {
-			_, err = worktree.Add(fileName)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (gm *GitManager) commit(commitMessage string) error {
-	worktree, err := gm.repository.Worktree()
-	if err != nil {
-		return err
-	}
-	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
-		Author: &object.Signature{
-			Name:  frogbotAuthorName,
-			Email: frogbotAuthorEmail,
-			When:  time.Now(),
-		},
-	})
-	if err != nil {
-		err = fmt.Errorf("git commit failed with error: %s", err.Error())
-	}
-	return err
 }
 
 func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
@@ -299,25 +217,6 @@ func (gm *GitManager) GenerateAggregatedCommitMessage() string {
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
 
-func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
-	replacements := []struct {
-		placeholder string
-		value       string
-	}{
-		{PackagePlaceHolder, impactedPackage},
-		{FixVersionPlaceHolder, fixVersion},
-		{BranchHashPlaceHolder, hash},
-	}
-
-	for _, r := range replacements {
-		str = strings.Replace(str, r.placeholder, r.value, 1)
-	}
-	if !allowSpaces {
-		str = strings.ReplaceAll(str, " ", "_")
-	}
-	return str
-}
-
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
 	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
 	if err != nil {
@@ -351,25 +250,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, e
 	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
 }
 
-// Construct HTTPS clone url from the provided git info.
-// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
-// in case we encounter SSH clone url, we generate HTTPS url instead.
-func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
-	switch gm.git.GitProvider {
-	case vcsutils.GitHub:
-		return fmt.Sprintf(githubHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.GitLab:
-		return fmt.Sprintf(gitLabHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.BitbucketServer:
-		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.AzureRepos:
-		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.APIEndpoint, "https://")[1:], "")
-		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.Project, gm.git.RepoName), nil
-	default:
-		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
-	}
-}
-
 func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
 	var checkoutConfig *git.CheckoutOptions
 	if gm.dryRun {
@@ -389,7 +269,10 @@ func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
 	if err != nil {
 		return err
 	}
-	return worktree.Checkout(checkoutConfig)
+	if err = worktree.Checkout(checkoutConfig); err != nil {
+		return fmt.Errorf("checkout to remote branch failed with error: %s", err.Error())
+	}
+	return nil
 }
 
 func toBasicAuth(token, username string) *githttp.BasicAuth {
@@ -432,4 +315,161 @@ func setGoGitCustomClient() {
 
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 	client.InstallProtocol("https", githttp.NewClient(customClient))
+}
+
+func (gm *GitManager) addAll() error {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// AddWithOptions doesn't exclude files in .gitignore, so we add their contents as exclusions explicitly.
+	ignorePatterns, err := gitignore.ReadPatterns(worktree.Filesystem, nil)
+	if err != nil {
+		return err
+	}
+	worktree.Excludes = append(worktree.Excludes, ignorePatterns...)
+	status, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	err = worktree.AddWithOptions(&git.AddOptions{All: true})
+	if err != nil {
+		return fmt.Errorf("git add failed with error: %s", err.Error())
+	}
+	// go-git add all using AddWithOptions doesn't include deleted files, that's why we need to double-check
+	for fileName, fileStatus := range status {
+		if fileStatus.Worktree == git.Deleted {
+			_, err = worktree.Add(fileName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (gm *GitManager) commit(commitMessage string) error {
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  frogbotAuthorName,
+			Email: frogbotAuthorEmail,
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		err = fmt.Errorf("git commit failed with error: %s", err.Error())
+	}
+	return err
+}
+
+func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
+	replacements := []struct {
+		placeholder string
+		value       string
+	}{
+		{PackagePlaceHolder, impactedPackage},
+		{FixVersionPlaceHolder, fixVersion},
+		{BranchHashPlaceHolder, hash},
+	}
+
+	for _, r := range replacements {
+		str = strings.Replace(str, r.placeholder, r.value, 1)
+	}
+	if !allowSpaces {
+		str = strings.ReplaceAll(str, " ", "_")
+	}
+	return str
+}
+
+// Construct HTTPS clone url from the provided git info.
+// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
+// in case we encounter SSH clone url, we generate HTTPS url instead.
+func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
+	switch gm.git.GitProvider {
+	case vcsutils.GitHub:
+		return fmt.Sprintf(githubHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+	case vcsutils.GitLab:
+		return fmt.Sprintf(gitLabHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+	case vcsutils.BitbucketServer:
+		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
+	case vcsutils.AzureRepos:
+		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.APIEndpoint, "https://")[1:], "")
+		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.Project, gm.git.RepoName), nil
+	default:
+		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
+	}
+}
+
+func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
+	checkoutConfig := &git.CheckoutOptions{
+		Create: create,
+		Branch: getFullBranchName(branchName),
+		Force:  true,
+	}
+	worktree, err := gm.repository.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(checkoutConfig)
+}
+
+// Must CI tools clone the repository before running
+// Valid git repository meaning we are inside a working git dir, and we are using HTTPS clone URLs
+func validGitRepository(dryRun bool) (repository *git.Repository, valid bool) {
+	repository, err := git.PlainOpen(".")
+	if err != nil {
+		return
+	}
+	// Don't check remotes on dryRuns.
+	if dryRun {
+		valid = true
+		return
+	}
+	// Verify HTTPS clone urls and not SSH
+	gitRemote, err := repository.Remote("origin")
+	if err != nil {
+		return
+	}
+	if len(gitRemote.Config().URLs) < 1 {
+		return
+	}
+	remoteUrl := gitRemote.Config().URLs[0]
+	if !strings.HasPrefix(remoteUrl, "https") {
+		return
+	}
+	return repository, true
+}
+
+// In tests cases change dir to pre-prepared testFolderPath
+func (g *Git) dryRunClone(testFolderPath string) (*git.Repository, error) {
+	err := os.Chdir(testFolderPath)
+	if err != nil {
+		return nil, err
+	}
+	return handleTestGitFolder(testFolderPath)
+}
+
+func handleTestGitFolder(testFolderPath string) (repository *git.Repository, err error) {
+	exists, err := fileutils.IsDirExists(testFolderPath, false)
+	if err != nil {
+		return
+	}
+	if exists {
+		err = fileutils.CopyDir(filepath.Join(testFolderPath, "git"), filepath.Join(testFolderPath, ".git"), true, []string{})
+		if err != nil {
+			return
+		}
+		err = fileutils.RemoveTempDir(filepath.Join(testFolderPath, "git"))
+		if err != nil {
+			return
+		}
+	}
+	repository, err = git.PlainOpen(".")
+	return
 }

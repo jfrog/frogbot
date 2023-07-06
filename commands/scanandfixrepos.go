@@ -4,7 +4,8 @@ import (
 	"errors"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"os"
 )
 
 type ScanAndFixRepositories struct {
@@ -14,48 +15,43 @@ type ScanAndFixRepositories struct {
 	dryRunRepoPath string
 }
 
+// Run scanning multi repositories by cloning each one from repoAggregator and running CreateFixPullRequestsCmd.
+// As this command doesn't have the context of one repository, each repository needs to be cloned.
 func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
+	if !saf.dryRun {
+		// Prepare environment
+		// TODO rethink this.
+		wd, err := fileutils.CreateTempDir()
+		if err != nil {
+			return err
+		}
+		if err = os.Chdir(wd); err != nil {
+			return err
+		}
+		defer func() {
+			err = errors.Join(err, fileutils.RemoveTempDir(wd))
+		}()
+	}
 	// Aggregate errors and log at the end rather than failing the entire run if there is an error on one repository.
 	var aggregatedErrors error
 	for repoNum := range repoAggregator {
-		if err := saf.scanAndFixSingleRepository(&repoAggregator[repoNum], client); err != nil {
+		if err := saf.cloneAndRunScanAndFix(&repoAggregator[repoNum], client); err != nil {
 			aggregatedErrors = errors.Join(err)
 		}
 	}
 	return aggregatedErrors
 }
 
-func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
-	var aggregatedErrors error
-	for _, branch := range repoConfig.Branches {
-		if err := saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
-			if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
-				log.Debug(err.Error())
-			} else {
-				aggregatedErrors = errors.Join(err)
-			}
-		}
-	}
-	return aggregatedErrors
-}
-
-func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
+// Clone each repository, run CreateFixPullRequestsCmd command and return to the parent directory
+func (saf *ScanAndFixRepositories) cloneAndRunScanAndFix(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	parentWd, _ := os.Getwd()
+	defer func() {
+		err = errors.Join(err, os.Chdir(parentWd))
+	}()
+	_, err = utils.CloneRepositoryAndChDir(saf.dryRun, &repository.Git)
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = errors.Join(err, cleanup())
-	}()
-
-	restoreDir, err := utils.Chdir(wd)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		err = errors.Join(err, restoreDir())
-	}()
-
 	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: saf.dryRunRepoPath}
-	return cfp.scanAndFixRepository(repository, branch, client)
+	return cfp.Run(utils.RepoAggregator{*repository}, client)
 }

@@ -27,9 +27,10 @@ const (
 )
 
 type ScanPullRequestCmd struct {
-	gitManager     *utils.GitManager
-	dryRun         bool
-	dryRunRepoPath string
+	pullRequestDetails *vcsclient.PullRequestInfo
+	gitManager         *utils.GitManager
+	dryRun             bool
+	dryRunRepoPath     string
 }
 
 // Run ScanPullRequest method only works for a single repository scan.
@@ -44,16 +45,23 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
-	gitManager, err := utils.NewGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
+	gitManager, err := utils.InitGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
 	if err != nil {
-		return err
+		return fmt.Errorf("initlizeion of the git repository failed: %s ", err.Error())
 	}
 	cmd.gitManager = gitManager
-	pullRequestDetails, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
-	if err != nil || (pullRequestDetails.ID == 0 && pullRequestDetails.Target.Name == "") {
+	if cmd.pullRequestDetails == nil {
+		prInfo, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
+		cmd.pullRequestDetails = &prInfo
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil || (cmd.pullRequestDetails.ID == 0 && cmd.pullRequestDetails.Target.Name == "") {
 		return err
 	}
-	return cmd.scanPullRequest(repoConfig, &pullRequestDetails, client)
+	log.Info("Scanning Pull Request ID:", cmd.pullRequestDetails.ID)
+	return cmd.scanPullRequest(repoConfig, cmd.pullRequestDetails, client)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
@@ -68,7 +76,7 @@ func (cmd *ScanPullRequestCmd) scanPullRequest(repoConfig *utils.Repository, pul
 	}
 
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
+	message := cmd.createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
 
 	// Add comment to the pull request
 	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
@@ -79,6 +87,7 @@ func (cmd *ScanPullRequestCmd) scanPullRequest(repoConfig *utils.Repository, pul
 	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
+	log.Info("Successfully scanned pull request ID:", pullRequestDetails.ID)
 	return err
 }
 
@@ -98,7 +107,7 @@ func (cmd *ScanPullRequestCmd) auditPullRequest(repoConfig *utils.Repository, pu
 		// Audit source
 		sourceResults, err := cmd.scanByBranch(repoConfig, sourceBranch, scanDetails)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("scanning source branch failed. %s", err.Error())
 		}
 		// Handle includes all vulnerabilities
 		if repoConfig.IncludeAllVulnerabilities {
@@ -115,7 +124,7 @@ func (cmd *ScanPullRequestCmd) auditPullRequest(repoConfig *utils.Repository, pu
 		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 		targetResults, err := cmd.scanByBranch(repoConfig, targetBranch, scanDetails)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("scanning target branch failed. %s", err.Error())
 		}
 		newIssuesRows, err := createNewIssuesRows(targetResults, sourceResults)
 		if err != nil {
@@ -132,6 +141,7 @@ func (cmd *ScanPullRequestCmd) scanByBranch(repoConfig *utils.Repository, branch
 	if err = cmd.gitManager.CheckoutRemoteBranch(branch); err != nil {
 		return
 	}
+	log.Info(fmt.Sprintf("Auditing branch %s ...", branch))
 	results, err = auditSource(scanDetails)
 	if err != nil {
 		return
@@ -365,7 +375,7 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
+func (cmd *ScanPullRequestCmd) createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
 		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
 	}

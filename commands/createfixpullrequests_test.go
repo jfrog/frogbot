@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -220,9 +221,9 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			}
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
-			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
+			client.EXPECT().ListOpenPullRequests(context.Background(), gomock.Any(), gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
-				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, "", "", int(mockPrId), vcsutils.Open).Return(nil)
+				client.EXPECT().UpdatePullRequest(context.Background(), gomock.Any(), gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, gomock.Any(), gomock.Any(), int(mockPrId), vcsutils.Open).Return(nil)
 			}
 			// Load default configurations
 			var configData []byte

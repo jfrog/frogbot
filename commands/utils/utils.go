@@ -16,7 +16,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"regexp"
@@ -206,23 +205,6 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 	}
 
 	return err
-}
-
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
-	wd, err = fileutils.CreateTempDir()
-	if err != nil {
-		return
-	}
-	cleanup = func() error {
-		return fileutils.RemoveTempDir(wd)
-	}
-	log.Debug("Created temp working directory: ", wd)
-	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
-		return
-	}
-	log.Debug("repository download completed")
-	return
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {

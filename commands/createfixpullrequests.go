@@ -43,12 +43,13 @@ func (cfp *CreateFixPullRequestsCmd) Run(configAggregator utils.RepoAggregator, 
 		return err
 	}
 	repository := configAggregator[0]
-
-	gitManager, err := utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, &repository.Git)
+	// Clone and init git manager
+	gitManager, err := utils.InitGitManager(cfp.dryRun, cfp.dryRunRepoPath, &repository.Git)
 	if err != nil {
 		return err
 	}
 	cfp.gitManager = gitManager
+
 	for _, branch := range repository.Branches {
 		err := cfp.scanAndFixRepository(&repository, branch, client)
 		if err != nil {
@@ -265,10 +266,6 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 }
 
 func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (pullRequestTitle string, prBody string) {
-	if cfp.dryRun && cfp.aggregateFixes {
-		// For testings, don't compare pull request body as scan results order may change.
-		return utils.AggregatedPullRequestTitleTemplate, ""
-	}
 	prBody = cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilities)
 	if cfp.aggregateFixes {
 		pullRequestTitle = utils.AggregatedPullRequestTitleTemplate

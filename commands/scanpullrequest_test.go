@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -33,7 +34,6 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
-	testSameBranchProjConfigPath     = "testdata/config/frogbot-config-test-same-branch-fail.yml"
 )
 
 func TestCreateVulnerabilitiesRows(t *testing.T) {
@@ -365,8 +365,9 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
+	cpr := ScanPullRequestCmd{}
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities, nil, &utils.StandardOutput{})
+	message := cpr.createPullRequestMessage(vulnerabilities, nil, &utils.StandardOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -375,7 +376,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 
 	outputWriter := &utils.StandardOutput{}
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, nil, outputWriter)
+	message = cpr.createPullRequestMessage(vulnerabilities, nil, outputWriter)
 
 	expectedMessageByte, err = os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilitiesMR.md"))
 	assert.NoError(t, err)
@@ -384,6 +385,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
+	cpr := ScanPullRequestCmd{}
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
 			Severity:                  "High",
@@ -445,13 +447,13 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	writerOutput := &utils.StandardOutput{}
 	writerOutput.SetEntitledForJas(true)
-	message := createPullRequestMessage(vulnerabilities, iac, writerOutput)
+	message := cpr.createPullRequestMessage(vulnerabilities, iac, writerOutput)
 
 	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVEs:** CVE-2022-24450\n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n- **Fixed Version:** \n- **CVEs:** \n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🎃 Medium\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVEs:** CVE-2022-26652\n\n**Description:**\n\n\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n---\n\n<div align=\"center\">\n\n[This comment was generated by JFrog Frogbot 🐸](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, iac, writerOutput)
+	message = cpr.createPullRequestMessage(vulnerabilities, iac, writerOutput)
 	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVEs:** CVE-2022-24450\n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n- **Fixed Version:** \n- **CVEs:** \n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🎃 Medium\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVEs:** CVE-2022-26652\n\n**Description:**\n\n\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n---\n\n<div align=\"center\">\n\n[This comment was generated by JFrog Frogbot 🐸](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 }
@@ -505,6 +507,8 @@ func TestScanPullRequestNoIssues(t *testing.T) {
 	testScanPullRequest(t, testCleanProjConfigPath, "clean-test-proj", false)
 }
 
+// TODO -> now we compare project by proejct and jump from main to pr branch, maybe scan all together?
+// TODO also, vul found in a differnt project is not considerd as new.
 func TestScanPullRequestMultiWorkDir(t *testing.T) {
 	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", true)
 }
@@ -525,13 +529,15 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
 
-	// TODO this will require to create branch of pull requests in the test data
-	// TODO now this works on only mocks, change to work on gits.
+	mockPrId := 1
+	ctx := context.Background()
 	client := mockVcsClient(t)
-	client.EXPECT().GetPullRequestByID(context.Background(), "jfrog", projectName, 1).Return(vcsclient.PullRequestInfo{}, nil)
+	curGitParams := configAggregator[0].Git
+	client.EXPECT().GetPullRequestByID(ctx, curGitParams.RepoOwner, projectName, mockPrId).Return(mockPr, nil)
+	client.EXPECT().AddPullRequestComment(ctx, curGitParams.RepoOwner, projectName, gomock.Any(), mockPrId)
 
 	// Run "frogbot scan pull request"
-	var scanPullRequest ScanPullRequestCmd
+	scanPullRequest := ScanPullRequestCmd{dryRun: true}
 	err := scanPullRequest.Run(configAggregator, client)
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)

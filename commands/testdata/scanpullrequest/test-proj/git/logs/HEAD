@@ -1,1 +1,6 @@
 0000000000000000000000000000000000000000 9f19e8e214da2ec75e3191980f30b567c7558ff7 delarea <eyalde@jfrog.com> 1685960481 +0300	commit (initial): init
+9f19e8e214da2ec75e3191980f30b567c7558ff7 77839a46e14f8146e3d32f0627dc4c8e6e62f967 delarea <eyalde@jfrog.com> 1688655047 +0300	commit: update lock
+77839a46e14f8146e3d32f0627dc4c8e6e62f967 cb6bea407b149a91d375190a4e035f121da19687 delarea <eyalde@jfrog.com> 1688655106 +0300	commit: only one vul on main
+cb6bea407b149a91d375190a4e035f121da19687 cb6bea407b149a91d375190a4e035f121da19687 delarea <eyalde@jfrog.com> 1688655108 +0300	checkout: moving from main to pr
+cb6bea407b149a91d375190a4e035f121da19687 d3a273a9faea01c50fe15a9a240ef58d6d276a67 delarea <eyalde@jfrog.com> 1688655140 +0300	commit: add new vul at pr
+d3a273a9faea01c50fe15a9a240ef58d6d276a67 cb6bea407b149a91d375190a4e035f121da19687 delarea <eyalde@jfrog.com> 1688655143 +0300	checkout: moving from pr to main
