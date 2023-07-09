@@ -191,6 +191,7 @@ type Git struct {
 	BranchNameTemplate       string `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate    string `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string `yaml:"pullRequestTitleTemplate,omitempty"`
+	EmailAuthor              string `yaml:"emailAuthor,omitempty"`
 	AggregateFixes           bool   `yaml:"aggregateFixes,omitempty"`
 	PullRequestID            int
 }
@@ -224,7 +225,14 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	}
 	g.AggregateFixes = git.AggregateFixes
 	if !g.AggregateFixes {
-		g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false)
+		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
+			return
+		}
+	}
+	if g.EmailAuthor == "" {
+		if g.EmailAuthor = getTrimmedEnv(GitEmailAuthorEnv); g.EmailAuthor == "" {
+			g.EmailAuthor = frogbotAuthorEmail
+		}
 	}
 	// Non-mandatory git branch pr id.
 	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
@@ -325,9 +333,8 @@ func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (c
 	if err != nil && !missingConfigErr {
 		return nil, err
 	}
-
 	// Read the config from the current working dir
-	if len(configFileContent) == 0 && err == nil {
+	if len(configFileContent) == 0 {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 	}
 	return

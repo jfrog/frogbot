@@ -79,6 +79,7 @@ const (
 	GitPullRequestIDEnv  = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv    = "JF_GIT_API_ENDPOINT"
 	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
+	GitEmailAuthorEnv    = "JF_GIT_EMAIL_AUTHOR"
 
 	// Comment
 	vulnerabilitiesTableHeader        = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
