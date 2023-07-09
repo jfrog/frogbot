@@ -49,15 +49,16 @@ func (cmd ScanAllPullRequestsCmd) scanAllPullRequests(repo utils.Repository, cli
 		return err
 	}
 
-	for _, pr := range openPullRequests {
-		shouldScan, e := shouldScanPullRequest(repo, client, int(pr.ID))
+	for index := range openPullRequests {
+		currentPr := openPullRequests[index]
+		shouldScan, e := shouldScanPullRequest(repo, client, int(currentPr.ID))
 		if e != nil {
-			aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error())))
+			aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(currentPr.ID), repo.RepoName, e.Error())))
 		}
 		if shouldScan {
-			spr := &ScanPullRequestCmd{dryRun: cmd.dryRun, dryRunRepoPath: path.Join(cmd.dryRunRepoPath, repo.RepoName), pullRequestDetails: &pr}
+			spr := &ScanPullRequestCmd{dryRun: cmd.dryRun, dryRunRepoPath: path.Join(cmd.dryRunRepoPath, repo.RepoName), pullRequestDetails: &currentPr}
 			if err = spr.Run(utils.RepoAggregator{repo}, client); err != nil {
-				aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error())))
+				aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(currentPr.ID), repo.RepoName, e.Error())))
 			}
 		}
 	}

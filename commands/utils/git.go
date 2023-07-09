@@ -64,25 +64,25 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-// InitGitManager clones the repository based on the provided Git information if needed.
-// On dryRuns, will mimic the operation by changing dir to the clonedRepoPath.
+// InitGitManager initializes the GitManager.
+// If the repository has not been cloned yet, it clones the repository using the provided Git information.
+// During dry runs, it emulates the operation by changing the directory to the cloned repository path.
 func InitGitManager(dryRun bool, testFolderPath string, gitInfo *Git) (gm *GitManager, err error) {
 	setGoGitCustomClient()
-	repository, valid := validGitRepository(dryRun)
-
+	// Check git preconditions are met before running
+	repository, valid := isValidGitRepository(dryRun)
+	// Attempt to clone the repository based on the Git info.
 	if !valid {
 		repository, err = CloneRepositoryAndChDir(dryRun, gitInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone repository: %s", err.Error())
 		}
 	}
-
 	templates, err := loadCustomTemplates(gitInfo.CommitMessageTemplate, gitInfo.BranchNameTemplate, gitInfo.PullRequestTitleTemplate)
 	if err != nil {
 		return
 	}
-	gm = &GitManager{repository: repository, dryRunRepoPath: testFolderPath, remoteName: "origin", auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}
-	return
+	return &GitManager{repository: repository, dryRunRepoPath: testFolderPath, remoteName: "origin", auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}, nil
 }
 
 // CloneRepositoryAndChDir clones the repository provided from the git info.
@@ -92,7 +92,6 @@ func CloneRepositoryAndChDir(dryRun bool, gitInfo *Git) (repository *git.Reposit
 		return
 	}
 	expectedWorkingDir := filepath.Join(baseWd, gitInfo.RepoName)
-
 	if dryRun {
 		// Used for testings
 		repository, err = gitInfo.dryRunClone(expectedWorkingDir)
@@ -419,9 +418,10 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 	return worktree.Checkout(checkoutConfig)
 }
 
-// Must CI tools clone the repository before running
-// Valid git repository meaning we are inside a working git dir, and we are using HTTPS clone URLs
-func validGitRepository(dryRun bool) (repository *git.Repository, valid bool) {
+// Ensures that two mandatory conditions are met:
+// 1. The current working directory is set to the root of the .git directory.
+// 2. Remote URLs are in the HTTPS format and not SSH.
+func isValidGitRepository(dryRun bool) (repository *git.Repository, valid bool) {
 	repository, err := git.PlainOpen(".")
 	if err != nil {
 		return
@@ -446,16 +446,20 @@ func validGitRepository(dryRun bool) (repository *git.Repository, valid bool) {
 	return repository, true
 }
 
-// In tests cases change dir to pre-prepared testFolderPath
-func (g *Git) dryRunClone(testFolderPath string) (*git.Repository, error) {
-	err := os.Chdir(testFolderPath)
+// Dry clones used for testings to use predefined test folders.
+// Copies from testFolderPath to the current working dir, and replace git folders to .git
+func (g *Git) dryRunClone(testFolderPath string) (repository *git.Repository, err error) {
+	err = os.Chdir(testFolderPath)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return handleTestGitFolder(testFolderPath)
+	if err = prepareTestGitFolder(testFolderPath); err != nil {
+		return
+	}
+	return git.PlainOpen(".")
 }
 
-func handleTestGitFolder(testFolderPath string) (repository *git.Repository, err error) {
+func prepareTestGitFolder(testFolderPath string) (err error) {
 	exists, err := fileutils.IsDirExists(testFolderPath, false)
 	if err != nil {
 		return
@@ -470,6 +474,5 @@ func handleTestGitFolder(testFolderPath string) (repository *git.Repository, err
 			return
 		}
 	}
-	repository, err = git.PlainOpen(".")
 	return
 }

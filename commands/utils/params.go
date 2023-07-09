@@ -325,7 +325,7 @@ func getConfigAggregator(client vcsclient.VcsClient, gitParams *Git, server *cor
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
-// If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target Repository based on these variables.
+// If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (configFileContent []byte, err error) {
 	configFileContent, err = readConfigFromTarget(client, clientInfo)
@@ -361,7 +361,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParams *Git, server *corec
 }
 
 // unmarshalFrogbotConfigYaml uses the yaml.Unmarshaler interface to parse the yamlContent.
-// If there is no config file, the function returns a RepoAggregator with an empty Repository.
+// If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
 		return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}, nil
@@ -571,7 +571,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target Repository
+// readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
 func readConfigFromTarget(client vcsclient.VcsClient, clientInfo *ClientInfo) (configContent []byte, err error) {
 	if clientInfo.RepoName != "" && clientInfo.RepoOwner != "" {
 		log.Debug("Downloading", FrogbotConfigFile, "from target", clientInfo.RepoOwner, "/", clientInfo.RepoName)

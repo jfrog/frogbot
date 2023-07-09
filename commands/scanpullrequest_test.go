@@ -507,8 +507,6 @@ func TestScanPullRequestNoIssues(t *testing.T) {
 	testScanPullRequest(t, testCleanProjConfigPath, "clean-test-proj", false)
 }
 
-// TODO -> now we compare project by proejct and jump from main to pr branch, maybe scan all together?
-// TODO also, vul found in a differnt project is not considerd as new.
 func TestScanPullRequestMultiWorkDir(t *testing.T) {
 	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", true)
 }

@@ -20,7 +20,6 @@ type ScanAndFixRepositories struct {
 func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	if !saf.dryRun {
 		// Prepare environment
-		// TODO rethink this.
 		wd, err := fileutils.CreateTempDir()
 		if err != nil {
 			return err
