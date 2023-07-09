@@ -20,21 +20,22 @@ type ScanAllPullRequestsCmd struct {
 	dryRunRepoPath string
 }
 
-func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
+	var allErrors error
 	for index := range configAggregator {
 		if e := cmd.scanAllPullRequests(configAggregator[index], client); e != nil {
-			err = errors.Join(err, e)
+			allErrors = errors.Join(allErrors, e)
 		}
-		// Return baseWd, as ScanPullRequest changed dirs.
+		// Return the baseWd before continuing to the next repository
 		if err = os.Chdir(baseWd); err != nil {
 			return err
 		}
 	}
-	return
+	return allErrors
 }
 
 // Scan pull requests as follows:
