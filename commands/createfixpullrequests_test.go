@@ -2,7 +2,16 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -14,13 +23,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strings"
-	"testing"
 )
 
 const (
@@ -500,6 +502,18 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 		}
 	}
+}
+
+func TestHandleUpdatePackageErrors(t *testing.T) {
+	var err = errors.New("Code Red")
+	cfp := CreateFixPullRequestsCmd{}
+	var errList strings.Builder
+	cfp.handleUpdatePackageErrors(err, &errList)
+	assert.Equal(t, err.Error()+"\n", errList.String())
+
+	errList.Reset()
+	cfp.handleUpdatePackageErrors(&utils.ErrUnsupportedFix{ErrorType: utils.BuildToolsDependencyFixNotSupported}, &errList)
+	assert.Empty(t, errList.String())
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {

@@ -150,7 +150,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 	log.Info("-----------------------------------------------------------------")
 	for _, vulnDetails := range vulnerabilitiesMap {
 		if err = cfp.fixSinglePackageAndCreatePR(vulnDetails); err != nil {
-			cfp.handleUpdatePackageErrors(err, errList)
+			cfp.handleUpdatePackageErrors(err, &errList)
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
@@ -195,7 +195,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
 // else, append to errList string.
-func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error, errList strings.Builder) {
+func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error, errList *strings.Builder) {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
 	} else {
@@ -443,7 +443,7 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilit
 	var fixedVulnerabilities []formats.VulnerabilityOrViolationRow
 	for _, vulnDetails := range vulnerabilities {
 		if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
-			cfp.handleUpdatePackageErrors(err, errList)
+			cfp.handleUpdatePackageErrors(err, &errList)
 			// Clear the error after handling it.
 			err = nil
 		} else {
