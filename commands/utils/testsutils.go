@@ -36,7 +36,8 @@ func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, 
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	err = fileutils.CopyDir(filepath.Join("testdata", filepath.Join(testDir, projectName)), tmpDir, true, []string{})
+	path := filepath.Join("testdata", filepath.Join(testDir, projectName))
+	err = fileutils.CopyDir(path, tmpDir, true, []string{})
 	assert.NoError(t, err)
 
 	// Renames test git folder to .git

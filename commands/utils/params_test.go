@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
-	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
+	configParamsTestFile          = filepath.Join("testdata", "config", "frogbot-config-test-params.yml")
+	configEmptyScanParamsTestFile = filepath.Join("testdata", "config", "frogbot-config-empty-scan.yml")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {
@@ -393,7 +393,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 }
 
 func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
-	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
+	testFilePath := filepath.Join("testdata", "config", "frogbot-config-test-unmarshal.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
 	configAggregator, err := unmarshalFrogbotConfigYaml(fileContent)
@@ -456,7 +456,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		FailOnSecurityIssuesEnv:      "true",
 		jfrogWatchesEnv:              "watch-1,watch-2",
 	})
-	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
+	testFilePath := filepath.Join("testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
 	gitParams := Git{

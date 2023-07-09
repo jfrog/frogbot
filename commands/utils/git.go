@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
@@ -100,6 +99,7 @@ func CloneRepositoryAndChDir(dryRun bool, gitInfo *Git) (repository *git.Reposit
 		}
 	} else {
 		// Clone using HTTPS clone urls
+		log.Info("Cloning repository...")
 		cloneUrl, err := gitInfo.generateHTTPSCloneUrl()
 		if err != nil {
 			return nil, err
@@ -386,25 +386,6 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 	return str
 }
 
-// Construct HTTPS clone url from the provided git info.
-// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
-// in case we encounter SSH clone url, we generate HTTPS url instead.
-func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
-	switch gm.git.GitProvider {
-	case vcsutils.GitHub:
-		return fmt.Sprintf(githubHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.GitLab:
-		return fmt.Sprintf(gitLabHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.BitbucketServer:
-		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.AzureRepos:
-		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.APIEndpoint, "https://")[1:], "")
-		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.Project, gm.git.RepoName), nil
-	default:
-		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
-	}
-}
-
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
@@ -421,6 +402,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 // Ensures that two mandatory conditions are met:
 // 1. The current working directory is set to the root of the .git directory.
 // 2. Remote URLs are in the HTTPS format and not SSH.
+// In the case of SSH urls, we convert to HTTPS and clone the repository.
 func isValidGitRepository(dryRun bool) (repository *git.Repository, valid bool) {
 	repository, err := git.PlainOpen(".")
 	if err != nil {

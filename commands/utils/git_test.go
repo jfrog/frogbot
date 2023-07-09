@@ -4,6 +4,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -231,7 +232,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 	}
 	for _, test := range testsCases {
 		t.Run(test.vcsProvider.String(), func(t *testing.T) {
-			gm := GitManager{git: &Git{ClientInfo: ClientInfo{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}}
+			gm := &Git{ClientInfo: ClientInfo{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}
 			remoteUrl, err := gm.generateHTTPSCloneUrl()
 			if remoteUrl == "" {
 				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
@@ -239,6 +240,28 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, test.expected, remoteUrl)
 			}
+		})
+	}
+}
+
+// Verifies HTTPS vs SSH & working dir is set properly
+func TestIsValidGitRepository(t *testing.T) {
+	testsCases := []struct {
+		folderName    string
+		expectedValid bool
+	}{
+		{folderName: "sshRemoteUrls", expectedValid: false},
+		{folderName: "httpsRemoteUrls", expectedValid: true},
+	}
+	// In order to use PrepareTestEnvironment
+	err := os.Chdir("../")
+	assert.NoError(t, err)
+	for _, test := range testsCases {
+		t.Run(test.folderName, func(t *testing.T) {
+			_, cleanUp := PrepareTestEnvironment(t, test.folderName, "git")
+			_, valid := isValidGitRepository(false)
+			assert.Equal(t, test.expectedValid, valid)
+			cleanUp()
 		})
 	}
 }
