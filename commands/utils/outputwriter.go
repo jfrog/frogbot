@@ -57,13 +57,18 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
 	}
 
+	cvesTitle := "**CVE:**"
+	if len(cves) > 1 {
+		cvesTitle = "**CVEs:**"
+	}
+
 	descriptionBullets := []descriptionBullet{
 		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(), vulnerabilityDetails.Severity)},
 		{title: "**Contextual Analysis:**", value: formattedApplicabilityText(vulnerabilityDetails.Applicable, provider)},
 		{title: "**Package Name:**", value: vulnerabilityDetails.ImpactedDependencyName},
 		{title: "**Current Version:**", value: vulnerabilityDetails.ImpactedDependencyVersion},
 		{title: "**Fixed Version:**", value: strings.Join(vulnerabilityDetails.FixedVersions, ",")},
-		{title: "**CVEs:**", value: strings.Join(cves, ", ")},
+		{title: cvesTitle, value: strings.Join(cves, ", ")},
 	}
 
 	var descriptionBuilder strings.Builder
