@@ -23,6 +23,8 @@ import (
 const (
 	refFormat = "refs/heads/%s:refs/heads/%[1]s"
 
+	defaultRemoteName = "origin"
+
 	// Timout is seconds for the git operations performed by the go-git client.
 	goGitTimeoutSeconds = 120
 
@@ -67,21 +69,23 @@ type CustomTemplates struct {
 // If the repository has not been cloned yet, it clones the repository using the provided Git information.
 // During dry runs, it emulates the operation by changing the directory to the cloned repository path.
 func InitGitManager(dryRun bool, testFolderPath string, gitInfo *Git) (gm *GitManager, err error) {
+	log.Debug("initializing git manager...")
 	setGoGitCustomClient()
 	// Check git preconditions are met before running
 	repository, valid := isValidGitRepository(dryRun)
 	// Attempt to clone the repository based on the Git info.
 	if !valid {
+		log.Debug("git repository is not found in the current working directory, trying to clone...")
 		repository, err = CloneRepositoryAndChDir(dryRun, gitInfo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to clone repository: %s", err.Error())
+			return nil, err
 		}
 	}
 	templates, err := loadCustomTemplates(gitInfo.CommitMessageTemplate, gitInfo.BranchNameTemplate, gitInfo.PullRequestTitleTemplate)
 	if err != nil {
 		return
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: testFolderPath, remoteName: "origin", auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}, nil
+	return &GitManager{repository: repository, dryRunRepoPath: testFolderPath, auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}, nil
 }
 
 // CloneRepositoryAndChDir clones the repository provided from the git info.
@@ -104,12 +108,15 @@ func CloneRepositoryAndChDir(dryRun bool, gitInfo *Git) (repository *git.Reposit
 		if err != nil {
 			return nil, err
 		}
+		log.Debug(fmt.Sprintf("Clone url: %s", cloneUrl))
 		cloneOptions := &git.CloneOptions{
-			URL:  cloneUrl,
-			Auth: toBasicAuth(gitInfo.Token, gitInfo.Username),
+			RemoteName: defaultRemoteName,
+			URL:        cloneUrl,
+			Auth:       toBasicAuth(gitInfo.Token, gitInfo.Username),
 		}
 		repository, err = git.PlainClone(expectedWorkingDir, false, cloneOptions)
 		if err != nil {
+			log.Debug(fmt.Sprintf("failed to open git repository in path %s, error: %s", expectedWorkingDir, err.Error()))
 			return nil, err
 		}
 	}
@@ -414,7 +421,7 @@ func isValidGitRepository(dryRun bool) (repository *git.Repository, valid bool) 
 		return
 	}
 	// Verify HTTPS clone urls and not SSH
-	gitRemote, err := repository.Remote("origin")
+	gitRemote, err := repository.Remote(defaultRemoteName)
 	if err != nil {
 		return
 	}
@@ -423,6 +430,7 @@ func isValidGitRepository(dryRun bool) (repository *git.Repository, valid bool) 
 	}
 	remoteUrl := gitRemote.Config().URLs[0]
 	if !strings.HasPrefix(remoteUrl, "https") {
+		log.Debug("git repository has SSH remote urls, cloning repository with HTTPS urls instead...")
 		return
 	}
 	return repository, true

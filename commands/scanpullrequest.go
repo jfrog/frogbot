@@ -141,7 +141,7 @@ func (cmd *ScanPullRequestCmd) scanByBranch(repoConfig *utils.Repository, branch
 	if err = cmd.gitManager.CheckoutRemoteBranch(branch); err != nil {
 		return
 	}
-	log.Info(fmt.Sprintf("Auditing branch %s ...", branch))
+	log.Info(fmt.Sprintf("Scanning branch %s ...", branch))
 	results, err = auditSource(scanDetails)
 	if err != nil {
 		return

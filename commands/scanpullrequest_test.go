@@ -385,7 +385,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
-	cpr := ScanPullRequestCmd{}
+	cpr := &ScanPullRequestCmd{}
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
 			Severity:                  "High",
@@ -535,7 +535,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	client.EXPECT().AddPullRequestComment(ctx, curGitParams.RepoOwner, projectName, gomock.Any(), mockPrId)
 
 	// Run "frogbot scan pull request"
-	scanPullRequest := ScanPullRequestCmd{dryRun: true}
+	scanPullRequest := &ScanPullRequestCmd{dryRun: true}
 	err := scanPullRequest.Run(configAggregator, client)
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
