@@ -140,7 +140,7 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 		if gm.dryRun {
 			return nil
 		}
-		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+		err = fmt.Errorf("git create and checkout branch: %s, failed with error: %s", branchName, err.Error())
 	}
 	return err
 }
@@ -276,7 +276,7 @@ func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
 		return err
 	}
 	if err = worktree.Checkout(checkoutConfig); err != nil {
-		return fmt.Errorf("checkout to remote branch failed with error: %s", err.Error())
+		return fmt.Errorf("checkout to remote branch: %s, failed with error: %s", branchName, err.Error())
 	}
 	return nil
 }
