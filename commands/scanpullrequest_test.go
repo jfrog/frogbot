@@ -524,6 +524,8 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	defer server.Close()
 
 	configAggregator, _ := prepareConfigAndClient(t, configPath, server, params)
+	wd, _ := os.Getwd()
+	log.Info("Preparing test env! current wd is: ", wd)
 	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
 	defer cleanUp()
 

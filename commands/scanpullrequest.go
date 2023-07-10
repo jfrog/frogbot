@@ -47,7 +47,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 	}
 	gitManager, err := utils.InitGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
 	if err != nil {
-		return fmt.Errorf("initlizeion of the git repository failed: %s ", err.Error())
+		return fmt.Errorf("initialization of the git repository failed: %s ", err.Error())
 	}
 	cmd.gitManager = gitManager
 	if cmd.pullRequestDetails == nil {
