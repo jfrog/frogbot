@@ -269,7 +269,7 @@ func (g *Git) getDefaultApiEndpoint() string {
 	case vcsutils.GitLab:
 		return "https://gitlab.com"
 	case vcsutils.AzureRepos:
-		return "https://dev.azurerepos.com"
+		return "https://dev.azure.com"
 	default:
 		// Bitbucket server, for example, doesn't have a default as this is on perm
 		return ""
