@@ -35,6 +35,7 @@ type ScanPullRequestCmd struct {
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
+// The GitManager and PullRequest information are provided in advance when using the scan-pull-requests (plural) command.
 func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
@@ -52,18 +53,14 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 		cmd.gitManager = gitManager
 	}
-
 	if cmd.pullRequestDetails == nil {
 		prInfo, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
-		cmd.pullRequestDetails = &prInfo
 		if err != nil {
 			return err
 		}
+		cmd.pullRequestDetails = &prInfo
 	}
-	if err != nil || (cmd.pullRequestDetails.ID == 0 && cmd.pullRequestDetails.Target.Name == "") {
-		return err
-	}
-	log.Info(fmt.Sprintf("scanning Pull Request ID: %d from %s to %s \n", cmd.pullRequestDetails.ID, cmd.pullRequestDetails.Source.Name, cmd.pullRequestDetails.Target.Name))
+	log.Info(fmt.Sprintf("Scanning Pull Request ID: %d Source: %s Target: %s", cmd.pullRequestDetails.ID, cmd.pullRequestDetails.Source.Name, cmd.pullRequestDetails.Target.Name))
 	return cmd.scanPullRequest(repoConfig, cmd.pullRequestDetails, client)
 }
 
