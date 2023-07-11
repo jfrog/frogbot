@@ -85,7 +85,7 @@ func InitGitManager(dryRun bool, testFolderPath string, gitInfo *Git) (gm *GitMa
 	if err != nil {
 		return
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: testFolderPath, auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo}, nil
+	return &GitManager{repository: repository, dryRunRepoPath: testFolderPath, auth: toBasicAuth(gitInfo.Token, gitInfo.Username), dryRun: dryRun, customTemplates: templates, git: gitInfo, remoteName: defaultRemoteName}, nil
 }
 
 // CloneRepositoryAndChDir clones the repository provided from the git info.
@@ -103,7 +103,7 @@ func CloneRepositoryAndChDir(dryRun bool, gitInfo *Git) (repository *git.Reposit
 		}
 	} else {
 		// Clone using HTTPS clone urls
-		log.Info("Cloning repository...")
+		log.Info(fmt.Sprintf("Cloning repository: %s ... ", gitInfo.RepoName))
 		cloneUrl, err := gitInfo.generateHTTPSCloneUrl()
 		if err != nil {
 			return nil, err

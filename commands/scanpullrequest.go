@@ -35,7 +35,7 @@ type ScanPullRequestCmd struct {
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
-func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
+func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
 	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return err
 	}
@@ -45,11 +45,14 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
-	gitManager, err := utils.InitGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
-	if err != nil {
-		return fmt.Errorf("initialization of the git repository failed: %s ", err.Error())
+	if cmd.gitManager == nil {
+		gitManager, err := utils.InitGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repoConfig.Git)
+		if err != nil {
+			return fmt.Errorf("initialization of the git repository failed: %s ", err.Error())
+		}
+		cmd.gitManager = gitManager
 	}
-	cmd.gitManager = gitManager
+
 	if cmd.pullRequestDetails == nil {
 		prInfo, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
 		cmd.pullRequestDetails = &prInfo
@@ -60,7 +63,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 	if err != nil || (cmd.pullRequestDetails.ID == 0 && cmd.pullRequestDetails.Target.Name == "") {
 		return err
 	}
-	log.Info("Scanning Pull Request ID:", cmd.pullRequestDetails.ID)
+	log.Info(fmt.Sprintf("scanning Pull Request ID: %d from %s to %s \n", cmd.pullRequestDetails.ID, cmd.pullRequestDetails.Source.Name, cmd.pullRequestDetails.Target.Name))
 	return cmd.scanPullRequest(repoConfig, cmd.pullRequestDetails, client)
 }
 
@@ -79,7 +82,7 @@ func (cmd *ScanPullRequestCmd) scanPullRequest(repoConfig *utils.Repository, pul
 	message := cmd.createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
 
 	// Add comment to the pull request
-	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
+	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, int(pullRequestDetails.ID)); err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 
@@ -87,7 +90,7 @@ func (cmd *ScanPullRequestCmd) scanPullRequest(repoConfig *utils.Repository, pul
 	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
-	log.Info("Successfully scanned pull request ID:", pullRequestDetails.ID)
+	log.Info(fmt.Sprintf("successfully scanned pull request ID: %v\n", pullRequestDetails.ID))
 	return err
 }
 

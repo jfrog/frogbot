@@ -235,9 +235,13 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		}
 	}
 	// Non-mandatory git branch pr id.
-	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-		if g.PullRequestID, err = strconv.Atoi(pullRequestIDString); err != nil {
-			return err
+	if g.PullRequestID == 0 {
+		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
+			idNum, err := strconv.Atoi(idStr)
+			if err != nil {
+				return err
+			}
+			g.PullRequestID = idNum
 		}
 	}
 	return

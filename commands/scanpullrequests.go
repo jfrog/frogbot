@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path"
 	"sort"
@@ -27,7 +28,9 @@ func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, cli
 	}
 	var allErrors error
 	for index := range configAggregator {
-		if e := cmd.scanAllPullRequests(configAggregator[index], client); e != nil {
+		repository := configAggregator[index]
+		log.Info(fmt.Sprintf("Scanning all pull requests for repository: %s", repository.RepoName))
+		if e := cmd.scanAllPullRequests(repository, client); e != nil {
 			allErrors = errors.Join(allErrors, e)
 		}
 		// Return the baseWd before continuing to the next repository
@@ -44,6 +47,12 @@ func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, cli
 // c. Audit the dependencies of the source and the target branches.
 // d. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 func (cmd ScanAllPullRequestsCmd) scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (aggregatedErrors error) {
+
+	gm, err := utils.InitGitManager(cmd.dryRun, cmd.dryRunRepoPath, &repo.Git)
+	if err != nil {
+		return err
+	}
+
 	openPullRequests, err := client.ListOpenPullRequests(context.Background(), repo.RepoOwner, repo.RepoName)
 	if err != nil {
 		return err
@@ -56,10 +65,12 @@ func (cmd ScanAllPullRequestsCmd) scanAllPullRequests(repo utils.Repository, cli
 			aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(currentPr.ID), repo.RepoName, e.Error())))
 		}
 		if shouldScan {
-			spr := &ScanPullRequestCmd{dryRun: cmd.dryRun, dryRunRepoPath: path.Join(cmd.dryRunRepoPath, repo.RepoName), pullRequestDetails: &currentPr}
+			spr := &ScanPullRequestCmd{dryRun: cmd.dryRun, dryRunRepoPath: path.Join(cmd.dryRunRepoPath, repo.RepoName), pullRequestDetails: &currentPr, gitManager: gm}
 			if err = spr.Run(utils.RepoAggregator{repo}, client); err != nil {
 				aggregatedErrors = errors.Join(aggregatedErrors, fmt.Errorf(fmt.Sprintf(errPullRequestScan, int(currentPr.ID), repo.RepoName, e.Error())))
 			}
+		} else {
+			log.Debug(fmt.Sprintf("skipping scan for pull request number: %d", currentPr.ID))
 		}
 	}
 	return
