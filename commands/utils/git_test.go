@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -18,25 +20,25 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>: bump ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "<type>: bump mquery",
 			description:     "Custom prefix",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
-			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
 			description: "Default template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: ""}},
-			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{FixVersion: "3.4.5"},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, test.fixVersion.FixVersion)
+			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.Equal(t, test.expected, commitMessage)
 		})
 	}
@@ -53,27 +55,27 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "[Feature]-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No template",
 		}, {
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template without inputs",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.FixVersion)
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, commitMessage)
 		})
@@ -91,28 +93,28 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery to 3.4.5",
 			description:     "Custom template",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE}"}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "[CustomPR] update mquery",
 			description:     "Custom template one var",
 		},
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
 			impactedPackage: "mquery",
-			fixVersion:      VulnerabilityDetails{FixVersion: "3.4.5"},
+			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "[🐸 Frogbot] Update version of mquery to 3.4.5",
 			description:     "No prefix",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.FixVersion)
+			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.Equal(t, test.expected, titleOutput)
 		})
 	}
@@ -125,19 +127,19 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 		desc       string
 	}{
 		{
-			expected:   "frogbot-update-dependencies-0",
+			expected:   "frogbot-update-go-dependencies",
 			desc:       "No template",
 			gitManager: GitManager{},
 		},
 		{
-			expected:   "[feature]-0",
+			expected:   "[feature]-go",
 			desc:       "Custom template hash only",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName()
+			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName(coreutils.Go)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, titleOutput)
 		})
@@ -149,12 +151,12 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		gitManager GitManager
 		expected   string
 	}{
-		{gitManager: GitManager{}, expected: AggregatedPullRequestTitleTemplate},
+		{gitManager: GitManager{}, expected: fmt.Sprintf(AggregatedPullRequestTitleTemplate, coreutils.Pipenv)},
 		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
 	}
 	for _, test := range tests {
 		t.Run(test.expected, func(t *testing.T) {
-			commit := test.gitManager.GenerateAggregatedCommitMessage()
+			commit := test.gitManager.GenerateAggregatedCommitMessage(coreutils.Pipenv)
 			assert.Equal(t, commit, test.expected)
 		})
 	}

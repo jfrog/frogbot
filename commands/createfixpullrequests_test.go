@@ -18,13 +18,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
-)
-
-const (
-	aggregatedBranchConstName = "frogbot-update-dependencies-0"
 )
 
 var testPackagesData = []struct {
@@ -75,45 +70,63 @@ var testPackagesData = []struct {
 // Make sure it is checked out to the main branch, replicating an actual run.
 func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 	tests := []struct {
-		repoName           string
-		testDir            string
-		configPath         string
-		expectedBranchName string
-		expectedDiff       string
-		dependencyFileName string
-		aggregateFixes     bool
+		repoName               string
+		testDir                string
+		configPath             string
+		expectedDiff           []string
+		expectedBranches       []string
+		packageDescriptorPaths []string
+		aggregateFixes         bool
 	}{
 		{
-			repoName:           "aggregate",
-			testDir:            "createfixpullrequests/aggregate",
-			expectedBranchName: aggregatedBranchConstName,
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
-			dependencyFileName: "package.json",
-			aggregateFixes:     true,
+			repoName:               "aggregate",
+			testDir:                "createfixpullrequests/aggregate",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         true,
 		},
 		{
-			repoName:           "aggregate-no-vul",
-			testDir:            "createfixpullrequests/aggregate-no-vul",
-			expectedBranchName: "main", // No branch should be created
-			expectedDiff:       "",
-			dependencyFileName: "package.json",
-			aggregateFixes:     true,
+			repoName:               "aggregate-multi-dir",
+			testDir:                "createfixpullrequests/aggregate-multi-dir",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
+			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex 1a4f13d..48eed63 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"mongoose\":\"5.10.10\",\n-    \"mpath\": \"0.7.0\"\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex 8fd5afd..abb80f5 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
+			aggregateFixes:         true,
+			configPath:             "testdata/createfixpullrequests/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
-			repoName:           "aggregate-cant-fix",
-			testDir:            "createfixpullrequests/aggregate-cant-fix",
-			expectedBranchName: aggregatedBranchConstName,
-			expectedDiff:       "",         // No diff expected
-			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
-			aggregateFixes:     true,
+			repoName:               "aggregate-multi-project",
+			testDir:                "createfixpullrequests/aggregate-multi-project",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies", "frogbot-update-pip-dependencies"},
+			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex 1a4f13d..48eed63 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"mongoose\":\"5.10.10\",\n-    \"mpath\": \"0.7.0\"\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n", "diff --git a/pip/requirements.txt b/pip/requirements.txt\nindex 65c9637..7788edc 100644\n--- a/pip/requirements.txt\n+++ b/pip/requirements.txt\n@@ -1,2 +1,2 @@\n pexpect==4.8.0\n-pyjwt==1.7.1\n\\ No newline at end of file\n+pyjwt==2.4.0\n\\ No newline at end of file\n"},
+			packageDescriptorPaths: []string{"npm/package.json", "pip/requirements.txt"},
+			aggregateFixes:         true,
+			configPath:             "testdata/createfixpullrequests/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
-			repoName:           "non-aggregate",
-			testDir:            "createfixpullrequests/non-aggregate",
-			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
-			dependencyFileName: "package.json",
-			aggregateFixes:     false,
+			repoName:               "aggregate-no-vul",
+			testDir:                "createfixpullrequests/aggregate-no-vul",
+			expectedBranches:       []string{"main"}, // No branch should be created
+			expectedDiff:           []string{""},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         true,
+		},
+		{
+			repoName:               "aggregate-cant-fix",
+			testDir:                "createfixpullrequests/aggregate-cant-fix",
+			expectedBranches:       []string{"frogbot-update-pip-dependencies"},
+			expectedDiff:           []string{""},         // No diff expected
+			packageDescriptorPaths: []string{"setup.py"}, // This is a build tool dependency which should not be fixed
+			aggregateFixes:         true,
+		},
+		{
+			repoName:               "non-aggregate",
+			testDir:                "createfixpullrequests/non-aggregate",
+			expectedBranches:       []string{"frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         false,
 		},
 	}
 	for _, test := range tests {
@@ -157,12 +170,16 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			err = cmd.Run(configAggregator, client)
 			// Validate
 			assert.NoError(t, err)
-			resultDiff, err := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
-			assert.NoError(t, err)
-			assert.Equal(t, test.expectedDiff, string(resultDiff))
+			for _, branch := range test.expectedBranches {
+				resultDiff, err := verifyDependencyFileDiff("main", branch, test.packageDescriptorPaths...)
+				assert.NoError(t, err)
+				assert.Contains(t, test.expectedDiff, string(resultDiff))
+			}
 			// Defers
-			restoreEnv()
-			server.Close()
+			defer func() {
+				restoreEnv()
+				server.Close()
+			}()
 		})
 	}
 }
@@ -185,7 +202,11 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			testDir:        "createfixpullrequests/aggregate-dont-update-pr",
 			expectedUpdate: false,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Body: `
+[comment]: <> (Checksum: 16cc29940fb50efb794f6a53bbf18f80)
+pr body
+ `,
+				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
 				Target: vcsclient.BranchInfo{Name: "main"},
 			}},
 		},
@@ -194,7 +215,11 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			testDir:        "createfixpullrequests/aggregate-update-pr",
 			expectedUpdate: true,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Body: `
+[comment]: <> (Checksum: 01373ac4d2c32e7da9be22f3e4b4e665)
+pr body
+ `,
+				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
 				Target: vcsclient.BranchInfo{Name: "remoteMain"},
 			}},
 		},
@@ -222,7 +247,7 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			client := mockVcsClient(t)
 			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
-				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, "", "", int(mockPrId), vcsutils.Open).Return(nil)
+				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, "npm"), "", "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
 			// Load default configurations
 			var configData []byte
@@ -293,7 +318,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
-	var testScan CreateFixPullRequestsCmd
+	testScan := &CreateFixPullRequestsCmd{OutputWriter: &utils.StandardOutput{}}
 	trueVal := true
 	params := utils.Params{
 		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
@@ -411,13 +436,13 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
-					FixVersion:         "1.9.1",
-					IsDirectDependency: true,
-					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+					SuggestedFixedVersion: "1.9.1",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
 				},
 				"vuln2": {
-					FixVersion: "2.4.1",
-					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+					SuggestedFixedVersion: "2.4.1",
+					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
 				},
 			},
 		},
@@ -461,13 +486,13 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
-					FixVersion:         "1.9.1",
-					IsDirectDependency: true,
-					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+					SuggestedFixedVersion: "1.9.1",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
 				},
 				"viol2": {
-					FixVersion: "2.4.1",
-					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+					SuggestedFixedVersion: "2.4.1",
+					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
 				},
 			},
 		},
@@ -481,7 +506,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				actualVuln, exists := fixVersionsMap[name]
 				require.True(t, exists)
 				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
-				assert.Equal(t, expectedVuln.FixVersion, actualVuln.FixVersion)
+				assert.Equal(t, expectedVuln.SuggestedFixedVersion, actualVuln.SuggestedFixedVersion)
 				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
 			}
 		})
@@ -494,7 +519,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan CreateFixPullRequestsCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			vulnDetails := &utils.VulnerabilityDetails{FixVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
+			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
 			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -504,8 +529,6 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 
 func TestGetRemoteBranchScanHash(t *testing.T) {
 	prBody := `
-[//]: <> (Hash: myhash4321)
-
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
 ## 📦 Vulnerable Dependencies 
 
@@ -585,16 +608,17 @@ func TestGetRemoteBranchScanHash(t *testing.T) {
 [JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
 
 </div>
+
+[Comment]: <> (Checksum: myhash4321)
 `
 	cfp := &CreateFixPullRequestsCmd{}
-	result, err := cfp.getRemoteBranchScanHash(prBody)
-	assert.NoError(t, err)
+	result := cfp.getRemoteBranchScanHash(prBody)
 	assert.Equal(t, "myhash4321", result)
 	prBody = `
 random body
 `
-	result, err = cfp.getRemoteBranchScanHash(prBody)
-	assert.Error(t, err)
+	result = cfp.getRemoteBranchScanHash(prBody)
+	assert.Equal(t, "", result)
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
@@ -606,15 +630,17 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
-	var cmd *exec.Cmd
-	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) ([]byte, error) {
+	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
-	} else {
-		cmd = exec.Command("git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
+	var args []string
+	if coreutils.IsWindows() {
+		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
+		args = append(args, packageDescriptorPaths...)
+		return exec.Command("cmd", args...).Output()
 	}
-	return cmd.Output()
+	args = []string{"diff", baseBranch, fixBranch}
+	args = append(args, packageDescriptorPaths...)
+	return exec.Command("git", args...).Output()
 }

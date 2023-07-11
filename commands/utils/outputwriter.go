@@ -49,7 +49,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabiltiesTitle(isComment bool) string
 	VulnerabilitiesTableHeader() string
-	VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
+	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
 	Seperator() string
@@ -78,39 +78,40 @@ func JasMsg(entitled bool) string {
 	return msg
 }
 
-func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
+func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
 	var cves []string
-	for _, cve := range vulnerabilityDetails.Cves {
+	for _, cve := range vulnerability.Cves {
 		cves = append(cves, cve.Id)
 	}
-	if vulnerabilityDetails.JfrogResearchInformation == nil {
-		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
+
+	if vulnerability.JfrogResearchInformation == nil {
+		vulnerability.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
 	}
-	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
+	if vulnerability.Applicable != "" && vulnerability.Applicable != "Undetermined" {
 		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
-			utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-			vulnerabilityDetails.Severity,
-			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
-			vulnerabilityDetails.ImpactedDependencyName,
-			vulnerabilityDetails.ImpactedDependencyVersion,
-			strings.Join(vulnerabilityDetails.FixedVersions, ","),
+			utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(),
+			vulnerability.Severity,
+			formattedApplicabilityText(vulnerability.Applicable, provider),
+			vulnerability.ImpactedDependencyName,
+			vulnerability.ImpactedDependencyVersion,
+			strings.Join(vulnerability.FixedVersions, ","),
 			strings.Join(cves, ", "),
-			vulnerabilityDetails.JfrogResearchInformation.Details,
-			vulnerabilityDetails.JfrogResearchInformation.Remediation)
+			vulnerability.JfrogResearchInformation.Details,
+			vulnerability.JfrogResearchInformation.Remediation)
 	}
 	return fmt.Sprintf(vulnerabilityDetailsComment,
-		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-		vulnerabilityDetails.Severity,
-		vulnerabilityDetails.ImpactedDependencyName,
-		vulnerabilityDetails.ImpactedDependencyVersion,
-		strings.Join(vulnerabilityDetails.FixedVersions, ","),
+		utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(),
+		vulnerability.Severity,
+		vulnerability.ImpactedDependencyName,
+		vulnerability.ImpactedDependencyVersion,
+		strings.Join(vulnerability.FixedVersions, ","),
 		strings.Join(cves, ", "),
-		vulnerabilityDetails.JfrogResearchInformation.Details)
+		vulnerability.JfrogResearchInformation.Details)
 }
 
-func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var tableContent string
-	for _, vulnerability := range vulnerabilitiesRows {
+	for _, vulnerability := range vulnerabilities {
 		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
 	}
 	return tableContent
@@ -159,5 +160,5 @@ func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) stri
 }
 
 func MarkdownComment(text string) string {
-	return fmt.Sprintf("[comment]: <> (%s)\n", text)
+	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
 }

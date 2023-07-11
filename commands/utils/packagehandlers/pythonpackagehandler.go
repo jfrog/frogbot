@@ -32,7 +32,7 @@ func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 
 	return &utils.ErrUnsupportedFix{
 		PackageName:  vulnDetails.ImpactedDependencyName,
-		FixedVersion: vulnDetails.FixVersion,
+		FixedVersion: vulnDetails.SuggestedFixedVersion,
 		ErrorType:    utils.IndirectDependencyFixNotSupported,
 	}
 }
@@ -62,7 +62,7 @@ func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDet
 func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
-	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.FixVersion
+	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.SuggestedFixedVersion
 	if py.pipRequirementsFile == "" {
 		py.pipRequirementsFile = "setup.py"
 	}
@@ -90,7 +90,7 @@ func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetail
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
-		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.FixVersion, err.Error())
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}
 	return
 }

@@ -43,7 +43,7 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	commandArgs := []string{vulnDetails.Technology.GetPackageInstallOperator()}
 	commandArgs = append(commandArgs, extraArgs...)
 	operator := vulnDetails.Technology.GetPackageOperator()
-	fixedPackage := impactedPackage + operator + vulnDetails.FixVersion
+	fixedPackage := impactedPackage + operator + vulnDetails.SuggestedFixedVersion
 	commandArgs = append(commandArgs, fixedPackage)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
 }

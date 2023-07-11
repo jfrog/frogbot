@@ -56,6 +56,6 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Re
 		err = errors.Join(err, restoreDir())
 	}()
 
-	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: saf.dryRunRepoPath}
+	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: wd}
 	return cfp.scanAndFixRepository(repository, branch, client)
 }
