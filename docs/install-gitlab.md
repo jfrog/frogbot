@@ -134,18 +134,20 @@ frogbot-scan:
     # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
     # The following values are accepted: Low, Medium, High or Critical
     # JF_MIN_SEVERITY: ""
+
+    # [Optional, Default: eco-system+frogbot@jfrog.com]
+    # Set the email of the commit author
+    # JF_GIT_EMAIL_AUTHOR: ""
   script:
     # For Linux / MacOS runner:
     - |
       getFrogbotScriptPath=$(if [ -z "$JF_RELEASES_REPO" ]; then echo "https://releases.jfrog.io"; else echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}"; fi)
       curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-      ./frogbot scan-pull-requests
-      ./frogbot scan-and-fix-repos
+      - ./frogbot ${FROGBOT_CMD}
 
     # For Windows runner:
     # 
     # - $getFrogbotScriptPath = $(if ([string]::IsNullOrEmpty($env:JF_RELEASES_REPO)) { "https://releases.jfrog.io" } else { "$($env:JF_URL)/artifactory/$($env:JF_RELEASES_REPO)" })
     # - Invoke-WebRequest -Uri "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" -UseBasicParsing | ForEach-Object { & $_.Content }
-    # - .\frogbot scan-pull-requests
-    # - .\frogbot scan-and-fix-repos
+    # - .\frogbot ${FROGBOT_CMD}
 ```

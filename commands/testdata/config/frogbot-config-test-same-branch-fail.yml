@@ -1,0 +1,9 @@
+- params:
+    git:
+      repoName: test-same-branch-fail
+      branches:
+        - main
+    scan:
+      projects:
+        - workingDirs:
+            - .

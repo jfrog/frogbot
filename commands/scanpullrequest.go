@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	"github.com/jfrog/gofrog/datastructures"
 	"os"
 	"os/exec"
@@ -40,7 +41,30 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
+	if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
+		return err
+	}
 	return scanPullRequest(repoConfig, client)
+}
+
+// Verifies current branch and target branch are not the same.
+// The Current branch is the branch the action is triggered on.
+// The Target branch is the branch to open pull request to.
+func (cmd *ScanPullRequestCmd) verifyDifferentBranches(repoConfig *utils.Repository) error {
+	repo, err := git.PlainOpen(".")
+	if err != nil {
+		return err
+	}
+	ref, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	currentBranch := ref.Name().Short()
+	defaultBranch := repoConfig.Branches[0]
+	if currentBranch == defaultBranch {
+		return fmt.Errorf(utils.ErrScanPullRequestSameBranches, currentBranch)
+	}
+	return nil
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
@@ -77,6 +101,7 @@ func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) e
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	var iacRows []formats.IacSecretsRow
+	targetBranch := repoConfig.Branches[0]
 	for i := range repoConfig.Projects {
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
@@ -99,7 +124,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 			continue
 		}
 		// Audit target code
-		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).SetBranch(repoConfig.Branches[0])
+		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).SetBranch(targetBranch)
 		targetResults, err := auditTarget(scanDetails)
 		if err != nil {
 			return nil, nil, err
