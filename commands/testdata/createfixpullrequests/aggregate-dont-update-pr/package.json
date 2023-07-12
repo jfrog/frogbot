@@ -1,0 +1,15 @@
+{
+  "name": "aggregate-dont-update-pr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no tsest specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "mpath": "0.7.0"
+  }
+}
