@@ -136,8 +136,6 @@ func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) stri
 	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
 	var formattedText string
 	switch provider {
-	case vcsutils.GitHub, vcsutils.GitLab:
-		formattedText = fmt.Sprintf("$\\color{%s}{\\textsf{%s}}$", applicabilityColor, text)
 	case vcsutils.AzureRepos:
 		formattedText = fmt.Sprintf("<span style=\"color: %s;\">%s</span>", applicabilityColor, text)
 	default:
