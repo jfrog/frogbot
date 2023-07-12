@@ -26,12 +26,12 @@ func Exec(command FrogbotCommand, name string) (err error) {
 	}
 
 	// Build the server configuration file
-	previousJfrogHomeDir, currentJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotUtils.ServerDetails)
+	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotUtils.ServerDetails)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		err = errors.Join(err, os.Setenv(utils.JfrogHomeDirEnv, previousJfrogHomeDir), fileutils.RemoveTempDir(currentJFrogHomeDir))
+		err = errors.Join(err, os.Setenv(utils.JfrogHomeDirEnv, originalJfrogHomeDir), fileutils.RemoveTempDir(tempJFrogHomeDir))
 	}()
 
 	// Set releases remote repository env if needed
