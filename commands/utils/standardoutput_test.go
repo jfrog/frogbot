@@ -233,8 +233,8 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
-	assert.Contains(t, actualContent, "Applicable")
-	assert.Contains(t, actualContent, "Not Applicable")
+	assert.Contains(t, actualContent, "**APPLICABLE**")
+	assert.Contains(t, actualContent, "**NOT APPLICABLE**")
 }
 
 func TestStandardOutput_IacContent(t *testing.T) {

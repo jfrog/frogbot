@@ -13,14 +13,14 @@ func TestFormattedApplicabilityText(t *testing.T) {
 		expected string
 	}{
 		// Test cases for GitHub as gitProvider
-		{vcsutils.GitHub, "applicable", "$\\color{#FF7377}{\\textsf{applicable}}$"},
-		{vcsutils.GitHub, "not applicable", "$\\color{#3CB371}{\\textsf{not applicable}}$"},
-		{vcsutils.GitHub, "undetermined", "$\\color{}{\\textsf{undetermined}}$"},
+		{vcsutils.GitHub, "applicable", "**APPLICABLE**"},
+		{vcsutils.GitHub, "not applicable", "**NOT APPLICABLE**"},
+		{vcsutils.GitHub, "undetermined", "**UNDETERMINED**"},
 
 		// Test cases for GitLab as gitProvider
-		{vcsutils.GitLab, "applicable", "$\\color{#FF7377}{\\textsf{applicable}}$"},
-		{vcsutils.GitLab, "not applicable", "$\\color{#3CB371}{\\textsf{not applicable}}$"},
-		{vcsutils.GitLab, "undetermined", "$\\color{}{\\textsf{undetermined}}$"},
+		{vcsutils.GitLab, "applicable", "**APPLICABLE**"},
+		{vcsutils.GitLab, "not applicable", "**NOT APPLICABLE**"},
+		{vcsutils.GitLab, "undetermined", "**UNDETERMINED**"},
 
 		// Test cases for AzureRepos as gitProvider
 		{vcsutils.AzureRepos, "applicable", "<span style=\"color: #FF7377;\">applicable</span>"},
