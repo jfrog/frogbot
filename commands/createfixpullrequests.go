@@ -493,7 +493,7 @@ func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(prBody string) stri
 }
 
 func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName string) (prInfo *vcsclient.PullRequestInfo, err error) {
-	list, err := cfp.details.Client().ListOpenPullRequests(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
+	list, err := cfp.details.Client().ListOpenPullRequestsWithBody(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
 	if err != nil {
 		return
 	}

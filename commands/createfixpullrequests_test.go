@@ -245,7 +245,7 @@ pr body
 			}
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
-			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
+			client.EXPECT().ListOpenPullRequestsWithBody(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
 				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, "npm"), "", "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
