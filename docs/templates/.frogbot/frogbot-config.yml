@@ -34,6 +34,10 @@
       # If false, Frogbot creates a separate pull request for each fix.
       # aggregateFixes: false
 
+      # [Optional, Default: eco-system+frogbot@jfrog.com]
+      # Set the email of the commit author
+      # emailAuthor: ""
+
     # Frogbot scanning parameters
     scan:
       # [Default: false]

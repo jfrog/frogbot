@@ -69,10 +69,17 @@
           "[Security_Update]-${FIX_VERSION}",
           "[Feature]"
         ]
-      } ,
+      },
       "aggregateFixes": {
         "type": "boolean",
         "default": "false"
+      },
+      "emailAuthor": {
+        "type": "string",
+        "default": "eco-system+frogbot@jfrog.com",
+        "examples": [
+          "myemail@jfrog.com"
+        ]
       }
     },
     "examples": [

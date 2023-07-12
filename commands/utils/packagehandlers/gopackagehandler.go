@@ -8,7 +8,7 @@ type GoPackageHandler struct {
 	CommonPackageHandler
 }
 
-func (golang *GoPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
+func (golang *GoPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	// In Golang, we can address every dependency as a direct dependency.
-	return golang.CommonPackageHandler.UpdateDependency(fixDetails)
+	return golang.CommonPackageHandler.UpdateDependency(vulnDetails)
 }

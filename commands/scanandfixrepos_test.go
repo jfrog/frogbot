@@ -37,12 +37,15 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer server.Close()
 	port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
-	gitTestParams := &utils.Git{
-		GitProvider:   vcsutils.GitHub,
-		RepoOwner:     "jfrog",
-		Token:         "123456",
-		ApiEndpoint:   server.URL,
-		PullRequestID: 1,
+	gitTestParams := utils.Git{
+		ClientInfo: utils.ClientInfo{
+			GitProvider: vcsutils.GitHub,
+			RepoOwner:   "jfrog",
+			VcsInfo: vcsclient.VcsInfo{
+				Token:       "123456",
+				APIEndpoint: server.URL,
+			},
+		},
 	}
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
@@ -55,140 +58,11 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer cleanUp()
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
-	configAggregator, err := utils.NewConfigAggregatorFromFile(configData, gitTestParams, &serverParams, "")
+	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 	assert.NoError(t, err)
 
-	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: filepath.Join("testdata", "scanandfixrepos")}
+	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: tmpDir}
 	assert.NoError(t, cmd.Run(configAggregator, client))
-}
-
-func TestShouldScanBranchByStatus(t *testing.T) {
-	commitStatusTestCases := []struct {
-		statuses    []vcsclient.CommitStatusInfo
-		description string
-		expected    bool
-	}{
-		{
-			statuses:    []vcsclient.CommitStatusInfo{},
-			description: "Empty statuses",
-			expected:    true,
-		},
-		{
-			statuses: []vcsclient.CommitStatusInfo{
-				{
-					State:         vcsclient.Fail,
-					Description:   utils.CommitStatusDescription,
-					DetailsUrl:    utils.CommitStatusDetailsUrl,
-					Creator:       utils.FrogbotCreatorName,
-					LastUpdatedAt: time.Now().UTC(),
-				}, {
-					State:         vcsclient.InProgress,
-					Description:   utils.CommitStatusDescription,
-					DetailsUrl:    "",
-					Creator:       "im not frogbot",
-					LastUpdatedAt: time.Now().UTC(),
-				},
-			},
-			description: "Frogbot failed statues should scan",
-			expected:    true,
-		},
-		{
-			statuses: []vcsclient.CommitStatusInfo{
-				{
-					State:         vcsclient.Fail,
-					Description:   "description",
-					DetailsUrl:    "some other url",
-					Creator:       "im not frogbot",
-					LastUpdatedAt: time.Now().UTC(),
-				}, {
-					State:         vcsclient.InProgress,
-					Description:   "this is the latest commit",
-					DetailsUrl:    "some other url",
-					Creator:       "im not frogbot",
-					LastUpdatedAt: time.Now().UTC(),
-				},
-				{
-					State:         vcsclient.Pass,
-					Description:   "this is the latest commit",
-					DetailsUrl:    "some other url",
-					Creator:       "im not frogbot",
-					LastUpdatedAt: time.Now().UTC(),
-				},
-			},
-			description: "Non Frogbot statues",
-			expected:    true,
-		}, {
-			statuses: []vcsclient.CommitStatusInfo{
-				{
-					State:         vcsclient.Pass,
-					Description:   utils.CommitStatusDescription,
-					DetailsUrl:    utils.CommitStatusDetailsUrl,
-					Creator:       utils.FrogbotCreatorName,
-					LastUpdatedAt: time.Now().AddDate(0, -1, 0),
-				},
-			},
-			description: "Old statuse should scan",
-			expected:    true,
-		},
-	}
-	for _, tt := range commitStatusTestCases {
-		t.Run(tt.description, func(t *testing.T) {
-			shouldScan := shouldScanCommitByStatus(tt.statuses)
-			assert.Equal(t, tt.expected, shouldScan)
-		})
-	}
-}
-
-func TestStatusTimestampElapsed(t *testing.T) {
-	testCases := []struct {
-		commitStatusInfo vcsclient.CommitStatusInfo
-		description      string
-		expected         bool
-	}{
-		{
-			commitStatusInfo: vcsclient.CommitStatusInfo{
-				State:         0,
-				Description:   "",
-				DetailsUrl:    "",
-				Creator:       "",
-				CreatedAt:     time.Now().UTC().AddDate(0, -3, 0),
-				LastUpdatedAt: time.Now().UTC().AddDate(0, 0, -utils.SkipRepoScanDays-1),
-			},
-			expected:    true,
-			description: "Last Update time is priority",
-		},
-		{
-			commitStatusInfo: vcsclient.CommitStatusInfo{
-				State:         0,
-				Description:   "",
-				DetailsUrl:    "",
-				Creator:       "",
-				CreatedAt:     time.Now(),
-				LastUpdatedAt: time.Now(),
-			},
-			expected:    false,
-			description: "No scan needed ",
-		},
-		{
-			commitStatusInfo: vcsclient.CommitStatusInfo{
-				State:         0,
-				Description:   "",
-				DetailsUrl:    "",
-				Creator:       "",
-				CreatedAt:     time.Now().UTC(),
-				LastUpdatedAt: time.Time{},
-			},
-			expected:    false,
-			description: "Creation time fallback",
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.description, func(t *testing.T) {
-			needScan := statusTimestampElapsed(tt.commitStatusInfo)
-			assert.Equal(t, tt.expected, needScan)
-		})
-	}
 }
 
 func createReposGitEnvironment(t *testing.T, wd, port string, repositories ...string) {

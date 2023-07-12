@@ -59,13 +59,10 @@ frogbot-scan:
     # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
     # JF_RELEASES_REPO: ""
 
-
-
-
-    ##########################################################################
-    ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
-    ##   the following variables inside the file, instead of here.          ##
-    ##########################################################################
+    ###########################################################################
+    ##   If your project uses a 'frogbot-config.yml' file, you should define ##
+    ##   the following variables inside the file, instead of here.           ##
+    ###########################################################################
 
     # [Mandatory if the two conditions below are met]
     # 1. The project uses yarn 2, NuGet or .NET to download its dependencies
@@ -137,16 +134,22 @@ frogbot-scan:
     # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
     # The following values are accepted: Low, Medium, High or Critical
     # JF_MIN_SEVERITY: ""
+
+    # [Optional, Default: eco-system+frogbot@jfrog.com]
+    # Set the email of the commit author
+    # JF_GIT_EMAIL_AUTHOR: ""
   script:
     # For Linux / MacOS runner:
-    - curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-    - ./frogbot ${FROGBOT_CMD}
+    - |
+      getFrogbotScriptPath=$(if [ -z "$JF_RELEASES_REPO" ]; then echo "https://releases.jfrog.io"; else echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}"; fi)
+      curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
+      ./frogbot scan-pull-requests
+      ./frogbot scan-and-fix-repos
 
     # For Windows runner:
-    # iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe ${FROGBOT_CMD}
-
-    # For Windows runner using Artifactory remote repository:
-    # iwr $JF_URL/artifactory/$JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe
-    # .\frogbot.exe ${FROGBOT_CMD}
+    # 
+    # - $getFrogbotScriptPath = $(if ([string]::IsNullOrEmpty($env:JF_RELEASES_REPO)) { "https://releases.jfrog.io" } else { "$($env:JF_URL)/artifactory/$($env:JF_RELEASES_REPO)" })
+    # - Invoke-WebRequest -Uri "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" -UseBasicParsing | ForEach-Object { & $_.Content }
+    # - .\frogbot scan-pull-requests
+    # - .\frogbot scan-and-fix-repos
 ```

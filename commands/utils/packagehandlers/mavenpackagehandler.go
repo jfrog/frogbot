@@ -156,7 +156,7 @@ type MavenPackageHandler struct {
 	depsRepo string
 }
 
-func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) error {
+func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if err := mph.installMavenGavReader(); err != nil {
 		return err
 	}
@@ -176,19 +176,19 @@ func (mph *MavenPackageHandler) UpdateDependency(fixDetails *utils.FixDetails) e
 	var depDetails pomDependencyDetails
 	var exists bool
 	// Check if the impacted package is a direct dependency
-	impactedDependency := fixDetails.ImpactedDependency
+	impactedDependency := vulnDetails.ImpactedDependencyName
 	if depDetails, exists = mph.mavenDepToPropertyMap[impactedDependency]; !exists {
 		return &utils.ErrUnsupportedFix{
-			PackageName:  fixDetails.ImpactedDependency,
-			FixedVersion: fixDetails.FixVersion,
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.FixVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
 	if len(depDetails.properties) > 0 {
-		return mph.updateProperties(&depDetails, fixDetails.FixVersion)
+		return mph.updateProperties(&depDetails, vulnDetails.FixVersion)
 	}
 
-	return mph.updatePackageVersion(fixDetails.ImpactedDependency, fixDetails.FixVersion, depDetails.foundInDependencyManagement)
+	return mph.updatePackageVersion(vulnDetails.ImpactedDependencyName, vulnDetails.FixVersion, depDetails.foundInDependencyManagement)
 }
 
 func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
@@ -269,7 +269,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 // Update the package version. Updates it only if the version is not a reference to a property.
 func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersion string, foundInDependencyManagement bool) (err error) {
 	updateVersionArgs := []string{
-		"-B", "versions:use-dep-version", "-Dincludes=" + impactedPackage,
+		"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:use-dep-version", "-Dincludes=" + impactedPackage,
 		"-DdepVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
 		fmt.Sprintf("-DprocessDependencies=%t", !foundInDependencyManagement),
 		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
@@ -283,7 +283,7 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
 	for _, property := range depDetails.properties {
 		updatePropertyArgs := []string{
-			"-B", "versions:set-property", "-Dproperty=" + property,
+			"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:set-property", "-Dproperty=" + property,
 			"-DnewVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
 			fmt.Sprintf("-DprocessDependencies=%t", !depDetails.foundInDependencyManagement),
 			fmt.Sprintf("-DprocessDependencyManagement=%t", depDetails.foundInDependencyManagement)}

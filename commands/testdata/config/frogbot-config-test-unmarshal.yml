@@ -4,6 +4,7 @@
       branches:
         - master
         - main
+      emailAuthor: "myemail@jfrog.com"
     scan:
       projects:
         - installCommand: nuget restore

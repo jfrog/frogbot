@@ -113,13 +113,18 @@
           // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
           // JF_RELEASES_REPO= ""
 
-
+          ///////////////////////////////////////////////////////////////////////////
+          //   If your project uses a 'frogbot-config.yml' file, you should define //
+          //   the following variables inside the file, instead of here.           //
+          ///////////////////////////////////////////////////////////////////////////
   
+          // [Mandatory]
+          // The name of the repository
+          JF_GIT_REPO: ""
 
-          //////////////////////////////////////////////////////////////////////////
-          //   If your project uses a 'frogbot-config.yml' file, you can define   //
-          //   the following variables inside the file, instead of here.          //
-          //////////////////////////////////////////////////////////////////////////
+          // [Mandatory]
+          // The name of the branch on which Frogbot will perform the scan
+          JF_GIT_BASE_BRANCH: ""
 
           // [Mandatory if the two conditions below are met]
           // 1. The project uses yarn 2, NuGet or .NET to download its dependencies
@@ -191,14 +196,25 @@
           // Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
           // The following values are accepted: Low, Medium, High or Critical
           // JF_MIN_SEVERITY= ""
+  
+          // [Optional, Default: eco-system+frogbot@jfrog.com]
+          // Set the email of the commit author
+          // JF_GIT_EMAIL_AUTHOR: ""
       }
       stages {
                stage('Download Frogbot') {
                    steps {
-                       // For Linux / MacOS runner:
-                       sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-                       // For Windows runner:
-                       // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                      if (env.JF_RELEASES_REPO == "") {
+                         // For Linux / MacOS runner:
+                         sh """ curl -fLg "https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                         // For Windows runner:
+                         // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""  
+                      } else {
+                         // For Linux / MacOS air gapped environments:
+                         sh """ curl -fLg "${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
+                         // For Windows air gapped environments:
+                         // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
+                      }                      
                    }
                }
                stage('Scan Pull Requests') {
