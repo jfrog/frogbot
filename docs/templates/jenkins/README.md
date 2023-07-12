@@ -46,7 +46,7 @@
   - Go your project settings and select webhooks.
   - Setup a webhhok with merge request events
   -  <img src="../../../images/GitLab_webhook.png">
-      
+      TODO -> EXLPAIN THIS SECRET
    - Fill in your **JENKINS URL/generic-webhook-trigger/invoke** , **SECRET_TOKEN** and select add webhook.
 
 </details>
