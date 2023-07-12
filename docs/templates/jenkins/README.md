@@ -5,50 +5,68 @@
 <img src="../../../images/jenkins-logo.png" width="250">
 
 ### 🖥️ Follow These steps to install Frogbot on Jenkins
-
 <details>
-  <summary>🔼 Step 1 - Setup Jenkins Webhook </summary>
+  <summary>1️⃣  Install Jenkins Webhook Plugin </summary>
 
 - **Install Generic Webhook Trigger**
-    - Using the GUI: From your Jenkins dashboard navigate to Manage Jenkins > Manage Plugins and select the Available
-      tab. Locate this plugin by searching
-      for - [Generic Webhook Trigger](https://plugins.jenkins.io/generic-webhook-trigger/).
+  - Using the GUI: From your Jenkins dashboard navigate to Manage Jenkins > Manage Plugins and select the Available
+    tab. Locate this plugin by searching
+    for - [Generic Webhook Trigger](https://plugins.jenkins.io/generic-webhook-trigger/).
+
+</details>
+<details>
+  <summary>2️⃣ Setup VCS Webhook </summary>
 
 - **Set Up Webhook on your Git Provider**
 
     <details>
       <summary> Bitbucket Server  </summary>
-       Go to repository settings and create a Pull Request Webhook:
+  
+    - Go to repository settings and select Webhooks , and create a new webhook.
+    - <img src="../../../images/bitbucket-webhook-setup.png">
+    - <img src="../../../images/bitbucketserver-create-webhook.png">
 
     </details>
 
   <details>
       <summary> GitHub  </summary>
+  - Go
     </details>
 
   <details>
         <summary> Azure Repos  </summary>
+  
+   -   [Set Up Azure Repos Jenkins Webhook](https://learn.microsoft.com/en-us/azure/devops/service-hooks/services/jenkins?view=azure-devops)
+  
     </details>
 
   <details>
         <summary> GitLab  </summary>
-    </details>
+  
+  - Go your project settings and select webhooks.
+  - Setup a webhhok with merge request events
+  -  <img src="../../../images/GitLab_webhook.png">
+      
+   - Fill in your **JENKINS URL/generic-webhook-trigger/invoke** , **SECRET_TOKEN** and select add webhook.
 
 </details>
 
 <details>
-  <summary>🔑 Step 2 - Set up credentials</summary>
+  <summary>3️⃣ Set up credentials</summary>
 
 - Make sure you have the connection details of your JFrog environment and saved as credentials, as they will be
   referenced from the Jenkinsfile.
+- Set up the following credentials:
     - **JF_URL**
     - **JF_ACCESS_TOKEN** *or* **JF_USER**  & **JF_PASSWORD**
     - **JF_GIT_TOKEN** access token with read&write access to the repository.
+    - **TRIGGER_SECRET** secret used when creating the webhook.
+- [How to use credentials with Jenkins](https://www.jenkins.io/doc/book/using/using-credentials/)
 
 </details>
 
 <details>
-  <summary>💻  Step 3 - Prepare Agents</summary>
+  <summary>4️⃣  Prepare Agents</summary>
 
 - It is necessary to have the package manager corresponding to the repository installed on the machine. For example, for
   an npm project, npm must be installed. In the case of multi-project repositories, ensure that all the required package
@@ -57,7 +75,7 @@
 </details>
 
 <details>
-  <summary>🔼 Step 4 - Copy templates </summary>
+  <summary>5️⃣ Copy templates </summary>
 
 - **Copy and adjust params for each command**
 
@@ -241,14 +259,33 @@
     triggers {
         GenericTrigger(
                 genericVariables: [
-                        [key: 'JF_GIT_REPO', value: '$.repository.name'],
-                        [key: 'JF_GIT_PULL_REQUEST_ID', value: '$.number'],
-                        [key: 'JF_GIT_OWNER', value: '$.pull_request.user.login'],
-                        [key: 'TRIGGER_KEY', value: '$.action'],
+                       // GitHub
+                       //[key: 'JF_GIT_REPO', value: '$.repository.name'],
+                       //[key: 'JF_GIT_PULL_REQUEST_ID', value: '$.number'],
+                       //[key: 'JF_GIT_OWNER', value: '$.pull_request.user.login'],
+                       //[key: 'TRIGGER_KEY', value: '$.action'],
+                        
+                       // Bitbucket Server
+                       //[key: 'JF_GIT_REPO', value: '$.pullRequest.fromRef.repository.slug'],
+                       //[key: 'JF_GIT_PULL_REQUEST_ID', value: '$.pullRequest.id'],
+                       //[key: 'JF_GIT_OWNER', value: '$.pullRequest.fromRef.repository.project.key'],
+                       //[key: 'TRIGGER_KEY', value: '$.eventKey'],
+                  
+                        // GitLab
+                       //[key: 'JF_GIT_REPO', value: '$.project.name'],
+                       //[key: 'JF_GIT_PULL_REQUEST_ID', value: '$.pullRequestId'],
+                       //[key: 'JF_GIT_OWNER', value: '$.user.username'],
+                       //[key: 'TRIGGER_KEY', value: '$.event_type'],
+                  
+                       // Azure Repos
+                       //[key: 'JF_GIT_REPO', value: '$.resource.repository.name'],
+                       //[key: 'JF_GIT_PULL_REQUEST_ID', value: '$.object_attributes.iid'],
+                       //[key: 'JF_GIT_OWNER', value: '$.resource.repository.project.name'],
+                       //[key: 'TRIGGER_KEY', value: '$.eventType'],
                 ],
                 causeString: 'Pull Request Trigger',
                 printContributedVariables: false,
-                token: credentials("TRIGGER_TOKEN")
+                token: credentials("TRIGGER_SECRET")
         )
     }
   
@@ -365,6 +402,11 @@
         stage("Verify trigger") {
             steps {
                 script {
+                    // Change this to your trigger name
+                    // GitHub: synchronize
+                    // BitbucketServer: pr:from_ref_updated && pr:opened payload
+                    // GitLab: merge_request
+                    // AzureRepos: git.pullrequest.updated || git.pullrequest.created
                     if (env.TRIGGER_KEY != 'synchronize') {
                         error('Event key is not pr:from_ref_updated. Aborting pipeline execution.')
                     }
