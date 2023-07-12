@@ -107,8 +107,9 @@ type Scan struct {
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
-	NpmIgnoreDevDependencies  bool      `yaml:"npmIgnoreDevDependencies,omitempty"`
 	JfrogReleasesRepo         string
+	// Ignore reporting issues for npm dev dependencies.
+	ExcludeDevDependencies bool `yaml:"excludeDevDependencies,omitempty"`
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -148,11 +149,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	s.JfrogReleasesRepo = getTrimmedEnv(jfrogReleasesRepoEnv)
 
-	npmIgnoreDevDependencies, err := getBoolEnv(IgnoreNpmDevDependencies, true)
+	excludeDevDependencies, err := getBoolEnv(ExcludeDevDependencies, false)
 	if err != nil {
 		return err
 	}
-	s.NpmIgnoreDevDependencies = npmIgnoreDevDependencies
+	s.ExcludeDevDependencies = excludeDevDependencies
 	return
 }
 

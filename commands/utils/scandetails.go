@@ -18,8 +18,8 @@ type ScanDetails struct {
 	minSeverityFilter        string
 	branch                   string
 	releasesRepo             string
-	npmDependenciesScope     string
 	ExtendedResults          *xrayutils.ExtendedScanResults
+	excludeDevDependencies   bool
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -61,10 +61,8 @@ func (sc *ScanDetails) SetReleasesRepo(releasesRepo string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetNpmDependenciesScope(ignoreDev bool) *ScanDetails {
-	if ignoreDev {
-		sc.npmDependenciesScope = "prodOnly"
-	}
+func (sc *ScanDetails) SetExcludeDevDependencies(exclude bool) *ScanDetails {
+	sc.excludeDevDependencies = exclude
 	return sc
 }
 
@@ -92,8 +90,8 @@ func (sc *ScanDetails) MinSeverityFilter() string {
 	return sc.minSeverityFilter
 }
 
-func (sc *ScanDetails) NpmDependenciesScope() string {
-	return sc.npmDependenciesScope
+func (sc *ScanDetails) ExcludeDevDependencies() bool {
+	return sc.excludeDevDependencies
 }
 
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {

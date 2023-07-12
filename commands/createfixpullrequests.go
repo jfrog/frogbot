@@ -65,7 +65,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 		SetReleasesRepo(repository.JfrogReleasesRepo).
 		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverity(repository.MinSeverity).
-		SetNpmDependenciesScope(repository.NpmIgnoreDevDependencies)
+		SetExcludeDevDependencies(repository.ExcludeDevDependencies)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	cfp.OutputWriter = utils.GetCompatibleOutputWriter(cfp.details.GitProvider)
 	for i := range repository.Projects {

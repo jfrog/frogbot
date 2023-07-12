@@ -57,9 +57,9 @@
       # The following values are accepted: Low, Medium, High or Critical
       # minSeverity: ""
 
-      # [Optional, Default: false]
-      # Allow the option to ignore dev dependencies while scanning npm projects.
-      # npmIgnoreDevDependencies: false
+      # [Default: false]
+      # Avoid reporting issues for dev dependencies for npm projects.
+      # excludeDevDependencies: false
 
       # List of subprojects / project dirs inside the Git repository
       projects:
