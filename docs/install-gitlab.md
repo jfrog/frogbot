@@ -143,13 +143,11 @@ frogbot-scan:
     - |
       getFrogbotScriptPath=$(if [ -z "$JF_RELEASES_REPO" ]; then echo "https://releases.jfrog.io"; else echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}"; fi)
       curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-      ./frogbot scan-pull-requests
-      ./frogbot scan-and-fix-repos
+      - ./frogbot ${FROGBOT_CMD}
 
     # For Windows runner:
     # 
     # - $getFrogbotScriptPath = $(if ([string]::IsNullOrEmpty($env:JF_RELEASES_REPO)) { "https://releases.jfrog.io" } else { "$($env:JF_URL)/artifactory/$($env:JF_RELEASES_REPO)" })
     # - Invoke-WebRequest -Uri "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" -UseBasicParsing | ForEach-Object { & $_.Content }
-    # - .\frogbot scan-pull-requests
-    # - .\frogbot scan-and-fix-repos
+    # - .\frogbot ${FROGBOT_CMD}
 ```
