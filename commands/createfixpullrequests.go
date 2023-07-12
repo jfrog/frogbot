@@ -32,8 +32,6 @@ type CreateFixPullRequestsCmd struct {
 	details *utils.ScanDetails
 	// The base working directory
 	baseWd string
-	// The current project working directory
-	projectWorkingDir string
 	// The git client the command performs git operations with
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request
