@@ -77,7 +77,6 @@ func (cfp *CreateFixPullRequestsCmd) setCommandPreRequisites(repository *utils.R
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetBranch(branch).
-		SetReleasesRepo(repository.JfrogReleasesRepo).
 		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes

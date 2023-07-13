@@ -105,7 +105,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	for i := range repoConfig.Projects {
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
-			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 			SetMinSeverity(repoConfig.MinSeverity).
 			SetFixableOnly(repoConfig.FixableOnly)
@@ -291,8 +290,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (audit
 		SetUseWrapper(*scanSetup.UseWrapper).
 		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(scanSetup.ServerDetails).
-		SetReleasesRepo(scanSetup.ReleasesRepo())
+		SetServerDetails(scanSetup.ServerDetails)
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
