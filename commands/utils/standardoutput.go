@@ -19,8 +19,7 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	}
 
 	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
-	_, caSupported := contextualAnalysisSupport[vulnerability.Technology]
-	if so.EntitledForJas() && caSupported {
+	if so.EntitledForJas() && vulnerability.Technology.ContextualAnalysisSupport() {
 		row += vulnerability.Applicable + " |"
 	}
 	row += fmt.Sprintf("%s | %s | %s |",

@@ -19,9 +19,8 @@ type SimplifiedOutput struct {
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
 	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
-	_, caSupported := contextualAnalysisSupport[vulnerability.Technology]
 	directsRowFmt := directDependencyRow
-	if smo.EntitledForJas() && caSupported {
+	if smo.EntitledForJas() && vulnerability.Technology.ContextualAnalysisSupport() {
 		row += vulnerability.Applicable + " |"
 		directsRowFmt = directDependencyRowWithJas
 	}

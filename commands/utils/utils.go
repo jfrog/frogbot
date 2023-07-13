@@ -50,14 +50,6 @@ var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
 	coreutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
-var contextualAnalysisSupport = map[coreutils.Technology]struct{}{
-	coreutils.Pip:    {},
-	coreutils.Pipenv: {},
-	coreutils.Poetry: {},
-	coreutils.Npm:    {},
-	coreutils.Yarn:   {},
-}
-
 type ErrUnsupportedFix struct {
 	PackageName  string
 	FixedVersion string
