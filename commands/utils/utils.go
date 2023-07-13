@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
@@ -37,6 +38,7 @@ const (
 	skipIndirectVulnerabilitiesMsg = "\n%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can potentially cause conflicts with other dependencies that depend on the previous version.\nFrogbot skips this to avoid potential incompatibilities and breaking changes."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
+	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
 )
 
 var (
@@ -275,4 +277,21 @@ func validateBranchName(branchName string) error {
 		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
+}
+
+func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, currentJFrogHomeDir string, err error) {
+	// Create temp dir to store server config inside
+	currentJFrogHomeDir, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	// Save current JFrog Home dir
+	previousJFrogHomeDir = os.Getenv(JfrogHomeDirEnv)
+	// Set the temp dir as the JFrog Home dir
+	if err = os.Setenv(JfrogHomeDirEnv, currentJFrogHomeDir); err != nil {
+		return
+	}
+	cc := commands.NewConfigCommand(commands.AddOrEdit, "frogbot").SetDetails(server)
+	err = cc.Run()
+	return
 }
