@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-var applicabilityColorMap = map[string]string{
-	"applicable":     "#FF7377",
-	"not applicable": "#3CB371",
-	"undetermined":   "",
-}
-
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
@@ -48,7 +42,7 @@ type descriptionBullet struct {
 	value string
 }
 
-func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
+func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow) string {
 	var cves []string
 	for _, cve := range vulnerabilityDetails.Cves {
 		cves = append(cves, cve.Id)
@@ -64,7 +58,7 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 
 	descriptionBullets := []descriptionBullet{
 		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(), vulnerabilityDetails.Severity)},
-		{title: "**Contextual Analysis:**", value: formattedApplicabilityText(vulnerabilityDetails.Applicable, provider)},
+		{title: "**Contextual Analysis:**", value: vulnerabilityDetails.Applicable},
 		{title: "**Package Name:**", value: vulnerabilityDetails.ImpactedDependencyName},
 		{title: "**Current Version:**", value: vulnerabilityDetails.ImpactedDependencyVersion},
 		{title: "**Fixed Version:**", value: strings.Join(vulnerabilityDetails.FixedVersions, ",")},
@@ -101,45 +95,10 @@ func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityO
 	return tableContent
 }
 
-func createVulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	var directDependencies strings.Builder
-	if len(vulnerability.Components) > 0 {
-		for _, dependency := range vulnerability.Components {
-			directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, writer.Seperator()))
-		}
-	}
-
-	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
-	if writer.EntitledForJas() {
-		row += formattedApplicabilityText(vulnerability.Applicable, writer.VcsProvider()) + " |"
-	}
-	row += fmt.Sprintf("%s | %s | %s |",
-		strings.TrimSuffix(directDependencies.String(), writer.Seperator()),
-		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, writer.Seperator()),
-	)
-	return row
-}
-
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
 	}
 	return tableContent
-}
-
-func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) string {
-	if text == "" {
-		return ""
-	}
-	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
-	var formattedText string
-	switch provider {
-	case vcsutils.AzureRepos:
-		formattedText = fmt.Sprintf("<span style=\"color: %s;\">%s</span>", applicabilityColor, text)
-	default:
-		formattedText = strings.ToUpper(fmt.Sprintf("**%s**", text))
-	}
-	return formattedText
 }

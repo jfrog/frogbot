@@ -13,7 +13,22 @@ type StandardOutput struct {
 }
 
 func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createVulnerabilitiesTableRow(vulnerability, so)
+	var directDependencies strings.Builder
+	for _, dependency := range vulnerability.Components {
+		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Seperator()))
+	}
+
+	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	_, caSupported := contextualAnalysisSupport[vulnerability.Technology]
+	if so.EntitledForJas() && caSupported {
+		row += vulnerability.Applicable + " |"
+	}
+	row += fmt.Sprintf("%s | %s | %s |",
+		strings.TrimSuffix(directDependencies.String(), so.Seperator()),
+		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
+		strings.Join(vulnerability.FixedVersions, so.Seperator()),
+	)
+	return row
 }
 
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
@@ -91,7 +106,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.V
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilitiesRows[i], so.vcsProvider)))
+`, createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -105,7 +120,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.V
 `,
 			vulnerabilitiesRows[i].ImpactedDependencyName,
 			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i], so.vcsProvider)))
+			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 	}
 	return contentBuilder.String()
 }
@@ -140,7 +155,7 @@ func (so *StandardOutput) Footer() string {
 }
 
 func (so *StandardOutput) Seperator() string {
-	return "<br>"
+	return "<br><br>"
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {

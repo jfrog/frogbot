@@ -148,7 +148,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 	}
 	for _, vulnDetails := range vulnerabilitiesMap {
 		if e := cfp.fixSinglePackageAndCreatePR(vulnDetails); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e, err))
+			err = cfp.handleUpdatePackageErrors(e, err)
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
@@ -165,7 +165,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
-	log.Debug("Starting aggregated dependencies fix")
+	log.Debug("Starting aggregated dependencies fix...")
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName()
 	if err != nil {
 		return
@@ -335,7 +335,7 @@ func (cfp *CreateFixPullRequestsCmd) createVulnerabilitiesMap(scanResults *xrayu
 			}
 		}
 	}
-	log.Debug(fmt.Sprintf("Frogbot will attempt to resolve the following vulnerable dependencies:\n%v", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n")))
+	log.Debug("Frogbot will attempt to resolve the following vulnerable dependencies:\n", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n"))
 	return vulnerabilitiesMap, nil
 }
 
@@ -431,7 +431,6 @@ func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName
 
 func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilities map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	var atLeastOneFix bool
-	log.Debug("Starting aggregated dependencies fix")
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
@@ -439,7 +438,7 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilit
 	var fixedVulnerabilities []formats.VulnerabilityOrViolationRow
 	for _, vulnDetails := range vulnerabilities {
 		if e := cfp.updatePackageToFixedVersion(vulnDetails); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e, err))
+			err = cfp.handleUpdatePackageErrors(e, err)
 		} else {
 			vulnDetails.FixedVersions = []string{vulnDetails.FixVersion}
 			fixedVulnerabilities = append(fixedVulnerabilities, *vulnDetails.VulnerabilityOrViolationRow)

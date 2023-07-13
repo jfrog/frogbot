@@ -7,13 +7,38 @@ import (
 	"strings"
 )
 
+const (
+	directDependencyRow        = "|  | %s |  |  |"
+	directDependencyRowWithJas = "|  |  | %s |  |  |"
+)
+
 type SimplifiedOutput struct {
 	entitledForJas bool
 	vcsProvider    vcsutils.VcsProvider
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createVulnerabilitiesTableRow(vulnerability, smo)
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	_, caSupported := contextualAnalysisSupport[vulnerability.Technology]
+	directsRowFmt := directDependencyRow
+	if smo.EntitledForJas() && caSupported {
+		row += vulnerability.Applicable + " |"
+		directsRowFmt = directDependencyRowWithJas
+	}
+	var firstDirectDependency string
+	if len(vulnerability.Components) > 0 {
+		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
+	}
+	row += fmt.Sprintf(" %s | %s | %s |",
+		firstDirectDependency,
+		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
+		strings.Join(vulnerability.FixedVersions, smo.Seperator()),
+	)
+	for i := 1; i < len(vulnerability.Components); i++ {
+		currDirect := vulnerability.Components[i]
+		row += "\n" + fmt.Sprintf(directsRowFmt, fmt.Sprintf("%s:%s", currDirect.Name, currDirect.Version))
+	}
+	return row
 }
 
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
@@ -83,7 +108,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilitiesRows []format
 `,
 			vulnerabilitiesRows[i].ImpactedDependencyName,
 			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i], smo.vcsProvider)))
+			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
 	}
 
 	return contentBuilder.String()
