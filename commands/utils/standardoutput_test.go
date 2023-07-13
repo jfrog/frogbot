@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -37,7 +38,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-5678"},
 				},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br>3.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br><br>3.0.0 |",
 		},
 		{
 			name: "Single CVE and direct dependencies",
@@ -52,7 +53,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Name: "dep2", Version: "2.0.0"},
 				},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br><br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
@@ -70,7 +71,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				ImpactedDependencyVersion: "3.0.0",
 				FixedVersions:             []string{"4.0.0", "5.0.0"},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br><br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br><br>5.0.0 |",
 		},
 	}
 
@@ -181,11 +182,13 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 			ImpactedDependencyName:    "Dependency1",
 			ImpactedDependencyVersion: "1.0.0",
 			Applicable:                "Applicable",
+			Technology:                coreutils.Pip,
 		},
 		{
 			ImpactedDependencyName:    "Dependency2",
 			ImpactedDependencyVersion: "2.0.0",
 			Applicable:                "Not Applicable",
+			Technology:                coreutils.Pip,
 		},
 	}
 
@@ -233,8 +236,8 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
-	assert.Contains(t, actualContent, "**APPLICABLE**")
-	assert.Contains(t, actualContent, "**NOT APPLICABLE**")
+	assert.Contains(t, actualContent, "| Applicable |")
+	assert.Contains(t, actualContent, "| Not Applicable |")
 }
 
 func TestStandardOutput_IacContent(t *testing.T) {
