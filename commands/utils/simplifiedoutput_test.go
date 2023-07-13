@@ -54,7 +54,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 			name: "Multiple CVEs",
 			vulnerability: formats.VulnerabilityOrViolationRow{
 				Severity:                  "Critical",
-				Components:                []formats.ComponentRow{{"direct", "1.0.2"}},
+				Components:                []formats.ComponentRow{{Name: "direct", Version: "1.0.2"}},
 				Applicable:                "Applicable",
 				ImpactedDependencyName:    "impacted_dep",
 				ImpactedDependencyVersion: "4.0.0",
@@ -119,14 +119,14 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 		{
 			Severity:                  "Critical",
 			ImpactedDependencyName:    "Dependency1",
-			Components:                []formats.ComponentRow{{"Direct1", "1.0.0"}, {"Direct2", "2.0.0"}},
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			ImpactedDependencyVersion: "1.0.0",
 		},
 		{
 			Severity:                  "High",
-			Components:                []formats.ComponentRow{{"Direct1", "1.0.0"}, {"Direct2", "2.0.0"}},
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			ImpactedDependencyName:    "Dependency2",
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
