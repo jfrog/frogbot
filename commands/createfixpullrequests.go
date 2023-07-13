@@ -104,11 +104,11 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixProject(repository *utils.Reposit
 
 		// Prepare the vulnerabilities map for each working dir path
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
-		if len(currPathVulnerabilities) > 0 {
-			fixNeeded = true
-		}
 		if err != nil {
 			return err
+		}
+		if len(currPathVulnerabilities) > 0 {
+			fixNeeded = true
 		}
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
