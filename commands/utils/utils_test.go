@@ -137,23 +137,23 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 		{
 			vulnerabilities: []*VulnerabilityDetails{
 				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Npm}, IsDirectDependency: false}},
-			expectedHash: "0aa066970b613b114f8e21d11c74ff94",
+			expectedHash: "8a5f1a3a7f11a825f3e0546f74d5dd18",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
 				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false},
 				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false}},
-			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
+			expectedHash: "984b2585da84b62146f8d2ec0fd12e0e",
 		},
 		{
 			// The Same map with different order should be the same hash.
 			vulnerabilities: []*VulnerabilityDetails{
 				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false},
 				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false}},
-			expectedHash: "a0d4119dfe5fc5186d6c2cf1497f8c7c",
+			expectedHash: "984b2585da84b62146f8d2ec0fd12e0e",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
 				{SuggestedFixedVersion: "0.2.33", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "myNuget", Technology: coreutils.Nuget}, IsDirectDependency: false}},
-			expectedHash: "887ac2c931920c20956409702c0dfbc7",
+			expectedHash: "1708946f489ed70c754dd1ceef49b50b",
 		},
 	}
 	for _, test := range tests {
