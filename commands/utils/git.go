@@ -215,7 +215,7 @@ func (gm *GitManager) commit(commitMessage string) error {
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  frogbotAuthorName,
-			Email: frogbotAuthorEmail,
+			Email: gm.git.EmailAuthor,
 			When:  time.Now(),
 		},
 	})
