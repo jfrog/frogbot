@@ -133,11 +133,10 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 	for _, test := range testcases {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			pythonPackageHandler, err := GetCompatiblePackageHandler(test.vulnDetails, &utils.ScanDetails{
+			pythonPackageHandler := GetCompatiblePackageHandler(test.vulnDetails, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
-			assert.NoError(t, err)
 			cleanup := createTempDirAndChDir(t, testDataDir, test.vulnDetails.Technology)
-			err = pythonPackageHandler.UpdateDependency(test.vulnDetails)
+			err := pythonPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
