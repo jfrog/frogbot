@@ -1,6 +1,7 @@
 package packagehandlers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -14,7 +15,7 @@ type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
 
-func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler, err error) {
 	switch vulnDetails.Technology {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
@@ -30,6 +31,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	case coreutils.Maven:
 		handler = &MavenPackageHandler{depsRepo: details.Repository, ServerDetails: details.ServerDetails}
+	default:
+		err = errors.New("frogbot currently does not support opening a pull request that fixes vulnerabilities in " + vulnDetails.Technology.ToFormal())
 	}
 	return
 }

@@ -386,7 +386,10 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *ut
 		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
 	if cfp.handlers[vulnDetails.Technology] == nil {
-		cfp.handlers[vulnDetails.Technology] = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		cfp.handlers[vulnDetails.Technology], err = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		if err != nil {
+			return
+		}
 	}
 	return cfp.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
 }
