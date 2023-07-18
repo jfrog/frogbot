@@ -110,8 +110,8 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "non-aggregate",
 			testDir:            "createfixpullrequests/non-aggregate",
-			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			expectedBranchName: "frogbot-mongoose-9edc0b210458957e484df1f051963d6a",
+			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..d1fd848 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.20\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 			aggregateFixes:     false,
 		},
@@ -513,7 +513,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
 func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
 	var cmd *exec.Cmd
-	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
+	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
 	if runtime.GOOS == "windows" {
