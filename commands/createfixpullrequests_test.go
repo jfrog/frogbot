@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -511,7 +512,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) ([]byte, error) {
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) (output []byte, err error) {
 	var cmd *exec.Cmd
 	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
 	// Suppress condition always false warning
@@ -521,5 +522,9 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFil
 	} else {
 		cmd = exec.Command("git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
 	}
-	return cmd.Output()
+	output, err = cmd.Output()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		err = errors.New("git error: " + string(exitError.Stderr))
+	}
+	return
 }
