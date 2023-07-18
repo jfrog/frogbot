@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mongoose":"5.10.10"
+    "minimist":"1.2.5"
   }
 }
