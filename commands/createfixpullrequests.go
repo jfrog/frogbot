@@ -378,15 +378,23 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *ut
 			err = errors.Join(err, restoreDir())
 		}()
 	}
+
 	if err = isBuildToolsDependency(vulnDetails); err != nil {
 		return
 	}
+
 	if cfp.handlers == nil {
 		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
-	if cfp.handlers[vulnDetails.Technology] == nil {
-		cfp.handlers[vulnDetails.Technology] = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+
+	handler := cfp.handlers[vulnDetails.Technology]
+	if handler == nil {
+		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		cfp.handlers[vulnDetails.Technology] = handler
+	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+		return
 	}
+
 	return cfp.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
 }
 
