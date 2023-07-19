@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -157,7 +158,7 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
-			hash, err := FixVersionsMapToMd5Hash(test.fixVersionMap)
+			hash, err := VulnerabilityDetailsToMD5Hash(test.fixVersionMap)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
 		})
@@ -295,4 +296,46 @@ func TestValidatedBranchName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildServerConfigFile(t *testing.T) {
+	preTestJFrogHome := os.Getenv(JfrogHomeDirEnv)
+	defer func() {
+		assert.NoError(t, os.Setenv(JfrogHomeDirEnv, preTestJFrogHome))
+	}()
+	assert.NoError(t, os.Setenv(JfrogHomeDirEnv, "path/to/nowhere"))
+	server := &config.ServerDetails{
+		Url:               "https://myserver.com",
+		ArtifactoryUrl:    "https://myserver.com/artifactory",
+		DistributionUrl:   "https://myserver.co/distribution",
+		XrayUrl:           "https://myserver.com/xray",
+		MissionControlUrl: "https://myserver.com/missioncontrol",
+		PipelinesUrl:      "https://myserver.com/pipelines",
+		AccessUrl:         "https://myserver.com/access",
+		AccessToken:       "abcdefg1234",
+	}
+	expectedConfigurationFile :=
+		`{
+  "servers": [
+    {
+      "url": "https://myserver.com/",
+      "artifactoryUrl": "https://myserver.com/artifactory/",
+      "distributionUrl": "https://myserver.co/distribution/",
+      "xrayUrl": "https://myserver.com/xray/",
+      "missionControlUrl": "https://myserver.com/missioncontrol/",
+      "pipelinesUrl": "https://myserver.com/pipelines/",
+      "accessUrl": "https://myserver.com/access",
+      "accessToken": "abcdefg1234",
+      "serverId": "frogbot",
+      "isDefault": true
+    }
+  ],
+  "version": "6"
+}`
+	previousJFrogHome, currentJFrogHome, err := BuildServerConfigFile(server)
+	assert.NoError(t, err)
+	assert.Equal(t, "path/to/nowhere", previousJFrogHome)
+	actualConfigurationFile, err := os.ReadFile(path.Join(currentJFrogHome, "jfrog-cli.conf.v6"))
+	assert.NoError(t, err)
+	assert.Equal(t, expectedConfigurationFile, string(actualConfigurationFile))
 }

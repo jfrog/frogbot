@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
@@ -37,6 +38,7 @@ const (
 	skipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
+	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
 )
 
 var (
@@ -172,13 +174,12 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// Generates MD5Hash from a FixVersionMap object
+// Generates MD5Hash from a vulnerabilityDetails
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func FixVersionsMapToMd5Hash(versionsMap map[string]*VulnerabilityDetails) (string, error) {
+func VulnerabilityDetailsToMD5Hash(vulnerabilityDetails map[string]*VulnerabilityDetails) (string, error) {
 	h := crypto.MD5.New()
-	// Sort the package names
-	keys := make([]string, 0, len(versionsMap))
-	for k, v := range versionsMap {
+	keys := make([]string, 0, len(vulnerabilityDetails))
+	for k, v := range vulnerabilityDetails {
 		keys = append(keys, k+v.FixVersion)
 	}
 	sort.Strings(keys)
@@ -272,4 +273,21 @@ func validateBranchName(branchName string) error {
 		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
+}
+
+func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, currentJFrogHomeDir string, err error) {
+	// Create temp dir to store server config inside
+	currentJFrogHomeDir, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	// Save current JFrog Home dir
+	previousJFrogHomeDir = os.Getenv(JfrogHomeDirEnv)
+	// Set the temp dir as the JFrog Home dir
+	if err = os.Setenv(JfrogHomeDirEnv, currentJFrogHomeDir); err != nil {
+		return
+	}
+	cc := commands.NewConfigCommand(commands.AddOrEdit, "frogbot").SetDetails(server)
+	err = cc.Run()
+	return
 }
