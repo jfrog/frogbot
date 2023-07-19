@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -630,7 +631,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) ([]byte, error) {
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
@@ -638,9 +639,14 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	if coreutils.IsWindows() {
 		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
 		args = append(args, packageDescriptorPaths...)
-		return exec.Command("cmd", args...).Output()
+		output, err = exec.Command("cmd", args...).Output()
+	} else {
+		args = []string{"diff", baseBranch, fixBranch}
+		args = append(args, packageDescriptorPaths...)
+		output, err = exec.Command("git", args...).Output()
 	}
-	args = []string{"diff", baseBranch, fixBranch}
-	args = append(args, packageDescriptorPaths...)
-	return exec.Command("git", args...).Output()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		err = errors.New("git error: " + string(exitError.Stderr))
+	}
+	return
 }
