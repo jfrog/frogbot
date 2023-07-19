@@ -192,7 +192,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
-// else, append to errList string.
+// else, return the error
 func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
