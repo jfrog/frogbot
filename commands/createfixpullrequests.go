@@ -195,13 +195,13 @@ func (cfp *CreateFixPullRequestsCmd) fixProjectVulnerabilities(fullProjectPath s
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
 		if e := cfp.fixSinglePackageAndCreatePR(vulnerability); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e, err))
+			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 
 		// After fixing the current vulnerability, checkout to the base branch to start fixing the next vulnerability
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
 		if e := cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e, err))
+			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 			return
 		}
 	}
@@ -225,7 +225,7 @@ func (cfp *CreateFixPullRequestsCmd) fixMultiplePackages(fullProjectPath string,
 	}
 	for _, vulnDetails := range vulnerabilities {
 		if e := cfp.updatePackageToFixedVersion(vulnDetails); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e, err))
+			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 			continue
 		}
 		fixedVulnerabilities = append(fixedVulnerabilities, vulnDetails)
@@ -254,12 +254,12 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilitiesMap map[st
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
 // else, append to errList.
-func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err, errList error) error {
+func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
 		return nil
 	}
-	return errors.Join(errList, err)
+	return err
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
