@@ -142,22 +142,21 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(vulnerabilitiesMap ma
 }
 
 func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) (err error) {
-	var errList strings.Builder
 	if len(vulnerabilitiesMap) == 0 {
 		return
 	}
 	log.Info("-----------------------------------------------------------------")
 	for _, vulnDetails := range vulnerabilitiesMap {
-		if err = cfp.fixSinglePackageAndCreatePR(vulnDetails); err != nil {
-			cfp.handleUpdatePackageErrors(err, errList)
+		if e := cfp.fixSinglePackageAndCreatePR(vulnDetails); e != nil {
+			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 		// After finishing to work on the current vulnerability, we go back to the base branch to start the next vulnerability fix
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
-		if err = cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); err != nil {
+		if e := cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); e != nil {
+			err = errors.Join(err, e)
 			return
 		}
 	}
-	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
 	return
 }
@@ -193,13 +192,13 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilityDetails map[
 
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
-// else, append to errList string.
-func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error, errList strings.Builder) {
+// else, return the error
+func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
-	} else {
-		errList.WriteString(err.Error() + "\n")
+		return nil
 	}
+	return err
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
@@ -431,7 +430,6 @@ func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName
 }
 
 func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilities map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo) (err error) {
-	var errList strings.Builder
 	var atLeastOneFix bool
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
@@ -442,9 +440,7 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilit
 	var fixedVulnerabilities []formats.VulnerabilityOrViolationRow
 	for _, vulnDetails := range vulnerabilities {
 		if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
-			cfp.handleUpdatePackageErrors(err, errList)
-			// Clear the error after handling it.
-			err = nil
+			err = errors.Join(cfp.handleUpdatePackageErrors(err))
 		} else {
 			vulnDetails.FixedVersions = []string{vulnDetails.FixVersion}
 			fixedVulnerabilities = append(fixedVulnerabilities, *vulnDetails.VulnerabilityOrViolationRow)
@@ -453,11 +449,11 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilit
 		}
 	}
 	if atLeastOneFix {
-		if err = cfp.openAggregatedPullRequest(aggregatedFixBranchName, pullRequestInfo, fixedVulnerabilities); err != nil {
-			return fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error())
+		if e := cfp.openAggregatedPullRequest(aggregatedFixBranchName, pullRequestInfo, fixedVulnerabilities); e != nil {
+			err = errors.Join(err, fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", e.Error()))
+			return
 		}
 	}
-	logAppendedErrorsIfExists(errList)
 	log.Info("-----------------------------------------------------------------")
 	return
 }
@@ -519,12 +515,4 @@ func parseVersionChangeString(fixVersion string) string {
 	latestVersion = strings.Trim(latestVersion, "[")
 	latestVersion = strings.Trim(latestVersion, "]")
 	return latestVersion
-}
-
-// During the operation of updating packages, there could be some errors,
-// in order to not fail the whole run, we store the errors in strings.builder and log them at the end.
-func logAppendedErrorsIfExists(errList strings.Builder) {
-	if errList.String() != "" {
-		log.Error("During fixing dependencies operations the following errors occurred:\n", errors.New(errList.String()))
-	}
 }
