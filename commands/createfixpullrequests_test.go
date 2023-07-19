@@ -88,7 +88,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:           "aggregate",
 			testDir:            "createfixpullrequests/aggregate",
 			expectedBranchName: aggregatedBranchConstName,
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex 8f0367a..62133f2 100644\n--- a/package.json\n+++ b/package.json\n@@ -14,15 +14,16 @@\n     \"json5\": \"^1.0.2\",\n     \"jsonwebtoken\": \"^9.0.0\",\n     \"ldapjs\": \"^3.0.1\",\n+    \"lodash\": \"4.16.4\",\n+    \"moment\": \"2.29.1\",\n+    \"mongoose\": \"^5.13.15\",\n+    \"mpath\": \"^0.8.4\",\n     \"primeflex\": \"^3.3.0\",\n     \"primeicons\": \"^6.0.1\",\n     \"primereact\": \"^9.2.1\",\n     \"sass\": \"^1.59.3\",\n     \"scss\": \"^0.2.4\",\n     \"typescript\": \"5.0.2\",\n-    \"uuid\": \"^9.0.0\",\n-    \"moment\": \"2.29.1\",\n-    \"lodash\": \"4.16.4\",\n-    \"mongoose\":\"5.10.10\"\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			expectedDiff:       "diff --git a/package.json b/package.json\nindex c5ea932..1176f2d 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimist\":\"1.2.5\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimist\": \"^1.2.6\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 			aggregateFixes:     true,
 		},
@@ -111,8 +111,8 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		{
 			repoName:           "non-aggregate",
 			testDir:            "createfixpullrequests/non-aggregate",
-			expectedBranchName: "frogbot-mongoose-8ed82a82c26133b1bcf556d6dc2db0d3",
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex e016d1b..a4bf5ed 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"mongoose\":\"5.10.10\"\n+    \"mongoose\": \"^5.13.15\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
+			expectedBranchName: "frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7",
+			expectedDiff:       "diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
 			dependencyFileName: "package.json",
 			aggregateFixes:     false,
 		},
@@ -550,7 +550,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
 func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) (output []byte, err error) {
 	var cmd *exec.Cmd
-	log.Debug(fmt.Sprintf("Checking differance in the file %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
+	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
 	if runtime.GOOS == "windows" {
