@@ -288,7 +288,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = fmt.Sprintf(AggregatedPullRequestTitleTemplate, tech.ToString())
+		template = GetAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
