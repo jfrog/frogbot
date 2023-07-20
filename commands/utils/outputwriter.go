@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"strings"
@@ -58,7 +59,7 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	}
 
 	fixedVersionsTitle := "**Fixed Version:**"
-	if len(vulnerability.FixedVersions) > 0 {
+	if len(vulnerability.FixedVersions) > 1 {
 		fixedVersionsTitle = "**Fixed Versions:**"
 	}
 
@@ -111,4 +112,11 @@ func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) st
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
+	if tech.ToString() == "" {
+		return FrogbotPullRequestTitlePrefix + " Update dependencies"
+	}
+	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
 }

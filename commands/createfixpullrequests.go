@@ -349,12 +349,12 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) (string, string) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
-		return fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, cfp.projectTech.ToFormal()), ""
+		return utils.GetAggregatedPullRequestTitle(cfp.projectTech), ""
 	}
 
 	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
-		return fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, cfp.projectTech.ToFormal()), prBody + utils.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
+		return utils.GetAggregatedPullRequestTitle(cfp.projectTech), prBody + utils.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
 	}
 	// In separate pull requests there is only one vulnerability
 	vulnDetails := vulnerabilitiesRows[0]
