@@ -380,7 +380,7 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
-		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }

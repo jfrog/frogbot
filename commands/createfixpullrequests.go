@@ -15,6 +15,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"os"
 	"regexp"
@@ -253,7 +254,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilitiesMap map[st
 
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
-// else, append to errList.
+// else, return the error
 func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
@@ -266,7 +267,7 @@ func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error 
 // In case a branch already exists on remote, we skip it.
 func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
-	log.Debug("Start fixing", vulnDetails.ImpactedDependencyName, "with", fixVersion)
+	log.Debug("Attempting to fix", vulnDetails.ImpactedDependencyName, "with", fixVersion)
 	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), vulnDetails.ImpactedDependencyName, fixVersion)
 	if err != nil {
 		return
@@ -276,7 +277,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(vulnDetails *ut
 		return
 	}
 	if existsInRemote {
-		log.Info(fmt.Sprintf("A Pull Request updating dependency '%s' to version '%s' already exists.", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
+		log.Info(fmt.Sprintf("A pull request updating the dependency '%s' to version '%s' already exists. Skipping...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 		return
 	}
 	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
@@ -350,7 +351,7 @@ func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, 
 	for _, vulnerability := range vulnerabilities {
 		vulnerabilitiesRows = append(vulnerabilitiesRows, *vulnerability.VulnerabilityOrViolationRow)
 	}
-	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows)
+	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
 		return fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, cfp.projectTech.ToFormal()), prBody + utils.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
 	}
@@ -426,6 +427,7 @@ func (cfp *CreateFixPullRequestsCmd) createVulnerabilitiesMap(scanResults *xrayu
 			}
 		}
 	}
+	log.Debug("Frogbot will attempt to resolve the following vulnerable dependencies:\n", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n"))
 	return vulnerabilitiesMap, nil
 }
 
@@ -442,7 +444,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 	}
 	if vulnDetails, exists := vulnerabilitiesMap[vulnerability.ImpactedDependencyName]; exists {
 		// More than one vulnerability can exist on the same impacted package.
-		// Among all possible fix versions that fix the above impacted package, we select the maximum fix version.
+		// Among all possible fix versions that fix the above-impacted package, we select the maximum fix version.
 		vulnDetails.UpdateFixVersionIfMax(vulnFixVersion)
 	} else {
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
@@ -464,12 +466,19 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *ut
 	if err = isBuildToolsDependency(vulnDetails); err != nil {
 		return
 	}
+
 	if cfp.handlers == nil {
 		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
-	if cfp.handlers[vulnDetails.Technology] == nil {
-		cfp.handlers[vulnDetails.Technology] = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+
+	handler := cfp.handlers[vulnDetails.Technology]
+	if handler == nil {
+		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		cfp.handlers[vulnDetails.Technology] = handler
+	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+		return
 	}
+
 	return cfp.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
 }
 
@@ -562,19 +571,6 @@ func (cfp *CreateFixPullRequestsCmd) isUpdateRequired(fixedVulnerabilities []*ut
 	return
 }
 
-func isBuildToolsDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	// Skip build tools dependencies (for example, pip)
-	// that are not defined in the descriptor file and cannot be fixed by a PR.
-	if slices.Contains(utils.BuildToolsDependenciesMap[vulnDetails.Technology], vulnDetails.ImpactedDependencyName) {
-		return &utils.ErrUnsupportedFix{
-			PackageName:  vulnDetails.ImpactedDependencyName,
-			FixedVersion: vulnDetails.SuggestedFixedVersion,
-			ErrorType:    utils.BuildToolsDependencyFixNotSupported,
-		}
-	}
-	return nil
-}
-
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
 // fixVersions is a sorted array. The function returns the first version in the array, that is larger than impactedPackageVersion.
 func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) string {
@@ -605,4 +601,17 @@ func parseVersionChangeString(fixVersion string) string {
 	latestVersion = strings.Trim(latestVersion, "[")
 	latestVersion = strings.Trim(latestVersion, "]")
 	return latestVersion
+}
+
+// Skip build tools dependencies (for example, pip)
+// that are not defined in the descriptor file and cannot be fixed by a PR.
+func isBuildToolsDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if slices.Contains(utils.BuildToolsDependenciesMap[vulnDetails.Technology], vulnDetails.ImpactedDependencyName) {
+		return &utils.ErrUnsupportedFix{
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.SuggestedFixedVersion,
+			ErrorType:    utils.BuildToolsDependencyFixNotSupported,
+		}
+	}
+	return nil
 }

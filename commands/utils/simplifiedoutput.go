@@ -7,13 +7,37 @@ import (
 	"strings"
 )
 
+const (
+	directDependencyRow        = "|  | %s |  |  |"
+	directDependencyRowWithJas = "|  |  | %s |  |  |"
+)
+
 type SimplifiedOutput struct {
 	entitledForJas bool
 	vcsProvider    vcsutils.VcsProvider
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createVulnerabilitiesTableRow(vulnerability, smo)
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	directsRowFmt := directDependencyRow
+	if smo.EntitledForJas() && vulnerability.Technology.ApplicabilityScannable() {
+		row += vulnerability.Applicable + " |"
+		directsRowFmt = directDependencyRowWithJas
+	}
+	var firstDirectDependency string
+	if len(vulnerability.Components) > 0 {
+		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
+	}
+	row += fmt.Sprintf(" %s | %s | %s |",
+		firstDirectDependency,
+		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
+		strings.Join(vulnerability.FixedVersions, smo.Seperator()),
+	)
+	for i := 1; i < len(vulnerability.Components); i++ {
+		currDirect := vulnerability.Components[i]
+		row += "\n" + fmt.Sprintf(directsRowFmt, fmt.Sprintf("%s:%s", currDirect.Name, currDirect.Version))
+	}
+	return row
 }
 
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
@@ -83,7 +107,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 `,
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], smo.vcsProvider)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 
 	return contentBuilder.String()
@@ -105,7 +129,7 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("\n\n---\n%s", CommentGeneratedByFrogbot)
+	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Seperator() string {
@@ -114,4 +138,12 @@ func (smo *SimplifiedOutput) Seperator() string {
 
 func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
+}
+
+func (smo *SimplifiedOutput) UntitledForJasMsg() string {
+	msg := ""
+	if !smo.entitledForJas {
+		msg = "\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+	}
+	return msg
 }

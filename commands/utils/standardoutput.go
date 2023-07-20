@@ -13,7 +13,21 @@ type StandardOutput struct {
 }
 
 func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return createVulnerabilitiesTableRow(vulnerability, so)
+	var directDependencies strings.Builder
+	for _, dependency := range vulnerability.Components {
+		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Seperator()))
+	}
+
+	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	if so.EntitledForJas() && vulnerability.Technology.ApplicabilityScannable() {
+		row += vulnerability.Applicable + " |"
+	}
+	row += fmt.Sprintf("%s | %s | %s |",
+		strings.TrimSuffix(directDependencies.String(), so.Seperator()),
+		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
+		strings.Join(vulnerability.FixedVersions, so.Seperator()),
+	)
+	return row
 }
 
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
@@ -91,7 +105,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilities[i], so.vcsProvider)))
+`, createVulnerabilityDescription(&vulnerabilities[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -105,7 +119,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 `,
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], so.vcsProvider)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 	return contentBuilder.String()
 }
@@ -131,8 +145,6 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
----
-
 <div align="center">
 
 %s
@@ -142,9 +154,24 @@ func (so *StandardOutput) Footer() string {
 }
 
 func (so *StandardOutput) Seperator() string {
-	return "<br>"
+	return "<br><br>"
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
 	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+}
+
+func (so *StandardOutput) UntitledForJasMsg() string {
+	msg := ""
+	if !so.entitledForJas {
+		msg =
+			`
+<div align="center">
+
+**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
+
+</div>
+`
+	}
+	return msg
 }
