@@ -314,7 +314,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	if err != nil {
 		return err
 	}
-	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, vulnDetails)
+	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, []formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
 	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
@@ -333,7 +333,11 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err != nil {
 		return
 	}
-	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, vulnerabilities...)
+	var vulnerabilityRows []formats.VulnerabilityOrViolationRow
+	for _, vulnerability := range vulnerabilities {
+		vulnerabilityRows = append(vulnerabilityRows, *vulnerability.VulnerabilityOrViolationRow)
+	}
+	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, vulnerabilityRows)
 	if pullRequestInfo == nil {
 		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.Branch())
 		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
@@ -342,20 +346,18 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
 }
 
-func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, vulnerabilities ...*utils.VulnerabilityDetails) (string, string) {
+func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) (string, string) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
 		return fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, cfp.projectTech.ToFormal()), ""
 	}
-	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	for _, vulnerability := range vulnerabilities {
-		vulnerabilitiesRows = append(vulnerabilitiesRows, *vulnerability.VulnerabilityOrViolationRow)
-	}
+
 	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
 		return fmt.Sprintf(utils.AggregatedPullRequestTitleTemplate, cfp.projectTech.ToFormal()), prBody + utils.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
 	}
-	vulnDetails := vulnerabilities[0]
+	// In separate pull requests there is only one vulnerability
+	vulnDetails := vulnerabilitiesRows[0]
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.FixedVersions[0])
 	return pullRequestTitle, prBody
 }

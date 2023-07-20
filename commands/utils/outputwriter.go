@@ -57,12 +57,17 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 		cvesTitle = "**CVEs:**"
 	}
 
+	fixedVersionsTitle := "**Fixed Version:**"
+	if len(vulnerability.FixedVersions) > 0 {
+		fixedVersionsTitle = "**Fixed Versions:**"
+	}
+
 	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(), vulnerabilityDetails.Severity)},
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
 		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
 		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
 		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
-		{title: "**Fixed Version:**", value: strings.Join(vulnerability.FixedVersions, ",")},
+		{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")},
 		{title: cvesTitle, value: strings.Join(cves, ", ")},
 	}
 
