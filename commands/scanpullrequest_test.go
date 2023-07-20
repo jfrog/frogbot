@@ -9,6 +9,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	utils2 "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -229,7 +230,9 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			IssueId:    "XRAY-1",
 			Summary:    "summary-1",
 			Severity:   "high",
+			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+			Technology: coreutils.Maven.ToString(),
 		}},
 	}
 
@@ -240,13 +243,17 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				IssueId:    "XRAY-1",
 				Summary:    "summary-1",
 				Severity:   "high",
+				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+				Technology: coreutils.Maven.ToString(),
 			},
 			{
 				IssueId:    "XRAY-2",
 				Summary:    "summary-2",
 				Severity:   "low",
+				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
 				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+				Technology: coreutils.Yarn.ToString(),
 			},
 		},
 	}
@@ -254,24 +261,28 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
 			Summary:                "summary-2",
-			Applicable:             "Undetermined",
+			Applicable:             "Applicable",
 			IssueId:                "XRAY-2",
 			Severity:               "low",
 			ImpactedDependencyName: "component-C",
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Technology:             coreutils.Yarn,
 		},
 		{
 			Summary:                "summary-2",
-			Applicable:             "Undetermined",
+			Applicable:             "Applicable",
 			IssueId:                "XRAY-2",
 			Severity:               "low",
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
 			ImpactedDependencyName: "component-D",
+			Technology:             coreutils.Yarn,
 		},
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	rows, err := createNewIssuesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -783,7 +794,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					LineColumn:       "1:10",
 					Type:             "Secret",
 					Text:             "Sensitive information",
-					SeverityNumValue: 9,
+					SeverityNumValue: 10,
 				},
 			},
 		},
@@ -810,7 +821,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
 				{
 					Severity:         "Medium",
-					SeverityNumValue: 6,
+					SeverityNumValue: 8,
 					File:             "file2",
 					LineColumn:       "2:5",
 					Text:             "Confidential data",
