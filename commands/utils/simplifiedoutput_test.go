@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -29,8 +30,9 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				Cves: []formats.CveRow{
 					{Id: "CVE-2022-0001"},
 				},
+				Technology: coreutils.Nuget,
 			},
-			expectedOutput: "| High | dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
+			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
 		},
 		{
 			name: "No CVE and multiple direct dependencies",
@@ -42,16 +44,18 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				ImpactedDependencyName:    "impacted_dep",
 				ImpactedDependencyVersion: "3.0.0",
-				FixedVersions:             []string{"4.0.0"},
+				FixedVersions:             []string{"4.0.0", "4.1.0", "4.2.0", "5.0.0"},
 				Cves:                      []formats.CveRow{},
+				Technology:                coreutils.Dotnet,
 			},
-			expectedOutput: "| Low | dep1:1.0.0, dep2:2.0.0 | impacted_dep:3.0.0 | 4.0.0 |",
+			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |\n|  | dep2:2.0.0 |  |  |",
 		},
 		{
-			name: "Multiple CVEs and no direct dependencies",
+			name: "Multiple CVEs",
 			vulnerability: formats.VulnerabilityOrViolationRow{
 				Severity:                  "Critical",
-				Components:                []formats.ComponentRow{},
+				Components:                []formats.ComponentRow{{Name: "direct", Version: "1.0.2"}},
+				Applicable:                "Applicable",
 				ImpactedDependencyName:    "impacted_dep",
 				ImpactedDependencyVersion: "4.0.0",
 				FixedVersions:             []string{"5.0.0", "6.0.0"},
@@ -59,14 +63,15 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 					{Id: "CVE-2022-0002"},
 					{Id: "CVE-2022-0003"},
 				},
+				Technology: coreutils.Pip,
 			},
-			expectedOutput: "| Critical |  | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
+			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			smo := &SimplifiedOutput{}
+			smo := &SimplifiedOutput{entitledForJas: true}
 			actualOutput := smo.VulnerabilitiesTableRow(tc.vulnerability)
 			assert.Equal(t, tc.expectedOutput, actualOutput)
 		})
@@ -112,12 +117,16 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
+			Severity:                  "Critical",
 			ImpactedDependencyName:    "Dependency1",
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			ImpactedDependencyVersion: "1.0.0",
 		},
 		{
+			Severity:                  "High",
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			ImpactedDependencyName:    "Dependency2",
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
@@ -154,10 +163,10 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -168,25 +177,29 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
 	so := &SimplifiedOutput{entitledForJas: true, vcsProvider: vcsutils.BitbucketServer}
 
-	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
 			ImpactedDependencyName:    "Dependency1",
 			ImpactedDependencyVersion: "1.0.0",
+			Severity:                  "High",
 			FixedVersions:             []string{"2.2.3"},
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			Applicable:                "Applicable",
+			Technology:                coreutils.Npm,
 		},
 		{
 			ImpactedDependencyName:    "Dependency2",
 			ImpactedDependencyVersion: "2.0.0",
+			Severity:                  "Low",
+			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			FixedVersions:             []string{"2.2.3"},
 			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			Applicable:                "Not Applicable",
+			Technology:                coreutils.Poetry,
 		},
 	}
 
-	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
 ---
 ## 📦 Vulnerable Dependencies
@@ -215,17 +228,17 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], so.VcsProvider()),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], so.VcsProvider()),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
-	assert.Contains(t, actualContent, "**APPLICABLE**")
-	assert.Contains(t, actualContent, "**NOT APPLICABLE**")
+	assert.Contains(t, actualContent, "| Applicable |")
+	assert.Contains(t, actualContent, "| Not Applicable |")
 }
 
 func TestSimplifiedOutput_IacContent(t *testing.T) {
