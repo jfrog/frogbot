@@ -647,6 +647,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName) {
 			w.WriteHeader(http.StatusOK)
 			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
+			assert.NoError(t, err)
 			_, err = w.Write(expectedResponse)
 			assert.NoError(t, err)
 		}

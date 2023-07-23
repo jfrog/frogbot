@@ -27,6 +27,7 @@ const (
 )
 
 type ScanPullRequestCmd struct {
+	// Optional provided pull request details, used in scan-pull-requests command.
 	pullRequestDetails *vcsclient.PullRequestInfo
 }
 
@@ -59,6 +60,8 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
+	log.Info("Scanning Pull Request ID:", pullRequestDetails.ID, "Source:", pullRequestDetails.Source.Name, "Target:", pullRequestDetails.Target.Name)
+	log.Info("-----------------------------------------------------------")
 	// Audit PR code
 	vulnerabilitiesRows, iacRows, err := auditPullRequest(repoConfig, client, pullRequestDetails)
 	if err != nil {
