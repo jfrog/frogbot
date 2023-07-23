@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"sort"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 )
 
-var errPullRequestScan = "pull Request number %d in repository %s returned the following error: \n%s\n"
+var errPullRequestScan = "pull request %d in the %s repository returned the following error: \n%s"
 
 type ScanAllPullRequestsCmd struct {
 }
@@ -37,23 +38,20 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 	if err != nil {
 		return err
 	}
-	var errList strings.Builder
 	for _, pr := range openPullRequests {
 		shouldScan, e := shouldScanPullRequest(repo, client, int(pr.ID))
 		if e != nil {
-			errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
+			err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
 		if shouldScan {
 			e = downloadAndScanPullRequest(pr, repo, client)
 			// If error, write it in errList and continue to the next PR.
 			if e != nil {
-				errList.WriteString(fmt.Sprintf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
+				err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 			}
+		} else {
+			log.Info("Pull Request", pr.ID, "has already been scanned before. If you wish to scan it again, please comment \"rescan\".")
 		}
-	}
-
-	if errList.String() != "" {
-		err = errors.New(errList.String())
 	}
 	return
 }
@@ -86,7 +84,7 @@ func isFrogbotRescanComment(comment string) bool {
 	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), utils.RescanRequestComment)
 }
 
-func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Repository, client vcsclient.VcsClient) error {
+func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Repository, client vcsclient.VcsClient) (err error) {
 	// Download the pull request source ("from") branch
 	params := utils.Params{
 		Git: utils.Git{

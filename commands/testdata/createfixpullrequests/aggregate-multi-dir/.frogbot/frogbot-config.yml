@@ -1,0 +1,10 @@
+- params:
+    git:
+      branches:
+        - main
+      repoName: "aggregate-multi-dir"
+    scan:
+      projects:
+        - workingDirs:
+            - npm1
+            - npm2

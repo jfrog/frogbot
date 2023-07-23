@@ -12,7 +12,7 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	} else {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
-			FixedVersion: vulnDetails.FixVersion,
+			FixedVersion: vulnDetails.SuggestedFixedVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	utils2 "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -229,7 +230,9 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			IssueId:    "XRAY-1",
 			Summary:    "summary-1",
 			Severity:   "high",
+			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+			Technology: coreutils.Maven.ToString(),
 		}},
 	}
 
@@ -240,13 +243,17 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				IssueId:    "XRAY-1",
 				Summary:    "summary-1",
 				Severity:   "high",
+				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+				Technology: coreutils.Maven.ToString(),
 			},
 			{
 				IssueId:    "XRAY-2",
 				Summary:    "summary-2",
 				Severity:   "low",
+				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
 				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+				Technology: coreutils.Yarn.ToString(),
 			},
 		},
 	}
@@ -254,24 +261,28 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
 			Summary:                "summary-2",
-			Applicable:             "Undetermined",
+			Applicable:             "Applicable",
 			IssueId:                "XRAY-2",
 			Severity:               "low",
 			ImpactedDependencyName: "component-C",
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Technology:             coreutils.Yarn,
 		},
 		{
 			Summary:                "summary-2",
-			Applicable:             "Undetermined",
+			Applicable:             "Applicable",
 			IssueId:                "XRAY-2",
 			Severity:               "low",
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
 			ImpactedDependencyName: "component-D",
+			Technology:             coreutils.Yarn,
 		},
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	rows, err := createNewIssuesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -447,12 +458,12 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	writerOutput.SetEntitledForJas(true)
 	message := createPullRequestMessage(vulnerabilities, iac, writerOutput)
 
-	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVEs:** CVE-2022-24450\n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n- **Fixed Version:** \n- **CVEs:** \n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🎃 Medium\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVEs:** CVE-2022-26652\n\n**Description:**\n\n\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n---\n\n<div align=\"center\">\n\n[This comment was generated by JFrog Frogbot 🐸](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	expectedMessage := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
 	message = createPullRequestMessage(vulnerabilities, iac, writerOutput)
-	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\\color{}{\\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\\color{}{\\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVEs:** CVE-2022-24450\n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity:** 🔥 High\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n- **Fixed Version:** \n- **CVEs:** \n\n**Description:**\n\n\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity:** 🎃 Medium\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVEs:** CVE-2022-26652\n\n**Description:**\n\n\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n---\n\n<div align=\"center\">\n\n[This comment was generated by JFrog Frogbot 🐸](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	expectedMessage = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 }
 
@@ -783,7 +794,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					LineColumn:       "1:10",
 					Type:             "Secret",
 					Text:             "Sensitive information",
-					SeverityNumValue: 9,
+					SeverityNumValue: 10,
 				},
 			},
 		},
@@ -810,7 +821,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
 				{
 					Severity:         "Medium",
-					SeverityNumValue: 6,
+					SeverityNumValue: 8,
 					File:             "file2",
 					LineColumn:       "2:5",
 					Text:             "Confidential data",

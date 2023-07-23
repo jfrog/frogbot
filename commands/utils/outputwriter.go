@@ -3,44 +3,11 @@ package utils
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"strings"
 )
-
-const vulnerabilityDetailsComment = `
-- **Severity:** %s %s
-- **Package Name:** %s
-- **Current Version:** %s
-- **Fixed Version:** %s
-- **CVEs:** %s
-
-**Description:**
-
-%s
-`
-const vulnerabilityDetailsCommentWithJas = `
-- **Severity:** %s %s
-- **Contextual Analysis:** %s
-- **Package Name:** %s
-- **Current Version:** %s
-- **Fixed Version:** %s
-- **CVEs:** %s
-
-**Description:**
-
-%s
-
-**Remediation:**
-
-%s
-`
-
-var applicabilityColorMap = map[string]string{
-	"applicable":     "#FF7377",
-	"not applicable": "#3CB371",
-	"undetermined":   "",
-}
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
@@ -49,7 +16,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabiltiesTitle(isComment bool) string
 	VulnerabilitiesTableHeader() string
-	VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
+	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
 	Seperator() string
@@ -59,6 +26,7 @@ type OutputWriter interface {
 	SetEntitledForJas(entitled bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
+	UntitledForJasMsg() string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -70,70 +38,68 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	}
 }
 
-func JasMsg(entitled bool) string {
-	msg := ""
-	if !entitled {
-		msg = "\n\n--- \n* **Frogbot** also supports **Contextual Analysis, Infrastructure as Code Scanning and Secrets Detection**. These features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
-	}
-	return msg
+type descriptionBullet struct {
+	title string
+	value string
 }
 
-func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow, provider vcsutils.VcsProvider) string {
+func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var cves []string
-	for _, cve := range vulnerabilityDetails.Cves {
+	for _, cve := range vulnerability.Cves {
 		cves = append(cves, cve.Id)
 	}
-	if vulnerabilityDetails.JfrogResearchInformation == nil {
-		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
-	}
-	if vulnerabilityDetails.Applicable != "" && vulnerabilityDetails.Applicable != "Undetermined" {
-		return fmt.Sprintf(vulnerabilityDetailsCommentWithJas,
-			utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-			vulnerabilityDetails.Severity,
-			formattedApplicabilityText(vulnerabilityDetails.Applicable, provider),
-			vulnerabilityDetails.ImpactedDependencyName,
-			vulnerabilityDetails.ImpactedDependencyVersion,
-			strings.Join(vulnerabilityDetails.FixedVersions, ","),
-			strings.Join(cves, ", "),
-			vulnerabilityDetails.JfrogResearchInformation.Details,
-			vulnerabilityDetails.JfrogResearchInformation.Remediation)
-	}
-	return fmt.Sprintf(vulnerabilityDetailsComment,
-		utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(),
-		vulnerabilityDetails.Severity,
-		vulnerabilityDetails.ImpactedDependencyName,
-		vulnerabilityDetails.ImpactedDependencyVersion,
-		strings.Join(vulnerabilityDetails.FixedVersions, ","),
-		strings.Join(cves, ", "),
-		vulnerabilityDetails.JfrogResearchInformation.Details)
-}
 
-func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	var tableContent string
-	for _, vulnerability := range vulnerabilitiesRows {
-		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
+	if vulnerability.JfrogResearchInformation == nil {
+		vulnerability.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
 	}
-	return tableContent
-}
 
-func createVulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	var directDependencies strings.Builder
-	if len(vulnerability.Components) > 0 {
-		for _, dependency := range vulnerability.Components {
-			directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, writer.Seperator()))
+	cvesTitle := "**CVE:**"
+	if len(cves) > 1 {
+		cvesTitle = "**CVEs:**"
+	}
+
+	fixedVersionsTitle := "**Fixed Version:**"
+	if len(vulnerability.FixedVersions) > 1 {
+		fixedVersionsTitle = "**Fixed Versions:**"
+	}
+
+	descriptionBullets := []descriptionBullet{
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
+		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
+		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
+		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
+		{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")},
+		{title: cvesTitle, value: strings.Join(cves, ", ")},
+	}
+
+	var descriptionBuilder strings.Builder
+	descriptionBuilder.WriteString("\n")
+	// Write the bullets of the description
+	for _, bullet := range descriptionBullets {
+		if strings.TrimSpace(bullet.value) != "" {
+			descriptionBuilder.WriteString(fmt.Sprintf("- %s %s\n", bullet.title, bullet.value))
 		}
 	}
 
-	row := fmt.Sprintf("| %s | ", writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
-	if writer.EntitledForJas() {
-		row += formattedApplicabilityText(vulnerability.Applicable, writer.VcsProvider()) + " |"
+	// Write description if exists:
+	if vulnerability.JfrogResearchInformation.Details != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Details))
 	}
-	row += fmt.Sprintf("%s | %s | %s |",
-		strings.TrimSuffix(directDependencies.String(), writer.Seperator()),
-		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, writer.Seperator()),
-	)
-	return row
+
+	// Write remediation if exists
+	if vulnerability.JfrogResearchInformation.Remediation != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Remediation))
+	}
+
+	return descriptionBuilder.String()
+}
+
+func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	var tableContent string
+	for _, vulnerability := range vulnerabilities {
+		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
+	}
+	return tableContent
 }
 
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
@@ -144,16 +110,13 @@ func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) st
 	return tableContent
 }
 
-func formattedApplicabilityText(text string, provider vcsutils.VcsProvider) string {
-	applicabilityColor := applicabilityColorMap[strings.ToLower(text)]
-	var formattedText string
-	switch provider {
-	case vcsutils.GitHub, vcsutils.GitLab:
-		formattedText = fmt.Sprintf("$\\color{%s}{\\textsf{%s}}$", applicabilityColor, text)
-	case vcsutils.AzureRepos:
-		formattedText = fmt.Sprintf("<span style=\"color: %s;\">%s</span>", applicabilityColor, text)
-	default:
-		formattedText = strings.ToUpper(fmt.Sprintf("**%s**", text))
+func MarkdownComment(text string) string {
+	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
+	if tech.ToString() == "" {
+		return FrogbotPullRequestTitlePrefix + " Update dependencies"
 	}
-	return formattedText
+	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
 }
