@@ -217,15 +217,6 @@ func getScanVulnerabilitiesRows(auditResults *audit.Results) ([]formats.Vulnerab
 	return []formats.VulnerabilityOrViolationRow{}, nil
 }
 
-func auditSource(scanSetup *utils.ScanDetails) (auditResults *audit.Results, err error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-	fullPathWds := getFullPathWorkingDirs(scanSetup.WorkingDirs, wd)
-	return runInstallAndAudit(scanSetup, fullPathWds...)
-}
-
 func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 	var fullPathWds []string
 	if len(workingDirs) != 0 {
