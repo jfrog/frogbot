@@ -199,6 +199,7 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	g.RepoOwner = git.RepoOwner
 	g.GitProvider = git.GitProvider
 	g.VcsInfo = git.VcsInfo
+	g.APIEndpoint = g.setDefaultApiEndpoint()
 	if g.RepoName == "" {
 		if git.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
@@ -233,12 +234,30 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		}
 	}
 	// Non-mandatory git branch pr id.
-	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-		if g.PullRequestID, err = strconv.Atoi(pullRequestIDString); err != nil {
-			return err
+	if g.PullRequestID == 0 {
+		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
+			idNum, err := strconv.Atoi(idStr)
+			if err != nil {
+				return err
+			}
+			g.PullRequestID = idNum
 		}
 	}
 	return
+}
+
+func (g *Git) setDefaultApiEndpoint() string {
+	switch g.GitProvider {
+	case vcsutils.GitHub:
+		return "https://github.com"
+	case vcsutils.GitLab:
+		return "https://gitlab.com"
+	case vcsutils.AzureRepos:
+		return "https://dev.azure.com"
+	default:
+		// Bitbucket server, for example, doesn't have a default as this is on perm
+		return ""
+	}
 }
 
 func validateHashPlaceHolder(template string) error {

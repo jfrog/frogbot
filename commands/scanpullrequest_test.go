@@ -34,7 +34,8 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
-	testSameBranchProjConfigPath     = "testdata/config/frogbot-config-test-same-branch-fail.yml"
+	testSourceBranchName             = "pr"
+	testTargetBranchName             = "master"
 )
 
 func TestCreateVulnerabilitiesRows(t *testing.T) {
@@ -504,32 +505,6 @@ func TestScanPullRequest(t *testing.T) {
 	testScanPullRequest(t, testProjConfigPath, "test-proj", true)
 }
 
-func TestScanPullRequestSameBranchFail(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
-	defer restoreEnv()
-
-	// Create mock GitLab server
-	projectName := "test-same-branch-fail"
-
-	server := httptest.NewServer(createGitLabHandler(t, projectName))
-	defer server.Close()
-
-	configAggregator, client := prepareConfigAndClient(t, testSameBranchProjConfigPath, server, params)
-	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
-	defer cleanUp()
-
-	// Run "frogbot scan pull request"
-	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(configAggregator, client)
-	exceptedError := fmt.Errorf(utils.ErrScanPullRequestSameBranches, "main")
-	assert.Equal(t, exceptedError, err)
-
-	// Check env sanitize
-	err = utils.SanitizeEnv()
-	assert.NoError(t, err)
-	utils.AssertSanitizedEnv(t)
-}
-
 func TestScanPullRequestNoFail(t *testing.T) {
 	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
 }
@@ -668,15 +643,29 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
-		// Return test-proj.tar.gz when using DownloadRepository
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=master", "%2F"+projectName) {
+		// Mimic get pull request by ID
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName) {
 			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", projectName+".tar.gz"))
+			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
+			_, err = w.Write(expectedResponse)
+			assert.NoError(t, err)
+		}
+		// Mimic download specific branch to scan
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testSourceBranchName) {
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "sourceBranch.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 		}
+		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testTargetBranchName) {
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "targetBranch.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+		}
+
 		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") {
 			w.WriteHeader(http.StatusOK)
