@@ -10,8 +10,6 @@ import (
 type ScanAndFixRepositories struct {
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
-	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
-	dryRunRepoPath string
 }
 
 func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
@@ -56,6 +54,6 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Re
 		err = errors.Join(err, restoreDir())
 	}()
 
-	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: saf.dryRunRepoPath}
+	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: wd}
 	return cfp.scanAndFixRepository(repository, branch, client)
 }

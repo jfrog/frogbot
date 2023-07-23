@@ -79,7 +79,7 @@ func (smo *SimplifiedOutput) EntitledForJas() bool {
 	return smo.entitledForJas
 }
 
-func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
@@ -97,17 +97,17 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilitiesRows []format
 
 `,
 		smo.VulnerabilitiesTableHeader(),
-		getVulnerabilitiesTableContent(vulnerabilitiesRows, smo)))
-	for i := range vulnerabilitiesRows {
+		getVulnerabilitiesTableContent(vulnerabilities, smo)))
+	for i := range vulnerabilities {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s %s
 
 %s
 
 `,
-			vulnerabilitiesRows[i].ImpactedDependencyName,
-			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+			vulnerabilities[i].ImpactedDependencyName,
+			vulnerabilities[i].ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 
 	return contentBuilder.String()

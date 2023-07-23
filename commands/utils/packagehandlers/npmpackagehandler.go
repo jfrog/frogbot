@@ -12,7 +12,7 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 	} else {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
-			FixedVersion: vulnDetails.FixVersion,
+			FixedVersion: vulnDetails.SuggestedFixedVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
