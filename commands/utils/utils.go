@@ -71,7 +71,7 @@ func (err *ErrUnsupportedFix) Error() string {
 type VulnerabilityDetails struct {
 	*formats.VulnerabilityOrViolationRow
 	// Suggested fix version
-	FixVersion string
+	SuggestedFixedVersion string
 	// States whether the dependency is direct or transitive
 	IsDirectDependency bool
 	// Cves as a list of string
@@ -81,7 +81,7 @@ type VulnerabilityDetails struct {
 func NewVulnerabilityDetails(vulnerability *formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
 	vulnDetails := &VulnerabilityDetails{
 		VulnerabilityOrViolationRow: vulnerability,
-		FixVersion:                  fixVersion,
+		SuggestedFixedVersion:       fixVersion,
 	}
 	vulnDetails.SetCves(vulnerability.Cves)
 	return vulnDetails
@@ -99,8 +99,8 @@ func (vd *VulnerabilityDetails) SetCves(cves []formats.CveRow) {
 
 func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	// Update vd.FixVersion as the maximum version if found a new version that is greater than the previous maximum version.
-	if vd.FixVersion == "" || version.NewVersion(vd.FixVersion).Compare(fixVersion) > 0 {
-		vd.FixVersion = fixVersion
+	if vd.SuggestedFixedVersion == "" || version.NewVersion(vd.SuggestedFixedVersion).Compare(fixVersion) > 0 {
+		vd.SuggestedFixedVersion = fixVersion
 	}
 }
 
@@ -131,7 +131,7 @@ func Chdir(dir string) (cbk func() error, err error) {
 		return nil, err
 	}
 	if err = os.Chdir(dir); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not change dir to: %s\n%s", dir, err.Error())
 	}
 	return func() error { return os.Chdir(wd) }, err
 }
@@ -172,19 +172,19 @@ func Md5Hash(values ...string) (string, error) {
 
 // Generates MD5Hash from a vulnerabilityDetails
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func VulnerabilityDetailsToMD5Hash(vulnerabilityDetails map[string]*VulnerabilityDetails) (string, error) {
-	h := crypto.MD5.New()
-	keys := make([]string, 0, len(vulnerabilityDetails))
-	for k, v := range vulnerabilityDetails {
-		keys = append(keys, k+v.FixVersion)
+func VulnerabilityDetailsToMD5Hash(vulnerabilities ...*VulnerabilityDetails) (string, error) {
+	hash := crypto.MD5.New()
+	var keys []string
+	for _, vuln := range vulnerabilities {
+		keys = append(keys, GetUniqueID(*vuln.VulnerabilityOrViolationRow))
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
-		if _, err := fmt.Fprint(h, key, value); err != nil {
+		if _, err := fmt.Fprint(hash, key, value); err != nil {
 			return "", err
 		}
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
@@ -286,4 +286,8 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 	cc := commands.NewConfigCommand(commands.AddOrEdit, "frogbot").SetDetails(server)
 	err = cc.Run()
 	return
+}
+
+func GetUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
+	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }

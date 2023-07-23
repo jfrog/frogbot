@@ -343,14 +343,14 @@ func getNewViolations(targetScan, sourceScan services.ScanResponse, auditResults
 		return violationsRows, err
 	}
 	for _, violation := range violationsRows {
-		existsViolationsMap[getUniqueID(violation)] = violation
+		existsViolationsMap[utils.GetUniqueID(violation)] = violation
 	}
 	violationsRows, _, _, err = xrayutils.PrepareViolations(sourceScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
 	if err != nil {
 		return newViolationsRows, err
 	}
 	for _, violation := range violationsRows {
-		if _, exists := existsViolationsMap[getUniqueID(violation)]; !exists {
+		if _, exists := existsViolationsMap[utils.GetUniqueID(violation)]; !exists {
 			newViolationsRows = append(newViolationsRows, violation)
 		}
 	}
@@ -364,22 +364,18 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 		return newVulnerabilitiesRows, err
 	}
 	for _, vulnerability := range targetVulnerabilitiesRows {
-		targetVulnerabilitiesMap[getUniqueID(vulnerability)] = vulnerability
+		targetVulnerabilitiesMap[utils.GetUniqueID(vulnerability)] = vulnerability
 	}
 	sourceVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
 	if err != nil {
 		return newVulnerabilitiesRows, err
 	}
 	for _, vulnerability := range sourceVulnerabilitiesRows {
-		if _, exists := targetVulnerabilitiesMap[getUniqueID(vulnerability)]; !exists {
+		if _, exists := targetVulnerabilitiesMap[utils.GetUniqueID(vulnerability)]; !exists {
 			newVulnerabilitiesRows = append(newVulnerabilitiesRows, vulnerability)
 		}
 	}
 	return
-}
-
-func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {

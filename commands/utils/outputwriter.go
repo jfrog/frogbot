@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"strings"
@@ -15,7 +16,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabiltiesTitle(isComment bool) string
 	VulnerabilitiesTableHeader() string
-	VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string
+	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
 	Seperator() string
@@ -42,13 +43,14 @@ type descriptionBullet struct {
 	value string
 }
 
-func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityOrViolationRow) string {
+func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var cves []string
-	for _, cve := range vulnerabilityDetails.Cves {
+	for _, cve := range vulnerability.Cves {
 		cves = append(cves, cve.Id)
 	}
-	if vulnerabilityDetails.JfrogResearchInformation == nil {
-		vulnerabilityDetails.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerabilityDetails.Summary}
+
+	if vulnerability.JfrogResearchInformation == nil {
+		vulnerability.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
 	}
 
 	cvesTitle := "**CVE:**"
@@ -56,12 +58,17 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 		cvesTitle = "**CVEs:**"
 	}
 
+	fixedVersionsTitle := "**Fixed Version:**"
+	if len(vulnerability.FixedVersions) > 1 {
+		fixedVersionsTitle = "**Fixed Versions:**"
+	}
+
 	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerabilityDetails.Severity, utils.ApplicableStringValue).Emoji(), vulnerabilityDetails.Severity)},
-		{title: "**Contextual Analysis:**", value: vulnerabilityDetails.Applicable},
-		{title: "**Package Name:**", value: vulnerabilityDetails.ImpactedDependencyName},
-		{title: "**Current Version:**", value: vulnerabilityDetails.ImpactedDependencyVersion},
-		{title: "**Fixed Version:**", value: strings.Join(vulnerabilityDetails.FixedVersions, ",")},
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
+		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
+		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
+		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
+		{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")},
 		{title: cvesTitle, value: strings.Join(cves, ", ")},
 	}
 
@@ -75,21 +82,21 @@ func createVulnerabilityDescription(vulnerabilityDetails *formats.VulnerabilityO
 	}
 
 	// Write description if exists:
-	if vulnerabilityDetails.JfrogResearchInformation.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnerabilityDetails.JfrogResearchInformation.Details))
+	if vulnerability.JfrogResearchInformation.Details != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Details))
 	}
 
 	// Write remediation if exists
-	if vulnerabilityDetails.JfrogResearchInformation.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnerabilityDetails.JfrogResearchInformation.Remediation))
+	if vulnerability.JfrogResearchInformation.Remediation != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Remediation))
 	}
 
 	return descriptionBuilder.String()
 }
 
-func getVulnerabilitiesTableContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var tableContent string
-	for _, vulnerability := range vulnerabilitiesRows {
+	for _, vulnerability := range vulnerabilities {
 		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
 	}
 	return tableContent
@@ -101,4 +108,15 @@ func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) st
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
 	}
 	return tableContent
+}
+
+func MarkdownComment(text string) string {
+	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
+	if tech.ToString() == "" {
+		return FrogbotPullRequestTitlePrefix + " Update dependencies"
+	}
+	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
 }
