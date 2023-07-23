@@ -44,7 +44,8 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 	}
 
 	if cmd.pullRequestDetails == nil {
-		*cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
+		pullRequestDetails, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
+		cmd.pullRequestDetails = &pullRequestDetails
 		if err != nil {
 			return err
 		}
