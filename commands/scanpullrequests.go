@@ -46,7 +46,7 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 			err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
 		if shouldScan {
-			spr := &ScanPullRequestCmd{pullRequestDetails: &pr}
+			spr := &ScanPullRequestCmd{pullRequestDetails: pr}
 			e = spr.Run(utils.RepoAggregator{repo}, client)
 			// If error, write it in errList and continue to the next PR.
 			if e != nil {

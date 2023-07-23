@@ -28,7 +28,7 @@ const (
 
 type ScanPullRequestCmd struct {
 	// Optional provided pull request details, used in scan-pull-requests command.
-	pullRequestDetails *vcsclient.PullRequestInfo
+	pullRequestDetails vcsclient.PullRequestInfo
 }
 
 // Run ScanPullRequest method only works for a single repository scan.
@@ -44,15 +44,14 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 
-	if cmd.pullRequestDetails == nil {
-		pullRequestDetails, err := client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
-		cmd.pullRequestDetails = &pullRequestDetails
+	if cmd.pullRequestDetails.ID == 0 {
+		cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
 		if err != nil {
 			return err
 		}
 	}
 
-	return scanPullRequest(repoConfig, client, *cmd.pullRequestDetails)
+	return scanPullRequest(repoConfig, client, cmd.pullRequestDetails)
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
