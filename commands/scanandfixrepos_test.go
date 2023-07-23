@@ -61,7 +61,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 	assert.NoError(t, err)
 
-	var cmd = ScanAndFixRepositories{dryRun: true, dryRunRepoPath: tmpDir}
+	var cmd = ScanAndFixRepositories{dryRun: true}
 	assert.NoError(t, cmd.Run(configAggregator, client))
 }
 

@@ -7,3 +7,4 @@ coverage
 .vscode
 *.iml
 .DS_Store
+commands/testdata/**/hooks/

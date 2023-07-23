@@ -79,7 +79,7 @@ func (so *StandardOutput) EntitledForJas() bool {
 	return so.entitledForJas
 }
 
-func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) string {
+func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
@@ -97,15 +97,15 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.V
 
 `,
 		so.VulnerabilitiesTableHeader(),
-		getVulnerabilitiesTableContent(vulnerabilitiesRows, so)))
+		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
-	for i := range vulnerabilitiesRows {
-		if len(vulnerabilitiesRows) == 1 {
+	for i := range vulnerabilities {
+		if len(vulnerabilities) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+`, createVulnerabilityDescription(&vulnerabilities[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -117,9 +117,9 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilitiesRows []formats.V
 </details>
 
 `,
-			vulnerabilitiesRows[i].ImpactedDependencyName,
-			vulnerabilitiesRows[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilitiesRows[i])))
+			vulnerabilities[i].ImpactedDependencyName,
+			vulnerabilities[i].ImpactedDependencyVersion,
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 	return contentBuilder.String()
 }
