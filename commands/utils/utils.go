@@ -173,18 +173,18 @@ func Md5Hash(values ...string) (string, error) {
 // Generates MD5Hash from a vulnerabilityDetails
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
 func VulnerabilityDetailsToMD5Hash(vulnerabilities ...*VulnerabilityDetails) (string, error) {
-	h := crypto.MD5.New()
+	hash := crypto.MD5.New()
 	var keys []string
-	for _, v := range vulnerabilities {
-		keys = append(keys, GetUniqueID(*v.VulnerabilityOrViolationRow))
+	for _, vuln := range vulnerabilities {
+		keys = append(keys, GetUniqueID(*vuln.VulnerabilityOrViolationRow))
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
-		if _, err := fmt.Fprint(h, key, value); err != nil {
+		if _, err := fmt.Fprint(hash, key, value); err != nil {
 			return "", err
 		}
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI

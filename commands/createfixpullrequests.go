@@ -62,7 +62,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 	if err != nil {
 		return
 	}
-	cfp.setCommandPreRequisites(repository, branch, client)
+	cfp.setCommandPrerequisites(repository, branch, client)
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
 		cfp.projectTech = ""
@@ -73,7 +73,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) setCommandPreRequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) {
+func (cfp *CreateFixPullRequestsCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) {
 	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).

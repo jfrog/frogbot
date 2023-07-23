@@ -11,7 +11,7 @@ import (
 	rtutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	mvnutils "github.com/jfrog/jfrog-cli-core/v2/utils/mvn"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/audit/java"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
 	"io"
@@ -304,8 +304,8 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []by
 		return
 	}
 	// Run the mvn command with the Maven Build-Info Extractor to download dependencies from Artifactory.
-	javaProps := audit.CreateJavaProps(mph.depsRepo, mph.ServerDetails)
-	vConfig, err := rtutils.ReadMavenConfig("", javaProps)
+	mvnProps := java.CreateMvnProps(mph.depsRepo, mph.ServerDetails)
+	vConfig, err := rtutils.ReadMavenConfig("", mvnProps)
 	if err != nil {
 		return
 	}
