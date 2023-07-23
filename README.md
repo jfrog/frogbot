@@ -41,8 +41,11 @@ It supports the following Git providers:
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data that is provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 - **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
+- **Secrets Detection**: For GitHUb repositories, detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
+- **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
-> **_NOTE:_** **Vulnerability Contextual Analysis** require the [JFrog Advanced Security Package](https://jfrog.com/xray/).
+> **_NOTE:_** **Vulnerability Contextual Analysis**, **Secrets Detection** and **Infrastructure as Code scans**
+  > require the [JFrog Advanced Security Package](https://jfrog.com/xray/).
 
 ### What's needed for the setup?
 - Frogbot uses a JFrog environment to scan your Git repositories. If you don't have a JFrog environment, you can set up one for free, and use it with no limits.
@@ -252,13 +255,21 @@ Supported package management tools:
 ![](./images/fix-pr.png)
 
 ### Adding Security Alerts
-For GitHub repositories, issues that are found during Frogbot's periodic scans are also added to the [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) view in the UI.
+  
+For GitHub repositories, issues that are found during Frogbot's periodic scans are also added to the [Security Alerts](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/managing-code-scanning-alerts-for-your-repository) view in the UI. 
 The following alert types are supported:
 
-#### CVEs on vulnerable depedencies
+#### 1. CVEs on vulnerable depedencies
+
 ![](./images/github-code-scanning.png)
 
 ![](./images/github-code-scanning-content.png)
+
+#### 2. Secrets that are exposed in the code (for GitHub only)
+![](./images/github-code-scanning-iac-content.png)
+
+#### 3. Infrastructure as Code issues  
+![](./images/github-code-scanning-secrets-content.png)
 
 </details>
 
