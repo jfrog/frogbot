@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
@@ -34,9 +35,10 @@ const (
 	branchCharsMaxLength           = 255
 	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
 	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
-	skipIndirectVulnerabilitiesMsg = "%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can introduce conflicts with other dependencies that rely on the previous version.\nFrogbot skips this to avoid potential incompatibilities."
+	skipIndirectVulnerabilitiesMsg = "\n%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can potentially cause conflicts with other dependencies that depend on the previous version.\nFrogbot skips this to avoid potential incompatibilities and breaking changes."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
+	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
 )
 
 var (
@@ -59,14 +61,10 @@ type ErrUnsupportedFix struct {
 // Custom error for unsupported fixes
 // Currently we hold two unsupported reasons, indirect and build tools dependencies.
 func (err *ErrUnsupportedFix) Error() string {
-	switch err.ErrorType {
-	case IndirectDependencyFixNotSupported:
+	if err.ErrorType == IndirectDependencyFixNotSupported {
 		return fmt.Sprintf(skipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
-	case BuildToolsDependencyFixNotSupported:
-		return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
-	default:
-		panic("Incompatible custom error!")
 	}
+	return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
 }
 
 // VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
@@ -204,7 +202,7 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 	if err != nil {
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
-
+	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
 	return err
 }
 
@@ -271,4 +269,21 @@ func validateBranchName(branchName string) error {
 		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
+}
+
+func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, currentJFrogHomeDir string, err error) {
+	// Create temp dir to store server config inside
+	currentJFrogHomeDir, err = fileutils.CreateTempDir()
+	if err != nil {
+		return
+	}
+	// Save current JFrog Home dir
+	previousJFrogHomeDir = os.Getenv(JfrogHomeDirEnv)
+	// Set the temp dir as the JFrog Home dir
+	if err = os.Setenv(JfrogHomeDirEnv, currentJFrogHomeDir); err != nil {
+		return
+	}
+	cc := commands.NewConfigCommand(commands.AddOrEdit, "frogbot").SetDetails(server)
+	err = cc.Run()
+	return
 }

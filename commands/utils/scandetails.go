@@ -3,7 +3,6 @@ package utils
 import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
@@ -18,7 +17,6 @@ type ScanDetails struct {
 	minSeverityFilter        string
 	branch                   string
 	releasesRepo             string
-	ExtendedResults          *xrayutils.ExtendedScanResults
 	excludeDevDependencies   bool
 }
 
@@ -72,10 +70,6 @@ func (sc *ScanDetails) Client() vcsclient.VcsClient {
 
 func (sc *ScanDetails) Branch() string {
 	return sc.branch
-}
-
-func (sc *ScanDetails) ReleasesRepo() string {
-	return sc.releasesRepo
 }
 
 func (sc *ScanDetails) FailOnInstallationErrors() bool {

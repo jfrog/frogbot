@@ -105,7 +105,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	for i := range repoConfig.Projects {
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
-			SetReleasesRepo(repoConfig.JfrogReleasesRepo).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 			SetMinSeverity(repoConfig.MinSeverity).
 			SetFixableOnly(repoConfig.FixableOnly)
@@ -292,7 +291,6 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (audit
 		SetDepsRepo(scanSetup.Repository).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(scanSetup.ServerDetails).
-		SetReleasesRepo(scanSetup.ReleasesRepo()).
 		SetExcludeTestDependencies(scanSetup.ExcludeDevDependencies())
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
@@ -387,7 +385,7 @@ func getUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
-		return writer.NoVulnerabilitiesTitle() + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + utils.JasMsg(writer.EntitledForJas()) + writer.Footer()
+	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }

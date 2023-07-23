@@ -3,3 +3,9 @@
       repoName: frogbot
       branches:
         - dev
+    scan:
+      projects:
+        - workingDirs:
+            - action
+        - workingDirs:
+            - .
