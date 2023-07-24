@@ -34,20 +34,19 @@ type ScanPullRequestCmd struct {
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
 func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
-	if err := utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
-		return err
+	if err = utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
+		return
 	}
 	repoConfig := &(configAggregator)[0]
 	if repoConfig.GitProvider == vcsutils.GitHub {
-		if err := verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
-			return err
+		if err = verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
+			return
 		}
 	}
 
-	if cmd.pullRequestDetails.ID == 0 {
-		cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID)
-		if err != nil {
-			return err
+	if cmd.pullRequestDetails.ID == utils.UndefinedPrID {
+		if cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID); err != nil {
+			return
 		}
 	}
 
@@ -82,6 +81,7 @@ func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, p
 	return err
 }
 
+// Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
 	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
 	var iacRows []formats.IacSecretsRow

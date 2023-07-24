@@ -45,15 +45,14 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 		if e != nil {
 			err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
-		if shouldScan {
-			spr := &ScanPullRequestCmd{pullRequestDetails: pr}
-			e = spr.Run(utils.RepoAggregator{repo}, client)
-			// If error, write it in errList and continue to the next PR.
-			if e != nil {
-				err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
-			}
-		} else {
+		if !shouldScan {
 			log.Info("Pull Request", pr.ID, "has already been scanned before. If you wish to scan it again, please comment \"rescan\".")
+			return
+		}
+		spr := &ScanPullRequestCmd{pullRequestDetails: pr}
+		if e = spr.Run(utils.RepoAggregator{repo}, client); e != nil {
+			// If error, write it in errList and continue to the next PR.
+			err = errors.Join(err, fmt.Errorf(errPullRequestScan, int(pr.ID), repo.RepoName, e.Error()))
 		}
 	}
 	return

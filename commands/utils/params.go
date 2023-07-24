@@ -23,6 +23,9 @@ import (
 const (
 	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
+
+	// Pull Request ID cannot be 0
+	UndefinedPrID = 0
 )
 
 var (
@@ -233,8 +236,7 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	// Non-mandatory git branch pr id.
-	if g.PullRequestID == 0 {
+	if g.PullRequestID == UndefinedPrID {
 		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
 			idNum, err := strconv.Atoi(idStr)
 			if err != nil {
