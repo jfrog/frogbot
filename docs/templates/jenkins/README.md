@@ -4,7 +4,7 @@
 
 <div>
 <img src="../../../images/jenkins-logo.png" width="250">
-<img src="../../../images/frogbot-intro.png" width="250">
+<img src="../../../images/frogbot-circle.png" width="180">
 </div>
 
 ### 🖥️ Follow These steps to install Frogbot on Jenkins
