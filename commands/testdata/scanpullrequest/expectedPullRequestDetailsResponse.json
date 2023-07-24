@@ -6,5 +6,6 @@
   "description": "this is pr description",
   "state": "opened",
   "target_branch": "master",
-  "source_branch": "pr"
+  "source_branch": "pr",
+  "owner": "jfrog"
 }

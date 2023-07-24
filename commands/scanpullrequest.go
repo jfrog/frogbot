@@ -88,11 +88,15 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	targetBranch := pullRequestDetails.Target.Name
 	sourceBranch := pullRequestDetails.Source.Name
 	for i := range repoConfig.Projects {
+		// Source scan details
 		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 			SetProject(&repoConfig.Projects[i]).
 			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 			SetMinSeverity(repoConfig.MinSeverity).
-			SetFixableOnly(repoConfig.FixableOnly).SetBranch(sourceBranch)
+			SetFixableOnly(repoConfig.FixableOnly).
+			SetBranch(sourceBranch).
+			SetRepoOwner(pullRequestDetails.Source.Owner)
+
 		sourceResults, err := downloadAndAuditBranch(scanDetails)
 		if err != nil {
 			return nil, nil, err
@@ -108,8 +112,11 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)...)
 			continue
 		}
-		// Audit target code
-		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).SetBranch(targetBranch)
+		// Target scan details
+		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
+			SetBranch(targetBranch).
+			SetRepoOwner(pullRequestDetails.Target.Owner)
+
 		targetResults, err := downloadAndAuditBranch(scanDetails)
 		if err != nil {
 			return nil, nil, err

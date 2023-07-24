@@ -72,6 +72,11 @@ func (sc *ScanDetails) MinSeverityFilter() string {
 	return sc.minSeverityFilter
 }
 
+func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
+	sc.RepoOwner = owner
+	return sc
+}
+
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
