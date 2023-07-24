@@ -26,7 +26,6 @@ func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, cli
 			return err
 		}
 	}
-
 	return nil
 }
 

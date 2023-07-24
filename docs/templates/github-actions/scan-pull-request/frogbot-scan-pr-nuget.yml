@@ -20,10 +20,6 @@ jobs:
       - uses: jfrog/frogbot@v2
         env:
           # [Mandatory]
-          # ID of the pull request
-          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
-
-          # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
 
