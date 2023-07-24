@@ -93,8 +93,9 @@ After the setup is complete, you'll receive an email with your JFrog environment
 - [GitHub Actions](docs/install-github.md)
 - [Jenkins](docs/templates/jenkins/README.md)
 - [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
-- [Azure Pipelines](docs/install-azure-pipelines.md)
 - [GitLab Pipelines](docs/install-gitlab.md)
+- [Azure Pipelines](docs/install-azure-pipelines.md)
+
 
 </details>
 
