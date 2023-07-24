@@ -19,14 +19,13 @@
 
 </details>
 <details>
-  <summary>2️⃣ Setup VCS Webhook </summary>
+  <summary>2️⃣ Setup Webhook on your Git Provider </summary>
 
-- **Set Up Webhook on your Git Provider**
 - Webhook Link: `JENKINS_URL/generic-webhook-trigger/invoke`
 - Optional - **JobToken** : When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
   want to trigger only a certain job you can use the **JobToken** in the URL to specify what job needs to be executed.
-- Webhook Link with **JobToken
-  **: `JENKINS_URL/generic-webhook-trigger/invoke?token=JobToken` [JobToken Docs](https://plugins.jenkins.io/generic-webhook-trigger/#plugin-content-trigger-only-specific-job)
+- Webhook Link with **JobToken** : `JENKINS_URL/generic-webhook-trigger/invoke?token=JobToken`
+- Read more [JobToken Docs](https://plugins.jenkins.io/generic-webhook-trigger/#plugin-content-trigger-only-specific-job)
 - 🌟 Choose your Git provider:
     <details>
       <summary> Bitbucket Server  </summary>
