@@ -40,10 +40,13 @@
 
   <details>
       <summary> GitHub  </summary>
+  
     - Go to repository settings and create a new webhook.
     <img src="../../../images/github-new-webhook.png">
+  
     - Add a new webhook
     <img src="../../../images/github-webhook-setup.png">
+  
     - Set up trigger
     <img src="../../../images/github-trigger-event.png">
 
