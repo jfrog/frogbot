@@ -1,0 +1,12 @@
+- params:
+    git:
+      branches:
+        - main
+      repoName: "aggregate-multi-dir"
+    scan:
+      projects:
+        - workingDirs:
+            - npm
+        - workingDirs:
+            - pip
+          pipRequirementsFile: requirements.txt

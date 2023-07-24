@@ -84,7 +84,7 @@ func isFrogbotRescanComment(comment string) bool {
 	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), utils.RescanRequestComment)
 }
 
-func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Repository, client vcsclient.VcsClient) error {
+func downloadAndScanPullRequest(pr vcsclient.PullRequestInfo, repo utils.Repository, client vcsclient.VcsClient) (err error) {
 	// Download the pull request source ("from") branch
 	params := utils.Params{
 		Git: utils.Git{

@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
 	"os"
@@ -35,10 +36,6 @@ const (
 	gitLabHttpsFormat          = "%s/%s/%s.git"
 	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
 	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
-
-	// Aggregate branches name should always be the same name.
-	// We use a const to replace in the branch template ${BRANCH_NAME_HASH}
-	constAggregatedHash = "0"
 )
 
 type GitManager struct {
@@ -52,6 +49,8 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
+	// When dryRun is enabled, skipClone allows skipping the cloning of a repository for testing purposes
+	SkipClone bool
 	// Custom naming formats
 	customTemplates CustomTemplates
 	// Git details
@@ -286,10 +285,10 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitMessage() string {
+func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = AggregatedPullRequestTitleTemplate
+		template = GetAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -303,7 +302,6 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 		{FixVersionPlaceHolder, fixVersion},
 		{BranchHashPlaceHolder, hash},
 	}
-
 	for _, r := range replacements {
 		str = strings.Replace(str, r.placeholder, r.value, 1)
 	}
@@ -338,17 +336,20 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot branch in aggregated mode.
-func (gm *GitManager) GenerateAggregatedFixBranchName() (fixBranchName string, err error) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology) (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", constAggregatedHash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", tech.ToString(), false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
+	if gm.SkipClone {
+		return nil
+	}
 	baseWd, err := os.Getwd()
 	if err != nil {
 		return err

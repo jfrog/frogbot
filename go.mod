@@ -6,9 +6,9 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.9.6
-	github.com/jfrog/froggit-go v1.8.1
+	github.com/jfrog/froggit-go v1.9.0
 	github.com/jfrog/gofrog v1.3.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.39.2
+	github.com/jfrog/jfrog-cli-core/v2 v2.39.3
 	github.com/jfrog/jfrog-client-go v1.31.2
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.4

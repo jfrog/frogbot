@@ -19,13 +19,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
-)
-
-const (
-	aggregatedBranchConstName = "frogbot-update-dependencies-0"
 )
 
 var testPackagesData = []struct {
@@ -76,45 +71,63 @@ var testPackagesData = []struct {
 // Make sure it is checked out to the main branch, replicating an actual run.
 func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 	tests := []struct {
-		repoName           string
-		testDir            string
-		configPath         string
-		expectedBranchName string
-		expectedDiff       string
-		dependencyFileName string
-		aggregateFixes     bool
+		repoName               string
+		testDir                string
+		configPath             string
+		expectedDiff           []string
+		expectedBranches       []string
+		packageDescriptorPaths []string
+		aggregateFixes         bool
 	}{
 		{
-			repoName:           "aggregate",
-			testDir:            "createfixpullrequests/aggregate",
-			expectedBranchName: aggregatedBranchConstName,
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex c5ea932..1176f2d 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimist\":\"1.2.5\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimist\": \"^1.2.6\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
-			dependencyFileName: "package.json",
-			aggregateFixes:     true,
+			repoName:               "aggregate",
+			testDir:                "createfixpullrequests/aggregate",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex c5ea932..1176f2d 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimist\":\"1.2.5\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimist\": \"^1.2.6\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         true,
 		},
 		{
-			repoName:           "aggregate-no-vul",
-			testDir:            "createfixpullrequests/aggregate-no-vul",
-			expectedBranchName: "main", // No branch should be created
-			expectedDiff:       "",
-			dependencyFileName: "package.json",
-			aggregateFixes:     true,
+			repoName:               "aggregate-multi-dir",
+			testDir:                "createfixpullrequests/aggregate-multi-dir",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
+			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex be180a6..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"^1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
+			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
+			aggregateFixes:         true,
+			configPath:             "testdata/createfixpullrequests/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
-			repoName:           "aggregate-cant-fix",
-			testDir:            "createfixpullrequests/aggregate-cant-fix",
-			expectedBranchName: aggregatedBranchConstName,
-			expectedDiff:       "",         // No diff expected
-			dependencyFileName: "setup.py", // This is a build tool dependency which should not be fixed
-			aggregateFixes:     true,
+			repoName:               "aggregate-multi-project",
+			testDir:                "createfixpullrequests/aggregate-multi-project",
+			expectedBranches:       []string{"frogbot-update-npm-dependencies", "frogbot-update-pip-dependencies"},
+			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex ae09978..286211d 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n", "diff --git a/pip/requirements.txt b/pip/requirements.txt\nindex 65c9637..7788edc 100644\n--- a/pip/requirements.txt\n+++ b/pip/requirements.txt\n@@ -1,2 +1,2 @@\n pexpect==4.8.0\n-pyjwt==1.7.1\n\\ No newline at end of file\n+pyjwt==2.4.0\n\\ No newline at end of file\n"},
+			packageDescriptorPaths: []string{"npm/package.json", "pip/requirements.txt"},
+			aggregateFixes:         true,
+			configPath:             "testdata/createfixpullrequests/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
-			repoName:           "non-aggregate",
-			testDir:            "createfixpullrequests/non-aggregate",
-			expectedBranchName: "frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7",
-			expectedDiff:       "diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n",
-			dependencyFileName: "package.json",
-			aggregateFixes:     false,
+			repoName:               "aggregate-no-vul",
+			testDir:                "createfixpullrequests/aggregate-no-vul",
+			expectedBranches:       []string{"main"}, // No branch should be created
+			expectedDiff:           []string{""},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         true,
+		},
+		{
+			repoName:               "aggregate-cant-fix",
+			testDir:                "createfixpullrequests/aggregate-cant-fix",
+			expectedBranches:       []string{"frogbot-update-pip-dependencies"},
+			expectedDiff:           []string{""},         // No diff expected
+			packageDescriptorPaths: []string{"setup.py"}, // This is a build tool dependency which should not be fixed
+			aggregateFixes:         true,
+		},
+		{
+			repoName:               "non-aggregate",
+			testDir:                "createfixpullrequests/non-aggregate",
+			expectedBranches:       []string{"frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			packageDescriptorPaths: []string{"package.json"},
+			aggregateFixes:         false,
 		},
 	}
 	for _, test := range tests {
@@ -158,12 +171,16 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			err = cmd.Run(configAggregator, client)
 			// Validate
 			assert.NoError(t, err)
-			resultDiff, err := verifyDependencyFileDiff("main", test.expectedBranchName, test.dependencyFileName)
-			assert.NoError(t, err)
-			assert.Equal(t, test.expectedDiff, string(resultDiff))
+			for _, branch := range test.expectedBranches {
+				resultDiff, err := verifyDependencyFileDiff("main", branch, test.packageDescriptorPaths...)
+				assert.NoError(t, err)
+				assert.Contains(t, test.expectedDiff, string(resultDiff))
+			}
 			// Defers
-			restoreEnv()
-			server.Close()
+			defer func() {
+				restoreEnv()
+				server.Close()
+			}()
 		})
 	}
 }
@@ -186,7 +203,11 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			testDir:        "createfixpullrequests/aggregate-dont-update-pr",
 			expectedUpdate: false,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Body: `
+[comment]: <> (Checksum: 16cc29940fb50efb794f6a53bbf18f80)
+pr body
+ `,
+				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
 				Target: vcsclient.BranchInfo{Name: "main"},
 			}},
 		},
@@ -195,7 +216,11 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			testDir:        "createfixpullrequests/aggregate-update-pr",
 			expectedUpdate: true,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Source: vcsclient.BranchInfo{Name: aggregatedBranchConstName},
+				Body: `
+[comment]: <> (Checksum: 01373ac4d2c32e7da9be22f3e4b4e665)
+pr body
+ `,
+				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
 				Target: vcsclient.BranchInfo{Name: "remoteMain"},
 			}},
 		},
@@ -221,9 +246,9 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			}
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
-			client.EXPECT().ListOpenPullRequests(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
+			client.EXPECT().ListOpenPullRequestsWithBody(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
-				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.AggregatedPullRequestTitleTemplate, "", "", int(mockPrId), vcsutils.Open).Return(nil)
+				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, utils.GetAggregatedPullRequestTitle(coreutils.Npm), "", "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
 			// Load default configurations
 			var configData []byte
@@ -294,7 +319,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := verifyEnv(t)
 	defer restoreEnv()
-	var testScan CreateFixPullRequestsCmd
+	testScan := &CreateFixPullRequestsCmd{OutputWriter: &utils.StandardOutput{}}
 	trueVal := true
 	params := utils.Params{
 		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
@@ -412,13 +437,13 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
-					FixVersion:         "1.9.1",
-					IsDirectDependency: true,
-					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+					SuggestedFixedVersion: "1.9.1",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
 				},
 				"vuln2": {
-					FixVersion: "2.4.1",
-					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+					SuggestedFixedVersion: "2.4.1",
+					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
 				},
 			},
 		},
@@ -462,13 +487,13 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
-					FixVersion:         "1.9.1",
-					IsDirectDependency: true,
-					Cves:               []string{"CVE-2023-1234", "CVE-2023-4321"},
+					SuggestedFixedVersion: "1.9.1",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
 				},
 				"viol2": {
-					FixVersion: "2.4.1",
-					Cves:       []string{"CVE-2022-1234", "CVE-2022-4321"},
+					SuggestedFixedVersion: "2.4.1",
+					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
 				},
 			},
 		},
@@ -482,7 +507,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				actualVuln, exists := fixVersionsMap[name]
 				require.True(t, exists)
 				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
-				assert.Equal(t, expectedVuln.FixVersion, actualVuln.FixVersion)
+				assert.Equal(t, expectedVuln.SuggestedFixedVersion, actualVuln.SuggestedFixedVersion)
 				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
 			}
 		})
@@ -495,12 +520,106 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan CreateFixPullRequestsCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			vulnDetails := &utils.VulnerabilityDetails{FixVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
+			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
 			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 		}
 	}
+}
+
+func TestGetRemoteBranchScanHash(t *testing.T) {
+	prBody := `
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
+## 📦 Vulnerable Dependencies 
+
+### ✍️ Summary
+
+<div align="center">
+
+| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
+| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |
+
+</div>
+
+## 👇 Details
+
+
+<details>
+<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
+<br>
+
+- **Severity** 🔥 High
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/nats-io/nats-streaming-server
+- **Current Version:** v0.21.0
+- **Fixed Version:** [0.24.1]
+- **CVEs:** CVE-2022-24450
+
+
+</details>
+
+
+<details>
+<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>
+<br>
+
+- **Severity** 🔥 High
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/mholt/archiver/v3
+- **Current Version:** v3.5.1
+
+
+</details>
+
+
+<details>
+<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
+<br>
+
+- **Severity** 🎃 Medium
+- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
+- **Package Name:** github.com/nats-io/nats-streaming-server
+- **Current Version:** v0.21.0
+- **Fixed Version:** [0.24.3]
+- **CVEs:** CVE-2022-26652
+
+
+</details>
+
+
+## 🛠️ Infrastructure as Code 
+
+<div align="center">
+
+
+| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |
+| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |
+
+</div>
+
+
+<div align="center">
+
+[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
+
+</div>
+
+[Comment]: <> (Checksum: myhash4321)
+`
+	cfp := &CreateFixPullRequestsCmd{}
+	result := cfp.getRemoteBranchScanHash(prBody)
+	assert.Equal(t, "myhash4321", result)
+	prBody = `
+random body
+`
+	result = cfp.getRemoteBranchScanHash(prBody)
+	assert.Equal(t, "", result)
 }
 
 func TestPreparePullRequestDetails(t *testing.T) {
@@ -515,8 +634,8 @@ func TestPreparePullRequestDetails(t *testing.T) {
 			Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
 		},
 	}
-	expectedPrBody := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
-	prTitle, prBody := cfp.preparePullRequestDetails(vulnerabilities)
+	expectedPrBody := "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Versions:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	prTitle, prBody := cfp.preparePullRequestDetails("hash", vulnerabilities)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	vulnerabilities = append(vulnerabilities, formats.VulnerabilityOrViolationRow{
@@ -528,14 +647,14 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
 	})
 	cfp.aggregateFixes = true
-	expectedPrBody = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br><br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n<details>\n<summary> <b>package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Version:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
-	prTitle, prBody = cfp.preparePullRequestDetails(vulnerabilities)
-	assert.Equal(t, "[🐸 Frogbot] Update dependencies versions", prTitle)
+	expectedPrBody = "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br><br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Versions:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n<details>\n<summary> <b>package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Versions:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: hash)\n"
+	prTitle, prBody = cfp.preparePullRequestDetails("hash", vulnerabilities)
+	assert.Equal(t, utils.GetAggregatedPullRequestTitle(""), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	cfp.OutputWriter = &utils.SimplifiedOutput{}
-	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary \n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High |   | package1:1.0.0 | 1.0.0, 2.0.0 |\n| Critical |   | package2:2.0.0 | 2.0.0, 3.0.0 |\n\n---\n### 👇 Details\n---\n\n\n#### package1 1.0.0\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Version:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n#### package2 2.0.0\n\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Version:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	prTitle, prBody = cfp.preparePullRequestDetails(vulnerabilities)
-	assert.Equal(t, "[🐸 Frogbot] Update dependencies versions", prTitle)
+	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary \n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High |   | package1:1.0.0 | 1.0.0, 2.0.0 |\n| Critical |   | package2:2.0.0 | 2.0.0, 3.0.0 |\n\n---\n### 👇 Details\n---\n\n\n#### package1 1.0.0\n\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Versions:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n\n#### package2 2.0.0\n\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Versions:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n\n---\n\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n[comment]: <> (Checksum: hash)\n"
+	prTitle, prBody = cfp.preparePullRequestDetails("hash", vulnerabilities)
+	assert.Equal(t, utils.GetAggregatedPullRequestTitle(""), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 }
 
@@ -548,17 +667,20 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, dependencyFilename string) (output []byte, err error) {
-	var cmd *exec.Cmd
-	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", dependencyFilename, baseBranch, fixBranch))
+func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
+	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/c", "git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
+	var args []string
+	if coreutils.IsWindows() {
+		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
+		args = append(args, packageDescriptorPaths...)
+		output, err = exec.Command("cmd", args...).Output()
 	} else {
-		cmd = exec.Command("git", "diff", baseBranch, fixBranch, "--", dependencyFilename)
+		args = []string{"diff", baseBranch, fixBranch}
+		args = append(args, packageDescriptorPaths...)
+		output, err = exec.Command("git", args...).Output()
 	}
-	output, err = cmd.Output()
 	if exitError, ok := err.(*exec.ExitError); ok {
 		err = errors.New("git error: " + string(exitError.Stderr))
 	}

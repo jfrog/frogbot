@@ -39,21 +39,21 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []dependencyFixTest{
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "0.0.0-20201216223049-8b5274cf687f",
+				SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
 				IsDirectDependency:          false,
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
 			}, fixSupported: true,
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.7.7",
+				SuggestedFixedVersion:       "1.7.7",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
 			}, fixSupported: true,
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.3.0",
+				SuggestedFixedVersion:       "1.3.0",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
 			}, fixSupported: true,
@@ -82,49 +82,49 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []pythonIndirectDependencies{
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.25.9",
+				SuggestedFixedVersion:       "1.25.9",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
 			}}, requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.25.9",
+				SuggestedFixedVersion:       "1.25.9",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"}}},
 			requirementsPath: "pyproejct.toml"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.25.9",
+				SuggestedFixedVersion:       "1.25.9",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"}}},
 			requirementsPath: "Pipfile"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "2.4.0",
+				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
 			fixSupported: true},
 			requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "2.4.0",
+				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
 				IsDirectDependency:          true},
 			fixSupported: true},
 			requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "2.4.0",
+				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true}, fixSupported: true},
 			requirementsPath: "setup.py"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "2.4.0",
+				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
 			fixSupported: true},
 			requirementsPath: "pyproject.toml"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "2.4.0",
+				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
 			fixSupported: true},
@@ -176,13 +176,13 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []dependencyFixTest{
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "0.8.4",
+				SuggestedFixedVersion:       "0.8.4",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "mpath"},
 			}, fixSupported: false,
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "3.0.2",
+				SuggestedFixedVersion:       "3.0.2",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "minimatch"},
 			}, fixSupported: true,
@@ -211,13 +211,13 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	testcases := []dependencyFixTest{
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.2.6",
+				SuggestedFixedVersion:       "1.2.6",
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
 			}, fixSupported: false,
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
-				FixVersion:                  "1.2.6",
+				SuggestedFixedVersion:       "1.2.6",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
 			}, fixSupported: true,
@@ -244,11 +244,11 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	tests := []dependencyFixTest{
 		{vulnDetails: &utils.VulnerabilityDetails{
-			FixVersion:                  "2.7",
+			SuggestedFixedVersion:       "2.7",
 			VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
 			IsDirectDependency:          true}, fixSupported: true},
 		{vulnDetails: &utils.VulnerabilityDetails{
-			FixVersion:                  "4.3.20",
+			SuggestedFixedVersion:       "4.3.20",
 			VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
 			IsDirectDependency:          false}, fixSupported: false},
 	}
@@ -469,14 +469,14 @@ func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
-		{fixVersionInfo: utils.VulnerabilityDetails{FixVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
+		{fixVersionInfo: utils.VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
+		{fixVersionInfo: utils.VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.expectedOutput, func(t *testing.T) {
 			tc.fixVersionInfo.UpdateFixVersionIfMax(tc.newFixVersion)
-			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.FixVersion)
+			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.SuggestedFixedVersion)
 		})
 	}
 }
@@ -556,7 +556,7 @@ func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, p
 	if !test.fixSupported {
 		assert.NotContains(t, string(file), test.vulnDetails)
 	} else {
-		assert.Contains(t, string(file), test.vulnDetails.FixVersion)
+		assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
 		// Verify that case-sensitive packages in python are lowered
 		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
 	}
