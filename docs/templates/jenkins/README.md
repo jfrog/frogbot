@@ -18,7 +18,10 @@
   <summary>2️⃣ Setup VCS Webhook </summary>
 
 - **Set Up Webhook on your Git Provider**
-
+- Webhook Link: `JENKINS_URL/generic-webhook-trigger/invoke`    
+- Optional - **JobToken** : When using the plugin in several jobs, you will have the same URL trigger all jobs. If you want to trigger only a certain job you can use the **JobToken** in the URL to specify what job needs to be executed.
+- Webhook Link with **JobToken**: `JENKINS_URL/generic-webhook-trigger/invoke?token=JobToken` [JobToken Docs](https://plugins.jenkins.io/generic-webhook-trigger/#plugin-content-trigger-only-specific-job) 
+- Choose your Git provider:
     <details>
       <summary> Bitbucket Server  </summary>
   
@@ -30,8 +33,14 @@
 
   <details>
       <summary> GitHub  </summary>
-  - Go
-    </details>
+    - Go to repository settings and create a new webhook.
+    <img src="../../../images/github-new-webhook.png">
+    - Add a new webhook
+    <img src="../../../images/github-webhook-setup.png">
+    - Set up trigger
+    <img src="../../../images/github-trigger-event.png">
+
+  </details>
 
   <details>
         <summary> Azure Repos  </summary>
@@ -46,7 +55,7 @@
   - Go your project settings and select webhooks.
   - Setup a webhhok with merge request events
   -  <img src="../../../images/GitLab_webhook.png">
-      TODO -> EXLPAIN THIS SECRET
+  - Secret Token should be the same as defined in Jenkins credentials. **TRIGGER_SECRET**
    - Fill in your **JENKINS URL/generic-webhook-trigger/invoke** , **SECRET_TOKEN** and select add webhook.
 
 </details>
