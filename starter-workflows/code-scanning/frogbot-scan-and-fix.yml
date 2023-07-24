@@ -128,3 +128,7 @@ jobs:
           # If TRUE, Frogbot creates a single pull request with all the fixes.
           # If FALSE, Frogbot creates a separate pull request for each fix.
           # JF_GIT_AGGREGATE_FIXES: "FALSE"
+
+          # [Default: false]
+          # Avoid reporting issues for dev dependencies for npm projects.
+          # excludeDevDependencies: false

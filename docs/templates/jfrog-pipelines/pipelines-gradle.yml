@@ -155,6 +155,10 @@ pipelines:
             # Set the email of the commit author
             # JF_GIT_EMAIL_AUTHOR: ""
 
+            # [Default: false]
+            # Avoid reporting issues for dev dependencies for npm projects.
+            # excludeDevDependencies: false
+
         execution:
           onExecute:
             - cd $res_frogbotGitRepo_resourcePath
