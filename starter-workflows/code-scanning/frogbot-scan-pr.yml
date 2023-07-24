@@ -24,9 +24,6 @@ jobs:
     # Read more here (Install Frogbot Using GitHub Actions): https://github.com/jfrog/frogbot/blob/master/docs/install-github.md
     environment: frogbot
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       #  IMPORTANT:
       #  1. See the following link for information about the tools that need to be installed for Frogbot to work - https://github.com/jfrog/frogbot/tree/master/docs/templates/github-actions/scan-and-fix
@@ -34,6 +31,10 @@ jobs:
 
       - uses: jfrog/frogbot@b03f17265a90e238f6c5fa6ab010357d56615381
         env:
+          # [Mandatory]
+          # ID of the pull request
+          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
+
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}

@@ -12,10 +12,6 @@ jobs:
     # "frogbot" GitHub environment can approve the pull request to be scanned.
     environment: frogbot
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
       # Install prerequisites
       - uses: actions/setup-python@v3
         with:
@@ -25,6 +21,10 @@ jobs:
 
       - uses: jfrog/frogbot@v2
         env:
+          # [Mandatory]
+          # ID of the pull request
+          JF_GIT_PULL_REQUEST_ID: ${{ github.event.number }}
+
           # [Mandatory]
           # JFrog platform URL
           JF_URL: ${{ secrets.JF_URL }}
