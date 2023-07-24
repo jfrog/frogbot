@@ -87,10 +87,13 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <details>
   <summary>Step 2 - Install Frogbot</summary>
 
-- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
-- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
-- [Installing Frogbot on GitHub repositories](docs/install-github.md)
-- [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
+  <summary>Choose your preferred CI server</summary>
+
+- [GitHub Actions](docs/install-github.md)
+- [Jenkins](docs/templates/jenkins/README.md)
+- [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+- [Azure Pipelines](docs/install-azure-pipelines.md)
+- [GitLab Pipelines](docs/install-gitlab.md)
 
 </details>
 
