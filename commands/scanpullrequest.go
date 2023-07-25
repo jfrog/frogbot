@@ -40,9 +40,9 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
-	//if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
-	//	return err
-	//}
+	if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
+		return err
+	}
 	return scanPullRequest(repoConfig, client)
 }
 
