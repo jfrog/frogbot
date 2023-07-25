@@ -69,7 +69,7 @@ func (err *ErrUnsupportedFix) Error() string {
 
 // VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
 type VulnerabilityDetails struct {
-	*formats.VulnerabilityOrViolationRow
+	formats.VulnerabilityOrViolationRow
 	// Suggested fix version
 	SuggestedFixedVersion string
 	// States whether the dependency is direct or transitive
@@ -78,7 +78,7 @@ type VulnerabilityDetails struct {
 	Cves []string
 }
 
-func NewVulnerabilityDetails(vulnerability *formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
+func NewVulnerabilityDetails(vulnerability formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
 	vulnDetails := &VulnerabilityDetails{
 		VulnerabilityOrViolationRow: vulnerability,
 		SuggestedFixedVersion:       fixVersion,
@@ -102,6 +102,14 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	if vd.SuggestedFixedVersion == "" || version.NewVersion(vd.SuggestedFixedVersion).Compare(fixVersion) > 0 {
 		vd.SuggestedFixedVersion = fixVersion
 	}
+}
+
+func ExtractVunerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
+	var rows []formats.VulnerabilityOrViolationRow
+	for _, vuln := range vulnDetails {
+		rows = append(rows, vuln.VulnerabilityOrViolationRow)
+	}
+	return rows
 }
 
 type ErrMissingEnv struct {
@@ -170,13 +178,13 @@ func Md5Hash(values ...string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// Generates MD5Hash from a vulnerabilityDetails
+// Generates MD5Hash from a VulnerabilityOrViolationRow
 // The map can be returned in different order from Xray, so we need to sort the strings before hashing.
-func VulnerabilityDetailsToMD5Hash(vulnerabilities ...*VulnerabilityDetails) (string, error) {
+func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrViolationRow) (string, error) {
 	hash := crypto.MD5.New()
 	var keys []string
 	for _, vuln := range vulnerabilities {
-		keys = append(keys, GetUniqueID(*vuln.VulnerabilityOrViolationRow))
+		keys = append(keys, GetUniqueID(vuln))
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
@@ -290,4 +298,16 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 
 func GetUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
+}
+
+func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
+	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repoOwner, repoName, prID)
+	if err != nil {
+		return nil, err
+	}
+	// Sort the comment according to time created, the newest comment should be the first one.
+	sort.Slice(pullRequestsComments, func(i, j int) bool {
+		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
+	})
+	return pullRequestsComments, nil
 }

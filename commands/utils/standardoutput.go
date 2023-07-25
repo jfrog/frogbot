@@ -49,7 +49,7 @@ func (so *StandardOutput) VulnerabiltiesTitle(isComment bool) string {
 	case !isComment && so.vcsProvider != vcsutils.GitLab:
 		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
 	}
-	return banner
+	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n\n", banner)
 }
 
 func (so *StandardOutput) VulnerabilitiesTableHeader() string {
@@ -60,7 +60,10 @@ func (so *StandardOutput) VulnerabilitiesTableHeader() string {
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource))
+	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(NoVulnerabilityMrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(VulnerabilitiesMrBannerSource))
 }
 
 func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {

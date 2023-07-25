@@ -5,19 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	"github.com/jfrog/gofrog/datastructures"
-	"os"
-	"os/exec"
-	"path/filepath"
-
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/datastructures"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 const (
@@ -41,9 +40,9 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return err
 		}
 	}
-	if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
-		return err
-	}
+	//if err := cmd.verifyDifferentBranches(repoConfig); err != nil {
+	//	return err
+	//}
 	return scanPullRequest(repoConfig, client)
 }
 
@@ -71,28 +70,33 @@ func (cmd *ScanPullRequestCmd) verifyDifferentBranches(repoConfig *utils.Reposit
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
+func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) error {
 	// Validate scan params
-	if len(repoConfig.Branches) == 0 {
+	if len(repo.Branches) == 0 {
 		return &utils.ErrMissingEnv{VariableName: utils.GitBaseBranchEnv}
 	}
 
 	// Audit PR code
-	vulnerabilitiesRows, iacRows, err := auditPullRequest(repoConfig, client)
+	vulnerabilitiesRows, iacRows, err := auditPullRequest(repo, client)
 	if err != nil {
 		return err
 	}
 
+	// Delete previous Frogbot pull request message if exists
+	if err = deletePreviousPullRequestMessages(repo, client); err != nil {
+		return err
+	}
+
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
+	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repo.OutputWriter)
 
 	// Add comment to the pull request
-	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, repo.PullRequestID); err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
@@ -383,4 +387,26 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
 	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
+}
+
+func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsclient.VcsClient) error {
+	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
+	if err != nil {
+		return err
+	}
+
+	var commentIDs []int
+	for _, comment := range comments {
+		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
+			commentIDs = append(commentIDs, int(comment.ID))
+		}
+	}
+
+	for _, id := range commentIDs {
+		if e := client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, id); e != nil {
+			err = errors.Join(err, e)
+		}
+	}
+
+	return err
 }
