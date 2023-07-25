@@ -44,6 +44,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 
+	// PullRequestDetails can be defined already when using the scan-all-pull-requests command.
 	if cmd.pullRequestDetails.ID == utils.UndefinedPrID {
 		if cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID); err != nil {
 			return
