@@ -210,7 +210,7 @@ The Frogbot GitLab flow is as follows:
 
 ### 👮 Security note for pull requests scanning
 
-When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's approval before scanning newly opened pull requests. Using Frogbot with these platforms, however, isn't recommended for open-source projects.
+When installing Frogbot using JFrog Pipelines, Jenkins and Azure DevOps, Frogbot will not wait for a maintainer's approval before scanning newly opened pull requests. Using Frogbot with these platforms, is therefore not recommended for open-source projects.
 
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
@@ -228,12 +228,25 @@ If no new vulnerabilities are found, Frogbot automatically adds the following co
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
+
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](#-issues)
+
+<br>
+
+**VULNERABLE DEPEDENCIES**
 |                                                      SEVERITY                                                       | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
 |:-------------------------------------------------------------------------------------------------------------------:| :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | $\color{#3CB371}{\textsf{Not Applicable}}$ |minimist:1.2.5 | minimist:1.2.5 | [0.2.4]<br>[1.2.6] |
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | $\color{#FF7377}{\textsf{Applicable}}$ |protobufjs:6.11.2 | protobufjs:6.11.2 | [6.11.3] |
 |     ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High      | $\color{#3CB371}{\textsf{Not Applicable}}$ |lodash:4.17.19 | lodash:4.17.19 | [4.17.21] |
+
+<br>
+
+**INFRASTRUCTURE AS CODE**
+|                                                      SEVERITY                                                       | FILE           | LINE:COLUMN   | FINDING                   
+|:-------------------------------------------------------------------------------------------------------------------:| :------------: | :-----------: | :-----------------------------------: 
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | test.js        | 1:20          | kms_key_id='' was detected
+|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | mock.js        | 4:30          | Deprecated TLS version was detected
 
 </details>
 
@@ -265,10 +278,10 @@ The following alert types are supported:
 
 ![](./images/github-code-scanning-content.png)
 
-#### 2. Secrets that are exposed in the code (for GitHub only)
+#### 2. Secrets that are exposed in the code
 ![](./images/github-code-scanning-iac-content.png)
 
-#### 3. Infrastructure as Code issues  
+#### 3. Infrastructure as Code (Iac) issues on Terraform packages
 ![](./images/github-code-scanning-secrets-content.png)
 
 </details>
