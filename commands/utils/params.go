@@ -463,8 +463,7 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	case string(AzureRepos):
 		return vcsutils.AzureRepos, nil
 	}
-
-	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)
+	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, AzureRepos)
 }
 
 func SanitizeEnv() error {
