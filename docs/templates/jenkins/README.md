@@ -95,6 +95,7 @@
 <details>
   <summary>5️⃣ Copy templates </summary>
 
+- **Create a new pipeline**
 - **Copy and adjust params for each command**
 
 * [Scan And Fix Repository](scan-and-fix.jenkinsfile)
