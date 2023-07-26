@@ -31,7 +31,11 @@ pipeline {
                 ],
                 causeString: 'Pull Request Trigger',
                 printContributedVariables: false,
-                token: credentials("TRIGGER_SECRET")
+                // Use the token-parameter have different tokens for different jobs.
+                // Using only the token means only jobs with that exact token will be visible for that request
+                // This token will be sent as a query param from the webhook
+                // Example: https://jenkinsUrl/generic-webhook-trigger/invoke?token=specificJobToken
+                token: 'jobToken'
         )
     }
 
