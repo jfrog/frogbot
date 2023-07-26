@@ -240,7 +240,7 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
 			idNum, err := strconv.Atoi(idStr)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
 			}
 			g.PullRequestID = idNum
 		}
