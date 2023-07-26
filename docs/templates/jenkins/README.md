@@ -102,7 +102,7 @@
 * [Scan Pull Request](scan-pull-request.jenkinsfile)
 
 - For Scan Pull Request, make sure to enable build trigger.
-- <img src="../../../images/jenkins-build-trigger.png">
+<img src="../../../images/jenkins-build-trigger.png">
 
 
 
