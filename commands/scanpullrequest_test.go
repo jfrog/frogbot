@@ -679,7 +679,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 		}
 		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") {
-			if r.Method == "POST" {
+			if r.Method == http.MethodPost {
 				w.WriteHeader(http.StatusOK)
 				_, err := w.Write([]byte("{}"))
 				assert.NoError(t, err)
@@ -695,7 +695,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 
 		// Return 200 when using the REST that creates the comment
 		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) {
-			if r.Method == "POST" {
+			if r.Method == http.MethodPost {
 				buf := new(bytes.Buffer)
 				_, err := buf.ReadFrom(r.Body)
 				assert.NoError(t, err)
