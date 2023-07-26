@@ -113,7 +113,7 @@ func TestExtractClientInfo(t *testing.T) {
 	}()
 
 	_, err := extractClientInfo()
-	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
 	_, err = extractClientInfo()
