@@ -113,7 +113,7 @@ func TestExtractClientInfo(t *testing.T) {
 	}()
 
 	_, err := extractClientInfo()
-	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab' or 'bitbucketServer'")
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
 	_, err = extractClientInfo()
@@ -311,7 +311,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		ClientInfo: ClientInfo{
 			GitProvider: vcsutils.GitHub,
 			VcsInfo: vcsclient.VcsInfo{
-				APIEndpoint: "endpoint.com",
+				APIEndpoint: "https://github.com",
 				Token:       "123456789",
 			},
 			RepoName:  "repoName",
