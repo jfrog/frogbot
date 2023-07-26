@@ -202,7 +202,6 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	g.RepoOwner = git.RepoOwner
 	g.GitProvider = git.GitProvider
 	g.VcsInfo = git.VcsInfo
-	g.APIEndpoint = vcsutils.GetDefaultApiEndpoint(g.GitProvider)
 	if g.RepoName == "" {
 		if git.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
