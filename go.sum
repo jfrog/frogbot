@@ -98,8 +98,8 @@ github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1m
 github.com/envoyproxy/go-control-plane v0.9.7/go.mod h1:cwu0lG7PUMfa9snN8LXBig5ynNVH9qI8YYLbd1fK2po=
 github.com/envoyproxy/go-control-plane v0.9.9-0.20201210154907-fd9021fe5dad/go.mod h1:cXg6YxExXjJnVBQHBLXeUAgxn2UodCpnH306RInaBQk=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
-github.com/eyaldelarea/froggit-go v1.6.1-0.20230726080755-54d9170ff901 h1:8nlsBSsWnTMhp9yFxb/DB9uMpGCfc3j5WMl5BqmLGsQ=
-github.com/eyaldelarea/froggit-go v1.6.1-0.20230726080755-54d9170ff901/go.mod h1:XTFf4RqWwZsF9pdERt0Ra5gO1O3iqIq7Npx2tEQSGAQ=
+github.com/eyaldelarea/froggit-go v1.6.1-0.20230726103835-4d98ef644ae3 h1:we2Wzt6g0FPIVEj3c3vWrq3vYB9IEgbrxV08JcBo+L8=
+github.com/eyaldelarea/froggit-go v1.6.1-0.20230726103835-4d98ef644ae3/go.mod h1:XTFf4RqWwZsF9pdERt0Ra5gO1O3iqIq7Npx2tEQSGAQ=
 github.com/fatih/color v1.13.0 h1:8LOYc1KYPPmyKMuN8QV2DNRWNbLo6LZ0iLs8+mlH53w=
 github.com/forPelevin/gomoji v1.1.8 h1:JElzDdt0TyiUlecy6PfITDL6eGvIaxqYH1V52zrd0qQ=
 github.com/forPelevin/gomoji v1.1.8/go.mod h1:8+Z3KNGkdslmeGZBC3tCrwMrcPy5GRzAD+gL9NAwMXg=

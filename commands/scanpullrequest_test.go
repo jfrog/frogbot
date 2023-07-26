@@ -638,45 +638,43 @@ func TestScanPullRequestError(t *testing.T) {
 // Create HTTP handler to mock GitLab server
 func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.RequestURI {
 		// Return 200 on ping
-		if r.RequestURI == "/api/v4/" {
+		case "/api/v4/":
 			w.WriteHeader(http.StatusOK)
 			return
-		}
 		// Mimic get pull request by ID
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName) {
+		case fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName):
 			w.WriteHeader(http.StatusOK)
 			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
 			assert.NoError(t, err)
 			_, err = w.Write(expectedResponse)
 			assert.NoError(t, err)
-		}
+			return
 		// Mimic download specific branch to scan
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testSourceBranchName) {
+		case fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testSourceBranchName):
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "sourceBranch.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
-		}
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testTargetBranchName) {
+			return
+		// Download repository mock
+		case fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testTargetBranchName):
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "targetBranch.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
-		}
-
+			return
 		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") {
+		case fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj"):
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("{}"))
 			assert.NoError(t, err)
 			return
-		}
-
 		// Return 200 when using the REST that creates the comment
-		if r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) {
+		case fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName):
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
@@ -697,6 +695,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
 			assert.NoError(t, err)
+			return
 		}
 	}
 }
