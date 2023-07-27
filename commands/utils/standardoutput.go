@@ -49,7 +49,7 @@ func (so *StandardOutput) VulnerabiltiesTitle(isComment bool) string {
 	case !isComment && so.vcsProvider != vcsutils.GitLab:
 		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
 	}
-	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n\n", banner)
+	return banner
 }
 
 func (so *StandardOutput) VulnerabilitiesTableHeader() string {
