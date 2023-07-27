@@ -126,12 +126,12 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	}
 
 	configAggregator := utils.RepoAggregator{
-		{
+		utils.Repository{
 			OutputWriter: &utils.StandardOutput{},
 			Server:       server,
 			Params:       firstRepoParams,
 		},
-		{
+		utils.Repository{
 			OutputWriter: &utils.StandardOutput{},
 			Server:       server,
 			Params:       secondRepoParams,
