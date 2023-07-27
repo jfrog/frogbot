@@ -23,12 +23,12 @@ func TestGetSeverityTagNotApplicable(t *testing.T) {
 }
 
 func TestGetVulnerabilitiesBanners(t *testing.T) {
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(NoVulnerabilityPrBannerSource))
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(VulnerabilitiesPrBannerSource))
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(VulnerabilitiesMrBannerSource))
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(NoVulnerabilityMrBannerSource))
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(VulnerabilitiesFixMrBannerSource))
-	assert.Equal(t, "[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)", GetBanner(VulnerabilitiesFixPrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(NoVulnerabilityPrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(VulnerabilitiesPrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(VulnerabilitiesMrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(NoVulnerabilityMrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(VulnerabilitiesFixMrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n", GetBanner(VulnerabilitiesFixPrBannerSource))
 }
 
 func TestGetSimplifiedTitle(t *testing.T) {
