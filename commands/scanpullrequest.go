@@ -254,6 +254,7 @@ func downloadAndAuditBranch(scanSetup *utils.ScanDetails) (auditResults *audit.R
 	currWd, err := os.Getwd()
 	if err != nil {
 		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
+		return
 	}
 	if err = os.Chdir(wd); err != nil {
 		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
