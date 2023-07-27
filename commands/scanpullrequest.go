@@ -261,7 +261,7 @@ func downloadAndAuditBranch(scanSetup *utils.ScanDetails) (auditResults *audit.R
 	}
 	// Cleanup and change dir
 	defer func() {
-		err = errors.Join(err, cleanup(), os.Chdir(currWd))
+		err = errors.Join(err, os.Chdir(currWd), cleanup())
 	}()
 	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
 	return runInstallAndAudit(scanSetup, fullPathWds...)
