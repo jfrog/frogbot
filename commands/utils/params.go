@@ -23,6 +23,9 @@ import (
 const (
 	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
+
+	// Pull Request ID cannot be 0
+	UndefinedPrID = 0
 )
 
 var (
@@ -232,10 +235,13 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	// Non-mandatory git branch pr id.
-	if pullRequestIDString := getTrimmedEnv(GitPullRequestIDEnv); pullRequestIDString != "" {
-		if g.PullRequestID, err = strconv.Atoi(pullRequestIDString); err != nil {
-			return err
+	if g.PullRequestID == UndefinedPrID {
+		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
+			idNum, err := strconv.Atoi(idStr)
+			if err != nil {
+				return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
+			}
+			g.PullRequestID = idNum
 		}
 	}
 	return
@@ -457,8 +463,7 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	case string(AzureRepos):
 		return vcsutils.AzureRepos, nil
 	}
-
-	return 0, fmt.Errorf("%s should be one of: '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer)
+	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, AzureRepos)
 }
 
 func SanitizeEnv() error {

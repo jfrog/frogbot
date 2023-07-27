@@ -143,7 +143,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	}
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
-	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
+	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
 	err := scanAllPullRequestsCmd.Run(configAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 4)
@@ -184,7 +184,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	paramsAggregator = append(paramsAggregator, *repoParams)
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
-	scanAllPullRequestsCmd := ScanAllPullRequestsCmd{}
+	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
 	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
@@ -198,10 +198,10 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 	// Init mock
 	client := mockVcsClient(t)
 	for _, params := range mockParams {
-		sourceBranchInfo := vcsclient.BranchInfo{Name: params.sourceBranchName, Repository: params.repoName}
-		targetBranchInfo := vcsclient.BranchInfo{Name: params.targetBranchName, Repository: params.repoName}
+		sourceBranchInfo := vcsclient.BranchInfo{Name: params.sourceBranchName, Repository: params.repoName, Owner: params.repoOwner}
+		targetBranchInfo := vcsclient.BranchInfo{Name: params.targetBranchName, Repository: params.repoName, Owner: params.repoOwner}
 		// Return 2 pull requests to scan, the first with issues the second "clean".
-		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 0, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 1, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
+		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 1, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 2, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
 		// Return empty comments slice so expect the code to scan both pull requests.
 		client.EXPECT().ListPullRequestComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
 		// Copy test project according to the given branch name, instead of download it.
@@ -211,6 +211,8 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 			*frogbotMessages = append(*frogbotMessages, content)
 			return nil
 		}).AnyTimes()
+		// Return private repositories visibility
+		client.EXPECT().GetRepositoryInfo(context.Background(), gomock.Any(), gomock.Any()).Return(vcsclient.RepositoryInfo{RepositoryVisibility: vcsclient.Private}, nil).AnyTimes()
 	}
 	return client
 }
@@ -220,10 +222,6 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 // 1. First, the "test-proj-with-vulnerability" project, which includes a "test-proj" directory, will be copied to a temporary directory with a random name. This project will be utilized during the source auditing phase to mimic a pull request with a new vulnerable dependency.
 // 2. Next, a second "download" will take place within the first temporary directory. As a result, the "test-proj" directory will be discovered and copied to a second temporary directory with another random name. This copied version will be used during the target auditing phase.
 func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) error {
-	err := fileutils.CopyDir(testProject, targetDir, true, []string{})
-	if err != nil {
-		return err
-	}
 	sourceDir, err := filepath.Abs(filepath.Join("testdata", "scanpullrequests", testProject))
 	if err != nil {
 		return err
