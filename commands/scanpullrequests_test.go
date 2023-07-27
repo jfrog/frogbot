@@ -211,6 +211,7 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 			*frogbotMessages = append(*frogbotMessages, content)
 			return nil
 		}).AnyTimes()
+		client.EXPECT().DeletePullRequestComment(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		// Return private repositories visibility
 		client.EXPECT().GetRepositoryInfo(context.Background(), gomock.Any(), gomock.Any()).Return(vcsclient.RepositoryInfo{RepositoryVisibility: vcsclient.Private}, nil).AnyTimes()
 	}
