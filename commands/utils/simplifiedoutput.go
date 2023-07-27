@@ -80,6 +80,10 @@ func (smo *SimplifiedOutput) EntitledForJas() bool {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
+	if len(vulnerabilities) == 0 {
+		return ""
+	}
+
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`

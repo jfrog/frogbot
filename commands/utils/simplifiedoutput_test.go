@@ -171,6 +171,11 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
+
+	vulnerabilitiesRows = []formats.VulnerabilityOrViolationRow{}
+	expectedContent = ""
+	actualContent = so.VulnerabilitiesContent(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 }
 
 func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {

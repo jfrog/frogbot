@@ -251,12 +251,17 @@ func downloadAndAuditBranch(scanSetup *utils.ScanDetails) (auditResults *audit.R
 	if err != nil {
 		return
 	}
-	// Cleanup
+	currWd, err := os.Getwd()
+	if err != nil {
+		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
+	}
+	if err = os.Chdir(wd); err != nil {
+		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
+		return
+	}
+	// Cleanup and change dir
 	defer func() {
-		e := cleanup()
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, cleanup(), os.Chdir(currWd))
 	}()
 	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
 	return runInstallAndAudit(scanSetup, fullPathWds...)
