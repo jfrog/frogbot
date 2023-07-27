@@ -380,17 +380,16 @@ func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsc
 		return err
 	}
 
-	var commentIDs []int
+	var commentID int
 	for _, comment := range comments {
 		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
-			commentIDs = append(commentIDs, int(comment.ID))
+			commentID = int(comment.ID)
+			break
 		}
 	}
 
-	for _, id := range commentIDs {
-		if e := client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, id); e != nil {
-			err = errors.Join(err, e)
-		}
+	if e := client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID); e != nil {
+		err = errors.Join(err, e)
 	}
 
 	return err
