@@ -147,7 +147,7 @@ func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !smo.entitledForJas {
-		msg = "\n\n**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
 	}
 	return msg
 }
