@@ -136,29 +136,30 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}{
 		{
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Npm}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Npm}, IsDirectDependency: false}},
 			expectedHash: "8a5f1a3a7f11a825f3e0546f74d5dd18",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false},
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "984b2585da84b62146f8d2ec0fd12e0e",
 		},
 		{
 			// The Same map with different order should be the same hash.
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false},
-				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false},
+				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "984b2585da84b62146f8d2ec0fd12e0e",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "0.2.33", VulnerabilityOrViolationRow: &formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "myNuget", Technology: coreutils.Nuget}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "0.2.33", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "myNuget", Technology: coreutils.Nuget}, IsDirectDependency: false}},
 			expectedHash: "1708946f489ed70c754dd1ceef49b50b",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
-			hash, err := VulnerabilityDetailsToMD5Hash(test.vulnerabilities...)
+			vulnRows := ExtractVunerabilitiesDetailsToRows(test.vulnerabilities)
+			hash, err := VulnerabilityDetailsToMD5Hash(vulnRows...)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
 		})
@@ -338,4 +339,35 @@ func TestBuildServerConfigFile(t *testing.T) {
 	actualConfigurationFile, err := os.ReadFile(path.Join(currentJFrogHome, "jfrog-cli.conf.v6"))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfigurationFile, string(actualConfigurationFile))
+}
+
+func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
+	testCases := []struct {
+		name         string
+		vulnDetails  []*VulnerabilityDetails
+		expectedRows []formats.VulnerabilityOrViolationRow
+	}{
+		{
+			name:         "No Vulnerabilities",
+			vulnDetails:  []*VulnerabilityDetails{},
+			expectedRows: []formats.VulnerabilityOrViolationRow{},
+		},
+		{
+			name:         "Single Vulnerability",
+			vulnDetails:  []*VulnerabilityDetails{{VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{IssueId: "1"}}},
+			expectedRows: []formats.VulnerabilityOrViolationRow{{IssueId: "1"}},
+		},
+		{
+			name:         "Multiple Vulnerabilities",
+			vulnDetails:  []*VulnerabilityDetails{{VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{IssueId: "1"}}, {VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{IssueId: "2"}}},
+			expectedRows: []formats.VulnerabilityOrViolationRow{{IssueId: "1"}, {IssueId: "2"}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualRows := ExtractVunerabilitiesDetailsToRows(tc.vulnDetails)
+			assert.ElementsMatch(t, tc.expectedRows, actualRows)
+		})
+	}
 }

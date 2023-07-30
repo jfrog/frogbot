@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/commands/utils"
@@ -58,14 +57,10 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 }
 
 func shouldScanPullRequest(repo utils.Repository, client vcsclient.VcsClient, prID int) (shouldScan bool, err error) {
-	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repo.RepoOwner, repo.RepoName, prID)
+	pullRequestsComments, err := utils.GetSortedPullRequestComments(client, repo.RepoOwner, repo.RepoName, prID)
 	if err != nil {
 		return
 	}
-	// Sort the comment according to time created, the newest comment should be the first one.
-	sort.Slice(pullRequestsComments, func(i, j int) bool {
-		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
-	})
 
 	for _, comment := range pullRequestsComments {
 		// If this a 're-scan' request comment

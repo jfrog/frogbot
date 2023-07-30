@@ -100,6 +100,14 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 			expected: true,
 		},
 		{
+			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesMrBannerSource) + " icon",
+			expected: true,
+		},
+		{
+			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityMrBannerSource) + " icon",
+			expected: true,
+		},
+		{
 			comment:  "This is a comment with no icons",
 			expected: false,
 		},
