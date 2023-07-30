@@ -310,11 +310,11 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnDetails)
+	scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnDetails.VulnerabilityOrViolationRow)
 	if err != nil {
 		return err
 	}
-	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, []formats.VulnerabilityOrViolationRow{*vulnDetails.VulnerabilityOrViolationRow})
+	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, []formats.VulnerabilityOrViolationRow{vulnDetails.VulnerabilityOrViolationRow})
 	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.Branch())
 	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.Branch(), pullRequestTitle, prBody)
 }
@@ -329,13 +329,10 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnerabilities...)
+	vulnerabilityRows := utils.ExtractVunerabilitiesDetailsToRows(vulnerabilities)
+	scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnerabilityRows...)
 	if err != nil {
 		return
-	}
-	var vulnerabilityRows []formats.VulnerabilityOrViolationRow
-	for _, vulnerability := range vulnerabilities {
-		vulnerabilityRows = append(vulnerabilityRows, *vulnerability.VulnerabilityOrViolationRow)
 	}
 	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, vulnerabilityRows)
 	if pullRequestInfo == nil {
@@ -454,7 +451,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 			return err
 		}
 		// First appearance of a version that fixes the current impacted package
-		newVulnDetails := utils.NewVulnerabilityDetails(vulnerability, vulnFixVersion)
+		newVulnDetails := utils.NewVulnerabilityDetails(*vulnerability, vulnFixVersion)
 		newVulnDetails.SetIsDirectDependency(isDirectDependency)
 		vulnerabilitiesMap[vulnerability.ImpactedDependencyName] = newVulnDetails
 	}
@@ -561,7 +558,8 @@ func (cfp *CreateFixPullRequestsCmd) isUpdateRequired(fixedVulnerabilities []*ut
 	}
 	log.Info("Aggregated pull request already exists, verifying if update is needed...")
 	log.Debug("Comparing current scan results to existing", prInfo.Target.Name, "scan results")
-	currentScanHash, err := utils.VulnerabilityDetailsToMD5Hash(fixedVulnerabilities...)
+	fixedVulnerabilitiesRows := utils.ExtractVunerabilitiesDetailsToRows(fixedVulnerabilities)
+	currentScanHash, err := utils.VulnerabilityDetailsToMD5Hash(fixedVulnerabilitiesRows...)
 	if err != nil {
 		return
 	}
