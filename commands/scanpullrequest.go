@@ -382,6 +382,7 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 }
 
 func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsclient.VcsClient) error {
+	log.Debug("Looking for previous Frogbot pull request message. Deleting if exists...")
 	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
 	if err != nil {
 		return err
@@ -390,6 +391,7 @@ func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsc
 	commentID := frogbotCommentNotFound
 	for _, comment := range comments {
 		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
+			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
 			commentID = int(comment.ID)
 			break
 		}
