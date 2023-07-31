@@ -382,7 +382,7 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 }
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
-	log.Debug("Looking for existing Frogbot pull request comment. Deleting if exists...")
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
 	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
 	if err != nil {
 		return err
