@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -834,6 +835,37 @@ func TestCreateNewIacRows(t *testing.T) {
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
+}
+
+func TestDeletePreviousPullRequestMessages(t *testing.T) {
+	repository := &utils.Repository{
+		Params: utils.Params{
+			Git: utils.Git{
+				ClientInfo:    utils.ClientInfo{RepoName: "repo", RepoOwner: "owner"},
+				PullRequestID: 17,
+			},
+		},
+		OutputWriter: &utils.StandardOutput{},
+	}
+	client := mockVcsClient(t)
+
+	// Test with comment returned
+	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{
+		{ID: 20, Content: utils.GetBanner(utils.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+	}, nil)
+	client.EXPECT().DeletePullRequestComment(context.Background(), "owner", "repo", 17, 20).Return(nil).AnyTimes()
+	err := deleteExistingPullRequestComment(repository, client)
+	assert.NoError(t, err)
+
+	// Test with no comment returned
+	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{}, nil)
+	err = deleteExistingPullRequestComment(repository, client)
+	assert.NoError(t, err)
+
+	// Test with error returned
+	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return(nil, errors.New("error"))
+	err = deleteExistingPullRequestComment(repository, client)
+	assert.Error(t, err)
 }
 
 // Set new logger with output redirection to a null logger. This is useful for negative tests.

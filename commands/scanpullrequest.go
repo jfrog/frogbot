@@ -24,6 +24,7 @@ const (
 	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	frogbotCommentNotFound   = -1
 )
 
 type ScanPullRequestCmd struct {
@@ -68,7 +69,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullReq
 	}
 
 	// Delete previous Frogbot pull request message if exists
-	if err = deletePreviousPullRequestMessages(repo, client); err != nil {
+	if err = deleteExistingPullRequestComment(repo, client); err != nil {
 		return err
 	}
 
@@ -380,22 +381,24 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }
 
-func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsclient.VcsClient) error {
+func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
 	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
 	if err != nil {
 		return err
 	}
 
-	var commentID int
+	commentID := frogbotCommentNotFound
 	for _, comment := range comments {
 		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
+			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
 			commentID = int(comment.ID)
 			break
 		}
 	}
 
-	if e := client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID); e != nil {
-		err = errors.Join(err, e)
+	if commentID != frogbotCommentNotFound {
+		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID)
 	}
 
 	return err
