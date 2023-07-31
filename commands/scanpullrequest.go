@@ -24,6 +24,7 @@ const (
 	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	frogbotCommentNotFound   = -1
 )
 
 type ScanPullRequestCmd struct {
@@ -386,7 +387,7 @@ func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsc
 		return err
 	}
 
-	var commentID int
+	commentID := frogbotCommentNotFound
 	for _, comment := range comments {
 		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
 			commentID = int(comment.ID)
@@ -394,8 +395,8 @@ func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsc
 		}
 	}
 
-	if e := client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID); e != nil {
-		err = errors.Join(err, e)
+	if commentID != frogbotCommentNotFound {
+		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID)
 	}
 
 	return err
