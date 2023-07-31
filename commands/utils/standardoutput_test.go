@@ -166,7 +166,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 </details>
 
 `,
-		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
@@ -236,7 +236,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 </details>
 
 `,
-		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
