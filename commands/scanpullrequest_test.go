@@ -848,17 +848,23 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 		OutputWriter: &utils.StandardOutput{},
 	}
 	client := mockVcsClient(t)
+
+	// Test with comment returned
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{
 		{ID: 20, Content: utils.GetBanner(utils.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	client.EXPECT().DeletePullRequestComment(context.Background(), "owner", "repo", 17, 20).Return(nil).AnyTimes()
-	err := deletePreviousPullRequestMessages(repository, client)
+	err := deleteExistingPullRequestComment(repository, client)
 	assert.NoError(t, err)
+
+	// Test with no comment returned
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{}, nil)
-	err = deletePreviousPullRequestMessages(repository, client)
+	err = deleteExistingPullRequestComment(repository, client)
 	assert.NoError(t, err)
+
+	// Test with error returned
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return(nil, errors.New("error"))
-	err = deletePreviousPullRequestMessages(repository, client)
+	err = deleteExistingPullRequestComment(repository, client)
 	assert.Error(t, err)
 }
 

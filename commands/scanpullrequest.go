@@ -69,7 +69,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullReq
 	}
 
 	// Delete previous Frogbot pull request message if exists
-	if err = deletePreviousPullRequestMessages(repo, client); err != nil {
+	if err = deleteExistingPullRequestComment(repo, client); err != nil {
 		return err
 	}
 
@@ -381,8 +381,8 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }
 
-func deletePreviousPullRequestMessages(repository *utils.Repository, client vcsclient.VcsClient) error {
-	log.Debug("Looking for previous Frogbot pull request message. Deleting if exists...")
+func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
+	log.Debug("Looking for existing Frogbot pull request comment. Deleting if exists...")
 	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
 	if err != nil {
 		return err
