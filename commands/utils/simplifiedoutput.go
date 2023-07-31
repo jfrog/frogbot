@@ -13,6 +13,7 @@ const (
 )
 
 type SimplifiedOutput struct {
+	showCaColumn   bool
 	entitledForJas bool
 	vcsProvider    vcsutils.VcsProvider
 }
@@ -20,7 +21,7 @@ type SimplifiedOutput struct {
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
 	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	directsRowFmt := directDependencyRow
-	if smo.EntitledForJas() && vulnerability.Technology.ApplicabilityScannable() {
+	if smo.showCaColumn {
 		row += vulnerability.Applicable + " |"
 		directsRowFmt = directDependencyRowWithJas
 	}
@@ -51,14 +52,6 @@ func (smo *SimplifiedOutput) VulnerabiltiesTitle(isComment bool) string {
 	return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
 }
 
-func (smo *SimplifiedOutput) VulnerabilitiesTableHeader() string {
-	header := vulnerabilitiesTableHeader
-	if smo.entitledForJas {
-		header = vulnerabilitiesTableHeaderWithJas
-	}
-	return header
-}
-
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityPrBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesPrBannerSource))
 }
@@ -71,12 +64,9 @@ func (smo *SimplifiedOutput) VcsProvider() vcsutils.VcsProvider {
 	return smo.vcsProvider
 }
 
-func (smo *SimplifiedOutput) SetEntitledForJas(entitledForJas bool) {
-	smo.entitledForJas = entitledForJas
-}
-
-func (smo *SimplifiedOutput) EntitledForJas() bool {
-	return smo.entitledForJas
+func (smo *SimplifiedOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
+	smo.entitledForJas = entitled
+	smo.showCaColumn = showCaColumn
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
@@ -100,7 +90,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 ---
 
 `,
-		smo.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(smo.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, smo)))
 	for i := range vulnerabilities {
 		contentBuilder.WriteString(fmt.Sprintf(`

@@ -15,15 +15,13 @@ type OutputWriter interface {
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
 	VulnerabiltiesTitle(isComment bool) string
-	VulnerabilitiesTableHeader() string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
 	Seperator() string
 	FormattedSeverity(severity, applicability string) string
 	IsFrogbotResultComment(comment string) bool
-	EntitledForJas() bool
-	SetEntitledForJas(entitled bool)
+	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
@@ -47,10 +45,6 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	var cves []string
 	for _, cve := range vulnerability.Cves {
 		cves = append(cves, cve.Id)
-	}
-
-	if vulnerability.JfrogResearchInformation == nil {
-		vulnerability.JfrogResearchInformation = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
 	}
 
 	cvesTitle := "**CVE:**"
@@ -81,14 +75,19 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 		}
 	}
 
+	vulnResearch := vulnerability.JfrogResearchInformation
+	if vulnerability.JfrogResearchInformation == nil {
+		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
+	}
+
 	// Write description if exists:
-	if vulnerability.JfrogResearchInformation.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Details))
+	if vulnResearch.Details != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnResearch.Details))
 	}
 
 	// Write remediation if exists
-	if vulnerability.JfrogResearchInformation.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnerability.JfrogResearchInformation.Remediation))
+	if vulnResearch.Remediation != "" {
+		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnResearch.Remediation))
 	}
 
 	return descriptionBuilder.String()
@@ -119,4 +118,11 @@ func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
 		return FrogbotPullRequestTitlePrefix + " Update dependencies"
 	}
 	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
+}
+
+func getVulnerabilitiesTableHeader(showCaColumn bool) string {
+	if showCaColumn {
+		return vulnerabilitiesTableHeaderWithContextualAnalysis
+	}
+	return vulnerabilitiesTableHeader
 }
