@@ -182,7 +182,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
-	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.GitHub}
+	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.GitHub, showCaColumn: true}
 
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{}
 	expectedContent := ""
