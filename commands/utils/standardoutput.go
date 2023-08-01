@@ -21,7 +21,7 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 
 	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	if so.showCaColumn {
-		row += vulnerability.Applicable + " |"
+		row += vulnerability.Applicable + " | "
 	}
 	row += fmt.Sprintf("%s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Seperator()),
