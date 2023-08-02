@@ -69,9 +69,19 @@ pipelines:
             JF_GIT_OWNER: ""
 
             # [Optional]
-            # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository
-            # in Artifactory, which proxies https://releases.jfrog.io
-            # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+            # By default, the Frogbot workflows download the Frogbot executable as well as other tools
+            # needed from https://releases.jfrog.io
+            # If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
+            # executable to be downloaded from an Artifactory instance, which the machine has access to:
+            #
+            # 1. Login to the Artifactory UI, with a user which has admin credentials.
+            # 2. Create a Remote Repository with the following properties set.
+            #    Under the 'Basic' tab:
+            #       Package Type: Generic
+            #       URL: https://releases.jfrog.io
+            #    Under the 'Advanced' tab:
+            #       Uncheck the 'Store Artifacts Locally' option
+            # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
             # JF_RELEASES_REPO: ""
 
             ###########################################################################
