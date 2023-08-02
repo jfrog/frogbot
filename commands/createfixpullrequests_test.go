@@ -204,7 +204,7 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 			expectedUpdate: false,
 			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
 				Body: `
-[comment]: <> (Checksum: 16cc29940fb50efb794f6a53bbf18f80)
+[comment]: <> (Checksum: 4608a55b621cb6337ac93487979ac09c)
 pr body
  `,
 				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
