@@ -8,7 +8,7 @@ Make sure to [set up 'frogbot' environment and secrets](../../install-github.md#
 your GitHub repository.
 
 ## Using the Templates
-1. Use the templates below, depending on the tool used to download dependencies for you project, to create the workflow files.
+1. Use the templates below, depending on the tool used to download dependencies for your project, to create the workflow files.
 2. Push the workflow files to the `.github/workflows` directory at the root of your GitHub repository.
 
 **IMPORTANT**: The workflow files must be pushed to the target branch before Frogbot is triggered. This means that if, for example, a pull request includes the workflow files and the target branch doesn't, Frogbot will fail to run.
