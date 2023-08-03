@@ -11,16 +11,16 @@
    > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
    > instead of **JF_USER** and **JF_PASSWORD**
 
-   <img src="../images/github-repository-secrets.png" width="400">
+   <img src="../images/github-repository-secrets.png" width="500">
 
    - Check the Allow GitHub Actions to create and approve pull requests check box.
 
-   <img src="../images/github-pr-permissions.png" width="400">
+   <img src="../images/github-pr-permissions.png" width="500">
 
    - Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
    called **frogbot** and add people or public teams as reviewers. The chosen reviewers can trigger Frogbot scans on pull requests.
 
-   <img src="../images/github-environment.png" width="400">
+   <img src="../images/github-environment.png" width="500">
 
 # Frogbot GitHub Actions Templates
 
