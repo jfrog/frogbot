@@ -62,7 +62,7 @@
         <summary> GitLab  </summary>
 
     - Go your project settings and select webhooks.
-    - Setup a webhhok with merge request events
+    - Setup a webhook with merge request events
     - **Secret Token** is the JobToken to execute a specific job, this is optional.
     -  <img src="../../../images/GitLab_webhook.png">
 
