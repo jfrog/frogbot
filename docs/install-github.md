@@ -11,16 +11,16 @@
    > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN**
    > instead of **JF_USER** and **JF_PASSWORD**
 
-   ![](../images/github-repository-secrets.png)
+   <img src="../images/github-repository-secrets.png" width="400">
 
    - Check the Allow GitHub Actions to create and approve pull requests check box.
 
-   ![](../images/github-pr-permissions.png)
+   <img src="../images/github-pr-permissions.png" width="400">
 
    - Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
    called **frogbot** and add people or public teams as reviewers. The chosen reviewers can trigger Frogbot scans on pull requests.
 
-   ![](../images/github-environment.png)
+   <img src="../images/github-environment.png" width="400">
 
 # Frogbot GitHub Actions Templates
 
@@ -156,7 +156,7 @@ Make sure to follow the guidelines in the 'Using the Templates' section above.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 
 <details>
-  <summary>Scan Repository Branches and Fix Issues</summary>
+  <summary>Scan Repository Branches and Fix Issues Template</summary>
 
 ```yaml
 name: "Frogbot Scan and Fix"
