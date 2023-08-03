@@ -298,7 +298,11 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 }
 
 func GetUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return vulnerability.ImpactedDependencyName + vulnerability.ImpactedDependencyVersion + vulnerability.IssueId
+	return xrayutils.GetUniqueKey(
+		vulnerability.ImpactedDependencyName,
+		vulnerability.ImpactedDependencyVersion,
+		vulnerability.IssueId,
+		len(vulnerability.FixedVersions) > 0)
 }
 
 func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
