@@ -31,7 +31,7 @@
    <details>
       <summary>Install Frogbot Using JFrog Pipelines</summary>
 
-   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open-source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
    | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    - Make sure you have the connection details of your JFrog environment.
@@ -56,7 +56,7 @@
    <details>
      <summary>Install Frogbot Using Jenkins</summary>
 
-   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+   | Important: Using Frogbot with JFrog Pipelines isn't recommended for open-source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
    | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
    - Make sure you have the connection details of your JFrog environment.
@@ -113,7 +113,7 @@
           // If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
           // executable to be downloaded from an Artifactory instance, which the machine has access to: 
           //
-          // 1. Login to the Artifactory UI, with a user which has admin credentials.
+          // 1. Login to the Artifactory UI, with a user who has admin credentials.
           // 2. Create a Remote Repository with the following properties set.
           //    Under the 'Basic' tab:
           //       Package Type: Generic
@@ -137,7 +137,7 @@
           JF_GIT_BASE_BRANCH: ""
 
           // [Mandatory if the two conditions below are met]
-          // 1. The project uses yarn 2, NuGet or .NET to download its dependencies
+          // 1. The project uses yarn 2, NuGet, or .NET to download its dependencies
           // 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
           //
           // The command that installs the project dependencies (e.g "nuget restore")
@@ -164,7 +164,7 @@
           // JF_FAIL= "FALSE"
   
           // [Optional, default: "TRUE"]
-          // Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+          // Relative path to a Pip requirements.txt file. If not set, the Python project's dependencies are determined and scanned using the project setup.py file.
           // JF_REQUIREMENTS_FILE= ""
   
           // [Optional, Default: "TRUE"]
@@ -173,7 +173,7 @@
 
           // [Optional]
           // Frogbot will download the project dependencies if they're not cached locally. To download the
-          // dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+          // dependencies from a virtual repository in Artifactory set the name of the repository. There's no
           // need to set this value, if it is set in the frogbot-config.yml file.
           // JF_DEPS_REPO= ""
   
@@ -220,9 +220,9 @@
                          // For Windows runner:
                          // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""  
                       } else {
-                         // For Linux / MacOS air gapped environments:
+                         // For Linux / MacOS air-gapped environments:
                          sh """ curl -fLg "${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh"""
-                         // For Windows air gapped environments:
+                         // For Windows air-gapped environments:
                          // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                       }                      
                    }
@@ -247,7 +247,7 @@
 
 - In the Jenkinsfile, set the values of all the mandatory variables.
 
-- In the Jenkinsfile, modify the code inside the `Download Frogbot`, `Scan Pull Requests` and `Scan and Fix Repos` according to the Jenkins agent operating system.
+- In the Jenkinsfile, modify the code inside the `Download Frogbot`, `Scan Pull Requests`, and `Scan and Fix Repos` according to the Jenkins agent operating system.
 
 - Create a job in Jenkins pointing to the Jenkinsfile in your **Frogbot Management Repository**.
 
