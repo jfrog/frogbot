@@ -15,7 +15,7 @@
 
    <img src="../images/github-pr-permissions.png" width="600">
 
-   - For open-source project: Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
+   - For open-source projects: Create a new [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment)
    called **frogbot** and add people or public teams as reviewers. The chosen reviewers can trigger Frogbot scans on pull requests.
 
    <img src="../images/github-environment.png" width="600">
@@ -26,13 +26,13 @@ Use these templates to install [Frogbot](https://github.com/jfrog/frogbot/blob/m
 Push the workflow files to the `.github/workflows` directory at the root of your GitHub repository.
 **IMPORTANT**: The workflow files must be pushed to the target branch before Frogbot is triggered. This means that if, for example, a pull request includes the workflow files and the target branch doesn't, Frogbot will fail to run.
 
-### Scan pull requests
+### 🔎Scan pull requests
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of the following template.
 This will allow Frogbot to scan pull requests for security issues when the pull requests are open, and before they are merged.
 
 <details>
-  <summary>Scan Pull Request Template</summary>
+  <summary>Show Template</summary>
 
 ```yaml
 name: "Frogbot Scan Pull Request"
@@ -146,14 +146,14 @@ jobs:
 
 </details>
 
-### Scanning repository branches and fixing issues
+### 🛠️Scanning repository branches and fixing issues
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of the following template.
 Make sure to follow the guidelines in the 'Using the Templates' section above.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 
 <details>
-  <summary>Scan Repository Branches and Fix Issues Template</summary>
+  <summary>Show Template</summary>
 
 ```yaml
 name: "Frogbot Scan and Fix"
