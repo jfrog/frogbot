@@ -19,7 +19,7 @@
 
 </details>
 <details>
-  <summary>2️⃣ Setup Webhook on your Git Provider </summary>
+  <summary>2️⃣ Set up Webhook on your Git Provider </summary>
 
 - Webhook Link: `JENKINS_URL/generic-webhook-trigger/invoke`
 - Optional - **JobToken** : When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
