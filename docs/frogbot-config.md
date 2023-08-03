@@ -8,11 +8,11 @@ The [frogbot-config.yml](templates/.frogbot/frogbot-config.yml) file includes co
 ## Is the frogbot-config.yml file mandatory?
 Not all projects require the **frogbot-config.yml** file, but any project can use it.
 For projects with a single descriptor file (package.json, pom.xml, etc.), which is located 
-at the root directory of the project, the **frogbot-config.yml** file isn't mandatory.
+in the root directory of the project, the **frogbot-config.yml** file isn't mandatory.
 In other words, if the following conditions apply to your project, you don't have to create the file. 
 
 1. The project has only one descriptor file (pom.xml, package.json, go.mod, etc.) 
-2. The descriptor file is at the root directory of the project 
+2. The descriptor file is in the root directory of the project 
 
 If your project doesn't use a **frogbot-config.yml** file, all of the configuration Frogbot requires  
 should be provided as variables as part of the Frogbot workflows.
@@ -34,7 +34,7 @@ In the following example, there are two subprojects under `path/to/project-1` an
             - path/to/npm/project-2
 ```
 
-Here's another example. Notice that projects whuch use the nuget client to download the depedencies, the download command needs to be specified.
+Here's another example. Notice that projects which use the nuget client to download the dependencies, the download command needs to be specified.
 ```yaml
 - params:
     git:
@@ -53,13 +53,13 @@ Here's another example. Notice that projects whuch use the nuget client to downl
 See the full **frogbot-config.yml** structure [here](templates/.frogbot/frogbot-config.yml).
 
 ## Can one frogbot-config.yml file be used for multiple Git repositories?
-You have the option of using a single **frogbot-config.yml** file for scanning multiple Git repositories in the same organization, if one of the following platforms are used.
+You have the option of using a single **frogbot-config.yml** file for scanning multiple Git repositories in the same organization if one of the following platforms is used.
 - GitHub with Jenkins or JFrog Pipelines
 - Bitbucket Server
 - Azure Repos
 
-The file can be placed in any repository, if it's in the same organization as all the repositories referenced in the file. 
-Here's an example for a **frogbot-config.yml** referencing multiple repositories.
+The file can be placed in any repository if it's in the same organization as all the repositories referenced in the file. 
+Here's an example of a **frogbot-config.yml** referencing multiple repositories.
 ```yaml
 - params:
     git:
@@ -92,4 +92,4 @@ Frogbot expects the frogbot-config.yml file to be in the following path from the
 **IMPORTANT**: The `frogbot-config.yml` file must be pushed to the target branch before it can be used by Frogbot. This means that if, for example, a pull request includes the `frogbot-config.yml` and the target branch doesn't, the file will be ignored.
 
 ## The frogbot-config.yml file structure
-See the complete content and stracture of the **frogbot-config.yml** file [here](templates/.frogbot/frogbot-config.yml).
+See the complete content and structure of the **frogbot-config.yml** file [here](templates/.frogbot/frogbot-config.yml).

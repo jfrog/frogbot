@@ -41,7 +41,8 @@ func getApplicableIconTags(iconName IconName) string {
 }
 
 func GetBanner(banner ImageSource) string {
-	return "[" + GetIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
+	formattedBanner := "[" + GetIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
+	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n\n", formattedBanner)
 }
 
 func GetIconTag(imageSource ImageSource) string {

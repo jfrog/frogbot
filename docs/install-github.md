@@ -25,6 +25,3 @@
    - Use our [GitHub Actions templates](templates/github-actions/README.md#frogbot-gitHub-actions-templates) to add Frogbot workflows to your project.
 
    - Push the workflow files to the **.github/workflows** directory in the root of your **Frogbot Management Repository**.
-   
-
-  

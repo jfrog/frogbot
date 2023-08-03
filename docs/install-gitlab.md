@@ -20,7 +20,7 @@ frogbot-scan:
         FROGBOT_CMD: "scan-pull-request"
         JF_GIT_BASE_BRANCH: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
       # Repository scanning is triggered by any push to the default branch.
-      # If you'd like a different branch to be scanned, replace $CI_DEFAULT_BRANCH in the line below with the name of branch, wrapped with quotes (").
+      # If you'd like a different branch to be scanned, replace $CI_DEFAULT_BRANCH in the line below with the name of the branch, wrapped with quotes (").
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"
       variables:
         FROGBOT_CMD: "create-fix-pull-requests"
@@ -54,9 +54,19 @@ frogbot-scan:
     # JF_GIT_API_ENDPOINT: https://gitlab.example.com
 
     # [Optional]
-    # If the machine that runs Frogbot has no access to the internet, set the name of a remote repository 
-    # in Artifactory, which proxies https://releases.jfrog.io
-    # The 'frogbot' executable and other tools it needs will be downloaded through this repository.
+    # By default, the Frogbot workflows download the Frogbot executable as well as other tools 
+    # needed from https://releases.jfrog.io
+    # If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
+    # executable to be downloaded from an Artifactory instance, which the machine has access to: 
+    #
+    # 1. Login to the Artifactory UI, with a user who has admin credentials.
+    # 2. Create a Remote Repository with the following properties set.
+    #    Under the 'Basic' tab:
+    #       Package Type: Generic
+    #       URL: https://releases.jfrog.io
+    #    Under the 'Advanced' tab:
+    #       Uncheck the 'Store Artifacts Locally' option
+    # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
     # JF_RELEASES_REPO: ""
 
     ###########################################################################
@@ -65,7 +75,7 @@ frogbot-scan:
     ###########################################################################
 
     # [Mandatory if the two conditions below are met]
-    # 1. The project uses yarn 2, NuGet or .NET to download its dependencies
+    # 1. The project uses yarn 2, NuGet, or .NET to download its dependencies
     # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
     #
     # The command that installs the project dependencies (e.g "nuget restore")
@@ -92,7 +102,7 @@ frogbot-scan:
     # JF_FAIL: "FALSE"
 
     # [Optional]
-    # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+    # Relative path to a Pip requirements.txt file. If not set, the Python project's dependencies are determined and scanned using the project setup.py file.
     # JF_REQUIREMENTS_FILE: ""
 
     # [Optional, Default: "TRUE"]
@@ -132,7 +142,7 @@ frogbot-scan:
 
     # [Optional]
     # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
-    # The following values are accepted: Low, Medium, High or Critical
+    # The following values are accepted: Low, Medium, High, or Critical
     # JF_MIN_SEVERITY: ""
 
     # [Optional, Default: eco-system+frogbot@jfrog.com]

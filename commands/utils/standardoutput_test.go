@@ -100,6 +100,14 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 			expected: true,
 		},
 		{
+			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesMrBannerSource) + " icon",
+			expected: true,
+		},
+		{
+			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityMrBannerSource) + " icon",
+			expected: true,
+		},
+		{
 			comment:  "This is a comment with no icons",
 			expected: false,
 		},
@@ -176,8 +184,13 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
 	so := &StandardOutput{entitledForJas: true, vcsProvider: vcsutils.GitHub}
 
+	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{}
+	expectedContent := ""
+	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
+	assert.Equal(t, expectedContent, actualContent)
+
 	// Create some sample vulnerabilitiesRows for testing
-	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
+	vulnerabilitiesRows = []formats.VulnerabilityOrViolationRow{
 		{
 			ImpactedDependencyName:    "Dependency1",
 			ImpactedDependencyVersion: "1.0.0",
@@ -193,7 +206,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	}
 
 	// Set the expected content string based on the sample data
-	expectedContent := fmt.Sprintf(`
+	expectedContent = fmt.Sprintf(`
 ## 📦 Vulnerable Dependencies 
 
 ### ✍️ Summary
@@ -233,7 +246,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
-	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
+	actualContent = so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
 	assert.Contains(t, actualContent, "CONTEXTUAL ANALYSIS")
 	assert.Contains(t, actualContent, "| Applicable |")

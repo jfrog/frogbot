@@ -60,7 +60,10 @@ func (so *StandardOutput) VulnerabilitiesTableHeader() string {
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) || strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource))
+	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(NoVulnerabilityMrBannerSource)) ||
+		strings.Contains(comment, GetIconTag(VulnerabilitiesMrBannerSource))
 }
 
 func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
@@ -80,6 +83,9 @@ func (so *StandardOutput) EntitledForJas() bool {
 }
 
 func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
+	if len(vulnerabilities) == 0 {
+		return ""
+	}
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
@@ -168,7 +174,7 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 			`
 <div align="center">
 
-**Frogbot** also supports **Contextual Analysis**. This feature is included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
+**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
 
 </div>
 `

@@ -24,6 +24,7 @@ const (
 	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	frogbotCommentNotFound   = -1
 )
 
 type ScanPullRequestCmd struct {
@@ -58,25 +59,30 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
+func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
 	log.Info("Scanning Pull Request ID:", pullRequestDetails.ID, "Source:", pullRequestDetails.Source.Name, "Target:", pullRequestDetails.Target.Name)
 	log.Info("-----------------------------------------------------------")
 	// Audit PR code
-	vulnerabilitiesRows, iacRows, err := auditPullRequest(repoConfig, client, pullRequestDetails)
+	vulnerabilitiesRows, iacRows, err := auditPullRequest(repo, client, pullRequestDetails)
 	if err != nil {
 		return err
 	}
 
+	// Delete previous Frogbot pull request message if exists
+	if err = deleteExistingPullRequestComment(repo, client); err != nil {
+		return err
+	}
+
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repoConfig.OutputWriter)
+	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repo.OutputWriter)
 
 	// Add comment to the pull request
-	if err = client.AddPullRequestComment(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, message, repoConfig.PullRequestID); err != nil {
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, repo.PullRequestID); err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repoConfig.FailOnSecurityIssues != nil && *repoConfig.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
+	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return err
@@ -251,12 +257,18 @@ func downloadAndAuditBranch(scanSetup *utils.ScanDetails) (auditResults *audit.R
 	if err != nil {
 		return
 	}
-	// Cleanup
+	currWd, err := os.Getwd()
+	if err != nil {
+		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
+		return
+	}
+	if err = os.Chdir(wd); err != nil {
+		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
+		return
+	}
+	// Cleanup and change dir
 	defer func() {
-		e := cleanup()
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, os.Chdir(currWd), cleanup())
 	}()
 	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
 	return runInstallAndAudit(scanSetup, fullPathWds...)
@@ -367,4 +379,27 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
 	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
+}
+
+func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
+	if err != nil {
+		return err
+	}
+
+	commentID := frogbotCommentNotFound
+	for _, comment := range comments {
+		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
+			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
+			commentID = int(comment.ID)
+			break
+		}
+	}
+
+	if commentID != frogbotCommentNotFound {
+		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID)
+	}
+
+	return err
 }
