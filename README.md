@@ -52,8 +52,9 @@ It supports the following Git providers:
 - Frogbot also requires a runtime environment for the scanning. The following environments are supported:
 
   - GitHub Actions
-  - JFrog Pipelines
   - Jenkins
+  - JFrog Pipelines
+  - GitLab Pipelines
   - Azure Pipelines
 
 ## 🖥️ Installing Frogbot
@@ -85,25 +86,30 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <details>
-  <summary>Step 2 - Create the frogbot-config.yml file if needed</summary>
+  <summary>Step 2 - Install Frogbot</summary>
+
+-   Choose your preferred CI server
+
+- [GitHub Actions](docs/install-github.md)
+- [Jenkins](docs/templates/jenkins/README.md)
+- [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+- [GitLab Pipelines](docs/install-gitlab.md)
+- [Azure Pipelines](docs/install-azure-pipelines.md)
+
+
+</details>
+
+<details>
+  <summary>Step 3 - Customize settings with frogbot-config.yml file if needed</summary>
+    
 
 - [Creating the frogbot-config.yml File](docs/frogbot-config.md)
 
 </details>
 
-<details>
-  <summary>Step 3 - Install Frogbot</summary>
-
-- [Installing Frogbot on Azure Repos repositories](docs/install-azure-repos.md)
-- [Installing Frogbot on Bitbucket Server repositories](docs/install-bitbucket-server.md)
-- [Installing Frogbot on GitHub repositories](docs/install-github.md)
-- [Installing Frogbot on GitLab repositories](docs/install-gitlab.md)
-
-</details>
-
 <div id="reporting-issues"></div>
 
-## 🚥 Using Frogbot
+## 🚥 Frogbot's Commands
 <details>
   <summary>Scanning pull requests</summary>
 
