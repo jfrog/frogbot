@@ -2,7 +2,7 @@
 
 # Installing Frogbot on Azure Repos repositories
 
-| Important: Using Frogbot with Azure DevOps isn't recommended for open source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
+| Important: Using Frogbot with Azure DevOps isn't recommended for open-source projects. Read more about it in the [Security note for pull requests scanning](../README.md#-security-note-for-pull-requests-scanning) section. |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 To install Frogbot on Azure Repos repositories, follow these steps.
@@ -87,7 +87,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
             # executable to be downloaded from an Artifactory instance, which the machine has access to: 
             #
-            # 1. Login to the Artifactory UI, with a user which has admin credentials.
+            # 1. Login to the Artifactory UI, with a user who has admin credentials.
             # 2. Create a Remote Repository with the following properties set.
             #    Under the 'Basic' tab:
             #       Package Type: Generic
@@ -111,7 +111,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             JF_GIT_BASE_BRANCH: "main"
 
             # [Mandatory if the two conditions below are met]
-            # 1. The project uses yarn 2, NuGet or .NET to download its dependencies
+            # 1. The project uses yarn 2, NuGet, or .NET to download its dependencies
             # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
             #
             # The command that installs the project dependencies (e.g "nuget restore")
@@ -138,7 +138,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # JF_FAIL: "FALSE"
 
             # [Optional]
-            # Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+            # Relative path to a Pip requirements.txt file. If not set, the Python project's dependencies are determined and scanned using the project setup.py file.
             # JF_REQUIREMENTS_FILE: ""
 
             # [Optional, Default: "TRUE"]
@@ -147,7 +147,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
             # [Optional]
             # Frogbot will download the project dependencies if they're not cached locally. To download the
-            # dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+            # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
             # need to set this value, if it is set in the frogbot-config.yml file.
             # JF_DEPS_REPO: ""
 
@@ -178,7 +178,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 
             # [Optional]
             # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
-            # The following values are accepted: Low, Medium, High or Critical
+            # The following values are accepted: Low, Medium, High, or Critical
             # JF_MIN_SEVERITY: ""
 
             # [Optional, Default: eco-system+frogbot@jfrog.com]
