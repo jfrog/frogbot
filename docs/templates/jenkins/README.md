@@ -1,6 +1,6 @@
 [Go back to the Installation documentation page](../../../README.md)
 
-# Setup Frogbot Using Jenkins
+# Set up Frogbot Using Jenkins
 
 <div>
 <img src="../../../images/jenkins-logo.png" width="250">
