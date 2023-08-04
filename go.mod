@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/froggit-go v1.12.1
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.39.3
-	github.com/jfrog/jfrog-client-go v1.31.2
+	github.com/jfrog/jfrog-client-go v1.31.3
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.7
@@ -42,7 +42,7 @@ require (
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20230626192437-8d7be5866751 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
-	github.com/gocarina/gocsv v0.0.0-20230406101422-6445c2b15027 // indirect
+	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -91,7 +91,7 @@ require (
 	github.com/spf13/viper v1.15.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
-	github.com/urfave/cli v1.22.12 // indirect
+	github.com/urfave/cli v1.22.14 // indirect
 	github.com/vbauerster/mpb/v7 v7.5.3 // indirect
 	github.com/xanzy/go-gitlab v0.88.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -115,3 +115,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230801124421-c505d4221459
