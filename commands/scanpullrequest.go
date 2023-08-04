@@ -60,8 +60,12 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
-	log.Info("Scanning Pull Request ID:", pullRequestDetails.ID, "Source:", pullRequestDetails.Source.Name, "Target:", pullRequestDetails.Target.Name)
+	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
+		pullRequestDetails.ID,
+		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
+		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
+
 	// Audit PR code
 	vulnerabilitiesRows, iacRows, err := auditPullRequest(repo, client, pullRequestDetails)
 	if err != nil {
