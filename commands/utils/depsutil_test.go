@@ -120,7 +120,7 @@ func TestResolveDependencies(t *testing.T) {
 			scanSetup: &ScanDetails{
 				ServerDetails: &params,
 				Project: &Project{
-					Repository:         "frogbot-nuget-remote-tests",
+					DepsRepo:           "frogbot-nuget-remote-tests",
 					InstallCommandName: "dotnet",
 					InstallCommandArgs: []string{"restore"},
 				}},
@@ -132,7 +132,7 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
-			test.scanSetup.Project.Repository = repoKey
+			test.scanSetup.Project.DepsRepo = repoKey
 			_, err := test.resolveFunc(test.scanSetup)
 			assert.NoError(t, err)
 		})
