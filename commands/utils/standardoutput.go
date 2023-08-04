@@ -8,6 +8,7 @@ import (
 )
 
 type StandardOutput struct {
+	showCaColumn   bool
 	entitledForJas bool
 	vcsProvider    vcsutils.VcsProvider
 }
@@ -19,8 +20,8 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	}
 
 	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
-	if so.EntitledForJas() && vulnerability.Technology.ApplicabilityScannable() {
-		row += vulnerability.Applicable + " |"
+	if so.showCaColumn {
+		row += vulnerability.Applicable + " | "
 	}
 	row += fmt.Sprintf("%s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Seperator()),
@@ -52,13 +53,6 @@ func (so *StandardOutput) VulnerabiltiesTitle(isComment bool) string {
 	return banner
 }
 
-func (so *StandardOutput) VulnerabilitiesTableHeader() string {
-	if so.entitledForJas {
-		return vulnerabilitiesTableHeaderWithJas
-	}
-	return vulnerabilitiesTableHeader
-}
-
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
 	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) ||
 		strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource)) ||
@@ -74,12 +68,9 @@ func (so *StandardOutput) VcsProvider() vcsutils.VcsProvider {
 	return so.vcsProvider
 }
 
-func (so *StandardOutput) SetEntitledForJas(entitledForJas bool) {
-	so.entitledForJas = entitledForJas
-}
-
-func (so *StandardOutput) EntitledForJas() bool {
-	return so.entitledForJas
+func (so *StandardOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
+	so.entitledForJas = entitled
+	so.showCaColumn = showCaColumn
 }
 
 func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
@@ -102,7 +93,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 ## 👇 Details
 
 `,
-		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(so.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
