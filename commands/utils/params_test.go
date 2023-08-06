@@ -23,11 +23,11 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "",
 	})
-	_, err := extractJFrogCredentialsFromEnv()
+	_, err := extractJFrogCredentialsFromEnvs()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
-	_, err = extractJFrogCredentialsFromEnv()
+	_, err = extractJFrogCredentialsFromEnvs()
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
@@ -112,15 +112,15 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractClientInfo()
+	_, err := extractGitInfoFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractClientInfo()
+	_, err = extractGitInfoFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractClientInfo()
+	_, err = extractGitInfoFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 }
 
@@ -144,7 +144,10 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	server, gitParams, err := extractClientServerParams()
+
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	gitParams, err := extractGitInfoFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
@@ -185,7 +188,9 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
-	server, gitParams, err := extractClientServerParams()
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	gitParams, err := extractGitInfoFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
@@ -218,7 +223,9 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
-	server, gitParams, err := extractClientServerParams()
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	gitParams, err := extractGitInfoFromEnvs()
 	assert.NoError(t, err)
 	configFile, err := BuildRepoAggregator(nil, gitParams, server)
 	assert.NoError(t, err)
@@ -307,17 +314,15 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	gitParams := Git{
-		ClientInfo: ClientInfo{
-			GitProvider: vcsutils.GitHub,
-			VcsInfo: vcsclient.VcsInfo{
-				APIEndpoint: "https://github.com",
-				Token:       "123456789",
-			},
-			RepoName:  "repoName",
-			Branches:  []string{"master"},
-			RepoOwner: "jfrog",
+	gitClientInfo := GitClientInfo{
+		GitProvider: vcsutils.GitHub,
+		VcsInfo: vcsclient.VcsInfo{
+			APIEndpoint: "https://github.com",
+			Token:       "123456789",
 		},
+		RepoName:  "repoName",
+		Branches:  []string{"master"},
+		RepoOwner: "jfrog",
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -325,7 +330,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server)
+	repoAggregator, err := BuildRepoAggregator(nil, &gitClientInfo, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -333,12 +338,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitParams.Token, repo.Token)
-	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
-	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
+	assert.Equal(t, gitClientInfo.RepoOwner, repo.RepoOwner)
+	assert.Equal(t, gitClientInfo.Token, repo.Token)
+	assert.Equal(t, gitClientInfo.APIEndpoint, repo.APIEndpoint)
+	assert.ElementsMatch(t, gitClientInfo.Branches, repo.Branches)
 	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitClientInfo.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
 	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
@@ -458,17 +463,15 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	gitParams := Git{
-		ClientInfo: ClientInfo{
-			GitProvider: vcsutils.GitHub,
-			VcsInfo: vcsclient.VcsInfo{
-				APIEndpoint: "endpoint.com",
-				Token:       "123456789",
-			},
-			RepoName:  "repoName",
-			Branches:  []string{"master"},
-			RepoOwner: "jfrog",
+	gitClientInfo := &GitClientInfo{
+		GitProvider: vcsutils.GitHub,
+		VcsInfo: vcsclient.VcsInfo{
+			APIEndpoint: "endpoint.com",
+			Token:       "123456789",
 		},
+		RepoName:  "repoName",
+		Branches:  []string{"master"},
+		RepoOwner: "jfrog",
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -476,7 +479,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, &gitParams, &server)
+	repoAggregator, err := BuildRepoAggregator(fileContent, gitClientInfo, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, repo.AggregateFixes, false)
