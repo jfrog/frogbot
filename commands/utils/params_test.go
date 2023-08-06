@@ -204,7 +204,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.Empty(t, project.InstallCommandName)
 	assert.Empty(t, project.InstallCommandArgs)
 	assert.Empty(t, project.PipRequirementsFile)
-	assert.Empty(t, project.Repository)
+	assert.Empty(t, project.DepsRepo)
 	assert.Len(t, project.WorkingDirs, 1)
 	assert.Equal(t, RootDir, project.WorkingDirs[0])
 	assert.True(t, *project.UseWrapper)
@@ -353,7 +353,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "deps-remote", project.Repository)
+	assert.Equal(t, "deps-remote", project.DepsRepo)
 }
 
 func TestExtractProjectParamsFromEnv(t *testing.T) {
@@ -388,7 +388,7 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.False(t, *project.UseWrapper)
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "repository", project.Repository)
+	assert.Equal(t, "repository", project.DepsRepo)
 }
 
 func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
@@ -405,7 +405,7 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	firstRepoProject := firstRepo.Projects[0]
 	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
 	assert.False(t, *firstRepoProject.UseWrapper)
-	assert.Equal(t, "test-repo", firstRepoProject.Repository)
+	assert.Equal(t, "test-repo", firstRepoProject.DepsRepo)
 	secondRepo := configAggregator[1]
 	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
 	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
@@ -491,7 +491,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	project := repo.Projects[0]
 	assert.ElementsMatch(t, []string{"a/b"}, project.WorkingDirs)
 	assert.Equal(t, "r.txt", project.PipRequirementsFile)
-	assert.Equal(t, "repository", project.Repository)
+	assert.Equal(t, "repository", project.DepsRepo)
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.False(t, *project.UseWrapper)
