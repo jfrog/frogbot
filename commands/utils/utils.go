@@ -154,10 +154,10 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 	if serverDetails.ArtifactoryUrl == "" {
 		return
 	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info...")
+	log.Debug(usage.ReportUsagePrefix, "Sending info...")
 	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix + err.Error())
+		log.Debug(usage.ReportUsagePrefix, err.Error())
 		return
 	}
 	err = usage.SendReportUsage(productId, commandName, serviceManager)

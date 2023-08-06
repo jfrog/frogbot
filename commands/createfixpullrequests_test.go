@@ -134,19 +134,20 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		t.Run(test.repoName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
+			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
+			defer func() {
+				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+			}()
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := utils.Git{
-				ClientInfo: utils.ClientInfo{
-					GitProvider: vcsutils.GitHub,
-					VcsInfo: vcsclient.VcsInfo{
-						Token:       "123456",
-						APIEndpoint: server.URL,
-					},
-					RepoName: test.repoName,
+			gitTestParams := utils.GitClientInfo{
+				GitProvider: vcsutils.GitHub,
+				VcsInfo: vcsclient.VcsInfo{
+					Token:       "123456",
+					APIEndpoint: server.URL,
 				},
-				AggregateFixes: test.aggregateFixes,
+				RepoName: test.repoName,
 			}
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
@@ -230,19 +231,22 @@ pr body
 			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
 			defer restoreEnv()
+			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
+			defer func() {
+				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+			}()
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			defer func() {
 				server.Close()
 			}()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := utils.Git{ClientInfo: utils.ClientInfo{
+			gitTestParams := &utils.GitClientInfo{
 				GitProvider: vcsutils.GitHub,
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
 					APIEndpoint: server.URL,
 				}, RepoName: test.repoName,
-			}, AggregateFixes: true,
 			}
 			// Set up mock VCS responses
 			client := mockVcsClient(t)
@@ -256,7 +260,7 @@ pr body
 			gitTestParams.Branches = []string{"main"}
 			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", test.testDir)
 			defer cleanUp()
-			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
+			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
 			var cmd = CreateFixPullRequestsCmd{dryRun: true, dryRunRepoPath: envPath}
