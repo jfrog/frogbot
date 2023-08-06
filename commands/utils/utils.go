@@ -214,7 +214,7 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -223,9 +223,9 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 		return fileutils.RemoveTempDir(wd)
 	}
 	log.Debug("Created temp working directory: ", wd)
-	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
-		err = fmt.Errorf("failed to download repository: %s, owner: %s, branch: %s, error: %s", git.RepoName, git.RepoOwner, branch, err.Error())
+	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
+	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
+		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
 		return
 	}
 	log.Debug("Repository download completed")

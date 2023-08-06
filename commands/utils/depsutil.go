@@ -24,7 +24,7 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 
 func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
-	if err = npmCmd.PreparePrerequisites(scanSetup.Repository); err != nil {
+	if err = npmCmd.PreparePrerequisites(scanSetup.DepsRepo); err != nil {
 		return nil, err
 	}
 	if err = npmCmd.CreateTempNpmrc(); err != nil {
@@ -52,7 +52,7 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 	if err != nil {
 		return nil, err
 	}
-	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.Repository)
+	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.DepsRepo)
 	if err != nil {
 		return nil, yarn.RestoreConfigurationsAndError(nil, restoreYarnrcFunc, err)
 	}
@@ -80,7 +80,7 @@ func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error
 			err = e
 		}
 	}()
-	configFile, err := dotnet.InitNewConfig(wd, scanSetup.Repository, scanSetup.ServerDetails, false)
+	configFile, err := dotnet.InitNewConfig(wd, scanSetup.DepsRepo, scanSetup.ServerDetails, false)
 	if err != nil {
 		return
 	}

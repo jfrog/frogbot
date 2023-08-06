@@ -60,8 +60,12 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
-	log.Info("Scanning Pull Request ID:", pullRequestDetails.ID, "Source:", pullRequestDetails.Source.Name, "Target:", pullRequestDetails.Target.Name)
+	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
+		pullRequestDetails.ID,
+		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
+		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
+
 	// Audit PR code
 	vulnerabilitiesRows, iacRows, err := auditPullRequest(repo, client, pullRequestDetails)
 	if err != nil {
@@ -89,54 +93,77 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullReq
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, error) {
-	var vulnerabilitiesRows []formats.VulnerabilityOrViolationRow
-	var iacRows []formats.IacSecretsRow
-	targetBranch := pullRequestDetails.Target.Name
-	sourceBranch := pullRequestDetails.Source.Name
-	for i := range repoConfig.Projects {
-		// Source scan details
-		scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-			SetProject(&repoConfig.Projects[i]).
-			SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
-			SetMinSeverity(repoConfig.MinSeverity).
-			SetFixableOnly(repoConfig.FixableOnly).
-			SetBranch(sourceBranch).
-			SetRepoOwner(pullRequestDetails.Source.Owner)
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, err error) {
+	// Download source branch
+	sourceBranchInfo := pullRequestDetails.Source
+	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(client, sourceBranchInfo.Owner, sourceBranchInfo.Repository, sourceBranchInfo.Name)
+	if err != nil {
+		return
+	}
 
-		sourceResults, err := downloadAndAuditBranch(scanDetails)
+	// Download target branch (if needed)
+	targetBranchWd := ""
+	cleanupTarget := func() error { return nil }
+	if repoConfig.IncludeAllVulnerabilities {
+		log.Info("Frogbot is configured to show all vulnerabilities")
+		targetBranchInfo := pullRequestDetails.Target
+		targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(client, targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
-		repoConfig.SetEntitledForJas(sourceResults.ExtendedScanResults.EntitledForJas)
+	}
+	defer func() {
+		err = errors.Join(err, cleanupSource(), cleanupTarget())
+	}()
+
+	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
+		SetMinSeverity(repoConfig.MinSeverity).
+		SetFixableOnly(repoConfig.FixableOnly).
+		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+
+	for i := range repoConfig.Projects {
+		scanDetails.SetProject(&repoConfig.Projects[i])
+
+		// Audit source branch
+		var sourceResults *audit.Results
+		sourceResults, err = runInstallAndAudit(scanDetails, sourceBranchWd)
+		if err != nil {
+			return
+		}
+
+		// Set JAS output flags
+		extendedScanResults := sourceResults.ExtendedScanResults
+		repoConfig.OutputWriter.SetJasOutputFlags(extendedScanResults.EntitledForJas, len(extendedScanResults.ApplicabilityScanResults) > 0)
+
+		// Get all issues that were found in the source branch
 		if repoConfig.IncludeAllVulnerabilities {
-			log.Info("Frogbot is configured to show all vulnerabilities")
-			allIssuesRows, err := getScanVulnerabilitiesRows(sourceResults)
+			var allIssuesRows []formats.VulnerabilityOrViolationRow
+			allIssuesRows, err = getScanVulnerabilitiesRows(sourceResults)
 			if err != nil {
-				return nil, nil, err
+				return
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
 			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)...)
 			continue
 		}
-		// Target scan details
-		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
-			SetBranch(targetBranch).
-			SetRepoOwner(pullRequestDetails.Target.Owner)
 
-		targetResults, err := downloadAndAuditBranch(scanDetails)
+		// Set target branch scan details
+		var targetResults *audit.Results
+		targetResults, err = runInstallAndAudit(scanDetails, targetBranchWd)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
-		newIssuesRows, err := createNewIssuesRows(targetResults, sourceResults)
+		var newIssuesRows []formats.VulnerabilityOrViolationRow
+		newIssuesRows, err = createNewIssuesRows(targetResults, sourceResults)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
 		iacRows = append(iacRows, createNewIacRows(targetResults.ExtendedScanResults.IacScanResults, sourceResults.ExtendedScanResults.IacScanResults)...)
 	}
 	log.Info("Xray scan completed")
-	return vulnerabilitiesRows, iacRows, nil
+	return
 }
 
 func createNewIacRows(targetIacResults, sourceIacResults []xrayutils.IacOrSecretResult) []formats.IacSecretsRow {
@@ -250,31 +277,21 @@ func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 	return fullPathWds
 }
 
-func downloadAndAuditBranch(scanSetup *utils.ScanDetails) (auditResults *audit.Results, err error) {
-	// First download the target repo to temp dir
-	log.Info("Auditing repository:", scanSetup.Git.RepoName, "branch:", scanSetup.Branch())
-	wd, cleanup, err := utils.DownloadRepoToTempDir(scanSetup.Client(), scanSetup.Branch(), scanSetup.Git)
-	if err != nil {
-		return
-	}
+func runInstallAndAudit(scanSetup *utils.ScanDetails, branchWd string) (auditResults *audit.Results, err error) {
 	currWd, err := os.Getwd()
 	if err != nil {
 		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
 		return
 	}
-	if err = os.Chdir(wd); err != nil {
+	if err = os.Chdir(branchWd); err != nil {
 		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
 		return
 	}
-	// Cleanup and change dir
 	defer func() {
-		err = errors.Join(err, os.Chdir(currWd), cleanup())
+		err = errors.Join(err, os.Chdir(currWd))
 	}()
-	fullPathWds := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, wd)
-	return runInstallAndAudit(scanSetup, fullPathWds...)
-}
 
-func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (auditResults *audit.Results, err error) {
+	workDirs := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, branchWd)
 	for _, wd := range workDirs {
 		if err = runInstallIfNeeded(scanSetup, wd); err != nil {
 			return nil, err
@@ -284,7 +301,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (audit
 	graphBasicParams := (&xrayutils.GraphBasicParams{}).
 		SetPipRequirementsFile(scanSetup.PipRequirementsFile).
 		SetUseWrapper(*scanSetup.UseWrapper).
-		SetDepsRepo(scanSetup.Repository).
+		SetDepsRepo(scanSetup.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(scanSetup.ServerDetails)
 	auditParams := audit.NewAuditParams().
@@ -320,7 +337,7 @@ func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error
 }
 
 func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
-	if scanSetup.Repository == "" {
+	if scanSetup.DepsRepo == "" {
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		return exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
 	}
@@ -328,7 +345,7 @@ func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
 	if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
 		return nil, fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
 	}
-	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.Repository)
+	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.DepsRepo)
 	return utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
 }
 

@@ -14,6 +14,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 		name           string
 		vulnerability  formats.VulnerabilityOrViolationRow
 		expectedOutput string
+		showCaColumn   bool
 	}
 
 	testCases := []testCase{
@@ -66,12 +67,13 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				Technology: coreutils.Pip,
 			},
 			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
+			showCaColumn:   true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			smo := &SimplifiedOutput{entitledForJas: true}
+			smo := &SimplifiedOutput{entitledForJas: true, showCaColumn: tc.showCaColumn}
 			actualOutput := smo.VulnerabilitiesTableRow(tc.vulnerability)
 			assert.Equal(t, tc.expectedOutput, actualOutput)
 		})
@@ -159,7 +161,7 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 %s
 
 `,
-		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
@@ -180,7 +182,7 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 
 func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create a new instance of StandardOutput
-	so := &SimplifiedOutput{entitledForJas: true, vcsProvider: vcsutils.BitbucketServer}
+	so := &SimplifiedOutput{entitledForJas: true, vcsProvider: vcsutils.BitbucketServer, showCaColumn: true}
 
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
@@ -229,7 +231,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 %s
 
 `,
-		so.VulnerabilitiesTableHeader(),
+		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,

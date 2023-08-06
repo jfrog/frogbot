@@ -127,7 +127,9 @@ func (cfp *CreateFixPullRequestsCmd) scan(currentWorkingDir string) (*audit.Resu
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	cfp.OutputWriter.SetEntitledForJas(auditResults.ExtendedScanResults.EntitledForJas)
+	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
+	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
+	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
 	return auditResults, nil
 }
 
