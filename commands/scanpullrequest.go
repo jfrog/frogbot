@@ -119,7 +119,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 		SetMinSeverity(repoConfig.MinSeverity).
-		SetFixableOnly(repoConfig.FixableOnly)
+		SetFixableOnly(repoConfig.FixableOnly).
+		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
@@ -148,7 +149,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		}
 
 		// Set target branch scan details
-		scanDetails.SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 		var targetResults *audit.Results
 		targetResults, err = runInstallAndAudit(scanDetails, targetBranchWd)
 		if err != nil {
