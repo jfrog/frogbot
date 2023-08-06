@@ -70,7 +70,7 @@ type Project struct {
 	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
 	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
-	Repository          string   `yaml:"repository,omitempty"`
+	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
 }
@@ -99,8 +99,8 @@ func (p *Project) setDefaultsIfNeeded() error {
 	if p.PipRequirementsFile == "" {
 		p.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	}
-	if p.Repository == "" {
-		p.Repository = getTrimmedEnv(DepsRepoEnv)
+	if p.DepsRepo == "" {
+		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
 	}
 	return nil
 }

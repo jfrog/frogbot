@@ -301,7 +301,7 @@ func runInstallAndAudit(scanSetup *utils.ScanDetails, branchWd string) (auditRes
 	graphBasicParams := (&xrayutils.GraphBasicParams{}).
 		SetPipRequirementsFile(scanSetup.PipRequirementsFile).
 		SetUseWrapper(*scanSetup.UseWrapper).
-		SetDepsRepo(scanSetup.Repository).
+		SetDepsRepo(scanSetup.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(scanSetup.ServerDetails)
 	auditParams := audit.NewAuditParams().
@@ -337,7 +337,7 @@ func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error
 }
 
 func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
-	if scanSetup.Repository == "" {
+	if scanSetup.DepsRepo == "" {
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		return exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
 	}
@@ -345,7 +345,7 @@ func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
 	if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
 		return nil, fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
 	}
-	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.Repository)
+	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.DepsRepo)
 	return utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
 }
 
