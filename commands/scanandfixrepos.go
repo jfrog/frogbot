@@ -38,7 +38,7 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 }
 
 func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-	wd, cleanup, err := utils.DownloadRepoToTempDir(client, branch, &repository.Git)
+	wd, cleanup, err := utils.DownloadRepoToTempDir(client, repository.Git.RepoOwner, repository.Git.RepoName, branch)
 	if err != nil {
 		return
 	}
