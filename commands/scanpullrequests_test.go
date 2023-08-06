@@ -20,7 +20,7 @@ var gitParams = &utils.Repository{
 	OutputWriter: &utils.SimplifiedOutput{},
 	Params: utils.Params{
 		Git: utils.Git{
-			ClientInfo: utils.ClientInfo{
+			GitClientInfo: utils.GitClientInfo{
 				RepoOwner: "repo-owner",
 				Branches:  []string{"master"},
 				RepoName:  "repo-name",

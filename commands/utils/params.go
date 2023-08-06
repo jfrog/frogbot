@@ -34,7 +34,7 @@ var (
 	osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
 )
 
-type FrogbotUtils struct {
+type FrogbotDetails struct {
 	Repositories  RepoAggregator
 	ServerDetails *coreconfig.ServerDetails
 	Client        vcsclient.VcsClient
@@ -55,8 +55,8 @@ type Params struct {
 	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
 }
 
-func (p *Params) setDefaultsIfNeeded(git *Git) error {
-	if err := p.Git.setDefaultsIfNeeded(git); err != nil {
+func (p *Params) setDefaultsIfNeeded(gitClientInfo *GitClientInfo) error {
+	if err := p.Git.setDefaultsIfNeeded(gitClientInfo); err != nil {
 		return err
 	}
 	if err := p.JFrogPlatform.setDefaultsIfNeeded(); err != nil {
@@ -180,7 +180,7 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 	return
 }
 
-type ClientInfo struct {
+type GitClientInfo struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
 	RepoName  string   `yaml:"repoName,omitempty"`
@@ -189,7 +189,7 @@ type ClientInfo struct {
 }
 
 type Git struct {
-	ClientInfo               `yaml:",inline"`
+	GitClientInfo            `yaml:",inline"`
 	BranchNameTemplate       string `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate    string `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string `yaml:"pullRequestTitleTemplate,omitempty"`
@@ -198,18 +198,18 @@ type Git struct {
 	PullRequestID            int
 }
 
-func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
-	g.RepoOwner = git.RepoOwner
-	g.GitProvider = git.GitProvider
-	g.VcsInfo = git.VcsInfo
+func (g *Git) setDefaultsIfNeeded(gitClientInfo *GitClientInfo) (err error) {
+	g.RepoOwner = gitClientInfo.RepoOwner
+	g.GitProvider = gitClientInfo.GitProvider
+	g.VcsInfo = gitClientInfo.VcsInfo
 	if g.RepoName == "" {
-		if git.RepoName == "" {
+		if gitClientInfo.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
 		}
-		g.RepoName = git.RepoName
+		g.RepoName = gitClientInfo.RepoName
 	}
 	if len(g.Branches) == 0 {
-		g.Branches = append(g.Branches, git.Branches...)
+		g.Branches = append(g.Branches, gitClientInfo.Branches...)
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
@@ -224,7 +224,6 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 	if g.PullRequestTitleTemplate == "" {
 		g.PullRequestTitleTemplate = getTrimmedEnv(PullRequestTitleTemplateEnv)
 	}
-	g.AggregateFixes = git.AggregateFixes
 	if !g.AggregateFixes {
 		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
 			return
@@ -254,53 +253,60 @@ func validateHashPlaceHolder(template string) error {
 	return nil
 }
 
-func GetFrogbotUtils() (frogbotUtils *FrogbotUtils, err error) {
+func GetFrogbotDetails() (frogbotUtils *FrogbotDetails, err error) {
 	// Get server and git details
-	server, gitParams, err := extractClientServerParams()
+	jfrogServer, err := extractJFrogCredentialsFromEnvs()
 	if err != nil {
-		return nil, err
+		return
 	}
+	gitClientInfo, err := extractGitInfoFromEnvs()
+	if err != nil {
+		return
+	}
+
 	defer func() {
 		err = errors.Join(err, SanitizeEnv())
 	}()
 
 	// Build a version control client for REST API requests
 	client, err := vcsclient.
-		NewClientBuilder(gitParams.GitProvider).
-		ApiEndpoint(gitParams.APIEndpoint).
-		Token(gitParams.Token).
-		Project(gitParams.Project).
+		NewClientBuilder(gitClientInfo.GitProvider).
+		ApiEndpoint(gitClientInfo.APIEndpoint).
+		Token(gitClientInfo.Token).
+		Project(gitClientInfo.Project).
 		Logger(log.GetLogger()).
-		Username(gitParams.Username).
+		Username(gitClientInfo.Username).
 		Build()
 	if err != nil {
 		return nil, err
 	}
 
-	configAggregator, err := getConfigAggregator(client, gitParams, server)
+	configAggregator, err := getConfigAggregator(client, gitClientInfo, jfrogServer)
 	if err != nil {
 		return nil, err
 	}
-	return &FrogbotUtils{Repositories: configAggregator, Client: client, ServerDetails: server, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}, err
+	return &FrogbotDetails{Repositories: configAggregator, Client: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}, err
 }
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
-func getConfigAggregator(client vcsclient.VcsClient, gitParams *Git, server *coreconfig.ServerDetails) (RepoAggregator, error) {
-	configFileContent, err := getConfigFileContent(client, &gitParams.ClientInfo)
+func getConfigAggregator(gitClient vcsclient.VcsClient, gitClientInfo *GitClientInfo, jfrogServer *coreconfig.ServerDetails) (RepoAggregator, error) {
+	configFileContent, err := getConfigFileContent(gitClient, gitClientInfo)
 	// Don't return error in case of a missing frogbot-config.yml file
 	// If an error occurs due to a missing file, attempt to generate an environment variable-based configuration aggregator as an alternative.
-	if _, missingConfigErr := err.(*ErrMissingConfig); !missingConfigErr && len(configFileContent) == 0 {
+	var errMissingConfig *ErrMissingConfig
+	if !errors.As(err, &errMissingConfig) && len(configFileContent) == 0 {
 		return nil, err
 	}
-	return BuildRepoAggregator(configFileContent, gitParams, server)
+	return BuildRepoAggregator(configFileContent, gitClientInfo, jfrogServer)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
-func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (configFileContent []byte, err error) {
-	configFileContent, err = readConfigFromTarget(client, clientInfo)
-	_, missingConfigErr := err.(*ErrMissingConfig)
+func getConfigFileContent(gitClient vcsclient.VcsClient, gitClientInfo *GitClientInfo) (configFileContent []byte, err error) {
+	configFileContent, err = readConfigFromTarget(gitClient, gitClientInfo)
+	var errMissingConfig *ErrMissingConfig
+	missingConfigErr := errors.As(err, &errMissingConfig)
 	if err != nil && !missingConfigErr {
 		return nil, err
 	}
@@ -311,9 +317,9 @@ func getConfigFileContent(client vcsclient.VcsClient, clientInfo *ClientInfo) (c
 	return
 }
 
-// BuildRepoAggregator receive a frogbot-config.yml file content along with the ClientInfo and ServerDetails parameters.
+// BuildRepoAggregator receive a frogbot-config.yml file content along with the GitClientInfo and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(configFileContent []byte, gitParams *Git, server *coreconfig.ServerDetails) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(configFileContent []byte, gitClientInfo *GitClientInfo, server *coreconfig.ServerDetails) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -321,8 +327,8 @@ func BuildRepoAggregator(configFileContent []byte, gitParams *Git, server *corec
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
-		repository.OutputWriter = GetCompatibleOutputWriter(gitParams.GitProvider)
-		if err = repository.Params.setDefaultsIfNeeded(gitParams); err != nil {
+		repository.OutputWriter = GetCompatibleOutputWriter(gitClientInfo.GitProvider)
+		if err = repository.Params.setDefaultsIfNeeded(gitClientInfo); err != nil {
 			return
 		}
 		resultAggregator = append(resultAggregator, repository)
@@ -341,7 +347,7 @@ func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err 
 	return
 }
 
-func extractJFrogCredentialsFromEnv() (coreconfig.ServerDetails, error) {
+func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	server := coreconfig.ServerDetails{}
 	platformUrl := strings.TrimSuffix(getTrimmedEnv(JFrogUrlEnv), "/")
 	xrUrl := strings.TrimSuffix(getTrimmedEnv(jfrogXrayUrlEnv), "/")
@@ -351,7 +357,7 @@ func extractJFrogCredentialsFromEnv() (coreconfig.ServerDetails, error) {
 		server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if platformUrl == "" {
-			return server, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
+			return nil, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
 		server.Url = platformUrl + "/"
 		server.XrayUrl = platformUrl + "/xray/"
@@ -366,15 +372,15 @@ func extractJFrogCredentialsFromEnv() (coreconfig.ServerDetails, error) {
 	} else if accessToken := getTrimmedEnv(JFrogTokenEnv); accessToken != "" {
 		server.AccessToken = accessToken
 	} else {
-		return coreconfig.ServerDetails{}, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
+		return nil, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
-	return server, nil
+	return &server, nil
 }
 
-func extractClientInfo() (*ClientInfo, error) {
+func extractGitInfoFromEnvs() (*GitClientInfo, error) {
 	e := &ErrMissingEnv{}
 	var err error
-	clientInfo := &ClientInfo{}
+	clientInfo := &GitClientInfo{}
 	// Branch & Repo names are mandatory variables.
 	// Must be set in the frogbot-config.yml or as an environment variables.
 	// Validation performed later
@@ -479,19 +485,6 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func extractClientServerParams() (*coreconfig.ServerDetails, *Git, error) {
-	clientInfo, err := extractClientInfo()
-	if err != nil {
-		return nil, nil, err
-	}
-	server, err := extractJFrogCredentialsFromEnv()
-	if err != nil {
-		return nil, nil, err
-	}
-	git := Git{ClientInfo: *clientInfo}
-	return &server, &git, nil
-}
-
 // ReadConfigFromFileSystem looks for .frogbot/frogbot-config.yml from the given path and return its content. The path is relative and starts from the root of the project.
 // If the config file is not found in the relative path, it will search in parent dirs.
 func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []byte, err error) {
@@ -542,7 +535,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 }
 
 // readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
-func readConfigFromTarget(client vcsclient.VcsClient, clientInfo *ClientInfo) (configContent []byte, err error) {
+func readConfigFromTarget(client vcsclient.VcsClient, clientInfo *GitClientInfo) (configContent []byte, err error) {
 	if clientInfo.RepoName != "" && clientInfo.RepoOwner != "" {
 		log.Debug("Downloading", FrogbotConfigFile, "from target", clientInfo.RepoOwner, "/", clientInfo.RepoName)
 		var branch string
