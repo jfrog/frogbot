@@ -1,8 +1,32 @@
-package utils
+package outputwriter
 
 import (
 	"fmt"
 	"strings"
+)
+
+type ImageSource string
+type IconName string
+
+const (
+	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
+
+	NoVulnerabilityPrBannerSource       ImageSource = "v2/noVulnerabilityBannerPR.png"
+	NoVulnerabilityMrBannerSource       ImageSource = "v2/noVulnerabilityBannerMR.png"
+	VulnerabilitiesPrBannerSource       ImageSource = "v2/vulnerabilitiesBannerPR.png"
+	VulnerabilitiesMrBannerSource       ImageSource = "v2/vulnerabilitiesBannerMR.png"
+	VulnerabilitiesFixPrBannerSource    ImageSource = "v2/vulnerabilitiesFixBannerPR.png"
+	VulnerabilitiesFixMrBannerSource    ImageSource = "v2/vulnerabilitiesFixBannerMR.png"
+	criticalSeveritySource              ImageSource = "v2/applicableCriticalSeverity.png"
+	notApplicableCriticalSeveritySource ImageSource = "v2/notApplicableCritical.png"
+	highSeveritySource                  ImageSource = "v2/applicableHighSeverity.png"
+	notApplicableHighSeveritySource     ImageSource = "v2/notApplicableHigh.png"
+	mediumSeveritySource                ImageSource = "v2/applicableMediumSeverity.png"
+	notApplicableMediumSeveritySource   ImageSource = "v2/notApplicableMedium.png"
+	lowSeveritySource                   ImageSource = "v2/applicableLowSeverity.png"
+	notApplicableLowSeveritySource      ImageSource = "v2/notApplicableLow.png"
+	unknownSeveritySource               ImageSource = "v2/applicableUnknownSeverity.png"
+	notApplicableUnknownSeveritySource  ImageSource = "v2/notApplicableUnknown.png"
 )
 
 func getSeverityTag(iconName IconName, applicability string) string {

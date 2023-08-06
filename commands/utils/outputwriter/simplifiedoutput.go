@@ -1,4 +1,4 @@
-package utils
+package outputwriter
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	row += fmt.Sprintf(" %s | %s | %s |",
 		firstDirectDependency,
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, smo.Seperator()),
+		strings.Join(vulnerability.FixedVersions, smo.Separator()),
 	)
 	for i := 1; i < len(vulnerability.Components); i++ {
 		currDirect := vulnerability.Components[i]
@@ -45,7 +45,7 @@ func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
 	return GetSimplifiedTitle(NoVulnerabilityPrBannerSource)
 }
 
-func (smo *SimplifiedOutput) VulnerabiltiesTitle(isComment bool) string {
+func (smo *SimplifiedOutput) VulnerabilitiesTitle(isComment bool) string {
 	if !isComment {
 		return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
 	}
@@ -126,7 +126,7 @@ func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
 }
 
-func (smo *SimplifiedOutput) Seperator() string {
+func (smo *SimplifiedOutput) Separator() string {
 	return ", "
 }
 

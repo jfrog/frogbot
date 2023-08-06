@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"net/url"
@@ -45,7 +46,7 @@ type RepoAggregator []Repository
 
 type Repository struct {
 	Params `yaml:"params,omitempty"`
-	OutputWriter
+	outputwriter.OutputWriter
 	Server coreconfig.ServerDetails
 }
 
@@ -327,7 +328,7 @@ func BuildRepoAggregator(configFileContent []byte, gitClientInfo *GitClientInfo,
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
-		repository.OutputWriter = GetCompatibleOutputWriter(gitClientInfo.GitProvider)
+		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitClientInfo.GitProvider)
 		if err = repository.Params.setDefaultsIfNeeded(gitClientInfo); err != nil {
 			return
 		}

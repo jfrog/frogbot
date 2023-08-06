@@ -83,7 +83,7 @@ func createJfrogHttpClient(artDetails *auth.ServiceDetails) (*jfroghttpclient.Jf
 }
 
 func TestResolveDependencies(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
+	params, restoreEnv := VerifyEnv(t)
 	defer restoreEnv()
 	testCases := []struct {
 		name        string

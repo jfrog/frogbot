@@ -74,10 +74,10 @@ export class Utils {
     }
 
     /**
-     * Execute frogbot create-fix-pull-requests command.
+     * Execute frogbot scan-repository command.
      */
     public static async execCreateFixPullRequests() {
-        let res: number = await exec(Utils.getExecutableName(), ['create-fix-pull-requests']);
+        let res: number = await exec(Utils.getExecutableName(), ['scan-repository']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }

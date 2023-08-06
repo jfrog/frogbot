@@ -1,4 +1,4 @@
-package commands
+package scanpullrequest
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -13,11 +14,9 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	utils2 "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
-	clitool "github.com/urfave/cli/v2"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -379,14 +378,14 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities, nil, &utils.StandardOutput{})
+	message := createPullRequestMessage(vulnerabilities, nil, &outputwriter.StandardOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
 	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
 	assert.Equal(t, expectedMessage, message)
 
-	outputWriter := &utils.StandardOutput{}
+	outputWriter := &outputwriter.StandardOutput{}
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
 	message = createPullRequestMessage(vulnerabilities, nil, outputWriter)
 
@@ -456,7 +455,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Type:       "aws_cloudfront_tls_version",
 		},
 	}
-	writerOutput := &utils.StandardOutput{}
+	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
 	message := createPullRequestMessage(vulnerabilities, iac, writerOutput)
 
@@ -467,39 +466,6 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	message = createPullRequestMessage(vulnerabilities, iac, writerOutput)
 	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
-}
-
-func TestRunInstallIfNeeded(t *testing.T) {
-	scanSetup := utils.ScanDetails{
-		Project: &utils.Project{},
-	}
-	scanSetup.SetFailOnInstallationErrors(true)
-	assert.NoError(t, runInstallIfNeeded(&scanSetup, ""))
-	tmpDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		err = fileutils.RemoveTempDir(tmpDir)
-		assert.NoError(t, err)
-	}()
-	params := &utils.Project{
-		InstallCommandName: "echo",
-		InstallCommandArgs: []string{"Hello"},
-	}
-	scanSetup.Project = params
-	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
-
-	scanSetup.InstallCommandName = "not-exist"
-	scanSetup.InstallCommandArgs = []string{"1", "2"}
-	scanSetup.SetFailOnInstallationErrors(false)
-	assert.NoError(t, runInstallIfNeeded(&scanSetup, tmpDir))
-
-	params = &utils.Project{
-		InstallCommandName: "not-existed",
-		InstallCommandArgs: []string{"1", "2"},
-	}
-	scanSetup.Project = params
-	scanSetup.SetFailOnInstallationErrors(true)
-	assert.Error(t, runInstallIfNeeded(&scanSetup, tmpDir))
 }
 
 func TestScanPullRequest(t *testing.T) {
@@ -527,7 +493,7 @@ func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
-	params, restoreEnv := verifyEnv(t)
+	params, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 
 	// Create mock GitLab server
@@ -555,7 +521,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 
 func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 	// Init mock
-	client := mockVcsClient(t)
+	client := utils.CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
@@ -572,7 +538,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 	defer log.SetLogger(previousLogger)
 
 	// Init mock
-	client := mockVcsClient(t)
+	client := utils.CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, errors.New("404"))
@@ -585,7 +551,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 
 func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 	// Init mock
-	client := mockVcsClient(t)
+	client := utils.CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, nil)
@@ -627,11 +593,6 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 	return configAggregator, client
-}
-
-func TestScanPullRequestError(t *testing.T) {
-	app := clitool.App{Commands: GetCommands()}
-	assert.Error(t, app.Run([]string{"frogbot", "spr"}))
 }
 
 // Create HTTP handler to mock GitLab server
@@ -707,43 +668,12 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 	}
 }
 
-// Check connection details with JFrog instance.
-// Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) (server coreconfig.ServerDetails, restoreFunc func()) {
-	url := strings.TrimSuffix(os.Getenv(utils.JFrogUrlEnv), "/")
-	username := os.Getenv(utils.JFrogUserEnv)
-	password := os.Getenv(utils.JFrogPasswordEnv)
-	token := os.Getenv(utils.JFrogTokenEnv)
-	if url == "" {
-		assert.FailNow(t, fmt.Sprintf("'%s' is not set", utils.JFrogUrlEnv))
-	}
-	if token == "" && (username == "" || password == "") {
-		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", utils.JFrogTokenEnv, utils.JFrogUserEnv, utils.JFrogPasswordEnv))
-	}
-	server.Url = url
-	server.XrayUrl = url + "/xray/"
-	server.ArtifactoryUrl = url + "/artifactory/"
-	server.User = username
-	server.Password = password
-	server.AccessToken = token
-	restoreFunc = func() {
-		utils.SetEnvAndAssert(t, map[string]string{
-			utils.JFrogUrlEnv:          url,
-			utils.JFrogTokenEnv:        token,
-			utils.JFrogUserEnv:         username,
-			utils.JFrogPasswordEnv:     password,
-			utils.GitAggregateFixesEnv: "FALSE",
-		})
-	}
-	return
-}
-
 func TestGetFullPathWorkingDirs(t *testing.T) {
 	sampleProject := utils.Project{
 		WorkingDirs: []string{filepath.Join("a", "b"), filepath.Join("a", "b", "c"), ".", filepath.Join("c", "d", "e", "f")},
 	}
 	baseWd := "tempDir"
-	fullPathWds := getFullPathWorkingDirs(sampleProject.WorkingDirs, baseWd)
+	fullPathWds := utils.GetFullPathWorkingDirs(sampleProject.WorkingDirs, baseWd)
 	expectedWds := []string{filepath.Join("tempDir", "a", "b"), filepath.Join("tempDir", "a", "b", "c"), "tempDir", filepath.Join("tempDir", "c", "d", "e", "f")}
 	for _, expectedWd := range expectedWds {
 		assert.Contains(t, fullPathWds, expectedWd)
@@ -843,13 +773,13 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 				PullRequestID: 17,
 			},
 		},
-		OutputWriter: &utils.StandardOutput{},
+		OutputWriter: &outputwriter.StandardOutput{},
 	}
-	client := mockVcsClient(t)
+	client := utils.CreateMockVcsClient(t)
 
 	// Test with comment returned
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{
-		{ID: 20, Content: utils.GetBanner(utils.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+		{ID: 20, Content: outputwriter.GetBanner(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	client.EXPECT().DeletePullRequestComment(context.Background(), "owner", "repo", 17, 20).Return(nil).AnyTimes()
 	err := deleteExistingPullRequestComment(repository, client)

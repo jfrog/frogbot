@@ -104,7 +104,7 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	}
 }
 
-func ExtractVunerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
+func ExtractVulnerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
 	var rows []formats.VulnerabilityOrViolationRow
 	for _, vuln := range vulnDetails {
 		rows = append(rows, vuln.VulnerabilityOrViolationRow)
@@ -233,7 +233,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
-	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
+	// Multi repository configuration is supported only in the scanallpullrequests and scanmultiplerepositories commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)
 	}

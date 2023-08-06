@@ -1,4 +1,4 @@
-package utils
+package outputwriter
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type StandardOutput struct {
 func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
 	var directDependencies strings.Builder
 	for _, dependency := range vulnerability.Components {
-		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Seperator()))
+		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Separator()))
 	}
 
 	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
@@ -24,9 +24,9 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 		row += vulnerability.Applicable + " | "
 	}
 	row += fmt.Sprintf("%s | %s | %s |",
-		strings.TrimSuffix(directDependencies.String(), so.Seperator()),
+		strings.TrimSuffix(directDependencies.String(), so.Separator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, so.Seperator()),
+		strings.Join(vulnerability.FixedVersions, so.Separator()),
 	)
 	return row
 }
@@ -38,7 +38,7 @@ func (so *StandardOutput) NoVulnerabilitiesTitle() string {
 	return GetBanner(NoVulnerabilityPrBannerSource)
 }
 
-func (so *StandardOutput) VulnerabiltiesTitle(isComment bool) string {
+func (so *StandardOutput) VulnerabilitiesTitle(isComment bool) string {
 	var banner string
 	switch {
 	case isComment && so.vcsProvider == vcsutils.GitLab:
@@ -150,7 +150,7 @@ func (so *StandardOutput) Footer() string {
 `, CommentGeneratedByFrogbot)
 }
 
-func (so *StandardOutput) Seperator() string {
+func (so *StandardOutput) Separator() string {
 	return "<br><br>"
 }
 

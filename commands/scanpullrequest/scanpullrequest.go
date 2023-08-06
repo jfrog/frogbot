@@ -1,34 +1,31 @@
-package commands
+package scanpullrequest
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/gofrog/datastructures"
-	"os"
-	"os/exec"
-	"path/filepath"
-
 	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/datastructures"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
 )
 
 const (
-	securityIssueFoundErr    = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
-	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
-	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	frogbotCommentNotFound   = -1
+	securityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
+	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	frogbotCommentNotFound  = -1
 )
 
 type ScanPullRequestCmd struct {
-	// Optional provided pull request details, used in scan-pull-requests command.
+	// Optional provided pull request details, used in scan-all-pull-requests command.
 	pullRequestDetails vcsclient.PullRequestInfo
 }
 
@@ -127,7 +124,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Audit source branch
 		var sourceResults *audit.Results
-		sourceResults, err = runInstallAndAudit(scanDetails, sourceBranchWd)
+		sourceResults, err = scanDetails.RunInstallAndAudit(sourceBranchWd)
 		if err != nil {
 			return
 		}
@@ -150,7 +147,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Set target branch scan details
 		var targetResults *audit.Results
-		targetResults, err = runInstallAndAudit(scanDetails, targetBranchWd)
+		targetResults, err = scanDetails.RunInstallAndAudit(targetBranchWd)
 		if err != nil {
 			return
 		}
@@ -261,94 +258,6 @@ func getScanVulnerabilitiesRows(auditResults *audit.Results) ([]formats.Vulnerab
 	return []formats.VulnerabilityOrViolationRow{}, nil
 }
 
-func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
-	var fullPathWds []string
-	if len(workingDirs) != 0 {
-		for _, workDir := range workingDirs {
-			if workDir == utils.RootDir {
-				fullPathWds = append(fullPathWds, baseWd)
-				continue
-			}
-			fullPathWds = append(fullPathWds, filepath.Join(baseWd, workDir))
-		}
-	} else {
-		fullPathWds = append(fullPathWds, baseWd)
-	}
-	return fullPathWds
-}
-
-func runInstallAndAudit(scanSetup *utils.ScanDetails, branchWd string) (auditResults *audit.Results, err error) {
-	currWd, err := os.Getwd()
-	if err != nil {
-		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
-		return
-	}
-	if err = os.Chdir(branchWd); err != nil {
-		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
-		return
-	}
-	defer func() {
-		err = errors.Join(err, os.Chdir(currWd))
-	}()
-
-	workDirs := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, branchWd)
-	for _, wd := range workDirs {
-		if err = runInstallIfNeeded(scanSetup, wd); err != nil {
-			return nil, err
-		}
-	}
-
-	graphBasicParams := (&xrayutils.GraphBasicParams{}).
-		SetPipRequirementsFile(scanSetup.PipRequirementsFile).
-		SetUseWrapper(*scanSetup.UseWrapper).
-		SetDepsRepo(scanSetup.DepsRepo).
-		SetIgnoreConfigFile(true).
-		SetServerDetails(scanSetup.ServerDetails)
-	auditParams := audit.NewAuditParams().
-		SetXrayGraphScanParams(scanSetup.XrayGraphScanParams).
-		SetWorkingDirs(workDirs).
-		SetMinSeverityFilter(scanSetup.MinSeverityFilter()).
-		SetFixableOnly(scanSetup.FixableOnly()).
-		SetGraphBasicParams(graphBasicParams)
-
-	auditResults, err = audit.RunAudit(auditParams)
-	if auditResults != nil {
-		err = errors.Join(err, auditResults.AuditError)
-	}
-	return
-}
-
-func runInstallIfNeeded(scanSetup *utils.ScanDetails, workDir string) (err error) {
-	if scanSetup.InstallCommandName == "" {
-		return nil
-	}
-	restoreDir, err := utils.Chdir(workDir)
-	defer func() {
-		err = errors.Join(err, restoreDir())
-	}()
-	log.Info(fmt.Sprintf("Executing '%s %s' at %s", scanSetup.InstallCommandName, scanSetup.InstallCommandArgs, workDir))
-	output, err := runInstallCommand(scanSetup)
-	if err != nil && !scanSetup.FailOnInstallationErrors() {
-		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
-		// failOnInstallationErrors set to 'false'
-		err = nil
-	}
-	return
-}
-
-func runInstallCommand(scanSetup *utils.ScanDetails) ([]byte, error) {
-	if scanSetup.DepsRepo == "" {
-		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
-		return exec.Command(scanSetup.InstallCommandName, scanSetup.InstallCommandArgs...).CombinedOutput()
-	}
-
-	if _, exists := utils.MapTechToResolvingFunc[scanSetup.InstallCommandName]; !exists {
-		return nil, fmt.Errorf(scanSetup.InstallCommandName, "isn't recognized as an install command")
-	}
-	log.Info("Resolving dependencies from", scanSetup.ServerDetails.Url, "from repo", scanSetup.DepsRepo)
-	return utils.MapTechToResolvingFunc[scanSetup.InstallCommandName](scanSetup)
-}
-
 func getNewViolations(targetScan, sourceScan services.ScanResponse, auditResults *audit.Results) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
 	violationsRows, _, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
@@ -391,11 +300,11 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 	return
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer utils.OutputWriter) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer outputwriter.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabiltiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
+	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.IacContent(iacRows) + writer.UntitledForJasMsg() + writer.Footer()
 }
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {

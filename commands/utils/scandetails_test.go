@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -27,4 +28,37 @@ func TestCreateXrayScanParams(t *testing.T) {
 	assert.Equal(t, "project", scanDetails.ProjectKey)
 	assert.False(t, scanDetails.IncludeVulnerabilities)
 	assert.False(t, scanDetails.IncludeLicenses)
+}
+
+func TestRunInstallIfNeeded(t *testing.T) {
+	scanSetup := ScanDetails{
+		Project: &Project{},
+	}
+	scanSetup.SetFailOnInstallationErrors(true)
+	assert.NoError(t, scanSetup.runInstallIfNeeded(""))
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	defer func() {
+		err = fileutils.RemoveTempDir(tmpDir)
+		assert.NoError(t, err)
+	}()
+	params := &Project{
+		InstallCommandName: "echo",
+		InstallCommandArgs: []string{"Hello"},
+	}
+	scanSetup.Project = params
+	assert.NoError(t, scanSetup.runInstallIfNeeded(tmpDir))
+
+	scanSetup.InstallCommandName = "not-exist"
+	scanSetup.InstallCommandArgs = []string{"1", "2"}
+	scanSetup.SetFailOnInstallationErrors(false)
+	assert.NoError(t, scanSetup.runInstallIfNeeded(tmpDir))
+
+	params = &Project{
+		InstallCommandName: "not-existed",
+		InstallCommandArgs: []string{"1", "2"},
+	}
+	scanSetup.Project = params
+	scanSetup.SetFailOnInstallationErrors(true)
+	assert.Error(t, scanSetup.runInstallIfNeeded(tmpDir))
 }

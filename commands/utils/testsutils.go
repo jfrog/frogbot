@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/commands/testdata"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"path/filepath"
@@ -56,4 +60,40 @@ func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, 
 		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
+}
+
+// Check connection details with JFrog instance.
+// Return a callback method that restores the credentials after the test is done.
+func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
+	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
+	username := os.Getenv(JFrogUserEnv)
+	password := os.Getenv(JFrogPasswordEnv)
+	token := os.Getenv(JFrogTokenEnv)
+	if url == "" {
+		assert.FailNow(t, fmt.Sprintf("'%s' is not set", JFrogUrlEnv))
+	}
+	if token == "" && (username == "" || password == "") {
+		assert.FailNow(t, fmt.Sprintf("'%s' or '%s' and '%s' are not set", JFrogTokenEnv, JFrogUserEnv, JFrogPasswordEnv))
+	}
+	server.Url = url
+	server.XrayUrl = url + "/xray/"
+	server.ArtifactoryUrl = url + "/artifactory/"
+	server.User = username
+	server.Password = password
+	server.AccessToken = token
+	restoreFunc = func() {
+		SetEnvAndAssert(t, map[string]string{
+			JFrogUrlEnv:          url,
+			JFrogTokenEnv:        token,
+			JFrogUserEnv:         username,
+			JFrogPasswordEnv:     password,
+			GitAggregateFixesEnv: "FALSE",
+		})
+	}
+	return
+}
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	mockCtrl := gomock.NewController(t)
+	return testdata.NewMockVcsClient(mockCtrl)
 }

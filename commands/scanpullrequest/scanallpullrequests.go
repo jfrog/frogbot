@@ -1,4 +1,4 @@
-package commands
+package scanpullrequest
 
 import (
 	"context"

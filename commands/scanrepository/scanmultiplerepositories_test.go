@@ -1,4 +1,4 @@
-package commands
+package scanrepository
 
 import (
 	"bytes"
@@ -23,13 +23,11 @@ import (
 	"time"
 )
 
-const cmdDirName = "scanandfixrepos"
-
-var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-and-fix-repos.yml")
+var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
-	serverParams, restoreEnv := verifyEnv(t)
+	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 
 	var port string
@@ -52,14 +50,14 @@ func TestScanAndFixRepos(t *testing.T) {
 	configData, err := utils.ReadConfigFromFileSystem(testScanAndFixReposConfigPath)
 	assert.NoError(t, err)
 
-	tmpDir, cleanUp := utils.PrepareTestEnvironment(t, "", cmdDirName)
+	tmpDir, cleanUp := utils.PrepareTestEnvironment(t, "", "scanmultiplerepositories")
 	defer cleanUp()
 
 	createReposGitEnvironment(t, tmpDir, port, testRepositories...)
 	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 	assert.NoError(t, err)
 
-	var cmd = ScanAndFixRepositories{dryRun: true}
+	var cmd = ScanMultipleRepositories{dryRun: true}
 	assert.NoError(t, cmd.Run(configAggregator, client))
 }
 

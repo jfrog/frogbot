@@ -1,12 +1,20 @@
-package utils
+package outputwriter
 
 import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"strings"
+)
+
+const (
+	FrogbotPullRequestTitlePrefix                    = "[🐸 Frogbot]"
+	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 )
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -14,11 +22,11 @@ import (
 type OutputWriter interface {
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
-	VulnerabiltiesTitle(isComment bool) string
+	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
-	Seperator() string
+	Separator() string
 	FormattedSeverity(severity, applicability string) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
@@ -58,7 +66,7 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	}
 
 	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", utils.GetSeverity(vulnerability.Severity, utils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
 		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
 		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
 		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
@@ -104,7 +112,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, utils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
 	}
 	return tableContent
 }

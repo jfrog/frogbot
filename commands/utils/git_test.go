@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -150,7 +151,7 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		gitManager GitManager
 		expected   string
 	}{
-		{gitManager: GitManager{}, expected: GetAggregatedPullRequestTitle(coreutils.Pipenv)},
+		{gitManager: GitManager{}, expected: outputwriter.GetAggregatedPullRequestTitle(coreutils.Pipenv)},
 		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
 	}
 	for _, test := range tests {

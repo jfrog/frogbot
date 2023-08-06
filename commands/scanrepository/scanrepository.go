@@ -1,10 +1,11 @@
-package commands
+package scanrepository
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/frogbot/commands/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -22,9 +23,9 @@ import (
 	"strings"
 )
 
-type CreateFixPullRequestsCmd struct {
+type ScanRepositoryCmd struct {
 	// The interface that Frogbot utilizes to format and style the displayed messages on the Git providers
-	utils.OutputWriter
+	outputwriter.OutputWriter
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
@@ -43,7 +44,7 @@ type CreateFixPullRequestsCmd struct {
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
-func (cfp *CreateFixPullRequestsCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
+func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	if err := utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (cfp *CreateFixPullRequestsCmd) Run(repoAggregator utils.RepoAggregator, cl
 	return nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
+func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	cfp.baseWd, err = os.Getwd()
 	if err != nil {
 		return
@@ -73,7 +74,7 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) {
+func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) {
 	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
@@ -81,16 +82,16 @@ func (cfp *CreateFixPullRequestsCmd) setCommandPrerequisites(repository *utils.R
 		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
-	cfp.OutputWriter = utils.GetCompatibleOutputWriter(repository.GitProvider)
+	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
 }
 
-func (cfp *CreateFixPullRequestsCmd) scanAndFixProject(repository *utils.Repository) error {
+func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
 	var fixNeeded bool
 	// A map that contains the full project paths as a keys
 	// The value is a map of vulnerable package names -> the details of the vulnerable packages.x
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full details.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
-	projectFullPathWorkingDirs := getFullPathWorkingDirs(cfp.details.Project.WorkingDirs, cfp.baseWd)
+	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.details.Project.WorkingDirs, cfp.baseWd)
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
@@ -120,9 +121,9 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixProject(repository *utils.Reposit
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *CreateFixPullRequestsCmd) scan(currentWorkingDir string) (*audit.Results, error) {
+func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, error) {
 	// Audit commit code
-	auditResults, err := runInstallAndAudit(cfp.details, currentWorkingDir)
+	auditResults, err := cfp.details.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (cfp *CreateFixPullRequestsCmd) scan(currentWorkingDir string) (*audit.Resu
 	return auditResults, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) getVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, isMultipleRoots)
 	if err != nil {
 		return nil, err
@@ -146,7 +147,7 @@ func (cfp *CreateFixPullRequestsCmd) getVulnerabilitiesMap(scanResults *xrayutil
 	return vulnerabilitiesMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.gitManager == nil {
 		cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
 		if err != nil {
@@ -170,7 +171,7 @@ func (cfp *CreateFixPullRequestsCmd) fixVulnerablePackages(vulnerabilitiesByWdMa
 	return cfp.fixIssuesSeparatePRs(vulnerabilitiesByWdMap)
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
+func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
@@ -180,7 +181,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map
 	return err
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixProjectVulnerabilities(fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
 	// Update the working directory to the project's current working directory
 	projectWorkingDir := utils.GetRelativeWd(fullProjectPath, cfp.baseWd)
 
@@ -212,7 +213,7 @@ func (cfp *CreateFixPullRequestsCmd) fixProjectVulnerabilities(fullProjectPath s
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) fixMultiplePackages(fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (fixedVulnerabilities []*utils.VulnerabilityDetails, err error) {
+func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (fixedVulnerabilities []*utils.VulnerabilityDetails, err error) {
 	// Update the working directory to the project's current working directory
 	projectWorkingDir := utils.GetRelativeWd(fullProjectPath, cfp.baseWd)
 
@@ -242,7 +243,7 @@ func (cfp *CreateFixPullRequestsCmd) fixMultiplePackages(fullProjectPath string,
 // If the scan results are the same, no action is taken.
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
-func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.projectTech)
 	if err != nil {
 		return
@@ -257,7 +258,7 @@ func (cfp *CreateFixPullRequestsCmd) fixIssuesSinglePR(vulnerabilitiesMap map[st
 // Handles possible error of update package operation
 // When the expected custom error occurs, log to debug.
 // else, return the error
-func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error {
+func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
 		log.Debug(err.Error())
 		return nil
@@ -267,7 +268,7 @@ func (cfp *CreateFixPullRequestsCmd) handleUpdatePackageErrors(err error) error 
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", vulnDetails.ImpactedDependencyName, "with", fixVersion)
 	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.Branch(), vulnDetails.ImpactedDependencyName, fixVersion)
@@ -296,7 +297,7 @@ func (cfp *CreateFixPullRequestsCmd) fixSinglePackageAndCreatePR(vulnDetails *ut
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	log.Debug("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
@@ -323,7 +324,7 @@ func (cfp *CreateFixPullRequestsCmd) openFixingPullRequest(fixBranchName string,
 
 // openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
-func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech)
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
@@ -331,7 +332,7 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	vulnerabilityRows := utils.ExtractVunerabilitiesDetailsToRows(vulnerabilities)
+	vulnerabilityRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities)
 	scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnerabilityRows...)
 	if err != nil {
 		return
@@ -345,15 +346,15 @@ func (cfp *CreateFixPullRequestsCmd) openAggregatedPullRequest(fixBranchName str
 	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
 }
 
-func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) (string, string) {
+func (cfp *ScanRepositoryCmd) preparePullRequestDetails(scanHash string, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) (string, string) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
-		return utils.GetAggregatedPullRequestTitle(cfp.projectTech), ""
+		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), ""
 	}
 
-	prBody := cfp.OutputWriter.VulnerabiltiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
+	prBody := cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
-		return utils.GetAggregatedPullRequestTitle(cfp.projectTech), prBody + utils.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
+		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
 	}
 	// In separate pull requests there is only one vulnerability
 	vulnDetails := vulnerabilitiesRows[0]
@@ -361,7 +362,7 @@ func (cfp *CreateFixPullRequestsCmd) preparePullRequestDetails(scanHash string, 
 	return pullRequestTitle, prBody
 }
 
-func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
+func (cfp *ScanRepositoryCmd) cloneRepository() (tempWd string, restoreDir func() error, err error) {
 	if cfp.dryRunRepoPath != "" {
 		tempWd, err = cfp.getDryRunClonedRepo()
 	} else {
@@ -383,7 +384,7 @@ func (cfp *CreateFixPullRequestsCmd) cloneRepository() (tempWd string, restoreDi
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) getDryRunClonedRepo() (tempWd string, err error) {
+func (cfp *ScanRepositoryCmd) getDryRunClonedRepo() (tempWd string, err error) {
 	// Check if we already cloned the repository before, for multi projects tests
 	// Return the existing folder if exists
 	var files []string
@@ -403,7 +404,7 @@ func (cfp *CreateFixPullRequestsCmd) getDryRunClonedRepo() (tempWd string, err e
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *CreateFixPullRequestsCmd) createVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
 	for _, scanResult := range scanResults.XrayResults {
 		if len(scanResult.Vulnerabilities) > 0 {
@@ -432,7 +433,7 @@ func (cfp *CreateFixPullRequestsCmd) createVulnerabilitiesMap(scanResults *xrayu
 	return vulnerabilitiesMap, nil
 }
 
-func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
+func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *formats.VulnerabilityOrViolationRow, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
@@ -463,7 +464,7 @@ func (cfp *CreateFixPullRequestsCmd) addVulnerabilityToFixVersionsMap(vulnerabil
 }
 
 // Updates impacted package, can return ErrUnsupportedFix.
-func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	if err = isBuildToolsDependency(vulnDetails); err != nil {
 		return
 	}
@@ -484,7 +485,7 @@ func (cfp *CreateFixPullRequestsCmd) updatePackageToFixedVersion(vulnDetails *ut
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.
-func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(prBody string) string {
+func (cfp *ScanRepositoryCmd) getRemoteBranchScanHash(prBody string) string {
 	// The pattern matches the string "Checksum: <checksum>", followed by one or more word characters (letters, digits, or underscores).
 	re := regexp.MustCompile(`Checksum: (\w+)`)
 	match := re.FindStringSubmatch(prBody)
@@ -499,7 +500,7 @@ func (cfp *CreateFixPullRequestsCmd) getRemoteBranchScanHash(prBody string) stri
 	return match[1]
 }
 
-func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName string) (prInfo *vcsclient.PullRequestInfo, err error) {
+func (cfp *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string) (prInfo *vcsclient.PullRequestInfo, err error) {
 	list, err := cfp.details.Client().ListOpenPullRequestsWithBody(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
 	if err != nil {
 		return
@@ -514,7 +515,7 @@ func (cfp *CreateFixPullRequestsCmd) getOpenPullRequestBySourceBranch(branchName
 	return
 }
 
-func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
+func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
@@ -553,14 +554,14 @@ func (cfp *CreateFixPullRequestsCmd) aggregateFixAndOpenPullRequest(vulnerabilit
 
 // Performs a comparison of the Xray scan results hashes between an existing pull request's remote source branch
 // and the current source branch to identify any differences.
-func (cfp *CreateFixPullRequestsCmd) isUpdateRequired(fixedVulnerabilities []*utils.VulnerabilityDetails, prInfo *vcsclient.PullRequestInfo) (updateRequired bool, err error) {
+func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.VulnerabilityDetails, prInfo *vcsclient.PullRequestInfo) (updateRequired bool, err error) {
 	if prInfo == nil {
 		updateRequired = true
 		return
 	}
 	log.Info("Aggregated pull request already exists, verifying if update is needed...")
 	log.Debug("Comparing current scan results to existing", prInfo.Target.Name, "scan results")
-	fixedVulnerabilitiesRows := utils.ExtractVunerabilitiesDetailsToRows(fixedVulnerabilities)
+	fixedVulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(fixedVulnerabilities)
 	currentScanHash, err := utils.VulnerabilityDetailsToMD5Hash(fixedVulnerabilitiesRows...)
 	if err != nil {
 		return

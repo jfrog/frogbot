@@ -1,4 +1,4 @@
-package commands
+package scanrepository
 
 import (
 	"errors"
@@ -7,12 +7,12 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-type ScanAndFixRepositories struct {
+type ScanMultipleRepositories struct {
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
 	dryRun bool
 }
 
-func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
+func (saf *ScanMultipleRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
 	// Aggregate errors and log at the end rather than failing the entire run if there is an error on one repository.
 	var aggregatedErrors error
 	for repoNum := range repoAggregator {
@@ -23,7 +23,7 @@ func (saf *ScanAndFixRepositories) Run(repoAggregator utils.RepoAggregator, clie
 	return aggregatedErrors
 }
 
-func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
+func (saf *ScanMultipleRepositories) scanAndFixSingleRepository(repoConfig *utils.Repository, client vcsclient.VcsClient) error {
 	var aggregatedErrors error
 	for _, branch := range repoConfig.Branches {
 		if err := saf.downloadAndRunScanAndFix(repoConfig, branch, client); err != nil {
@@ -37,7 +37,7 @@ func (saf *ScanAndFixRepositories) scanAndFixSingleRepository(repoConfig *utils.
 	return aggregatedErrors
 }
 
-func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
+func (saf *ScanMultipleRepositories) downloadAndRunScanAndFix(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	wd, cleanup, err := utils.DownloadRepoToTempDir(client, repository.Git.RepoOwner, repository.Git.RepoName, branch)
 	if err != nil {
 		return
@@ -54,6 +54,6 @@ func (saf *ScanAndFixRepositories) downloadAndRunScanAndFix(repository *utils.Re
 		err = errors.Join(err, restoreDir())
 	}()
 
-	cfp := CreateFixPullRequestsCmd{dryRun: saf.dryRun, dryRunRepoPath: wd}
+	cfp := ScanRepositoryCmd{dryRun: saf.dryRun, dryRunRepoPath: wd}
 	return cfp.scanAndFixRepository(repository, branch, client)
 }
