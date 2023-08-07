@@ -262,7 +262,7 @@ func validateHashPlaceHolder(template string) error {
 	return nil
 }
 
-func GetFrogbotDetails(commandName string) (frogbotUtils *FrogbotDetails, err error) {
+func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err error) {
 	// Get server and git details
 	jfrogServer, err := extractJFrogCredentialsFromEnvs()
 	if err != nil {
