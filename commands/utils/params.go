@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"net/url"
@@ -42,6 +43,11 @@ type FrogbotUtils struct {
 }
 
 type RepoAggregator []Repository
+
+// NewRepoAggregator returns an initialized RepoAggregator with an empty repository
+func NewRepoAggregator() RepoAggregator {
+	return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}
+}
 
 type Repository struct {
 	Params `yaml:"params,omitempty"`
@@ -209,7 +215,13 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		g.RepoName = git.RepoName
 	}
 	if len(g.Branches) == 0 {
-		g.Branches = append(g.Branches, git.Branches...)
+		branch := getTrimmedEnv(GitBaseBranchEnv)
+		if branch == "" {
+			if branch, err = getBranchFromDotGit(); err != nil {
+				return err
+			}
+			g.Branches = append(g.Branches, branch)
+		}
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
@@ -245,6 +257,22 @@ func (g *Git) setDefaultsIfNeeded(git *Git) (err error) {
 		}
 	}
 	return
+}
+
+func getBranchFromDotGit() (string, error) {
+	dotGit, err := git.PlainOpen(".")
+	if err != nil {
+		return "", errors.New("unable to retrieve the branch to scan, as the .git folder was not found in the current working directory. The error that was received: " + err.Error())
+	}
+	ref, err := dotGit.Head()
+	if err != nil {
+		return "", err
+	}
+	branchName := ref.Name().String()
+	if branchName == "" {
+		return "", errors.New("branch is missing. Please set the branch to scan in you frogbot-config.yml or in your JF_GIT_BASE_BRANCH environment variable")
+	}
+	return strings.TrimPrefix(branchName, "refs/heads/"), nil
 }
 
 func validateHashPlaceHolder(template string) error {
@@ -335,7 +363,8 @@ func BuildRepoAggregator(configFileContent []byte, gitParams *Git, server *corec
 // If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
-		return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}, nil
+		result = NewRepoAggregator()
+		return
 	}
 	err = yaml.Unmarshal(yamlContent, &result)
 	return
