@@ -141,6 +141,13 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			defer func() {
 				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
 			}()
+			serverParams, restoreEnv := verifyEnv(t)
+			if test.aggregateFixes {
+				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
+				defer func() {
+					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+				}()
+			}
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]

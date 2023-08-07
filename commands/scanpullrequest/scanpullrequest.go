@@ -101,8 +101,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	// Download target branch (if needed)
 	targetBranchWd := ""
 	cleanupTarget := func() error { return nil }
-	if repoConfig.IncludeAllVulnerabilities {
-		log.Info("Frogbot is configured to show all vulnerabilities")
+	if !repoConfig.IncludeAllVulnerabilities {
 		targetBranchInfo := pullRequestDetails.Target
 		targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(client, targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name)
 		if err != nil {
@@ -124,7 +123,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Audit source branch
 		var sourceResults *audit.Results
-		sourceResults, err = scanDetails.RunInstallAndAudit(sourceBranchWd)
+		workingDirs := getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+		sourceResults, err = RunInstallAndAudit(scanDetails, workingDirs...)
 		if err != nil {
 			return
 		}
@@ -135,6 +135,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Get all issues that were found in the source branch
 		if repoConfig.IncludeAllVulnerabilities {
+			log.Info("Frogbot is configured to show all vulnerabilities")
 			var allIssuesRows []formats.VulnerabilityOrViolationRow
 			allIssuesRows, err = getScanVulnerabilitiesRows(sourceResults)
 			if err != nil {
@@ -147,7 +148,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Set target branch scan details
 		var targetResults *audit.Results
-		targetResults, err = scanDetails.RunInstallAndAudit(targetBranchWd)
+		workingDirs = getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+		targetResults, err = RunInstallAndAudit(scanDetails, workingDirs...)
 		if err != nil {
 			return
 		}
