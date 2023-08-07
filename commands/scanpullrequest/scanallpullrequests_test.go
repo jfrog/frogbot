@@ -37,7 +37,7 @@ type MockParams struct {
 	targetBranchName string
 }
 
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
 func TestShouldScanPullRequestNewPR(t *testing.T) {
 	// Init mock
 	client := utils.CreateMockVcsClient(t)
