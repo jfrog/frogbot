@@ -104,8 +104,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	// Download target branch (if needed)
 	targetBranchWd := ""
 	cleanupTarget := func() error { return nil }
-	if repoConfig.IncludeAllVulnerabilities {
-		log.Info("Frogbot is configured to show all vulnerabilities")
+	if !repoConfig.IncludeAllVulnerabilities {
 		targetBranchInfo := pullRequestDetails.Target
 		targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(client, targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name)
 		if err != nil {
@@ -127,7 +126,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Audit source branch
 		var sourceResults *audit.Results
-		sourceResults, err = runInstallAndAudit(scanDetails, sourceBranchWd)
+		workingDirs := getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+		sourceResults, err = runInstallAndAudit(scanDetails, workingDirs...)
 		if err != nil {
 			return
 		}
@@ -138,6 +138,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Get all issues that were found in the source branch
 		if repoConfig.IncludeAllVulnerabilities {
+			log.Info("Frogbot is configured to show all vulnerabilities")
 			var allIssuesRows []formats.VulnerabilityOrViolationRow
 			allIssuesRows, err = getScanVulnerabilitiesRows(sourceResults)
 			if err != nil {
@@ -150,7 +151,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Set target branch scan details
 		var targetResults *audit.Results
-		targetResults, err = runInstallAndAudit(scanDetails, targetBranchWd)
+		workingDirs = getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+		targetResults, err = runInstallAndAudit(scanDetails, workingDirs...)
 		if err != nil {
 			return
 		}
@@ -277,21 +279,7 @@ func getFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 	return fullPathWds
 }
 
-func runInstallAndAudit(scanSetup *utils.ScanDetails, branchWd string) (auditResults *audit.Results, err error) {
-	currWd, err := os.Getwd()
-	if err != nil {
-		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
-		return
-	}
-	if err = os.Chdir(branchWd); err != nil {
-		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
-		return
-	}
-	defer func() {
-		err = errors.Join(err, os.Chdir(currWd))
-	}()
-
-	workDirs := getFullPathWorkingDirs(scanSetup.Project.WorkingDirs, branchWd)
+func runInstallAndAudit(scanSetup *utils.ScanDetails, workDirs ...string) (auditResults *audit.Results, err error) {
 	for _, wd := range workDirs {
 		if err = runInstallIfNeeded(scanSetup, wd); err != nil {
 			return nil, err
