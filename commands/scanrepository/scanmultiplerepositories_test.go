@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var testScanAndFixReposConfigPath = filepath.Join("testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
+var testScanAndFixReposConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {

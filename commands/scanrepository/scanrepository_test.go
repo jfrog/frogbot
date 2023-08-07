@@ -339,7 +339,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	}
 	for _, pkg := range testPackagesData {
 		// Create temp technology project
-		projectPath := filepath.Join("testdata", "projects", pkg.packageType.ToString())
+		projectPath := filepath.Join("..", "testdata", "projects", pkg.packageType.ToString())
 		t.Run(pkg.packageType.ToString(), func(t *testing.T) {
 			tmpDir, err := fileutils.CreateTempDir()
 			defer func() {

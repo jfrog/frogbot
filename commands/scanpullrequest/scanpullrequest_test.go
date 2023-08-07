@@ -380,7 +380,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
 	message := createPullRequestMessage(vulnerabilities, nil, &outputwriter.StandardOutput{})
 
-	expectedMessageByte, err := os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilities.md"))
+	expectedMessageByte, err := os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
 	expectedMessage := strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
 	assert.Equal(t, expectedMessage, message)
@@ -389,7 +389,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
 	message = createPullRequestMessage(vulnerabilities, nil, outputWriter)
 
-	expectedMessageByte, err = os.ReadFile(filepath.Join("testdata", "messages", "novulnerabilitiesMR.md"))
+	expectedMessageByte, err = os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilitiesMR.md"))
 	assert.NoError(t, err)
 	expectedMessage = strings.ReplaceAll(string(expectedMessageByte), "\r\n", "\n")
 	assert.Equal(t, expectedMessage, message)

@@ -219,7 +219,7 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 // 1. First, the "test-proj-with-vulnerability" project, which includes a "test-proj" directory, will be copied to a temporary directory with a random name. This project will be utilized during the source auditing phase to mimic a pull request with a new vulnerable dependency.
 // 2. Next, a second "download" will take place within the first temporary directory. As a result, the "test-proj" directory will be discovered and copied to a second temporary directory with another random name. This copied version will be used during the target auditing phase.
 func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) error {
-	sourceDir, err := filepath.Abs(filepath.Join("testdata", "scanallpullrequests", testProject))
+	sourceDir, err := filepath.Abs(filepath.Join("..", "testdata", "scanallpullrequests", testProject))
 	if err != nil {
 		return err
 	}
