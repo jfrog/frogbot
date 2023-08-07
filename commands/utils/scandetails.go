@@ -9,7 +9,6 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"os"
 	"os/exec"
 	"path/filepath"
 )
@@ -112,21 +111,7 @@ func createXrayScanParams(watches []string, project string) (params *services.Xr
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(branchWd string) (auditResults *audit.Results, err error) {
-	currWd, err := os.Getwd()
-	if err != nil {
-		err = errors.New("unable to retrieve to current working directory while auditing the project. error received:\n" + err.Error())
-		return
-	}
-	if err = os.Chdir(branchWd); err != nil {
-		err = errors.New("unable to change directory to run an audit on it due to an error:\n" + err.Error())
-		return
-	}
-	defer func() {
-		err = errors.Join(err, os.Chdir(currWd))
-	}()
-
-	workDirs := GetFullPathWorkingDirs(sc.Project.WorkingDirs, branchWd)
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err

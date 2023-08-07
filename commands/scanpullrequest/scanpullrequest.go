@@ -123,8 +123,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Audit source branch
 		var sourceResults *audit.Results
-		workingDirs := getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
-		sourceResults, err = RunInstallAndAudit(scanDetails, workingDirs...)
+		workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+		sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 		if err != nil {
 			return
 		}
@@ -148,8 +148,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Set target branch scan details
 		var targetResults *audit.Results
-		workingDirs = getFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
-		targetResults, err = RunInstallAndAudit(scanDetails, workingDirs...)
+		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+		targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 		if err != nil {
 			return
 		}

@@ -137,11 +137,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		t.Run(test.repoName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := utils.VerifyEnv(t)
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
-			serverParams, restoreEnv := verifyEnv(t)
 			if test.aggregateFixes {
 				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
 				defer func() {
