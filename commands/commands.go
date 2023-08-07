@@ -20,7 +20,7 @@ type FrogbotCommand interface {
 func Exec(command FrogbotCommand, name string) (err error) {
 	// Get frogbotUtils that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
-	frogbotUtils, err := utils.GetFrogbotDetails()
+	frogbotUtils, err := utils.GetFrogbotDetails(name)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
-	err = command.Run(frogbotUtils.Repositories, frogbotUtils.Client)
+	err = command.Run(frogbotUtils.Repositories, frogbotUtils.GitClient)
 
 	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
@@ -65,7 +65,7 @@ func Exec(command FrogbotCommand, name string) (err error) {
 func GetCommands() []*clitool.Command {
 	return []*clitool.Command{
 		{
-			Name:    "scan-pull-request",
+			Name:    utils.ScanPullRequest,
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
@@ -74,7 +74,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "create-fix-pull-requests",
+			Name:    utils.CreateFixPullRequests,
 			Aliases: []string{"cfpr"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
@@ -83,7 +83,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-pull-requests",
+			Name:    utils.ScanPullRequests,
 			Aliases: []string{"sprs"},
 			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
@@ -92,7 +92,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-and-fix-repos",
+			Name:    utils.ScanAndFixRepos,
 			Aliases: []string{"safr"},
 			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
 			Action: func(ctx *clitool.Context) error {

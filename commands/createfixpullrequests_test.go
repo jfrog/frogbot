@@ -141,7 +141,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := utils.GitClientInfo{
+			gitTestParams := utils.Git{
 				GitProvider: vcsutils.GitHub,
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
@@ -241,7 +241,7 @@ pr body
 				server.Close()
 			}()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := &utils.GitClientInfo{
+			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
