@@ -134,10 +134,12 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 		t.Run(test.repoName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := verifyEnv(t)
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
+			if test.aggregateFixes {
+				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
+				defer func() {
+					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+				}()
+			}
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
