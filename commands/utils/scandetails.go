@@ -77,6 +77,11 @@ func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
 	return sc
 }
 
+func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
+	sc.RepoName = repoName
+	return sc
+}
+
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,

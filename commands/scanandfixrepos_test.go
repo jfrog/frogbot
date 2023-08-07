@@ -37,14 +37,12 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer server.Close()
 	port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
-	gitTestParams := utils.Git{
-		ClientInfo: utils.ClientInfo{
-			GitProvider: vcsutils.GitHub,
-			RepoOwner:   "jfrog",
-			VcsInfo: vcsclient.VcsInfo{
-				Token:       "123456",
-				APIEndpoint: server.URL,
-			},
+	gitTestParams := utils.GitClientInfo{
+		GitProvider: vcsutils.GitHub,
+		RepoOwner:   "jfrog",
+		VcsInfo: vcsclient.VcsInfo{
+			Token:       "123456",
+			APIEndpoint: server.URL,
 		},
 	}
 
