@@ -111,6 +111,26 @@ type Scan struct {
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
+	EmailDetails              `yaml:",inline"`
+}
+
+type EmailDetails struct {
+	SmtpServer     string
+	SmtpPort       string
+	SmtpAuthUser   string
+	SmtpAuthPass   string
+	EmailReceivers []string `yaml:"emailReceivers,omitempty"`
+}
+
+func (s *Scan) SetEmailDetails() {
+	s.SmtpServer = getTrimmedEnv(SmtpServer)
+	s.SmtpPort = getTrimmedEnv(SmtpPort)
+	s.SmtpAuthUser = getTrimmedEnv(SmtpAuthUser)
+	s.SmtpAuthPass = getTrimmedEnv(SmtpAuthPass)
+	if len(s.EmailReceivers) == 0 {
+		emailReceivers := getTrimmedEnv(EmailReceivers)
+		s.EmailReceivers = strings.Split(emailReceivers, ",")
+	}
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {

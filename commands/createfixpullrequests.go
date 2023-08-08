@@ -103,6 +103,10 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixProject(repository *utils.Reposit
 			}
 		}
 
+		if err = utils.SendEmailIfSecretsExposed(scanResults.ExtendedScanResults.SecretsScanResults, repository.EmailDetails, repository.VulnerabiltiesTitle(false)); err != nil {
+			return err
+		}
+
 		// Prepare the vulnerabilities map for each working dir path
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
 		if err != nil {

@@ -72,6 +72,13 @@ const (
 	FixableOnlyEnv               = "JF_FIXABLE_ONLY"
 	WatchesDelimiter             = ","
 
+	// Email related environment variables
+	SmtpServer     = "JF_SMTP_SERVER"
+	SmtpPort       = "JF_SMTP_PORT"
+	SmtpAuthUser   = "JF_SMTP_AUTH_USER"
+	SmtpAuthPass   = "JF_SMTP_AUTH_PASS"
+	EmailReceivers = "JF_EMAIL_RECEIVERS"
+
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv          = "JF_GIT_TOKEN"
 	GitBaseBranchEnv     = "JF_GIT_BASE_BRANCH"
@@ -85,6 +92,86 @@ const (
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	secretsEmailCSS                                  = `body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        a img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        img.severity-icon {
+            max-height: 30px;
+            vertical-align: middle;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #fff;
+        }`
+	secretsEmailHTMLTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frogbot Secret Detection</title>
+    <style>
+        %s
+    </style>
+</head>
+<body>
+    <div class="table-container">
+        <a href="https://github.com/jfrog/frogbot#readme">
+            <img src="%s" alt="Banner">
+        </a>
+        <table>
+            <thead>
+                <tr>
+                    <th>SEVERITY</th>
+                    <th>FILE</th>
+                    <th>LINE:COLUMN</th>
+                    <th>TEXT</th>
+                </tr>
+            </thead>
+            <tbody>
+                %s
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>`
+	secretsEmailTableRow = `
+				<tr>
+					<td><img class="severity-icon" src="%s" alt="severity"> %s </td>
+					<td> %s </td>
+					<td> %s </td>
+					<td> %s </td>
+				</tr>`
 
 	// Product ID for usage reporting
 	productId = "frogbot"

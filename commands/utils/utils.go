@@ -19,6 +19,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jordan-wright/email"
+	"net/smtp"
 	"os"
 	"regexp"
 	"sort"
@@ -315,4 +317,39 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
 	})
 	return pullRequestsComments, nil
+}
+
+func SendEmailIfSecretsExposed(secrets []xrayutils.IacOrSecretResult, emailDetails EmailDetails, emailLogo string) error {
+	if len(secrets) == 0 {
+		return nil
+	}
+	emailContent := getSecretsEmailContent(secrets, emailLogo)
+	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpAuthUser)
+	subject := "Frogbot Detected Potential Secrets"
+	return sendEmail(sender, subject, emailContent, emailDetails)
+}
+
+func getSecretsEmailContent(secrets []xrayutils.IacOrSecretResult, emailLogo string) string {
+	var tableContent strings.Builder
+	for _, secret := range secrets {
+		tableContent.WriteString(
+			fmt.Sprintf(secretsEmailTableRow,
+				getApplicableIconPath(IconName(secret.Severity)),
+				secret.Severity,
+				secret.File,
+				secret.LineColumn,
+				secret.Text))
+	}
+
+	return fmt.Sprintf(secretsEmailHTMLTemplate, secretsEmailCSS, emailLogo, tableContent.String())
+}
+
+func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {
+	e := email.NewEmail()
+	e.From = sender
+	e.To = emailDetails.EmailReceivers
+	e.Subject = subject
+	e.HTML = []byte(content)
+	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpAuthUser, emailDetails.SmtpAuthPass, emailDetails.SmtpServer)
+	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
 }
