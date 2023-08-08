@@ -222,7 +222,6 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug("Created temp working directory: ", wd)
 	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
 	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
 		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())

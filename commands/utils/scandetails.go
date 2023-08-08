@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -146,7 +147,7 @@ func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	defer func() {
 		err = errors.Join(err, restoreDir())
 	}()
-	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, sc.InstallCommandArgs, workDir))
+	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
 	output, err := sc.runInstallCommand()
 	if err != nil && !sc.FailOnInstallationErrors() {
 		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))

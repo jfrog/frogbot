@@ -161,7 +161,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
 		iacRows = append(iacRows, createNewIacRows(targetResults.ExtendedScanResults.IacScanResults, sourceResults.ExtendedScanResults.IacScanResults)...)
 	}
-	log.Info("Xray scan completed")
 	return
 }
 

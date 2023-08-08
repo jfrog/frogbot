@@ -11,7 +11,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 )
 
-var errPullRequestScan = "pull request %d in the %s repository returned the following error: \n%s"
+var errPullRequestScan = "pull request #%d scan in the '%s' repository returned the following error:\n%s"
 
 type ScanAllPullRequestsCmd struct {
 }
