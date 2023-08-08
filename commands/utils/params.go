@@ -268,7 +268,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	gitParamsFromEnv, err := extractGitParamsFromEnvs()
+	gitParamsFromEnv, err := extractGitInfoFromEnvs()
 	if err != nil {
 		return
 	}
@@ -381,7 +381,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
-func extractGitParamsFromEnvs() (*Git, error) {
+func extractGitInfoFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	clientInfo := &Git{}

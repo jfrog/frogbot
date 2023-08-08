@@ -18,15 +18,15 @@ type FrogbotCommand interface {
 }
 
 func Exec(command FrogbotCommand, name string) (err error) {
-	// Get frogbotDetails that contains the config, server, and VCS client
+	// Get frogbotUtils that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
-	frogbotDetails, err := utils.GetFrogbotDetails(name)
+	frogbotUtils, err := utils.GetFrogbotDetails(name)
 	if err != nil {
 		return err
 	}
 
 	// Build the server configuration file
-	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotDetails.ServerDetails)
+	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotUtils.ServerDetails)
 	if err != nil {
 		return err
 	}
@@ -36,8 +36,8 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Set releases remote repository env if needed
 	previousReleasesRepoEnv := os.Getenv(coreutils.ReleasesRemoteEnv)
-	if frogbotDetails.ReleasesRepo != "" {
-		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotDetails.ReleasesRepo)); err != nil {
+	if frogbotUtils.ReleasesRepo != "" {
+		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotUtils.ReleasesRepo)); err != nil {
 			return
 		}
 		defer func() {
@@ -47,11 +47,11 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Send a usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, frogbotDetails.ServerDetails, usageReportSent)
+	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
-	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient)
+	err = command.Run(frogbotUtils.Repositories, frogbotUtils.GitClient)
 
 	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
