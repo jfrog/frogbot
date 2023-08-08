@@ -222,11 +222,18 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
 			}, fixSupported: true,
 		},
+		{
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.2.6",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+			}, fixSupported: true,
+		},
 	}
-	for _, test := range testcases {
+	for idx, test := range testcases {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn)
+			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, strconv.Itoa(idx))
 			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -542,9 +549,15 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 	return testdataDir
 }
 
-func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology) func() {
+func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology, extraArgs ...string) func() {
 	// Create temp technology project
-	projectPath := filepath.Join(testdataDir, tech.ToString())
+	var techDirName string
+	if len(extraArgs) > 0 {
+		techDirName = tech.ToString() + extraArgs[0]
+	} else {
+		techDirName = tech.ToString()
+	}
+	projectPath := filepath.Join(testdataDir, techDirName)
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
