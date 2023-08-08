@@ -60,16 +60,16 @@ func GetCommands() []*clitool.Command {
 	}
 }
 
-func Exec(command FrogbotCommand, name string) (err error) {
-	// Get frogbotUtils that contains the config, server, and VCS client
+func Exec(command FrogbotCommand, commandName string) (err error) {
+	// Get frogbotDetails that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
-	frogbotUtils, err := utils.GetFrogbotDetails()
+	frogbotDetails, err := utils.GetFrogbotDetails()
 	if err != nil {
 		return err
 	}
 
 	// Build the server configuration file
-	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotUtils.ServerDetails)
+	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotDetails.ServerDetails)
 	if err != nil {
 		return err
 	}
@@ -79,8 +79,8 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Set releases remote repository env if needed
 	previousReleasesRepoEnv := os.Getenv(coreutils.ReleasesRemoteEnv)
-	if frogbotUtils.ReleasesRepo != "" {
-		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotUtils.ReleasesRepo)); err != nil {
+	if frogbotDetails.ReleasesRepo != "" {
+		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotDetails.ReleasesRepo)); err != nil {
 			return
 		}
 		defer func() {
@@ -90,17 +90,17 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Send a usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
+	go utils.ReportUsage(commandName, frogbotDetails.ServerDetails, usageReportSent)
 
 	// Invoke the command interface
-	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
-	err = command.Run(frogbotUtils.Repositories, frogbotUtils.Client)
+	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
+	err = command.Run(frogbotDetails.Repositories, frogbotDetails.Client)
 
 	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
 
 	if err == nil {
-		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", name))
+		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
 	}
 	return err
 }

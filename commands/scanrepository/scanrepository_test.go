@@ -76,7 +76,6 @@ var testPackagesData = []struct {
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName               string
-		testDir                string
 		configPath             string
 		expectedDiff           []string
 		expectedBranches       []string
@@ -163,7 +162,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				gitTestParams.Branches = []string{"main"}
 			}
 
-			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testDir))
+			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testName))
 			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
@@ -195,7 +194,6 @@ func TestAggregatePullRequestLifecycle(t *testing.T) {
 	mockPrId := int64(1)
 	tests := []struct {
 		testName                string
-		testDir                 string
 		expectedUpdate          bool
 		mockPullRequestResponse []vcsclient.PullRequestInfo
 	}{
@@ -256,7 +254,7 @@ pr body
 			var configData []byte
 			// Manual set of "JF_GIT_BASE_BRANCH"
 			gitTestParams.Branches = []string{"main"}
-			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testDir))
+			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testName))
 			defer cleanUp()
 			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
 			assert.NoError(t, err)
