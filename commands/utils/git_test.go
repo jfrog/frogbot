@@ -254,7 +254,8 @@ func TestGitManager_Checkout(t *testing.T) {
 	defer func() {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}()
-	restoreWd, err := Chdir(tmpDir)
+	var restoreWd func() error
+	restoreWd, err = Chdir(tmpDir)
 	defer func() {
 		assert.NoError(t, restoreWd())
 	}()
