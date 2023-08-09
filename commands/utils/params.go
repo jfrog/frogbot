@@ -201,6 +201,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 	g.RepoOwner = gitParamsFromEnv.RepoOwner
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
+	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
 	if g.RepoName == "" {
 		if gitParamsFromEnv.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
@@ -238,13 +239,6 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 		if g.EmailAuthor = getTrimmedEnv(GitEmailAuthorEnv); g.EmailAuthor == "" {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
-	}
-	if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
-		var idNum int
-		if idNum, err = strconv.Atoi(idStr); err != nil {
-			return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
-		}
-		g.PullRequestDetails.ID = int64(idNum)
 	}
 	return
 }
@@ -424,6 +418,13 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	// Mandatory for Azure Repos only
 	if err = readParamFromEnv(GitProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
+	}
+	if envPrId := getTrimmedEnv(GitPullRequestIDEnv); envPrId != "" {
+		var convertedPrId int
+		if convertedPrId, err = strconv.Atoi(envPrId); err != nil {
+			return nil, fmt.Errorf("failed parsing %s environment variable as a number. The received environment is : %s", GitPullRequestIDEnv, envPrId)
+		}
+		gitEnvParams.PullRequestDetails = vcsclient.PullRequestInfo{ID: int64(convertedPrId)}
 	}
 
 	return gitEnvParams, nil

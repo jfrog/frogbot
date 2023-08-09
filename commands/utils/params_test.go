@@ -251,7 +251,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		assert.Equal(t, "dev", configParams.Branches[0])
-		assert.Equal(t, 1, configParams.PullRequestDetails.ID)
+		assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
 	}
 }
 
