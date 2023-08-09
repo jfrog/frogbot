@@ -26,12 +26,12 @@ import (
 )
 
 const (
-	ScanPullRequest       = "scan-pull-request"
-	ScanPullRequests      = "scan-pull-requests"
-	CreateFixPullRequests = "create-fix-pull-requests"
-	ScanAndFixRepos       = "scan-and-fix-repos"
-	RootDir               = "."
-	branchNameRegex       = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest          = "scan-pull-request"
+	ScanAllPullRequests      = "scan-all-pull-requests"
+	ScanRepository           = "scan-repository"
+	ScanMultipleRepositories = "scan-multiple-repositories"
+	RootDir                  = "."
+	branchNameRegex          = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -108,7 +108,7 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	}
 }
 
-func ExtractVunerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
+func ExtractVulnerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
 	var rows []formats.VulnerabilityOrViolationRow
 	for _, vuln := range vulnDetails {
 		rows = append(rows, vuln.VulnerabilityOrViolationRow)
@@ -226,7 +226,6 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug("Created temp working directory: ", wd)
 	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
 	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
 		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
@@ -237,7 +236,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
-	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
+	// Multi repository configuration is supported only in the scanallpullrequests and scanmultiplerepositories commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)
 	}

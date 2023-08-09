@@ -203,19 +203,19 @@
       
               stage('Scan Pull Requests') {
                   steps {
-                      sh "./frogbot scan-pull-requests"
+                      sh "./frogbot scan-all-pull-requests"
       
                       // For Windows runner:
-                      // powershell """.\frogbot.exe scan-pull-requests"""
+                      // powershell """.\frogbot.exe scan-all-pull-requests"""
                   }
               }
       
                stage('Scan and Fix Repos') {
                   steps {
-                      sh "./frogbot scan-and-fix-repos"
+                      sh "./frogbot scan-multiple-repositories"
       
                       // For Windows runner:
-                      // powershell """.\frogbot.exe scan-and-fix-repos"""
+                      // powershell """.\frogbot.exe scan-multiple-repositories"""
                   }
               }
           }
