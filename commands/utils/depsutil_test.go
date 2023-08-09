@@ -83,7 +83,7 @@ func createJfrogHttpClient(artDetails *auth.ServiceDetails) (*jfroghttpclient.Jf
 }
 
 func TestResolveDependencies(t *testing.T) {
-	params, restoreEnv := verifyEnv(t)
+	params, restoreEnv := VerifyEnv(t)
 	defer restoreEnv()
 	testCases := []struct {
 		name        string
@@ -133,8 +133,8 @@ func TestResolveDependencies(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
-			_, err := test.resolveFunc(test.scanSetup)
-			assert.NoError(t, err)
+			output, err := test.resolveFunc(test.scanSetup)
+			assert.NoError(t, err, "command's output:/n"+string(output))
 		})
 	}
 }

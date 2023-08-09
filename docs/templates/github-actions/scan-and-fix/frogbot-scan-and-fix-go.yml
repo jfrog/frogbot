@@ -9,7 +9,7 @@ permissions:
   pull-requests: write
   security-events: write
 jobs:
-  create-fix-pull-requests:
+  scan-repository:
     runs-on: ubuntu-latest
     strategy:
       matrix:
