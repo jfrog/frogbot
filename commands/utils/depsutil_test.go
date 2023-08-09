@@ -133,8 +133,8 @@ func TestResolveDependencies(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
-			_, err := test.resolveFunc(test.scanSetup)
-			assert.NoError(t, err)
+			output, err := test.resolveFunc(test.scanSetup)
+			assert.NoError(t, err, "command's output:/n"+string(output))
 		})
 	}
 }
