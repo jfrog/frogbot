@@ -24,9 +24,6 @@ import (
 const (
 	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
-
-	// Pull Request ID cannot be 0
-	UndefinedPrID = 0
 )
 
 var (
@@ -242,14 +239,12 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	if g.PullRequestDetails.ID == UndefinedPrID {
-		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
-			var idNum int
-			if idNum, err = strconv.Atoi(idStr); err != nil {
-				return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
-			}
-			g.PullRequestDetails.ID = int64(idNum)
+	if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
+		var idNum int
+		if idNum, err = strconv.Atoi(idStr); err != nil {
+			return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
 		}
+		g.PullRequestDetails.ID = int64(idNum)
 	}
 	return
 }
