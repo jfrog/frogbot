@@ -26,8 +26,12 @@ import (
 )
 
 const (
-	RootDir         = "."
-	branchNameRegex = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest       = "scan-pull-request"
+	ScanPullRequests      = "scan-pull-requests"
+	CreateFixPullRequests = "create-fix-pull-requests"
+	ScanAndFixRepos       = "scan-and-fix-repos"
+	RootDir               = "."
+	branchNameRegex       = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"

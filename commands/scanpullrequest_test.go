@@ -598,8 +598,8 @@ func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 
 func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	repoConfig := &utils.Repository{
-		Params: utils.Params{Git: utils.Git{GitClientInfo: utils.GitClientInfo{
-			VcsInfo: vcsclient.VcsInfo{APIEndpoint: "https://acme.vcs.io"}}},
+		Params: utils.Params{Git: utils.Git{
+			VcsInfo: vcsclient.VcsInfo{APIEndpoint: "https://acme.vcs.io"}},
 		},
 	}
 
@@ -609,7 +609,7 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 }
 
 func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
-	gitTestParams := &utils.GitClientInfo{
+	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
 		RepoOwner:   "jfrog",
 		VcsInfo: vcsclient.VcsInfo{
@@ -839,7 +839,8 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
-				GitClientInfo: utils.GitClientInfo{RepoName: "repo", RepoOwner: "owner"},
+				RepoName:      "repo",
+				RepoOwner:     "owner",
 				PullRequestID: 17,
 			},
 		},
