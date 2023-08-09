@@ -12,7 +12,7 @@ describe('Frogbot Action Tests', () => {
         delete process.env.JF_GIT_OWNER;
         delete process.env.GITHUB_REPOSITORY_OWNER;
         delete process.env.GITHUB_REPOSITORY;
-    })
+    });
 
     describe('Frogbot URL Tests', () => {
         const myOs: jest.Mocked<typeof os> = os as any;
@@ -52,13 +52,48 @@ describe('Frogbot Action Tests', () => {
                 'jfrog.exe',
                 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-windows-amd64/jfrog.exe',
             ],
-            ['darwin' as NodeJS.Platform, 'amd64', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-mac-386/jfrog'],
-            ['linux' as NodeJS.Platform, 'amd64', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-amd64/jfrog'],
-            ['linux' as NodeJS.Platform, 'arm64', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm64/jfrog'],
-            ['linux' as NodeJS.Platform, '386', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-386/jfrog'],
-            ['linux' as NodeJS.Platform, 'arm', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm/jfrog'],
-            ['linux' as NodeJS.Platform, 'ppc64', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64/jfrog'],
-            ['linux' as NodeJS.Platform, 'ppc64le', 'jfrog', 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64le/jfrog'],
+            [
+                'darwin' as NodeJS.Platform,
+                'amd64',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-mac-386/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                'amd64',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-amd64/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                'arm64',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm64/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                '386',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-386/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                'arm',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                'ppc64',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64/jfrog',
+            ],
+            [
+                'linux' as NodeJS.Platform,
+                'ppc64le',
+                'jfrog',
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64le/jfrog',
+            ],
         ];
 
         test.each(cases)('Remote CLI Url for %s-%s', (platform, arch, fileName, expectedUrl) => {
