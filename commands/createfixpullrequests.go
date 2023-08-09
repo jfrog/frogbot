@@ -63,10 +63,10 @@ func (cfp *CreateFixPullRequestsCmd) scanAndFixRepository(repository *utils.Repo
 	if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
 		return
 	}
+	if err = cfp.gitManager.Checkout(branch); err != nil {
+		return fmt.Errorf("failed to checkout to %s branch before scanning. The following error has been received:\n%s", branch, err.Error())
+	}
 	for i := range repository.Projects {
-		if err = cfp.gitManager.Checkout(branch); err != nil {
-			return fmt.Errorf("failed to checkout to %s branch before scanning. The following error has been received:\n%s", branch, err.Error())
-		}
 		cfp.details.Project = &repository.Projects[i]
 		cfp.projectTech = ""
 		if err = cfp.scanAndFixProject(repository); err != nil {
