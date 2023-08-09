@@ -47,6 +47,7 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 			log.Info("Pull Request", pr.ID, "has already been scanned before. If you wish to scan it again, please comment \"rescan\".")
 			return
 		}
+		repo.PullRequestID = int(pr.ID)
 		spr := &ScanPullRequestCmd{pullRequestDetails: pr}
 		if e = spr.Run(utils.RepoAggregator{repo}, client); e != nil {
 			// If error, write it in errList and continue to the next PR.
