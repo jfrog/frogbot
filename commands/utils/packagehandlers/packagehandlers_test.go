@@ -249,35 +249,6 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
-	yarnPackageHandler := &YarnPackageHandler{}
-	testcase := dependencyFixTest{
-		vulnDetails: &utils.VulnerabilityDetails{
-			SuggestedFixedVersion:       "1.2.6",
-			IsDirectDependency:          true,
-			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
-		},
-		fixSupported: true,
-	}
-	fmt.Println(yarnPackageHandler, testcase)
-
-	testDataDir := getTestDataDir(t, testcase.vulnDetails.IsDirectDependency)
-	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, "1")
-	err := yarnPackageHandler.UpdateDependency(testcase.vulnDetails)
-	assert.NoError(t, err)
-
-	command := exec.Command("ls")
-	outBuffer := bytes.NewBuffer([]byte{})
-	command.Stdout = outBuffer
-	assert.NoError(t, command.Run())
-	filesInWorkingDirectory := strings.Split(outBuffer.String(), "\n")
-	for _, inDirectory := range filesInWorkingDirectory {
-		assert.False(t, strings.HasPrefix(inDirectory, "to_delete"))
-	}
-
-	cleanup()
-}
-
 // Maven
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	tests := []dependencyFixTest{
@@ -566,6 +537,34 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	modifiedPom, err := os.ReadFile("pom.xml")
 	assert.NoError(t, err)
 	assert.Contains(t, string(modifiedPom), "2.39.9")
+}
+
+func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
+	yarnPackageHandler := &YarnPackageHandler{}
+	testcase := dependencyFixTest{
+		vulnDetails: &utils.VulnerabilityDetails{
+			SuggestedFixedVersion:       "1.2.6",
+			IsDirectDependency:          true,
+			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+		},
+		fixSupported: true,
+	}
+
+	testDataDir := getTestDataDir(t, testcase.vulnDetails.IsDirectDependency)
+	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, "1")
+	err := yarnPackageHandler.UpdateDependency(testcase.vulnDetails)
+	assert.NoError(t, err)
+
+	command := exec.Command("ls")
+	outBuffer := bytes.NewBuffer([]byte{})
+	command.Stdout = outBuffer
+	assert.NoError(t, command.Run())
+	filesInWorkingDirectory := strings.Split(outBuffer.String(), "\n")
+	for _, inDirectory := range filesInWorkingDirectory {
+		assert.False(t, strings.HasPrefix(inDirectory, "to_delete"))
+	}
+
+	cleanup()
 }
 
 func getTestDataDir(t *testing.T, directDependency bool) string {
