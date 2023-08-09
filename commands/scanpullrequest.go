@@ -27,10 +27,7 @@ const (
 	frogbotCommentNotFound   = -1
 )
 
-type ScanPullRequestCmd struct {
-	// Optional provided pull request details, used in scan-pull-requests command.
-	pullRequestDetails vcsclient.PullRequestInfo
-}
+type ScanPullRequestCmd struct{}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -45,21 +42,62 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 
-	// PullRequestDetails can be defined already when using the scan-all-pull-requests command.
-	if cmd.pullRequestDetails.ID == utils.UndefinedPrID {
-		if cmd.pullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, repoConfig.PullRequestID); err != nil {
+	// PullRequestDetails can have all the necessary details already when using the scan-all-pull-requests command.
+	if !validatePullRequestDetails(repoConfig.PullRequestDetails) {
+		if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 			return
 		}
 	}
 
-	return scanPullRequest(repoConfig, client, cmd.pullRequestDetails)
+	return scanPullRequest(repoConfig, client)
+}
+
+// Verify that the 'frogbot' GitHub environment was properly configured on the repository
+func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.Repository) error {
+	if repoConfig.APIEndpoint != "" && repoConfig.APIEndpoint != "https://api.github.com" {
+		// Don't verify 'frogbot' environment on GitHub on-prem
+		return nil
+	}
+	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
+		// Don't verify 'frogbot' environment on non GitHub Actions CI
+		return nil
+	}
+
+	// If the repository is not public, using 'frogbot' environment is not mandatory
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
+	if err != nil {
+		return err
+	}
+	if repoInfo.RepositoryVisibility != vcsclient.Public {
+		return nil
+	}
+
+	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
+	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
+	if err != nil {
+		return errors.New(err.Error() + "/n" + noGitHubEnvErr)
+	}
+	if len(repoEnvInfo.Reviewers) == 0 {
+		return errors.New(noGitHubEnvReviewersErr)
+	}
+
+	return nil
+}
+
+func validatePullRequestDetails(prDetails vcsclient.PullRequestInfo) bool {
+	return prDetails.ID != utils.UndefinedPrID && validateBranchDetails(prDetails.Source) && validateBranchDetails(prDetails.Target)
+}
+
+func validateBranchDetails(branchDetails vcsclient.BranchInfo) bool {
+	return branchDetails.Owner != "" && branchDetails.Repository != "" && branchDetails.Name != ""
 }
 
 // By default, includeAllVulnerabilities is set to false and the scan goes as follows:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) error {
+func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) error {
+	pullRequestDetails := repo.PullRequestDetails
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
 		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
@@ -81,7 +119,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient, pullReq
 	message := createPullRequestMessage(vulnerabilitiesRows, iacRows, repo.OutputWriter)
 
 	// Add comment to the pull request
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, repo.PullRequestID); err != nil {
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
 		return errors.New("couldn't add pull request comment: " + err.Error())
 	}
 
@@ -182,38 +220,6 @@ func createNewIacRows(targetIacResults, sourceIacResults []xrayutils.IacOrSecret
 		}
 	}
 	return addedIacVulnerabilities
-}
-
-// Verify that the 'frogbot' GitHub environment was properly configured on the repository
-func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.Repository) error {
-	if repoConfig.APIEndpoint != "" && repoConfig.APIEndpoint != "https://api.github.com" {
-		// Don't verify 'frogbot' environment on GitHub on-prem
-		return nil
-	}
-	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
-		// Don't verify 'frogbot' environment on non GitHub Actions CI
-		return nil
-	}
-
-	// If the repository is not public, using 'frogbot' environment is not mandatory
-	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
-	if err != nil {
-		return err
-	}
-	if repoInfo.RepositoryVisibility != vcsclient.Public {
-		return nil
-	}
-
-	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
-	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
-	if err != nil {
-		return errors.New(err.Error() + "/n" + noGitHubEnvErr)
-	}
-	if len(repoEnvInfo.Reviewers) == 0 {
-		return errors.New(noGitHubEnvReviewersErr)
-	}
-
-	return nil
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
@@ -388,7 +394,7 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
 	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, repository.PullRequestID)
+	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID))
 	if err != nil {
 		return err
 	}
@@ -403,7 +409,7 @@ func deleteExistingPullRequestComment(repository *utils.Repository, client vcscl
 	}
 
 	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, repository.PullRequestID, commentID)
+		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), commentID)
 	}
 
 	return err

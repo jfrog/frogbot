@@ -196,7 +196,7 @@ type Git struct {
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestID            int
+	PullRequestDetails       vcsclient.PullRequestInfo
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
@@ -241,13 +241,13 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	if g.PullRequestID == UndefinedPrID {
+	if g.PullRequestDetails.ID == UndefinedPrID {
 		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
 			var idNum int
 			if idNum, err = strconv.Atoi(idStr); err != nil {
 				return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
 			}
-			g.PullRequestID = idNum
+			g.PullRequestDetails.ID = int64(idNum)
 		}
 	}
 	return

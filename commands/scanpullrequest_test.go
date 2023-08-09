@@ -839,9 +839,9 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
-				RepoName:      "repo",
-				RepoOwner:     "owner",
-				PullRequestID: 17,
+				RepoName:           "repo",
+				RepoOwner:          "owner",
+				PullRequestDetails: vcsclient.PullRequestInfo{ID: 17},
 			},
 		},
 		OutputWriter: &utils.StandardOutput{},
@@ -865,6 +865,34 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return(nil, errors.New("error"))
 	err = deleteExistingPullRequestComment(repository, client)
 	assert.Error(t, err)
+}
+
+func TestValidPullRequestDetails(t *testing.T) {
+	// Test case: valid pull request details
+	prDetails := vcsclient.PullRequestInfo{
+		ID:     123,
+		Source: vcsclient.BranchInfo{Owner: "user", Repository: "repo", Name: "feature-branch"},
+		Target: vcsclient.BranchInfo{Owner: "user", Repository: "repo", Name: "main"},
+	}
+	assert.True(t, validatePullRequestDetails(prDetails))
+
+	// Test case: invalid pull request details (UndefinedPrID) and source info
+	invalidPrDetails := vcsclient.PullRequestInfo{
+		ID:     utils.UndefinedPrID,
+		Source: vcsclient.BranchInfo{},
+		Target: vcsclient.BranchInfo{Owner: "user", Repository: "repo", Name: "main"},
+	}
+	assert.False(t, validatePullRequestDetails(invalidPrDetails))
+}
+
+func TestValidBranchDetails(t *testing.T) {
+	// Test case: valid branch details
+	branchDetails := vcsclient.BranchInfo{Owner: "user", Repository: "repo", Name: "main"}
+	assert.True(t, validateBranchDetails(branchDetails))
+
+	// Test case: invalid branch details (empty Owner)
+	invalidBranchDetails := vcsclient.BranchInfo{Owner: "", Repository: "repo", Name: "feature-branch"}
+	assert.False(t, validateBranchDetails(invalidBranchDetails))
 }
 
 // Set new logger with output redirection to a null logger. This is useful for negative tests.
