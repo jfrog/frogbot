@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/commands/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -245,7 +247,7 @@ pr body
 				}, RepoName: test.testName,
 			}
 			// Set up mock VCS responses
-			client := utils.CreateMockVcsClient(t)
+			client := CreateMockVcsClient(t)
 			client.EXPECT().ListOpenPullRequestsWithBody(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
 			if test.expectedUpdate {
 				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, outputwriter.GetAggregatedPullRequestTitle(coreutils.Npm), "", "", int(mockPrId), vcsutils.Open).Return(nil)
@@ -685,4 +687,8 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 		err = errors.New("git error: " + string(exitError.Stderr))
 	}
 	return
+}
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	return testdata.NewMockVcsClient(gomock.NewController(t))
 }
