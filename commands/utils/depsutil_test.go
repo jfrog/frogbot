@@ -130,7 +130,7 @@ func TestResolveDependencies(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
+			restoreFunc, repoKey := setTestEnvironment(t, test.tech+"2", &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
 			_, err := test.resolveFunc(test.scanSetup)
