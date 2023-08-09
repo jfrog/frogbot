@@ -331,19 +331,19 @@ jobs:
 
 - Go to the "Branches" section:
 
-![azure-branches.png](../images/azure-branches.png)
+   ![azure-branches.png](../images/azure-branches.png)
 
 - For each of the branches against which you want Frogbot to scan pull requests, click on the three dots and select "Branch policies":
 
-![azure-branch-policies.png](../images/azure-branch-policies.png)
+   ![azure-branch-policies.png](../images/azure-branch-policies.png)
 
 - Add new build policy:
 
-![azure-build-policy.png](../images/azure-build-validation.png)
+   ![azure-build-policy.png](../images/azure-build-validation.png)
 
 - Fill the following build policy parameters and Save:
 
-![azure-build-policy.png](../images/azure-build-policy.png)
+   ![azure-build-policy.png](../images/azure-build-policy.png)
 
 </details>
 
