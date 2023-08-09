@@ -251,7 +251,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		assert.Equal(t, "dev", configParams.Branches[0])
-		assert.Equal(t, 1, configParams.PullRequestID)
+		assert.Equal(t, 1, configParams.PullRequestDetails.ID)
 	}
 }
 
@@ -342,7 +342,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
 	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
-	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
+	assert.Equal(t, repo.PullRequestDetails.ID, repo.PullRequestDetails.ID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
