@@ -49,16 +49,13 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Send a usage report
 	var usageGroup sync.WaitGroup
-	usageGroup.Add(3)
-	go utils.ReportUsage(name, frogbotUtils.ServerDetails, &usageGroup)                                       // Artifactory
-	go utils.ReportUsageToXray(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup)      // Xray
-	go utils.ReportUsageToEcosystem(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup) // Ecosystem
+	utils.ReportUsageOnCommand(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup)
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
 	err = command.Run(frogbotUtils.Repositories, frogbotUtils.Client)
 
-	// Wait for a signal, letting us know that the usage reporting is done.
+	// Wait for usage reporting to finish.
 	usageGroup.Wait()
 
 	if err == nil {

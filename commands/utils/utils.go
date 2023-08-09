@@ -149,6 +149,28 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
+func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) {
+	(*usageGroup).Add(3)
+	// Artifactory
+	go func() {
+		if e := ReportUsage(commandName, serverDetails, usageGroup); e != nil {
+			log.Debug(e.Error())
+		}
+	}()
+	// Xray
+	go func() {
+		if e := ReportUsageToXray(commandName, serverDetails, repositories, usageGroup); e != nil {
+			log.Debug(e.Error())
+		}
+	}()
+	// Ecosystem
+	go func() {
+		if e := ReportUsageToEcosystem(commandName, serverDetails, repositories, usageGroup); e != nil {
+			log.Debug(e.Error())
+		}
+	}()
+}
+
 func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageGroup *sync.WaitGroup) (err error) {
 	defer func() {
 		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
@@ -199,12 +221,11 @@ func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, 
 		return
 	}
 	events := []xrayusage.ReportXrayEventData{}
-	var clientAttribute *xrayusage.ReportUsageAttribute
-
 	for _, repository := range repositories {
 		// Report one usage event for each repository client
-		if clientAttribute, err = createRepositoryClientUsageAttribute(repository); err != nil {
-			log.Debug(err.Error())
+		clientAttribute, e := createRepositoryClientUsageAttribute(repository)
+		if e != nil {
+			err = errors.Join(err, e)
 			continue
 		}
 		events = append(events, xrayusage.CreateUsageEvent(productId, commandName, *clientAttribute))
@@ -213,10 +234,8 @@ func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, 
 		// Nothing to report
 		return
 	}
-	err = xrayusage.SendXrayUsageEvents(*sm, events...)
-	if err != nil {
-		log.Debug(err.Error())
-		return
+	if e := xrayusage.SendXrayUsageEvents(*sm, events...); e != nil {
+		err = errors.Join(err, e)
 	}
 	return
 }
@@ -230,15 +249,12 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 		return
 	}
 	reports := []xrayusage.ReportEcosystemUsageData{}
-	var usageReport xrayusage.ReportEcosystemUsageData
-	var clientAttribute *xrayusage.ReportUsageAttribute
-
 	for _, repository := range repositories {
 		// Report one entry for each repository client
-		if clientAttribute, err = createRepositoryClientUsageAttribute(repository); err != nil {
-			log.Debug(err.Error())
-		} else if usageReport, err = xrayusage.CreateUsageData(productId, serverDetails.Url, clientAttribute.AttributeValue, commandName); err != nil {
-			log.Debug(err.Error())
+		if clientAttribute, e := createRepositoryClientUsageAttribute(repository); e != nil {
+			err = errors.Join(err, e)
+		} else if usageReport, e := xrayusage.CreateUsageData(productId, serverDetails.Url, clientAttribute.AttributeValue, commandName); e != nil {
+			err = errors.Join(err, e)
 		} else {
 			reports = append(reports, usageReport)
 		}
@@ -248,10 +264,8 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 		return
 	}
 	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
-	err = xrayusage.SendEcosystemUsageReports(reports...)
-	if err != nil {
-		log.Debug(err.Error())
-		return
+	if e := xrayusage.SendEcosystemUsageReports(reports...); e != nil {
+		err = errors.Join(err, e)
 	}
 	return
 }
