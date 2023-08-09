@@ -521,7 +521,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 
 func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
@@ -538,7 +538,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 	defer log.SetLogger(previousLogger)
 
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, errors.New("404"))
@@ -551,7 +551,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 
 func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	environment := "frogbot"
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, nil)
@@ -765,7 +765,7 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 		},
 		OutputWriter: &outputwriter.StandardOutput{},
 	}
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 
 	// Test with comment returned
 	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{
