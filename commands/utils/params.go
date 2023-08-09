@@ -209,16 +209,14 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 		}
 		g.RepoName = gitParamsFromEnv.RepoName
 	}
-	if len(g.Branches) == 0 {
-		if len(gitParamsFromEnv.Branches) == 0 {
-			var branch string
-			if branch, err = GetBranchFromDotGit(); err != nil {
-				return
-			}
-			g.Branches = append(g.Branches, branch)
-		} else {
-			g.Branches = append(g.Branches, gitParamsFromEnv.Branches...)
+	if len(g.Branches) == 0 && len(gitParamsFromEnv.Branches) == 0 {
+		var branch string
+		if branch, err = GetBranchFromDotGit(); err != nil {
+			return
 		}
+		g.Branches = append(g.Branches, branch)
+	} else if len(g.Branches) == 0 {
+		g.Branches = append(g.Branches, gitParamsFromEnv.Branches...)
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
@@ -384,7 +382,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 func extractGitInfoFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
-	clientInfo := &Git{}
+	gitEnvParams := &Git{}
 	// Branch & Repo names are mandatory variables.
 	// Must be set in the frogbot-config.yml or as an environment variables.
 	// Validation performed later
@@ -394,45 +392,45 @@ func extractGitInfoFromEnvs() (*Git, error) {
 		return nil, err
 	}
 	if branch != "" {
-		clientInfo.Branches = []string{branch}
+		gitEnvParams.Branches = []string{branch}
 	}
 	// Set the repository name
-	if err = readParamFromEnv(GitRepoEnv, &clientInfo.RepoName); err != nil && !e.IsMissingEnvErr(err) {
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
 
 	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
-	if err = readParamFromEnv(GitApiEndpointEnv, &clientInfo.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
+	if err = readParamFromEnv(GitApiEndpointEnv, &gitEnvParams.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
-	if err = verifyValidApiEndpoint(clientInfo.APIEndpoint); err != nil {
+	if err = verifyValidApiEndpoint(gitEnvParams.APIEndpoint); err != nil {
 		return nil, err
 	}
 	// Set the Git provider
-	if clientInfo.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
+	if gitEnvParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
 	// Set the git repository owner name (organization)
-	if err = readParamFromEnv(GitRepoOwnerEnv, &clientInfo.RepoOwner); err != nil {
+	if err = readParamFromEnv(GitRepoOwnerEnv, &gitEnvParams.RepoOwner); err != nil {
 		return nil, err
 	}
 	// Set the access token to the git provider
-	if err = readParamFromEnv(GitTokenEnv, &clientInfo.Token); err != nil {
+	if err = readParamFromEnv(GitTokenEnv, &gitEnvParams.Token); err != nil {
 		return nil, err
 	}
 
 	// Set Bitbucket Server username
 	// Mandatory only for Bitbucket Server, this authentication detail is required for performing git operations.
-	if err = readParamFromEnv(GitUsernameEnv, &clientInfo.Username); err != nil && !e.IsMissingEnvErr(err) {
+	if err = readParamFromEnv(GitUsernameEnv, &gitEnvParams.Username); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
 	// Set Azure Repos Project name
 	// Mandatory for Azure Repos only
-	if err = readParamFromEnv(GitProjectEnv, &clientInfo.Project); err != nil && clientInfo.GitProvider == vcsutils.AzureRepos {
+	if err = readParamFromEnv(GitProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
 	}
 
-	return clientInfo, nil
+	return gitEnvParams, nil
 }
 
 func verifyValidApiEndpoint(apiEndpoint string) error {

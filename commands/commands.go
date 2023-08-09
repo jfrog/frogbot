@@ -17,10 +17,10 @@ type FrogbotCommand interface {
 	Run(config utils.RepoAggregator, client vcsclient.VcsClient) error
 }
 
-func Exec(command FrogbotCommand, name string) (err error) {
+func Exec(command FrogbotCommand, commandName string) (err error) {
 	// Get frogbotUtils that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
-	frogbotUtils, err := utils.GetFrogbotDetails(name)
+	frogbotUtils, err := utils.GetFrogbotDetails(commandName)
 	if err != nil {
 		return err
 	}
@@ -47,17 +47,17 @@ func Exec(command FrogbotCommand, name string) (err error) {
 
 	// Send a usage report
 	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
+	go utils.ReportUsage(commandName, frogbotUtils.ServerDetails, usageReportSent)
 
 	// Invoke the command interface
-	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
+	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
 	err = command.Run(frogbotUtils.Repositories, frogbotUtils.GitClient)
 
 	// Wait for a signal, letting us know that the usage reporting is done.
 	<-usageReportSent
 
 	if err == nil {
-		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", name))
+		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
 	}
 	return err
 }

@@ -151,14 +151,6 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 }
 
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
-	currentBranch, err := getCurrentBranch(gm.repository)
-	if err != nil {
-		return err
-	}
-	if currentBranch == branchName {
-		log.Debug("Skipping `git checkout`, as the branch name is already the same as the current branch")
-		return nil
-	}
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
 		Branch: getFullBranchName(branchName),
