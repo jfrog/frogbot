@@ -37,17 +37,14 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
-	clonedDirPath, err := coreutils.GetWorkingDirectory()
+	clonedDirPath, executableYarnVersion, err := getWorkingDirectoryAndYarnVersion()
 	if err != nil {
 		return
 	}
-	yarnExecutablePath, err := biUtils.GetYarnExecutable()
-	if err != nil {
-		return
-	}
-	executableYarnVersion, err := biUtils.GetVersion(yarnExecutablePath, clonedDirPath)
+
+	var dirToDeleteName string
 	isV2AndAbove := version.NewVersion(executableYarnVersion).Compare(yarnV2Version) <= 0
-	dirToDeleteName := ""
+
 	if isV2AndAbove {
 		vulnDetails.Technology.SetPackageInstallationCommand(yarnV2PackageUpdateCmd)
 	} else {
@@ -86,4 +83,24 @@ func getRandomToDeleteDirName() string {
 	rand.Seed(uint64(time.Now().UnixNano()))
 	randomNumberString := strconv.Itoa(int(rand.Int63n(1e9)))
 	return "to_delete" + randomNumberString
+}
+
+// getWorkingDirectoryAndYarnVersion gets current working directory and executed yarn version required to check what is
+// the correct yarn command to execute for updating packages
+func getWorkingDirectoryAndYarnVersion() (clonedDirPath string, executableYarnVersion string, err error) {
+	clonedDirPath, err = coreutils.GetWorkingDirectory()
+	if err != nil {
+		err = errors.New("couldn't fetch current working directory: " + err.Error())
+		return
+	}
+	yarnExecutablePath, err := biUtils.GetYarnExecutable()
+	if err != nil {
+		err = errors.New("couldn't fetch yarn executable: " + err.Error())
+		return
+	}
+	executableYarnVersion, err = biUtils.GetVersion(yarnExecutablePath, clonedDirPath)
+	if err != nil {
+		return
+	}
+	return
 }
