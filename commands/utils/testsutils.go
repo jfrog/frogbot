@@ -2,8 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/commands/testdata"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
@@ -91,9 +89,4 @@ func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 		})
 	}
 	return
-}
-
-func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
-	mockCtrl := gomock.NewController(t)
-	return testdata.NewMockVcsClient(mockCtrl)
 }

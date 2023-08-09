@@ -38,7 +38,7 @@ type MockParams struct {
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
 func TestShouldScanPullRequestNewPR(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{}, nil)
 	// Run handleFrogbotLabel
@@ -49,7 +49,7 @@ func TestShouldScanPullRequestNewPR(t *testing.T) {
 
 func TestShouldScanPullRequestReScan(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
@@ -62,7 +62,7 @@ func TestShouldScanPullRequestReScan(t *testing.T) {
 
 func TestShouldNotScanPullRequestReScan(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
@@ -76,7 +76,7 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 
 func TestShouldNotScanPullRequest(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
 		{Content: outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
@@ -88,7 +88,7 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 
 func TestShouldNotScanPullRequestError(t *testing.T) {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{}, fmt.Errorf("Bad Request"))
 	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
@@ -191,7 +191,7 @@ func TestScanAllPullRequests(t *testing.T) {
 
 func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockParams) *testdata.MockVcsClient {
 	// Init mock
-	client := utils.CreateMockVcsClient(t)
+	client := CreateMockVcsClient(t)
 	for _, params := range mockParams {
 		sourceBranchInfo := vcsclient.BranchInfo{Name: params.sourceBranchName, Repository: params.repoName, Owner: params.repoOwner}
 		targetBranchInfo := vcsclient.BranchInfo{Name: params.targetBranchName, Repository: params.repoName, Owner: params.repoOwner}
@@ -223,4 +223,8 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) er
 		return err
 	}
 	return fileutils.CopyDir(sourceDir, targetDir, true, []string{})
+}
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	return testdata.NewMockVcsClient(gomock.NewController(t))
 }
