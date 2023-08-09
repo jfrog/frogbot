@@ -109,7 +109,7 @@ jobs:
 
              # [Optional, default: "."]
              # Relative path to the root of the project in the Git repository
-             JF_WORKING_DIR: maven
+             # JF_WORKING_DIR: maven
 
              # [Optional]
              # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
