@@ -44,26 +44,29 @@ type ScanRepositoryCmd struct {
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
-func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
-	if err := utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
+func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+	if err = utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
 		return err
 	}
 	repository := repoAggregator[0]
 	for _, branch := range repository.Branches {
-		err := cfp.scanAndFixRepository(&repository, branch, client)
-		if err != nil {
-			return err
+		if err = cfp.scanAndFixRepository(&repository, branch, client); err != nil {
+			return
 		}
 	}
-	return nil
+	return
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-	cfp.baseWd, err = os.Getwd()
-	if err != nil {
+	if cfp.baseWd, err = os.Getwd(); err != nil {
 		return
 	}
-	cfp.setCommandPrerequisites(repository, branch, client)
+	if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
+		return
+	}
+	if err = cfp.gitManager.Checkout(branch); err != nil {
+		return fmt.Errorf("failed to checkout to %s branch before scanning. The following error has been received:\n%s", branch, err.Error())
+	}
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
 		cfp.projectTech = ""
@@ -74,7 +77,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 	return
 }
 
-func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) {
+func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
@@ -83,12 +86,14 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
+	return
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
 	var fixNeeded bool
 	// A map that contains the full project paths as a keys
-	// The value is a map of vulnerable package names -> the details of the vulnerable packages.x
+	// The value is a map of vulnerable package names -> the details of the vulnerable packages.
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full details.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.details.Project.WorkingDirs, cfp.baseWd)
@@ -148,12 +153,6 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Exten
 }
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
-	if cfp.gitManager == nil {
-		cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
-		if err != nil {
-			return
-		}
-	}
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
 	if err != nil {
 		return
@@ -187,12 +186,12 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, 
 
 	// 'CD' into the relevant working directory
 	if projectWorkingDir != "" {
-		restoreDir, err := utils.Chdir(projectWorkingDir)
-		if err != nil {
-			return err
+		var restoreDirFunc func() error
+		if restoreDirFunc, err = utils.Chdir(projectWorkingDir); err != nil {
+			return
 		}
 		defer func() {
-			err = errors.Join(err, restoreDir())
+			err = errors.Join(err, restoreDirFunc())
 		}()
 	}
 
@@ -204,7 +203,7 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, 
 
 		// After fixing the current vulnerability, checkout to the base branch to start fixing the next vulnerability
 		log.Debug("Running git checkout to base branch:", cfp.details.Branch())
-		if e := cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); e != nil {
+		if e := cfp.gitManager.Checkout(cfp.details.Branch()); e != nil {
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 			return
 		}
@@ -546,7 +545,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		}
 	}
 	log.Info("-----------------------------------------------------------------")
-	if e := cfp.gitManager.CheckoutLocalBranch(cfp.details.Branch()); e != nil {
+	if e := cfp.gitManager.Checkout(cfp.details.Branch()); e != nil {
 		err = errors.Join(err, e)
 	}
 	return

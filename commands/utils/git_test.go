@@ -1,11 +1,15 @@
 package utils
 
 import (
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -233,7 +237,7 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 	}
 	for _, test := range testsCases {
 		t.Run(test.vcsProvider.String(), func(t *testing.T) {
-			gm := GitManager{git: &Git{GitClientInfo: GitClientInfo{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}}
+			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}
 			remoteUrl, err := gm.generateHTTPSCloneUrl()
 			if remoteUrl == "" {
 				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
@@ -243,4 +247,61 @@ func TestConvertSSHtoHTTPS(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGitManager_Checkout(t *testing.T) {
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+	var restoreWd func() error
+	restoreWd, err = Chdir(tmpDir)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, restoreWd())
+	}()
+	gitManager := createFakeDotGit(t, tmpDir)
+	// Get the current branch that is set as HEAD
+	headRef, err := gitManager.repository.Head()
+	assert.NoError(t, err)
+	assert.Equal(t, headRef.Name().Short(), "master")
+	// Create 'dev' branch and checkout
+	err = gitManager.CreateBranchAndCheckout("dev")
+	assert.NoError(t, err)
+	var currBranch string
+	currBranch, err = getCurrentBranch(gitManager.repository)
+	assert.NoError(t, err)
+	assert.Equal(t, "dev", currBranch)
+	// Checkout back to 'master'
+	assert.NoError(t, gitManager.Checkout("master"))
+	currBranch, err = getCurrentBranch(gitManager.repository)
+	assert.NoError(t, err)
+	assert.Equal(t, "master", currBranch)
+}
+
+func createFakeDotGit(t *testing.T, testPath string) *GitManager {
+	// Initialize a new in-memory repository
+	repo, err := git.PlainInit(testPath, false)
+	assert.NoError(t, err)
+	// Create a new file and add it to the worktree
+	filename := "README.md"
+	content := []byte("# My New Repository\n\nThis is a sample repository created using go-git.")
+	err = os.WriteFile(filename, content, 0644)
+	assert.NoError(t, err)
+	worktree, err := repo.Worktree()
+	assert.NoError(t, err)
+	_, err = worktree.Add(filename)
+	assert.NoError(t, err)
+	// Commit the changes to the new main branch
+	_, err = worktree.Commit("Initial commit", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Your Name",
+			Email: "your@email.com",
+		},
+	})
+	assert.NoError(t, err)
+	manager, err := NewGitManager(true, testPath, testPath, "origin", "", "", &Git{})
+	assert.NoError(t, err)
+	return manager
 }
