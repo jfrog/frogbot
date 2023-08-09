@@ -117,6 +117,21 @@
         "description": "Handle vulnerabilities with fix versions only.",
         "title": "Handle vulnerabilities with fix versions only"
       },
+      "emailReceivers": {
+        "type": [
+          "array",
+          "null"
+        ],
+        "description": "List of email addresses to receive emails from Frogbot.",
+        "title": "List of email addresses to receive emails from Frogbot",
+        "items": {
+          "type": "string",
+          "title": "Email Address",
+          "examples": [
+            "user@company.com"
+          ]
+        }
+      },
       "projects": {
         "type": ["array", "null"],
         "title": "Projects in Git Repository",
