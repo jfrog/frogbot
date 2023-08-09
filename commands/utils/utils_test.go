@@ -3,17 +3,19 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChdir(t *testing.T) {
@@ -51,18 +53,32 @@ func TestReportUsage(t *testing.T) {
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
+	var usageGroup *sync.WaitGroup
+	usageGroup.Add(1)
 	channel := make(chan error)
-	go ReportUsage(commandName, serverDetails, channel)
+	go func() {
+		channel <- ReportUsage(commandName, serverDetails, usageGroup)
+	}()
+	usageGroup.Wait()
 	assert.NoError(t, <-channel)
 }
 
 func TestReportUsageError(t *testing.T) {
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(1)
 	channel := make(chan error)
-	go ReportUsage("", &config.ServerDetails{}, channel)
+	go func() {
+		channel <- ReportUsage("", &config.ServerDetails{}, &usageGroup)
+	}()
+	usageGroup.Wait()
 	assert.NoError(t, <-channel)
 
+	usageGroup.Add(1)
 	channel = make(chan error)
-	go ReportUsage("", &config.ServerDetails{ArtifactoryUrl: "http://httpbin.org/status/404"}, channel)
+	go func() {
+		channel <- ReportUsage("", &config.ServerDetails{ArtifactoryUrl: "http://httpbin.org/status/404"}, &usageGroup)
+	}()
+	usageGroup.Wait()
 	assert.Error(t, <-channel)
 }
 

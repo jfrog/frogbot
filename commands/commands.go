@@ -3,13 +3,15 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"os"
+	"sync"
+
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	clitool "github.com/urfave/cli/v2"
-	"os"
 )
 
 type FrogbotCommand interface {
@@ -46,15 +48,18 @@ func Exec(command FrogbotCommand, name string) (err error) {
 	}
 
 	// Send a usage report
-	usageReportSent := make(chan error)
-	go utils.ReportUsage(name, frogbotUtils.ServerDetails, usageReportSent)
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(3)
+	go utils.ReportUsage(name, frogbotUtils.ServerDetails, &usageGroup)                                       // Artifactory
+	go utils.ReportUsageToXray(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup)      // Xray
+	go utils.ReportUsageToEcosystem(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup) // Ecosystem
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", name))
 	err = command.Run(frogbotUtils.Repositories, frogbotUtils.Client)
 
 	// Wait for a signal, letting us know that the usage reporting is done.
-	<-usageReportSent
+	usageGroup.Wait()
 
 	if err == nil {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", name))

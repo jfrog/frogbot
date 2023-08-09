@@ -6,6 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
@@ -17,12 +23,11 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
+	clientconfig "github.com/jfrog/jfrog-client-go/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
+	"github.com/jfrog/jfrog-client-go/xray"
+	xrayusage "github.com/jfrog/jfrog-client-go/xray/usage"
 )
 
 const (
@@ -144,12 +149,11 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
-func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageReportSent chan<- error) {
-	var err error
+func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageGroup *sync.WaitGroup) (err error) {
 	defer func() {
 		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
 		// It is however important to the application to not exit before the reporting is finished. That is, in case the reporting takes longer than the action.
-		usageReportSent <- err
+		usageGroup.Done()
 	}()
 	if serverDetails.ArtifactoryUrl == "" {
 		return
@@ -165,6 +169,91 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 		log.Debug(err.Error())
 		return
 	}
+	return
+}
+
+func createRepositoryClientUsageAttribute(repository Repository) (*xrayusage.ReportUsageAttribute, error) {
+	if clientId, err := Md5Hash(repository.RepoName); err != nil {
+		return nil, err
+	} else {
+		return &xrayusage.ReportUsageAttribute{AttributeName: "clientId", AttributeValue: clientId}, nil
+	}
+}
+
+func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) (err error) {
+	defer func() {
+		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
+		// Notify the action is done so that the application does not exit before finished
+		usageGroup.Done()
+	}()
+	if serverDetails.XrayUrl == "" {
+		return
+	}
+	log.Debug(usage.ReportUsagePrefix + "Sending info to Xray...")
+	serviceConfig, err := clientconfig.NewConfigBuilder().Build()
+	if err != nil {
+		return
+	}
+	sm, err := xray.New(serviceConfig)
+	if err != nil {
+		return
+	}
+	events := []xrayusage.ReportXrayEventData{}
+	var clientAttribute *xrayusage.ReportUsageAttribute
+
+	for _, repository := range repositories {
+		// Report one usage event for each repository client
+		if clientAttribute, err = createRepositoryClientUsageAttribute(repository); err != nil {
+			log.Debug(err.Error())
+			continue
+		}
+		events = append(events, xrayusage.CreateUsageEvent(productId, commandName, *clientAttribute))
+	}
+	if len(events) == 0 {
+		// Nothing to report
+		return
+	}
+	err = xrayusage.SendXrayUsageEvents(*sm, events...)
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	return
+}
+
+func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) (err error) {
+	defer func() {
+		// Notify the action is done so that the application does not exit before finished
+		usageGroup.Done()
+	}()
+	if serverDetails.Url == "" {
+		return
+	}
+	reports := []xrayusage.ReportEcosystemUsageData{}
+	var usageReport xrayusage.ReportEcosystemUsageData
+	var clientAttribute *xrayusage.ReportUsageAttribute
+
+	for _, repository := range repositories {
+		// Report one entry for each repository client
+		if clientAttribute, err = createRepositoryClientUsageAttribute(repository); err != nil {
+			log.Debug(err.Error())
+		} else if usageReport, err = xrayusage.CreateUsageData(productId, serverDetails.Url, clientAttribute.AttributeValue, commandName); err != nil {
+			log.Debug(err.Error())
+		} else {
+			reports = append(reports, usageReport)
+		}
+	}
+	if len(reports) == 0 {
+		// Nothing to report
+		return
+	}
+	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
+	err = xrayusage.SendEcosystemUsageReports(reports...)
+	if err != nil {
+		log.Debug(err.Error())
+		return
+	}
+	return
 }
 
 func Md5Hash(values ...string) (string, error) {
