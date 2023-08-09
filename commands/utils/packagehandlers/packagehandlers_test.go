@@ -1,6 +1,7 @@
 package packagehandlers
 
 import (
+	"bytes"
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
@@ -9,6 +10,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -245,6 +247,35 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 			cleanup()
 		})
 	}
+}
+
+func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
+	yarnPackageHandler := &YarnPackageHandler{}
+	testcase := dependencyFixTest{
+		vulnDetails: &utils.VulnerabilityDetails{
+			SuggestedFixedVersion:       "1.2.6",
+			IsDirectDependency:          true,
+			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+		},
+		fixSupported: true,
+	}
+	fmt.Println(yarnPackageHandler, testcase)
+
+	testDataDir := getTestDataDir(t, testcase.vulnDetails.IsDirectDependency)
+	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, "1")
+	err := yarnPackageHandler.UpdateDependency(testcase.vulnDetails)
+	assert.NoError(t, err)
+
+	command := exec.Command("ls")
+	outBuffer := bytes.NewBuffer([]byte{})
+	command.Stdout = outBuffer
+	assert.NoError(t, command.Run())
+	filesInWorkingDirectory := strings.Split(outBuffer.String(), "\n")
+	for _, inDirectory := range filesInWorkingDirectory {
+		assert.False(t, strings.HasPrefix(inDirectory, "to_delete"))
+	}
+
+	cleanup()
 }
 
 // Maven
