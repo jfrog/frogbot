@@ -312,7 +312,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) (configFileContent []byte, err error) {
-	if commandName == ScanAndFixRepos || commandName == CreateFixPullRequests {
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 		return
 	}

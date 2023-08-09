@@ -3,6 +3,8 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/scanpullrequest"
+	"github.com/jfrog/frogbot/commands/scanrepository"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -20,7 +22,7 @@ type FrogbotCommand interface {
 func GetCommands() []*clitool.Command {
 	return []*clitool.Command{
 		{
-			Name:    "scan-pull-request",
+			Name:    utils.ScanPullRequest,
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
@@ -29,7 +31,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-repository",
+			Name:    utils.ScanRepository,
 			Aliases: []string{"cfpr", "create-fix-pull-requests"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
@@ -38,7 +40,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-all-pull-requests",
+			Name:    utils.ScanAllPullRequests,
 			Aliases: []string{"sprs", "scan-pull-requests"},
 			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
@@ -47,7 +49,7 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    "scan-multiple-repositories",
+			Name:    utils.ScanMultipleRepositories,
 			Aliases: []string{"scan-and-fix-repos", "safr"},
 			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
 			Action: func(ctx *clitool.Context) error {
@@ -61,7 +63,7 @@ func GetCommands() []*clitool.Command {
 func Exec(command FrogbotCommand, commandName string) (err error) {
 	// Get frogbotDetails that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
-	frogbotDetails, err := utils.GetFrogbotDetails()
+	frogbotDetails, err := utils.GetFrogbotDetails(commandName)
 	if err != nil {
 		return err
 	}
@@ -101,45 +103,4 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
 	}
 	return err
-}
-
-func GetCommands() []*clitool.Command {
-	return []*clitool.Command{
-		{
-			Name:    utils.ScanPullRequest,
-			Aliases: []string{"spr"},
-			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&ScanPullRequestCmd{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-		{
-			Name:    utils.CreateFixPullRequests,
-			Aliases: []string{"cfpr"},
-			Usage:   "Scan the current branch and create pull requests with fixes if needed",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&CreateFixPullRequestsCmd{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-		{
-			Name:    utils.ScanPullRequests,
-			Aliases: []string{"sprs"},
-			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&ScanAllPullRequestsCmd{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-		{
-			Name:    utils.ScanAndFixRepos,
-			Aliases: []string{"scan-and-fix-repos", "safr"},
-			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&ScanAndFixRepositories{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-	}
 }
