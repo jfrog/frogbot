@@ -1,10 +1,10 @@
 import * as core from '@actions/core';
 import { exec } from '@actions/exec';
-import * as github from '@actions/github';
-import * as toolCache from '@actions/tool-cache';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import { context as githubContext } from '@actions/github';
+import { downloadTool, find, cacheFile } from '@actions/tool-cache';
+import { chmodSync } from 'fs';
+import { platform, arch } from 'os';
+import { join } from 'path';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
@@ -31,14 +31,14 @@ export class Utils {
         let url: string = Utils.getCliUrl(major, version, fileName, releasesRepo);
         core.debug('Downloading Frogbot from ' + url);
         let auth: string = this.generateAuthString(releasesRepo);
-        let downloadDir: string = await toolCache.downloadTool(url, '', auth);
+        let downloadDir: string = await downloadTool(url, '', auth);
         // Cache 'frogbot' executable
         await this.cacheAndAddPath(downloadDir, version, fileName);
     }
 
     public static generateAuthString(releasesRepo: string): string {
         if (!releasesRepo) {
-            return ''
+            return '';
         }
         let accessToken: string = process.env.JF_ACCESS_TOKEN ?? '';
         let username: string = process.env.JF_USER ?? '';
@@ -53,14 +53,14 @@ export class Utils {
 
     public static setFrogbotEnv() {
         core.exportVariable('JF_GIT_PROVIDER', 'github');
-        core.exportVariable('JF_GIT_OWNER', github.context.repo.owner);
-        let owner: string | undefined = github.context.repo.repo;
+        core.exportVariable('JF_GIT_OWNER', githubContext.repo.owner);
+        let owner: string | undefined = githubContext.repo.repo;
         if (owner) {
             core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
         }
-        core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
-        core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
-        return github.context.eventName
+        core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref);
+        core.exportVariable('JF_GIT_PULL_REQUEST_ID', githubContext.issue.number);
+        return githubContext.eventName;
     }
 
     /**
@@ -90,7 +90,7 @@ export class Utils {
      * @returns true if the CLI executable was loaded from cache and added to path
      */
     private static loadFromCache(version: string): boolean {
-        let execPath: string = toolCache.find(Utils.TOOL_NAME, version);
+        let execPath: string = find(Utils.TOOL_NAME, version);
         if (execPath) {
             core.addPath(execPath);
             return true;
@@ -105,9 +105,9 @@ export class Utils {
      * @param fileName    - 'frogbot' or 'frogbot.exe'
      */
     private static async cacheAndAddPath(downloadDir: string, version: string, fileName: string) {
-        let cliDir: string = await toolCache.cacheFile(downloadDir, fileName, Utils.TOOL_NAME, version);
+        let cliDir: string = await cacheFile(downloadDir, fileName, Utils.TOOL_NAME, version);
         if (!Utils.isWindows()) {
-            fs.chmodSync(path.join(cliDir, fileName), 0o555);
+            chmodSync(join(cliDir, fileName), 0o555);
         }
         core.addPath(cliDir);
     }
@@ -130,19 +130,19 @@ export class Utils {
         if (Utils.isWindows()) {
             return 'windows-amd64';
         }
-        if (os.platform().includes('darwin')) {
+        if (platform().includes('darwin')) {
             return 'mac-386';
         }
-        if (os.arch().includes('arm')) {
-            return os.arch().includes('64') ? 'linux-arm64' : 'linux-arm';
+        if (arch().includes('arm')) {
+            return arch().includes('64') ? 'linux-arm64' : 'linux-arm';
         }
-        if (os.arch().includes('ppc64le')) {
+        if (arch().includes('ppc64le')) {
             return 'linux-ppc64le';
         }
-        if (os.arch().includes('ppc64')) {
+        if (arch().includes('ppc64')) {
             return 'linux-ppc64';
         }
-        return os.arch().includes('64') ? 'linux-amd64' : 'linux-386';
+        return arch().includes('64') ? 'linux-amd64' : 'linux-386';
     }
 
     public static getExecutableName() {
@@ -150,6 +150,6 @@ export class Utils {
     }
 
     public static isWindows() {
-        return os.platform().startsWith('win');
+        return platform().startsWith('win');
     }
 }
