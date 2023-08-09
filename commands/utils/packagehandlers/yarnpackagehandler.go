@@ -7,7 +7,6 @@ import (
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"golang.org/x/exp/rand"
 	"os/exec"
 	"strconv"
@@ -43,7 +42,7 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 	yarnExecutablePath, err := biUtils.GetYarnExecutable()
-	if errorutils.CheckError(err) != nil {
+	if err != nil {
 		return
 	}
 	executableYarnVersion, err := biUtils.GetVersion(yarnExecutablePath, clonedDirPath)
