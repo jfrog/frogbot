@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"net/url"
@@ -50,7 +51,7 @@ func NewRepoAggregator() RepoAggregator {
 
 type Repository struct {
 	Params `yaml:"params,omitempty"`
-	OutputWriter
+	outputwriter.OutputWriter
 	Server coreconfig.ServerDetails
 }
 
@@ -266,7 +267,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	gitParamsFromEnv, err := extractGitInfoFromEnvs()
+	gitParamsFromEnv, err := extractGitParamsFromEnvs()
 	if err != nil {
 		return
 	}
@@ -311,7 +312,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) (configFileContent []byte, err error) {
-	if commandName == ScanAndFixRepos || commandName == CreateFixPullRequests {
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 		return
 	}
@@ -328,7 +329,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
-		repository.OutputWriter = GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
+		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv); err != nil {
 			return
 		}
@@ -379,7 +380,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
-func extractGitInfoFromEnvs() (*Git, error) {
+func extractGitParamsFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	gitEnvParams := &Git{}

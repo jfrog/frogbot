@@ -112,15 +112,15 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitInfoFromEnvs()
+	_, err := extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 }
 
@@ -147,7 +147,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
@@ -190,7 +190,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	}()
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
@@ -225,7 +225,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFile, err := BuildRepoAggregator(nil, gitParams, server)
 	assert.NoError(t, err)
