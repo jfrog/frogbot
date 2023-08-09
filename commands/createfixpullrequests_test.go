@@ -91,7 +91,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			repoName:               "aggregate-multi-dir",
 			testDir:                "createfixpullrequests/aggregate-multi-dir",
 			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
-			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex be180a6..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"^1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
+			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex ff94a18..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:         true,
 			configPath:             "testdata/createfixpullrequests/aggregate-multi-dir/.frogbot/frogbot-config.yml",
@@ -143,7 +143,7 @@ func TestCreateFixPullRequestsCmd_Run(t *testing.T) {
 			var port string
 			server := httptest.NewServer(createHttpHandler(t, &port, test.repoName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := utils.GitClientInfo{
+			gitTestParams := utils.Git{
 				GitProvider: vcsutils.GitHub,
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
@@ -243,7 +243,7 @@ pr body
 				server.Close()
 			}()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-			gitTestParams := &utils.GitClientInfo{
+			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
