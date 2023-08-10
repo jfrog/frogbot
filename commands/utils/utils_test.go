@@ -6,14 +6,12 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -159,7 +157,7 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
-			vulnRows := ExtractVunerabilitiesDetailsToRows(test.vulnerabilities)
+			vulnRows := ExtractVulnerabilitiesDetailsToRows(test.vulnerabilities)
 			hash, err := VulnerabilityDetailsToMD5Hash(vulnRows...)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
@@ -209,30 +207,6 @@ func TestIsDirectDependency(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Check connection details with JFrog instance.
-// Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
-	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
-	token := os.Getenv(JFrogTokenEnv)
-	if url == "" {
-		assert.FailNow(t, "JF_URL is not set")
-	}
-	if token == "" {
-		assert.FailNow(t, "JF_ACCESS_TOKEN is not set")
-	}
-	server.Url = url
-	server.XrayUrl = url + "/xray/"
-	server.ArtifactoryUrl = url + "/artifactory/"
-	server.AccessToken = token
-	restoreFunc = func() {
-		SetEnvAndAssert(t, map[string]string{
-			JFrogUrlEnv:   url,
-			JFrogTokenEnv: token,
-		})
-	}
-	return
 }
 
 func TestValidatedBranchName(t *testing.T) {
@@ -367,112 +341,8 @@ func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualRows := ExtractVunerabilitiesDetailsToRows(tc.vulnDetails)
+			actualRows := ExtractVulnerabilitiesDetailsToRows(tc.vulnDetails)
 			assert.ElementsMatch(t, tc.expectedRows, actualRows)
 		})
 	}
-}
-
-func TestSendEmailIfSecretsExposed(t *testing.T) {
-	secrets := []utils.IacOrSecretResult{
-		{Severity: "High", File: "/config.yaml", LineColumn: "12:30", Text: "pass*****"},
-		{Severity: "Medium", File: "/server-conf.json", LineColumn: "15:20", Text: "pass*****"},
-	}
-	emailDetails := EmailDetails{
-		SmtpServer:     "smtp.server.com",
-		SmtpPort:       "12",
-		SmtpAuthUser:   "test",
-		SmtpAuthPass:   "testpass",
-		EmailReceivers: []string{"user1@company.com", "user2@company.com"},
-	}
-	logo := getFullResourceUrl(VulnerabilitiesMrBannerSource)
-	assert.NoError(t, SendEmailIfSecretsExposed(secrets, emailDetails, string(logo)))
-}
-
-func TestSendEmail(t *testing.T) {
-	assert.NoError(t, sendEmail("JFrog Frogbot <frogbot@service.jfrog.com>", "Frogbot detected Potential Secrets", `
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Frogbot Secret Detection</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-        }
-        a img {
-            display: block;
-            margin: 0 auto;
-            max-width: 100%;
-        }
-        table {
-            margin: 20px auto;
-            border-collapse: collapse;
-            width: 80%;
-        }
-        th, td {
-            padding: 10px;
-            border: 1px solid #ccc;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-        img.severity-icon {
-            max-height: 30px;
-            vertical-align: middle;
-        }
-        h1 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        .table-container {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            background-color: #fff;
-        }
-    </style>
-</head>
-<body>
-    <div class="table-container">
-        <a href="https://github.com/jfrog/frogbot#readme">
-            <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png" alt="Banner">
-        </a>
-        <table>
-            <thead>
-                <tr>
-                    <th>SEVERITY</th>
-                    <th>FILE</th>
-                    <th>LINE:COLUMN</th>
-                    <th>TEXT</th>
-                </tr>
-            </thead>
-            <tbody>
-                
-				<tr>
-					<td><img class="severity-icon" src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png" alt="severity"> High</td>
-					<td>/config.yaml</td>
-					<td>12:30</td>
-					<td>pass*****/td>
-				</tr>
-				<tr>
-					<td><img class="severity-icon" src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png" alt="severity"> Medium</td>
-					<td>/server-conf.json</td>
-					<td>15:20</td>
-					<td>pass*****/td>
-				</tr>
-            </tbody>
-        </table>
-    </div>
-</body>
-</html>`, EmailDetails{EmailReceivers: []string{"omerz@jfrog.com"}}))
 }

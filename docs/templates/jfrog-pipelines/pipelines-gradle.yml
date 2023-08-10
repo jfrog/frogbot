@@ -173,8 +173,8 @@ pipelines:
               getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
               curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
               restore_cache_files gradle_cache ~/.gradle/caches
-              ./frogbot scan-pull-requests
-              ./frogbot scan-and-fix-repos
+              ./frogbot scan-all-pull-requests
+              ./frogbot scan-multiple-repositories
               add_cache_files gradle_cache ~/.gradle/caches || true
 
             # For Windows runner:
@@ -188,6 +188,6 @@ pipelines:
             #   $scriptUrl = "$($getFrogbotScriptPath)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh"
             #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
             #   restore_cache_files gradle_cache "%userprofile%\.gradle\caches"
-            #   .\frogbot.exe scan-pull-requests
-            #   .\frogbot.exe scan-and-fix-repos
+            #   .\frogbot.exe scan-all-pull-requests
+            #   .\frogbot.exe scan-multiple-repositories
             #   add_cache_files gradle_cache "%userprofile%\.gradle\caches" || true

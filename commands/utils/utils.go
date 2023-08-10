@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -28,8 +30,12 @@ import (
 )
 
 const (
-	RootDir         = "."
-	branchNameRegex = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest          = "scan-pull-request"
+	ScanAllPullRequests      = "scan-all-pull-requests"
+	ScanRepository           = "scan-repository"
+	ScanMultipleRepositories = "scan-multiple-repositories"
+	RootDir                  = "."
+	branchNameRegex          = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -47,6 +53,7 @@ var (
 	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
+	emailExcludes           = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
 )
 
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
@@ -106,7 +113,7 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	}
 }
 
-func ExtractVunerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
+func ExtractVulnerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {
 	var rows []formats.VulnerabilityOrViolationRow
 	for _, vuln := range vulnDetails {
 		rows = append(rows, vuln.VulnerabilityOrViolationRow)
@@ -156,10 +163,10 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageR
 	if serverDetails.ArtifactoryUrl == "" {
 		return
 	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info...")
+	log.Debug(usage.ReportUsagePrefix, "Sending info...")
 	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix + err.Error())
+		log.Debug(usage.ReportUsagePrefix, err.Error())
 		return
 	}
 	err = usage.SendReportUsage(productId, commandName, serviceManager)
@@ -216,7 +223,7 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 	return err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) (wd string, cleanup func() error, err error) {
+func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -224,10 +231,9 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug("Created temp working directory: ", wd)
-	log.Debug(fmt.Sprintf("Downloading %s/%s , branch: %s to: %s", git.RepoOwner, git.RepoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), git.RepoOwner, git.RepoName, branch, wd); err != nil {
-		err = fmt.Errorf("failed to download repository: %s, owner: %s, branch: %s, error: %s", git.RepoName, git.RepoOwner, branch, err.Error())
+	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
+	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
+		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
 		return
 	}
 	log.Debug("Repository download completed")
@@ -235,7 +241,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, branch string, git *Git) 
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
-	// Multi repository configuration is supported only in the scanpullrequests and scanandfixrepos commands.
+	// Multi repository configuration is supported only in the scanallpullrequests and scanmultiplerepositories commands.
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)
 	}
@@ -319,29 +325,45 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	return pullRequestsComments, nil
 }
 
-func SendEmailIfSecretsExposed(secrets []xrayutils.IacOrSecretResult, emailDetails EmailDetails, emailLogo string) error {
+func AlertSecretsExposed(repo *Repository, client vcsclient.VcsClient, secrets []formats.IacSecretsRow, branch string) (err error) {
+	var relevantEmailReceivers []string
+	if relevantEmailReceivers, err = getRelevantEmailReceivers(repo, client, branch); err != nil {
+		return
+	}
+	repo.EmailReceivers = append(repo.EmailReceivers, relevantEmailReceivers...)
+	return sendEmailIfSecretsExposed(secrets, repo)
+}
+
+func sendEmailIfSecretsExposed(secrets []formats.IacSecretsRow, repo *Repository) error {
 	if len(secrets) == 0 {
 		return nil
 	}
-	emailContent := getSecretsEmailContent(secrets, emailLogo)
+	writer := repo.OutputWriter
+	emailDetails := repo.EmailDetails
+	emailLogo := string(outputwriter.GetVulnerabilitiesTitleImagePath(writer.OutputContext(), writer.VcsProvider()))
+	prLink := ""
+	if writer.OutputContext() == outputwriter.PullRequestScan {
+		prLink = fmt.Sprintf("<div class='detection-info'><a href='%s'>Click here for the relevant Pull Request</a></div>", repo.PullRequestDetails.URL)
+	}
+	emailContent := getSecretsEmailContent(secrets, emailLogo, prLink)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpAuthUser)
 	subject := "Frogbot Detected Potential Secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 
-func getSecretsEmailContent(secrets []xrayutils.IacOrSecretResult, emailLogo string) string {
+func getSecretsEmailContent(secrets []formats.IacSecretsRow, emailLogo, metadata string) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
 		tableContent.WriteString(
-			fmt.Sprintf(secretsEmailTableRow,
-				getApplicableIconPath(IconName(secret.Severity)),
+			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
+				outputwriter.GetApplicableIconPath(outputwriter.IconName(secret.Severity)),
 				secret.Severity,
 				secret.File,
 				secret.LineColumn,
 				secret.Text))
 	}
 
-	return fmt.Sprintf(secretsEmailHTMLTemplate, secretsEmailCSS, emailLogo, tableContent.String())
+	return fmt.Sprintf(outputwriter.SecretsEmailHTMLTemplate, outputwriter.SecretsEmailCSS, emailLogo, tableContent.String(), metadata)
 }
 
 func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {
@@ -352,4 +374,30 @@ func sendEmail(sender, subject, content string, emailDetails EmailDetails) error
 	e.HTML = []byte(content)
 	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpAuthUser, emailDetails.SmtpAuthPass, emailDetails.SmtpServer)
 	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
+}
+
+func getRelevantEmailReceivers(repo *Repository, client vcsclient.VcsClient, branch string) ([]string, error) {
+	commits, err := client.GetCommits(context.Background(), repo.RepoOwner, repo.RepoName, branch)
+	if err != nil {
+		return nil, err
+	}
+
+	emailReceivers := datastructures.MakeSet[string]()
+	for _, commit := range commits {
+		if shouldExcludeEmail(commit.AuthorEmail, emailExcludes) || shouldExcludeEmail(commit.AuthorEmail, repo.EmailReceivers) {
+			continue
+		}
+		emailReceivers.Add(commit.AuthorEmail)
+	}
+
+	return emailReceivers.ToSlice(), nil
+}
+
+func shouldExcludeEmail(email string, excludes []string) bool {
+	for _, excludedEmail := range excludes {
+		if strings.Contains(email, excludedEmail) {
+			return true
+		}
+	}
+	return false
 }
