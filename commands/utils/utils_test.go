@@ -174,7 +174,7 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.expectedHash, func(t *testing.T) {
-			vulnRows := ExtractVunerabilitiesDetailsToRows(test.vulnerabilities)
+			vulnRows := ExtractVulnerabilitiesDetailsToRows(test.vulnerabilities)
 			hash, err := VulnerabilityDetailsToMD5Hash(vulnRows...)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedHash, hash)
@@ -224,30 +224,6 @@ func TestIsDirectDependency(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Check connection details with JFrog instance.
-// Return a callback method that restores the credentials after the test is done.
-func verifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
-	url := strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/")
-	token := os.Getenv(JFrogTokenEnv)
-	if url == "" {
-		assert.FailNow(t, "JF_URL is not set")
-	}
-	if token == "" {
-		assert.FailNow(t, "JF_ACCESS_TOKEN is not set")
-	}
-	server.Url = url
-	server.XrayUrl = url + "/xray/"
-	server.ArtifactoryUrl = url + "/artifactory/"
-	server.AccessToken = token
-	restoreFunc = func() {
-		SetEnvAndAssert(t, map[string]string{
-			JFrogUrlEnv:   url,
-			JFrogTokenEnv: token,
-		})
-	}
-	return
 }
 
 func TestValidatedBranchName(t *testing.T) {
@@ -382,7 +358,7 @@ func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualRows := ExtractVunerabilitiesDetailsToRows(tc.vulnDetails)
+			actualRows := ExtractVulnerabilitiesDetailsToRows(tc.vulnDetails)
 			assert.ElementsMatch(t, tc.expectedRows, actualRows)
 		})
 	}

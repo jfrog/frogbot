@@ -112,15 +112,15 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitInfoFromEnvs()
+	_, err := extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 }
 
@@ -147,7 +147,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
@@ -190,7 +190,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	}()
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
@@ -225,7 +225,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFile, err := BuildRepoAggregator(nil, gitParams, server)
 	assert.NoError(t, err)
@@ -251,7 +251,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		assert.Equal(t, "dev", configParams.Branches[0])
-		assert.Equal(t, 1, configParams.PullRequestID)
+		assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
 	}
 }
 
@@ -314,7 +314,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	gitClientInfo := GitClientInfo{
+	gitParams := Git{
 		GitProvider: vcsutils.GitHub,
 		VcsInfo: vcsclient.VcsInfo{
 			APIEndpoint: "https://github.com",
@@ -330,7 +330,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitClientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -338,12 +338,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, gitClientInfo.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitClientInfo.Token, repo.Token)
-	assert.Equal(t, gitClientInfo.APIEndpoint, repo.APIEndpoint)
-	assert.ElementsMatch(t, gitClientInfo.Branches, repo.Branches)
-	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, gitClientInfo.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
+	assert.Equal(t, gitParams.Token, repo.Token)
+	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
+	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
+	assert.Equal(t, repo.PullRequestDetails.ID, repo.PullRequestDetails.ID)
+	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
 	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
@@ -463,7 +463,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	gitClientInfo := &GitClientInfo{
+	gitParams := &Git{
 		GitProvider: vcsutils.GitHub,
 		VcsInfo: vcsclient.VcsInfo{
 			APIEndpoint: "endpoint.com",
@@ -479,7 +479,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, gitClientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
