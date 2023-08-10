@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"net/url"
@@ -23,9 +24,6 @@ import (
 const (
 	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
-
-	// Pull Request ID cannot be 0
-	UndefinedPrID = 0
 )
 
 var (
@@ -50,7 +48,7 @@ func NewRepoAggregator() RepoAggregator {
 
 type Repository struct {
 	Params `yaml:"params,omitempty"`
-	OutputWriter
+	outputwriter.OutputWriter
 	Server coreconfig.ServerDetails
 }
 
@@ -196,13 +194,14 @@ type Git struct {
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestID            int
+	PullRequestDetails       vcsclient.PullRequestInfo
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 	g.RepoOwner = gitParamsFromEnv.RepoOwner
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
+	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
 	if g.RepoName == "" {
 		if gitParamsFromEnv.RepoName == "" {
 			return fmt.Errorf("repository name is missing. please set the repository name in your %s file or as the %s environment variable", FrogbotConfigFile, GitRepoEnv)
@@ -241,15 +240,6 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	if g.PullRequestID == UndefinedPrID {
-		if idStr := getTrimmedEnv(GitPullRequestIDEnv); idStr != "" {
-			var idNum int
-			if idNum, err = strconv.Atoi(idStr); err != nil {
-				return fmt.Errorf("failed parsing pull request ID as a number. ID as string : %s", idStr)
-			}
-			g.PullRequestID = idNum
-		}
-	}
 	return
 }
 
@@ -266,7 +256,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	gitParamsFromEnv, err := extractGitInfoFromEnvs()
+	gitParamsFromEnv, err := extractGitParamsFromEnvs()
 	if err != nil {
 		return
 	}
@@ -311,7 +301,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
 func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) (configFileContent []byte, err error) {
-	if commandName == ScanAndFixRepos || commandName == CreateFixPullRequests {
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 		return
 	}
@@ -328,7 +318,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
-		repository.OutputWriter = GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
+		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv); err != nil {
 			return
 		}
@@ -379,7 +369,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
-func extractGitInfoFromEnvs() (*Git, error) {
+func extractGitParamsFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	gitEnvParams := &Git{}
@@ -428,6 +418,13 @@ func extractGitInfoFromEnvs() (*Git, error) {
 	// Mandatory for Azure Repos only
 	if err = readParamFromEnv(GitProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
+	}
+	if envPrId := getTrimmedEnv(GitPullRequestIDEnv); envPrId != "" {
+		var convertedPrId int
+		if convertedPrId, err = strconv.Atoi(envPrId); err != nil {
+			return nil, fmt.Errorf("failed parsing %s environment variable as a number. The received environment is : %s", GitPullRequestIDEnv, envPrId)
+		}
+		gitEnvParams.PullRequestDetails = vcsclient.PullRequestInfo{ID: int64(convertedPrId)}
 	}
 
 	return gitEnvParams, nil

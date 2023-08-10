@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -295,7 +296,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = GetAggregatedPullRequestTitle(tech)
+		template = outputwriter.GetAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
