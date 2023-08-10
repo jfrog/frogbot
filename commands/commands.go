@@ -92,7 +92,7 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 
 	// Send a usage report
 	var usageGroup sync.WaitGroup
-	utils.ReportUsageOnCommand(name, frogbotUtils.ServerDetails, frogbotUtils.Repositories, &usageGroup)
+	utils.ReportUsageOnCommand(commandName, frogbotDetails.ServerDetails, frogbotDetails.Repositories, &usageGroup)
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
