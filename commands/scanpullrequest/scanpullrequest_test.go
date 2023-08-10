@@ -582,6 +582,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 			Token:       "123456",
 			APIEndpoint: server.URL,
 		},
+		PullRequestDetails: vcsclient.PullRequestInfo{ID: int64(1)},
 	}
 	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
 
@@ -757,9 +758,9 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
-				RepoName:      "repo",
-				RepoOwner:     "owner",
-				PullRequestID: 17,
+				RepoName:           "repo",
+				RepoOwner:          "owner",
+				PullRequestDetails: vcsclient.PullRequestInfo{ID: 17},
 			},
 		},
 		OutputWriter: &outputwriter.StandardOutput{},
