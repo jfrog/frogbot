@@ -132,7 +132,7 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Check this change
 			if test.tech == "yarn" {
-				test.tech = test.tech + "2"
+				test.tech += "2"
 			}
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
