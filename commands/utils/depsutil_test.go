@@ -62,7 +62,7 @@ func createRemoteRepo(t *testing.T, project string, server *config.ServerDetails
 	createRemoteRepoServices.ArtDetails = rtDetails
 	var repoKey string
 	switch project {
-	case "npm", "yarn":
+	case "npm", "yarn2": // Check this change
 		repoKey = createNpmRemoteRepo(t, createRemoteRepoServices)
 	case "dotnet":
 		repoKey = createNugetRemoteRepo(t, createRemoteRepoServices)
@@ -130,7 +130,11 @@ func TestResolveDependencies(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			restoreFunc, repoKey := setTestEnvironment(t, test.tech+"2", &params)
+			// Check this change
+			if test.tech == "yarn" {
+				test.tech = test.tech + "2"
+			}
+			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
 			output, err := test.resolveFunc(test.scanSetup)
