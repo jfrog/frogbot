@@ -168,8 +168,8 @@ pipelines:
               export LANG=C.UTF-8
               getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
               curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-              ./frogbot scan-pull-requests
-              ./frogbot scan-and-fix-repos
+              ./frogbot scan-all-pull-requests
+              ./frogbot scan-multiple-repositories
 
             # For Windows runner:
             # - |
@@ -181,5 +181,5 @@ pipelines:
             #
             #   $scriptUrl = "$($getFrogbotScriptPath)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh"
             #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
-            #   .\frogbot.exe scan-pull-requests
-            #   .\frogbot.exe scan-and-fix-repos
+            #   .\frogbot.exe scan-all-pull-requests
+            #   .\frogbot.exe scan-multiple-repositories

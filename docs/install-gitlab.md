@@ -23,7 +23,7 @@ frogbot-scan:
       # If you'd like a different branch to be scanned, replace $CI_DEFAULT_BRANCH in the line below with the name of the branch, wrapped with quotes (").
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"
       variables:
-        FROGBOT_CMD: "create-fix-pull-requests"
+        FROGBOT_CMD: "scan-repository"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
     # [Mandatory]

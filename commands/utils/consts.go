@@ -1,32 +1,12 @@
 package utils
 
-type IconName string
-type ImageSource string
+import "github.com/jfrog/frogbot/commands/utils/outputwriter"
+
 type vcsProvider string
 
 const (
-	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
-
 	// Errors
 	errUnsupportedMultiRepo = "multi repository configuration isn't supported. Only one repository configuration is allowed"
-
-	// Images
-	NoVulnerabilityPrBannerSource       ImageSource = "v2/noVulnerabilityBannerPR.png"
-	NoVulnerabilityMrBannerSource       ImageSource = "v2/noVulnerabilityBannerMR.png"
-	VulnerabilitiesPrBannerSource       ImageSource = "v2/vulnerabilitiesBannerPR.png"
-	VulnerabilitiesMrBannerSource       ImageSource = "v2/vulnerabilitiesBannerMR.png"
-	VulnerabilitiesFixPrBannerSource    ImageSource = "v2/vulnerabilitiesFixBannerPR.png"
-	VulnerabilitiesFixMrBannerSource    ImageSource = "v2/vulnerabilitiesFixBannerMR.png"
-	criticalSeveritySource              ImageSource = "v2/applicableCriticalSeverity.png"
-	notApplicableCriticalSeveritySource ImageSource = "v2/notApplicableCritical.png"
-	highSeveritySource                  ImageSource = "v2/applicableHighSeverity.png"
-	notApplicableHighSeveritySource     ImageSource = "v2/notApplicableHigh.png"
-	mediumSeveritySource                ImageSource = "v2/applicableMediumSeverity.png"
-	notApplicableMediumSeveritySource   ImageSource = "v2/notApplicableMedium.png"
-	lowSeveritySource                   ImageSource = "v2/applicableLowSeverity.png"
-	notApplicableLowSeveritySource      ImageSource = "v2/notApplicableLow.png"
-	unknownSeveritySource               ImageSource = "v2/applicableUnknownSeverity.png"
-	notApplicableUnknownSeveritySource  ImageSource = "v2/notApplicableUnknown.png"
 
 	// VCS providers params
 	GitHub          vcsProvider = "github"
@@ -80,12 +60,6 @@ const (
 	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
 	GitEmailAuthorEnv    = "JF_GIT_EMAIL_AUTHOR"
 
-	// Comment
-	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-
 	// Product ID for usage reporting
 	productId = "frogbot"
 
@@ -98,11 +72,10 @@ const (
 	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
 
 	// Default naming templates
-	BranchNameTemplate            = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
-	AggregatedBranchNameTemplate  = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
-	CommitMessageTemplate         = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
-	FrogbotPullRequestTitlePrefix = "[🐸 Frogbot]"
-	PullRequestTitleTemplate      = FrogbotPullRequestTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	BranchNameTemplate           = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	AggregatedBranchNameTemplate = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
+	CommitMessageTemplate        = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	PullRequestTitleTemplate     = outputwriter.FrogbotPullRequestTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
