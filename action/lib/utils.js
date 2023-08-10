@@ -90,7 +90,6 @@ class Utils {
         if (owner) {
             core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
         }
-        core.exportVariable('JF_GIT_BASE_BRANCH', github_1.context.ref);
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', github_1.context.issue.number);
         return github_1.context.eventName;
     }
