@@ -214,7 +214,8 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 		}
 	}
 	// When pull request ID is provided, no need to continue and extract unrelated env params.
-	if g.PullRequestDetails.ID != 0 || gitParamsFromEnv.PullRequestDetails.ID != 0 {
+	isPullRequestContext := gitParamsFromEnv.PullRequestDetails.ID != 0
+	if isPullRequestContext {
 		return
 	}
 	// Continue to extract ScanRepository related env params
