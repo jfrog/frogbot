@@ -208,14 +208,28 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 		}
 		g.RepoName = gitParamsFromEnv.RepoName
 	}
-	if len(g.Branches) == 0 && len(gitParamsFromEnv.Branches) == 0 {
-		var branch string
-		if branch, err = GetBranchFromDotGit(); err != nil {
-			return
+	if g.EmailAuthor == "" {
+		if g.EmailAuthor = getTrimmedEnv(GitEmailAuthorEnv); g.EmailAuthor == "" {
+			g.EmailAuthor = frogbotAuthorEmail
 		}
-		g.Branches = append(g.Branches, branch)
-	} else if len(g.Branches) == 0 {
-		g.Branches = append(g.Branches, gitParamsFromEnv.Branches...)
+	}
+	// When pull request ID is provided, no need to continue and extract unrelated env params.
+	isPullRequestContext := gitParamsFromEnv.PullRequestDetails.ID != 0
+	if isPullRequestContext {
+		return
+	}
+	// Continue to extract ScanRepository related env params
+	noBranchesProvidedViaConfig := len(g.Branches) == 0
+	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
+	if noBranchesProvidedViaConfig {
+		g.Branches = gitParamsFromEnv.Branches
+		if noBranchesProvidedViaEnv {
+			var branch string
+			if branch, err = GetBranchFromDotGit(); err != nil {
+				return
+			}
+			g.Branches = []string{branch}
+		}
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
@@ -233,11 +247,6 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 	if !g.AggregateFixes {
 		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
 			return
-		}
-	}
-	if g.EmailAuthor == "" {
-		if g.EmailAuthor = getTrimmedEnv(GitEmailAuthorEnv); g.EmailAuthor == "" {
-			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
 	return
