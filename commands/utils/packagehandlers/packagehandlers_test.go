@@ -233,7 +233,7 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 		},
 	}
 	for idx, test := range testcases {
-		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency)+",v"+strconv.Itoa(idx), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, strconv.Itoa(idx))
 			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
@@ -582,18 +582,11 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology, extraArgs ...string) func() {
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech.ToString())
-	if len(extraArgs) > 0 {
-		projectPath = filepath.Join(projectPath, extraArgs[0])
+	if tech == "yarn" && len(extraArgs) > 0 {
+		// Adding version specifier to the folder's name in order to get the correct yarn suitcase for the test
+		projectPath += extraArgs[0]
 	}
-	/*
-		var techDirName string
-		if len(extraArgs) > 0 {
-			techDirName = tech.ToString() + extraArgs[0]
-		} else {
-			techDirName = tech.ToString()
-		}
-		projectPath := filepath.Join(testdataDir, techDirName)
-	*/
+
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
