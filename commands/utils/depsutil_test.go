@@ -131,6 +131,7 @@ func TestResolveDependencies(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.tech == "yarn" {
+				// Yarn testdata was split into 2 testcases (V1 and V2) therefore another direction is required here
 				test.tech += "2"
 			}
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)

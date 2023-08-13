@@ -583,7 +583,7 @@ func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Tech
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech.ToString())
 	if tech == "yarn" && len(extraArgs) > 0 {
-		// Adding version specifier to the folder's name in order to get the correct yarn suitcase for the test
+		// Yarn testdata was split into 2 testcases (V1 and V2) therefore a version specifier was added in extraArgs to be added to the path
 		projectPath += extraArgs[0]
 	}
 

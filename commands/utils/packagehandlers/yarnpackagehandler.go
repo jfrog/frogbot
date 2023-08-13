@@ -32,8 +32,6 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-// TODO: see that scan pull request works correctly with yarn1 and yarn2
-// TODO: fix pull PR and merge
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
 	executableYarnVersion, err := getYarnVersion()
 	if err != nil {
@@ -64,8 +62,7 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	return
 }
 
-// getYarnVersion gets current working directory and executed yarn version required to check what is
-// the correct yarn command to execute for updating packages
+// getYarnVersion gets the project's executed yarn version. This is required for fetching the correct command for updating packages
 func getYarnVersion() (executableYarnVersion string, err error) {
 	workingDirectory, err := coreutils.GetWorkingDirectory()
 	if err != nil {
