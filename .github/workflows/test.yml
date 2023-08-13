@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [ ScanPullRequest, ScanAllPullRequests, ScanRepository, ScanMultipleRepositories, PackageHandlers ]
+        suite: [ scan-pull-request, scan-all-pull-requests, scan-repository, scan-multiple-repositories, package-handlers ]
         os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - name: Unlabel 'safe to test'
