@@ -31,7 +31,9 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
-func TestExtractParamsFromEnvPlatform(t *testing.T) {
+// Test extraction of env params in ScanPullRequest command
+// Pull request ID is not default, which mean we don't have branches related variables defined.
+func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
 		JFrogUserEnv:        "admin",
@@ -40,8 +42,25 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "dev",
 		GitPullRequestIDEnv: "1",
+	})
+	extractAndAssertParamsFromEnv(t, true, true)
+}
+
+// Test extraction in ScanRepository command
+// Pull request ID is default 0, which mean we will have branches related variables.
+func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:              "http://127.0.0.1:8081",
+		JFrogUserEnv:             "admin",
+		JFrogPasswordEnv:         "password",
+		GitProvider:              string(BitbucketServer),
+		GitRepoOwnerEnv:          "jfrog",
+		GitRepoEnv:               "frogbot",
+		GitTokenEnv:              "123456789",
+		CommitMessageTemplateEnv: "my-custom-commit-template",
+		GitBaseBranchEnv:         "dev",
+		GitPullRequestIDEnv:      "0",
 	})
 	extractAndAssertParamsFromEnv(t, true, true)
 }
@@ -250,8 +269,15 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "dev", configParams.Branches[0])
-		assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
+		// ScanRepository command context
+		if len(configParams.Branches) != 0 {
+			assert.Equal(t, "dev", configParams.Branches[0])
+			assert.Equal(t, int64(0), configParams.PullRequestDetails.ID)
+			assert.Equal(t, "my-custom-commit-template", configParams.Git.CommitMessageTemplate)
+		} else {
+			// ScanPullRequest context
+			assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
+		}
 	}
 }
 
@@ -309,6 +335,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FailOnSecurityIssuesEnv:      "false",
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
+		GitPullRequestIDEnv:          "0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -459,6 +486,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		CommitMessageTemplateEnv:     "commit-msg",
 		FailOnSecurityIssuesEnv:      "true",
 		jfrogWatchesEnv:              "watch-1,watch-2",
+		GitPullRequestIDEnv:          "0",
 	})
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
