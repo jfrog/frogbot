@@ -581,13 +581,19 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 
 func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology, extraArgs ...string) func() {
 	// Create temp technology project
-	var techDirName string
+	projectPath := filepath.Join(testdataDir, tech.ToString())
 	if len(extraArgs) > 0 {
-		techDirName = tech.ToString() + extraArgs[0]
-	} else {
-		techDirName = tech.ToString()
+		projectPath = filepath.Join(projectPath, extraArgs[0])
 	}
-	projectPath := filepath.Join(testdataDir, techDirName)
+	/*
+		var techDirName string
+		if len(extraArgs) > 0 {
+			techDirName = tech.ToString() + extraArgs[0]
+		} else {
+			techDirName = tech.ToString()
+		}
+		projectPath := filepath.Join(testdataDir, techDirName)
+	*/
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
