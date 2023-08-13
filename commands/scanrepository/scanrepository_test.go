@@ -69,6 +69,12 @@ var testPackagesData = []struct {
 	},
 }
 
+func initScanRepositoryTest(t *testing.T) {
+	if !*utils.TestScanRepository {
+		t.Skip("Skipping Scan Repository tests. To run Scan Repository tests add the '-test.ScanRepository=true' option.")
+	}
+}
+
 // These tests utilize pre-prepared git folders that correspond to specific use cases.
 // To modify these tests, you can change the folder name from "git"
 // to ".git",make the necessary changes,and then rename it back to "git".
@@ -76,6 +82,7 @@ var testPackagesData = []struct {
 // It is crucial to maintain the desired state of the git repository.
 // Make sure it is checked out to the main branch, replicating an actual run.
 func TestScanRepositoryCmd_Run(t *testing.T) {
+	initScanRepositoryTest(t)
 	tests := []struct {
 		testName               string
 		configPath             string
@@ -193,6 +200,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 // Same scan results -> do nothing.
 // Different scan results -> Update the pull request branch & body.
 func TestAggregatePullRequestLifecycle(t *testing.T) {
+	initScanRepositoryTest(t)
 	mockPrId := int64(1)
 	tests := []struct {
 		testName                string
@@ -276,6 +284,7 @@ pr body
 // /      (1.0, 2.0)   --> 1.0 < x < 2.0
 // /      [1.0, 2.0]   --> 1.0 ≤ x ≤ 2.0
 func TestParseVersionChangeString(t *testing.T) {
+	initScanRepositoryTest(t)
 	tests := []struct {
 		versionChangeString string
 		expectedVersion     string
@@ -298,6 +307,7 @@ func TestParseVersionChangeString(t *testing.T) {
 }
 
 func TestGenerateFixBranchName(t *testing.T) {
+	initScanRepositoryTest(t)
 	tests := []struct {
 		baseBranch      string
 		impactedPackage string
@@ -319,6 +329,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
+	initScanRepositoryTest(t)
 	environmentVars, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
@@ -366,6 +377,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 }
 
 func TestGetMinimalFixVersion(t *testing.T) {
+	initScanRepositoryTest(t)
 	tests := []struct {
 		impactedVersionPackage string
 		fixVersions            []string
@@ -386,6 +398,7 @@ func TestGetMinimalFixVersion(t *testing.T) {
 }
 
 func TestCreateVulnerabilitiesMap(t *testing.T) {
+	initScanRepositoryTest(t)
 	cfp := &ScanRepositoryCmd{}
 
 	testCases := []struct {
@@ -519,6 +532,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 // Verifies unsupported packages return specific error
 // Other logic is implemented inside each package-handler.
 func TestUpdatePackageToFixedVersion(t *testing.T) {
+	initScanRepositoryTest(t)
 	var testScan ScanRepositoryCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
@@ -531,6 +545,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 }
 
 func TestGetRemoteBranchScanHash(t *testing.T) {
+	initScanRepositoryTest(t)
 	prBody := `
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
 ## 📦 Vulnerable Dependencies 
@@ -625,6 +640,7 @@ random body
 }
 
 func TestPreparePullRequestDetails(t *testing.T) {
+	initScanRepositoryTest(t)
 	cfp := ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}, gitManager: &utils.GitManager{}}
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{

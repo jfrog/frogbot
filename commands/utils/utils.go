@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"encoding/hex"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -49,6 +50,8 @@ var (
 	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
+	TestScanRepository      *bool
+	TestScanPullRequest     *bool
 )
 
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
@@ -60,6 +63,11 @@ type ErrUnsupportedFix struct {
 	PackageName  string
 	FixedVersion string
 	ErrorType    UnsupportedErrorType
+}
+
+func init() {
+	TestScanRepository = flag.Bool("test.ScanRepository", false, "Test Scan Repository")
+	TestScanPullRequest = flag.Bool("test.ScanPullRequest", false, "Test Scan Pull Request")
 }
 
 // Custom error for unsupported fixes

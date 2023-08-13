@@ -38,7 +38,14 @@ const (
 	testTargetBranchName             = "master"
 )
 
+func initScanPullRequestTest(t *testing.T) {
+	if !*utils.TestScanPullRequest {
+		t.Skip("Skipping Scan Pull Request tests. To run Scan Pull Request tests add the '-test.ScanPullRequestTest=true' option.")
+	}
+}
+
 func TestCreateVulnerabilitiesRows(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with only one violation - XRAY-1
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{{
@@ -89,6 +96,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 }
 
 func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with no violation
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{},
@@ -138,6 +146,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with 2 violations - XRAY-1 and XRAY-2
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{
@@ -172,6 +181,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 }
 
 func TestGetAllVulnerabilities(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
 	currentScan := services.ScanResponse{
 		Vulnerabilities: []services.Vulnerability{
@@ -225,6 +235,7 @@ func TestGetAllVulnerabilities(t *testing.T) {
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with only one vulnerability - XRAY-1
 	previousScan := services.ScanResponse{
 		Vulnerabilities: []services.Vulnerability{{
@@ -291,6 +302,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 }
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with no vulnerabilities
 	previousScan := services.ScanResponse{
 		Vulnerabilities: []services.Vulnerability{},
@@ -344,6 +356,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Previous scan with 2 vulnerabilities - XRAY-1 and XRAY-2
 	previousScan := services.ScanResponse{
 		Vulnerabilities: []services.Vulnerability{
@@ -377,6 +390,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
+	initScanPullRequestTest(t)
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
 	message := createPullRequestMessage(vulnerabilities, nil, &outputwriter.StandardOutput{})
 
@@ -396,6 +410,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
+	initScanPullRequestTest(t)
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
 			Severity:                  "High",
@@ -469,27 +484,55 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPath, "test-proj", true)
-}
-
-func TestScanPullRequestNoFail(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
-}
-
-func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, testProjSubdirConfigPath, "test-proj-subdir", true)
-}
-
-func TestScanPullRequestNoIssues(t *testing.T) {
-	testScanPullRequest(t, testCleanProjConfigPath, "clean-test-proj", false)
-}
-
-func TestScanPullRequestMultiWorkDir(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", true)
-}
-
-func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPathNoFail, "multi-dir-test-proj", false)
+	initScanPullRequestTest(t)
+	tests := []struct {
+		testName             string
+		configPath           string
+		projectName          string
+		failOnSecurityIssues bool
+	}{
+		{
+			testName:             "ScanPullRequest",
+			configPath:           testProjConfigPath,
+			projectName:          "test-proj",
+			failOnSecurityIssues: true,
+		},
+		{
+			testName:             "ScanPullRequestNoFail",
+			configPath:           testProjConfigPathNoFail,
+			projectName:          "test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestSubdir",
+			configPath:           testProjSubdirConfigPath,
+			projectName:          "test-proj-subdir",
+			failOnSecurityIssues: true,
+		},
+		{
+			testName:             "ScanPullRequestNoIssues",
+			configPath:           testCleanProjConfigPath,
+			projectName:          "clean-test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestMultiWorkDir",
+			configPath:           testMultiDirProjConfigPathNoFail,
+			projectName:          "multi-dir-test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestMultiWorkDirNoFail",
+			configPath:           testMultiDirProjConfigPath,
+			projectName:          "multi-dir-test-proj",
+			failOnSecurityIssues: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			testScanPullRequest(t, test.configPath, test.projectName, test.failOnSecurityIssues)
+		})
+	}
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
@@ -520,6 +563,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 }
 
 func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Init mock
 	client := CreateMockVcsClient(t)
 	environment := "frogbot"
@@ -533,6 +577,7 @@ func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 }
 
 func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Redirect log to avoid negative output
 	previousLogger := redirectLogOutputToNil()
 	defer log.SetLogger(previousLogger)
@@ -550,6 +595,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
 }
 
 func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
+	initScanPullRequestTest(t)
 	// Init mock
 	client := CreateMockVcsClient(t)
 	environment := "frogbot"
@@ -563,6 +609,7 @@ func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
 }
 
 func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
+	initScanPullRequestTest(t)
 	repoConfig := &utils.Repository{
 		Params: utils.Params{Git: utils.Git{
 			VcsInfo: vcsclient.VcsInfo{APIEndpoint: "https://acme.vcs.io"}},
@@ -670,6 +717,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 }
 
 func TestCreateNewIacRows(t *testing.T) {
+	initScanPullRequestTest(t)
 	testCases := []struct {
 		name                            string
 		targetIacResults                []utils2.IacOrSecretResult
@@ -755,6 +803,7 @@ func TestCreateNewIacRows(t *testing.T) {
 }
 
 func TestDeletePreviousPullRequestMessages(t *testing.T) {
+	initScanPullRequestTest(t)
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
