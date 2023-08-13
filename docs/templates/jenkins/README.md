@@ -7,15 +7,13 @@
 <img src="../../../images/frogbot-circle.png" width="180">
 </div>
 
-### 🖥️ Follow These steps to install Frogbot on Jenkins
+### 🖥️ Follow these steps to install Frogbot on Jenkins
 
 <details>
-  <summary>1️⃣  Install Jenkins Webhook Plugin </summary>
+  <summary>1️⃣  Install Jenkins 'Generic Webhook Trigger' plugin </summary>
 
-- **Install Generic Webhook Trigger**
-    - Using the GUI: From your Jenkins dashboard navigate to Manage Jenkins > Manage Plugins and select the Available
-      tab. Locate this plugin by searching
-      for - [Generic Webhook Trigger](https://plugins.jenkins.io/generic-webhook-trigger/).
+From your Jenkins dashboard navigate to **Manage Jenkins** > **Manage Plugins** and select the **Available** tab.
+Use the search bar to find **Generic Webhook Trigger** ([more info](https://plugins.jenkins.io/generic-webhook-trigger/)).
 
 </details>
 <details>

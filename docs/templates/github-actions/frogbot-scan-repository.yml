@@ -1,4 +1,4 @@
-name: "Frogbot Scan and Fix"
+name: "Frogbot Scan Repository"
 on:
   workflow_dispatch:
   schedule:
