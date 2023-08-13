@@ -341,11 +341,11 @@ func sendEmailIfSecretsExposed(secrets []formats.IacSecretsRow, repo *Repository
 	writer := repo.OutputWriter
 	emailDetails := repo.EmailDetails
 	emailLogo := string(outputwriter.GetVulnerabilitiesTitleImagePath(writer.OutputContext(), writer.VcsProvider()))
-	prLink := ""
+	metadada := ""
 	if writer.OutputContext() == outputwriter.PullRequestScan {
-		prLink = fmt.Sprintf("<div class='detection-info'><a href='%s'>Click here for the relevant Pull Request</a></div>", repo.PullRequestDetails.URL)
+		metadada = outputwriter.GetEmailPullRequestMetadata(repo.PullRequestDetails)
 	}
-	emailContent := getSecretsEmailContent(secrets, emailLogo, prLink)
+	emailContent := getSecretsEmailContent(secrets, emailLogo, metadada)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpAuthUser)
 	subject := "Frogbot Detected Potential Secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
@@ -363,7 +363,7 @@ func getSecretsEmailContent(secrets []formats.IacSecretsRow, emailLogo, metadata
 				secret.Text))
 	}
 
-	return fmt.Sprintf(outputwriter.SecretsEmailHTMLTemplate, outputwriter.SecretsEmailCSS, emailLogo, tableContent.String(), metadata)
+	return fmt.Sprintf(outputwriter.SecretsEmailHTMLTemplate, outputwriter.SecretsEmailCSS, emailLogo, tableContent.String(), metadata, "../../resources/jfrogLogo.png")
 }
 
 func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {

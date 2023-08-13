@@ -2,6 +2,8 @@ package outputwriter
 
 import (
 	"fmt"
+	"github.com/jfrog/froggit-go/vcsclient"
+
 	//"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -86,8 +88,10 @@ const (
                 %s
             </tbody>
         </table>
-    </div>
-	%s
+		<hr>
+		%s
+		<img src="%s" alt="JFrog">
+		 </div>
 </body>
 </html>`
 	SecretsEmailTableRow = `
@@ -243,4 +247,9 @@ func GetVulnerabilitiesTitleImagePath(outputContext OutputContext, provider vcsu
 	}
 
 	return getFullResourceUrl(path)
+}
+
+func GetEmailPullRequestMetadata(prDetails vcsclient.PullRequestInfo) string {
+	return fmt.Sprintf("You are receiving this email because you initiated a JFrog Frogbot scan on your pull request.<br/>The pull request was triggered on %s/%s in the %s branch.<br/><a href='%s'>View it here</a><br/>",
+		prDetails.Target.Owner, prDetails.Target.Repository, prDetails.Target.Name, prDetails.URL)
 }
