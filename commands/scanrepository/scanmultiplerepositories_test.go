@@ -26,8 +26,14 @@ import (
 var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
+func initScanMultipleRepositoriesTest(t *testing.T) {
+	if !*utils.TestScanMultipleRepositories {
+		t.Skip("Skipping Scan Multiple Repositories tests. To run Scan Multiple Repositories tests add the '-test.ScanMultipleRepositories=true' option.")
+	}
+}
+
 func TestScanMultipleRepositories(t *testing.T) {
-	initScanRepositoryTest(t)
+	initScanMultipleRepositoriesTest(t)
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 

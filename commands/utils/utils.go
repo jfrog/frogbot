@@ -47,18 +47,22 @@ const (
 )
 
 var (
-	TrueVal                 = true
-	FrogbotVersion          = "0.0.0"
-	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
-	TestScanRepository      *bool
-	TestScanPullRequest     *bool
-	TestPackageHandlers     *bool
+	TrueVal                      = true
+	FrogbotVersion               = "0.0.0"
+	branchInvalidCharsRegex      = regexp.MustCompile(branchNameRegex)
+	TestScanRepository           *bool
+	TestScanMultipleRepositories *bool
+	TestScanPullRequest          *bool
+	TestScanAllPullRequests      *bool
+	TestPackageHandlers          *bool
 )
 
 func init() {
-	TestScanRepository = flag.Bool("test.ScanRepository", false, "Test Scan Repository")
-	TestScanPullRequest = flag.Bool("test.ScanPullRequest", false, "Test Scan Pull Request")
-	TestPackageHandlers = flag.Bool("test.PackageHandlers", false, "Test Package Handlers")
+	TestScanRepository = flag.Bool("test.scanrepository", false, "Test Scan Repository")
+	TestScanMultipleRepositories = flag.Bool("test.scanmultiplerepositories", false, "Test Scan Multiple Repositories")
+	TestScanPullRequest = flag.Bool("test.scanpullrequest", false, "Test Scan Pull Request")
+	TestScanAllPullRequests = flag.Bool("test.scanallpullrequests", false, "Test Scan Pull Request")
+	TestPackageHandlers = flag.Bool("test.packagehandlers", false, "Test Package Handlers")
 }
 
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{

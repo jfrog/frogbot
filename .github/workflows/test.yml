@@ -4,7 +4,7 @@ on:
   push:
   # Triggers the workflow on labeled PRs only.
   pull_request_target:
-    types: [labeled]
+    types: [ labeled ]
 
 jobs:
   tests:
@@ -14,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [ScanPullRequest, ScanRepository, PackageHandlers]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        suite: [ ScanPullRequest, ScanAllPullRequests, ScanRepository, ScanMultipleRepositories, PackageHandlers ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
