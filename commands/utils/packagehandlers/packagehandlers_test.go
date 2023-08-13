@@ -33,8 +33,14 @@ type pipPackageRegexTest struct {
 	expectedRequirement string
 }
 
-// Go
+func initPackageHandlersTest(t *testing.T) {
+	if !*utils.TestPackageHandlers {
+		t.Skip("Skipping Package Handlers tests. To run Package Handlers tests add the '-test.PackageHandlersTest=true' option.")
+	}
+}
+
 func TestGoPackageHandler_UpdateDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	goPackageHandler := GoPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -77,8 +83,8 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-// Python, includes pip,pipenv, poetry
 func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	testcases := []pythonIndirectDependencies{
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
@@ -150,6 +156,7 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 }
 
 func TestPipPackageRegex(t *testing.T) {
+	initPackageHandlersTest(t)
 	var pipPackagesRegexTests = []pipPackageRegexTest{
 		{"oslo.config", "oslo.config>=1.12.1,<1.13"},
 		{"oslo.utils", "oslo.utils<5.0,>=4.0.0"},
@@ -170,8 +177,8 @@ func TestPipPackageRegex(t *testing.T) {
 	}
 }
 
-// Npm
 func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	npmPackageHandler := &NpmPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -205,8 +212,8 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-// Yarn
 func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
@@ -240,8 +247,8 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-// Maven
 func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	tests := []dependencyFixTest{
 		{vulnDetails: &utils.VulnerabilityDetails{
 			SuggestedFixedVersion:       "2.7",
@@ -270,8 +277,8 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
-// Maven utils functions
 func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	testCases := []string{`<dependency>
 	<groupId>org.apache.commons</groupId>
 	<artifactId>commons-email</artifactId>
@@ -298,6 +305,7 @@ func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
 }
 
 func TestGetDependenciesFromPomXmlMultiDependency(t *testing.T) {
+	initPackageHandlersTest(t)
 	testCases := []string{`
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
@@ -333,6 +341,7 @@ func TestGetDependenciesFromPomXmlMultiDependency(t *testing.T) {
 }
 
 func TestGetPluginsFromPomXml(t *testing.T) {
+	initPackageHandlersTest(t)
 	testCase :=
 		`<project>
 			<build>
@@ -391,6 +400,7 @@ func TestGetPluginsFromPomXml(t *testing.T) {
 }
 
 func TestGetDependenciesFromDependencyManagement(t *testing.T) {
+	initPackageHandlersTest(t)
 	testCase := `
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
@@ -442,6 +452,7 @@ func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 }
 
 func TestMavenGavReader(t *testing.T) {
+	initPackageHandlersTest(t)
 	mvnHandler := &MavenPackageHandler{}
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -462,6 +473,7 @@ func TestMavenGavReader(t *testing.T) {
 
 // General Utils functions
 func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
+	initPackageHandlersTest(t)
 	type testCase struct {
 		fixVersionInfo utils.VulnerabilityDetails
 		newFixVersion  string
@@ -482,6 +494,7 @@ func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 }
 
 func TestUpdatePackageVersion(t *testing.T) {
+	initPackageHandlersTest(t)
 	testProjectPath := filepath.Join("..", "..", "testdata", "packagehandlers")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -513,6 +526,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 }
 
 func TestUpdatePropertiesVersion(t *testing.T) {
+	initPackageHandlersTest(t)
 	testProjectPath := filepath.Join("..", "..", "testdata", "packagehandlers")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)

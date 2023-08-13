@@ -10,11 +10,11 @@ jobs:
   tests:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.suite }} ${{ matrix.os }}
+    name: ${{ matrix.suite }} (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        suite: [ScanPullRequest, ScanRepository]
+        suite: [ScanPullRequest, ScanRepository, PackageHandlers]
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Unlabel 'safe to test'
@@ -67,6 +67,7 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
+
       # Generate code coverage
       - name: Send coverage
         run: |
