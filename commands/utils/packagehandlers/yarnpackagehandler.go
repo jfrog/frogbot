@@ -1,23 +1,19 @@
 package packagehandlers
 
 import (
-	"bytes"
 	"errors"
 	biUtils "github.com/jfrog/build-info-go/build/utils"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"golang.org/x/exp/rand"
-	"os/exec"
-	"strconv"
-	"time"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )
 
 const (
 	yarnV2Version          = "2.0.0"
 	yarnV1PackageUpdateCmd = "upgrade"
 	yarnV2PackageUpdateCmd = "up"
-	modulesFolderFlag      = "--modules-folder=./"
+	modulesFolderFlag      = "--modules-folder="
 )
 
 type YarnPackageHandler struct {
@@ -36,21 +32,26 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
+// TODO: see that scan pull request works correctly with yarn1 and yarn2
+// TODO: fix pull PR and merge
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
-	clonedDirPath, executableYarnVersion, err := getWorkingDirectoryAndYarnVersion()
+	executableYarnVersion, err := getYarnVersion()
 	if err != nil {
 		return
 	}
 
-	var dirToDeleteName string
+	var tmpDirToDelete string
 	isV2AndAbove := version.NewVersion(executableYarnVersion).Compare(yarnV2Version) <= 0
 
 	if isV2AndAbove {
 		vulnDetails.Technology.SetPackageInstallationCommand(yarnV2PackageUpdateCmd)
 	} else {
 		vulnDetails.Technology.SetPackageInstallationCommand(yarnV1PackageUpdateCmd)
-		dirToDeleteName = getRandomToDeleteDirName()
-		extraArgs = append(extraArgs, modulesFolderFlag+dirToDeleteName)
+		tmpDirToDelete, err = fileutils.CreateTempDir()
+		if err != nil {
+			return
+		}
+		extraArgs = append(extraArgs, modulesFolderFlag+tmpDirToDelete)
 	}
 	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
 	if err != nil {
@@ -58,37 +59,15 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	}
 
 	if !isV2AndAbove {
-		return deleteNodeModulesDir(clonedDirPath, dirToDeleteName)
+		err = fileutils.RemoveTempDir(tmpDirToDelete)
 	}
 	return
 }
 
-// deleteNodeModulesDir deletes a directory that contains node_modules that is automatically created when upgrading a package
-// in yarn 1 ('yarn install' runs automatically when running 'yarn upgrade')
-func deleteNodeModulesDir(clonedDirPath string, toDelete string) (err error) {
-	command := exec.Command("rm", "-rf", clonedDirPath+"/"+toDelete)
-	command.Dir = clonedDirPath
-	errBuffer := bytes.NewBuffer([]byte{})
-	command.Stderr = errBuffer
-	err = command.Run()
-	if err != nil {
-		err = errors.New("removing " + toDelete + " directory after updating some package has failed:\n" + err.Error())
-	}
-	return
-}
-
-// getRandomToDeleteDirName returns a directory name that starts with 'to_delete' following a pseudo random number
-// this directory is used to store node_modules created when upgrading packages in yarn 1 and needs to be deleted before pushed to VC
-func getRandomToDeleteDirName() string {
-	rand.Seed(uint64(time.Now().UnixNano()))
-	randomNumberString := strconv.Itoa(int(rand.Int63n(1e9)))
-	return "to_delete" + randomNumberString
-}
-
-// getWorkingDirectoryAndYarnVersion gets current working directory and executed yarn version required to check what is
+// getYarnVersion gets current working directory and executed yarn version required to check what is
 // the correct yarn command to execute for updating packages
-func getWorkingDirectoryAndYarnVersion() (clonedDirPath string, executableYarnVersion string, err error) {
-	clonedDirPath, err = coreutils.GetWorkingDirectory()
+func getYarnVersion() (executableYarnVersion string, err error) {
+	workingDirectory, err := coreutils.GetWorkingDirectory()
 	if err != nil {
 		err = errors.New("couldn't fetch current working directory: " + err.Error())
 		return
@@ -98,9 +77,9 @@ func getWorkingDirectoryAndYarnVersion() (clonedDirPath string, executableYarnVe
 		err = errors.New("couldn't fetch yarn executable: " + err.Error())
 		return
 	}
-	executableYarnVersion, err = biUtils.GetVersion(yarnExecutablePath, clonedDirPath)
+	executableYarnVersion, err = biUtils.GetVersion(yarnExecutablePath, workingDirectory)
 	if err != nil {
-		return
+		err = errors.New("couldn't get yarn executed version: " + err.Error())
 	}
 	return
 }
