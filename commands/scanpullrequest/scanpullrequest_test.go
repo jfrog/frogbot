@@ -40,7 +40,7 @@ const (
 
 func initScanPullRequestTest(t *testing.T) {
 	if !*utils.TestScanPullRequest {
-		t.Skip("Skipping Scan Pull Request tests. To run Scan Pull Request tests add the '-test.ScanPullRequestTest=true' option.")
+		t.Skip("Skipping Scan Pull Request tests. To run Scan Pull Request tests add the '--test.Scan-Pull-Request' option.")
 	}
 }
 

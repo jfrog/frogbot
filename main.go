@@ -1,13 +1,12 @@
 package main
 
 import (
-	"github.com/jfrog/frogbot/commands/utils"
-	"os"
-
 	"github.com/jfrog/frogbot/commands"
+	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/log"
 	clitool "github.com/urfave/cli/v2"
+	"os"
 )
 
 func main() {
