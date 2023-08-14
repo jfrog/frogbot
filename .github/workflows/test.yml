@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers, Resolve-Dependency ]
+        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers, resolvedependency ]
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
@@ -63,7 +63,7 @@ jobs:
 
       # Run tests
       - name: Tests
-        run: go test -p 1 github.com/jfrog/frogbot -v -race -timeout 30m -cover --test.${{ matrix.suite }}
+        run: go test github.com/jfrog/frogbot -race -timeout 30m -cover -v --test.${{ matrix.suite }}
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
