@@ -33,7 +33,7 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	var tmpDirToDelete string
+	var tmpNodeModulesDir string
 	var installationCommand string
 	var extraArgs []string
 
@@ -44,15 +44,16 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 
 	if isYarn1 {
 		installationCommand = yarnV1PackageUpdateCmd
-		tmpDirToDelete, err = fileutils.CreateTempDir()
+		// This dir is created to store node_modules that are created during updating packages in Yarn V1. This dir is to be deleted and not pushed into the PR
+		tmpNodeModulesDir, err = fileutils.CreateTempDir()
 		defer func() {
-			err = fileutils.RemoveTempDir(tmpDirToDelete)
+			err = errors.Join(err, fileutils.RemoveTempDir(tmpNodeModulesDir))
 		}()
 
 		if err != nil {
 			return
 		}
-		extraArgs = append(extraArgs, modulesFolderFlag+tmpDirToDelete)
+		extraArgs = append(extraArgs, modulesFolderFlag+tmpNodeModulesDir)
 	} else {
 		installationCommand = yarnV2PackageUpdateCmd
 	}
