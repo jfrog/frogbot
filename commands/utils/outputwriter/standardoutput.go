@@ -10,7 +10,6 @@ import (
 type StandardOutput struct {
 	showCaColumn   bool
 	entitledForJas bool
-	outputContext  OutputContext
 	vcsProvider    vcsutils.VcsProvider
 }
 
@@ -39,8 +38,19 @@ func (so *StandardOutput) NoVulnerabilitiesTitle() string {
 	return GetBanner(NoVulnerabilityPrBannerSource)
 }
 
-func (so *StandardOutput) VulnerabilitiesTitle(outputContext OutputContext) string {
-	return GetBanner(GetVulnerabilitiesTitleImagePath(outputContext, so.vcsProvider))
+func (so *StandardOutput) VulnerabilitiesTitle(isComment bool) string {
+	var banner string
+	switch {
+	case isComment && so.vcsProvider == vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesMrBannerSource)
+	case isComment && so.vcsProvider != vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesPrBannerSource)
+	case !isComment && so.vcsProvider == vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesFixMrBannerSource)
+	case !isComment && so.vcsProvider != vcsutils.GitLab:
+		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
+	}
+	return banner
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
@@ -161,12 +171,4 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 `
 	}
 	return msg
-}
-
-func (so *StandardOutput) SetOutputContext(outputContext OutputContext) {
-	so.outputContext = outputContext
-}
-
-func (so *StandardOutput) OutputContext() OutputContext {
-	return so.outputContext
 }

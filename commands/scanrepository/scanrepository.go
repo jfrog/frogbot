@@ -23,8 +23,6 @@ import (
 	"strings"
 )
 
-const ScanRepository = "scan-repository"
-
 type ScanRepositoryCmd struct {
 	// The interface that Frogbot utilizes to format and style the displayed messages on the Git providers
 	outputwriter.OutputWriter
@@ -353,7 +351,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(scanHash string, vulnera
 		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), ""
 	}
 
-	prBody := cfp.OutputWriter.VulnerabilitiesTitle(outputwriter.RepositoryScan) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
+	prBody := cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
 		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash))
 	}

@@ -15,7 +15,6 @@ const (
 type SimplifiedOutput struct {
 	showCaColumn   bool
 	entitledForJas bool
-	outputContext  OutputContext
 	vcsProvider    vcsutils.VcsProvider
 }
 
@@ -46,8 +45,8 @@ func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
 	return GetSimplifiedTitle(NoVulnerabilityPrBannerSource)
 }
 
-func (smo *SimplifiedOutput) VulnerabilitiesTitle(outputContext OutputContext) string {
-	if outputContext == RepositoryScan {
+func (smo *SimplifiedOutput) VulnerabilitiesTitle(isComment bool) string {
+	if isComment {
 		return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
 	}
 	return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
@@ -141,12 +140,4 @@ func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
 	}
 	return msg
-}
-
-func (smo *SimplifiedOutput) SetOutputContext(outputContext OutputContext) {
-	smo.outputContext = outputContext
-}
-
-func (smo *SimplifiedOutput) OutputContext() OutputContext {
-	return smo.outputContext
 }

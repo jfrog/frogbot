@@ -64,6 +64,19 @@ jobs:
           # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
           # JF_RELEASES_REPO: ""
 
+          # [Optional]
+          # Configure the SMTP server to enable Frogbot to send emails about detected secrets in pull request scans.
+          # The SMTP server should include the relevant port in this format: smtp.server.com:port
+          # JF_SMTP_SERVER: ""
+
+          # [Mandatory if JF_SMTP_SERVER is set]
+          # The username required for authenticating with the SMTP server.
+          # JF_SMTP_AUTH_USER: ""
+
+          # [Mandatory if JF_SMTP_SERVER is set]
+          # The password associated with the username required for authentication with the SMTP server.
+          # JF_SMTP_AUTH_PASS: ""
+
           ##########################################################################
           ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
           ##   the following variables inside the file, instead of here.          ##
@@ -108,3 +121,8 @@ jobs:
           # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
           # The following values are accepted: Low, Medium, High or Critical
           # JF_MIN_SEVERITY: ""
+
+          # [Mandatory if JF_SMTP_SERVER is set]
+          # List of email addresses to receive emails about secrets that has been detected in a pull request scan.
+          # The list should be seperated by commas.
+          # JF_EMAIL_RECEIVERS: ""

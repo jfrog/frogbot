@@ -338,42 +338,49 @@ func sendEmailIfSecretsExposed(secrets []formats.IacSecretsRow, repo *Repository
 	if len(secrets) == 0 {
 		return nil
 	}
-	writer := repo.OutputWriter
 	emailDetails := repo.EmailDetails
-	emailLogo := string(outputwriter.GetVulnerabilitiesTitleImagePath(writer.OutputContext(), writer.VcsProvider()))
-	metadada := ""
-	if writer.OutputContext() == outputwriter.PullRequestScan {
-		metadada = outputwriter.GetEmailPullRequestMetadata(repo.PullRequestDetails)
-	}
-	emailContent := getSecretsEmailContent(secrets, emailLogo, metadada)
+	emailContent := getSecretsEmailContent(secrets, repo)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpAuthUser)
-	subject := "Frogbot Detected Potential Secrets"
+	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 
-func getSecretsEmailContent(secrets []formats.IacSecretsRow, emailLogo, metadata string) string {
+func getSecretsEmailContent(secrets []formats.IacSecretsRow, repo *Repository) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
 		tableContent.WriteString(
 			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
-				outputwriter.GetApplicableIconPath(outputwriter.IconName(secret.Severity)),
-				secret.Severity,
 				secret.File,
 				secret.LineColumn,
 				secret.Text))
 	}
+	pullOrMergeRequest := "pull request"
+	if repo.VcsProvider() == vcsutils.GitLab {
+		pullOrMergeRequest = "merge request"
+	}
 
-	return fmt.Sprintf(outputwriter.SecretsEmailHTMLTemplate, outputwriter.SecretsEmailCSS, emailLogo, tableContent.String(), metadata, "../../resources/jfrogLogo.png")
+	return fmt.Sprintf(
+		outputwriter.SecretsEmailHTMLTemplate,
+		outputwriter.SecretsEmailCSS,
+		repo.PullRequestDetails.URL,
+		pullOrMergeRequest,
+		tableContent.String(),
+	)
 }
 
 func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {
+	e := prepareEmail(sender, subject, content, emailDetails)
+	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpAuthUser, emailDetails.SmtpAuthPass, emailDetails.SmtpServer)
+	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
+}
+
+func prepareEmail(sender, subject, content string, emailDetails EmailDetails) *email.Email {
 	e := email.NewEmail()
 	e.From = sender
 	e.To = emailDetails.EmailReceivers
 	e.Subject = subject
 	e.HTML = []byte(content)
-	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpAuthUser, emailDetails.SmtpAuthPass, emailDetails.SmtpServer)
-	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
+	return e
 }
 
 func getRelevantEmailReceivers(repo *Repository, client vcsclient.VcsClient, branch string) ([]string, error) {
@@ -382,9 +389,13 @@ func getRelevantEmailReceivers(repo *Repository, client vcsclient.VcsClient, bra
 		return nil, err
 	}
 
+	return getEmailReceiversFromCommits(commits, repo.EmailReceivers)
+}
+
+func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredEmailReceivers []string) ([]string, error) {
 	emailReceivers := datastructures.MakeSet[string]()
 	for _, commit := range commits {
-		if shouldExcludeEmail(commit.AuthorEmail, emailExcludes) || shouldExcludeEmail(commit.AuthorEmail, repo.EmailReceivers) {
+		if shouldExcludeEmail(commit.AuthorEmail, emailExcludes) || shouldExcludeEmail(commit.AuthorEmail, preConfiguredEmailReceivers) {
 			continue
 		}
 		emailReceivers.Add(commit.AuthorEmail)

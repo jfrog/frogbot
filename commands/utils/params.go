@@ -125,15 +125,30 @@ type EmailDetails struct {
 	EmailReceivers []string `yaml:"emailReceivers,omitempty"`
 }
 
-func (s *Scan) SetEmailDetails() {
-	s.SmtpServer = getTrimmedEnv(SmtpServer)
-	s.SmtpPort = getTrimmedEnv(SmtpPort)
-	s.SmtpAuthUser = getTrimmedEnv(SmtpAuthUser)
-	s.SmtpAuthPass = getTrimmedEnv(SmtpAuthPass)
+func (s *Scan) SetEmailDetails() error {
+	smtpServerAndPort := getTrimmedEnv(SmtpServerEnv)
+	if smtpServerAndPort == "" {
+		return nil
+	}
+	splittedServerAndPort := strings.Split(smtpServerAndPort, ":")
+	if len(splittedServerAndPort) < 2 {
+		return fmt.Errorf("failed while setting your email details. Could not extract the smtp server and its port from the %s environment variable. Expected format: `smtp.server.com:port`, received: %s", SmtpServerEnv, smtpServerAndPort)
+	}
+	s.SmtpServer = splittedServerAndPort[0]
+	s.SmtpPort = splittedServerAndPort[1]
+	s.SmtpAuthUser = getTrimmedEnv(SmtpAuthUserEnv)
+	s.SmtpAuthPass = getTrimmedEnv(SmtpAuthPassEnv)
+	if s.SmtpAuthUser == "" {
+		return fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpAuthUserEnv)
+	}
+	if s.SmtpAuthPass == "" {
+		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpAuthPassEnv)
+	}
 	if len(s.EmailReceivers) == 0 {
-		emailReceivers := getTrimmedEnv(EmailReceivers)
+		emailReceivers := getTrimmedEnv(EmailReceiversEnv)
 		s.EmailReceivers = strings.Split(emailReceivers, ",")
 	}
+	return nil
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -171,7 +186,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-	s.SetEmailDetails()
+	err = s.SetEmailDetails()
 	return
 }
 
@@ -308,29 +323,21 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
 func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
-	outputContext := getOutputContext(commandName)
-	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, outputContext)
+	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, commandName)
 	// Don't return error in case of a missing frogbot-config.yml file
 	// If an error occurs due to a missing file, attempt to generate an environment variable-based configuration aggregator as an alternative.
 	var errMissingConfig *ErrMissingConfig
 	if !errors.As(err, &errMissingConfig) && len(configFileContent) == 0 {
 		return nil, err
 	}
-	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, outputContext)
-}
-
-func getOutputContext(commandName string) outputwriter.OutputContext {
-	if commandName == ScanPullRequest || commandName == ScanAllPullRequests {
-		return outputwriter.PullRequestScan
-	}
-	return outputwriter.RepositoryScan
+	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
 // If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
 // If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
-func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, outputContext outputwriter.OutputContext) (configFileContent []byte, err error) {
-	if outputContext == outputwriter.RepositoryScan {
+func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) (configFileContent []byte, err error) {
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
 		return
 	}
@@ -339,7 +346,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, outputContext outputwriter.OutputContext) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -348,7 +355,6 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
 		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
-		repository.SetOutputContext(outputContext)
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv); err != nil {
 			return
 		}

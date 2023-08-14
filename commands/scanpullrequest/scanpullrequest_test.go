@@ -683,8 +683,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Text:       "aws violation",
 				},
 			},
 			sourceIacResults:                []utils2.IacOrSecretResult{},
@@ -698,8 +697,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Text:       "aws violation",
 				},
 			},
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
@@ -707,8 +705,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:         "High",
 					File:             "file1",
 					LineColumn:       "1:10",
-					Type:             "Secret",
-					Text:             "Sensitive information",
+					Text:             "aws violation",
 					SeverityNumValue: 10,
 				},
 			},
@@ -720,11 +717,93 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
+					Text:       "aws violation",
+				},
+			},
+			sourceIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "Medium",
+					File:       "file2",
+					LineColumn: "2:5",
+					Text:       "gcp violation",
+				},
+			},
+			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "Medium",
+					SeverityNumValue: 8,
+					File:             "file2",
+					LineColumn:       "2:5",
+					Text:             "gcp violation",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			addedIacVulnerabilities := createNewIacOrSecretsRows(tc.targetIacResults, tc.sourceIacResults, false)
+			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
+		})
+	}
+}
+
+func TestCreateNewSecretRows(t *testing.T) {
+	testCases := []struct {
+		name                                string
+		targetSecretsResults                []utils2.IacOrSecretResult
+		sourceSecretsResults                []utils2.IacOrSecretResult
+		expectedAddedSecretsVulnerabilities []formats.IacSecretsRow
+	}{
+		{
+			name: "No vulnerabilities in source secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
 					Type:       "Secret",
 					Text:       "Sensitive information",
 				},
 			},
-			sourceIacResults: []utils2.IacOrSecretResult{
+			sourceSecretsResults:                []utils2.IacOrSecretResult{},
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{},
+		},
+		{
+			name:                 "No vulnerabilities in target secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{},
+			sourceSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					File:             "file1",
+					LineColumn:       "1:10",
+					Type:             "Secret",
+					Text:             "Sensitive information",
+					SeverityNumValue: 10,
+				},
+			},
+		},
+		{
+			name: "Some new vulnerabilities in source secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			sourceSecretsResults: []utils2.IacOrSecretResult{
 				{
 					Severity:   "Medium",
 					File:       "file2",
@@ -733,7 +812,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Text:       "Confidential data",
 				},
 			},
-			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 8,
@@ -748,8 +827,8 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addedIacVulnerabilities := createNewIacRows(tc.targetIacResults, tc.sourceIacResults)
-			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
+			addedIacVulnerabilities := createNewIacOrSecretsRows(tc.targetSecretsResults, tc.sourceSecretsResults, true)
+			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedIacVulnerabilities)
 		})
 	}
 }

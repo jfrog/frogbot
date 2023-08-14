@@ -2,8 +2,6 @@ package outputwriter
 
 import (
 	"fmt"
-	"github.com/jfrog/froggit-go/vcsclient"
-
 	//"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -13,29 +11,22 @@ import (
 )
 
 const (
-	FrogbotPullRequestTitlePrefix                    = "[🐸 Frogbot]"
+	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	SecretsEmailCSS                                  = `body {
-            text-align: center;
             font-family: Arial, sans-serif;
-        }
-        a img {
-            display: block;
-            margin: 0 auto;
-            max-width: 100%;
+            background-color: #f5f5f5;
         }
         table {
-            margin: 20px auto;
             border-collapse: collapse;
             width: 80%;
         }
         th, td {
             padding: 10px;
             border: 1px solid #ccc;
-            text-align: center;
         }
         th {
             background-color: #f2f2f2;
@@ -46,20 +37,19 @@ const (
         tr:hover {
             background-color: #f5f5f5;
         }
-        img.severity-icon {
-            max-height: 30px;
-            vertical-align: middle;
-        }
-        h1 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 20px;
-        }
         .table-container {
+            max-width: 700px;
+            padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             overflow: hidden;
             background-color: #fff;
+			margin-top: 10px;
+        }
+        .ignore-comments {
+            margin-top: 10px;
+			margin-bottom: 5px;
+            border-radius: 5px;
         }`
 	SecretsEmailHTMLTemplate = `
 <!DOCTYPE html>
@@ -71,43 +61,33 @@ const (
     </style>
 </head>
 <body>
-    <div align="center" class="table-container">
-        <a href="https://github.com/jfrog/frogbot#readme">
-            <img src="%s" alt="Banner">
-        </a>ֿ
-        <table>
+	<div>
+		The following potential exposed secrets in your <a href="%s">%s</a> have been detected by <a href="https://github.com/jfrog/frogbot#readme">Frogbot</a>
+		<br/>
+		<table class="table-container">
             <thead>
                 <tr>
-                    <th>SEVERITY</th>
                     <th>FILE</th>
                     <th>LINE:COLUMN</th>
-                    <th>TEXT</th>
+                    <th>SECRET</th>
                 </tr>
             </thead>
             <tbody>
                 %s
             </tbody>
         </table>
-		<hr>
-		%s
-		<img src="%s" alt="JFrog">
-		 </div>
+		<div class="ignore-comments">
+		To make Frogbot ignore the lines with the potential secrets, add a comment above the line which includes the <b>jfrog-ignore</b> keyword.	
+		</div>
+	</div>
 </body>
 </html>`
 	SecretsEmailTableRow = `
 				<tr>
-					<td><img class="severity-icon" src="%s" alt="severity"> %s </td>
 					<td> %s </td>
 					<td> %s </td>
 					<td> %s </td>
 				</tr>`
-)
-
-type OutputContext int
-
-const (
-	PullRequestScan OutputContext = 0
-	RepositoryScan  OutputContext = 1
 )
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -115,7 +95,7 @@ const (
 type OutputWriter interface {
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
-	VulnerabilitiesTitle(outputContext OutputContext) string
+	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.IacSecretsRow) string
 	Footer() string
@@ -126,8 +106,6 @@ type OutputWriter interface {
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
-	SetOutputContext(outputContext OutputContext)
-	OutputContext() OutputContext
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -218,9 +196,9 @@ func MarkdownComment(text string) string {
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
 	if tech.ToString() == "" {
-		return FrogbotPullRequestTitlePrefix + " Update dependencies"
+		return FrogbotTitlePrefix + " Update dependencies"
 	}
-	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
+	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
 }
 
 func getVulnerabilitiesTableHeader(showCaColumn bool) string {
@@ -228,28 +206,4 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 		return vulnerabilitiesTableHeaderWithContextualAnalysis
 	}
 	return vulnerabilitiesTableHeader
-}
-
-func GetVulnerabilitiesTitleImagePath(outputContext OutputContext, provider vcsutils.VcsProvider) ImageSource {
-	isPrContext := outputContext == PullRequestScan
-	path := VulnerabilitiesFixPrBannerSource // Default value
-
-	if isPrContext {
-		if provider == vcsutils.GitLab {
-			path = VulnerabilitiesMrBannerSource
-		} else {
-			path = VulnerabilitiesPrBannerSource
-		}
-	} else {
-		if provider == vcsutils.GitLab {
-			path = VulnerabilitiesFixMrBannerSource
-		}
-	}
-
-	return getFullResourceUrl(path)
-}
-
-func GetEmailPullRequestMetadata(prDetails vcsclient.PullRequestInfo) string {
-	return fmt.Sprintf("You are receiving this email because you initiated a JFrog Frogbot scan on your pull request.<br/>The pull request was triggered on %s/%s in the %s branch.<br/><a href='%s'>View it here</a><br/>",
-		prDetails.Target.Owner, prDetails.Target.Repository, prDetails.Target.Name, prDetails.URL)
 }

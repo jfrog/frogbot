@@ -37,49 +37,31 @@ func getSeverityTag(iconName IconName, applicability string) string {
 }
 
 func getNotApplicableIconTags(iconName IconName) string {
-	return GetIconTag(getNotApplicableIconPath(iconName)) + "<br>"
+	switch strings.ToLower(string(iconName)) {
+	case "critical":
+		return GetIconTag(notApplicableCriticalSeveritySource) + "<br>"
+	case "high":
+		return GetIconTag(notApplicableHighSeveritySource) + "<br>"
+	case "medium":
+		return GetIconTag(notApplicableMediumSeveritySource) + "<br>"
+	case "low":
+		return GetIconTag(notApplicableLowSeveritySource) + "<br>"
+	}
+	return GetIconTag(notApplicableUnknownSeveritySource) + "<br>"
 }
 
 func getApplicableIconTags(iconName IconName) string {
-	return GetIconTag(GetApplicableIconPath(iconName)) + "<br>"
-}
-
-func GetApplicableIconPath(iconName IconName) ImageSource {
-	var imageSource ImageSource
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
-		imageSource = criticalSeveritySource
+		return GetIconTag(criticalSeveritySource) + "<br>"
 	case "high":
-		imageSource = highSeveritySource
+		return GetIconTag(highSeveritySource) + "<br>"
 	case "medium":
-		imageSource = mediumSeveritySource
+		return GetIconTag(mediumSeveritySource) + "<br>"
 	case "low":
-		imageSource = lowSeveritySource
-	default:
-		imageSource = unknownSeveritySource
+		return GetIconTag(lowSeveritySource) + "<br>"
 	}
-	return getFullResourceUrl(imageSource)
-}
-
-func getNotApplicableIconPath(iconName IconName) ImageSource {
-	var imageSource ImageSource
-	switch strings.ToLower(string(iconName)) {
-	case "critical":
-		imageSource = notApplicableCriticalSeveritySource
-	case "high":
-		imageSource = notApplicableHighSeveritySource
-	case "medium":
-		imageSource = notApplicableMediumSeveritySource
-	case "low":
-		imageSource = notApplicableLowSeveritySource
-	default:
-		imageSource = notApplicableUnknownSeveritySource
-	}
-	return getFullResourceUrl(imageSource)
-}
-
-func getFullResourceUrl(imageSource ImageSource) ImageSource {
-	return baseResourceUrl + imageSource
+	return GetIconTag(unknownSeveritySource) + "<br>"
 }
 
 func GetBanner(banner ImageSource) string {
@@ -88,7 +70,7 @@ func GetBanner(banner ImageSource) string {
 }
 
 func GetIconTag(imageSource ImageSource) string {
-	return fmt.Sprintf("![](%s)", imageSource)
+	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
 }
 
 func GetSimplifiedTitle(is ImageSource) string {

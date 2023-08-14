@@ -122,8 +122,8 @@
           "array",
           "null"
         ],
-        "description": "List of email addresses to receive emails from Frogbot.",
-        "title": "List of email addresses to receive emails from Frogbot",
+        "description": "List of email addresses to receive emails about secrets that has been detected in a pull request scan.",
+        "title": "List of email addresses to receive emails about secrets that has been detected in a pull request scan",
         "items": {
           "type": "string",
           "title": "Email Address",
