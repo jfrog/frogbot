@@ -69,7 +69,7 @@ func init() {
 	TestScanPullRequest = flag.Bool("test.Scan-Pull-Request", false, "Test Scan Pull Request")
 	TestScanAllPullRequests = flag.Bool("test.Scan-All-Pull-Requests", false, "Test Scan Pull Request")
 	TestPackageHandlers = flag.Bool("test.Package-Handlers", false, "Test Package Handlers")
-	TestResolveDependency = flag.Bool("test.Resolve-Dependencies", false, "Test Resolve Dependencies")
+	TestResolveDependency = flag.Bool("test.Resolve-Dependency", false, "Test Resolve Dependency")
 
 	noSuitSelected := !(*TestScanRepository ||
 		*TestScanMultipleRepositories ||

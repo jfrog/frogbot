@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	coreTests "github.com/jfrog/jfrog-cli-core/v2/utils/tests"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
@@ -21,15 +19,6 @@ const (
 )
 
 func TestRunner(t *testing.T) {
-	// Create temp jfrog home
-	cleanUpJfrogHome, err := coreTests.SetJfrogHome()
-	if err != nil {
-		log.Error(err)
-		os.Exit(1)
-	}
-	// Clean from previous tests.
-	defer cleanUpJfrogHome()
-
 	packages := clientTests.GetTestPackages("./...")
 	// Exclude module to avoid loop
 	packages = clientTests.ExcludeTestsPackage(packages, FrogbotModuleName)
