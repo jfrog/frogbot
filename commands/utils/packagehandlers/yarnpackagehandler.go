@@ -33,52 +33,46 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	executableYarnVersion, err := getYarnVersion()
-	if err != nil {
-		return
-	}
-
 	var tmpDirToDelete string
 	var installationCommand string
 	var extraArgs []string
-	isV2AndAbove := version.NewVersion(executableYarnVersion).Compare(yarnV2Version) <= 0
 
-	if isV2AndAbove {
-		installationCommand = yarnV2PackageUpdateCmd
-	} else {
+	if isYarnV1() {
 		installationCommand = yarnV1PackageUpdateCmd
 		tmpDirToDelete, err = fileutils.CreateTempDir()
+		defer func() {
+			err = fileutils.RemoveTempDir(tmpDirToDelete)
+		}()
+
 		if err != nil {
 			return
 		}
 		extraArgs = append(extraArgs, modulesFolderFlag+tmpDirToDelete)
+	} else {
+		installationCommand = yarnV2PackageUpdateCmd
 	}
 	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
 	if err != nil {
 		return
 	}
-
-	if !isV2AndAbove {
-		err = fileutils.RemoveTempDir(tmpDirToDelete)
-	}
 	return
 }
 
-// getYarnVersion gets the project's executed yarn version. This is required for fetching the correct command for updating packages
-func getYarnVersion() (executableYarnVersion string, err error) {
+// isYarnV1 gets the current executed yarn version and returns whether the current yarn version is V1 or not
+func isYarnV1() (isYarn1 bool) {
 	workingDirectory, err := coreutils.GetWorkingDirectory()
 	if err != nil {
-		err = errors.New("couldn't fetch current working directory: " + err.Error())
+		err = errors.New("couldn't get current working directory: " + err.Error())
 		return
 	}
 	yarnExecutablePath, err := biUtils.GetYarnExecutable()
 	if err != nil {
-		err = errors.New("couldn't fetch yarn executable: " + err.Error())
+		err = errors.New("couldn't find yarn executable: " + err.Error())
 		return
 	}
-	executableYarnVersion, err = biUtils.GetVersion(yarnExecutablePath, workingDirectory)
+	executableYarnVersion, err := biUtils.GetVersion(yarnExecutablePath, workingDirectory)
 	if err != nil {
-		err = errors.New("couldn't get yarn executed version: " + err.Error())
+		return
 	}
-	return
+	return version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
 }

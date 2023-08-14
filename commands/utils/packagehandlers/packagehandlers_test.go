@@ -537,36 +537,6 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	assert.Contains(t, string(modifiedPom), "2.39.9")
 }
 
-/* TODO delete
-func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
-	yarnPackageHandler := &YarnPackageHandler{}
-	testcase := dependencyFixTest{
-		vulnDetails: &utils.VulnerabilityDetails{
-			SuggestedFixedVersion:       "1.2.6",
-			IsDirectDependency:          true,
-			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
-		},
-		fixSupported: true,
-	}
-
-	testDataDir := getTestDataDir(t, testcase.vulnDetails.IsDirectDependency)
-	cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, "1")
-	err := yarnPackageHandler.UpdateDependency(testcase.vulnDetails)
-	assert.NoError(t, err)
-
-	command := exec.Command("ls") //todo make sure 'ls' command works in all os
-	outBuffer := bytes.NewBuffer([]byte{})
-	command.Stdout = outBuffer
-	assert.NoError(t, command.Run())
-	filesInWorkingDirectory := strings.Split(outBuffer.String(), "\n")
-	for _, inDirectory := range filesInWorkingDirectory {
-		assert.False(t, strings.HasPrefix(inDirectory, "to_delete"))
-	}
-
-	cleanup()
-}
-*/
-
 func getTestDataDir(t *testing.T, directDependency bool) string {
 	var projectDir string
 	if directDependency {
@@ -582,7 +552,7 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology, extraArgs ...string) func() {
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech.ToString())
-	if tech == "yarn" && len(extraArgs) > 0 {
+	if tech == coreutils.Yarn && len(extraArgs) > 0 {
 		// Yarn testdata was split into 2 testcases (V1 and V2) therefore a version specifier was added in extraArgs to be added to the path
 		projectPath += extraArgs[0]
 	}
