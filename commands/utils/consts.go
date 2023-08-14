@@ -54,9 +54,9 @@ const (
 
 	// Email related environment variables
 	//#nosec G101 -- False positive - no hardcoded credentials.
+	SmtpAuthPassEnv   = "JF_SMTP_AUTH_PASS"
 	SmtpServerEnv     = "JF_SMTP_SERVER"
 	SmtpAuthUserEnv   = "JF_SMTP_AUTH_USER"
-	SmtpAuthPassEnv   = "JF_SMTP_AUTH_PASS"
 	EmailReceiversEnv = "JF_EMAIL_RECEIVERS"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
