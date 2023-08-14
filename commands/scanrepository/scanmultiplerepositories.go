@@ -55,5 +55,8 @@ func (saf *ScanMultipleRepositories) downloadAndRunScanAndFix(repository *utils.
 	}()
 
 	cfp := ScanRepositoryCmd{dryRun: saf.dryRun, dryRunRepoPath: wd}
-	return cfp.scanAndFixRepository(repository, branch, client)
+	if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
+		return
+	}
+	return cfp.scanAndFixRepository(repository)
 }
