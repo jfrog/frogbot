@@ -16,6 +16,12 @@ import (
 
 var timestamp = time.Now().Unix()
 
+func initResolveDependencyTest(t *testing.T) {
+	if !*TestResolveDependency || *TestAll {
+		t.Skip("Skipping Resolve Dependency tests. To run Resolve Dependency tests add the '--test.Resolve-Dependency' option.")
+	}
+}
+
 func setTestEnvironment(t *testing.T, project string, server *config.ServerDetails) (func(), string) {
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -83,6 +89,7 @@ func createJfrogHttpClient(artDetails *auth.ServiceDetails) (*jfroghttpclient.Jf
 }
 
 func TestResolveDependencies(t *testing.T) {
+	initResolveDependencyTest(t)
 	params, restoreEnv := VerifyEnv(t)
 	defer restoreEnv()
 	testCases := []struct {

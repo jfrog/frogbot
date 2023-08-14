@@ -9,13 +9,13 @@ on:
 jobs:
   tests:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     name: ${{ matrix.suite }} (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers ]
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers, Resolve-Dependency ]
+        os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
