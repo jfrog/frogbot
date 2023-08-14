@@ -64,9 +64,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 	if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
 		return
 	}
-	if err = cfp.gitManager.Checkout(branch); err != nil {
-		return fmt.Errorf("failed to checkout to %s branch before scanning. The following error has been received:\n%s", branch, err.Error())
-	}
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
 		cfp.projectTech = ""
@@ -156,6 +153,10 @@ func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[s
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepository()
 	if err != nil {
 		return
+	}
+	// After clone, checkout to target scan branch
+	if err = cfp.gitManager.Checkout(cfp.details.Branch()); err != nil {
+		return fmt.Errorf("failed to checkout to %s branch before scanning. The following error has been received:\n%s", cfp.details.Branch(), err.Error())
 	}
 	defer func() {
 		// On dry run don't delete the folder as we want to validate results.
