@@ -37,7 +37,12 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	var installationCommand string
 	var extraArgs []string
 
-	if isYarnV1() {
+	isYarn1, err := isYarnV1()
+	if err != nil {
+		return
+	}
+
+	if isYarn1 {
 		installationCommand = yarnV1PackageUpdateCmd
 		tmpDirToDelete, err = fileutils.CreateTempDir()
 		defer func() {
@@ -59,7 +64,7 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 }
 
 // isYarnV1 gets the current executed yarn version and returns whether the current yarn version is V1 or not
-func isYarnV1() (isYarn1 bool) {
+func isYarnV1() (isYarn1 bool, err error) {
 	workingDirectory, err := coreutils.GetWorkingDirectory()
 	if err != nil {
 		err = errors.New("couldn't get current working directory: " + err.Error())
@@ -74,5 +79,6 @@ func isYarnV1() (isYarn1 bool) {
 	if err != nil {
 		return
 	}
-	return version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
+	isYarn1 = version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
+	return
 }
