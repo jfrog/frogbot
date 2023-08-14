@@ -62,7 +62,7 @@ func createRemoteRepo(t *testing.T, project string, server *config.ServerDetails
 	createRemoteRepoServices.ArtDetails = rtDetails
 	var repoKey string
 	switch project {
-	case "npm", "yarn2":
+	case "npm", "yarn2", "yarn1":
 		repoKey = createNpmRemoteRepo(t, createRemoteRepoServices)
 	case "dotnet":
 		repoKey = createNugetRemoteRepo(t, createRemoteRepoServices)
@@ -104,8 +104,8 @@ func TestResolveDependencies(t *testing.T) {
 			resolveFunc: resolveNpmDependencies,
 		},
 		{
-			name: "Resolve Yarn dependencies",
-			tech: "yarn",
+			name: "Resolve Yarn V2 dependencies",
+			tech: "yarn2",
 			scanSetup: &ScanDetails{
 				ServerDetails: &params,
 				Project: &Project{
@@ -130,10 +130,6 @@ func TestResolveDependencies(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			if test.tech == "yarn" {
-				// Yarn testdata was split into 2 testcases (V1 and V2) therefore another direction is required here
-				test.tech += "2"
-			}
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
@@ -141,4 +137,29 @@ func TestResolveDependencies(t *testing.T) {
 			assert.NoError(t, err, "command's output:/n"+string(output))
 		})
 	}
+
+	unsupportedTestCase := struct {
+		name        string
+		tech        string
+		scanSetup   *ScanDetails
+		repoKey     string
+		resolveFunc func(scanSetup *ScanDetails) ([]byte, error)
+	}{
+		name: "Resolve Yarn V1 dependencies",
+		tech: "yarn1",
+		scanSetup: &ScanDetails{
+			ServerDetails: &params,
+			Project: &Project{
+				InstallCommandName: "yarn",
+				InstallCommandArgs: []string{"install"},
+			}},
+		resolveFunc: resolveYarnDependencies,
+	}
+	t.Run(unsupportedTestCase.name, func(t *testing.T) {
+		restoreFunc, repoKey := setTestEnvironment(t, unsupportedTestCase.tech, &params)
+		defer restoreFunc()
+		unsupportedTestCase.scanSetup.Project.DepsRepo = repoKey
+		_, err := unsupportedTestCase.resolveFunc(unsupportedTestCase.scanSetup)
+		assert.Error(t, err)
+	})
 }
