@@ -673,19 +673,19 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NoError(t, err)
 			return
 		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") && r.Method == http.MethodPost:
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodPost:
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte("{}"))
 			assert.NoError(t, err)
 			return
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2Fclean-test-proj") && r.Method == http.MethodGet:
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
 			assert.NoError(t, err)
 			_, err = w.Write(comments)
 			assert.NoError(t, err)
 		// Return 200 when using the REST that creates the comment
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) && r.Method == http.MethodPost:
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodPost:
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
@@ -706,7 +706,7 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
 			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1/notes", "%2F"+projectName) && r.Method == http.MethodGet:
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
 			assert.NoError(t, err)
