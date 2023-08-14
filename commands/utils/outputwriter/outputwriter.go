@@ -2,7 +2,6 @@ package outputwriter
 
 import (
 	"fmt"
-	//"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -51,6 +50,7 @@ const (
 			margin-bottom: 5px;
             border-radius: 5px;
         }`
+	//#nosec G101 -- full secrets would not be hard coded
 	SecretsEmailHTMLTemplate = `
 <!DOCTYPE html>
 <html>
@@ -82,6 +82,7 @@ const (
 	</div>
 </body>
 </html>`
+	//#nosec G101 -- full secrets would not be hard coded
 	SecretsEmailTableRow = `
 				<tr>
 					<td> %s </td>

@@ -53,6 +53,7 @@ const (
 	WatchesDelimiter             = ","
 
 	// Email related environment variables
+	//#nosec G101 -- False positive - no hardcoded credentials.
 	SmtpServerEnv     = "JF_SMTP_SERVER"
 	SmtpAuthUserEnv   = "JF_SMTP_AUTH_USER"
 	SmtpAuthPassEnv   = "JF_SMTP_AUTH_PASS"
