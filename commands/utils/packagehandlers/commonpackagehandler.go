@@ -39,10 +39,10 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 type CommonPackageHandler struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
-func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, InstallationCommand string, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
-	commandArgs := []string{vulnDetails.Technology.GetPackageInstallOperator()}
+	commandArgs := []string{InstallationCommand}
 	commandArgs = append(commandArgs, extraArgs...)
 	operator := vulnDetails.Technology.GetPackageOperator()
 	fixedPackage := impactedPackage + operator + vulnDetails.SuggestedFixedVersion

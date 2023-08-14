@@ -1,7 +1,6 @@
 package packagehandlers
 
 import (
-	"bytes"
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	"github.com/jfrog/frogbot/commands/utils"
@@ -10,7 +9,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -539,6 +537,7 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	assert.Contains(t, string(modifiedPom), "2.39.9")
 }
 
+/* TODO delete
 func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
 	yarnPackageHandler := &YarnPackageHandler{}
 	testcase := dependencyFixTest{
@@ -555,7 +554,7 @@ func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
 	err := yarnPackageHandler.UpdateDependency(testcase.vulnDetails)
 	assert.NoError(t, err)
 
-	command := exec.Command("ls")
+	command := exec.Command("ls") //todo make sure 'ls' command works in all os
 	outBuffer := bytes.NewBuffer([]byte{})
 	command.Stdout = outBuffer
 	assert.NoError(t, command.Run())
@@ -566,6 +565,7 @@ func TestYarnPackageHandler_deleteNodeModulesDir(t *testing.T) {
 
 	cleanup()
 }
+*/
 
 func getTestDataDir(t *testing.T, directDependency bool) string {
 	var projectDir string

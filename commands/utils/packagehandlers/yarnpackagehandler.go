@@ -32,26 +32,28 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	executableYarnVersion, err := getYarnVersion()
 	if err != nil {
 		return
 	}
 
 	var tmpDirToDelete string
+	var installationCommand string
+	var extraArgs []string
 	isV2AndAbove := version.NewVersion(executableYarnVersion).Compare(yarnV2Version) <= 0
 
 	if isV2AndAbove {
-		vulnDetails.Technology.SetPackageInstallationCommand(yarnV2PackageUpdateCmd)
+		installationCommand = yarnV2PackageUpdateCmd
 	} else {
-		vulnDetails.Technology.SetPackageInstallationCommand(yarnV1PackageUpdateCmd)
+		installationCommand = yarnV1PackageUpdateCmd
 		tmpDirToDelete, err = fileutils.CreateTempDir()
 		if err != nil {
 			return
 		}
 		extraArgs = append(extraArgs, modulesFolderFlag+tmpDirToDelete)
 	}
-	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
+	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
 	if err != nil {
 		return
 	}
