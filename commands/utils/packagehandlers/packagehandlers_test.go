@@ -19,6 +19,7 @@ import (
 type dependencyFixTest struct {
 	vulnDetails  *utils.VulnerabilityDetails
 	fixSupported bool
+	projectDir   string
 }
 
 type pythonIndirectDependencies struct {
@@ -42,34 +43,40 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 				SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
 				IsDirectDependency:          false,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "go",
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.7.7",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "go",
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.3.0",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "go",
 		},
 	}
 	for _, test := range testcases {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Go)
+			cleanup := createTempDirAndChdir(t, testDataDir, test.projectDir)
 			err := goPackageHandler.UpdateDependency(test.vulnDetails)
-			if !test.fixSupported {
-				assert.Error(t, err, "Expected error to occur")
-				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
-			} else {
+			if test.fixSupported {
 				assert.NoError(t, err)
 				assertFixVersionInPackageDescriptor(t, test, "go.mod")
+			} else {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 			}
 			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
@@ -84,50 +91,56 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.25.9",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
-			}}, requirementsPath: "requirements.txt"},
+			}, projectDir: "pip"}, requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.25.9",
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"}}},
-			requirementsPath: "pyproejct.toml"},
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"},
+			}, projectDir: "poetry"}, requirementsPath: "pyproejct.toml"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.25.9",
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"}}},
-			requirementsPath: "Pipfile"},
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"},
+			}, projectDir: "pipenv"}, requirementsPath: "Pipfile"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
-			fixSupported: true},
+			fixSupported: true,
+			projectDir:   "pip"},
 			requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
 				IsDirectDependency:          true},
-			fixSupported: true},
+			fixSupported: true,
+			projectDir:   "pip"},
 			requirementsPath: "requirements.txt"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
-				IsDirectDependency:          true}, fixSupported: true},
+				IsDirectDependency:          true},
+			fixSupported: true,
+			projectDir:   "pip"},
 			requirementsPath: "setup.py"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
-			fixSupported: true},
+			fixSupported: true,
+			projectDir:   "poetry"},
 			requirementsPath: "pyproject.toml"},
 		{dependencyFixTest: dependencyFixTest{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "2.4.0",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
 				IsDirectDependency:          true},
-			fixSupported: true},
+			fixSupported: true,
+			projectDir:   "poetry"},
 			requirementsPath: "pyproject.toml"},
 	}
 	for _, test := range testcases {
@@ -135,7 +148,7 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			pythonPackageHandler := GetCompatiblePackageHandler(test.vulnDetails, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
-			cleanup := createTempDirAndChDir(t, testDataDir, test.vulnDetails.Technology)
+			cleanup := createTempDirAndChdir(t, testDataDir, test.projectDir)
 			err := pythonPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -178,20 +191,24 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "0.8.4",
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "mpath"},
-			}, fixSupported: false,
+			},
+			fixSupported: false,
+			projectDir:   "npm",
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "3.0.2",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "minimatch"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "npm",
 		},
 	}
 	for _, test := range testcases {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Npm)
+			cleanup := createTempDirAndChdir(t, testDataDir, test.projectDir)
 			err := npmPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -212,34 +229,41 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.2.6",
+				IsDirectDependency:          false,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
-			}, fixSupported: false,
+			},
+			fixSupported: false,
+			projectDir:   "yarn",
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.2.6",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "yarn1",
 		},
 		{
 			vulnDetails: &utils.VulnerabilityDetails{
 				SuggestedFixedVersion:       "1.2.6",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
-			}, fixSupported: true,
+			},
+			fixSupported: true,
+			projectDir:   "yarn2",
 		},
 	}
-	for idx, test := range testcases {
-		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency)+",v"+strconv.Itoa(idx), func(t *testing.T) {
+	for _, test := range testcases {
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Yarn, strconv.Itoa(idx))
+			cleanup := createTempDirAndChdir(t, testDataDir, test.projectDir)
 			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
-			if !test.fixSupported {
+			if test.fixSupported {
+				assert.NoError(t, err)
+			} else {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
-			} else {
-				assert.NoError(t, err)
 			}
 			assert.NoError(t, os.Chdir(testDataDir))
 			cleanup()
@@ -253,17 +277,21 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 		{vulnDetails: &utils.VulnerabilityDetails{
 			SuggestedFixedVersion:       "2.7",
 			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
-			IsDirectDependency:          true}, fixSupported: true},
+			IsDirectDependency:          true},
+			fixSupported: true,
+			projectDir:   "maven"},
 		{vulnDetails: &utils.VulnerabilityDetails{
 			SuggestedFixedVersion:       "4.3.20",
 			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
-			IsDirectDependency:          false}, fixSupported: false},
+			IsDirectDependency:          false},
+			fixSupported: false,
+			projectDir:   "maven"},
 	}
 	for _, test := range tests {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			mavenPackageHandler := MavenPackageHandler{}
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChDir(t, testDataDir, coreutils.Maven)
+			cleanup := createTempDirAndChdir(t, testDataDir, test.projectDir)
 			err := mavenPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -549,14 +577,9 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 	return testdataDir
 }
 
-func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Technology, extraArgs ...string) func() {
+func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func() {
 	// Create temp technology project
-	projectPath := filepath.Join(testdataDir, tech.ToString())
-	if tech == coreutils.Yarn && len(extraArgs) > 0 {
-		// Yarn testdata was split into 2 testcases (V1 and V2) therefore a version specifier was added in extraArgs to be added to the path
-		projectPath += extraArgs[0]
-	}
-
+	projectPath := filepath.Join(testdataDir, tech)
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
 	return cleanup
@@ -565,11 +588,11 @@ func createTempDirAndChDir(t *testing.T, testdataDir string, tech coreutils.Tech
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
 	file, err := os.ReadFile(packageDescriptor)
 	assert.NoError(t, err)
-	if !test.fixSupported {
-		assert.NotContains(t, string(file), test.vulnDetails)
-	} else {
+	if test.fixSupported {
 		assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
 		// Verify that case-sensitive packages in python are lowered
 		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
+	} else {
+		assert.NotContains(t, string(file), test.vulnDetails)
 	}
 }
