@@ -55,7 +55,6 @@ jobs:
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        if: ${{ matrix.suite == 'ScanPullRequest' }} && ${{ matrix.suite == 'ScanRepository' }}
 
       # Lint
       - name: Lint
