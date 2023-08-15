@@ -34,7 +34,7 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 }
 
 // Test extraction of env params in ScanPullRequest command
-// Pull request ID is not default, which mean we don't have branches related variables defined.
+// Pull request ID is not the default, which means we don't have branches related variables defined.
 func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
@@ -50,7 +50,7 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 }
 
 // Test extraction in ScanRepository command
-// Pull request ID is default 0, which mean we will have branches related variables.
+// Pull request ID's default is 0, which means we will have branches related variables.
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:              "http://127.0.0.1:8081",

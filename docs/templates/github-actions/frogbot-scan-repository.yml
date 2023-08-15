@@ -1,4 +1,4 @@
-name: "Frogbot Scan and Fix"
+name: "Frogbot Scan Repository"
 on:
   workflow_dispatch:
   schedule:
@@ -19,16 +19,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch }}
-
-      # Install prerequisites
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-          cache: 'poetry'
-
-      - name: Install poetry
-        run: python -m pip install pipenv
 
       - uses: jfrog/frogbot@v2
         env:
@@ -94,7 +84,7 @@ jobs:
           # JF_FAIL: "FALSE"
 
           # [Optional]
-          # Frogbot will download the project dependencies if they're not cached locally. To download the
+          # Frogbot will download the project dependencies, if they're not cached locally. To download the
           # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
           # need to set this value, if it is set in the frogbot-config.yml file.
           # JF_DEPS_REPO: ""

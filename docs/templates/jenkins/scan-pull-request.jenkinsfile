@@ -31,11 +31,11 @@ pipeline {
                 ],
                 causeString: 'Pull Request Trigger',
                 printContributedVariables: false,
-                // Use the token-parameter have different tokens for different jobs.
+                // Use the token parameter to have different tokens for different jobs.
                 // Using only the token means only jobs with that exact token will be visible for that request
                 // This token will be sent as a query param from the webhook
-                // Example: https://jenkinsUrl/generic-webhook-trigger/invoke?token=specificJobToken
-                token: 'jobToken'
+                // Example: https://jenkinsUrl/generic-webhook-trigger/invoke?token=MyJobToken
+                token: 'MyJobToken'
         )
     }
 
@@ -56,7 +56,7 @@ pipeline {
         // Read and Write access to code, pull requests, security events, and workflows
         JF_GIT_TOKEN = credentials("JF_GIT_TOKEN")
 
-        // [Mandatory for on premise]
+        // [Mandatory for on-premise]
         // API endpoint to VCS provider REST API
         // JF_GIT_API_ENDPOINT= ""
 
@@ -112,7 +112,7 @@ pipeline {
         // JF_FAIL= "FALSE"
 
         // [Optional, default: "TRUE"]
-        // Relative path to a Pip requirements.txt file. If not set, the python project's dependencies are determined and scanned using the project setup.py file.
+        // Relative path to a Pip requirements.txt file. If not set, the Python project's dependencies are determined and scanned using the project setup.py file.
         // JF_REQUIREMENTS_FILE= ""
 
         // [Optional, Default: "TRUE"]
@@ -121,7 +121,7 @@ pipeline {
 
         // [Optional]
         // Frogbot will download the project dependencies if they're not cached locally. To download the
-        // dependencies from a virtual repository in Artifactory, set the name of of the repository. There's no
+        // dependencies from a virtual repository in JFrog Artifactory set the name of the repository. There's no
         // need to set this value, if it is set in the frogbot-config.yml file.
         // JF_DEPS_REPO= ""
 
@@ -191,9 +191,9 @@ pipeline {
                              // For Windows runner:
                              // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                          } else {
-                             // For Linux / MacOS air gapped environments:
+                             // For Linux / MacOS air-gaped environments:
                              sh 'curl -fLg "$env.JF_URL/artifactory/$env.JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh'
-                             // For Windows air gapped environments:
+                             // For Windows air-gaped environments:
                              // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                          }
                 }

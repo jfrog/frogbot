@@ -42,7 +42,7 @@ type FrogbotDetails struct {
 type RepoAggregator []Repository
 
 // NewRepoAggregator returns an initialized RepoAggregator with an empty repository
-func NewRepoAggregator() RepoAggregator {
+func newRepoAggregator() RepoAggregator {
 	return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}
 }
 
@@ -377,7 +377,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 // If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
-		result = NewRepoAggregator()
+		result = newRepoAggregator()
 		return
 	}
 	err = yaml.Unmarshal(yamlContent, &result)
