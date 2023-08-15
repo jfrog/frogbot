@@ -52,11 +52,11 @@ func TestReportUsage(t *testing.T) {
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
-	var usageGroup *sync.WaitGroup
+	var usageGroup sync.WaitGroup
 	usageGroup.Add(1)
 	channel := make(chan error)
 	go func() {
-		channel <- ReportUsage(commandName, serverDetails, usageGroup)
+		channel <- ReportUsage(commandName, serverDetails, &usageGroup)
 	}()
 	usageGroup.Wait()
 	assert.NoError(t, <-channel)
