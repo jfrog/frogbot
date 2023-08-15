@@ -225,8 +225,8 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 
 	var newSecrets []formats.IacSecretsRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		targetSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
-		sourceSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.IacScanResults)
+		sourceSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.IacScanResults)
 		newSecrets = createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
 	}
 
