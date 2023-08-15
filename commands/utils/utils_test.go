@@ -195,7 +195,7 @@ func createUsageHandler(t *testing.T, commandName, accountId, clientId string) h
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, clientId, productId, xrayusage.GetExpectedEventName(productId, commandName)), buf.String())
+			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, clientId, productId, xrayusage.GetExpectedXrayEventName(productId, commandName)), buf.String())
 
 			// Send response OK
 			w.WriteHeader(http.StatusOK)
