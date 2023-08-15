@@ -2,9 +2,8 @@
 
 # Set up Frogbot Using Jenkins
 
-<div>
-<img src="../../../images/jenkins-logo.png" width="250">
-<img src="../../../images/frogbot-circle.png" width="180">
+<div align="center">
+<img src="../../../images/jenkins-logo.png" width="800">
 </div>
 
 ### 🖥️ Follow these steps to install Frogbot on Jenkins
