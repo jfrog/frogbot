@@ -841,9 +841,10 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
-				RepoName:           "repo",
-				RepoOwner:          "owner",
-				PullRequestDetails: vcsclient.PullRequestInfo{ID: 17},
+				PullRequestDetails: vcsclient.PullRequestInfo{Target: vcsclient.BranchInfo{
+					Repository: "repo",
+					Owner:      "owner",
+				}, ID: 17},
 			},
 		},
 		OutputWriter: &outputwriter.StandardOutput{},

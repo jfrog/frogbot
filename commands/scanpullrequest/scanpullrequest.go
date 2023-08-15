@@ -99,8 +99,10 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	shouldSendExposedSecretsEmail := len(secretsRows) > 0 && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		prSourceDetails := pullRequestDetails.Source
-		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo.GitProvider,
-			prSourceDetails.Owner, prSourceDetails.Repository, prSourceDetails.Name, repo.PullRequestDetails.URL,
+		secretsEmailDetails := utils.NewSecretsEmailDetails(
+			client, repo.GitProvider,
+			prSourceDetails.Owner, prSourceDetails.Repository,
+			prSourceDetails.Name, pullRequestDetails.URL,
 			secretsRows, repo.EmailDetails)
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
@@ -219,14 +221,14 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 	var newIacs []formats.IacSecretsRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
 		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
-		sourceIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
 		newIacs = createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
 	}
 
 	var newSecrets []formats.IacSecretsRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.IacScanResults)
-		sourceSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.IacScanResults)
+		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.SecretsScanResults)
+		sourceSecretsRows := xrayutils.PrepareSecrets(sourceResults.ExtendedScanResults.SecretsScanResults)
 		newSecrets = createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
 	}
 
