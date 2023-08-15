@@ -81,10 +81,92 @@ func TestReportUsageError(t *testing.T) {
 	assert.Error(t, <-channel)
 }
 
-// Create HTTP handler to mock an Artifactory server suitable for report usage requests
+func getDummyRepo() RepoAggregator {
+	return RepoAggregator{
+		Repository{
+			Params: Params{
+				Git: Git{
+					RepoName: "repository1",
+				},
+			},
+		},
+	}
+}
+
+func TestReportEcosystemUsage(t *testing.T) {
+	const commandName = "test-command"
+	server := httptest.NewServer(createUsageHandler(t, commandName))
+	defer server.Close()
+
+	serverDetails := &config.ServerDetails{Url: server.URL + "/"}
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(1)
+	channel := make(chan error)
+	go func() {
+		channel <- ReportUsageToEcosystem(commandName, serverDetails, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.NoError(t, <-channel)
+}
+
+func TestReportEcosystemUsageError(t *testing.T) {
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(1)
+	channel := make(chan error)
+	go func() {
+		channel <- ReportUsageToEcosystem("", &config.ServerDetails{}, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.NoError(t, <-channel)
+
+	usageGroup.Add(1)
+	channel = make(chan error)
+	go func() {
+		channel <- ReportUsageToEcosystem("", &config.ServerDetails{Url: "http://httpbin.org/status/404"}, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.Error(t, <-channel)
+}
+
+func TestReportXrayUsage(t *testing.T) {
+	const commandName = "test-command"
+	server := httptest.NewServer(createUsageHandler(t, commandName))
+	defer server.Close()
+
+	serverDetails := &config.ServerDetails{XrayUrl: server.URL + "/"}
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(1)
+	channel := make(chan error)
+	go func() {
+		channel <- ReportUsageToXray(commandName, serverDetails, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.NoError(t, <-channel)
+}
+
+func TestReportXrayError(t *testing.T) {
+	var usageGroup sync.WaitGroup
+	usageGroup.Add(1)
+	channel := make(chan error)
+	go func() {
+		channel <- ReportUsageToXray("", &config.ServerDetails{}, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.NoError(t, <-channel)
+
+	usageGroup.Add(1)
+	channel = make(chan error)
+	go func() {
+		channel <- ReportUsageToXray("", &config.ServerDetails{XrayUrl: "http://httpbin.org/status/404"}, getDummyRepo(), &usageGroup)
+	}()
+	usageGroup.Wait()
+	assert.Error(t, <-channel)
+}
+
+// Create HTTP handler to mock an Artifactory/Xray server suitable for report usage requests
 func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == "/api/system/version" {
+		if r.RequestURI == "/api/system/version" || r.RequestURI == "/api/v1/system/version" {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"version":"6.9.0"}`))
 			assert.NoError(t, err)

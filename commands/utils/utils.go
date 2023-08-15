@@ -20,13 +20,12 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	xray "github.com/jfrog/jfrog-cli-core/v2/xray/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
-	clientconfig "github.com/jfrog/jfrog-client-go/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray"
 	xrayusage "github.com/jfrog/jfrog-client-go/xray/usage"
 )
 
@@ -158,13 +157,13 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	// Ecosystem
 	go func() {
 		if e := ReportUsageToEcosystem(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug(usage.ReportUsagePrefix, e.Error())
+			log.Debug("Ecosystem "+usage.ReportUsagePrefix, e.Error())
 		}
 	}()
 	// Xray
 	go func() {
 		if e := ReportUsageToXray(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug(usage.ReportUsagePrefix, e.Error())
+			log.Debug("Xray "+usage.ReportUsagePrefix, e.Error())
 		}
 	}()
 	// Artifactory
@@ -202,7 +201,7 @@ func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, 
 	if serverDetails.XrayUrl == "" {
 		return
 	}
-	sm, err := CreateXrayServiceManager(serverDetails)
+	sm, err := xray.CreateXrayServiceManager(serverDetails)
 	if err != nil {
 		return
 	}
@@ -251,20 +250,6 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
 	err = errors.Join(err, xrayusage.SendEcosystemUsageReports(reports...))
 	return
-}
-
-func CreateXrayServiceManager(serviceDetails *config.ServerDetails) (*xray.XrayServicesManager, error) {
-	xrayDetails, err := serviceDetails.CreateXrayAuthConfig()
-	if err != nil {
-		return nil, err
-	}
-	serviceConfig, err := clientconfig.NewConfigBuilder().
-		SetServiceDetails(xrayDetails).
-		Build()
-	if err != nil {
-		return nil, err
-	}
-	return xray.New(serviceConfig)
 }
 
 func createRepositoryClientUsageAttribute(repository Repository) (*xrayusage.ReportUsageAttribute, error) {
