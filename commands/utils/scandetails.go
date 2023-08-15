@@ -27,7 +27,7 @@ type ScanDetails struct {
 	failOnInstallationErrors bool
 	fixableOnly              bool
 	minSeverityFilter        string
-	branch                   string
+	baseBranch               string
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -59,8 +59,8 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetBranch(branch string) *ScanDetails {
-	sc.branch = branch
+func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
+	sc.baseBranch = branch
 	return sc
 }
 
@@ -68,8 +68,8 @@ func (sc *ScanDetails) Client() vcsclient.VcsClient {
 	return sc.client
 }
 
-func (sc *ScanDetails) Branch() string {
-	return sc.branch
+func (sc *ScanDetails) BaseBranch() string {
+	return sc.baseBranch
 }
 
 func (sc *ScanDetails) FailOnInstallationErrors() bool {
