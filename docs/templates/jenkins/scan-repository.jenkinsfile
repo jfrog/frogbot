@@ -142,18 +142,18 @@ pipeline {
                             // For Windows runner:
                             // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                         } else {
-                            // For Linux / MacOS air gapped environments:
+                            // For Linux / MacOS air gaped environments:
                             sh 'curl -fLg "$env.JF_URL/artifactory/$env.JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh'
-                            // For Windows air gapped environments:
+                            // For Windows air gaped environments:
                             // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                         }
                 }
             }
         }
 
-        stage('Scan and Fix Repository') {
+        stage('Scan Repository') {
             steps {
-                sh "./frogbot scan-multiple-repositories"
+                sh "./frogbot scan-repository"
             }
         }
     }

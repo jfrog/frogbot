@@ -88,7 +88,7 @@ Use the search bar to find **Generic Webhook Trigger
 </details>
 
 <details>
-  <summary>5️⃣ Prepare Agents</summary>
+  <summary>5️⃣ Prepare Jenkins Agent</summary>
 
 - It is necessary to have the package manager corresponding to the repository installed on the machine. For example, for
   an npm project, npm must be installed.
@@ -110,5 +110,5 @@ Make sure to enable build trigger.
   <summary>7️⃣ Scanning repository branches and fixing issues</summary>
 
 Create a new Jenkins pipeline with the following jenkinsfile:
-[Scan And Fix Repository](scan-and-fix.jenkinsfile)
+[Scan Repository](scan-repository.jenkinsfile)
 </details>
