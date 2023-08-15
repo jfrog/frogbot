@@ -245,11 +245,8 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 		},
 	}
 	for _, test := range testcases {
-		yarnVersionString := ""
-		if test.vulnDetails.IsDirectDependency { // For direct dependency test cases we check two yarn versions (V1 and V2)
-			yarnVersionString = ",yarn" + test.specificTechVersion
-		}
-		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency)+yarnVersionString,
+
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency)+",yarn"+test.specificTechVersion,
 			func(t *testing.T) {
 				testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 				cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString()+test.specificTechVersion)
