@@ -98,8 +98,8 @@ To install Frogbot on Azure Repos repositories, follow these steps.
             # JF_RELEASES_REPO: ""
             
             # [Optional]
-            # Configure the SMTP server to enable Frogbot to send emails about detected secrets in pull request scans.
-            # The SMTP server should include the relevant port in this format: smtp.server.com:port
+            # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+            # SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
             # JF_SMTP_SERVER: ""
    
             # [Mandatory if JF_SMTP_SERVER is set]
@@ -108,7 +108,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
    
             # [Mandatory if JF_SMTP_SERVER is set]
             # The password associated with the username required for authentication with the SMTP server.
-            # JF_SMTP_PASS: ""
+            # JF_SMTP_PASSWORD: ""
 
             ##########################################################################
             ##   If your project uses a 'frogbot-config.yml' file, you can define   ##

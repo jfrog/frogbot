@@ -6,10 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -21,8 +19,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jordan-wright/email"
-	"net/smtp"
 	"os"
 	"regexp"
 	"sort"
@@ -53,7 +49,6 @@ var (
 	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
-	emailExcludes           = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
 )
 
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
@@ -323,107 +318,4 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
 	})
 	return pullRequestsComments, nil
-}
-
-type SecretsEmailDetails struct {
-	gitClient       vcsclient.VcsClient
-	gitProvider     vcsutils.VcsProvider
-	branch          string
-	repoName        string
-	repoOwner       string
-	secretsDetected []formats.IacSecretsRow
-	pullRequestLink string
-	EmailDetails
-}
-
-func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, gitProvider vcsutils.VcsProvider,
-	repoOwner, repoName, branch, pullRequestLink string,
-	secretsDetected []formats.IacSecretsRow, emailDetails EmailDetails) *SecretsEmailDetails {
-	return &SecretsEmailDetails{gitClient: gitClient, gitProvider: gitProvider,
-		repoOwner: repoOwner, repoName: repoName, branch: branch, pullRequestLink: pullRequestLink,
-		secretsDetected: secretsDetected, EmailDetails: emailDetails}
-}
-
-func AlertSecretsExposed(details *SecretsEmailDetails) (err error) {
-	var relevantEmailReceivers []string
-	if relevantEmailReceivers, err = getRelevantEmailReceivers(details.gitClient, details.repoOwner, details.repoName, details.branch, details.EmailReceivers); err != nil {
-		return
-	}
-	details.EmailReceivers = append(details.EmailReceivers, relevantEmailReceivers...)
-	if len(details.secretsDetected) == 0 {
-		return nil
-	}
-	emailDetails := details.EmailDetails
-	emailContent := getSecretsEmailContent(details.secretsDetected, details.gitProvider, details.pullRequestLink)
-	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpUser)
-	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
-	return sendEmail(sender, subject, emailContent, emailDetails)
-}
-
-func getSecretsEmailContent(secrets []formats.IacSecretsRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
-	var tableContent strings.Builder
-	for _, secret := range secrets {
-		tableContent.WriteString(
-			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
-				secret.File,
-				secret.LineColumn,
-				secret.Text))
-	}
-	pullOrMergeRequest := "pull request"
-	if gitProvider == vcsutils.GitLab {
-		pullOrMergeRequest = "merge request"
-	}
-
-	return fmt.Sprintf(
-		outputwriter.SecretsEmailHTMLTemplate,
-		outputwriter.SecretsEmailCSS,
-		pullRequestLink,
-		pullOrMergeRequest,
-		tableContent.String(),
-	)
-}
-
-func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {
-	e := prepareEmail(sender, subject, content, emailDetails)
-	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpUser, emailDetails.SmtpPass, emailDetails.SmtpServer)
-	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
-}
-
-func prepareEmail(sender, subject, content string, emailDetails EmailDetails) *email.Email {
-	e := email.NewEmail()
-	e.From = sender
-	e.To = emailDetails.EmailReceivers
-	e.Subject = subject
-	e.HTML = []byte(content)
-	return e
-}
-
-func getRelevantEmailReceivers(client vcsclient.VcsClient, repoOwner, repoName, branch string, emailReceivers []string) ([]string, error) {
-	commits, err := client.GetCommits(context.Background(), repoOwner, repoName, branch)
-	if err != nil {
-		return nil, err
-	}
-
-	return getEmailReceiversFromCommits(commits, emailReceivers)
-}
-
-func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredEmailReceivers []string) ([]string, error) {
-	emailReceivers := datastructures.MakeSet[string]()
-	for _, commit := range commits {
-		if shouldExcludeEmail(commit.AuthorEmail, emailExcludes) || shouldExcludeEmail(commit.AuthorEmail, preConfiguredEmailReceivers) {
-			continue
-		}
-		emailReceivers.Add(commit.AuthorEmail)
-	}
-
-	return emailReceivers.ToSlice(), nil
-}
-
-func shouldExcludeEmail(email string, excludes []string) bool {
-	for _, excludedEmail := range excludes {
-		if strings.Contains(email, excludedEmail) {
-			return true
-		}
-	}
-	return false
 }

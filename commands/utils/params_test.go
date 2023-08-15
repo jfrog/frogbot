@@ -543,8 +543,8 @@ func TestSetEmailDetails(t *testing.T) {
 			name: "ValidEmailDetails",
 			envs: map[string]string{
 				SmtpServerEnv:     "smtp.server.com:587",
-				SmtpAuthUserEnv:   "user",
-				SmtpAuthPassEnv:   "pass",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
 				EmailReceiversEnv: "receiver1@example.com,   receiver2@example.com",
 			},
 			expectedError:  nil,
@@ -554,8 +554,8 @@ func TestSetEmailDetails(t *testing.T) {
 		{
 			name: "MissingSmtpServer",
 			envs: map[string]string{
-				SmtpAuthUserEnv:   "user",
-				SmtpAuthPassEnv:   "pass",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
 				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
 			},
 			expectedError: nil,
@@ -564,8 +564,8 @@ func TestSetEmailDetails(t *testing.T) {
 			name: "InvalidSmtpServerFormat",
 			envs: map[string]string{
 				SmtpServerEnv:     "invalid_server",
-				SmtpAuthUserEnv:   "user",
-				SmtpAuthPassEnv:   "pass",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
 				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
 			},
 			expectedError: errors.New("failed while setting your email details. Could not extract the smtp server and its port from the JF_SMTP_SERVER environment variable. Expected format: `smtp.server.com:port`, received: invalid_server"),
@@ -574,26 +574,26 @@ func TestSetEmailDetails(t *testing.T) {
 			name: "MissingSmtpAuthUser",
 			envs: map[string]string{
 				SmtpServerEnv:     "smtp.server.com:587",
-				SmtpAuthPassEnv:   "pass",
+				SmtpPasswordEnv:   "pass",
 				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
 			},
-			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpAuthUserEnv),
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv),
 		},
 		{
 			name: "MissingSmtpAuthPass",
 			envs: map[string]string{
 				SmtpServerEnv:     "smtp.server.com:587",
-				SmtpAuthUserEnv:   "user",
+				SmtpUserEnv:       "user",
 				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
 			},
-			expectedError: fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpAuthPassEnv),
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv),
 		},
 		{
 			name: "EmptyEmailReceivers",
 			envs: map[string]string{
 				SmtpServerEnv:   "smtp.server.com:587",
-				SmtpAuthUserEnv: "user",
-				SmtpAuthPassEnv: "pass",
+				SmtpUserEnv:     "user",
+				SmtpPasswordEnv: "pass",
 			},
 			expectedError:  nil,
 			expectedServer: "smtp.server.com",
@@ -603,8 +603,8 @@ func TestSetEmailDetails(t *testing.T) {
 			name: "InvalidEmailReceivers",
 			envs: map[string]string{
 				SmtpServerEnv:     "smtp.server.com:587",
-				SmtpAuthUserEnv:   "user",
-				SmtpAuthPassEnv:   "pass",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
 				EmailReceiversEnv: "receiver1@example.com,receiver2",
 			},
 			expectedError:  nil,
@@ -635,7 +635,7 @@ func TestSetEmailDetails(t *testing.T) {
 			err := scan.SetEmailDetails()
 
 			if err != nil {
-				assert.Equal(t, test.expectedError.Error(), err.Error())
+				assert.EqualError(t, test.expectedError, err.Error())
 			}
 
 			if err == nil {

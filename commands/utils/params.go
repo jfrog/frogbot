@@ -121,7 +121,7 @@ type EmailDetails struct {
 	SmtpServer     string
 	SmtpPort       string
 	SmtpUser       string
-	SmtpPass       string
+	SmtpPassword   string
 	EmailReceivers []string `yaml:"emailReceivers,omitempty"`
 }
 
@@ -136,13 +136,13 @@ func (s *Scan) SetEmailDetails() error {
 	}
 	s.SmtpServer = splittedServerAndPort[0]
 	s.SmtpPort = splittedServerAndPort[1]
-	s.SmtpUser = getTrimmedEnv(SmtpAuthUserEnv)
-	s.SmtpPass = getTrimmedEnv(SmtpAuthPassEnv)
+	s.SmtpUser = getTrimmedEnv(SmtpUserEnv)
+	s.SmtpPassword = getTrimmedEnv(SmtpPasswordEnv)
 	if s.SmtpUser == "" {
-		return fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpAuthUserEnv)
+		return fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv)
 	}
-	if s.SmtpPass == "" {
-		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpAuthPassEnv)
+	if s.SmtpPassword == "" {
+		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv)
 	}
 	if len(s.EmailReceivers) == 0 {
 		emailReceivers := getTrimmedEnv(EmailReceiversEnv)

@@ -96,8 +96,9 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	if len(secretsRows) > 0 && repo.SmtpServer != "" {
-		prSourceDetails := repo.PullRequestDetails.Source
+	shouldSendExposedSecretsEmail := len(secretsRows) > 0 && repo.SmtpServer != ""
+	if shouldSendExposedSecretsEmail {
+		prSourceDetails := pullRequestDetails.Source
 		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo.GitProvider,
 			prSourceDetails.Owner, prSourceDetails.Repository, prSourceDetails.Name, repo.PullRequestDetails.URL,
 			secretsRows, repo.EmailDetails)
@@ -192,36 +193,52 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if err != nil {
 			return
 		}
-		targetScanResults := targetResults.ExtendedScanResults
-		var newIssuesRows []formats.VulnerabilityOrViolationRow
-		newIssuesRows, err = createNewIssuesRows(targetResults, sourceResults)
+
+		// Get new issues
+		newVulnerabilities, newIacs, newSecrets, err := getNewIssues(targetResults, sourceResults)
 		if err != nil {
 			return
 		}
-		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
-		iacRows = append(iacRows, createNewIacOrSecretsRows(targetScanResults.IacScanResults, sourceScanResults.IacScanResults, false)...)
-		secretsRows = append(secretsRows, createNewIacOrSecretsRows(targetScanResults.SecretsScanResults, sourceScanResults.SecretsScanResults, true)...)
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
+		iacRows = append(iacRows, newIacs...)
+		secretsRows = append(secretsRows, newSecrets...)
 	}
 	return
 }
 
-func createNewIacOrSecretsRows(targetIacOrSecretsResults, sourceIacOrSecretsResults []xrayutils.IacOrSecretResult, isSecret bool) []formats.IacSecretsRow {
-	var targetRows []formats.IacSecretsRow
-	var sourceRows []formats.IacSecretsRow
-	if isSecret {
-		targetRows = xrayutils.PrepareSecrets(targetIacOrSecretsResults)
-		sourceRows = xrayutils.PrepareSecrets(sourceIacOrSecretsResults)
-	} else {
-		targetRows = xrayutils.PrepareIacs(targetIacOrSecretsResults)
-		sourceRows = xrayutils.PrepareIacs(sourceIacOrSecretsResults)
+func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, []formats.IacSecretsRow, error) {
+	var newVulnerabilities []formats.VulnerabilityOrViolationRow
+	var err error
+	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
+		if newVulnerabilities, err = createNewVulnerabilitiesRows(targetResults, sourceResults); err != nil {
+			return nil, nil, nil, err
+		}
 	}
 
+	var newIacs []formats.IacSecretsRow
+	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
+		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		newIacs = createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+	}
+
+	var newSecrets []formats.IacSecretsRow
+	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
+		targetSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		newSecrets = createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+	}
+
+	return newVulnerabilities, newIacs, newSecrets, nil
+}
+
+func createNewIacOrSecretsRows(targetResults, sourceResults []formats.IacSecretsRow) []formats.IacSecretsRow {
 	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
-	for _, row := range targetRows {
+	for _, row := range targetResults {
 		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Text)
 	}
 	var addedIacOrSecretsVulnerabilities []formats.IacSecretsRow
-	for _, row := range sourceRows {
+	for _, row := range sourceResults {
 		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Text) {
 			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
 		}
@@ -230,7 +247,7 @@ func createNewIacOrSecretsRows(targetIacOrSecretsResults, sourceIacOrSecretsResu
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewIssuesRows(targetResults, sourceResults *audit.Results) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	targetScanAggregatedResults := aggregateScanResults(targetResults.ExtendedScanResults.XrayResults)
 	sourceScanAggregatedResults := aggregateScanResults(sourceResults.ExtendedScanResults.XrayResults)
 
@@ -327,10 +344,11 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
 	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID))
+	prDetails := repository.PullRequestDetails
+	comments, err := utils.GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
 	if err != nil {
 		return fmt.Errorf(
-			"failed to get the pull request comments. the following details were used in order to fetch the comments: <%s/%s> pull request id: %d. the error received: %s",
+			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
 			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
 
@@ -344,7 +362,7 @@ func deleteExistingPullRequestComment(repository *utils.Repository, client vcscl
 	}
 
 	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), commentID)
+		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
 	}
 
 	return err

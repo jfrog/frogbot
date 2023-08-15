@@ -72,7 +72,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -128,7 +128,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -163,7 +163,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -281,7 +281,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
@@ -334,7 +334,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -368,7 +368,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -742,7 +742,9 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addedIacVulnerabilities := createNewIacOrSecretsRows(tc.targetIacResults, tc.sourceIacResults, false)
+			targetIacRows := utils2.PrepareSecrets(tc.targetIacResults)
+			sourceIacRows := utils2.PrepareSecrets(tc.sourceIacResults)
+			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
@@ -827,8 +829,10 @@ func TestCreateNewSecretRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addedIacVulnerabilities := createNewIacOrSecretsRows(tc.targetSecretsResults, tc.sourceSecretsResults, true)
-			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedIacVulnerabilities)
+			targetSecretsRows := utils2.PrepareSecrets(tc.targetSecretsResults)
+			sourceSecretsRows := utils2.PrepareSecrets(tc.sourceSecretsResults)
+			addedSecretsVulnerabilities := createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}
 }
