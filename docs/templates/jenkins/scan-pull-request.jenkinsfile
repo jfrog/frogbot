@@ -34,8 +34,8 @@ pipeline {
                 // Use the token-parameter have different tokens for different jobs.
                 // Using only the token means only jobs with that exact token will be visible for that request
                 // This token will be sent as a query param from the webhook
-                // Example: https://jenkinsUrl/generic-webhook-trigger/invoke?token=specificJobToken
-                token: 'jobToken'
+                // Example: https://jenkinsUrl/generic-webhook-trigger/invoke?token=MyJobToken
+                token: 'MyJobToken'
         )
     }
 
@@ -173,9 +173,9 @@ pipeline {
                              // For Windows runner:
                              // powershell """iwr https://releases.jfrog.io/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                          } else {
-                             // For Linux / MacOS air gapped environments:
+                             // For Linux / MacOS air gaped environments:
                              sh 'curl -fLg "$env.JF_URL/artifactory/$env.JF_RELEASES_REPO/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh'
-                             // For Windows air gapped environments:
+                             // For Windows air gaped environments:
                              // powershell """iwr ${env.JF_URL}/artifactory/${env.JF_RELEASES_REPO}/artifactory/frogbot/v2/[RELEASE]/frogbot-windows-amd64/frogbot.exe -OutFile .\frogbot.exe"""
                          }
                 }
