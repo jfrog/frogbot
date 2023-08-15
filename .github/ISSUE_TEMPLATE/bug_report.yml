@@ -64,6 +64,7 @@ body:
         - GitHub
         - Bitbucket Server
         - GitLab
+        - Azure DevOps
     validations:
       required: true
 
