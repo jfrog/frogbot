@@ -57,6 +57,12 @@
       # The following values are accepted: Low, Medium, High or Critical
       # minSeverity: ""
 
+      # [Optional]
+      # List of email addresses to receive emails about secrets that has been detected in a pull request scan.
+      # Applies only to servers that are entitled to JFrog Advanced Security.
+      # emailReceivers:
+      # - user@company.com
+
       # List of subprojects / project dirs inside the Git repository
       projects:
       # [Mandatory if the two conditions below are met]

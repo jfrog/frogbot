@@ -52,6 +52,13 @@ const (
 	FixableOnlyEnv               = "JF_FIXABLE_ONLY"
 	WatchesDelimiter             = ","
 
+	// Email related environment variables
+	//#nosec G101 -- False positive - no hardcoded credentials.
+	SmtpPasswordEnv   = "JF_SMTP_PASSWORD"
+	SmtpUserEnv       = "JF_SMTP_USER"
+	SmtpServerEnv     = "JF_SMTP_SERVER"
+	EmailReceiversEnv = "JF_EMAIL_RECEIVERS"
+
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv          = "JF_GIT_TOKEN"
 	GitBaseBranchEnv     = "JF_GIT_BASE_BRANCH"
@@ -75,7 +82,7 @@ const (
 	BranchNameTemplate           = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
 	AggregatedBranchNameTemplate = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
 	CommitMessageTemplate        = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
-	PullRequestTitleTemplate     = outputwriter.FrogbotPullRequestTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	PullRequestTitleTemplate     = outputwriter.FrogbotTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
