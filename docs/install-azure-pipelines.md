@@ -104,11 +104,11 @@ To install Frogbot on Azure Repos repositories, follow these steps.
    
             # [Mandatory if JF_SMTP_SERVER is set]
             # The username required for authenticating with the SMTP server.
-            # JF_SMTP_AUTH_USER: ""
+            # JF_SMTP_USER: ""
    
             # [Mandatory if JF_SMTP_SERVER is set]
             # The password associated with the username required for authentication with the SMTP server.
-            # JF_SMTP_AUTH_PASS: ""
+            # JF_SMTP_PASS: ""
 
             ##########################################################################
             ##   If your project uses a 'frogbot-config.yml' file, you can define   ##

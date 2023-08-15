@@ -340,7 +340,7 @@ func sendEmailIfSecretsExposed(secrets []formats.IacSecretsRow, repo *Repository
 	}
 	emailDetails := repo.EmailDetails
 	emailContent := getSecretsEmailContent(secrets, repo)
-	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpAuthUser)
+	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpUser)
 	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
@@ -370,7 +370,7 @@ func getSecretsEmailContent(secrets []formats.IacSecretsRow, repo *Repository) s
 
 func sendEmail(sender, subject, content string, emailDetails EmailDetails) error {
 	e := prepareEmail(sender, subject, content, emailDetails)
-	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpAuthUser, emailDetails.SmtpAuthPass, emailDetails.SmtpServer)
+	smtpAuth := smtp.PlainAuth("", emailDetails.SmtpUser, emailDetails.SmtpPass, emailDetails.SmtpServer)
 	return e.Send(strings.Join([]string{emailDetails.SmtpServer, emailDetails.SmtpPort}, ":"), smtpAuth)
 }
 
