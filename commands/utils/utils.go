@@ -155,22 +155,22 @@ func Chdir(dir string) (cbk func() error, err error) {
 
 func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) {
 	(*usageGroup).Add(3)
-	// Artifactory
+	// Ecosystem
 	go func() {
-		if e := ReportUsage(commandName, serverDetails, usageGroup); e != nil {
-			log.Debug(e.Error())
+		if e := ReportUsageToEcosystem(commandName, serverDetails, repositories, usageGroup); e != nil {
+			log.Debug(usage.ReportUsagePrefix, e.Error())
 		}
 	}()
 	// Xray
 	go func() {
 		if e := ReportUsageToXray(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug(e.Error())
+			log.Debug(usage.ReportUsagePrefix, e.Error())
 		}
 	}()
-	// Ecosystem
+	// Artifactory
 	go func() {
-		if e := ReportUsageToEcosystem(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug(e.Error())
+		if e := ReportUsage(commandName, serverDetails, usageGroup); e != nil {
+			log.Debug(usage.ReportUsagePrefix, e.Error())
 		}
 	}()
 }
@@ -184,26 +184,13 @@ func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageG
 	if serverDetails.ArtifactoryUrl == "" {
 		return
 	}
-	log.Debug(usage.ReportUsagePrefix, "Sending info...")
 	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix, err.Error())
 		return
 	}
+	log.Debug(usage.ReportUsagePrefix, "Sending info...")
 	err = usage.SendReportUsage(productId, commandName, serviceManager)
-	if err != nil {
-		log.Debug(err.Error())
-		return
-	}
 	return
-}
-
-func createRepositoryClientUsageAttribute(repository Repository) (*xrayusage.ReportUsageAttribute, error) {
-	if clientId, err := Md5Hash(repository.RepoName); err != nil {
-		return nil, err
-	} else {
-		return &xrayusage.ReportUsageAttribute{AttributeName: "clientId", AttributeValue: clientId}, nil
-	}
 }
 
 func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) (err error) {
@@ -215,12 +202,7 @@ func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, 
 	if serverDetails.XrayUrl == "" {
 		return
 	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info to Xray...")
-	serviceConfig, err := clientconfig.NewConfigBuilder().Build()
-	if err != nil {
-		return
-	}
-	sm, err := xray.New(serviceConfig)
+	sm, err := CreateXrayServiceManager(serverDetails)
 	if err != nil {
 		return
 	}
@@ -238,9 +220,8 @@ func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, 
 		// Nothing to report
 		return
 	}
-	if e := xrayusage.SendXrayUsageEvents(*sm, events...); e != nil {
-		err = errors.Join(err, e)
-	}
+	log.Debug(usage.ReportUsagePrefix + "Sending info to Xray...")
+	err = errors.Join(err, xrayusage.SendXrayUsageEvents(*sm, events...))
 	return
 }
 
@@ -268,10 +249,30 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 		return
 	}
 	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
-	if e := xrayusage.SendEcosystemUsageReports(reports...); e != nil {
-		err = errors.Join(err, e)
-	}
+	err = errors.Join(err, xrayusage.SendEcosystemUsageReports(reports...))
 	return
+}
+
+func CreateXrayServiceManager(serviceDetails *config.ServerDetails) (*xray.XrayServicesManager, error) {
+	xrayDetails, err := serviceDetails.CreateXrayAuthConfig()
+	if err != nil {
+		return nil, err
+	}
+	serviceConfig, err := clientconfig.NewConfigBuilder().
+		SetServiceDetails(xrayDetails).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	return xray.New(serviceConfig)
+}
+
+func createRepositoryClientUsageAttribute(repository Repository) (*xrayusage.ReportUsageAttribute, error) {
+	if clientId, err := Md5Hash(repository.RepoName); err != nil {
+		return nil, err
+	} else {
+		return &xrayusage.ReportUsageAttribute{AttributeName: "clientId", AttributeValue: clientId}, nil
+	}
 }
 
 func Md5Hash(values ...string) (string, error) {
