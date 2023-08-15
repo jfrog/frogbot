@@ -41,7 +41,7 @@ It supports the following Git providers:
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data that is provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 - **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
-- **Secrets Detection**: For GitHub repositories, detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
+- **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
 > **_NOTE:_** **Vulnerability Contextual Analysis**, **Secrets Detection** and **Infrastructure as Code scans**
@@ -109,7 +109,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 <div id="reporting-issues"></div>
 
-## 🚥 Frogbot's Commands
+## 🚥 Using Frogbot
 <details>
   <summary>Scanning pull requests</summary>
 
@@ -117,8 +117,11 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
-Supported package management tools:
+The following features uses the package manager used for building the project:
+* Software Composition Analysis (SCA)
+* Vulnerability Contextual Analysis
 
+The supported package management are:
 - Go
 - Gradle
 - Maven
@@ -186,7 +189,7 @@ The Frogbot GitHub scan workflow is:
 1. The developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
 
-[![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
+![](./images/github-pending-deployment.png)
 
 3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
@@ -210,7 +213,7 @@ The Frogbot GitLab flow is as follows:
 2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual _frogbot-scan_ job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
-   [GitLab CI Run Button](./images/gitlab-run-button.png)
+   ![](./images/gitlab-run-button.png)
 
   </details>
 
