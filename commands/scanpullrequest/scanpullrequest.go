@@ -195,8 +195,9 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		}
 
 		// Get new issues
-		newVulnerabilities, newIacs, newSecrets, err := getNewIssues(targetResults, sourceResults)
-		if err != nil {
+		var newVulnerabilities []formats.VulnerabilityOrViolationRow
+		var newIacs, newSecrets []formats.IacSecretsRow
+		if newVulnerabilities, newIacs, newSecrets, err = getNewIssues(targetResults, sourceResults); err != nil {
 			return
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
