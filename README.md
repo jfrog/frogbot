@@ -99,7 +99,6 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <details>
   <summary>3. Advanced - Customize advanced settings with frogbot-config.yml</summary>
     
-
 - [Creating the frogbot-config.yml File](docs/frogbot-config.md)
 
 </details>
@@ -185,8 +184,7 @@ The Frogbot GitHub scan workflow is:
 
 1. The developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
-
-![](./images/github-pending-deployment.png)
+   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-pending-deployment.png)
 
 3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
@@ -210,7 +208,7 @@ The Frogbot GitLab flow is as follows:
 2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual _frogbot-scan_ job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
-   ![](./images/gitlab-run-button.png)
+   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-run-button.png)
 
   </details>
 
@@ -257,7 +255,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 ##### Secrets Detection
 When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
 
-![](./images/secrets-email.png)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/secrets-email.png)
 
 </details>
 
