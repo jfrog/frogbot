@@ -95,8 +95,8 @@ Use the search bar to find **Generic Webhook Trigger** ([more info](https://plug
 ---
 <details>
   <summary>6️⃣ Scanning pull requests</summary>
-  
-Create a new pipeline with the following jenkinsfile:  [Scan Pull Request Jenkinsfile](./scan-pull-request.jenkinsfile)
+
+Create a new pipeline job using [this](./scan-pull-request.jenkinsfile) Jenkinsfile template.
   
 <img src="../../../images/jenkins-pipeline-select.png" width="650"> 
 
@@ -109,8 +109,9 @@ Enable the ‘Generic Webhook Trigger’:
 ---
 <details>
   <summary>7️⃣ Scanning repository branches and fixing issues</summary>
+
   
-Create a new pipeline with the following jenkinsfile: [Scan Repository Jenkinsfile](scan-repository.jenkinsfile)
+Create a new pipeline job using [this](./scan-repository.jenkinsfile) Jenkinsfile template.
   
 <img src="../../../images/jenkins-pipeline-select.png" width="650">  
 
