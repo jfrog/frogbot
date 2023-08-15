@@ -14,6 +14,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	xrayusage "github.com/jfrog/jfrog-client-go/xray/usage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +49,7 @@ func TestChdirErr(t *testing.T) {
 
 func TestReportUsage(t *testing.T) {
 	const commandName = "test-command"
-	server := httptest.NewServer(createUsageHandler(t, commandName))
+	server := httptest.NewServer(createUsageHandler(t, commandName, "", ""))
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
@@ -95,7 +96,9 @@ func getDummyRepo() RepoAggregator {
 
 func TestReportEcosystemUsage(t *testing.T) {
 	const commandName = "test-command"
-	server := httptest.NewServer(createUsageHandler(t, commandName))
+	repo := getDummyRepo()
+	server := httptest.NewServer(nil)
+	server.Config.Handler = createUsageHandler(t, commandName, server.URL, repo[0].RepoName)
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{Url: server.URL + "/"}
@@ -103,7 +106,7 @@ func TestReportEcosystemUsage(t *testing.T) {
 	usageGroup.Add(1)
 	channel := make(chan error)
 	go func() {
-		channel <- ReportUsageToEcosystem(commandName, serverDetails, getDummyRepo(), &usageGroup)
+		channel <- ReportUsageToEcosystem(commandName, serverDetails, repo, &usageGroup)
 	}()
 	usageGroup.Wait()
 	assert.NoError(t, <-channel)
@@ -130,7 +133,8 @@ func TestReportEcosystemUsageError(t *testing.T) {
 
 func TestReportXrayUsage(t *testing.T) {
 	const commandName = "test-command"
-	server := httptest.NewServer(createUsageHandler(t, commandName))
+	repo := getDummyRepo()
+	server := httptest.NewServer(createUsageHandler(t, commandName, "", repo[0].RepoName))
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{XrayUrl: server.URL + "/"}
@@ -163,8 +167,8 @@ func TestReportXrayError(t *testing.T) {
 	assert.Error(t, <-channel)
 }
 
-// Create HTTP handler to mock an Artifactory/Xray server suitable for report usage requests
-func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
+// Create HTTP handler to mock an Artifactory/Xray/Ecosystem server suitable for report usage requests
+func createUsageHandler(t *testing.T, commandName, accountId, clientId string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/api/system/version" || r.RequestURI == "/api/v1/system/version" {
 			w.WriteHeader(http.StatusOK)
@@ -172,12 +176,39 @@ func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
 			assert.NoError(t, err)
 			return
 		}
+		// Artifactory API
 		if r.RequestURI == "/api/system/usage" {
 			// Check request
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
 			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
+
+			// Send response OK
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		}
+		// Xray API
+		if r.RequestURI == "/api/v1/usage/events/send" {
+			// Check request
+			buf := new(bytes.Buffer)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, clientId, productId, xrayusage.GetExpectedEventName(productId, commandName)), buf.String())
+
+			// Send response OK
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		}
+		// Ecosystem API
+		if r.RequestURI == "/api/usage/report" {
+			// Check request
+			buf := new(bytes.Buffer)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf(`[{"productId":"%s","accountId":"%s","clientId":"%s","features":["%s"]}]`, productId, "", clientId, commandName), buf.String())
 
 			// Send response OK
 			w.WriteHeader(http.StatusOK)
