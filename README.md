@@ -277,7 +277,7 @@ Supported package management tools:
 - Pip
 - Pipenv
 - Poetry
-- Yarn 2
+- Yarn
 
 ![](./images/fix-pr.png)
 

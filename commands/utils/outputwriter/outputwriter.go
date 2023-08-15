@@ -10,11 +10,85 @@ import (
 )
 
 const (
-	FrogbotPullRequestTitlePrefix                    = "[🐸 Frogbot]"
+	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	SecretsEmailCSS                                  = `body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        table {
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .table-container {
+            max-width: 700px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #fff;
+			margin-top: 10px;
+        }
+        .ignore-comments {
+            margin-top: 10px;
+			margin-bottom: 5px;
+            border-radius: 5px;
+        }`
+	//#nosec G101 -- full secrets would not be hard coded
+	SecretsEmailHTMLTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frogbot Secret Detection</title>
+    <style>
+        %s
+    </style>
+</head>
+<body>
+	<div>
+		The following potential exposed secrets in your <a href="%s">%s</a> have been detected by <a href="https://github.com/jfrog/frogbot#readme">Frogbot</a>
+		<br/>
+		<table class="table-container">
+            <thead>
+                <tr>
+                    <th>FILE</th>
+                    <th>LINE:COLUMN</th>
+                    <th>SECRET</th>
+                </tr>
+            </thead>
+            <tbody>
+                %s
+            </tbody>
+        </table>
+		<div class="ignore-comments">
+		To make Frogbot ignore the lines with the potential secrets, add a comment above the line which includes the <b>jfrog-ignore</b> keyword.	
+		</div>
+	</div>
+</body>
+</html>`
+	//#nosec G101 -- full secrets would not be hard coded
+	SecretsEmailTableRow = `
+				<tr>
+					<td> %s </td>
+					<td> %s </td>
+					<td> %s </td>
+				</tr>`
 )
 
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
@@ -123,9 +197,9 @@ func MarkdownComment(text string) string {
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
 	if tech.ToString() == "" {
-		return FrogbotPullRequestTitlePrefix + " Update dependencies"
+		return FrogbotTitlePrefix + " Update dependencies"
 	}
-	return fmt.Sprintf("%s Update %s dependencies", FrogbotPullRequestTitlePrefix, tech.ToFormal())
+	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
 }
 
 func getVulnerabilitiesTableHeader(showCaColumn bool) string {

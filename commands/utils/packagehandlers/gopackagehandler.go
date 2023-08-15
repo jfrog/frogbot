@@ -10,5 +10,5 @@ type GoPackageHandler struct {
 
 func (golang *GoPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	// In Golang, we can address every dependency as a direct dependency.
-	return golang.CommonPackageHandler.UpdateDependency(vulnDetails)
+	return golang.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 }
