@@ -25,7 +25,7 @@ Use the search bar to find **Generic Webhook Trigger
       <summary>Bitbucket Server</summary>
 
 - Webhook URL: `JENKINS_URL/generic-webhook-trigger/invoke`
-- Go to repository settings and select Webhooks , and create a new webhook.
+- Go to repository settings, select Webhooks, and create a new webhook.
   <img src="../../../images/bitbucket-webhook-setup.png">
 - Set the webhook URL `https://jenkinsUrl/generic-webhook-trigger/invoke`
   <img src="../../../images/bitbucketserver-create-webhook.png">
@@ -57,7 +57,7 @@ Use the search bar to find **Generic Webhook Trigger
 <details>
    <summary>GitLab</summary>
 
-- Go your project settings and select webhooks.
+- Go to your project settings and select webhooks.
 - Set up a webhook with merge request events.
 - Fill in the URL: `JENKINS URL/generic-webhook-trigger/invoke`
   <img src="../../../images/GitLab_webhook.png">
@@ -73,7 +73,7 @@ Use the search bar to find **Generic Webhook Trigger
   - When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
     want to trigger only a certain job you can use the **JobToken** in the URL to specify what job needs to be executed.
   - Webhook URL with **JobToken** : `JENKINS_URL/generic-webhook-trigger/invoke?token=MyJobToken`
-  - On some Git providers the JobToken called Secret Token.
+  - On some Git providers the JobToken is called Secret Token.
   - Read more [JobToken Docs](https://plugins.jenkins.io/generic-webhook-trigger/#plugin-content-trigger-only-specific-job)
 </details>
 
@@ -107,7 +107,7 @@ Create a new pipeline with the following jenkinsfile:
 
 [Scan Pull Request Jenkinsfile](scan-pull-request.jenkinsfile)
 
-Make sure to enable build trigger.
+Make sure to enable the build trigger.
 <img src="../../../images/jenkins-build-trigger.png">
 
 </details>
