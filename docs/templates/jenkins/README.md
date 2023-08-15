@@ -18,6 +18,7 @@ Use the search bar to find **Generic Webhook Trigger
 
 </details>
 
+---
 <details>
   <summary>2️⃣ Connect the Webhook on your Git provider </summary>
 
@@ -66,16 +67,18 @@ Use the search bar to find **Generic Webhook Trigger
 
 </details>
 
+---
 <details>
   <summary>3️⃣ [Optional] - setting JobToken</summary>
 
-  -  When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
+  - When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
     want to trigger only a certain job you can use the **JobToken** in the URL to specify what job needs to be executed.
   - Webhook URL with **JobToken** : `JENKINS_URL/generic-webhook-trigger/invoke?token=MyJobToken`
   - On some Git providers the JobToken called Secret Token.
   - Read more [JobToken Docs](https://plugins.jenkins.io/generic-webhook-trigger/#plugin-content-trigger-only-specific-job)
 </details>
 
+---
 <details>
   <summary>4️⃣ Set up credentials</summary>
 
@@ -87,6 +90,7 @@ Use the search bar to find **Generic Webhook Trigger
 
 </details>
 
+---
 <details>
   <summary>5️⃣ Prepare Jenkins Agent</summary>
 
@@ -95,6 +99,7 @@ Use the search bar to find **Generic Webhook Trigger
 
 </details>
 
+---
 <details>
   <summary>6️⃣ Scanning pull requests</summary>
 
@@ -106,6 +111,7 @@ Make sure to enable build trigger.
 
 </details>
 
+---
 <details>
   <summary>7️⃣ Scanning repository branches and fixing issues</summary>
 
