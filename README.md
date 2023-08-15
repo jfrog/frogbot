@@ -293,10 +293,10 @@ The following alert types are supported:
 ![](./images/github-code-scanning-content.png)
 
 #### 2. Secrets that are exposed in the code
-![](./images/github-code-scanning-iac-content.png)
+![](./images/github-code-scanning-secrets-content.png)
 
 #### 3. Infrastructure as Code (Iac) issues on Terraform packages
-![](./images/github-code-scanning-secrets-content.png)
+![](./images/github-code-scanning-iac-content.png)
 
 </details>
 
