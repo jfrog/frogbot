@@ -325,27 +325,42 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	return pullRequestsComments, nil
 }
 
-func AlertSecretsExposed(repo *Repository, client vcsclient.VcsClient, secrets []formats.IacSecretsRow, branch string) (err error) {
-	var relevantEmailReceivers []string
-	if relevantEmailReceivers, err = getRelevantEmailReceivers(repo, client, branch); err != nil {
-		return
-	}
-	repo.EmailReceivers = append(repo.EmailReceivers, relevantEmailReceivers...)
-	return sendEmailIfSecretsExposed(secrets, repo)
+type SecretsEmailDetails struct {
+	gitClient       vcsclient.VcsClient
+	gitProvider     vcsutils.VcsProvider
+	branch          string
+	repoName        string
+	repoOwner       string
+	secretsDetected []formats.IacSecretsRow
+	pullRequestLink string
+	EmailDetails
 }
 
-func sendEmailIfSecretsExposed(secrets []formats.IacSecretsRow, repo *Repository) error {
-	if len(secrets) == 0 {
+func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, gitProvider vcsutils.VcsProvider,
+	repoOwner, repoName, branch, pullRequestLink string,
+	secretsDetected []formats.IacSecretsRow, emailDetails EmailDetails) *SecretsEmailDetails {
+	return &SecretsEmailDetails{gitClient: gitClient, gitProvider: gitProvider,
+		repoOwner: repoOwner, repoName: repoName, branch: branch, pullRequestLink: pullRequestLink,
+		secretsDetected: secretsDetected, EmailDetails: emailDetails}
+}
+
+func AlertSecretsExposed(details *SecretsEmailDetails) (err error) {
+	var relevantEmailReceivers []string
+	if relevantEmailReceivers, err = getRelevantEmailReceivers(details.gitClient, details.repoOwner, details.repoName, details.branch, details.EmailReceivers); err != nil {
+		return
+	}
+	details.EmailReceivers = append(details.EmailReceivers, relevantEmailReceivers...)
+	if len(details.secretsDetected) == 0 {
 		return nil
 	}
-	emailDetails := repo.EmailDetails
-	emailContent := getSecretsEmailContent(secrets, repo)
+	emailDetails := details.EmailDetails
+	emailContent := getSecretsEmailContent(details.secretsDetected, details.gitProvider, details.pullRequestLink)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpUser)
 	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 
-func getSecretsEmailContent(secrets []formats.IacSecretsRow, repo *Repository) string {
+func getSecretsEmailContent(secrets []formats.IacSecretsRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
 		tableContent.WriteString(
@@ -355,14 +370,14 @@ func getSecretsEmailContent(secrets []formats.IacSecretsRow, repo *Repository) s
 				secret.Text))
 	}
 	pullOrMergeRequest := "pull request"
-	if repo.VcsProvider() == vcsutils.GitLab {
+	if gitProvider == vcsutils.GitLab {
 		pullOrMergeRequest = "merge request"
 	}
 
 	return fmt.Sprintf(
 		outputwriter.SecretsEmailHTMLTemplate,
 		outputwriter.SecretsEmailCSS,
-		repo.PullRequestDetails.URL,
+		pullRequestLink,
 		pullOrMergeRequest,
 		tableContent.String(),
 	)
@@ -383,13 +398,13 @@ func prepareEmail(sender, subject, content string, emailDetails EmailDetails) *e
 	return e
 }
 
-func getRelevantEmailReceivers(repo *Repository, client vcsclient.VcsClient, branch string) ([]string, error) {
-	commits, err := client.GetCommits(context.Background(), repo.PullRequestDetails.Source.Owner, repo.PullRequestDetails.Source.Repository, branch)
+func getRelevantEmailReceivers(client vcsclient.VcsClient, repoOwner, repoName, branch string, emailReceivers []string) ([]string, error) {
+	commits, err := client.GetCommits(context.Background(), repoOwner, repoName, branch)
 	if err != nil {
 		return nil, err
 	}
 
-	return getEmailReceiversFromCommits(commits, repo.EmailReceivers)
+	return getEmailReceiversFromCommits(commits, emailReceivers)
 }
 
 func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredEmailReceivers []string) ([]string, error) {

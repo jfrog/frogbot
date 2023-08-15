@@ -97,7 +97,11 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	if len(secretsRows) > 0 && repo.SmtpServer != "" {
-		if err = utils.AlertSecretsExposed(repo, client, secretsRows, repo.PullRequestDetails.Source.Name); err != nil {
+		prSourceDetails := repo.PullRequestDetails.Source
+		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo.GitProvider,
+			prSourceDetails.Owner, prSourceDetails.Repository, prSourceDetails.Name, repo.PullRequestDetails.URL,
+			secretsRows, repo.EmailDetails)
+		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
 		}
 	}
