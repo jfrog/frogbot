@@ -184,7 +184,7 @@ The Frogbot GitHub scan workflow is:
 
 1. The developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
-   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-pending-deployment.pngg)
+   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-pending-deployment.png)
 
 3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
