@@ -12,8 +12,7 @@
   <summary>1️⃣ Install Jenkins 'Generic Webhook Trigger' plugin </summary>
 
 From your Jenkins dashboard navigate to **Manage Jenkins** > **Manage Plugins** and select the **Available** tab.
-Use the search bar to find **Generic Webhook Trigger
-** ([more info](https://plugins.jenkins.io/generic-webhook-trigger/)).
+Use the search bar to find **Generic Webhook Trigger** ([more info](https://plugins.jenkins.io/generic-webhook-trigger/)).
 
 </details>
 
@@ -101,11 +100,9 @@ Use the search bar to find **Generic Webhook Trigger
 ---
 <details>
   <summary>6️⃣ Scanning pull requests</summary>
-Create a new pipeline with the following jenkinsfile: 
+Create a new pipeline with the following jenkinsfile: [Scan Pull Request Jenkinsfile](scan-pull-request.jenkinsfile)
   
 <img src="../../../images/jenkins-pipeline-select.png" width="650"> 
-
-[Scan Pull Request Jenkinsfile](scan-pull-request.jenkinsfile)
 
 Make sure to enable the build trigger.
 <img src="../../../images/jenkins-build-trigger.png">
@@ -115,10 +112,8 @@ Make sure to enable the build trigger.
 ---
 <details>
   <summary>7️⃣ Scanning repository branches and fixing issues</summary>
-Create a new pipeline with the following jenkinsfile:
+Create a new pipeline with the following jenkinsfile: [Scan Repository Jenkinsfile](scan-repository.jenkinsfile)
   
 <img src="../../../images/jenkins-pipeline-select.png" width="650">  
 
-
-[Scan Repository Jenkinsfile](scan-repository.jenkinsfile)
 </details>
