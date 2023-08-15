@@ -34,7 +34,7 @@ Use the search bar to find **Generic Webhook Trigger
 <details>
     <summary>GitHub</summary>
 
-- Webhook URL: 'JENKINS_URL/generic-webhook-trigger/invoke'
+- Webhook URL: `JENKINS_URL/generic-webhook-trigger/invoke`
 - Go to repository settings and create a new webhook:
   <img src="../../../images/github-new-webhook.png">
 
@@ -59,7 +59,7 @@ Use the search bar to find **Generic Webhook Trigger
 
 - Go your project settings and select webhooks.
 - Set up a webhook with merge request events.
-- Fill in the URL: '**JENKINS URL/generic-webhook-trigger/invoke**'
+- Fill in the URL: `JENKINS URL/generic-webhook-trigger/invoke`
   <img src="../../../images/GitLab_webhook.png">
 
 </details>
