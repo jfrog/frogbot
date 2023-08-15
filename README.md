@@ -257,7 +257,7 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 ##### Secrets Detection
 When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
 
-<img src"./images/secrets-email.png">
+<img src="./images/secrets-email.png">
 
 </details>
 
