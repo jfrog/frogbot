@@ -18,6 +18,6 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 	}
 }
 
-func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
-	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
+func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 }
