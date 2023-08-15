@@ -150,7 +150,6 @@ jobs:
 ### 🛠️Scanning repository branches and fixing issues
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of the following template.
-Make sure to follow the guidelines in the 'Using the Templates' section above.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
 
 <details>
@@ -198,7 +197,7 @@ jobs:
           # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
 
           # [Mandatory]
-          # The GitHub token automatically generated for the job
+          # The GitHub token is automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # [Optional, default: https://api.github.com]
@@ -211,7 +210,7 @@ jobs:
           # If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
           # executable to be downloaded from an Artifactory instance, which the machine has access to:
           #
-          # 1. Login to the Artifactory UI, with a user which has admin credentials.
+          # 1. Login to the Artifactory UI, with a user who has admin credentials.
           # 2. Create a Remote Repository with the following properties set.
           #    Under the 'Basic' tab:
           #       Package Type: Generic
