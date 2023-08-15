@@ -131,7 +131,7 @@ The supported package management are:
 - Pip
 - Pipenv
 - Poetry
-- Yarn 2
+- Yarn
 
 ### How to use Pull Request scanning?
 
