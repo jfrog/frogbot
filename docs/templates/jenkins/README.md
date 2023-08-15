@@ -63,7 +63,7 @@ Use the search bar to find **Generic Webhook Trigger** ([more info](https://plug
 
 ---
 <details>
-  <summary>3️⃣ [Optional] - setting JobToken</summary>
+  <summary>3️⃣ Optional - setting JobToken</summary>
 
   - When using the plugin in several jobs, you will have the same URL trigger all jobs. If you
     want to trigger only a certain job you can use the **JobToken** in the URL to specify what job needs to be executed.
