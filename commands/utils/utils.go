@@ -384,7 +384,7 @@ func prepareEmail(sender, subject, content string, emailDetails EmailDetails) *e
 }
 
 func getRelevantEmailReceivers(repo *Repository, client vcsclient.VcsClient, branch string) ([]string, error) {
-	commits, err := client.GetCommits(context.Background(), repo.RepoOwner, repo.RepoName, branch)
+	commits, err := client.GetCommits(context.Background(), repo.PullRequestDetails.Source.Owner, repo.PullRequestDetails.Source.Repository, branch)
 	if err != nil {
 		return nil, err
 	}

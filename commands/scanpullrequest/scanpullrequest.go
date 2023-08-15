@@ -96,7 +96,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	if len(secretsRows) > 0 {
+	if len(secretsRows) > 0 && repo.SmtpServer != "" {
 		if err = utils.AlertSecretsExposed(repo, client, secretsRows, repo.PullRequestDetails.Source.Name); err != nil {
 			return
 		}
