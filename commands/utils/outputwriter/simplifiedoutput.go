@@ -46,10 +46,10 @@ func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTitle(isComment bool) string {
-	if !isComment {
-		return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
+	if isComment {
+		return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
 	}
-	return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
+	return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
 }
 
 func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {

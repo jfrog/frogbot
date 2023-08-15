@@ -66,6 +66,19 @@ pipeline {
         // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
         // JF_RELEASES_REPO= ""
 
+        // [Optional]
+        // Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+        // SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
+        // JF_SMTP_SERVER= ""
+
+        // [Mandatory if JF_SMTP_SERVER is set]
+        // The username required for authenticating with the SMTP server.
+        // JF_SMTP_USER= ""
+
+        // [Mandatory if JF_SMTP_SERVER is set]
+        // The password associated with the username required for authentication with the SMTP server.
+        // JF_SMTP_PASSWORD= ""
+
         ///////////////////////////////////////////////////////////////////////////
         //   If your project uses a 'frogbot-config.yml' file, you should define //
         //   the following variables inside the file, instead of here.           //
@@ -144,7 +157,12 @@ pipeline {
 
         // [Optional, Default: eco-system+frogbot@jfrog.com]
         // Set the email of the commit author
-        // JF_GIT_EMAIL_AUTHOR: ""
+        // JF_GIT_EMAIL_AUTHOR= ""
+
+        // [Mandatory if JF_SMTP_SERVER is set]
+        // List of email addresses to receive emails about secrets that has been detected in a pull request scan.
+        // The list should be seperated by commas.
+        // JF_EMAIL_RECEIVERS: ""
     }
 
     stages {
