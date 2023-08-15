@@ -157,7 +157,7 @@ This will make Frogbot open pull requests with fixes for security vulnerabilitie
   <summary>Show Template</summary>
 
 ```yaml
-name: "Frogbot Scan and Fix"
+name: "Frogbot Scan Repository"
 on:
   workflow_dispatch:
   schedule:
@@ -168,7 +168,7 @@ permissions:
   pull-requests: write
   security-events: write
 jobs:
-  create-fix-pull-requests:
+  scan-repository:
     runs-on: ubuntu-latest
     strategy:
       matrix:
