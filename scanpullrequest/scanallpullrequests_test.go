@@ -103,7 +103,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	firstRepoParams := utils.Params{
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &failOnSecurityIssues,
-			Projects: []xrayutils.Project{{
+			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
 				WorkingDirs:        []string{utils.RootDir},
@@ -116,7 +116,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		Git: gitParams.Git,
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &failOnSecurityIssues,
-			Projects:             []xrayutils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
+			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
 	}
 
 	configAggregator := utils.RepoAggregator{
@@ -161,7 +161,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	params := utils.Params{
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &falseVal,
-			Projects: []xrayutils.Project{{
+			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
 				WorkingDirs:        []string{"."},

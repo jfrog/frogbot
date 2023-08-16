@@ -472,7 +472,7 @@ func TestMavenGavReader(t *testing.T) {
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
-	assert.NoError(t, fileutils.CopyDir(filepath.Join("..", "..", "testdata", "projects", "maven"), tmpDir, true, nil))
+	assert.NoError(t, fileutils.CopyDir(filepath.Join("..", "testdata", "projects", "maven"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
@@ -507,7 +507,7 @@ func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
 }
 
 func TestUpdatePackageVersion(t *testing.T) {
-	testProjectPath := filepath.Join("..", "..", "testdata", "packagehandlers")
+	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -538,7 +538,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 }
 
 func TestUpdatePropertiesVersion(t *testing.T) {
-	testProjectPath := filepath.Join("..", "..", "testdata", "packagehandlers")
+	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -562,7 +562,7 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 	} else {
 		projectDir = "indirect-projects"
 	}
-	testdataDir, err := filepath.Abs(filepath.Join("..", "..", "testdata/"+projectDir))
+	testdataDir, err := filepath.Abs(filepath.Join("..", "testdata/"+projectDir))
 	assert.NoError(t, err)
 	return testdataDir
 }
