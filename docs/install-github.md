@@ -29,11 +29,11 @@ Push the workflow files to the `.github/workflows` directory at the root of your
 
 ### 🔎 Scan pull requests
 
-Create a file named [frogbot-scan-pull-request.yml](templates/github-actions/frogbot-scan-pull-request.yml) with the content of the provided template.
+Create a file named `frogbot-scan-pull-request.yml` with the content of [this](templates/github-actions/frogbot-scan-pull-request.yml) template.
 This will allow Frogbot to scan pull requests for security issues when the pull requests are open, and before they are merged.
 
 
 ### 🛠️ Scanning repository branches and fixing issues
 
-Create a file named [frogbot-scan-repository.yml](templates/github-actions/frogbot-scan-repository.yml) with the content of the provided template.
+Create a file named `frogbot-scan-repository.yml` with the content of [this](templates/github-actions/frogbot-scan-repository.yml) template.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
