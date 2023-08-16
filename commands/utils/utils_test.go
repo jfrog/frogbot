@@ -98,10 +98,10 @@ func TestReportEcosystemUsage(t *testing.T) {
 	const commandName = "test-command"
 	repo := getDummyRepo()
 	server := httptest.NewServer(nil)
-	server.Config.Handler = createUsageHandler(t, commandName, server.URL, repo[0].RepoName)
+	server.Config.Handler = createUsageHandler(t, commandName, xrayusage.EcosystemUsageBaseUrl, repo[0].RepoName)
 	defer server.Close()
 
-	serverDetails := &config.ServerDetails{Url: server.URL + "/"}
+	serverDetails := &config.ServerDetails{Url: xrayusage.EcosystemUsageBaseUrl + "/"}
 	var usageGroup sync.WaitGroup
 	usageGroup.Add(1)
 	channel := make(chan error)
