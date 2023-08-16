@@ -67,6 +67,7 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+			defer cleanup()
 			err := goPackageHandler.UpdateDependency(test.vulnDetails)
 			if test.fixSupported {
 				assert.NoError(t, err)
@@ -75,8 +76,7 @@ func TestGoPackageHandler_UpdateDependency(t *testing.T) {
 				assert.Error(t, err, "Expected error to occur")
 				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 			}
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
+
 		})
 	}
 }
@@ -141,6 +141,7 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 			pythonPackageHandler := GetCompatiblePackageHandler(test.vulnDetails, &utils.ScanDetails{
 				Project: &utils.Project{PipRequirementsFile: test.requirementsPath}})
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+			defer cleanup()
 			err := pythonPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -148,8 +149,6 @@ func TestPythonPackageHandler_UpdateDependency(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
 		})
 	}
 }
@@ -199,6 +198,7 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+			defer cleanup()
 			err := npmPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -206,8 +206,6 @@ func TestNpmPackageHandler_UpdateDependency(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
 		})
 	}
 }
@@ -250,6 +248,7 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 			func(t *testing.T) {
 				testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 				cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString()+test.specificTechVersion)
+				defer cleanup()
 				err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
 				if test.fixSupported {
 					assert.NoError(t, err)
@@ -257,8 +256,6 @@ func TestYarnPackageHandler_UpdateDependency(t *testing.T) {
 					assert.Error(t, err, "Expected error to occur")
 					assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 				}
-				assert.NoError(t, os.Chdir(testDataDir))
-				cleanup()
 			})
 	}
 }
@@ -282,6 +279,7 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 			mavenPackageHandler := MavenPackageHandler{}
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+			defer cleanup()
 			err := mavenPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
@@ -289,8 +287,6 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, os.Chdir(testDataDir))
-			cleanup()
 		})
 	}
 }
@@ -562,7 +558,7 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 	} else {
 		projectDir = "indirect-projects"
 	}
-	testdataDir, err := filepath.Abs(filepath.Join("..", "testdata/"+projectDir))
+	testdataDir, err := filepath.Abs(filepath.Join("..", "testdata", projectDir))
 	assert.NoError(t, err)
 	return testdataDir
 }
@@ -571,8 +567,13 @@ func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func()
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech)
 	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
-	return cleanup
+	return func() {
+		cleanup()
+		assert.NoError(t, os.Chdir(currDir))
+	}
 }
 
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
