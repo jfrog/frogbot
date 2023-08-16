@@ -145,8 +145,9 @@ func (s *Scan) SetEmailDetails() error {
 		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv)
 	}
 	if len(s.EmailReceivers) == 0 {
-		emailReceivers := getTrimmedEnv(EmailReceiversEnv)
-		s.EmailReceivers = strings.Split(emailReceivers, ",")
+		if emailReceivers := getTrimmedEnv(EmailReceiversEnv); emailReceivers != "" {
+			s.EmailReceivers = strings.Split(emailReceivers, ",")
+		}
 	}
 	return nil
 }

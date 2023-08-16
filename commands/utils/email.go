@@ -111,7 +111,7 @@ func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredE
 
 func shouldExcludeEmailAddress(emailAddress string, excludes []string) bool {
 	for _, excludedEmailAddress := range excludes {
-		if strings.Contains(emailAddress, excludedEmailAddress) {
+		if excludedEmailAddress != "" && strings.Contains(emailAddress, excludedEmailAddress) {
 			return true
 		}
 	}

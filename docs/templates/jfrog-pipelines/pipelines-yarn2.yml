@@ -173,9 +173,10 @@ pipelines:
             # Set the email of the commit author
             # JF_GIT_EMAIL_AUTHOR: ""
 
-            # [Mandatory if JF_SMTP_SERVER is set]
-            # List of email addresses to receive emails about secrets that has been detected in a pull request scan.
-            # The list should be seperated by commas.
+            # [Optional]
+            # List of comma separated email addresses to receive email notifications about secrets
+            # detected during pull request scanning. The notification is also sent to the email set
+            # in the committer git profile regardless of whether this variable is set or not.
             # JF_EMAIL_RECEIVERS: ""
 
         execution:
