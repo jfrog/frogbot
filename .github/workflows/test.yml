@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.test == "UnitTests" }}
+        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.test == 'UnitTests' }}
         with:
           labels: 'safe to test'
 
@@ -66,14 +66,14 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.test == "UnitTests" }}
+        if: ${{ matrix.test == 'UnitTests' }}
 
       - name: ${{ matrix.test }} Tests
         run: go test github.com/jfrog/frogbot/commands/${{ matrix.test }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.test != "UnitTests" }}
+        if: ${{ matrix.test != 'UnitTests' }}
 
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:
