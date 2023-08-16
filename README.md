@@ -28,9 +28,9 @@
 ## 🤖 About JFrog Frogbot
 ### Overview
 
-JFrog Frogbot is a Git bot that scans your git repositories for security vulnerabilities.
-1. It scans pull requests immediately after they are opened but before they are merged. This process notifies you if the pull request is about to introduce new vulnerabilities to your code. This unique capability ensures that the code is scanned and can be fixed even before vulnerabilities are introduced into the codebase.
-2. It scans the Git repository periodically and creates pull requests with fixes for vulnerabilities that are detected.
+JFrog Frogbot is a Git bot that scans your Git repositories for security vulnerabilities.
+1. It scans pull requests immediately after they are opened but before they are merged. This process notifies you if the pull request is about to introduce new vulnerabilities to your code. This unique capability ensures the code is scanned and can be fixed even before vulnerabilities are introduced into the codebase.
+2. It scans the Git repository periodically and creates pull requests with fixes for detected vulnerabilities.
 
 It supports the following Git providers:
 - Azure Repos
@@ -39,7 +39,7 @@ It supports the following Git providers:
 - GitLab
 
 ### Why use JFrog Frogbot?
-- **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data that is provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
+- **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 - **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
 - **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
@@ -47,31 +47,17 @@ It supports the following Git providers:
 > **_NOTE:_** **Vulnerability Contextual Analysis**, **Secrets Detection** and **Infrastructure as Code scans**
   > require the [JFrog Advanced Security Package](https://jfrog.com/xray/).
 
-### What's needed for the setup?
-- Frogbot uses a JFrog environment to scan your Git repositories. If you don't have a JFrog environment, you can set up one for free, and use it with no limits.
-- Frogbot also requires a runtime environment for the scanning. The following environments are supported:
-
-  - GitHub Actions
-  - Jenkins
-  - JFrog Pipelines
-  - GitLab Pipelines
-  - Azure Pipelines
-
 ## 🖥️ Setting up Frogbot
 
-<details>
-  <summary>1. Set up Frogbot on your preferred CI server</summary>
-
+Set up Frogbot on your preferred CI server:
 - [GitHub Actions](docs/install-github.md)
 - [Jenkins](docs/templates/jenkins/README.md)
 - [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
 - [GitLab Pipelines](docs/install-gitlab.md)
 - [Azure Pipelines](docs/install-azure-pipelines.md)
 
-</details>
-
 <details>
-  <summary>2. Optionally set up a FREE JFrog Environment in the Cloud</summary>
+  <summary> Optional - set up a FREE JFrog Environment in the Cloud</summary>
 
 Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
 
@@ -97,7 +83,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <details>
-  <summary>3. Advanced - Customize advanced settings with frogbot-config.yml</summary>
+  <summary>Advanced - Customize advanced settings with frogbot-config.yml</summary>
     
 - [Creating the frogbot-config.yml File](docs/frogbot-config.md)
 
@@ -206,7 +192,7 @@ The Frogbot GitLab flow is as follows:
 
 1. The developer opens a merge request.
 2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual _frogbot-scan_ job.
-3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
+3. Frogbot is then triggered by the job, it scans the merge request and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
    ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-run-button.png)
 
