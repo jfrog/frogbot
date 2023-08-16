@@ -13,7 +13,7 @@
 
    <img src="../images/github-repository-secrets.png" width="600">
 
-   - Under Actions > General, check the Allow GitHub Actions to create and approve pull requests check box.
+   - Under **Actions** > **General**, check the **Allow GitHub Actions to create and approve pull requests** check box.
 
    <img src="../images/github-pr-permissions.png" width="600">
 
