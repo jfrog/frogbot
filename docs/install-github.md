@@ -173,7 +173,7 @@ jobs:
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of the following template.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.
-> Please notice that the template is configured to scan "dev" branch but it can be changed to any existing branch/branches on your repository. (
+> Please notice that the template is configured to scan "dev" branch but it can be changed to any existing branch/branches on your repository.
 
 <details>
   <summary>Show Template</summary>
