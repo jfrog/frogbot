@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
 	"strings"
@@ -13,17 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-const (
-	FrogbotModuleName = "github.com/jfrog/frogbot"
-)
-
-func TestRunner(t *testing.T) {
-	packages := clientTests.GetTestPackages("./...")
-	// Exclude module to avoid loop
-	packages = clientTests.ExcludeTestsPackage(packages, FrogbotModuleName)
-	assert.NoError(t, clientTests.RunTests(packages, false))
-}
 
 func TestMain(m *testing.M) {
 	err := os.Setenv(coreutils.ReportUsage, "false")
