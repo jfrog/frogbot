@@ -27,7 +27,7 @@ Push the workflow files to the `.github/workflows` directory at the root of your
 
 > **IMPORTANT**: The workflow files must be pushed to the target branch before Frogbot is triggered. This means that if, for example, a pull request includes the workflow files and the target branch doesn't, Frogbot will fail to run.
 
-### 🔎Scan pull requests
+### 🔎 Scan pull requests
 
 Create a file named `frogbot-scan-pull-request.yml` with the content of the following template.
 This will allow Frogbot to scan pull requests for security issues when the pull requests are open, and before they are merged.
@@ -91,6 +91,19 @@ jobs:
           #       Uncheck the 'Store Artifacts Locally' option
           # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
           # JF_RELEASES_REPO: ""
+          
+          # [Optional]
+          # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+          # SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
+          # JF_SMTP_SERVER: ""
+
+          # [Mandatory if JF_SMTP_SERVER is set]
+          # The username required for authenticating with the SMTP server.
+          # JF_SMTP_USER: ""
+
+          # [Mandatory if JF_SMTP_SERVER is set]
+          # The password associated with the username required for authentication with the SMTP server.
+          # JF_SMTP_PASSWORD: ""
 
           ##########################################################################
           ##   If your project uses a 'frogbot-config.yml' file, you can define   ##
@@ -143,11 +156,18 @@ jobs:
           # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
           # The following values are accepted: Low, Medium, High or Critical
           # JF_MIN_SEVERITY: ""
+          
+          # [Optional]
+          # List of comma separated email addresses to receive email notifications about secrets
+          # detected during pull request scanning. The notification is also sent to the email set
+          # in the committer git profile regardless of whether this variable is set or not.
+          # JF_EMAIL_RECEIVERS: ""
+          
 ```
 
 </details>
 
-### 🛠️Scanning repository branches and fixing issues
+### 🛠️ Scanning repository branches and fixing issues
 
 Create a file named `frogbot-scan-and-fix.yml` with the content of the following template.
 This will make Frogbot open pull requests with fixes for security vulnerabilities found in the GitHub repository.

@@ -6,14 +6,13 @@ import (
 	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jordan-wright/email"
 	"net/smtp"
 	"strings"
 )
 
-var excludedEmailAddresses = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
+var blacklistedEmailAddresses = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
 
 type SecretsEmailDetails struct {
 	gitClient       vcsclient.VcsClient
@@ -98,20 +97,28 @@ func getRelevantEmailReceivers(client vcsclient.VcsClient, repoOwner, repoName, 
 }
 
 func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredEmailReceivers []string) ([]string, error) {
-	emailReceivers := datastructures.MakeSet[string]()
+	emailReceivers := []string{}
 	for _, commit := range commits {
-		if shouldExcludeEmailAddress(commit.AuthorEmail, excludedEmailAddresses) || shouldExcludeEmailAddress(commit.AuthorEmail, preConfiguredEmailReceivers) {
+		if shouldExcludeEmailAddress(commit.AuthorEmail, preConfiguredEmailReceivers) {
 			continue
 		}
-		emailReceivers.Add(commit.AuthorEmail)
+		emailReceivers = append(emailReceivers, commit.AuthorEmail)
 	}
 
-	return emailReceivers.ToSlice(), nil
+	return emailReceivers, nil
 }
 
-func shouldExcludeEmailAddress(emailAddress string, excludes []string) bool {
-	for _, excludedEmailAddress := range excludes {
-		if strings.Contains(emailAddress, excludedEmailAddress) {
+func shouldExcludeEmailAddress(emailAddress string, preConfiguredEmailReceivers []string) bool {
+	if emailAddress == "" {
+		return true
+	}
+	for _, blackListedEmail := range blacklistedEmailAddresses {
+		if strings.Contains(emailAddress, blackListedEmail) {
+			return true
+		}
+	}
+	for _, preConfiguredEmailAddress := range preConfiguredEmailReceivers {
+		if emailAddress == preConfiguredEmailAddress {
 			return true
 		}
 	}
