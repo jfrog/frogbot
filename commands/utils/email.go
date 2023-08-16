@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-var excludedEmailKeywords = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
+var blacklistedEmailAddresses = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
 
 type SecretsEmailDetails struct {
 	gitClient       vcsclient.VcsClient
@@ -108,17 +108,17 @@ func getEmailReceiversFromCommits(commits []vcsclient.CommitInfo, preConfiguredE
 	return emailReceivers, nil
 }
 
-func shouldExcludeEmailAddress(emailAddressCandidate string, excludedEmailAddresses []string) bool {
-	if emailAddressCandidate == "" {
+func shouldExcludeEmailAddress(emailAddress string, preConfiguredEmailReceivers []string) bool {
+	if emailAddress == "" {
 		return true
 	}
-	for _, keyword := range excludedEmailKeywords {
-		if strings.Contains(emailAddressCandidate, keyword) {
+	for _, blackListedEmail := range blacklistedEmailAddresses {
+		if strings.Contains(emailAddress, blackListedEmail) {
 			return true
 		}
 	}
-	for _, excludedEmailAddress := range excludedEmailAddresses {
-		if emailAddressCandidate == excludedEmailAddress {
+	for _, preConfiguredEmailAddress := range preConfiguredEmailReceivers {
+		if emailAddress == preConfiguredEmailAddress {
 			return true
 		}
 	}
