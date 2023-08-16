@@ -9,15 +9,18 @@ on:
 jobs:
   tests:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        test: [ UnitTests, ScanRepository, ScanPullRequest ]
+        os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }} && runner.os == 'Linux'
+        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.test == "UnitTests" }}
         with:
           labels: 'safe to test'
 
@@ -58,21 +61,19 @@ jobs:
       - name: Lint
         run: go vet ./...
 
-      # Run tests
-      - name: Tests
-        run: go test -p 1 ./... -v -race -timeout 30m -cover -coverprofile=covprofile -covermode=atomic
+      - name: Unit Tests
+        run: go test github.com/jfrog/frogbot -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          JFROG_CLI_LOG_LEVEL: "DEBUG"
-      # Generate code coverage
-      - name: Send coverage
-        run: |
-          go install github.com/mattn/goveralls@latest
-          goveralls -coverprofile=covprofile -service=github
+        if: ${{ matrix.test == "UnitTests" }}
+
+      - name: ${{ matrix.test }} Tests
+        run: go test github.com/jfrog/frogbot/commands/${{ matrix.test }} -v -race -timeout 30m -cover
         env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: runner.os == 'Linux'
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+        if: ${{ matrix.test != "UnitTests" }}
 
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:

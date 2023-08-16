@@ -9,8 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="nuget.protocol" Version="4.6.0" />
-    <PackageReference Include="personnummer" Version="3.0.2" />
   </ItemGroup>
 
 </Project>

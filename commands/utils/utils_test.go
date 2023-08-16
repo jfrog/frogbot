@@ -262,7 +262,7 @@ func TestValidatedBranchName(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.branchName, func(t *testing.T) {
+		t.Run("Branch Name: '"+test.branchName+"'", func(t *testing.T) {
 			err := validateBranchName(test.branchName)
 			if test.expectedError {
 				assert.Error(t, err)

@@ -469,27 +469,54 @@ func TestCreatePullRequestMessage(t *testing.T) {
 }
 
 func TestScanPullRequest(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPath, "test-proj", true)
-}
-
-func TestScanPullRequestNoFail(t *testing.T) {
-	testScanPullRequest(t, testProjConfigPathNoFail, "test-proj", false)
-}
-
-func TestScanPullRequestSubdir(t *testing.T) {
-	testScanPullRequest(t, testProjSubdirConfigPath, "test-proj-subdir", true)
-}
-
-func TestScanPullRequestNoIssues(t *testing.T) {
-	testScanPullRequest(t, testCleanProjConfigPath, "clean-test-proj", false)
-}
-
-func TestScanPullRequestMultiWorkDir(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPath, "multi-dir-test-proj", true)
-}
-
-func TestScanPullRequestMultiWorkDirNoFail(t *testing.T) {
-	testScanPullRequest(t, testMultiDirProjConfigPathNoFail, "multi-dir-test-proj", false)
+	tests := []struct {
+		testName             string
+		configPath           string
+		projectName          string
+		failOnSecurityIssues bool
+	}{
+		{
+			testName:             "ScanPullRequest",
+			configPath:           testProjConfigPath,
+			projectName:          "test-proj",
+			failOnSecurityIssues: true,
+		},
+		{
+			testName:             "ScanPullRequestNoFail",
+			configPath:           testProjConfigPathNoFail,
+			projectName:          "test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestSubdir",
+			configPath:           testProjSubdirConfigPath,
+			projectName:          "test-proj-subdir",
+			failOnSecurityIssues: true,
+		},
+		{
+			testName:             "ScanPullRequestNoIssues",
+			configPath:           testCleanProjConfigPath,
+			projectName:          "clean-test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestMultiWorkDir",
+			configPath:           testMultiDirProjConfigPathNoFail,
+			projectName:          "multi-dir-test-proj",
+			failOnSecurityIssues: false,
+		},
+		{
+			testName:             "ScanPullRequestMultiWorkDirNoFail",
+			configPath:           testMultiDirProjConfigPath,
+			projectName:          "multi-dir-test-proj",
+			failOnSecurityIssues: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			testScanPullRequest(t, test.configPath, test.projectName, test.failOnSecurityIssues)
+		})
+	}
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {

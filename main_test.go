@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/commands/utils"
+	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
 	"strings"
@@ -10,6 +11,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var IntegrationTestPackages = []string{
+	"github.com/jfrog/frogbot/commands/scanrepository",
+	"github.com/jfrog/frogbot/commands/scanpullrequest",
+}
+
+func TestUnitTests(t *testing.T) {
+	packages := clientTests.GetTestPackages("./...")
+	for _, integrationPackage := range IntegrationTestPackages {
+		packages = clientTests.ExcludeTestsPackage(packages, integrationPackage)
+	}
+	assert.NoError(t, clientTests.RunTests(packages, false))
+}
 
 func TestVersion(t *testing.T) {
 	originalStdout := os.Stdout

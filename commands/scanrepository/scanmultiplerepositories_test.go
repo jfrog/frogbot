@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-var testScanAndFixReposConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
+var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
@@ -47,7 +47,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	configData, err := utils.ReadConfigFromFileSystem(testScanAndFixReposConfigPath)
+	configData, err := utils.ReadConfigFromFileSystem(testScanMultipleRepositoriesConfigPath)
 	assert.NoError(t, err)
 
 	tmpDir, cleanUp := utils.PrepareTestEnvironment(t, "", "scanmultiplerepositories")
