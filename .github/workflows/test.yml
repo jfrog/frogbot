@@ -1,4 +1,4 @@
-name: "Test"
+name: "Go Test"
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ UnitTests, ScanRepository, ScanPullRequest ]
+        test: [ UnitTests, scanrepository, scanpullrequest ]
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
