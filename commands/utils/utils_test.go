@@ -91,50 +91,51 @@ func getDummyRepo() RepoAggregator {
 				},
 			},
 		},
+		Repository{
+			Params: Params{
+				Git: Git{
+					RepoName: "repository2",
+				},
+			},
+		},
 	}
 }
 
 func TestReportEcosystemUsage(t *testing.T) {
 	const commandName = "test-command"
+	const accountName = "platform-url"
+	serverDetails := &config.ServerDetails{Url: accountName}
 	repo := getDummyRepo()
-	server := httptest.NewServer(nil)
-	server.Config.Handler = createUsageHandler(t, commandName, xrayusage.EcosystemUsageBaseUrl, repo[0].RepoName)
-	defer server.Close()
-
-	serverDetails := &config.ServerDetails{Url: xrayusage.EcosystemUsageBaseUrl + "/"}
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsageToEcosystem(commandName, serverDetails, repo, &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
+	data, err := CreateEcosystemReports(commandName, serverDetails, repo)
+	assert.NoError(t, err)
+	assert.Len(t, data, 2)
+	for i, entry := range data {
+		assert.Equal(t, productId, entry.ProductId)
+		assert.Equal(t, accountName, entry.AccountId)
+		hashed, err := Md5Hash(repo[i].RepoName)
+		assert.NoError(t, err)
+		assert.Equal(t, hashed, entry.ClientId)
+		assert.Equal(t, commandName, entry.Features[0])
+	}
 }
 
 func TestReportEcosystemUsageError(t *testing.T) {
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsageToEcosystem("", &config.ServerDetails{}, getDummyRepo(), &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
-
-	usageGroup.Add(1)
-	channel = make(chan error)
-	go func() {
-		channel <- ReportUsageToEcosystem("", &config.ServerDetails{Url: "http://httpbin.org/status/404"}, getDummyRepo(), &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.Error(t, <-channel)
+	const commandName = "test-command"
+	accountName := &config.ServerDetails{Url: "platform-url/"}
+	repos := getDummyRepo()
+	// No features
+	_, err := CreateEcosystemReports("", accountName, repos)
+	assert.Error(t, err)
+	// Np repositories
+	data, err := CreateEcosystemReports(commandName, accountName, RepoAggregator{})
+	assert.NoError(t, err)
+	assert.Len(t, data, 0)
 }
 
 func TestReportXrayUsage(t *testing.T) {
 	const commandName = "test-command"
 	repo := getDummyRepo()
-	server := httptest.NewServer(createUsageHandler(t, commandName, "", repo[0].RepoName))
+	server := httptest.NewServer(createUsageHandler(t, commandName, repo[0].RepoName, repo[1].RepoName))
 	defer server.Close()
 
 	serverDetails := &config.ServerDetails{XrayUrl: server.URL + "/"}
@@ -168,11 +169,19 @@ func TestReportXrayError(t *testing.T) {
 }
 
 // Create HTTP handler to mock an Artifactory/Xray/Ecosystem server suitable for report usage requests
-func createUsageHandler(t *testing.T, commandName, accountId, clientId string) http.HandlerFunc {
+func createUsageHandler(t *testing.T, commandName, clientId, clientId2 string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == "/api/system/version" || r.RequestURI == "/api/v1/system/version" {
+		// Artifactory version
+		if r.RequestURI == "/api/system/version" {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"version":"6.9.0"}`))
+			assert.NoError(t, err)
+			return
+		}
+		// Xray version
+		if r.RequestURI == "/api/v1/system/version" {
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte(`{"xray_version":"6.9.0"}`))
 			assert.NoError(t, err)
 			return
 		}
@@ -195,20 +204,12 @@ func createUsageHandler(t *testing.T, commandName, accountId, clientId string) h
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, clientId, productId, xrayusage.GetExpectedXrayEventName(productId, commandName)), buf.String())
-
-			// Send response OK
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
+			hashed, err := Md5Hash(clientId)
 			assert.NoError(t, err)
-		}
-		// Ecosystem API
-		if r.RequestURI == "/api/usage/report" {
-			// Check request
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
+			hashed2, err := Md5Hash(clientId2)
 			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`[{"productId":"%s","accountId":"%s","clientId":"%s","features":["%s"]}]`, productId, "", clientId, commandName), buf.String())
+			featureId := xrayusage.GetExpectedXrayEventName(productId, commandName)
+			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"},{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, hashed, productId, featureId, hashed2, productId, featureId), buf.String())
 
 			// Send response OK
 			w.WriteHeader(http.StatusOK)

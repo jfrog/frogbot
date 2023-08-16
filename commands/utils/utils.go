@@ -229,10 +229,21 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 		// Notify the action is done so that the application does not exit before finished
 		usageGroup.Done()
 	}()
+	reports, err := CreateEcosystemReports(commandName, serverDetails, repositories)
+	if err != nil || len(reports) == 0 {
+		// Nothing to report
+		return
+	}
+	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
+	err = errors.Join(err, xrayusage.SendEcosystemUsageReports(reports...))
+	return
+}
+
+func CreateEcosystemReports(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) (reports []xrayusage.ReportEcosystemUsageData, err error) {
+	reports = []xrayusage.ReportEcosystemUsageData{}
 	if serverDetails.Url == "" {
 		return
 	}
-	reports := []xrayusage.ReportEcosystemUsageData{}
 	for _, repository := range repositories {
 		// Report one entry for each repository client
 		if clientAttribute, e := createRepositoryClientUsageAttribute(repository); e != nil {
@@ -243,12 +254,6 @@ func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDeta
 			reports = append(reports, usageReport)
 		}
 	}
-	if len(reports) == 0 {
-		// Nothing to report
-		return
-	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
-	err = errors.Join(err, xrayusage.SendEcosystemUsageReports(reports...))
 	return
 }
 
