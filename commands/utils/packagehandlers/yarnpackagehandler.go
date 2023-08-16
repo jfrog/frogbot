@@ -70,7 +70,7 @@ func isYarnV1() (isYarn1 bool, err error) {
 		err = errors.New("couldn't get current working directory: " + err.Error())
 		return
 	}
-	log.Debug("################ dir for --version command: " + workingDirectory + "#################")
+	log.Info("################ dir for --version command: " + workingDirectory + "#################")
 	fmt.Println("################ dir for --version command: " + workingDirectory + "#################")
 
 	yarnExecutablePath, err := biUtils.GetYarnExecutable()
@@ -82,7 +82,7 @@ func isYarnV1() (isYarn1 bool, err error) {
 	if err != nil {
 		return
 	}
-	log.Debug("################ detected yarn version: " + executableYarnVersion + "#################")
+	log.Info("################ detected yarn version: " + executableYarnVersion + "#################")
 	fmt.Println("################ detected yarn version: " + executableYarnVersion + "#################")
 	isYarn1 = version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
 	return
