@@ -60,7 +60,6 @@ var (
 	TestScanAllPullRequests      *bool
 	TestPackageHandlers          *bool
 	TestResolveDependency        *bool
-	TestAll                      *bool
 )
 
 func init() {
@@ -69,15 +68,7 @@ func init() {
 	TestScanPullRequest = flag.Bool("test.Scan-Pull-Request", false, "Test Scan Pull Request")
 	TestScanAllPullRequests = flag.Bool("test.Scan-All-Pull-Requests", false, "Test Scan Pull Request")
 	TestPackageHandlers = flag.Bool("test.Package-Handlers", false, "Test Package Handlers")
-	TestResolveDependency = flag.Bool("test.resolvedependency", false, "Test Resolve Dependency")
-
-	noSuitSelected := !(*TestScanRepository ||
-		*TestScanMultipleRepositories ||
-		*TestScanPullRequest ||
-		*TestScanAllPullRequests ||
-		*TestPackageHandlers ||
-		*TestResolveDependency)
-	TestAll = &noSuitSelected
+	TestResolveDependency = flag.Bool("test.Resolve-Dependency", false, "Test Resolve Dependency")
 }
 
 var BuildToolsDependenciesMap = map[coreutils.Technology][]string{

@@ -27,7 +27,7 @@ var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "co
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func initScanMultipleRepositoriesTest(t *testing.T) {
-	if !(*utils.TestScanMultipleRepositories || *utils.TestAll) {
+	if !*utils.TestScanMultipleRepositories {
 		t.Skip("Skipping Scan Multiple Repositories tests. To run Scan Multiple Repositories tests add the '--test.Scan-Multiple-Repositories' option.")
 	}
 }

@@ -70,7 +70,7 @@ var testPackagesData = []struct {
 }
 
 func initScanRepositoryTest(t *testing.T) {
-	if !(*utils.TestScanRepository || *utils.TestAll) {
+	if !*utils.TestScanRepository {
 		t.Skip("Skipping Scan Repository tests. To run Scan Repository tests add the '--test.Scan-Repository' option.")
 	}
 }

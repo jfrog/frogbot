@@ -14,12 +14,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers, resolvedependency ]
+        suite: [ Scan-Pull-Request, Scan-All-Pull-Requests, Scan-Repository, Scan-Multiple-Repositories, Package-Handlers, Resolve-Dependency ]
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.suite == 'ScanPullRequest' }}
+        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.suite == 'Scan-Pull-Request' }}
         with:
           labels: 'safe to test'
 
@@ -62,7 +62,7 @@ jobs:
 
       # Run tests
       - name: Tests
-        run: go test github.com/jfrog/frogbot -race -timeout 30m -cover -v --test.${{ matrix.suite }}
+        run: go test github.com/jfrog/frogbot -race -timeout 30m -cover -v -test.${{ matrix.suite }}
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
