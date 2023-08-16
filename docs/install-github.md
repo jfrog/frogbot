@@ -8,7 +8,7 @@
       - **JF_URL** (JFrog Platform URL - Example: `https://acme.jfrog.io`)
       - **JF_ACCESS_TOKEN** (JFrog access token)
 
-   > **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**,
+   > You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**,
    > and **JF_USER** + **JF_PASSWORD** instead of **JF_ACCESS_TOKEN**
 
    <img src="../images/github-repository-secrets.png" width="600">
