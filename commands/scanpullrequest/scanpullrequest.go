@@ -82,7 +82,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) error {
+func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err error) {
 	pullRequestDetails := repo.PullRequestDetails
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
@@ -91,14 +91,27 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) error {
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	vulnerabilitiesRows, iacRows, err := auditPullRequest(repo, client, pullRequestDetails)
+	vulnerabilitiesRows, iacRows, secretsRows, err := auditPullRequest(repo, client, pullRequestDetails)
 	if err != nil {
-		return err
+		return
+	}
+
+	shouldSendExposedSecretsEmail := len(secretsRows) > 0 && repo.SmtpServer != ""
+	if shouldSendExposedSecretsEmail {
+		prSourceDetails := pullRequestDetails.Source
+		secretsEmailDetails := utils.NewSecretsEmailDetails(
+			client, repo.GitProvider,
+			prSourceDetails.Owner, prSourceDetails.Repository,
+			prSourceDetails.Name, pullRequestDetails.URL,
+			secretsRows, repo.EmailDetails)
+		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
+			return
+		}
 	}
 
 	// Delete previous Frogbot pull request message if exists
 	if err = deleteExistingPullRequestComment(repo, client); err != nil {
-		return err
+		return
 	}
 
 	// Create a pull request message
@@ -106,18 +119,19 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) error {
 
 	// Add comment to the pull request
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
-		return errors.New("couldn't add pull request comment: " + err.Error())
+		err = errors.New("couldn't add pull request comment: " + err.Error())
+		return
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && len(vulnerabilitiesRows) > 0 {
 		err = errors.New(securityIssueFoundErr)
 	}
-	return err
+	return
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, secretsRows []formats.IacSecretsRow, err error) {
 	// Download source branch
 	sourceBranchInfo := pullRequestDetails.Source
 	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(client, sourceBranchInfo.Owner, sourceBranchInfo.Repository, sourceBranchInfo.Name)
@@ -157,8 +171,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		}
 
 		// Set JAS output flags
-		extendedScanResults := sourceResults.ExtendedScanResults
-		repoConfig.OutputWriter.SetJasOutputFlags(extendedScanResults.EntitledForJas, len(extendedScanResults.ApplicabilityScanResults) > 0)
+		sourceScanResults := sourceResults.ExtendedScanResults
+		repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
 
 		// Get all issues that were found in the source branch
 		if repoConfig.IncludeAllVulnerabilities {
@@ -169,7 +183,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 				return
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
-			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)...)
+			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceScanResults.IacScanResults)...)
+			secretsRows = append(secretsRows, xrayutils.PrepareSecrets(sourceScanResults.SecretsScanResults)...)
 			continue
 		}
 
@@ -180,35 +195,62 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if err != nil {
 			return
 		}
-		var newIssuesRows []formats.VulnerabilityOrViolationRow
-		newIssuesRows, err = createNewIssuesRows(targetResults, sourceResults)
-		if err != nil {
+
+		// Get new issues
+		var newVulnerabilities []formats.VulnerabilityOrViolationRow
+		var newIacs, newSecrets []formats.IacSecretsRow
+		if newVulnerabilities, newIacs, newSecrets, err = getNewIssues(targetResults, sourceResults); err != nil {
 			return
 		}
-		vulnerabilitiesRows = append(vulnerabilitiesRows, newIssuesRows...)
-		iacRows = append(iacRows, createNewIacRows(targetResults.ExtendedScanResults.IacScanResults, sourceResults.ExtendedScanResults.IacScanResults)...)
+		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
+		iacRows = append(iacRows, newIacs...)
+		secretsRows = append(secretsRows, newSecrets...)
 	}
 	return
 }
 
-func createNewIacRows(targetIacResults, sourceIacResults []xrayutils.IacOrSecretResult) []formats.IacSecretsRow {
-	targetIacRows := xrayutils.PrepareIacs(targetIacResults)
-	sourceIacRows := xrayutils.PrepareIacs(sourceIacResults)
-	targetIacVulnerabilitiesKeys := datastructures.MakeSet[string]()
-	for _, row := range targetIacRows {
-		targetIacVulnerabilitiesKeys.Add(row.File + row.Text)
-	}
-	var addedIacVulnerabilities []formats.IacSecretsRow
-	for _, row := range sourceIacRows {
-		if !targetIacVulnerabilitiesKeys.Exists(row.File + row.Text) {
-			addedIacVulnerabilities = append(addedIacVulnerabilities, row)
+func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, []formats.IacSecretsRow, error) {
+	var newVulnerabilities []formats.VulnerabilityOrViolationRow
+	var err error
+	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
+		if newVulnerabilities, err = createNewVulnerabilitiesRows(targetResults, sourceResults); err != nil {
+			return nil, nil, nil, err
 		}
 	}
-	return addedIacVulnerabilities
+
+	var newIacs []formats.IacSecretsRow
+	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
+		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
+		newIacs = createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+	}
+
+	var newSecrets []formats.IacSecretsRow
+	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
+		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.SecretsScanResults)
+		sourceSecretsRows := xrayutils.PrepareSecrets(sourceResults.ExtendedScanResults.SecretsScanResults)
+		newSecrets = createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+	}
+
+	return newVulnerabilities, newIacs, newSecrets, nil
+}
+
+func createNewIacOrSecretsRows(targetResults, sourceResults []formats.IacSecretsRow) []formats.IacSecretsRow {
+	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
+	for _, row := range targetResults {
+		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Text)
+	}
+	var addedIacOrSecretsVulnerabilities []formats.IacSecretsRow
+	for _, row := range sourceResults {
+		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Text) {
+			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
+		}
+	}
+	return addedIacOrSecretsVulnerabilities
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewIssuesRows(targetResults, sourceResults *audit.Results) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	targetScanAggregatedResults := aggregateScanResults(targetResults.ExtendedScanResults.XrayResults)
 	sourceScanAggregatedResults := aggregateScanResults(sourceResults.ExtendedScanResults.XrayResults)
 
@@ -305,9 +347,12 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
 	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	comments, err := utils.GetSortedPullRequestComments(client, repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID))
+	prDetails := repository.PullRequestDetails
+	comments, err := utils.GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
+			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
 
 	commentID := frogbotCommentNotFound
@@ -320,7 +365,7 @@ func deleteExistingPullRequestComment(repository *utils.Repository, client vcscl
 	}
 
 	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), commentID)
+		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
 	}
 
 	return err
