@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/packagehandlers"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
-	packagehandlers2 "github.com/jfrog/frogbot/utils/packagehandlers"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
@@ -41,7 +41,7 @@ type ScanRepositoryCmd struct {
 	// The current project technology
 	projectTech coreutils.Technology
 	// Stores all package manager handlers for detected issues
-	handlers map[coreutils.Technology]packagehandlers2.PackageHandler
+	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
@@ -468,14 +468,14 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 	}
 
 	if cfp.handlers == nil {
-		cfp.handlers = make(map[coreutils.Technology]packagehandlers2.PackageHandler)
+		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
 
 	handler := cfp.handlers[vulnDetails.Technology]
 	if handler == nil {
-		handler = packagehandlers2.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
 		cfp.handlers[vulnDetails.Technology] = handler
-	} else if _, unsupported := handler.(*packagehandlers2.UnsupportedPackageHandler); unsupported {
+	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
 		return
 	}
 
