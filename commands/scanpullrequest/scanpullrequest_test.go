@@ -79,7 +79,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -136,7 +136,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -172,7 +172,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -292,7 +292,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
@@ -346,7 +346,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -381,7 +381,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	rows, err := createNewIssuesRows(
+	rows, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
 	)
@@ -731,8 +731,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Text:       "aws violation",
 				},
 			},
 			sourceIacResults:                []utils2.IacOrSecretResult{},
@@ -746,8 +745,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Text:       "aws violation",
 				},
 			},
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
@@ -755,8 +753,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:         "High",
 					File:             "file1",
 					LineColumn:       "1:10",
-					Type:             "Secret",
-					Text:             "Sensitive information",
+					Text:             "aws violation",
 					SeverityNumValue: 10,
 				},
 			},
@@ -768,11 +765,95 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:   "High",
 					File:       "file1",
 					LineColumn: "1:10",
+					Text:       "aws violation",
+				},
+			},
+			sourceIacResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "Medium",
+					File:       "file2",
+					LineColumn: "2:5",
+					Text:       "gcp violation",
+				},
+			},
+			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "Medium",
+					SeverityNumValue: 8,
+					File:             "file2",
+					LineColumn:       "2:5",
+					Text:             "gcp violation",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			targetIacRows := utils2.PrepareSecrets(tc.targetIacResults)
+			sourceIacRows := utils2.PrepareSecrets(tc.sourceIacResults)
+			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
+		})
+	}
+}
+
+func TestCreateNewSecretRows(t *testing.T) {
+	testCases := []struct {
+		name                                string
+		targetSecretsResults                []utils2.IacOrSecretResult
+		sourceSecretsResults                []utils2.IacOrSecretResult
+		expectedAddedSecretsVulnerabilities []formats.IacSecretsRow
+	}{
+		{
+			name: "No vulnerabilities in source secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
 					Type:       "Secret",
 					Text:       "Sensitive information",
 				},
 			},
-			sourceIacResults: []utils2.IacOrSecretResult{
+			sourceSecretsResults:                []utils2.IacOrSecretResult{},
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{},
+		},
+		{
+			name:                 "No vulnerabilities in target secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{},
+			sourceSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
+				{
+					Severity:         "High",
+					File:             "file1",
+					LineColumn:       "1:10",
+					Type:             "Secret",
+					Text:             "Sensitive information",
+					SeverityNumValue: 10,
+				},
+			},
+		},
+		{
+			name: "Some new vulnerabilities in source secrets results",
+			targetSecretsResults: []utils2.IacOrSecretResult{
+				{
+					Severity:   "High",
+					File:       "file1",
+					LineColumn: "1:10",
+					Type:       "Secret",
+					Text:       "Sensitive information",
+				},
+			},
+			sourceSecretsResults: []utils2.IacOrSecretResult{
 				{
 					Severity:   "Medium",
 					File:       "file2",
@@ -781,7 +862,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					Text:       "Confidential data",
 				},
 			},
-			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 8,
@@ -796,8 +877,10 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			addedIacVulnerabilities := createNewIacRows(tc.targetIacResults, tc.sourceIacResults)
-			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
+			targetSecretsRows := utils2.PrepareSecrets(tc.targetSecretsResults)
+			sourceSecretsRows := utils2.PrepareSecrets(tc.sourceSecretsResults)
+			addedSecretsVulnerabilities := createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}
 }
@@ -807,9 +890,10 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
-				RepoName:           "repo",
-				RepoOwner:          "owner",
-				PullRequestDetails: vcsclient.PullRequestInfo{ID: 17},
+				PullRequestDetails: vcsclient.PullRequestInfo{Target: vcsclient.BranchInfo{
+					Repository: "repo",
+					Owner:      "owner",
+				}, ID: 17},
 			},
 		},
 		OutputWriter: &outputwriter.StandardOutput{},

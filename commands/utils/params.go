@@ -42,7 +42,7 @@ type FrogbotDetails struct {
 type RepoAggregator []Repository
 
 // NewRepoAggregator returns an initialized RepoAggregator with an empty repository
-func NewRepoAggregator() RepoAggregator {
+func newRepoAggregator() RepoAggregator {
 	return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}
 }
 
@@ -114,6 +114,41 @@ type Scan struct {
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
+	EmailDetails              `yaml:",inline"`
+}
+
+type EmailDetails struct {
+	SmtpServer     string
+	SmtpPort       string
+	SmtpUser       string
+	SmtpPassword   string
+	EmailReceivers []string `yaml:"emailReceivers,omitempty"`
+}
+
+func (s *Scan) SetEmailDetails() error {
+	smtpServerAndPort := getTrimmedEnv(SmtpServerEnv)
+	if smtpServerAndPort == "" {
+		return nil
+	}
+	splittedServerAndPort := strings.Split(smtpServerAndPort, ":")
+	if len(splittedServerAndPort) < 2 {
+		return fmt.Errorf("failed while setting your email details. Could not extract the smtp server and its port from the %s environment variable. Expected format: `smtp.server.com:port`, received: %s", SmtpServerEnv, smtpServerAndPort)
+	}
+	s.SmtpServer = splittedServerAndPort[0]
+	s.SmtpPort = splittedServerAndPort[1]
+	s.SmtpUser = getTrimmedEnv(SmtpUserEnv)
+	s.SmtpPassword = getTrimmedEnv(SmtpPasswordEnv)
+	if s.SmtpUser == "" {
+		return fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv)
+	}
+	if s.SmtpPassword == "" {
+		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv)
+	}
+	if len(s.EmailReceivers) == 0 {
+		emailReceivers := getTrimmedEnv(EmailReceiversEnv)
+		s.EmailReceivers = strings.Split(emailReceivers, ",")
+	}
+	return nil
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -151,6 +186,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
+	err = s.SetEmailDetails()
 	return
 }
 
@@ -341,7 +377,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 // If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
-		result = NewRepoAggregator()
+		result = newRepoAggregator()
 		return
 	}
 	err = yaml.Unmarshal(yamlContent, &result)

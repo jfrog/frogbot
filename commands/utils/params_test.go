@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
@@ -32,7 +34,7 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 }
 
 // Test extraction of env params in ScanPullRequest command
-// Pull request ID is not default, which mean we don't have branches related variables defined.
+// Pull request ID is not the default, which means we don't have branches related variables defined.
 func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
@@ -48,7 +50,7 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 }
 
 // Test extraction in ScanRepository command
-// Pull request ID is default 0, which mean we will have branches related variables.
+// Pull request ID's default is 0, which means we will have branches related variables.
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:              "http://127.0.0.1:8081",
@@ -527,4 +529,119 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.False(t, *project.UseWrapper)
+}
+
+func TestSetEmailDetails(t *testing.T) {
+	tests := []struct {
+		name           string
+		envs           map[string]string
+		expectedError  error
+		expectedServer string
+		expectedPort   string
+	}{
+		{
+			name: "ValidEmailDetails",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,   receiver2@example.com",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name: "MissingSmtpServer",
+			envs: map[string]string{
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "InvalidSmtpServerFormat",
+			envs: map[string]string{
+				SmtpServerEnv:     "invalid_server",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: errors.New("failed while setting your email details. Could not extract the smtp server and its port from the JF_SMTP_SERVER environment variable. Expected format: `smtp.server.com:port`, received: invalid_server"),
+		},
+		{
+			name: "MissingSmtpAuthUser",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv),
+		},
+		{
+			name: "MissingSmtpAuthPass",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv),
+		},
+		{
+			name: "EmptyEmailReceivers",
+			envs: map[string]string{
+				SmtpServerEnv:   "smtp.server.com:587",
+				SmtpUserEnv:     "user",
+				SmtpPasswordEnv: "pass",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name: "InvalidEmailReceivers",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name:          "NoEmailDetails",
+			envs:          map[string]string{},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", "SmtpAuthUserEnv"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Mock environment variables
+			originalEnvs := make(map[string]string)
+			for key, value := range test.envs {
+				originalEnvs[key] = os.Getenv(key)
+				assert.NoError(t, os.Setenv(key, value))
+			}
+			defer func() {
+				for key, value := range originalEnvs {
+					assert.NoError(t, os.Setenv(key, value))
+				}
+			}()
+			scan := &Scan{}
+			err := scan.SetEmailDetails()
+
+			if err != nil {
+				assert.EqualError(t, test.expectedError, err.Error())
+			}
+
+			if err == nil {
+				assert.Equal(t, test.expectedServer, scan.SmtpServer)
+				assert.Equal(t, test.expectedPort, scan.SmtpPort)
+			}
+		})
+	}
 }

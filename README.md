@@ -17,7 +17,7 @@
 ## Table of contents
 
 - [🤖 About JFrog Frogbot](#-about-jfrog-frogbot)
-- [🖥️ Installing Frogbot](#️-installing-frogbot)
+- [🖥️ Setting up Frogbot](#️-setting-up-frogbot)
 - [🚥 Using Frogbot](#-using-frogbot)
 - [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
 - [🔥 Reporting issues](#-reporting-issues)
@@ -41,7 +41,7 @@ It supports the following Git providers:
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data that is provided by our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 - **Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
-- **Secrets Detection**: For GitHub repositories, detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
+- **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
 > **_NOTE:_** **Vulnerability Contextual Analysis**, **Secrets Detection** and **Infrastructure as Code scans**
@@ -57,10 +57,21 @@ It supports the following Git providers:
   - GitLab Pipelines
   - Azure Pipelines
 
-## 🖥️ Installing Frogbot
+## 🖥️ Setting up Frogbot
 
 <details>
-  <summary>Step 1 - Optionally set up a FREE JFrog Environment in the Cloud</summary>
+  <summary>1. Set up Frogbot on your preferred CI server</summary>
+
+- [GitHub Actions](docs/install-github.md)
+- [Jenkins](docs/templates/jenkins/README.md)
+- [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+- [GitLab Pipelines](docs/install-gitlab.md)
+- [Azure Pipelines](docs/install-azure-pipelines.md)
+
+</details>
+
+<details>
+  <summary>2. Optionally set up a FREE JFrog Environment in the Cloud</summary>
 
 Frogbot requires a JFrog environment to scan your projects. If you don't have an environment, we can set up a free environment in the cloud for you. Just run one of the following commands in your terminal to set up an environment in less than a minute.
 
@@ -86,30 +97,15 @@ After the setup is complete, you'll receive an email with your JFrog environment
 </details>
 
 <details>
-  <summary>Step 2 - Install Frogbot</summary>
-
--   Choose your preferred CI server
-
-- [GitHub Actions](docs/install-github.md)
-- [Jenkins](docs/templates/jenkins/README.md)
-- [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
-- [GitLab Pipelines](docs/install-gitlab.md)
-- [Azure Pipelines](docs/install-azure-pipelines.md)
-
-
-</details>
-
-<details>
-  <summary>Step 3 - Customize settings with frogbot-config.yml file if needed</summary>
+  <summary>3. Advanced - Customize advanced settings with frogbot-config.yml</summary>
     
-
 - [Creating the frogbot-config.yml File](docs/frogbot-config.md)
 
 </details>
 
 <div id="reporting-issues"></div>
 
-## 🚥 Frogbot's Commands
+## 🚥 Using Frogbot
 <details>
   <summary>Scanning pull requests</summary>
 
@@ -117,8 +113,11 @@ After the setup is complete, you'll receive an email with your JFrog environment
 
 Frogbot uses [JFrog Xray](https://jfrog.com/xray/) (version 3.29.0 and above is required) to scan your pull requests. It adds the scan results as a comment on the pull request. If no new vulnerabilities are found, Frogbot will also add a comment, confirming this.
 
-Supported package management tools:
+The following features use the package manager used for building the project:
+* Software Composition Analysis (SCA)
+* Vulnerability Contextual Analysis
 
+The supported package managers are:
 - Go
 - Gradle
 - Maven
@@ -128,7 +127,7 @@ Supported package management tools:
 - Pip
 - Pipenv
 - Poetry
-- Yarn 2
+- Yarn
 
 ### How to use Pull Request scanning?
 
@@ -185,8 +184,7 @@ The Frogbot GitHub scan workflow is:
 
 1. The developer opens a pull request.
 2. The Frogbot workflow automatically gets triggered and a [GitHub environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#creating-an-environment) named `frogbot` becomes pending for the maintainer's approval.
-
-[![](./images/github-pending-deployment.png)](#running-frogbot-on-github)
+   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-pending-deployment.png)
 
 3. The maintainer of the repository reviews the pull request and approves the scan: [![](./images/github-deployment.gif)](#running-frogbot-on-github)
 4. Frogbot can be triggered again following new commits, by repeating steps 2 and 3.
@@ -210,7 +208,7 @@ The Frogbot GitLab flow is as follows:
 2. The maintainer of the repository reviews the merge request and approves the scan by triggering the manual _frogbot-scan_ job.
 3. Frogbot is then triggered by the job, it scans the merge request, and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
-   [GitLab CI Run Button](./images/gitlab-run-button.png)
+   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-run-button.png)
 
   </details>
 
@@ -221,19 +219,19 @@ When installing Frogbot using JFrog Pipelines, Jenkins, and Azure DevOps, Frogbo
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
 ### Scan results
+#### Software Composition Analysis (SCA), Vulnerability Contextual Analysis and Infrastructure as Code scans (IaC)
 
 Frogbot adds the scan results to the pull request in the following format:
 
-#### 👍 No issues
+##### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](#-no-issues)
 
-#### 👎 Issues were found
+##### 👎 Issues were found
 
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
-
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](#-issues)
 
@@ -253,6 +251,11 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 |:-------------------------------------------------------------------------------------------------------------------:| :------------: | :-----------: | :-----------------------------------: 
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | test.js        | 1:20          | kms_key_id='' was detected
 |   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | mock.js        | 4:30          | Deprecated TLS version was detected
+
+##### Secrets Detection
+When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
+
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/secrets-email.png)
 
 </details>
 
@@ -285,10 +288,10 @@ The following alert types are supported:
 ![](./images/github-code-scanning-content.png)
 
 #### 2. Secrets that are exposed in the code
-![](./images/github-code-scanning-iac-content.png)
+![](./images/github-code-scanning-secrets-content.png)
 
 #### 3. Infrastructure as Code (Iac) issues on Terraform packages
-![](./images/github-code-scanning-secrets-content.png)
+![](./images/github-code-scanning-iac-content.png)
 
 </details>
 

@@ -54,10 +54,10 @@ func (so *StandardOutput) VulnerabilitiesTitle(isComment bool) string {
 }
 
 func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.Contains(comment, GetIconTag(NoVulnerabilityPrBannerSource)) ||
-		strings.Contains(comment, GetIconTag(VulnerabilitiesPrBannerSource)) ||
-		strings.Contains(comment, GetIconTag(NoVulnerabilityMrBannerSource)) ||
-		strings.Contains(comment, GetIconTag(VulnerabilitiesMrBannerSource))
+	return strings.Contains(comment, string(NoVulnerabilityPrBannerSource)) ||
+		strings.Contains(comment, string(VulnerabilitiesPrBannerSource)) ||
+		strings.Contains(comment, string(NoVulnerabilityMrBannerSource)) ||
+		strings.Contains(comment, string(VulnerabilitiesMrBannerSource))
 }
 
 func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {

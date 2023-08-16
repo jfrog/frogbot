@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"github.com/jfrog/build-info-go/build"
+	biUtils "github.com/jfrog/build-info-go/build/utils"
 	dotnetutils "github.com/jfrog/build-info-go/build/utils/dotnet"
+	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/dotnet"
 	"github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/npm"
 	rtutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/utils"
@@ -21,6 +24,8 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 	coreutils.Dotnet.ToString(): resolveDotnetDependencies,
 	coreutils.Nuget.ToString():  resolveDotnetDependencies,
 }
+
+const yarnV2Version = "2.0.0"
 
 func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
@@ -44,14 +49,27 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 	if err != nil {
 		return nil, err
 	}
-	restoreYarnrcFunc, err := rtutils.BackupFile(filepath.Join(currWd, yarn.YarnrcFileName), filepath.Join(currWd, yarn.YarnrcBackupFileName))
-	if err != nil {
-		return nil, err
-	}
 	yarnExecPath, err := exec.LookPath("yarn")
 	if err != nil {
 		return nil, err
 	}
+
+	executableYarnVersion, err := biUtils.GetVersion(yarnExecPath, currWd)
+	if err != nil {
+		return
+	}
+
+	// Checking if the current yarn version is Yarn V1, and if so - abort. Resolving dependencies is currently not supported for Yarn V1
+	if version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0 {
+		err = errors.New("resolving yarn dependencies is currently not supported for Yarn V1")
+		return
+	}
+
+	restoreYarnrcFunc, err := rtutils.BackupFile(filepath.Join(currWd, yarn.YarnrcFileName), filepath.Join(currWd, yarn.YarnrcBackupFileName))
+	if err != nil {
+		return nil, err
+	}
+
 	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.DepsRepo)
 	if err != nil {
 		return nil, yarn.RestoreConfigurationsAndError(nil, restoreYarnrcFunc, err)
