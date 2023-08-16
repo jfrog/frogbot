@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/utils"
 	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
@@ -13,8 +13,9 @@ import (
 )
 
 var IntegrationTestPackages = []string{
-	"github.com/jfrog/frogbot/commands/scanrepository",
-	"github.com/jfrog/frogbot/commands/scanpullrequest",
+	"github.com/jfrog/frogbot/scanrepository",
+	"github.com/jfrog/frogbot/scanpullrequest",
+	"github.com/jfrog/frogbot/packagehandlers",
 }
 
 func TestUnitTests(t *testing.T) {

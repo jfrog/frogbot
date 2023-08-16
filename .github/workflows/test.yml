@@ -1,4 +1,4 @@
-name: "Go Test"
+name: "Go Tests"
 
 on:
   push:
@@ -9,18 +9,19 @@ on:
 jobs:
   tests:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
+    name: ${{ matrix.suite }} Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     strategy:
       fail-fast: false
       matrix:
-        test: [ UnitTests, scanrepository, scanpullrequest ]
+        suite: [ Unit, scanrepository, scanpullrequest, packagehandlers ]
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.test == 'UnitTests' }}
+        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.suite == 'Unit' }}
         with:
           labels: 'safe to test'
 
@@ -57,23 +58,19 @@ jobs:
       - name: Generate mocks
         run: go generate ./...
 
-      # Lint
-      - name: Lint
-        run: go vet ./...
-
       - name: Unit Tests
         run: go test github.com/jfrog/frogbot -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.test == 'UnitTests' }}
+        if: ${{ matrix.suite == 'Unit' }}
 
       - name: ${{ matrix.test }} Tests
-        run: go test github.com/jfrog/frogbot/commands/${{ matrix.test }} -v -race -timeout 30m -cover
+        run: go test github.com/jfrog/frogbot/commands/${{ matrix.suite }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.test != 'UnitTests' }}
+        if: ${{ matrix.suite != 'Unit' }}
 
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:
