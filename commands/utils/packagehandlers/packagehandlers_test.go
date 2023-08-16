@@ -36,7 +36,7 @@ type pipPackageRegexTest struct {
 
 func initPackageHandlersTest(t *testing.T) {
 	if !*utils.TestPackageHandlers {
-		t.Skip("Skipping Package Handlers tests. To run Package Handlers tests add the '--test.Package-Handlers' option.")
+		t.Skip("Skipping Package Handlers tests. To run Package Handlers tests add the '-test.Package-Handlers' option.")
 	}
 }
 

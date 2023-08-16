@@ -66,7 +66,7 @@ func init() {
 	TestScanRepository = flag.Bool("test.Scan-Repository", false, "Test Scan Repository")
 	TestScanMultipleRepositories = flag.Bool("test.Scan-Multiple-Repositories", false, "Test Scan Multiple Repositories")
 	TestScanPullRequest = flag.Bool("test.Scan-Pull-Request", false, "Test Scan Pull Request")
-	TestScanAllPullRequests = flag.Bool("test.Scan-All-Pull-Requests", false, "Test Scan Pull Request")
+	TestScanAllPullRequests = flag.Bool("test.Scan-All-Pull-Requests", false, "Test Scan All Pull Requests")
 	TestPackageHandlers = flag.Bool("test.Package-Handlers", false, "Test Package Handlers")
 	TestResolveDependency = flag.Bool("test.Resolve-Dependency", false, "Test Resolve Dependency")
 }

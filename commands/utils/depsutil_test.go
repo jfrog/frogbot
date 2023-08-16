@@ -18,7 +18,7 @@ var timestamp = time.Now().Unix()
 
 func initResolveDependencyTest(t *testing.T) {
 	if !*TestResolveDependency {
-		t.Skip("Skipping Resolve Dependency tests. To run Resolve Dependency tests add the '--test.Resolve-Dependency' option.")
+		t.Skip("Skipping Resolve Dependency tests. To run Resolve Dependency tests add the '-test.Resolve-Dependency' option.")
 	}
 }
 

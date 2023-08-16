@@ -19,7 +19,7 @@ import (
 
 func initScanAllPullRequestsTest(t *testing.T) {
 	if !*utils.TestScanAllPullRequests {
-		t.Skip("Skipping Scan All Pull Requests tests. To run Scan All Pull Requests tests add the '--test.Scan-All-Pull-Requests' option.")
+		t.Skip("Skipping Scan All Pull Requests tests. To run Scan All Pull Requests tests add the '-test.Scan-All-Pull-Requests' option.")
 	}
 }
 
