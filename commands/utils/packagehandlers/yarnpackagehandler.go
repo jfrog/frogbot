@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
@@ -68,6 +69,8 @@ func isYarnV1() (isYarn1 bool, err error) {
 		err = errors.New("couldn't get current working directory: " + err.Error())
 		return
 	}
+	log.Debug("################ dir for --version command: " + workingDirectory + "#################")
+
 	yarnExecutablePath, err := biUtils.GetYarnExecutable()
 	if err != nil {
 		err = errors.New("couldn't find yarn executable: " + err.Error())
@@ -77,6 +80,7 @@ func isYarnV1() (isYarn1 bool, err error) {
 	if err != nil {
 		return
 	}
+	log.Debug("################ detected yarn version: " + executableYarnVersion + "#################")
 	isYarn1 = version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
 	return
 }
