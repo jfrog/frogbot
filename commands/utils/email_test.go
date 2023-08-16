@@ -52,6 +52,7 @@ func TestGetEmailReceiversFromCommits(t *testing.T) {
 		{AuthorEmail: "test3@jfrog.noreply.com"},
 		{AuthorEmail: "test3@jfrog.no-reply.com"},
 		{AuthorEmail: "test3@jfrog.frogbot.com"},
+		{AuthorEmail: ""},
 	}
 	preConfiguredEmailReceivers := []string{"receiver1@jfrog.com", "receiver2@jfrog.com"}
 	finalEmailReceiversList, err := getEmailReceiversFromCommits(commits, preConfiguredEmailReceivers)
