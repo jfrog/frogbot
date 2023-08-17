@@ -16,12 +16,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [ Unit, scanrepository, scanpullrequest, packagehandlers ]
+        suite: [ unit, scanrepository, scanpullrequest, packagehandlers ]
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' }} && runner.os == 'Linux' && ${{ matrix.suite == 'Unit' }}
+        if: ${{github.event_name != 'push' && matrix.suite == 'unit'}} && runner.os == 'Linux'
         with:
           labels: 'safe to test'
 
@@ -33,10 +33,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.20.x
-      - name: Install npm
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16"
 
       - name: Go Cache
         uses: actions/cache@v3
@@ -45,6 +41,11 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
 
       - name: Setup Python3
         uses: actions/setup-python@v4
@@ -57,20 +58,21 @@ jobs:
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
+        if: ${{ matrix.suite != 'unit' }}
 
-      - name: Unit Tests
+      - name: unit Tests
         run: go test github.com/jfrog/frogbot -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.suite == 'Unit' }}
+        if: ${{ matrix.suite == 'unit' }}
 
       - name: ${{ matrix.test }} Tests
         run: go test github.com/jfrog/frogbot/${{ matrix.suite }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.suite != 'Unit' }}
+        if: ${{ matrix.suite != 'unit' }}
 
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:

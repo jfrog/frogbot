@@ -1,8 +1,6 @@
 package packagehandlers
 
-import (
-	"github.com/jfrog/frogbot/utils"
-)
+import "github.com/jfrog/frogbot/utils"
 
 type NpmPackageHandler struct {
 	CommonPackageHandler
