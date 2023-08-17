@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
@@ -24,6 +25,7 @@ func TestUnitTests(t *testing.T) {
 	for _, integrationPackage := range IntegrationTestPackages {
 		packages = clientTests.ExcludeTestsPackage(packages, integrationPackage)
 	}
+	log.Info("Running Unit tests for the following packages:", strings.Join(packages, "/n"))
 	assert.NoError(t, clientTests.RunTests(packages, false))
 }
 
