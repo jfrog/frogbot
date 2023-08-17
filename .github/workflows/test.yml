@@ -39,6 +39,11 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+        if: ${{ matrix.suite != 'unit' }}
+
       - name: Lint
         run: go vet -v ./...
 
