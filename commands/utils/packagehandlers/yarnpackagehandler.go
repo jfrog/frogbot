@@ -2,11 +2,12 @@ package packagehandlers
 
 import (
 	"errors"
+	"fmt"
 	biUtils "github.com/jfrog/build-info-go/build/utils"
 	"github.com/jfrog/frogbot/commands/utils"
 	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
@@ -33,7 +34,7 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	isYarn1, err := isYarnV1()
+	isYarn1, executableYarnVersion, err := isYarnV1Project()
 	if err != nil {
 		return
 	}
@@ -58,25 +59,24 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		installationCommand = yarnV2PackageUpdateCmd
 	}
 	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
+	if err != nil {
+		err = fmt.Errorf("running 'yarn %s for '%s' failed:\n%s\nHint: The Yarn version that was used is: %s. If your project was built with a different major version of Yarn, please configure your CI runner to include it",
+			installationCommand,
+			vulnDetails.ImpactedDependencyName,
+			err.Error(),
+			executableYarnVersion)
+	}
 	return
 }
 
-// isYarnV1 gets the current executed yarn version and returns whether the current yarn version is V1 or not
-func isYarnV1() (isYarn1 bool, err error) {
-	workingDirectory, err := coreutils.GetWorkingDirectory()
-	if err != nil {
-		err = errors.New("couldn't get current working directory: " + err.Error())
-		return
-	}
-	yarnExecutablePath, err := biUtils.GetYarnExecutable()
-	if err != nil {
-		err = errors.New("couldn't find yarn executable: " + err.Error())
-		return
-	}
-	executableYarnVersion, err := biUtils.GetVersion(yarnExecutablePath, workingDirectory)
+// isYarnV1Project gets the current executed yarn version and returns whether the current yarn version is V1 or not
+func isYarnV1Project() (isYarn1 bool, executableYarnVersion string, err error) {
+	// NOTICE: in case your global yarn version is 1.x this function will always return true even if the project is originally in higher yarn version
+	executableYarnVersion, err = biUtils.GetVersion("yarn", "")
 	if err != nil {
 		return
 	}
+	log.Info("Using Yarn version: ", executableYarnVersion)
 	isYarn1 = version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
 	return
 }
