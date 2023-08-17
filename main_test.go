@@ -13,6 +13,7 @@ import (
 )
 
 var IntegrationTestPackages = []string{
+	"github.com/jfrog/frogbot",
 	"github.com/jfrog/frogbot/scanrepository",
 	"github.com/jfrog/frogbot/scanpullrequest",
 	"github.com/jfrog/frogbot/packagehandlers",
