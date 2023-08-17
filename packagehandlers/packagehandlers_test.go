@@ -276,10 +276,10 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
-			mavenPackageHandler := MavenPackageHandler{}
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
 			defer cleanup()
+			mavenPackageHandler := MavenPackageHandler{}
 			err := mavenPackageHandler.UpdateDependency(test.vulnDetails)
 			if !test.fixSupported {
 				assert.Error(t, err, "Expected error to occur")
