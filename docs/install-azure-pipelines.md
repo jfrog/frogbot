@@ -240,6 +240,19 @@ jobs:
             #       Uncheck the 'Store Artifacts Locally' option
             # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
             # JF_RELEASES_REPO: ""
+            
+            # [Optional]
+            # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+            # SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
+            # JF_SMTP_SERVER: ""
+   
+            # [Mandatory if JF_SMTP_SERVER is set]
+            # The username required for authenticating with the SMTP server.
+            # JF_SMTP_USER: ""
+   
+            # [Mandatory if JF_SMTP_SERVER is set]
+            # The password associated with the username required for authentication with the SMTP server.
+            # JF_SMTP_PASSWORD: ""
 
             # [Optional]
             # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.

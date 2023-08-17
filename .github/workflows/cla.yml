@@ -23,7 +23,7 @@ jobs:
         env:
           # Generated and maintained by GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # JFrog organization secret
+          # JFrog's organization secret
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_SIGN_TOKEN }}
         with:
           path-to-signatures: "signed_clas.json"

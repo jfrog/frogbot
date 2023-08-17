@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
+	"github.com/jfrog/frogbot/commands/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -80,13 +81,12 @@ func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, 
 	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
 }
 
-func (gm *GitManager) CheckoutLocalBranch(branchName string) error {
-	err := gm.createBranchAndCheckout(branchName, false)
-	if err != nil {
-		err = fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
+func (gm *GitManager) Checkout(branchName string) error {
+	log.Debug("Running git checkout to branch:", branchName)
+	if err := gm.createBranchAndCheckout(branchName, false); err != nil {
+		return fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
 	}
-	log.Debug("Running git checkout to local branch:", branchName)
-	return err
+	return nil
 }
 
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
@@ -162,6 +162,14 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 		return err
 	}
 	return worktree.Checkout(checkoutConfig)
+}
+
+func getCurrentBranch(repository *git.Repository) (string, error) {
+	head, err := repository.Head()
+	if err != nil {
+		return "", err
+	}
+	return head.Name().Short(), nil
 }
 
 func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
@@ -288,7 +296,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = GetAggregatedPullRequestTitle(tech)
+		template = outputwriter.GetAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -388,28 +396,6 @@ func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
 	}
 }
 
-func (gm *GitManager) CheckoutRemoteBranch(branchName string) error {
-	var checkoutConfig *git.CheckoutOptions
-	if gm.dryRun {
-		// On dry runs we mimic remote as local branches.
-		checkoutConfig = &git.CheckoutOptions{
-			Branch: plumbing.NewBranchReferenceName(branchName),
-			Force:  true,
-		}
-	} else {
-		checkoutConfig = &git.CheckoutOptions{
-			Branch: plumbing.NewRemoteReferenceName(gm.remoteName, branchName),
-			Force:  true,
-		}
-	}
-	log.Debug("Running git checkout to remote branch:", branchName)
-	worktree, err := gm.repository.Worktree()
-	if err != nil {
-		return err
-	}
-	return worktree.Checkout(checkoutConfig)
-}
-
 func toBasicAuth(token, username string) *githttp.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {
@@ -427,6 +413,14 @@ func toBasicAuth(token, username string) *githttp.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
+}
+
+func GetBranchFromDotGit() (string, error) {
+	currentRepo, err := git.PlainOpen(".")
+	if err != nil {
+		return "", errors.New("unable to retrieve the branch to scan, as the .git folder was not found in the current working directory. The error that was received: " + err.Error())
+	}
+	return getCurrentBranch(currentRepo)
 }
 
 func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {

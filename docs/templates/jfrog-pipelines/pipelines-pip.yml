@@ -84,6 +84,19 @@ pipelines:
             # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
             # JF_RELEASES_REPO: ""
 
+            # [Optional]
+            # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+            # SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
+            # JF_SMTP_SERVER: ""
+
+            # [Mandatory if JF_SMTP_SERVER is set]
+            # The username required for authenticating with the SMTP server.
+            # JF_SMTP_USER: ""
+
+            # [Mandatory if JF_SMTP_SERVER is set]
+            # The password associated with the username required for authentication with the SMTP server.
+            # JF_SMTP_PASSWORD: ""
+
             ###########################################################################
             ##   If your project uses a 'frogbot-config.yml' file, you should define ##
             ##   the following variables inside the file, instead of here.           ##
@@ -164,6 +177,12 @@ pipelines:
             # Set the email of the commit author
             # JF_GIT_EMAIL_AUTHOR: ""
 
+            # [Optional]
+            # List of comma separated email addresses to receive email notifications about secrets
+            # detected during pull request scanning. The notification is also sent to the email set
+            # in the committer git profile regardless of whether this variable is set or not.
+            # JF_EMAIL_RECEIVERS: ""
+
         execution:
           onExecute:
             - cd $res_frogbotGitRepo_resourcePath
@@ -172,8 +191,8 @@ pipelines:
             - |
               getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
               curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
-              ./frogbot scan-pull-requests
-              ./frogbot scan-and-fix-repos
+              ./frogbot scan-all-pull-requests
+              ./frogbot scan-multiple-repositories
 
             # For Windows runner:
             # - |
@@ -185,5 +204,5 @@ pipelines:
             #
             #   $scriptUrl = "$($getFrogbotScriptPath)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh"
             #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
-            #   .\frogbot.exe scan-pull-requests
-            #   .\frogbot.exe scan-and-fix-repos
+            #   .\frogbot.exe scan-all-pull-requests
+            #   .\frogbot.exe scan-multiple-repositories

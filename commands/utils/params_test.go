@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
@@ -31,7 +33,9 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
 }
 
-func TestExtractParamsFromEnvPlatform(t *testing.T) {
+// Test extraction of env params in ScanPullRequest command
+// Pull request ID is not the default, which means we don't have branches related variables defined.
+func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
 		JFrogUserEnv:        "admin",
@@ -40,8 +44,25 @@ func TestExtractParamsFromEnvPlatform(t *testing.T) {
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "dev",
 		GitPullRequestIDEnv: "1",
+	})
+	extractAndAssertParamsFromEnv(t, true, true)
+}
+
+// Test extraction in ScanRepository command
+// Pull request ID's default is 0, which means we will have branches related variables.
+func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:              "http://127.0.0.1:8081",
+		JFrogUserEnv:             "admin",
+		JFrogPasswordEnv:         "password",
+		GitProvider:              string(BitbucketServer),
+		GitRepoOwnerEnv:          "jfrog",
+		GitRepoEnv:               "frogbot",
+		GitTokenEnv:              "123456789",
+		CommitMessageTemplateEnv: "my-custom-commit-template",
+		GitBaseBranchEnv:         "dev",
+		GitPullRequestIDEnv:      "0",
 	})
 	extractAndAssertParamsFromEnv(t, true, true)
 }
@@ -112,15 +133,15 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitInfoFromEnvs()
+	_, err := extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitInfoFromEnvs()
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 }
 
@@ -147,7 +168,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
@@ -190,7 +211,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	}()
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
@@ -225,7 +246,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitInfoFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFile, err := BuildRepoAggregator(nil, gitParams, server)
 	assert.NoError(t, err)
@@ -250,8 +271,15 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "jfrog", configParams.RepoOwner)
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
-		assert.Equal(t, "dev", configParams.Branches[0])
-		assert.Equal(t, 1, configParams.PullRequestID)
+		// ScanRepository command context
+		if len(configParams.Branches) != 0 {
+			assert.Equal(t, "dev", configParams.Branches[0])
+			assert.Equal(t, int64(0), configParams.PullRequestDetails.ID)
+			assert.Equal(t, "my-custom-commit-template", configParams.Git.CommitMessageTemplate)
+		} else {
+			// ScanPullRequest context
+			assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
+		}
 	}
 }
 
@@ -309,12 +337,13 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FailOnSecurityIssuesEnv:      "false",
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
+		GitPullRequestIDEnv:          "0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	gitClientInfo := GitClientInfo{
+	gitParams := Git{
 		GitProvider: vcsutils.GitHub,
 		VcsInfo: vcsclient.VcsInfo{
 			APIEndpoint: "https://github.com",
@@ -330,7 +359,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitClientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -338,12 +367,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, gitClientInfo.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitClientInfo.Token, repo.Token)
-	assert.Equal(t, gitClientInfo.APIEndpoint, repo.APIEndpoint)
-	assert.ElementsMatch(t, gitClientInfo.Branches, repo.Branches)
-	assert.Equal(t, repo.PullRequestID, repo.PullRequestID)
-	assert.Equal(t, gitClientInfo.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
+	assert.Equal(t, gitParams.Token, repo.Token)
+	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
+	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
+	assert.Equal(t, repo.PullRequestDetails.ID, repo.PullRequestDetails.ID)
+	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
 	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
 	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
 	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
@@ -459,11 +488,12 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		CommitMessageTemplateEnv:     "commit-msg",
 		FailOnSecurityIssuesEnv:      "true",
 		jfrogWatchesEnv:              "watch-1,watch-2",
+		GitPullRequestIDEnv:          "0",
 	})
 	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
 	fileContent, err := os.ReadFile(testFilePath)
 	assert.NoError(t, err)
-	gitClientInfo := &GitClientInfo{
+	gitParams := &Git{
 		GitProvider: vcsutils.GitHub,
 		VcsInfo: vcsclient.VcsInfo{
 			APIEndpoint: "endpoint.com",
@@ -479,7 +509,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, gitClientInfo, &server)
+	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
@@ -499,4 +529,119 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.False(t, *project.UseWrapper)
+}
+
+func TestSetEmailDetails(t *testing.T) {
+	tests := []struct {
+		name           string
+		envs           map[string]string
+		expectedError  error
+		expectedServer string
+		expectedPort   string
+	}{
+		{
+			name: "ValidEmailDetails",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,   receiver2@example.com",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name: "MissingSmtpServer",
+			envs: map[string]string{
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "InvalidSmtpServerFormat",
+			envs: map[string]string{
+				SmtpServerEnv:     "invalid_server",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: errors.New("failed while setting your email details. Could not extract the smtp server and its port from the JF_SMTP_SERVER environment variable. Expected format: `smtp.server.com:port`, received: invalid_server"),
+		},
+		{
+			name: "MissingSmtpAuthUser",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv),
+		},
+		{
+			name: "MissingSmtpAuthPass",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				EmailReceiversEnv: "receiver1@example.com,receiver2@example.com",
+			},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv),
+		},
+		{
+			name: "EmptyEmailReceivers",
+			envs: map[string]string{
+				SmtpServerEnv:   "smtp.server.com:587",
+				SmtpUserEnv:     "user",
+				SmtpPasswordEnv: "pass",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name: "InvalidEmailReceivers",
+			envs: map[string]string{
+				SmtpServerEnv:     "smtp.server.com:587",
+				SmtpUserEnv:       "user",
+				SmtpPasswordEnv:   "pass",
+				EmailReceiversEnv: "receiver1@example.com,receiver2",
+			},
+			expectedError:  nil,
+			expectedServer: "smtp.server.com",
+			expectedPort:   "587",
+		},
+		{
+			name:          "NoEmailDetails",
+			envs:          map[string]string{},
+			expectedError: fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", "SmtpAuthUserEnv"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Mock environment variables
+			originalEnvs := make(map[string]string)
+			for key, value := range test.envs {
+				originalEnvs[key] = os.Getenv(key)
+				assert.NoError(t, os.Setenv(key, value))
+			}
+			defer func() {
+				for key, value := range originalEnvs {
+					assert.NoError(t, os.Setenv(key, value))
+				}
+			}()
+			scan := &Scan{}
+			err := scan.SetEmailDetails()
+
+			if err != nil {
+				assert.EqualError(t, test.expectedError, err.Error())
+			}
+
+			if err == nil {
+				assert.Equal(t, test.expectedServer, scan.SmtpServer)
+				assert.Equal(t, test.expectedPort, scan.SmtpPort)
+			}
+		})
+	}
 }

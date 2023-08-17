@@ -23,7 +23,7 @@ frogbot-scan:
       # If you'd like a different branch to be scanned, replace $CI_DEFAULT_BRANCH in the line below with the name of the branch, wrapped with quotes (").
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_PIPELINE_SOURCE == "schedule"
       variables:
-        FROGBOT_CMD: "create-fix-pull-requests"
+        FROGBOT_CMD: "scan-repository"
         JF_GIT_BASE_BRANCH: $CI_COMMIT_BRANCH
   variables:
     # [Mandatory]
@@ -68,7 +68,20 @@ frogbot-scan:
     #       Uncheck the 'Store Artifacts Locally' option
     # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
     # JF_RELEASES_REPO: ""
+    
+    # [Optional]
+    # Configure the SMTP server to enable Frogbot to send emails with detected secrets in pull request scans.
+    # SMTP server URL including should the relevant port: (Example: smtp.server.com:8080)
+    # JF_SMTP_SERVER: ""
 
+    # [Mandatory if JF_SMTP_SERVER is set]
+    # The username required for authenticating with the SMTP server.
+    # JF_SMTP_USER: ""
+
+    # [Mandatory if JF_SMTP_SERVER is set]
+    # The password associated with the username required for authentication with the SMTP server.
+    # JF_SMTP_PASSWORD: ""
+    
     ###########################################################################
     ##   If your project uses a 'frogbot-config.yml' file, you should define ##
     ##   the following variables inside the file, instead of here.           ##
@@ -148,6 +161,13 @@ frogbot-scan:
     # [Optional, Default: eco-system+frogbot@jfrog.com]
     # Set the email of the commit author
     # JF_GIT_EMAIL_AUTHOR: ""
+    
+    # [Optional]
+    # List of comma separated email addresses to receive email notifications about secrets
+    # detected during pull request scanning. The notification is also sent to the email set
+    # in the committer git profile regardless of whether this variable is set or not.
+    # JF_EMAIL_RECEIVERS: ""
+    
   script:
     # For Linux / MacOS runner:
     - |

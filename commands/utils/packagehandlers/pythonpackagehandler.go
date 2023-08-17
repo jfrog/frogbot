@@ -37,14 +37,14 @@ func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails, extraArgs ...string) (err error) {
+func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	switch vulnDetails.Technology {
 	case coreutils.Poetry:
 		return py.handlePoetry(vulnDetails)
 	case coreutils.Pip:
 		return py.handlePip(vulnDetails)
 	case coreutils.Pipenv:
-		return py.CommonPackageHandler.UpdateDependency(vulnDetails, extraArgs...)
+		return py.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 	default:
 		return errors.New("unknown python package manger: " + vulnDetails.Technology.GetPackageType())
 	}
@@ -52,7 +52,7 @@ func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 
 func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// Install the desired fixed version
-	if err = py.CommonPackageHandler.UpdateDependency(vulnDetails); err != nil {
+	if err = py.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
 		return
 	}
 	// Update Poetry lock file as well
