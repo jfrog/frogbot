@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
@@ -86,6 +87,7 @@ func isYarnV1() (isYarn1 bool, err error) {
 	if err != nil {
 		return
 	}
+	log.Debug("Detected Yarn version: " + executableYarnVersion)
 	isYarn1 = version.NewVersion(executableYarnVersion).Compare(yarnV2Version) > 0
 	return
 }
