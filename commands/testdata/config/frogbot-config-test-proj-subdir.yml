@@ -1,9 +1,0 @@
-- params:
-    git:
-      repoName: test-proj-subdir
-      branches:
-        - master
-    scan:
-      projects:
-        - workingDirs:
-            - subdir

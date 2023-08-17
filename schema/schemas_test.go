@@ -24,7 +24,7 @@ func TestFrogbotSchema(t *testing.T) {
 	validateYamlSchema(t, schemaLoader, filepath.Join("..", "docs", "templates", ".frogbot", "frogbot-config.yml"), "")
 
 	// Validate all frogbot configs in commands/testdata/config
-	validateYamlsInDirectory(t, filepath.Join("..", "commands", "testdata", "config"), schemaLoader)
+	validateYamlsInDirectory(t, filepath.Join("..", "testdata", "config"), schemaLoader)
 }
 
 func TestBadFrogbotSchemas(t *testing.T) {
