@@ -59,12 +59,6 @@ jobs:
         suite: [ unit, scanrepository, scanpullrequest, packagehandlers ]
         os: [ ubuntu, windows, macos ]
     steps:
-      - name: Unlabel 'safe to test'
-        uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{github.event_name != 'push' && matrix.suite == 'unit'}} && runner.os == 'Linux'
-        with:
-          labels: 'safe to test'
-
       # Configure prerequisites
       - uses: actions/checkout@v3
         with:
