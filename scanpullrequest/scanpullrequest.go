@@ -69,7 +69,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
 	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
 	if err != nil {
-		return errors.New(err.Error() + "/n" + noGitHubEnvErr)
+		return errors.New(err.Error() + "\n" + noGitHubEnvErr)
 	}
 	if len(repoEnvInfo.Reviewers) == 0 {
 		return errors.New(noGitHubEnvReviewersErr)

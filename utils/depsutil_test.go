@@ -153,7 +153,7 @@ func TestResolveDependencies(t *testing.T) {
 			if test.shouldExpectError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err, "command's output:/n"+string(output))
+				assert.NoError(t, err, "command's output:ֿֿֿ\n"+string(output))
 			}
 		})
 	}
