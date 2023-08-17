@@ -63,6 +63,7 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		err = fmt.Errorf("running 'yarn %s for '%s' failed:\n%s\nHint: detected Yarn version: %s. If your project's Yarn version is higher make sure to configure global yarn version with the same version as the project's or higher",
 			installationCommand,
 			vulnDetails.ImpactedDependencyName,
+			err.Error(),
 			executableYarnVersion)
 	}
 	return
