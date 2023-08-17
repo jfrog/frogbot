@@ -246,7 +246,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	goals := []string{"com.jfrog.frogbot:maven-gav-reader:gav", "-q"}
 	var readerOutput []byte
 	if readerOutput, err = mph.runMvnCommand(goals); err != nil {
-		return fmt.Errorf("failed to get project poms while running maven-gav-reader: \n%s\n%s", readerOutput, err.Error())
+		return fmt.Errorf("failed to get project poms while running maven-gav-reader:\n%s\n%s", readerOutput, err.Error())
 	}
 	for _, jsonContent := range strings.Split(string(readerOutput), "\n") {
 		if jsonContent == "" {
