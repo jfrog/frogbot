@@ -58,11 +58,20 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		installationCommand = yarnV2PackageUpdateCmd
 	}
 	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
+	if err != nil {
+		err = errors.New(
+			"'yarn " + installationCommand + "' for '" + vulnDetails.ImpactedDependencyName + "' package has failed:\n" +
+				"1) Please run 'yarn install' and try again\n" +
+				"2) Ensure you are working with the correct global Yarn version:\n" +
+				"   Global Yarn version of 1.x is not compatible with yarn projects of versions 2.x/3.x " +
+				"(please check your global Yarn version and make it compatible with you project's Yarn version)\n")
+	}
 	return
 }
 
 // isYarnV1 gets the current executed yarn version and returns whether the current yarn version is V1 or not
 func isYarnV1() (isYarn1 bool, err error) {
+	// NOTICE: in case your yarn version is 1.x this function will always return true even if the project is originally in higher yarn version
 	workingDirectory, err := coreutils.GetWorkingDirectory()
 	if err != nil {
 		err = errors.New("couldn't get current working directory: " + err.Error())
