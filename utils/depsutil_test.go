@@ -31,10 +31,10 @@ func setTestEnvironment(t *testing.T, project string, server *config.ServerDetai
 	}, repoKey
 }
 
-func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService) string {
+func createNpmRemoteRepo(t *testing.T, remoteRepoService *services.RemoteRepositoryService, project string) string {
 	repoParams := services.NewNpmRemoteRepositoryParams()
 	timestamp++
-	repoParams.Key = fmt.Sprintf("frogbot-npm-remote-repo-%d-%s", timestamp, runtime.GOOS)
+	repoParams.Key = fmt.Sprintf("frogbot-%s-remote-repo-%d-%s", project, timestamp, runtime.GOOS)
 	repoParams.Url = "https://registry.npmjs.org"
 	assert.NoError(t, remoteRepoService.Npm(repoParams))
 	return repoParams.Key
@@ -63,7 +63,7 @@ func createRemoteRepo(t *testing.T, project string, server *config.ServerDetails
 	var repoKey string
 	switch project {
 	case "npm", "yarn2", "yarn1":
-		repoKey = createNpmRemoteRepo(t, createRemoteRepoServices)
+		repoKey = createNpmRemoteRepo(t, createRemoteRepoServices, project)
 	case "dotnet":
 		repoKey = createNugetRemoteRepo(t, createRemoteRepoServices)
 	}
