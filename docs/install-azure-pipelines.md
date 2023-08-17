@@ -30,7 +30,7 @@ To install Frogbot on Azure Repos repositories, follow these steps.
 7. Use the content of the below templates for the pipeline. Edit the remaining mandatory `Variables`.
 
 <details>
-   <summary>Scan Repository and Fix</summary>
+   <summary>Scanning repository branches and fixing issues</summary>
 
  ```yml
 schedules:
@@ -184,7 +184,7 @@ jobs:
 </details>
 
 <details>
-   <summary>Scan Pull Request</summary>
+   <summary>Scanning pull requests</summary>
 
  ```yml
 pool:
