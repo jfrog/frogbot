@@ -13,7 +13,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"os"
 )
 
@@ -154,7 +154,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	}()
 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, nil).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
@@ -271,10 +271,10 @@ func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results) (
 	return vulnerabilitiesRows, nil
 }
 
-func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResponse {
-	aggregateResults := services.ScanResponse{
-		Violations:      []services.Violation{},
-		Vulnerabilities: []services.Vulnerability{},
+func aggregateScanResults(scanResults []scan.ScanResponse) scan.ScanResponse {
+	aggregateResults := scan.ScanResponse{
+		Violations:      []scan.Violation{},
+		Vulnerabilities: []scan.Vulnerability{},
 	}
 	for _, scanResult := range scanResults {
 		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
@@ -296,7 +296,7 @@ func getScanVulnerabilitiesRows(auditResults *audit.Results) ([]formats.Vulnerab
 	return []formats.VulnerabilityOrViolationRow{}, nil
 }
 
-func getNewViolations(targetScan, sourceScan services.ScanResponse, auditResults *audit.Results) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
+func getNewViolations(targetScan, sourceScan scan.ScanResponse, auditResults *audit.Results) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
 	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
 	violationsRows, _, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
 	if err != nil {
@@ -317,7 +317,7 @@ func getNewViolations(targetScan, sourceScan services.ScanResponse, auditResults
 	return
 }
 
-func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditResults *audit.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+func getNewVulnerabilities(targetScan, sourceScan scan.ScanResponse, auditResults *audit.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
 	targetVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
 	targetVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
 	if err != nil {

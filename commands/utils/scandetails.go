@@ -8,7 +8,7 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -21,7 +21,7 @@ const (
 type ScanDetails struct {
 	*Project
 	*Git
-	*services.XrayGraphScanParams
+	*scan.XrayGraphScanParams
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
@@ -44,8 +44,8 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey)
+func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, context *scan.XscGitInfoContext) *ScanDetails {
+	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, context)
 	return sc
 }
 
@@ -94,10 +94,11 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
-	params = &services.XrayGraphScanParams{
-		ScanType:        services.Dependency,
-		IncludeLicenses: false,
+func createXrayScanParams(watches []string, project string, gitInfo *scan.XscGitInfoContext) (params *scan.XrayGraphScanParams) {
+	params = &scan.XrayGraphScanParams{
+		ScanType:          scan.Dependency,
+		IncludeLicenses:   false,
+		XscGitInfoContext: gitInfo,
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
