@@ -73,8 +73,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -129,8 +129,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -164,8 +164,8 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no violations in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
@@ -218,7 +218,7 @@ func TestGetAllVulnerabilities(t *testing.T) {
 	}
 
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}})
+	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}})
 	assert.NoError(t, err)
 	assert.Len(t, rows, 4)
 	assert.ElementsMatch(t, expected, rows)
@@ -282,8 +282,8 @@ func TestGetNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -335,8 +335,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -369,8 +369,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
