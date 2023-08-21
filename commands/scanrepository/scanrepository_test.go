@@ -15,7 +15,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http/httptest"
@@ -353,11 +353,11 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: &services.XrayGraphScanParams{},
+				XrayGraphScanParams: &scan.XrayGraphScanParams{},
 				Project:             &frogbotParams.Projects[0],
 				ServerDetails:       &frogbotParams.Server,
 			}
-			testScan.details = &scanSetup
+			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
@@ -397,39 +397,39 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with no violations and vulnerabilities",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{},
+				XrayResults: []scan.ScanResponse{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{
+				XrayResults: []scan.ScanResponse{
 					{
-						Vulnerabilities: []services.Vulnerability{
+						Vulnerabilities: []scan.Vulnerability{
 							{
-								Cves: []services.Cve{
+								Cves: []scan.Cve{
 									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
 									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
 								},
 								Severity: "Critical",
-								Components: map[string]services.Component{
+								Components: map[string]scan.Component{
 									"vuln1": {
 										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
 									},
 								},
 							},
 							{
-								Cves: []services.Cve{
+								Cves: []scan.Cve{
 									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
 									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
 								},
 								Severity: "High",
-								Components: map[string]services.Component{
+								Components: map[string]scan.Component{
 									"vuln2": {
 										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
 									},
 								},
 							},
@@ -452,34 +452,34 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{
+				XrayResults: []scan.ScanResponse{
 					{
-						Violations: []services.Violation{
+						Violations: []scan.Violation{
 							{
 								ViolationType: "security",
-								Cves: []services.Cve{
+								Cves: []scan.Cve{
 									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
 									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
 								},
 								Severity: "Critical",
-								Components: map[string]services.Component{
+								Components: map[string]scan.Component{
 									"viol1": {
 										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
 									},
 								},
 							},
 							{
 								ViolationType: "security",
-								Cves: []services.Cve{
+								Cves: []scan.Cve{
 									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
 									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
 								},
 								Severity: "High",
-								Components: map[string]services.Component{
+								Components: map[string]scan.Component{
 									"viol2": {
 										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
 									},
 								},
 							},
@@ -550,7 +550,7 @@ func TestGetRemoteBranchScanHash(t *testing.T) {
 ## 👇 Details
 
 
-<details>
+<scanDetails>
 <summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
 <br>
 
@@ -562,10 +562,10 @@ func TestGetRemoteBranchScanHash(t *testing.T) {
 - **CVEs:** CVE-2022-24450
 
 
-</details>
+</scanDetails>
 
 
-<details>
+<scanDetails>
 <summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>
 <br>
 
@@ -575,10 +575,10 @@ func TestGetRemoteBranchScanHash(t *testing.T) {
 - **Current Version:** v3.5.1
 
 
-</details>
+</scanDetails>
 
 
-<details>
+<scanDetails>
 <summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
 <br>
 
@@ -590,7 +590,7 @@ func TestGetRemoteBranchScanHash(t *testing.T) {
 - **CVEs:** CVE-2022-26652
 
 
-</details>
+</scanDetails>
 
 
 ## 🛠️ Infrastructure as Code 
@@ -649,7 +649,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
 	})
 	cfp.aggregateFixes = true
-	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br><br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Versions:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n<details>\n<summary> <b>package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Versions:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: hash)\n"
+	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br><br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<scanDetails>\n<summary> <b>package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **Fixed Versions:** 1.0.0,2.0.0\n- **CVE:** CVE-2022-1234\n\n**Description:**\n\nsummary\n\n\n\n</scanDetails>\n\n\n<scanDetails>\n<summary> <b>package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **Fixed Versions:** 2.0.0,3.0.0\n- **CVE:** CVE-2022-4321\n\n**Description:**\n\nsummary\n\n\n\n</scanDetails>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: hash)\n"
 	prTitle, prBody = cfp.preparePullRequestDetails("hash", vulnerabilities)
 	assert.Equal(t, outputwriter.GetAggregatedPullRequestTitle(""), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -660,7 +660,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, expectedPrBody, prBody)
 }
 
-func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
+func verifyTechnologyNaming(t *testing.T, scanResponse []scan.ScanResponse, expectedType coreutils.Technology) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
 			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)

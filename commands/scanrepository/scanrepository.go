@@ -30,8 +30,8 @@ type ScanRepositoryCmd struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
-	// The details of the current scan
-	details *utils.ScanDetails
+	// The scanDetails of the current scan
+	scanDetails *utils.ScanDetails
 	// The base working directory
 	baseWd string
 	// The git client the command performs git operations with
@@ -56,6 +56,7 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 		if err = cfp.gitManager.Checkout(branch); err != nil {
 			return
 		}
+		cfp.scanDetails.SetXscGitInfoContext(branch, client, nil)
 		if err = cfp.scanAndFixRepository(&repository); err != nil {
 			return
 		}
@@ -68,7 +69,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository)
 		return
 	}
 	for i := range repository.Projects {
-		cfp.details.Project = &repository.Projects[i]
+		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = ""
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
@@ -78,25 +79,27 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository)
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
+
+	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetBaseBranch(branch).
 		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverity(repository.MinSeverity)
+
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
-	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.details.Token, cfp.details.Username, cfp.details.Git)
+	cfp.gitManager, err = utils.NewGitManager(cfp.dryRun, cfp.dryRunRepoPath, ".", "origin", cfp.scanDetails.Token, cfp.scanDetails.Username, cfp.scanDetails.Git)
 	return
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
 	var fixNeeded bool
 	// A map that contains the full project paths as a keys
-	// The value is a map of vulnerable package names -> the details of the vulnerable packages.
-	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full details.
+	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
+	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
-	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.details.Project.WorkingDirs, cfp.baseWd)
+	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
@@ -104,7 +107,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		}
 
 		if !cfp.dryRun {
-			if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.BaseBranch(), cfp.details.Client()); err != nil {
+			if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -128,7 +131,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 // Audit the dependencies of the current commit.
 func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, error) {
 	// Audit commit code
-	auditResults, err := cfp.details.RunInstallAndAudit(currentWorkingDir)
+	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +150,7 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Exten
 
 	// Nothing to fix, return
 	if len(vulnerabilitiesMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.details.RepoName)
+		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.scanDetails.RepoName)
 	}
 	return vulnerabilitiesMap, nil
 }
@@ -202,7 +205,7 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, 
 		}
 
 		// After fixing the current vulnerability, checkout to the base branch to start fixing the next vulnerability
-		if e := cfp.gitManager.Checkout(cfp.details.BaseBranch()); e != nil {
+		if e := cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()); e != nil {
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 			return
 		}
@@ -269,7 +272,7 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", vulnDetails.ImpactedDependencyName, "with", fixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.details.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
 	if err != nil {
 		return
 	}
@@ -316,8 +319,8 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 		return err
 	}
 	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, []formats.VulnerabilityOrViolationRow{vulnDetails.VulnerabilityOrViolationRow})
-	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.details.BaseBranch())
-	return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.BaseBranch(), pullRequestTitle, prBody)
+	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.scanDetails.BaseBranch())
+	return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
 }
 
 // openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
@@ -337,11 +340,11 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pu
 	}
 	pullRequestTitle, prBody := cfp.preparePullRequestDetails(scanHash, vulnerabilityRows)
 	if pullRequestInfo == nil {
-		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.details.BaseBranch())
-		return cfp.details.Client().CreatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, fixBranchName, cfp.details.BaseBranch(), pullRequestTitle, prBody)
+		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
+		return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
 	}
-	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.details.BaseBranch())
-	return cfp.details.Client().UpdatePullRequest(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
+	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
+	return cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, "", int(pullRequestInfo.ID), vcsutils.Open)
 }
 
 func (cfp *ScanRepositoryCmd) preparePullRequestDetails(scanHash string, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) (string, string) {
@@ -373,7 +376,7 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 	log.Debug("Created temp working directory:", tempWd)
 
 	// Clone the content of the repo to the new working directory
-	if err = cfp.gitManager.Clone(tempWd, cfp.details.BaseBranch()); err != nil {
+	if err = cfp.gitManager.Clone(tempWd, cfp.scanDetails.BaseBranch()); err != nil {
 		return
 	}
 
@@ -473,7 +476,7 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 
 	handler := cfp.handlers[vulnDetails.Technology]
 	if handler == nil {
-		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.details)
+		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.scanDetails)
 		cfp.handlers[vulnDetails.Technology] = handler
 	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
 		return
@@ -499,7 +502,7 @@ func (cfp *ScanRepositoryCmd) getRemoteBranchScanHash(prBody string) string {
 }
 
 func (cfp *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string) (prInfo *vcsclient.PullRequestInfo, err error) {
-	list, err := cfp.details.Client().ListOpenPullRequestsWithBody(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
+	list, err := cfp.scanDetails.Client().ListOpenPullRequestsWithBody(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
 	if err != nil {
 		return
 	}
@@ -544,7 +547,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		}
 	}
 	log.Info("-----------------------------------------------------------------")
-	if e := cfp.gitManager.Checkout(cfp.details.BaseBranch()); e != nil {
+	if e := cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()); e != nil {
 		err = errors.Join(err, e)
 	}
 	return
@@ -570,6 +573,10 @@ func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.Vul
 		log.Info("The existing pull request is not in sync with the latest scan, updating pull request...")
 	}
 	return
+}
+
+func (cfp *ScanRepositoryCmd) SetXscGitInfoContext(branch string, client vcsclient.VcsClient) {
+	cfp.scanDetails.XscGitInfoContext = utils.GenerateGitInfoContext(cfp.scanDetails.RepoName, cfp.scanDetails.RepoOwner, cfp.scanDetails.GitProvider, client, branch, nil)
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;

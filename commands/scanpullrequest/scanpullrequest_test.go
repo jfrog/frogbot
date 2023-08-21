@@ -15,7 +15,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	utils2 "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -40,41 +40,41 @@ const (
 
 func TestCreateVulnerabilitiesRows(t *testing.T) {
 	// Previous scan with only one violation - XRAY-1
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{{
+	previousScan := scan.ScanResponse{
+		Violations: []scan.Violation{{
 			IssueId:       "XRAY-1",
 			Summary:       "summary-1",
 			Severity:      "high",
-			Cves:          []services.Cve{},
+			Cves:          []scan.Cve{},
 			ViolationType: "security",
-			Components:    map[string]services.Component{"component-A": {}, "component-B": {}},
+			Components:    map[string]scan.Component{"component-A": {}, "component-B": {}},
 		}},
 	}
 
 	// Current scan with 2 violations - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{
+	currentScan := scan.ScanResponse{
+		Violations: []scan.Violation{
 			{
 				IssueId:       "XRAY-1",
 				Summary:       "summary-1",
 				Severity:      "high",
 				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}, "component-B": {}},
+				Components:    map[string]scan.Component{"component-A": {}, "component-B": {}},
 			},
 			{
 				IssueId:       "XRAY-2",
 				Summary:       "summary-2",
 				ViolationType: "security",
 				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}, "component-D": {}},
+				Components:    map[string]scan.Component{"component-C": {}, "component-D": {}},
 			},
 		},
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -90,26 +90,26 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 
 func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	// Previous scan with no violation
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{},
+	previousScan := scan.ScanResponse{
+		Violations: []scan.Violation{},
 	}
 
 	// Current scan with 2 violations - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{
+	currentScan := scan.ScanResponse{
+		Violations: []scan.Violation{
 			{
 				IssueId:       "XRAY-1",
 				Summary:       "summary-1",
 				Severity:      "high",
 				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}},
+				Components:    map[string]scan.Component{"component-A": {}},
 			},
 			{
 				IssueId:       "XRAY-2",
 				Summary:       "summary-2",
 				ViolationType: "security",
 				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}},
+				Components:    map[string]scan.Component{"component-C": {}},
 			},
 		},
 	}
@@ -129,8 +129,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -139,33 +139,33 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	// Previous scan with 2 violations - XRAY-1 and XRAY-2
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{
+	previousScan := scan.ScanResponse{
+		Violations: []scan.Violation{
 			{
 				IssueId:       "XRAY-1",
 				Severity:      "high",
 				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}},
+				Components:    map[string]scan.Component{"component-A": {}},
 			},
 			{
 				IssueId:       "XRAY-2",
 				Summary:       "summary-2",
 				ViolationType: "security",
 				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}},
+				Components:    map[string]scan.Component{"component-C": {}},
 			},
 		},
 	}
 
 	// Current scan with no violation
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{},
+	currentScan := scan.ScanResponse{
+		Violations: []scan.Violation{},
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)
@@ -173,19 +173,19 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 
 func TestGetAllVulnerabilities(t *testing.T) {
 	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
+	currentScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{
 			{
 				IssueId:    "XRAY-1",
 				Summary:    "summary-1",
 				Severity:   "high",
-				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+				Components: map[string]scan.Component{"component-A": {}, "component-B": {}},
 			},
 			{
 				IssueId:    "XRAY-2",
 				Summary:    "summary-2",
 				Severity:   "low",
-				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+				Components: map[string]scan.Component{"component-C": {}, "component-D": {}},
 			},
 		},
 	}
@@ -218,7 +218,7 @@ func TestGetAllVulnerabilities(t *testing.T) {
 	}
 
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}})
+	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}})
 	assert.NoError(t, err)
 	assert.Len(t, rows, 4)
 	assert.ElementsMatch(t, expected, rows)
@@ -226,34 +226,34 @@ func TestGetAllVulnerabilities(t *testing.T) {
 
 func TestGetNewVulnerabilities(t *testing.T) {
 	// Previous scan with only one vulnerability - XRAY-1
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{{
+	previousScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{{
 			IssueId:    "XRAY-1",
 			Summary:    "summary-1",
 			Severity:   "high",
-			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
-			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+			Cves:       []scan.Cve{{Id: "CVE-2023-1234"}},
+			Components: map[string]scan.Component{"component-A": {}, "component-B": {}},
 			Technology: coreutils.Maven.ToString(),
 		}},
 	}
 
 	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
+	currentScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{
 			{
 				IssueId:    "XRAY-1",
 				Summary:    "summary-1",
 				Severity:   "high",
-				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
-				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
+				Cves:       []scan.Cve{{Id: "CVE-2023-1234"}},
+				Components: map[string]scan.Component{"component-A": {}, "component-B": {}},
 				Technology: coreutils.Maven.ToString(),
 			},
 			{
 				IssueId:    "XRAY-2",
 				Summary:    "summary-2",
 				Severity:   "low",
-				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
-				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
+				Cves:       []scan.Cve{{Id: "CVE-2023-4321"}},
+				Components: map[string]scan.Component{"component-C": {}, "component-D": {}},
 				Technology: coreutils.Yarn.ToString(),
 			},
 		},
@@ -282,8 +282,8 @@ func TestGetNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -292,26 +292,26 @@ func TestGetNewVulnerabilities(t *testing.T) {
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	// Previous scan with no vulnerabilities
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{},
+	previousScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{},
 	}
 
 	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
+	currentScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{
 			{
 				IssueId:             "XRAY-1",
 				Summary:             "summary-1",
 				Severity:            "high",
-				ExtendedInformation: &services.ExtendedInformation{FullDescription: "description-1"},
-				Components:          map[string]services.Component{"component-A": {}},
+				ExtendedInformation: &scan.ExtendedInformation{FullDescription: "description-1"},
+				Components:          map[string]scan.Component{"component-A": {}},
 			},
 			{
 				IssueId:             "XRAY-2",
 				Summary:             "summary-2",
 				Severity:            "low",
-				ExtendedInformation: &services.ExtendedInformation{FullDescription: "description-2"},
-				Components:          map[string]services.Component{"component-B": {}},
+				ExtendedInformation: &scan.ExtendedInformation{FullDescription: "description-2"},
+				Components:          map[string]scan.Component{"component-B": {}},
 			},
 		},
 	}
@@ -335,8 +335,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 2)
@@ -345,32 +345,32 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	// Previous scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
+	previousScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{
 			{
 				IssueId:    "XRAY-1",
 				Summary:    "summary-1",
 				Severity:   "high",
-				Components: map[string]services.Component{"component-A": {}},
+				Components: map[string]scan.Component{"component-A": {}},
 			},
 			{
 				IssueId:    "XRAY-2",
 				Summary:    "summary-2",
 				Severity:   "low",
-				Components: map[string]services.Component{"component-B": {}},
+				Components: map[string]scan.Component{"component-B": {}},
 			},
 		},
 	}
 
 	// Current scan with no vulnerabilities
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{},
+	currentScan := scan.ScanResponse{
+		Vulnerabilities: []scan.Vulnerability{},
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
 	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{previousScan}}},
+		&audit.Results{ExtendedScanResults: &utils2.ExtendedScanResults{XrayResults: []scan.ScanResponse{currentScan}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, rows, 0)

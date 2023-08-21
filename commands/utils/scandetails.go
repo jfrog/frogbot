@@ -44,8 +44,8 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, context *scan.XscGitInfoContext) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, context)
+func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string) *ScanDetails {
+	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey)
 	return sc
 }
 
@@ -94,11 +94,10 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func createXrayScanParams(watches []string, project string, gitInfo *scan.XscGitInfoContext) (params *scan.XrayGraphScanParams) {
+func createXrayScanParams(watches []string, project string) (params *scan.XrayGraphScanParams) {
 	params = &scan.XrayGraphScanParams{
-		ScanType:          scan.Dependency,
-		IncludeLicenses:   false,
-		XscGitInfoContext: gitInfo,
+		ScanType:        scan.Dependency,
+		IncludeLicenses: false,
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
@@ -169,6 +168,11 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 	}
 	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
 	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
+}
+
+func (sc *ScanDetails) SetXscGitInfoContext(branch string, client vcsclient.VcsClient, pullRequestDetails *vcsclient.PullRequestInfo) *ScanDetails {
+	sc.XscGitInfoContext = GenerateGitInfoContext(sc.RepoName, sc.RepoOwner, sc.GitProvider, client, branch, pullRequestDetails)
+	return sc
 }
 
 func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {

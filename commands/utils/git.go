@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/config"
@@ -8,9 +9,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/frogbot/commands/utils/outputwriter"
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -444,4 +447,32 @@ func setGoGitCustomClient() {
 
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 	client.InstallProtocol("https", githttp.NewClient(customClient))
+}
+
+func GenerateGitInfoContext(repoName, repoOwner string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, sourceBranch string, pullRequestDetails *vcsclient.PullRequestInfo) (gitInfo *scan.XscGitInfoContext) {
+	// Optional
+	if pullRequestDetails == nil {
+		pullRequestDetails = &vcsclient.PullRequestInfo{}
+	}
+	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, sourceBranch)
+	if err != nil {
+		log.Warn("failed getting latest commit with the following error :", err.Error())
+	}
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
+	if err != nil {
+		return
+	}
+	return &scan.XscGitInfoContext{
+		GitRepoUrl:        repoInfo.CloneInfo.HTTP,
+		GitRepoName:       repoName,
+		GitTargetRepoName: pullRequestDetails.Target.Repository,
+		GitProvider:       vcsProvider.String(),
+		BranchName:        sourceBranch,
+		TargetBranchName:  pullRequestDetails.Target.Name,
+		LastCommit:        latestCommit.Url,
+		CommitHash:        latestCommit.Hash,
+		CommitMessage:     latestCommit.Message,
+		CommitAuthor:      latestCommit.AuthorName,
+		Date:              time.Now().UTC().Format(time.RFC3339),
+	}
 }
