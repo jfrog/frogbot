@@ -449,12 +449,8 @@ func setGoGitCustomClient() {
 	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
-func GenerateGitInfoContext(repoName, repoOwner string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, sourceBranch string, pullRequestDetails *vcsclient.PullRequestInfo) (gitInfo *scan.XscGitInfoContext) {
-	// Optional
-	if pullRequestDetails == nil {
-		pullRequestDetails = &vcsclient.PullRequestInfo{}
-	}
-	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, sourceBranch)
+func GenerateGitInfoContext(repoName, repoOwner string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *scan.XscGitInfoContext) {
+	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, branchName)
 	if err != nil {
 		log.Warn("failed getting latest commit with the following error :", err.Error())
 	}
@@ -463,16 +459,14 @@ func GenerateGitInfoContext(repoName, repoOwner string, vcsProvider vcsutils.Vcs
 		return
 	}
 	return &scan.XscGitInfoContext{
-		GitRepoUrl:        repoInfo.CloneInfo.HTTP,
-		GitRepoName:       repoName,
-		GitTargetRepoName: pullRequestDetails.Target.Repository,
-		GitProvider:       vcsProvider.String(),
-		BranchName:        sourceBranch,
-		TargetBranchName:  pullRequestDetails.Target.Name,
-		LastCommit:        latestCommit.Url,
-		CommitHash:        latestCommit.Hash,
-		CommitMessage:     latestCommit.Message,
-		CommitAuthor:      latestCommit.AuthorName,
-		Date:              time.Now().UTC().Format(time.RFC3339),
+		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
+		GitRepoName:   repoName,
+		GitProvider:   vcsProvider.String(),
+		BranchName:    branchName,
+		LastCommit:    latestCommit.Url,
+		CommitHash:    latestCommit.Hash,
+		CommitMessage: latestCommit.Message,
+		CommitAuthor:  latestCommit.AuthorName,
+		Date:          time.Now().UTC().Format(time.RFC3339),
 	}
 }

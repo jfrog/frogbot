@@ -170,8 +170,8 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
 }
 
-func (sc *ScanDetails) SetXscGitInfoContext(branch string, client vcsclient.VcsClient, pullRequestDetails *vcsclient.PullRequestInfo) *ScanDetails {
-	sc.XscGitInfoContext = GenerateGitInfoContext(sc.RepoName, sc.RepoOwner, sc.GitProvider, client, branch, pullRequestDetails)
+func (sc *ScanDetails) SetXscGitInfoContext(branchName string, client vcsclient.VcsClient) *ScanDetails {
+	sc.XscGitInfoContext = GenerateGitInfoContext(sc.RepoName, sc.RepoOwner, sc.GitProvider, client, branchName)
 	return sc
 }
 

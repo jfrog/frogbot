@@ -56,7 +56,7 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 		if err = cfp.gitManager.Checkout(branch); err != nil {
 			return
 		}
-		cfp.scanDetails.SetXscGitInfoContext(branch, client, nil)
+		cfp.scanDetails.SetXscGitInfoContext(branch, client)
 		if err = cfp.scanAndFixRepository(&repository); err != nil {
 			return
 		}
@@ -576,7 +576,7 @@ func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.Vul
 }
 
 func (cfp *ScanRepositoryCmd) SetXscGitInfoContext(branch string, client vcsclient.VcsClient) {
-	cfp.scanDetails.XscGitInfoContext = utils.GenerateGitInfoContext(cfp.scanDetails.RepoName, cfp.scanDetails.RepoOwner, cfp.scanDetails.GitProvider, client, branch, nil)
+	cfp.scanDetails.XscGitInfoContext = utils.GenerateGitInfoContext(cfp.scanDetails.RepoName, cfp.scanDetails.RepoOwner, cfp.scanDetails.GitProvider, client, branch)
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;

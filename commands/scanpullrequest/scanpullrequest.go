@@ -153,13 +153,12 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		err = errors.Join(err, cleanupSource(), cleanupTarget())
 	}()
 
-	targetBranchName := pullRequestDetails.Target.Name
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
-		SetXscGitInfoContext(targetBranchName, client, &pullRequestDetails)
+		SetXscGitInfoContext(sourceBranchInfo.Name, client)
 
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
