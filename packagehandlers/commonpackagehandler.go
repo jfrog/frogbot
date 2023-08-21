@@ -31,7 +31,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case coreutils.Maven:
 		handler = &MavenPackageHandler{depsRepo: details.DepsRepo, ServerDetails: details.ServerDetails}
 	case coreutils.Nuget, coreutils.Dotnet:
-		handler = &NugetPackageHandler{}
+		handler = &NugetPackageHandler{} //f
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}

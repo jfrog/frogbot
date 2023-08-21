@@ -7,7 +7,7 @@ import (
 
 const dotnetPackageUpgradeExtraArg = "package"
 
-type NugetPackageHandler struct {
+type NugetPackageHandler struct { //f
 	CommonPackageHandler
 }
 
