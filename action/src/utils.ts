@@ -67,7 +67,9 @@ export class Utils {
      * Execute frogbot scan-pull-request command.
      */
     public static async execScanPullRequest() {
-        core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref)
+        if (!process.env.JF_GIT_BASE_BRANCH) {
+            core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref)
+        }
         let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
@@ -78,13 +80,15 @@ export class Utils {
      * Execute frogbot scan-repository command.
      */
     public static async execCreateFixPullRequests() {
-        // Get the current branch we are checked on
-        const git: SimpleGit = simpleGit();
-        try {
-            const currentBranch: BranchSummary = await git.branch();
-            core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
-        } catch (error) {
-            console.error('Error getting current branch for the .git folder:', error);
+        if (!process.env.JF_GIT_BASE_BRANCH) {
+            // Get the current branch we are checked on
+            const git: SimpleGit = simpleGit();
+            try {
+                const currentBranch: BranchSummary = await git.branch();
+                core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+            } catch (error) {
+                throw new Error('Error getting current branch from the .git folder: ' + error);
+            }
         }
 
         let res: number = await exec(Utils.getExecutableName(), ['scan-repository']);

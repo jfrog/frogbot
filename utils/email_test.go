@@ -29,7 +29,7 @@ func TestGetSecretsEmailContent(t *testing.T) {
 
 func TestPrepareEmail(t *testing.T) {
 	sender := "JFrog Frogbot <frogbot@jfrog.com>"
-	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
+	subject := outputwriter.FrogbotTitlePrefix + " detected potential secrets"
 	content := "content"
 	emailDetails := EmailDetails{EmailReceivers: []string{"receiver@jfrog.com"}}
 	expectedEmailObject := &email.Email{

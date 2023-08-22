@@ -101,16 +101,15 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	if branchName == "" {
-		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
-		branchName = "master"
-	}
-	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           gitRemoteUrl,
 		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
 		ReferenceName: getFullBranchName(branchName),
+		SingleBranch:  true,
+		Depth:         1,
+		Tags:          git.NoTags,
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {

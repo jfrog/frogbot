@@ -49,21 +49,35 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 		return err
 	}
 	repository := repoAggregator[0]
+	return cfp.scanAndFixRepository(&repository, client)
+}
+
+func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	if cfp.baseWd, err = os.Getwd(); err != nil {
+		return
+	}
 	for _, branch := range repository.Branches {
-		if err = cfp.setCommandPrerequisites(&repository, branch, client); err != nil {
+		if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
 			return
 		}
-		if err = cfp.scanAndFixRepository(&repository); err != nil {
+		if err = cfp.scanAndFixBranch(repository); err != nil {
 			return
 		}
 	}
 	return
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository) (err error) {
-	if cfp.baseWd, err = os.Getwd(); err != nil {
+func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
+	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
+	if err != nil {
 		return
 	}
+	defer func() {
+		// On dry run don't delete the folder as we want to validate results.
+		if !cfp.dryRun {
+			err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
+		}
+	}()
 	for i := range repository.Projects {
 		cfp.details.Project = &repository.Projects[i]
 		cfp.projectTech = ""
@@ -150,17 +164,6 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Exten
 }
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
-	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
-	if err != nil {
-		return
-	}
-	defer func() {
-		// On dry run don't delete the folder as we want to validate results.
-		if !cfp.dryRun {
-			err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
-		}
-	}()
-
 	if cfp.aggregateFixes {
 		return cfp.fixIssuesSinglePR(vulnerabilitiesByWdMap)
 	}
@@ -254,7 +257,8 @@ func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]ma
 // When the expected custom error occurs, log to debug.
 // else, return the error
 func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
-	if _, isCustomError := err.(*utils.ErrUnsupportedFix); isCustomError {
+	var errUnsupportedFix *utils.ErrUnsupportedFix
+	if errors.As(err, &errUnsupportedFix) {
 		log.Debug(err.Error())
 		return nil
 	}
