@@ -449,19 +449,28 @@ func setGoGitCustomClient() {
 	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
-func GenerateGitInfoContext(repoName, repoOwner string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *scan.XscGitInfoContext) {
+// CreateGitInfoContext Creates GitInfoContest for XSC scans,this is optional.
+// only log warning if fails to get information.
+func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *scan.XscGitInfoContext) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, branchName)
 	if err != nil {
-		log.Warn("failed getting latest commit with the following error :", err.Error())
+		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
+		return
 	}
 	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
 	if err != nil {
+		log.Warn(fmt.Sprintf("failed getting repository information,for repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
 		return
 	}
+	// In some VCS providers, there are no projects, fallback to the repository owner.
+	if gitProject == "" {
+		gitProject = repoOwner
+	}
 	return &scan.XscGitInfoContext{
-		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
+		GitRepoUrl:    repoInfo.CloneInfo.HTTP, // Clone URLs on browsers redirects to repository URLS.
 		GitRepoName:   repoName,
 		GitProvider:   vcsProvider.String(),
+		GitProject:    gitProject,
 		BranchName:    branchName,
 		LastCommit:    latestCommit.Url,
 		CommitHash:    latestCommit.Hash,

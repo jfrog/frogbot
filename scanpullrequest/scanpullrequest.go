@@ -158,7 +158,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
-		SetXscGitInfoContext(sourceBranchInfo.Name, client)
+		SetXscGitInfoContext(sourceBranchInfo.Name, repoConfig.Git.Project, client)
 
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
@@ -208,6 +208,13 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		secretsRows = append(secretsRows, newSecrets...)
 	}
 	return
+}
+
+func getProjectWithFallback(project string, owner string) string {
+	if project == "" {
+		return owner
+	}
+	return project
 }
 
 func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, []formats.IacSecretsRow, error) {
