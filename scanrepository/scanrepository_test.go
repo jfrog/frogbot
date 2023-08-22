@@ -252,6 +252,9 @@ pr body
 			if test.expectedUpdate {
 				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, outputwriter.GetAggregatedPullRequestTitle(coreutils.Npm), "", "", int(mockPrId), vcsutils.Open).Return(nil)
 			}
+			// Return empty latest commit info for optional XSC context.
+			client.EXPECT().GetLatestCommit(context.Background(), gitTestParams.RepoOwner, gitTestParams.RepoName, gomock.Any()).Return(vcsclient.CommitInfo{}, nil)
+			client.EXPECT().GetRepositoryInfo(context.Background(), gitTestParams.RepoOwner, gitTestParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 			// Load default configurations
 			var configData []byte
 			// Manual set of "JF_GIT_BASE_BRANCH"

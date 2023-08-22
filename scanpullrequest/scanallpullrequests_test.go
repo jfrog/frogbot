@@ -210,7 +210,7 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 		// Return private repositories visibility
 		client.EXPECT().GetRepositoryInfo(context.Background(), gomock.Any(), gomock.Any()).Return(vcsclient.RepositoryInfo{RepositoryVisibility: vcsclient.Private}, nil).AnyTimes()
 		// Return latest commit info for XSC context.
-		client.EXPECT().GetLatestCommit(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return(vcsclient.CommitInfo{}, nil)
+		client.EXPECT().GetLatestCommit(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return(vcsclient.CommitInfo{}, nil).AnyTimes()
 	}
 	return client
 }
