@@ -210,13 +210,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	return
 }
 
-func getProjectWithFallback(project string, owner string) string {
-	if project == "" {
-		return owner
-	}
-	return project
-}
-
 func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, []formats.IacSecretsRow, error) {
 	var newVulnerabilities []formats.VulnerabilityOrViolationRow
 	var err error
