@@ -92,15 +92,6 @@ class Utils {
             if (owner) {
                 core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
             }
-            // Get the current branch we are checked on
-            const git = (0, simple_git_1.simpleGit)();
-            try {
-                const currentBranch = yield git.branch();
-                core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
-            }
-            catch (error) {
-                console.error('Error getting current branch for the .git folder:', error);
-            }
             core.exportVariable('JF_GIT_PULL_REQUEST_ID', github_1.context.issue.number);
             return github_1.context.eventName;
         });
@@ -110,6 +101,7 @@ class Utils {
      */
     static execScanPullRequest() {
         return __awaiter(this, void 0, void 0, function* () {
+            core.exportVariable('JF_GIT_BASE_BRANCH', github_1.context.ref);
             let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
@@ -121,6 +113,15 @@ class Utils {
      */
     static execCreateFixPullRequests() {
         return __awaiter(this, void 0, void 0, function* () {
+            // Get the current branch we are checked on
+            const git = (0, simple_git_1.simpleGit)();
+            try {
+                const currentBranch = yield git.branch();
+                core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+            }
+            catch (error) {
+                console.error('Error getting current branch for the .git folder:', error);
+            }
             let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-repository']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
