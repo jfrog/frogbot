@@ -457,6 +457,9 @@ func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vc
 		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
 		return
 	}
+	if vcsProvider == vcsutils.AzureRepos {
+		repoOwner = gitProject
+	}
 	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
 	if err != nil {
 		log.Warn(fmt.Sprintf("failed getting repository information,for repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))

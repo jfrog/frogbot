@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/golang/mock v1.6.0
 	github.com/jfrog/build-info-go v1.9.7
-	github.com/jfrog/froggit-go v1.13.1
+	github.com/jfrog/froggit-go v1.13.2
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.40.1
 	github.com/jfrog/jfrog-client-go v1.31.4
@@ -118,3 +118,5 @@ require (
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eyaldelarea/jfrog-cli-core/v2 v2.0.0-20230822095451-1c5b610fe969
 
 replace github.com/jfrog/jfrog-client-go => github.com/eyaldelarea/jfrog-client-go v1.28.4-0.20230821145050-a30da83d09c4
+
+replace github.com/jfrog/froggit-go => github.com/eyaldelarea/froggit-go v1.6.1-0.20230822135850-0419822ab99a
