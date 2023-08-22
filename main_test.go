@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/commands/utils"
+	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	clientTests "github.com/jfrog/jfrog-client-go/utils/tests"
 	"io"
 	"os"
 	"strings"
@@ -10,6 +12,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var IntegrationTestPackages = []string{
+	"github.com/jfrog/frogbot",
+	"github.com/jfrog/frogbot/scanrepository",
+	"github.com/jfrog/frogbot/scanpullrequest",
+	"github.com/jfrog/frogbot/packagehandlers",
+}
+
+func TestUnitTests(t *testing.T) {
+	packages := clientTests.GetTestPackages("./...")
+	for _, integrationPackage := range IntegrationTestPackages {
+		packages = clientTests.ExcludeTestsPackage(packages, integrationPackage)
+	}
+	log.Info("Running Unit tests on the following packages:\n", strings.Join(packages, "\n"))
+	assert.NoError(t, clientTests.RunTests(packages, false))
+}
 
 func TestVersion(t *testing.T) {
 	originalStdout := os.Stdout
