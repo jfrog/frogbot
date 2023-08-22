@@ -703,6 +703,10 @@ github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0+
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
 github.com/eyaldelarea/froggit-go v1.6.1-0.20230822135850-0419822ab99a h1:DIS0+NBQs5V+/AgPfnhPuUm33YWwVRbozNfHiQmBuaQ=
 github.com/eyaldelarea/froggit-go v1.6.1-0.20230822135850-0419822ab99a/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
+github.com/eyaldelarea/jfrog-cli-core/v2 v2.0.0-20230822101755-c06269d500d3 h1:HIkOX3uzPvrAtfQUBiTL/QsYQeADTZyywLZrqd2eUnM=
+github.com/eyaldelarea/jfrog-cli-core/v2 v2.0.0-20230822101755-c06269d500d3/go.mod h1:R1dRbf5thSPtjtg/s59kO20Ux7CGbbyXUXpTJpEEr1Y=
+github.com/eyaldelarea/jfrog-client-go v1.28.4-0.20230821145050-a30da83d09c4 h1:wylQBde6B6Bk4hjAww0kXkuBLjXPBfkDzTERFGoExvo=
+github.com/eyaldelarea/jfrog-client-go v1.28.4-0.20230821145050-a30da83d09c4/go.mod h1:cstHMVqu11rn4TadtCBHrcuL+KcJ94kjSmMQSWMB61I=
 github.com/fatih/color v1.13.0 h1:8LOYc1KYPPmyKMuN8QV2DNRWNbLo6LZ0iLs8+mlH53w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
