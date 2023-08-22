@@ -5,7 +5,7 @@ import { downloadTool, find, cacheFile } from '@actions/tool-cache';
 import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
 import { join } from 'path';
-import {simpleGit} from 'simple-git';
+import {BranchSummary, SimpleGit, simpleGit} from 'simple-git';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
@@ -61,9 +61,9 @@ export class Utils {
         }
 
         // Get the current branch we are checked on
-        const git = simpleGit();
+        const git: SimpleGit = simpleGit();
         try {
-            const currentBranch = await git.branch();
+            const currentBranch: BranchSummary = await git.branch();
             core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
         } catch (error) {
             console.error('Error getting current branch for the .git folder:', error);
