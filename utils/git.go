@@ -67,18 +67,14 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
+func NewGitManager(dryRun bool, clonedRepoPath, token, username string, gitParams *Git) (*GitManager, error) {
 	setGoGitCustomClient()
-	repository, err := git.PlainOpen(projectPath)
-	if err != nil {
-		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
-	}
 	basicAuth := toBasicAuth(token, username)
-	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+	templates, err := loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate)
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
+	return &GitManager{dryRunRepoPath: clonedRepoPath, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: gitParams}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
