@@ -258,14 +258,10 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 	noBranchesProvidedViaConfig := len(g.Branches) == 0
 	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
 	if noBranchesProvidedViaConfig {
-		g.Branches = gitParamsFromEnv.Branches
 		if noBranchesProvidedViaEnv {
-			var branch string
-			if branch, err = GetBranchFromDotGit(); err != nil {
-				return
-			}
-			g.Branches = []string{branch}
+			return fmt.Errorf("no branches were provided. Please set your branches via the `JF_GIT_BASE_BRANCH` environment variable or through the frogbot-config.yml file")
 		}
+		g.Branches = gitParamsFromEnv.Branches
 	}
 	if g.BranchNameTemplate == "" {
 		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)

@@ -5,6 +5,7 @@ import { downloadTool, find, cacheFile } from '@actions/tool-cache';
 import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
 import { join } from 'path';
+import {simpleGit} from 'simple-git';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
@@ -51,13 +52,23 @@ export class Utils {
         return '';
     }
 
-    public static setFrogbotEnv() {
+    public static async setFrogbotEnv() {
         core.exportVariable('JF_GIT_PROVIDER', 'github');
         core.exportVariable('JF_GIT_OWNER', githubContext.repo.owner);
         let owner: string | undefined = githubContext.repo.repo;
         if (owner) {
             core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
         }
+
+        // Get the current branch we are checked on
+        const git = simpleGit();
+        try {
+            const currentBranch = await git.branch();
+            core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+        } catch (error) {
+            console.error('Error getting current branch for the .git folder:', error);
+        }
+
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', githubContext.issue.number);
         return githubContext.eventName;
     }

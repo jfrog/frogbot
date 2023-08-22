@@ -53,9 +53,6 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 		if err = cfp.setCommandPrerequisites(&repository, branch, client); err != nil {
 			return
 		}
-		if err = cfp.gitManager.Checkout(branch); err != nil {
-			return
-		}
 		if err = cfp.scanAndFixRepository(&repository); err != nil {
 			return
 		}
