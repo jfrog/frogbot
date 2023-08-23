@@ -78,14 +78,14 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:               "aggregate",
 			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
-			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex c5ea932..1176f2d 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimist\":\"1.2.5\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimist\": \"^1.2.6\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex c5ea932..1176f2d 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,16 +1,16 @@\n {\n   \"name\": \"aggregate\",\n   \"version\": \"1.0.0\",\n   \"description\": \"\",\n   \"main\": \"index.js\",\n   \"scripts\": {\n     \"test\": \"echo \\\"Error: no tsest specified\\\" && exit 1\"\n   },\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimist\":\"1.2.5\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimist\": \"^1.2.6\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"package.json"},
 			aggregateFixes:         true,
 		},
 		{
 			testName:               "aggregate-multi-dir",
 			expectedBranches:       []string{"frogbot-update-npm-dependencies"},
-			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex ff94a18..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
+			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -1,16 +1,16 @@\n {\n   \"name\": \"aggregate\",\n   \"version\": \"1.0.0\",\n   \"description\": \"\",\n   \"main\": \"index.js\",\n   \"scripts\": {\n     \"test\": \"echo \\\"Error: no tsest specified\\\" && exit 1\"\n   },\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n }\ndiff --git a/npm2/package.json b/npm2/package.json\nindex ff94a18..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:         true,
 			configPath:             "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
@@ -93,7 +93,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:               "aggregate-multi-project",
 			expectedBranches:       []string{"frogbot-update-npm-dependencies", "frogbot-update-pip-dependencies"},
-			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex ae09978..286211d 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n", "diff --git a/pip/requirements.txt b/pip/requirements.txt\nindex 65c9637..7788edc 100644\n--- a/pip/requirements.txt\n+++ b/pip/requirements.txt\n@@ -1,2 +1,2 @@\n pexpect==4.8.0\n-pyjwt==1.7.1\n\\ No newline at end of file\n+pyjwt==2.4.0\n\\ No newline at end of file\n"},
+			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex ae09978..286211d 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -1,16 +1,16 @@\n {\n   \"name\": \"aggregate\",\n   \"version\": \"1.0.0\",\n   \"description\": \"\",\n   \"main\": \"index.js\",\n   \"scripts\": {\n     \"test\": \"echo \\\"Error: no tsest specified\\\" && exit 1\"\n   },\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:         true,
 			configPath:             "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
@@ -115,7 +115,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:               "non-aggregate",
 			expectedBranches:       []string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302"},
-			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
+			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -1,14 +1,14 @@\n {\n   \"name\": \"non-aggregate\",\n   \"version\": \"1.0.0\",\n   \"description\": \"\",\n   \"main\": \"index.js\",\n   \"scripts\": {\n     \"test\": \"echo \\\"Error: no tsest specified\\\" && exit 1\"\n   },\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"package.json"},
 			aggregateFixes:         false,
 		},
@@ -703,11 +703,11 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	//goland:noinspection ALL
 	var args []string
 	if coreutils.IsWindows() {
-		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
+		args = []string{"/c", "git", "diff", "--unified=10000", "--ignore-all-space", baseBranch, fixBranch}
 		args = append(args, packageDescriptorPaths...)
 		output, err = exec.Command("cmd", args...).Output()
 	} else {
-		args = []string{"diff", baseBranch, fixBranch}
+		args = []string{"diff", "--unified=10000", "--ignore-all-space", baseBranch, fixBranch}
 		args = append(args, packageDescriptorPaths...)
 		output, err = exec.Command("git", args...).Output()
 	}
