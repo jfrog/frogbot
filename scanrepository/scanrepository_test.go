@@ -167,9 +167,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			defer func() {
-				assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, test.testName, ".git")))
-			}()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run

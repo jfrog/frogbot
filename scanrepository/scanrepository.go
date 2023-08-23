@@ -256,7 +256,7 @@ func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]ma
 func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	var errUnsupportedFix *utils.ErrUnsupportedFix
 	if errors.As(err, &errUnsupportedFix) {
-		log.Debug(err.Error())
+		log.Debug(strings.TrimSpace(err.Error()))
 		return nil
 	}
 	return err

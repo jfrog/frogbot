@@ -10,7 +10,6 @@ import (
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -29,9 +28,7 @@ func TestScanAndFixRepos(t *testing.T) {
 
 	baseWd, err := os.Getwd()
 	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, os.Chdir(baseWd))
-	}()
+
 	var port string
 	server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, nil, testRepositories...))
 	defer server.Close()
@@ -52,14 +49,12 @@ func TestScanAndFixRepos(t *testing.T) {
 	assert.NoError(t, err)
 
 	testDir, cleanup := utils.PrepareTestEnvironment(t, "scanmultiplerepositories")
-	defer cleanup()
+	defer func() {
+		assert.NoError(t, os.Chdir(baseWd))
+		cleanup()
+	}()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)
-	defer func() {
-		for _, testRepo := range testRepositories {
-			assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, testRepo, ".git")))
-		}
-	}()
 	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 	assert.NoError(t, err)
 

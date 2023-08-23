@@ -45,10 +45,7 @@ func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restor
 	err = fileutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 	restoreFunc = func() {
-		err := fileutils.RemoveTempDir(tmpDir)
-		if err != nil {
-			panic(err)
-		}
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 	return
 }
