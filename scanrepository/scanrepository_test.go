@@ -88,7 +88,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex ff94a18..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:         true,
-			configPath:             "../testdata/scanrepository/aggregate-multi-dir/.frogbot/frogbot-config.yml",
+			configPath:             "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:               "aggregate-multi-project",
@@ -96,7 +96,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex ae09978..286211d 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n", "diff --git a/pip/requirements.txt b/pip/requirements.txt\nindex 65c9637..7788edc 100644\n--- a/pip/requirements.txt\n+++ b/pip/requirements.txt\n@@ -1,2 +1,2 @@\n pexpect==4.8.0\n-pyjwt==1.7.1\n\\ No newline at end of file\n+pyjwt==2.4.0\n\\ No newline at end of file\n"},
 			packageDescriptorPaths: []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:         true,
-			configPath:             "../testdata/scanrepository/aggregate-multi-project/.frogbot/frogbot-config.yml",
+			configPath:             "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:               "aggregate-no-vul",
@@ -122,7 +122,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	}
 	baseDir, err := os.Getwd()
 	assert.NoError(t, err)
-	testDir, cleanup := utils.PrepareTestEnvironment(t, rootTestDir)
+	testDir, cleanup := utils.PrepareTestEnvironment(t, filepath.Join(rootTestDir, "cmd"))
 	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -248,7 +248,7 @@ pr body
 
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	testDir, cleanup := utils.PrepareTestEnvironment(t, rootTestDir)
+	testDir, cleanup := utils.PrepareTestEnvironment(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
 	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
