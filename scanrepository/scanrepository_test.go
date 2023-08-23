@@ -1,11 +1,9 @@
 package scanrepository
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/testdata"
+	"github.com/google/go-github/v45/github"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -21,7 +19,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -69,12 +66,6 @@ var testPackagesData = []struct {
 	},
 }
 
-// These tests utilize pre-prepared git folders that correspond to specific use cases.
-// To modify these tests, you can change the folder name from "git"
-// to ".git",make the necessary changes,and then rename it back to "git".
-// Afterward, add the changes to the main repository.
-// It is crucial to maintain the desired state of the git repository.
-// Make sure it is checked out to the main branch, replicating an actual run.
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName               string
@@ -97,7 +88,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedDiff:           []string{"diff --git a/npm1/package.json b/npm1/package.json\nindex ae09978..286211d 100644\n--- a/npm1/package.json\n+++ b/npm1/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\ndiff --git a/npm2/package.json b/npm2/package.json\nindex ff94a18..14b5c7a 100644\n--- a/npm2/package.json\n+++ b/npm2/package.json\n@@ -1,5 +1,5 @@\n {\n   \"dependencies\": {\n-    \"minimist\": \"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n }\n"},
 			packageDescriptorPaths: []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:         true,
-			configPath:             "testdata/scanrepository/aggregate-multi-dir/.frogbot/frogbot-config.yml",
+			configPath:             "../testdata/scanrepository/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:               "aggregate-multi-project",
@@ -105,11 +96,11 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedDiff:           []string{"diff --git a/npm/package.json b/npm/package.json\nindex ae09978..286211d 100644\n--- a/npm/package.json\n+++ b/npm/package.json\n@@ -9,8 +9,8 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"uuid\": \"^9.0.0\",\n-    \"minimatch\":\"3.0.2\",\n-    \"mpath\": \"0.7.0\"\n+    \"minimatch\": \"^3.0.5\",\n+    \"mpath\": \"^0.8.4\",\n+    \"uuid\": \"^9.0.0\"\n   }\n-}\n\\ No newline at end of file\n+}\n", "diff --git a/pip/requirements.txt b/pip/requirements.txt\nindex 65c9637..7788edc 100644\n--- a/pip/requirements.txt\n+++ b/pip/requirements.txt\n@@ -1,2 +1,2 @@\n pexpect==4.8.0\n-pyjwt==1.7.1\n\\ No newline at end of file\n+pyjwt==2.4.0\n\\ No newline at end of file\n"},
 			packageDescriptorPaths: []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:         true,
-			configPath:             "testdata/scanrepository/aggregate-multi-project/.frogbot/frogbot-config.yml",
+			configPath:             "../testdata/scanrepository/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:               "aggregate-no-vul",
-			expectedBranches:       []string{"main"}, // No branch should be created
+			expectedBranches:       []string{"master"}, // No branch should be created
 			expectedDiff:           []string{""},
 			packageDescriptorPaths: []string{"package.json"},
 			aggregateFixes:         true,
@@ -123,12 +114,16 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		},
 		{
 			testName:               "non-aggregate",
-			expectedBranches:       []string{"frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7"},
+			expectedBranches:       []string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302"},
 			expectedDiff:           []string{"diff --git a/package.json b/package.json\nindex 5c4b711..134c416 100644\n--- a/package.json\n+++ b/package.json\n@@ -9,6 +9,6 @@\n   \"author\": \"\",\n   \"license\": \"ISC\",\n   \"dependencies\": {\n-    \"minimist\":\"1.2.5\"\n+    \"minimist\": \"^1.2.6\"\n   }\n-}\n\\ No newline at end of file\n+}\n"},
 			packageDescriptorPaths: []string{"package.json"},
 			aggregateFixes:         false,
 		},
 	}
+	baseDir, err := os.Getwd()
+	assert.NoError(t, err)
+	testDir, cleanup := utils.PrepareTestEnvironment(t, "", rootTestDir, false)
+	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			// Prepare
@@ -140,7 +135,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				}()
 			}
 			var port string
-			server := httptest.NewServer(createHttpHandler(t, &port, test.testName))
+			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, nil, test.testName))
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 			gitTestParams := utils.Git{
 				GitProvider: vcsutils.GitHub,
@@ -148,7 +143,8 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					Token:       "123456",
 					APIEndpoint: server.URL,
 				},
-				RepoName: test.testName,
+				RepoName:  test.testName,
+				RepoOwner: "jfrog",
 			}
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
@@ -161,25 +157,25 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			} else {
 				configData = []byte{}
 				// Manual set of "JF_GIT_BASE_BRANCH"
-				gitTestParams.Branches = []string{"main"}
+				gitTestParams.Branches = []string{"master"}
 			}
 
-			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testName))
-			defer cleanUp()
+			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
-			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: envPath}
+			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
 			// Validate
 			assert.NoError(t, err)
 			for _, branch := range test.expectedBranches {
-				resultDiff, err := verifyDependencyFileDiff("main", branch, test.packageDescriptorPaths...)
+				resultDiff, err := verifyDependencyFileDiff("master", branch, test.packageDescriptorPaths...)
 				assert.NoError(t, err)
 				assert.Contains(t, test.expectedDiff, string(resultDiff))
 			}
 			// Defers
 			defer func() {
+				assert.NoError(t, os.Chdir(baseDir))
 				restoreEnv()
 				server.Close()
 			}()
@@ -193,75 +189,94 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 // Same scan results -> do nothing.
 // Different scan results -> Update the pull request branch & body.
 func TestAggregatePullRequestLifecycle(t *testing.T) {
-	mockPrId := int64(1)
+	mockPrId := 1
+	sourceBranchName := "frogbot-update-npm-dependencies"
+	targetBranchName := "main"
+	sourceLabel := "repo:frogbot-update-npm-dependencies"
+	targetLabel := "repo:main"
+	firstBody := `
+[comment]: <> (Checksum: 4608a55b621cb6337ac93487979ac09c)
+pr body
+`
+	secondBody := `
+[comment]: <> (Checksum: 01373ac4d2c32e7da9be22f3e4b4e665)
+pr body
+ `
 	tests := []struct {
 		testName                string
 		expectedUpdate          bool
-		mockPullRequestResponse []vcsclient.PullRequestInfo
+		mockPullRequestResponse []*github.PullRequest
 	}{
 		{
 			testName:       "aggregate-dont-update-pr",
 			expectedUpdate: false,
-			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Body: `
-[comment]: <> (Checksum: 4608a55b621cb6337ac93487979ac09c)
-pr body
- `,
-				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
-				Target: vcsclient.BranchInfo{Name: "main"},
+			mockPullRequestResponse: []*github.PullRequest{{
+				Number: &mockPrId,
+				Head: &github.PullRequestBranch{
+					Label: &sourceLabel,
+					Repo:  &github.Repository{Name: &sourceBranchName, Owner: &github.User{}},
+				},
+				Base: &github.PullRequestBranch{
+					Label: &targetLabel,
+					Repo:  &github.Repository{Name: &targetBranchName, Owner: &github.User{}},
+				},
+				Body: &firstBody,
 			}},
 		},
 		{
 			testName:       "aggregate-update-pr",
 			expectedUpdate: true,
-			mockPullRequestResponse: []vcsclient.PullRequestInfo{{ID: mockPrId,
-				Body: `
-[comment]: <> (Checksum: 01373ac4d2c32e7da9be22f3e4b4e665)
-pr body
- `,
-				Source: vcsclient.BranchInfo{Name: "frogbot-update-npm-dependencies"},
-				Target: vcsclient.BranchInfo{Name: "remoteMain"},
+			mockPullRequestResponse: []*github.PullRequest{{
+				Number: &mockPrId,
+				Head: &github.PullRequestBranch{
+					Label: &sourceLabel,
+					Repo:  &github.Repository{Name: &sourceBranchName, Owner: &github.User{}},
+				},
+				Base: &github.PullRequestBranch{
+					Label: &targetLabel,
+					Repo:  &github.Repository{Name: &targetBranchName, Owner: &github.User{}},
+				},
+				Body: &secondBody,
 			}},
 		},
 	}
+	serverParams, restoreEnv := utils.VerifyEnv(t)
+	defer restoreEnv()
+	testDir, cleanup := utils.PrepareTestEnvironment(t, "", rootTestDir, false)
+	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			// Prepare
-			serverParams, restoreEnv := utils.VerifyEnv(t)
-			defer restoreEnv()
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
 			var port string
-			server := httptest.NewServer(createHttpHandler(t, &port, test.testName))
+			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, test.mockPullRequestResponse, test.testName))
 			defer func() {
 				server.Close()
 			}()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
+
+			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
+			defer func() {
+				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+			}()
+
 			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
+				RepoOwner:   "jfrog",
 				VcsInfo: vcsclient.VcsInfo{
 					Token:       "123456",
 					APIEndpoint: server.URL,
 				}, RepoName: test.testName,
 			}
-			// Set up mock VCS responses
-			client := CreateMockVcsClient(t)
-			client.EXPECT().ListOpenPullRequestsWithBody(context.Background(), "", gitTestParams.RepoName).Return(test.mockPullRequestResponse, nil)
-			if test.expectedUpdate {
-				client.EXPECT().UpdatePullRequest(context.Background(), "", gitTestParams.RepoName, outputwriter.GetAggregatedPullRequestTitle(coreutils.Npm), "", "", int(mockPrId), vcsutils.Open).Return(nil)
-			}
+
+			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
+			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
+			assert.NoError(t, err)
 			// Load default configurations
 			var configData []byte
-			// Manual set of "JF_GIT_BASE_BRANCH"
-			gitTestParams.Branches = []string{"main"}
-			envPath, cleanUp := utils.PrepareTestEnvironment(t, "", path.Join(rootTestDir, test.testName))
-			defer cleanUp()
+			gitTestParams.Branches = []string{"master"}
 			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
-			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: envPath}
+			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
 			assert.NoError(t, err)
 		})
@@ -688,8 +703,4 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 		err = errors.New("git error: " + string(exitError.Stderr))
 	}
 	return
-}
-
-func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
-	return testdata.NewMockVcsClient(gomock.NewController(t))
 }

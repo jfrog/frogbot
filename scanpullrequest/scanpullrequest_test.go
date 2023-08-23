@@ -528,7 +528,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	defer server.Close()
 
 	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
-	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest")
+	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest", true)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"

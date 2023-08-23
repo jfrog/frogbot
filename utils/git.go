@@ -10,10 +10,7 @@ import (
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -97,7 +94,7 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           gitRemoteUrl,
 		Auth:          gm.auth,
@@ -350,19 +347,19 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology)
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
-	if gm.SkipClone {
-		return nil
-	}
-	baseWd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-		return err
-	}
+	//if gm.SkipClone {
+	//	return nil
+	//}
+	//baseWd, err := os.Getwd()
+	//if err != nil {
+	//	return err
+	//}
+	//// Copy all the current directory content to the destination path
+	//// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
+	//exclude := []string{filepath.Base(destination)}
+	//if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
+	//	return err
+	//}
 	// Set the git repository to the new destination .git folder
 	repo, err := git.PlainOpen(destination)
 	if err != nil {
@@ -408,14 +405,6 @@ func toBasicAuth(token, username string) *githttp.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
-}
-
-func GetBranchFromDotGit() (string, error) {
-	currentRepo, err := git.PlainOpen(".")
-	if err != nil {
-		return "", errors.New("unable to retrieve the branch to scan, as the .git folder was not found in the current working directory. The error that was received: " + err.Error())
-	}
-	return getCurrentBranch(currentRepo)
 }
 
 func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {

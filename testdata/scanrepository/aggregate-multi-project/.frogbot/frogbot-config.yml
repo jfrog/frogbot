@@ -1,8 +1,8 @@
 - params:
     git:
       branches:
-        - main
-      repoName: "aggregate-multi-dir"
+        - master
+      repoName: "aggregate-multi-project"
     scan:
       projects:
         - workingDirs:

@@ -19,6 +19,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -53,7 +54,7 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
-	if cfp.baseWd, err = os.Getwd(); err != nil {
+	if cfp.baseWd, err = cfp.getBaseWd(repository.Git.RepoName); err != nil {
 		return
 	}
 	for _, branch := range repository.Branches {
@@ -114,10 +115,8 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 
-		if !cfp.dryRun {
-			if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.BaseBranch(), cfp.details.Client()); err != nil {
-				log.Warn(err)
-			}
+		if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.BaseBranch(), cfp.details.Client()); err != nil {
+			log.Warn(err)
 		}
 
 		// Prepare the vulnerabilities map for each working dir path
@@ -363,7 +362,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(scanHash string, vulnera
 
 func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
 	if cfp.dryRunRepoPath != "" {
-		tempWd, err = cfp.getDryRunClonedRepo()
+		tempWd = cfp.baseWd
 	} else {
 		// Create temp working directory
 		tempWd, err = fileutils.CreateTempDir()
@@ -383,25 +382,25 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 	return
 }
 
-func (cfp *ScanRepositoryCmd) getDryRunClonedRepo() (tempWd string, err error) {
-	// Check if we already cloned the repository before, for multi projects tests
-	// Return the existing folder if exists
-	var files []string
-	files, err = fileutils.ListFiles(cfp.dryRunRepoPath, true)
-	if err != nil {
-		return
-	}
-	for _, file := range files {
-		if strings.Contains(file, "nested-temp.") {
-			cfp.gitManager.SkipClone = true
-			tempWd = file
-			return
-		}
-	}
-	// Create the temp folder nested in the current folder
-	return os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
-}
-
+//	func (cfp *ScanRepositoryCmd) getDryRunClonedRepo() (tempWd string, err error) {
+//		// Check if we already cloned the repository before, for multi projects tests
+//		// Return the existing folder if exists
+//		var files []string
+//		files, err = fileutils.ListFiles(cfp.dryRunRepoPath, true)
+//		if err != nil {
+//			return
+//		}
+//		for _, file := range files {
+//			if strings.Contains(file, "nested-temp.") {
+//				cfp.gitManager.SkipClone = true
+//				tempWd = file
+//				return
+//			}
+//		}
+//		// Create the temp folder nested in the current folder
+//		return os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
+//	}
+//
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
 func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
@@ -571,6 +570,13 @@ func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.Vul
 		log.Info("The existing pull request is not in sync with the latest scan, updating pull request...")
 	}
 	return
+}
+
+func (cfp *ScanRepositoryCmd) getBaseWd(repoName string) (string, error) {
+	if cfp.dryRun {
+		return filepath.Join(cfp.dryRunRepoPath, repoName), nil
+	}
+	return os.Getwd()
 }
 
 // getMinimalFixVersion find the minimal version that fixes the current impactedPackage;
