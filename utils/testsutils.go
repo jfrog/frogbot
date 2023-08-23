@@ -38,24 +38,12 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 // Prepare test environment for the integration tests
 // projectName - the directory name under testDir
 // Return a cleanup function and the temp dir path
-func PrepareTestEnvironment(t *testing.T, projectName, testDir string, toChdir bool) (tmpDir string, restoreFunc func()) {
+func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	err = fileutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
-
-	// Renames test git folder to .git
-	currentDir := filepath.Join(tmpDir, projectName)
-	if toChdir {
-		restoreDir, err := Chdir(currentDir)
-		assert.NoError(t, err)
-		restoreFunc = func() {
-			assert.NoError(t, restoreDir())
-			assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-		}
-		return
-	}
 	restoreFunc = func() {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}

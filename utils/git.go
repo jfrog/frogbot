@@ -64,14 +64,14 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, token, username string, gitParams *Git) (*GitManager, error) {
+func NewGitManager(username, token string, gitParams *Git, dryRun bool, clonedRepoPath string) (*GitManager, error) {
 	setGoGitCustomClient()
 	basicAuth := toBasicAuth(token, username)
 	templates, err := loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate)
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{dryRunRepoPath: clonedRepoPath, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: gitParams}, nil
+	return &GitManager{dryRunRepoPath: clonedRepoPath, remoteName: "origin", auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: gitParams}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -115,6 +115,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 
 func (gm *GitManager) getRemoteUrl() (string, error) {
 	// Gets the remote repo url from the current .git dir
+	var err error
+	gm.repository, err = git.PlainOpen(".")
+	if err != nil {
+		return "", errors.New("could not find a .git folder in the current working dir:" + err.Error())
+	}
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
 		return "", fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())

@@ -301,7 +301,7 @@ func createFakeDotGit(t *testing.T, testPath string) *GitManager {
 		},
 	})
 	assert.NoError(t, err)
-	manager, err := NewGitManager(true, testPath, "", "", &Git{})
+	manager, err := NewGitManager("", "", &Git{}, true, testPath)
 	manager.repository = repo
 	assert.NoError(t, err)
 	return manager

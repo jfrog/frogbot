@@ -50,7 +50,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	configData, err := utils.ReadConfigFromFileSystem(testScanMultipleRepositoriesConfigPath)
 	assert.NoError(t, err)
 
-	testDir, cleanup := utils.PrepareTestEnvironment(t, "", "scanmultiplerepositories", false)
+	testDir, cleanup := utils.PrepareTestEnvironment(t, "scanmultiplerepositories")
 	defer cleanup()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)

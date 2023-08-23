@@ -14,6 +14,7 @@ import (
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
@@ -528,12 +529,21 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	defer server.Close()
 
 	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
-	_, cleanUp := utils.PrepareTestEnvironment(t, projectName, "scanpullrequest", true)
+	testDir, cleanUp := utils.PrepareTestEnvironment(t, "scanpullrequest")
 	defer cleanUp()
+
+	// Renames test git folder to .git
+	currentDir := filepath.Join(testDir, projectName)
+	restoreDir, err := utils.Chdir(currentDir)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, restoreDir())
+		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
+	}()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(configAggregator, client)
+	err = scanPullRequest.Run(configAggregator, client)
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
 	} else {
