@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -54,6 +55,11 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer cleanup()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)
+	defer func() {
+		for _, testRepo := range testRepositories {
+			assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, testRepo, ".git")))
+		}
+	}()
 	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 	assert.NoError(t, err)
 

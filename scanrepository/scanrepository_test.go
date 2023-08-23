@@ -167,6 +167,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, test.testName, ".git")))
+			}()
 			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
 			assert.NoError(t, err)
 			// Run
@@ -274,6 +277,9 @@ pr body
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, test.testName, ".git")))
+			}()
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 			// Load default configurations
@@ -284,9 +290,6 @@ pr body
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
-			if err != nil {
-				panic(err)
-			}
 			assert.NoError(t, err)
 		})
 	}
