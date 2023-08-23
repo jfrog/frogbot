@@ -347,19 +347,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology)
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
-	//if gm.SkipClone {
-	//	return nil
-	//}
-	//baseWd, err := os.Getwd()
-	//if err != nil {
-	//	return err
-	//}
-	//// Copy all the current directory content to the destination path
-	//// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	//exclude := []string{filepath.Base(destination)}
-	//if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-	//	return err
-	//}
 	// Set the git repository to the new destination .git folder
 	repo, err := git.PlainOpen(destination)
 	if err != nil {

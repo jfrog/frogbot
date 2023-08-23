@@ -382,25 +382,6 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 	return
 }
 
-//	func (cfp *ScanRepositoryCmd) getDryRunClonedRepo() (tempWd string, err error) {
-//		// Check if we already cloned the repository before, for multi projects tests
-//		// Return the existing folder if exists
-//		var files []string
-//		files, err = fileutils.ListFiles(cfp.dryRunRepoPath, true)
-//		if err != nil {
-//			return
-//		}
-//		for _, file := range files {
-//			if strings.Contains(file, "nested-temp.") {
-//				cfp.gitManager.SkipClone = true
-//				tempWd = file
-//				return
-//			}
-//		}
-//		// Create the temp folder nested in the current folder
-//		return os.MkdirTemp(cfp.dryRunRepoPath, "nested-temp.")
-//	}
-//
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
 func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
