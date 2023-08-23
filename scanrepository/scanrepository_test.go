@@ -128,7 +128,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			// Prepare
 			serverParams, restoreEnv := utils.VerifyEnv(t)
-
+			defer restoreEnv()
 			if test.aggregateFixes {
 				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
 				defer func() {
@@ -137,11 +137,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 			var port string
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, nil, test.testName))
-			defer func() {
-				assert.NoError(t, os.Chdir(baseDir))
-				restoreEnv()
-				server.Close()
-			}()
+			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 			gitTestParams := utils.Git{
 				GitProvider: vcsutils.GitHub,
@@ -172,6 +168,10 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
+			defer func() {
+				assert.NoError(t, os.Chdir(baseDir))
+			}()
+
 			// Validate
 			assert.NoError(t, err)
 			for _, branch := range test.expectedBranches {
@@ -189,11 +189,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 // Same scan results -> do nothing.
 // Different scan results -> Update the pull request branch & body.
 func TestAggregatePullRequestLifecycle(t *testing.T) {
-	baseDir, err := os.Getwd()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, os.Chdir(baseDir))
-	}()
 	mockPrId := 1
 	sourceBranchName := "frogbot-update-npm-dependencies"
 	targetBranchName := "main"
@@ -246,6 +241,8 @@ pr body
 		},
 	}
 
+	baseDir, err := os.Getwd()
+	assert.NoError(t, err)
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 	testDir, cleanup := utils.PrepareTestEnvironment(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
@@ -254,9 +251,7 @@ pr body
 		t.Run(test.testName, func(t *testing.T) {
 			var port string
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, test.mockPullRequestResponse, test.testName))
-			defer func() {
-				server.Close()
-			}()
+			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
 
 			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
@@ -274,9 +269,6 @@ pr body
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			defer func() {
-				assert.NoError(t, fileutils.RemoveTempDir(filepath.Join(testDir, test.testName, ".git")))
-			}()
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 			// Load default configurations
@@ -287,6 +279,9 @@ pr body
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
+			defer func() {
+				assert.NoError(t, os.Chdir(baseDir))
+			}()
 			assert.NoError(t, err)
 		})
 	}
