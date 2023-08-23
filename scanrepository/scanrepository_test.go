@@ -284,6 +284,9 @@ pr body
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client)
+			if err != nil {
+				panic(err)
+			}
 			assert.NoError(t, err)
 		})
 	}
