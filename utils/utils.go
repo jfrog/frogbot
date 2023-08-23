@@ -148,14 +148,18 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
-func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) (reporter *usage.UsageReporter) {
-	reporter = usage.NewUsageReporter(productId, serverDetails)
+func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) func() {
+	reporter := usage.NewUsageReporter(productId, serverDetails)
 	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
 		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report")
 	}
 	reporter.Report(reports...)
-	return
+	return func() {
+		if err = reporter.WaitForResponses(); err != nil {
+			log.Debug(usage.ReportUsagePrefix, err.Error())
+		}
+	}
 }
 
 func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {

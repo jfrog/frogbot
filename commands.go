@@ -89,14 +89,14 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	}
 
 	// Send a usage report
-	usageReporter := utils.ReportUsageOnCommand(commandName, frogbotDetails.ServerDetails, frogbotDetails.Repositories)
+	waitForUsageResponse := utils.ReportUsageOnCommand(commandName, frogbotDetails.ServerDetails, frogbotDetails.Repositories)
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
 	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient)
 
 	// Wait for usage reporting to finish.
-	usageReporter.WaitForResponses()
+	waitForUsageResponse()
 
 	if err == nil {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
