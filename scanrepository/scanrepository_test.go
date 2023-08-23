@@ -240,6 +240,11 @@ pr body
 			}},
 		},
 	}
+	baseDir, err := os.Getwd()
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, os.Chdir(baseDir))
+	}()
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 	testDir, cleanup := utils.PrepareTestEnvironment(t, "", rootTestDir, false)
