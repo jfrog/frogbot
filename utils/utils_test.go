@@ -1,20 +1,14 @@
 package utils
 
 import (
-	"bytes"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayusage "github.com/jfrog/jfrog-client-go/xray/usage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,175 +41,29 @@ func TestChdirErr(t *testing.T) {
 	assert.Equal(t, originCwd, cwd)
 }
 
-func TestReportUsage(t *testing.T) {
-	const commandName = "test-command"
-	server := httptest.NewServer(createUsageHandler(t, commandName, "", ""))
-	defer server.Close()
-
-	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsage(commandName, serverDetails, &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
-}
-
-func TestReportUsageError(t *testing.T) {
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsage("", &config.ServerDetails{}, &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
-
-	usageGroup.Add(1)
-	channel = make(chan error)
-	go func() {
-		channel <- ReportUsage("", &config.ServerDetails{ArtifactoryUrl: "http://httpbin.org/status/404"}, &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.Error(t, <-channel)
+func getDummyRepoNames() []string {
+	return []string{"repository1", "repository2"}
 }
 
 func getDummyRepo() RepoAggregator {
-	return RepoAggregator{
-		Repository{
-			Params: Params{
-				Git: Git{
-					RepoName: "repository1",
-				},
-			},
-		},
-		Repository{
-			Params: Params{
-				Git: Git{
-					RepoName: "repository2",
-				},
-			},
-		},
+	repos := RepoAggregator{}
+	names := getDummyRepoNames()
+	for _, name := range names {
+		repos = append(repos, Repository{Params: Params{Git: Git{RepoName: name}}})
 	}
+	return repos
 }
 
-func TestReportEcosystemUsage(t *testing.T) {
+func TestConvertToUsageReports(t *testing.T) {
 	const commandName = "test-command"
-	const accountName = "platform-url"
-	serverDetails := &config.ServerDetails{Url: accountName}
+	repoNames := getDummyRepoNames()
 	repo := getDummyRepo()
-	data, err := CreateEcosystemReports(commandName, serverDetails, repo)
+	features, err := convertToUsageReports(commandName, repo)
 	assert.NoError(t, err)
-	assert.Len(t, data, 2)
-	for i, entry := range data {
-		assert.Equal(t, productId, entry.ProductId)
-		assert.Equal(t, accountName, entry.AccountId)
-		hashed, err := Md5Hash(repo[i].RepoName)
-		assert.NoError(t, err)
-		assert.Equal(t, hashed, entry.ClientId)
-		assert.Equal(t, commandName, entry.Features[0])
-	}
-}
-
-func TestReportEcosystemUsageError(t *testing.T) {
-	const commandName = "test-command"
-	accountName := &config.ServerDetails{Url: "platform-url/"}
-	repos := getDummyRepo()
-	// No features
-	_, err := CreateEcosystemReports("", accountName, repos)
-	assert.Error(t, err)
-	// Np repositories
-	data, err := CreateEcosystemReports(commandName, accountName, RepoAggregator{})
-	assert.NoError(t, err)
-	assert.Len(t, data, 0)
-}
-
-func TestReportXrayUsage(t *testing.T) {
-	const commandName = "test-command"
-	repo := getDummyRepo()
-	server := httptest.NewServer(createUsageHandler(t, commandName, repo[0].RepoName, repo[1].RepoName))
-	defer server.Close()
-
-	serverDetails := &config.ServerDetails{XrayUrl: server.URL + "/"}
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsageToXray(commandName, serverDetails, getDummyRepo(), &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
-}
-
-func TestReportXrayError(t *testing.T) {
-	var usageGroup sync.WaitGroup
-	usageGroup.Add(1)
-	channel := make(chan error)
-	go func() {
-		channel <- ReportUsageToXray("", &config.ServerDetails{}, getDummyRepo(), &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.NoError(t, <-channel)
-
-	usageGroup.Add(1)
-	channel = make(chan error)
-	go func() {
-		channel <- ReportUsageToXray("", &config.ServerDetails{XrayUrl: "http://httpbin.org/status/404"}, getDummyRepo(), &usageGroup)
-	}()
-	usageGroup.Wait()
-	assert.Error(t, <-channel)
-}
-
-// Create HTTP handler to mock an Artifactory/Xray/Ecosystem server suitable for report usage requests
-func createUsageHandler(t *testing.T, commandName, clientId, clientId2 string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Artifactory version
-		if r.RequestURI == "/api/system/version" {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte(`{"version":"6.9.0"}`))
-			assert.NoError(t, err)
-			return
-		}
-		// Xray version
-		if r.RequestURI == "/api/v1/system/version" {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte(`{"xray_version":"6.9.0"}`))
-			assert.NoError(t, err)
-			return
-		}
-		// Artifactory API
-		if r.RequestURI == "/api/system/usage" {
-			// Check request
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
-			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
-
-			// Send response OK
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		}
-		// Xray API
-		if r.RequestURI == "/api/v1/usage/events/send" {
-			// Check request
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
-			assert.NoError(t, err)
-			hashed, err := Md5Hash(clientId)
-			assert.NoError(t, err)
-			hashed2, err := Md5Hash(clientId2)
-			assert.NoError(t, err)
-			featureId := xrayusage.GetExpectedXrayEventName(productId, commandName)
-			assert.Equal(t, fmt.Sprintf(`[{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"},{"data":{"clientId":"%s"},"product_name":"%s","event_name":"%s","origin":"API"}]`, hashed, productId, featureId, hashed2, productId, featureId), buf.String())
-
-			// Send response OK
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		}
+	assert.Len(t, features, 2)
+	for _, feature := range features {
+		assert.Equal(t, commandName, feature.FeatureId)
+		assert.NotContains(t, repoNames, feature.ClientId)
 	}
 }
 

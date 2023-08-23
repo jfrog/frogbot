@@ -10,23 +10,19 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
-	xray "github.com/jfrog/jfrog-cli-core/v2/xray/commands/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/artifactory/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	xrayusage "github.com/jfrog/jfrog-client-go/xray/usage"
 )
 
 const (
@@ -152,117 +148,29 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
-func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) {
-	(*usageGroup).Add(3)
-	// Ecosystem
-	go func() {
-		if e := ReportUsageToEcosystem(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug("Ecosystem "+usage.ReportUsagePrefix, e.Error())
-		}
-	}()
-	// Xray
-	go func() {
-		if e := ReportUsageToXray(commandName, serverDetails, repositories, usageGroup); e != nil {
-			log.Debug("Xray "+usage.ReportUsagePrefix, e.Error())
-		}
-	}()
-	// Artifactory
-	go func() {
-		if e := ReportUsage(commandName, serverDetails, usageGroup); e != nil {
-			log.Debug(usage.ReportUsagePrefix, e.Error())
-		}
-	}()
-}
-
-func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageGroup *sync.WaitGroup) (err error) {
-	defer func() {
-		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
-		// It is however important to the application to not exit before the reporting is finished. That is, in case the reporting takes longer than the action.
-		usageGroup.Done()
-	}()
-	if serverDetails.ArtifactoryUrl == "" {
-		return
-	}
-	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
+func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) (reporter *usage.UsageReporter) {
+	reporter = usage.NewUsageReporter(productId, serverDetails)
+	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
-		return
+		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report")
 	}
-	log.Debug(usage.ReportUsagePrefix, "Sending info...")
-	err = usage.SendReportUsage(productId, commandName, serviceManager)
+	reporter.Report(reports...)
 	return
 }
 
-func ReportUsageToXray(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) (err error) {
-	defer func() {
-		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
-		// Notify the action is done so that the application does not exit before finished
-		usageGroup.Done()
-	}()
-	if serverDetails.XrayUrl == "" {
-		return
-	}
-	sm, err := xray.CreateXrayServiceManager(serverDetails)
-	if err != nil {
-		return
-	}
-	events := []xrayusage.ReportXrayEventData{}
+func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
 	for _, repository := range repositories {
-		// Report one usage event for each repository client
-		clientAttribute, e := createRepositoryClientUsageAttribute(repository)
-		if e != nil {
-			err = errors.Join(err, e)
-			continue
-		}
-		events = append(events, xrayusage.CreateUsageEvent(productId, commandName, *clientAttribute))
-	}
-	if len(events) == 0 {
-		// Nothing to report
-		return
-	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info to Xray...")
-	err = errors.Join(err, xrayusage.SendXrayUsageEvents(*sm, events...))
-	return
-}
-
-func ReportUsageToEcosystem(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator, usageGroup *sync.WaitGroup) (err error) {
-	defer func() {
-		// Notify the action is done so that the application does not exit before finished
-		usageGroup.Done()
-	}()
-	reports, err := CreateEcosystemReports(commandName, serverDetails, repositories)
-	if err != nil || len(reports) == 0 {
-		// Nothing to report
-		return
-	}
-	log.Debug(usage.ReportUsagePrefix + "Sending info to Ecosystem...")
-	err = errors.Join(err, xrayusage.SendEcosystemUsageReports(reports...))
-	return
-}
-
-func CreateEcosystemReports(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) (reports []xrayusage.ReportEcosystemUsageData, err error) {
-	reports = []xrayusage.ReportEcosystemUsageData{}
-	if serverDetails.Url == "" {
-		return
-	}
-	for _, repository := range repositories {
-		// Report one entry for each repository client
-		if clientAttribute, e := createRepositoryClientUsageAttribute(repository); e != nil {
-			err = errors.Join(err, e)
-		} else if usageReport, e := xrayusage.CreateUsageData(productId, serverDetails.Url, clientAttribute.AttributeValue, commandName); e != nil {
+		// Report one entry for each repository as client
+		if clientId, e := Md5Hash(repository.RepoName); e != nil {
 			err = errors.Join(err, e)
 		} else {
-			reports = append(reports, usageReport)
+			reports = append(reports, usage.ReportFeature{
+				FeatureId: commandName,
+				ClientId:  clientId,
+			})
 		}
 	}
 	return
-}
-
-func createRepositoryClientUsageAttribute(repository Repository) (*xrayusage.ReportUsageAttribute, error) {
-	if clientId, err := Md5Hash(repository.RepoName); err != nil {
-		return nil, err
-	} else {
-		return &xrayusage.ReportUsageAttribute{AttributeName: "clientId", AttributeValue: clientId}, nil
-	}
 }
 
 func Md5Hash(values ...string) (string, error) {
