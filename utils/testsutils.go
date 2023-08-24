@@ -2,12 +2,16 @@ package utils
 
 import (
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	goGitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,30 +38,16 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 // Prepare test environment for the integration tests
 // projectName - the directory name under testDir
 // Return a cleanup function and the temp dir path
-func PrepareTestEnvironment(t *testing.T, projectName, testDir string) (string, func()) {
+func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	err = fileutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
-
-	// Renames test git folder to .git
-	currentDir := filepath.Join(tmpDir, projectName)
-	testGitFolderPath := filepath.Join(currentDir, "git")
-	exists, err := fileutils.IsDirExists(testGitFolderPath, false)
-	assert.NoError(t, err)
-	if exists {
-		err = fileutils.CopyDir(testGitFolderPath, filepath.Join(currentDir, ".git"), true, []string{})
-		assert.NoError(t, err)
-		err = fileutils.RemoveTempDir(testGitFolderPath)
-		assert.NoError(t, err)
-	}
-	restoreDir, err := Chdir(currentDir)
-	assert.NoError(t, err)
-	return tmpDir, func() {
-		assert.NoError(t, restoreDir())
+	restoreFunc = func() {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
+	return
 }
 
 // Check connection details with JFrog instance.
@@ -90,4 +80,28 @@ func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 		})
 	}
 	return
+}
+
+func CreateDotGitWithCommit(t *testing.T, wd, port string, repositoriesPath ...string) {
+	for _, repositoryPath := range repositoriesPath {
+		fullWdPath := filepath.Join(wd, repositoryPath)
+		dotGit, err := git.PlainInit(fullWdPath, false)
+		assert.NoError(t, err)
+		_, err = dotGit.CreateRemote(&goGitConfig.RemoteConfig{
+			Name: "origin",
+			URLs: []string{fmt.Sprintf("http://127.0.0.1:%s/%s", port, repositoryPath)},
+		})
+		assert.NoError(t, err)
+		worktree, err := dotGit.Worktree()
+		assert.NoError(t, err)
+		assert.NoError(t, worktree.AddWithOptions(&git.AddOptions{All: true}))
+		_, err = worktree.Commit("first commit", &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "JFrog-Frogbot",
+				Email: "eco-system+frogbot@jfrog.com",
+				When:  time.Now(),
+			},
+		})
+		assert.NoError(t, err)
+	}
 }

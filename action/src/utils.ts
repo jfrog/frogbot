@@ -5,6 +5,7 @@ import { downloadTool, find, cacheFile } from '@actions/tool-cache';
 import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
 import { join } from 'path';
+import {BranchSummary, SimpleGit, simpleGit} from 'simple-git';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
@@ -51,7 +52,7 @@ export class Utils {
         return '';
     }
 
-    public static setFrogbotEnv() {
+    public static async setFrogbotEnv() {
         core.exportVariable('JF_GIT_PROVIDER', 'github');
         core.exportVariable('JF_GIT_OWNER', githubContext.repo.owner);
         let owner: string | undefined = githubContext.repo.repo;
@@ -66,6 +67,9 @@ export class Utils {
      * Execute frogbot scan-pull-request command.
      */
     public static async execScanPullRequest() {
+        if (!process.env.JF_GIT_BASE_BRANCH) {
+            core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref)
+        }
         let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
@@ -76,6 +80,17 @@ export class Utils {
      * Execute frogbot scan-repository command.
      */
     public static async execCreateFixPullRequests() {
+        if (!process.env.JF_GIT_BASE_BRANCH) {
+            // Get the current branch we are checked on
+            const git: SimpleGit = simpleGit();
+            try {
+                const currentBranch: BranchSummary = await git.branch();
+                core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+            } catch (error) {
+                throw new Error('Error getting current branch from the .git folder: ' + error);
+            }
+        }
+
         let res: number = await exec(Utils.getExecutableName(), ['scan-repository']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);

@@ -12,11 +12,8 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/xray/scan"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -70,18 +67,14 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
+func NewGitManager(username, token string, gitParams *Git, dryRun bool, clonedRepoPath string) (*GitManager, error) {
 	setGoGitCustomClient()
-	repository, err := git.PlainOpen(projectPath)
-	if err != nil {
-		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
-	}
 	basicAuth := toBasicAuth(token, username)
-	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+	templates, err := loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate)
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
+	return &GitManager{dryRunRepoPath: clonedRepoPath, remoteName: "origin", auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: gitParams}, nil
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -104,16 +97,15 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	if branchName == "" {
-		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
-		branchName = "master"
-	}
-	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           gitRemoteUrl,
 		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
 		ReferenceName: getFullBranchName(branchName),
+		SingleBranch:  true,
+		Depth:         1,
+		Tags:          git.NoTags,
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
@@ -126,6 +118,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 
 func (gm *GitManager) getRemoteUrl() (string, error) {
 	// Gets the remote repo url from the current .git dir
+	var err error
+	gm.repository, err = git.PlainOpen(".")
+	if err != nil {
+		return "", errors.New("could not find a .git folder in the current working dir:" + err.Error())
+	}
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {
 		return "", fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
@@ -358,19 +355,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology)
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
-	if gm.SkipClone {
-		return nil
-	}
-	baseWd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-		return err
-	}
 	// Set the git repository to the new destination .git folder
 	repo, err := git.PlainOpen(destination)
 	if err != nil {
@@ -416,14 +400,6 @@ func toBasicAuth(token, username string) *githttp.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
-}
-
-func GetBranchFromDotGit() (string, error) {
-	currentRepo, err := git.PlainOpen(".")
-	if err != nil {
-		return "", errors.New("unable to retrieve the branch to scan, as the .git folder was not found in the current working directory. The error that was received: " + err.Error())
-	}
-	return getCurrentBranch(currentRepo)
 }
 
 func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
