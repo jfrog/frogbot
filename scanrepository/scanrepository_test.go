@@ -280,9 +280,6 @@ pr body
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
-			// TODO FIX THIS
-			//client.EXPECT().GetLatestCommit(context.Background(), gitTestParams.RepoOwner, gitTestParams.RepoName, gomock.Any()).Return(vcsclient.CommitInfo{}, nil)
-			//client.EXPECT().GetRepositoryInfo(context.Background(), gitTestParams.RepoOwner, gitTestParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 			// Load default configurations
 			var configData []byte
 			gitTestParams.Branches = []string{"master"}
