@@ -177,7 +177,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			for branch, packages := range test.expectedPackagesInBranch {
 				resultDiff, err := verifyDependencyFileDiff("master", branch, test.packageDescriptorPaths...)
 				assert.NoError(t, err)
-				assert.NotEmpty(t, resultDiff)
+				if len(packages) > 0 {
+					assert.NotEmpty(t, resultDiff)
+				}
 				for _, packageToUpdate := range packages {
 					assert.Contains(t, string(resultDiff), packageToUpdate)
 				}
