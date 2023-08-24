@@ -134,7 +134,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
-		err = errors.Join(err, auditResults.AuditError)
+		err = errors.Join(err, auditResults.ScaError, auditResults.JasError)
 	}
 	return
 }
