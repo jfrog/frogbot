@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/golang/mock v1.6.0
-	github.com/jfrog/build-info-go v1.9.7
+	github.com/jfrog/build-info-go v1.9.8
 	github.com/jfrog/froggit-go v1.13.1
 	github.com/jfrog/gofrog v1.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.40.1
-	github.com/jfrog/jfrog-client-go v1.31.4
+	github.com/jfrog/jfrog-client-go v1.31.5
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/stretchr/testify v1.8.4
@@ -115,4 +115,4 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230823170617-93c36c70e311
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230824112620-48fecfcb4556

@@ -30,42 +30,47 @@ import (
 const rootTestDir = "scanrepository"
 
 var testPackagesData = []struct {
-	packageType coreutils.Technology
+	packageType string
 	commandName string
 	commandArgs []string
 }{
 	{
-		packageType: coreutils.Go,
+		packageType: coreutils.Go.ToString(),
 	},
 	{
-		packageType: coreutils.Maven,
+		packageType: coreutils.Maven.ToString(),
 	},
 	{
-		packageType: coreutils.Gradle,
+		packageType: coreutils.Gradle.ToString(),
 	},
 	{
-		packageType: coreutils.Npm,
+		packageType: coreutils.Npm.ToString(),
 		commandName: "npm",
 		commandArgs: []string{"install"},
 	},
 	{
-		packageType: coreutils.Yarn,
+		packageType: "yarn1",
 		commandName: "yarn",
 		commandArgs: []string{"install"},
 	},
 	{
-		packageType: coreutils.Dotnet,
+		packageType: "yarn2",
+		commandName: "yarn",
+		commandArgs: []string{"install"},
+	},
+	{
+		packageType: coreutils.Dotnet.ToString(),
 		commandName: "dotnet",
 		commandArgs: []string{"restore"},
 	},
 	{
-		packageType: coreutils.Pip,
+		packageType: coreutils.Pip.ToString(),
 	},
 	{
-		packageType: coreutils.Pipenv,
+		packageType: coreutils.Pipenv.ToString(),
 	},
 	{
-		packageType: coreutils.Poetry,
+		packageType: coreutils.Poetry.ToString(),
 	},
 }
 
@@ -332,15 +337,15 @@ func TestPackageTypeFromScan(t *testing.T) {
 	}
 	for _, pkg := range testPackagesData {
 		// Create temp technology project
-		projectPath := filepath.Join("..", "testdata", "projects", pkg.packageType.ToString())
-		t.Run(pkg.packageType.ToString(), func(t *testing.T) {
+		projectPath := filepath.Join("..", "testdata", "projects", pkg.packageType)
+		t.Run(pkg.packageType, func(t *testing.T) {
 			tmpDir, err := fileutils.CreateTempDir()
 			defer func() {
 				err = fileutils.RemoveTempDir(tmpDir)
 			}()
 			assert.NoError(t, err)
 			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
-			if pkg.packageType == coreutils.Gradle {
+			if pkg.packageType == coreutils.Gradle.ToString() {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
@@ -660,10 +665,10 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, expectedPrBody, prBody)
 }
 
-func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType coreutils.Technology) {
+func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType string) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
-			assert.Equal(t, expectedType.ToString(), vulnerability.Technology)
+			assert.Equal(t, expectedType, vulnerability.Technology)
 		}
 	}
 }
