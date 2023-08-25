@@ -45,7 +45,7 @@ func AlertSecretsExposed(secretsDetails *SecretsEmailDetails) (err error) {
 	emailDetails := secretsDetails.EmailDetails
 	emailContent := getSecretsEmailContent(secretsDetails.detectedSecrets, secretsDetails.gitProvider, secretsDetails.pullRequestLink)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpUser)
-	subject := outputwriter.FrogbotTitlePrefix + "  Frogbot detected potential secrets"
+	subject := outputwriter.FrogbotTitlePrefix + " detected potential secrets"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 

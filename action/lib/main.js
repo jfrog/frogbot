@@ -38,7 +38,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Frogbot');
-            const eventName = utils_1.Utils.setFrogbotEnv();
+            const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();
             switch (eventName) {
                 case 'pull_request':
