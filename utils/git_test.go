@@ -227,7 +227,6 @@ func createFakeDotGit(t *testing.T, testPath string) *GitManager {
 }
 
 func TestGitManager_SetRemoteGitUrl(t *testing.T) {
-	// Define test cases
 	testCases := []struct {
 		description       string
 		dotGitExists      bool
@@ -254,14 +253,15 @@ func TestGitManager_SetRemoteGitUrl(t *testing.T) {
 			dotGitExists:      true,
 			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
 			existingRemoteUrl: "https://example.com/owner/repo.git",
-			expectedGitUrl:    "https://example.com/owner/repo.git", // Should remain unchanged
+			expectedGitUrl:    "https://example.com/owner/repo.git",
 		},
 		{
 			description:       "DotGit exists, remote URL is not HTTPS",
 			dotGitExists:      true,
 			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
 			existingRemoteUrl: "ssh://example.com/owner/repo.git",
-			expectedGitUrl:    "https://example.com/owner/repo.git", // Should be updated to the new HTTPS URL
+			// Should be updated to the new HTTPS URL
+			expectedGitUrl: "https://example.com/owner/repo.git",
 		},
 	}
 
