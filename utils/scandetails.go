@@ -44,8 +44,8 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey)
+func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, includeLicences bool) *ScanDetails {
+	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, includeLicences)
 	return sc
 }
 
@@ -94,10 +94,10 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
+func createXrayScanParams(watches []string, project string, includeLicences bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
-		IncludeLicenses: false,
+		IncludeLicenses: includeLicences,
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
