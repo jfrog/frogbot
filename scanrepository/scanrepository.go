@@ -65,7 +65,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
-	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch(repository.RepoName)
+	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
 	if err != nil {
 		return
 	}
@@ -96,7 +96,15 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
-	cfp.gitManager, err = utils.NewGitManager(cfp.details.Username, cfp.details.Token, cfp.details.Git, cfp.dryRun, cfp.dryRunRepoPath)
+	remoteHttpsGitUrl := client.GetGitRemoteURL(cfp.details.RepoOwner, cfp.details.RepoName)
+	cfp.gitManager, err = utils.NewGitManager().
+		SetAuth(cfp.details.Username, cfp.details.Token).
+		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
+		SetRemoteGitUrl(remoteHttpsGitUrl)
+	if err != nil {
+		return
+	}
+	_, err = cfp.gitManager.SetGitParams(cfp.details.Git)
 	return
 }
 
@@ -359,15 +367,14 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 	return pullRequestTitle, prBody, nil
 }
 
-func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch(repoName string) (tempWd string, restoreDir func() error, err error) {
+func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
 	if cfp.dryRun {
-		tempWd = filepath.Join(cfp.dryRunRepoPath, repoName)
+		tempWd = filepath.Join(cfp.dryRunRepoPath, cfp.details.RepoName)
 	} else {
 		// Create temp working directory
-		tempWd, err = fileutils.CreateTempDir()
-	}
-	if err != nil {
-		return
+		if tempWd, err = fileutils.CreateTempDir(); err != nil {
+			return
+		}
 	}
 	log.Debug("Created temp working directory:", tempWd)
 
@@ -407,7 +414,9 @@ func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.Ex
 			}
 		}
 	}
-	log.Debug("Frogbot will attempt to resolve the following vulnerable dependencies:\n", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n"))
+	if len(vulnerabilitiesMap) > 0 {
+		log.Debug("Frogbot will attempt to resolve the following vulnerable dependencies:\n", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n"))
+	}
 	return vulnerabilitiesMap, nil
 }
 
