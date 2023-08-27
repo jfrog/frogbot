@@ -77,12 +77,12 @@ func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, er
 	if err != nil {
 		return nil, err
 	}
-
 	if !dotGitExists {
 		// If .git directory doesn't exist, create it with the given remote URL
 		gm.remoteGitUrl = remoteHttpsGitUrl
-		err = vcsutils.CreateDotGitFolderWithRemote(".", vcsutils.RemoteName, remoteHttpsGitUrl)
-		return gm, err
+		if err = vcsutils.CreateDotGitFolderWithRemote(".", vcsutils.RemoteName, remoteHttpsGitUrl); err != nil {
+			return gm, err
+		}
 	}
 
 	if gm.localGitRepository == nil {
