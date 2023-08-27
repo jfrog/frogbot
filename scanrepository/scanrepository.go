@@ -96,7 +96,11 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetMinSeverity(repository.MinSeverity)
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
-	remoteHttpsGitUrl := client.GetGitRemoteURL(cfp.details.RepoOwner, cfp.details.RepoName)
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.details.RepoOwner, cfp.details.RepoName)
+	if err != nil {
+		return
+	}
+	remoteHttpsGitUrl := repositoryInfo.CloneInfo.HTTP
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.details.Username, cfp.details.Token).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
