@@ -284,6 +284,7 @@ func TestGitManager_SetRemoteGitUrl(t *testing.T) {
 					Name: vcsutils.RemoteName,
 					URLs: []string{tc.existingRemoteUrl},
 				})
+				assert.NoError(t, err)
 			}
 			_, err = gm.SetRemoteGitUrl(tc.remoteHttpsGitUrl)
 			assert.Equal(t, tc.expectedError, err)
