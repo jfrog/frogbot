@@ -33,7 +33,7 @@ const (
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
-	repository *git.Repository
+	localGitRepository *git.Repository
 	// remoteName is name of the Git remote server
 	remoteName string
 	// remoteGitUrl is a URL in HTTPS protocol, to clone the repository
@@ -67,7 +67,7 @@ func NewGitManager() *GitManager {
 }
 
 func (gm *GitManager) SetAuth(username, token string) *GitManager {
-	gm.auth = toBasicAuth(token, username)
+	gm.auth = toBasicAuth(username, token)
 	return gm
 }
 
@@ -85,13 +85,13 @@ func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, er
 		return gm, err
 	}
 
-	if gm.repository == nil {
+	if gm.localGitRepository == nil {
 		if _, err = gm.SetLocalRepository(); err != nil {
 			return gm, err
 		}
 	}
 
-	gitRemote, err := gm.repository.Remote(gm.remoteName)
+	gitRemote, err := gm.localGitRepository.Remote(gm.remoteName)
 	if err != nil {
 		return nil, fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
 	}
@@ -113,7 +113,7 @@ func (gm *GitManager) SetLocalRepository() (*GitManager, error) {
 	var err error
 	// Re-initialize the repository and update remoteName
 	gm.remoteName = vcsutils.RemoteName
-	gm.repository, err = git.PlainOpen(".")
+	gm.localGitRepository, err = git.PlainOpen(".")
 	return gm, err
 }
 
@@ -161,9 +161,9 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, gm.remoteGitUrl, err.Error())
+		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, gm.remoteGitUrl, err.Error())
 	}
-	gm.repository = repo
+	gm.localGitRepository = repo
 	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gm.remoteGitUrl, destinationPath))
 	return nil
 }
@@ -187,7 +187,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 		Branch: getFullBranchName(branchName),
 		Force:  true,
 	}
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
 }
 
 func (gm *GitManager) addAll() error {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (gm *GitManager) addAll() error {
 }
 
 func (gm *GitManager) commit(commitMessage string) error {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	if gm.dryRun {
 		return false, nil
 	}
-	remote, err := gm.repository.Remote(gm.remoteName)
+	remote, err := gm.localGitRepository.Remote(gm.remoteName)
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
@@ -290,7 +290,7 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 		return nil
 	}
 	// Pushing to remote
-	if err := gm.repository.Push(&git.PushOptions{
+	if err := gm.localGitRepository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
 		Force:      force,
@@ -303,7 +303,7 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 
 // IsClean returns true if all the files are in Unmodified status.
 func (gm *GitManager) IsClean() (bool, error) {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return false, err
 	}
@@ -390,11 +390,11 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	if err != nil {
 		return err
 	}
-	gm.repository = repo
+	gm.localGitRepository = repo
 	return nil
 }
 
-func toBasicAuth(token, username string) *githttp.BasicAuth {
+func toBasicAuth(username, token string) *githttp.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {
 		username = "username"
