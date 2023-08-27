@@ -12,10 +12,6 @@ jobs:
     # "frogbot" GitHub environment can approve the pull request to be scanned.
     environment: frogbot
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
       # Install prerequisites
       - name: Setup Go
         uses: actions/setup-go@v3
