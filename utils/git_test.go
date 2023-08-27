@@ -286,7 +286,11 @@ func TestGitManager_SetRemoteGitUrl(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			_, err = gm.SetRemoteGitUrl(tc.remoteHttpsGitUrl)
-			assert.EqualError(t, tc.expectedError, err.Error())
+			if err != nil {
+				assert.EqualError(t, tc.expectedError, err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
 			assert.Equal(t, tc.expectedGitUrl, gm.remoteGitUrl)
 		})
 	}
