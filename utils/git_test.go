@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/jfrog/frogbot/utils/outputwriter"
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -166,89 +167,6 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 	}
 }
 
-func TestConvertSSHtoHTTPS(t *testing.T) {
-	testsCases := []struct {
-		repoName    string
-		repoOwner   string
-		projectName string
-		expected    string
-		apiEndpoint string
-		vcsProvider vcsutils.VcsProvider
-	}{
-		{
-			repoName:    "npmExample",
-			repoOwner:   "repoOwner",
-			expected:    "https://github.com/repoOwner/npmExample.git",
-			apiEndpoint: "https://github.com",
-			vcsProvider: vcsutils.GitHub,
-		}, {
-			repoName:    "npmExample",
-			repoOwner:   "repoOwner",
-			expected:    "https://api.github.com/repoOwner/npmExample.git",
-			apiEndpoint: "https://api.github.com",
-			vcsProvider: vcsutils.GitHub,
-		},
-		{
-			repoName:    "npmProject",
-			repoOwner:   "myTest5551218",
-			apiEndpoint: "https://gitlab.com",
-			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
-			vcsProvider: vcsutils.GitLab,
-		}, {
-			repoName:    "onPremProject",
-			repoOwner:   "myTest5551218",
-			apiEndpoint: "https://gitlab.example.com",
-			expected:    "https://gitlab.example.com/myTest5551218/onPremProject.git",
-			vcsProvider: vcsutils.GitLab,
-		},
-		{
-			repoName:    "npmExample",
-			projectName: "firstProject",
-			repoOwner:   "azureReposOwner",
-			apiEndpoint: "https://dev.azure.com/azureReposOwner/",
-			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmExample",
-			vcsProvider: vcsutils.AzureRepos,
-		}, {
-			repoName:    "npmExample",
-			projectName: "onPremProject",
-			repoOwner:   "organization",
-			apiEndpoint: "https://your-server-name:port/organization/",
-			expected:    "https://organization@your-server-name:port/organization/onPremProject/_git/npmExample",
-			vcsProvider: vcsutils.AzureRepos,
-		},
-		{
-			repoName:    "npmExample",
-			repoOwner:   "~bitbucketServerOwner", // Bitbucket server private projects owners start with ~ prefix.
-			apiEndpoint: "https://git.company.info",
-			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmExample.git",
-			vcsProvider: vcsutils.BitbucketServer,
-		}, {
-			repoName:    "npmExample",
-			repoOwner:   "bitbucketServerOwner", // Public on prem repo
-			apiEndpoint: "https://git.company.info",
-			expected:    "https://git.company.info/scm/bitbucketServerOwner/npmExample.git",
-			vcsProvider: vcsutils.BitbucketServer,
-		}, {
-			repoName:    "notSupported",
-			repoOwner:   "cloudOwner",
-			expected:    "",
-			vcsProvider: vcsutils.BitbucketCloud,
-		},
-	}
-	for _, test := range testsCases {
-		t.Run(test.vcsProvider.String(), func(t *testing.T) {
-			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}
-			remoteUrl, err := gm.generateHTTPSCloneUrl()
-			if remoteUrl == "" {
-				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, test.expected, remoteUrl)
-			}
-		})
-	}
-}
-
 func TestGitManager_Checkout(t *testing.T) {
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -301,8 +219,75 @@ func createFakeDotGit(t *testing.T, testPath string) *GitManager {
 		},
 	})
 	assert.NoError(t, err)
-	manager, err := NewGitManager("", "", &Git{}, true, testPath)
+	manager := NewGitManager().SetDryRun(true, testPath)
 	manager.repository = repo
+	manager.remoteName = vcsutils.RemoteName
 	assert.NoError(t, err)
 	return manager
+}
+
+func TestGitManager_SetRemoteGitUrl(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		description       string
+		dotGitExists      bool
+		remoteGitUrl      string
+		remoteHttpsGitUrl string
+		existingRemoteUrl string
+		expectedError     error
+		expectedGitUrl    string
+	}{
+		{
+			description:       "DotGit does not exist",
+			dotGitExists:      false,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			expectedGitUrl:    "https://example.com/owner/repo.git",
+		},
+		{
+			description:       "DotGit exists, no remote found",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			expectedError:     errors.New("'git remote origin' failed with error: remote not found"),
+		},
+		{
+			description:       "DotGit exists, remote URL exists with HTTPS protocol",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			existingRemoteUrl: "https://example.com/owner/repo.git",
+			expectedGitUrl:    "https://example.com/owner/repo.git", // Should remain unchanged
+		},
+		{
+			description:       "DotGit exists, remote URL is not HTTPS",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			existingRemoteUrl: "ssh://example.com/owner/repo.git",
+			expectedGitUrl:    "https://example.com/owner/repo.git", // Should be updated to the new HTTPS URL
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir, err := fileutils.CreateTempDir()
+			assert.NoError(t, err)
+			baseDir, err := os.Getwd()
+			assert.NoError(t, err)
+			assert.NoError(t, os.Chdir(tmpDir))
+			defer func() {
+				assert.NoError(t, os.Chdir(baseDir))
+			}()
+			gm := NewGitManager().SetDryRun(true, tmpDir)
+			if tc.dotGitExists {
+				gm = createFakeDotGit(t, tmpDir)
+			}
+			if tc.existingRemoteUrl != "" {
+				_, err = gm.repository.CreateRemote(&config.RemoteConfig{
+					Name: vcsutils.RemoteName,
+					URLs: []string{tc.existingRemoteUrl},
+				})
+			}
+			_, err = gm.SetRemoteGitUrl(tc.remoteHttpsGitUrl)
+			assert.Equal(t, tc.expectedError, err)
+			assert.Equal(t, tc.expectedGitUrl, gm.remoteGitUrl)
+		})
+	}
 }
