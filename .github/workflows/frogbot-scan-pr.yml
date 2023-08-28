@@ -31,3 +31,9 @@ jobs:
           # [Mandatory]
           # The GitHub token automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          JF_SMTP_SERVER: ${{ secrets.JF_SMTP_SERVER }}
+
+          JF_SMTP_PASSWORD: ${{ JF_SMTP_PASSWORD }}
+
+          JF_SMTP_USER: ${{ JF_SMTP_USER }}
