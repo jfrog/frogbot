@@ -292,7 +292,7 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 }
 
 func TestNugetPackageHandler_UpdateDependency(t *testing.T) {
-	yarnPackageHandler := &NugetPackageHandler{}
+	nugetPackageHandler := &NugetPackageHandler{}
 	testcases := []dependencyFixTest{
 		{
 			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
@@ -318,7 +318,7 @@ func TestNugetPackageHandler_UpdateDependency(t *testing.T) {
 			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
 			defer cleanup()
-			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
+			err := nugetPackageHandler.UpdateDependency(test.vulnDetails)
 			if test.fixSupported {
 				assert.NoError(t, err)
 			} else {
