@@ -254,6 +254,7 @@ Supported package management tools:
 
 - Go
 - Maven
+- .NET
 - npm
 - Pip
 - Pipenv
