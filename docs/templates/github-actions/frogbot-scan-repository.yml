@@ -16,10 +16,6 @@ jobs:
         # The repository scanning will be triggered periodically on the following branches.
         branch: [ "dev" ]
     steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ matrix.branch }}
-
       - uses: jfrog/frogbot@v2
         env:
           # [Mandatory]
@@ -41,6 +37,10 @@ jobs:
           # [Mandatory]
           # The GitHub token is automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # [Mandatory]
+          # The name of the branch on which Frogbot will perform the scan
+          JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub

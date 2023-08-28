@@ -12,8 +12,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,19 +29,15 @@ const (
 
 	// Timout is seconds for the git operations performed by the go-git client.
 	goGitTimeoutSeconds = 120
-
-	// Https clone url formats for each service provider
-	githubHttpsFormat          = "%s/%s/%s.git"
-	gitLabHttpsFormat          = "%s/%s/%s.git"
-	bitbucketServerHttpsFormat = "%s/scm/%s/%s.git"
-	azureDevopsHttpsFormat     = "https://%s@%s%s/_git/%s"
 )
 
 type GitManager struct {
 	// repository represents a git repository as a .git dir.
-	repository *git.Repository
+	localGitRepository *git.Repository
 	// remoteName is name of the Git remote server
 	remoteName string
+	// remoteGitUrl is a URL in HTTPS protocol, to clone the repository
+	remoteGitUrl string
 	// The authentication struct consisting a username/password
 	auth *githttp.BasicAuth
 	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
@@ -67,18 +61,75 @@ type CustomTemplates struct {
 	pullRequestTitleTemplate string
 }
 
-func NewGitManager(dryRun bool, clonedRepoPath, projectPath, remoteName, token, username string, g *Git) (*GitManager, error) {
+func NewGitManager() *GitManager {
 	setGoGitCustomClient()
-	repository, err := git.PlainOpen(projectPath)
-	if err != nil {
-		return nil, fmt.Errorf(".git folder was not found in the following path: %s. git error:\n%s", projectPath, err.Error())
-	}
-	basicAuth := toBasicAuth(token, username)
-	templates, err := loadCustomTemplates(g.CommitMessageTemplate, g.BranchNameTemplate, g.PullRequestTitleTemplate)
+	return &GitManager{}
+}
+
+func (gm *GitManager) SetAuth(username, token string) *GitManager {
+	gm.auth = toBasicAuth(username, token)
+	return gm
+}
+
+func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, error) {
+	// Check if the .git directory exists
+	dotGitExists, err := fileutils.IsDirExists(git.GitDirName, false)
 	if err != nil {
 		return nil, err
 	}
-	return &GitManager{repository: repository, dryRunRepoPath: clonedRepoPath, remoteName: remoteName, auth: basicAuth, dryRun: dryRun, customTemplates: templates, git: g}, nil
+	if !dotGitExists {
+		// If .git directory doesn't exist, create it with the given remote URL
+		gm.remoteGitUrl = remoteHttpsGitUrl
+		if err = vcsutils.CreateDotGitFolderWithRemote(".", vcsutils.RemoteName, remoteHttpsGitUrl); err != nil {
+			return gm, err
+		}
+	}
+
+	if gm.localGitRepository == nil {
+		if _, err = gm.SetLocalRepository(); err != nil {
+			return gm, err
+		}
+	}
+
+	gitRemote, err := gm.localGitRepository.Remote(gm.remoteName)
+	if err != nil {
+		return nil, fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
+	}
+
+	if len(gitRemote.Config().URLs) < 1 {
+		return nil, errors.New("failed to find git remote URL")
+	}
+
+	gm.remoteGitUrl = gitRemote.Config().URLs[0]
+
+	// If the remote URL in the .git directory is not using the HTTPS protocol, update remoteGitUrl to use HTTPS protocol.
+	if !strings.HasPrefix(gm.remoteGitUrl, "https://") {
+		gm.remoteGitUrl = remoteHttpsGitUrl
+	}
+	return gm, nil
+}
+
+func (gm *GitManager) SetLocalRepository() (*GitManager, error) {
+	var err error
+	// Re-initialize the repository and update remoteName
+	gm.remoteName = vcsutils.RemoteName
+	gm.localGitRepository, err = git.PlainOpen(".")
+	return gm, err
+}
+
+func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
+	var err error
+	if gm.customTemplates, err = loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate); err != nil {
+		return nil, err
+	}
+	gm.git = gitParams
+	return gm, nil
+}
+
+func (gm *GitManager) SetDryRun(dryRun bool, dryRunRepoPath string) *GitManager {
+	gm.dryRun = dryRun
+	gm.dryRunRepoPath = dryRunRepoPath
+	return gm
 }
 
 func (gm *GitManager) Checkout(branchName string) error {
@@ -94,48 +145,27 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		// "Clone" the repository from the testdata folder
 		return gm.dryRunClone(destinationPath)
 	}
-	gitRemoteUrl, err := gm.getRemoteUrl()
-	if err != nil {
-		return err
-	}
+
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	if branchName == "" {
-		log.Debug("Since no branch name was set, assuming 'master' as the default branch")
-		branchName = "master"
-	}
-	log.Debug(fmt.Sprintf("Cloning repository with these details:\nClone url: %s remote name: %s, branch: %s", gitRemoteUrl, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gm.remoteGitUrl, gm.remoteName, getFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
-		URL:           gitRemoteUrl,
+		URL:           gm.remoteGitUrl,
 		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
 		ReferenceName: getFullBranchName(branchName),
+		SingleBranch:  true,
+		Depth:         1,
+		Tags:          git.NoTags,
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("'git clone %s from %s' failed with error: %s", branchName, gitRemoteUrl, err.Error())
+		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, gm.remoteGitUrl, err.Error())
 	}
-	gm.repository = repo
-	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gitRemoteUrl, destinationPath))
+	gm.localGitRepository = repo
+	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gm.remoteGitUrl, destinationPath))
 	return nil
-}
-
-func (gm *GitManager) getRemoteUrl() (string, error) {
-	// Gets the remote repo url from the current .git dir
-	gitRemote, err := gm.repository.Remote(gm.remoteName)
-	if err != nil {
-		return "", fmt.Errorf("'git remote %s' failed with error: %s", gm.remoteName, err.Error())
-	}
-	if len(gitRemote.Config().URLs) < 1 {
-		return "", errors.New("failed to find git remote URL")
-	}
-	remoteUrl := gitRemote.Config().URLs[0]
-	if strings.HasPrefix(remoteUrl, "https://") {
-		return remoteUrl, nil
-	}
-	// Handle SSH clone urls
-	return gm.generateHTTPSCloneUrl()
 }
 
 func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
@@ -157,7 +187,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 		Branch: getFullBranchName(branchName),
 		Force:  true,
 	}
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -182,7 +212,7 @@ func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
 }
 
 func (gm *GitManager) addAll() error {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -215,7 +245,7 @@ func (gm *GitManager) addAll() error {
 }
 
 func (gm *GitManager) commit(commitMessage string) error {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return err
 	}
@@ -236,7 +266,7 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	if gm.dryRun {
 		return false, nil
 	}
-	remote, err := gm.repository.Remote(gm.remoteName)
+	remote, err := gm.localGitRepository.Remote(gm.remoteName)
 	if err != nil {
 		return false, errorutils.CheckError(err)
 	}
@@ -260,7 +290,7 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 		return nil
 	}
 	// Pushing to remote
-	if err := gm.repository.Push(&git.PushOptions{
+	if err := gm.localGitRepository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
 		Force:      force,
@@ -273,7 +303,7 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 
 // IsClean returns true if all the files are in Unmodified status.
 func (gm *GitManager) IsClean() (bool, error) {
-	worktree, err := gm.repository.Worktree()
+	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
 		return false, err
 	}
@@ -355,48 +385,16 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology)
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
-	if gm.SkipClone {
-		return nil
-	}
-	baseWd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	// Copy all the current directory content to the destination path
-	// In order to avoid an endless loop when copying into the current directory, exclude the target folder.
-	exclude := []string{filepath.Base(destination)}
-	if err = fileutils.CopyDir(baseWd, destination, true, exclude); err != nil {
-		return err
-	}
 	// Set the git repository to the new destination .git folder
 	repo, err := git.PlainOpen(destination)
 	if err != nil {
 		return err
 	}
-	gm.repository = repo
+	gm.localGitRepository = repo
 	return nil
 }
 
-// Construct HTTPS clone url from the provided git info.
-// Frogbot already has an access token with sufficient permissions to clone with HTTPS,
-// in case we encounter SSH clone url, we generate HTTPS url instead.
-func (gm *GitManager) generateHTTPSCloneUrl() (url string, err error) {
-	switch gm.git.GitProvider {
-	case vcsutils.GitHub:
-		return fmt.Sprintf(githubHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.GitLab:
-		return fmt.Sprintf(gitLabHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.BitbucketServer:
-		return fmt.Sprintf(bitbucketServerHttpsFormat, gm.git.APIEndpoint, gm.git.RepoOwner, gm.git.RepoName), nil
-	case vcsutils.AzureRepos:
-		azureEndpointWithoutHttps := strings.Join(strings.Split(gm.git.APIEndpoint, "https://")[1:], "")
-		return fmt.Sprintf(azureDevopsHttpsFormat, gm.git.RepoOwner, azureEndpointWithoutHttps, gm.git.Project, gm.git.RepoName), nil
-	default:
-		return "", fmt.Errorf("unsupported version control provider: %s", gm.git.GitProvider.String())
-	}
-}
-
-func toBasicAuth(token, username string) *githttp.BasicAuth {
+func toBasicAuth(username, token string) *githttp.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {
 		username = "username"
@@ -413,14 +411,6 @@ func toBasicAuth(token, username string) *githttp.BasicAuth {
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
 func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
-}
-
-func GetBranchFromDotGit() (string, error) {
-	currentRepo, err := git.PlainOpen(".")
-	if err != nil {
-		return "", errors.New("unable to retrieve the branch to scan, as the .git folder was not found in the current working directory. The error that was received: " + err.Error())
-	}
-	return getCurrentBranch(currentRepo)
 }
 
 func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
