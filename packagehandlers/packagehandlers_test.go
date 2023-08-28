@@ -291,6 +291,44 @@ func TestMavenPackageHandler_UpdateDependency(t *testing.T) {
 	}
 }
 
+func TestNugetPackageHandler_UpdateDependency(t *testing.T) {
+	yarnPackageHandler := &NugetPackageHandler{}
+	testcases := []dependencyFixTest{
+		{
+			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.1.1",
+				IsDirectDependency:          false,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+			},
+			fixSupported: false,
+		},
+		{
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.1.1",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+			},
+			fixSupported: true,
+		},
+	}
+	for _, test := range testcases {
+
+		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
+			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
+			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+			defer cleanup()
+			err := yarnPackageHandler.UpdateDependency(test.vulnDetails)
+			if test.fixSupported {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err, "Expected error to occur")
+				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+			}
+		})
+	}
+}
+
 // Maven utils functions
 func TestGetDependenciesFromPomXmlSingleDependency(t *testing.T) {
 	testCases := []string{`<dependency>

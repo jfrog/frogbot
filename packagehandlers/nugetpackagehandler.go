@@ -2,6 +2,7 @@ package packagehandlers
 
 import (
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"strings"
 )
 
@@ -29,5 +30,6 @@ func (dotnet *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vul
 	installationCommand := vulnDetails.Technology.GetPackageInstallationCommand()
 	operator := vulnDetails.Technology.GetPackageOperator()
 	commandArgs = append(commandArgs, installationCommand, dotnetPackageUpgradeExtraArg, impactedPackage, operator, vulnDetails.SuggestedFixedVersion)
+	log.Debug("Fixing vulnerabilities for .NET projects is performed using .NET CLI (not NuGet CLI). Make sure to have .NET CLI v3.1+ installed")
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
 }
