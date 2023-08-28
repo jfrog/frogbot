@@ -6,23 +6,23 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/jfrog/jfrog-client-go/artifactory/usage"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
+	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
@@ -148,27 +148,33 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
-func ReportUsage(commandName string, serverDetails *config.ServerDetails, usageReportSent chan<- error) {
-	var err error
-	defer func() {
-		// The usage reporting is meant to run asynchronously, so that the actual action isn't delayed.
-		// It is however important to the application to not exit before the reporting is finished. That is, in case the reporting takes longer than the action.
-		usageReportSent <- err
-	}()
-	if serverDetails.ArtifactoryUrl == "" {
-		return
-	}
-	log.Debug(usage.ReportUsagePrefix, "Sending info...")
-	serviceManager, err := utils.CreateServiceManager(serverDetails, -1, 0, false)
+func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) func() {
+	reporter := usage.NewUsageReporter(productId, serverDetails)
+	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix, err.Error())
-		return
+		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report")
 	}
-	err = usage.SendReportUsage(productId, commandName, serviceManager)
-	if err != nil {
-		log.Debug(err.Error())
-		return
+	reporter.Report(reports...)
+	return func() {
+		if err = reporter.WaitForResponses(); err != nil {
+			log.Debug(err.Error())
+		}
 	}
+}
+
+func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
+	for _, repository := range repositories {
+		// Report one entry for each repository as client
+		if clientId, e := Md5Hash(repository.RepoName); e != nil {
+			err = errors.Join(err, e)
+		} else {
+			reports = append(reports, usage.ReportFeature{
+				FeatureId: commandName,
+				ClientId:  clientId,
+			})
+		}
+	}
+	return
 }
 
 func Md5Hash(values ...string) (string, error) {
