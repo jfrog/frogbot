@@ -157,7 +157,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	reporter.Report(reports...)
 	return func() {
 		if err = reporter.WaitForResponses(); err != nil {
-			log.Debug(usage.ReportUsagePrefix, err.Error())
+			log.Debug(err.Error())
 		}
 	}
 }
