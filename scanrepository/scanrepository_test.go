@@ -55,11 +55,6 @@ var testPackagesData = []struct {
 		commandName: "yarn",
 		commandArgs: []string{"install"},
 	},
-	//{
-	//	packageType: coreutils.Dotnet.ToString(),
-	//	commandName: "dotnet",
-	//	commandArgs: []string{"restore"},
-	//},
 	{
 		packageType: coreutils.Nuget.ToString(),
 		commandName: "nuget",
