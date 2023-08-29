@@ -1,18 +1,15 @@
 package utils
 
 import (
-	"bytes"
-	"fmt"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
+
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChdir(t *testing.T) {
@@ -44,48 +41,29 @@ func TestChdirErr(t *testing.T) {
 	assert.Equal(t, originCwd, cwd)
 }
 
-func TestReportUsage(t *testing.T) {
+func getDummyRepoNames() []string {
+	return []string{"repository1", "repository2"}
+}
+
+func getDummyRepo() RepoAggregator {
+	repos := RepoAggregator{}
+	names := getDummyRepoNames()
+	for _, name := range names {
+		repos = append(repos, Repository{Params: Params{Git: Git{RepoName: name}}})
+	}
+	return repos
+}
+
+func TestConvertToUsageReports(t *testing.T) {
 	const commandName = "test-command"
-	server := httptest.NewServer(createUsageHandler(t, commandName))
-	defer server.Close()
-
-	serverDetails := &config.ServerDetails{ArtifactoryUrl: server.URL + "/"}
-	channel := make(chan error)
-	go ReportUsage(commandName, serverDetails, channel)
-	assert.NoError(t, <-channel)
-}
-
-func TestReportUsageError(t *testing.T) {
-	channel := make(chan error)
-	go ReportUsage("", &config.ServerDetails{}, channel)
-	assert.NoError(t, <-channel)
-
-	channel = make(chan error)
-	go ReportUsage("", &config.ServerDetails{ArtifactoryUrl: "http://httpbin.org/status/404"}, channel)
-	assert.Error(t, <-channel)
-}
-
-// Create HTTP handler to mock an Artifactory server suitable for report usage requests
-func createUsageHandler(t *testing.T, commandName string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == "/api/system/version" {
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte(`{"version":"6.9.0"}`))
-			assert.NoError(t, err)
-			return
-		}
-		if r.RequestURI == "/api/system/usage" {
-			// Check request
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
-			assert.NoError(t, err)
-			assert.Equal(t, fmt.Sprintf(`{"productId":"%s","features":[{"featureId":"%s"}]}`, productId, commandName), buf.String())
-
-			// Send response OK
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		}
+	repoNames := getDummyRepoNames()
+	repo := getDummyRepo()
+	features, err := convertToUsageReports(commandName, repo)
+	assert.NoError(t, err)
+	assert.Len(t, features, 2)
+	for _, feature := range features {
+		assert.Equal(t, commandName, feature.FeatureId)
+		assert.NotContains(t, repoNames, feature.ClientId)
 	}
 }
 
