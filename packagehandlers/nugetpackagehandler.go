@@ -1,7 +1,6 @@
 package packagehandlers
 
 import (
-	"fmt"
 	"github.com/jfrog/frogbot/utils"
 )
 
@@ -24,9 +23,5 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
-	if err != nil {
-		err = fmt.Errorf("failed to update NuGet package with error:\n%w", err)
-	}
-	return
+	return nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
 }

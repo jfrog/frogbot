@@ -571,3 +571,30 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	default:
 	}
 }
+
+func TestGetFixedPackage(t *testing.T) {
+	var testcases = []struct {
+		impactedPackage       string
+		versionOperator       string
+		suggestedFixedVersion string
+		expectedOutput        []string
+	}{
+		{
+			impactedPackage:       "snappier",
+			versionOperator:       " -v ",
+			suggestedFixedVersion: "1.1.1",
+			expectedOutput:        []string{"snappier", "-v", "1.1.1"},
+		},
+		{
+			impactedPackage:       "json",
+			versionOperator:       "@",
+			suggestedFixedVersion: "10.0.0",
+			expectedOutput:        []string{"json@10.0.0"},
+		},
+	}
+
+	for _, test := range testcases {
+		fixedPackageArgs := getFixedPackage(test.impactedPackage, test.versionOperator, test.suggestedFixedVersion)
+		assert.Equal(t, test.expectedOutput, fixedPackageArgs)
+	}
+}
