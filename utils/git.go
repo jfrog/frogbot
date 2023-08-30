@@ -114,11 +114,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 }
 
 func (gm *GitManager) getRemoteUrl() (string, error) {
-	// Gets the remote repo url from the current .git dir
+	// Get the remote repo url from the current .git dir
 	var err error
 	gm.repository, err = git.PlainOpen(".")
 	if err != nil {
-		return "", errors.New("could not find a .git folder in the current working dir:" + err.Error())
+		return "", errors.New("could not find a .git folder in the current working dir: " + err.Error())
 	}
 	gitRemote, err := gm.repository.Remote(gm.remoteName)
 	if err != nil {

@@ -89,7 +89,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	cfp.details = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
+		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, false).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetBaseBranch(branch).
 		SetFixableOnly(repository.FixableOnly).

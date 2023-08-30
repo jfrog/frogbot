@@ -172,3 +172,21 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 	}
 	return msg
 }
+
+func (so *StandardOutput) LicensesContent(licenses []formats.LicenseBaseWithKey) string {
+	if len(licenses) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(`
+## 🪪 Forbidden Licenses 
+
+<div align="center">
+
+%s %s
+
+</div>
+
+`,
+		licenseTableHeader,
+		getLicensesTableContent(licenses, so))
+}

@@ -188,7 +188,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	hash := crypto.MD5.New()
 	var keys []string
 	for _, vuln := range vulnerabilities {
-		keys = append(keys, GetUniqueID(vuln))
+		keys = append(keys, GetVulnerabiltiesUniqueID(vuln))
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
@@ -300,7 +300,7 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 	return
 }
 
-func GetUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
+func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return xrayutils.GetUniqueKey(
 		vulnerability.ImpactedDependencyName,
 		vulnerability.ImpactedDependencyVersion,

@@ -15,6 +15,7 @@ const (
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -95,6 +96,7 @@ const (
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
+	LicensesContent(licenses []formats.LicenseBaseWithKey) string
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
@@ -184,11 +186,23 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 }
 
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
-	var tableContent string
+	var tableContent strings.Builder
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
+		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text))
 	}
-	return tableContent
+	return tableContent.String()
+}
+
+func getLicensesTableContent(licenses []formats.LicenseBaseWithKey, writer OutputWriter) string {
+	var tableContent strings.Builder
+	for _, license := range licenses {
+		var licenseComponents strings.Builder
+		for _, component := range license.Components {
+			licenseComponents.WriteString(fmt.Sprintf("%s %s %s", component.Name, component.Version, writer.Separator()))
+		}
+		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, licenseComponents.String(), license.ImpactedDependencyName))
+	}
+	return tableContent.String()
 }
 
 func MarkdownComment(text string) string {

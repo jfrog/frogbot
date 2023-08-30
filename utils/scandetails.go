@@ -107,7 +107,6 @@ func createXrayScanParams(watches []string, project string, includeLicences bool
 		params.ProjectKey = project
 		return
 	}
-	// No context was supplied. We therefore request from Xray to return all known vulnerabilities.
 	params.IncludeVulnerabilities = true
 	return
 }

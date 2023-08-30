@@ -122,6 +122,21 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 		getIacTableContent(iacRows, smo))
 }
 
+func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseBaseWithKey) string {
+	if len(licenses) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+## 🪪 Forbidden Licenses 
+
+%s %s
+
+`,
+		licenseTableHeader,
+		getLicensesTableContent(licenses, smo))
+}
+
 func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
 }
