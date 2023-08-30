@@ -324,7 +324,7 @@ func TestNugetPackageHandler_UpdateDependency(t *testing.T) {
 					assert.NoError(t, err)
 				} else {
 					assert.Error(t, err)
-					assert.ErrorAs(t, err, &utils.ErrUnsupportedFix{})
+					assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 				}
 			})
 	}
