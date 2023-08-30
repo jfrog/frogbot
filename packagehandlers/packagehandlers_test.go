@@ -24,7 +24,10 @@ type dependencyFixTest struct {
 	uniqueChecksExtraArgs []string
 }
 
-const requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
+const (
+	requirementsFile    = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
+	GoPackageDescriptor = "go.mod"
+)
 
 type pipPackageRegexTest struct {
 	packageName         string
@@ -42,7 +45,7 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
 				},
 				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{"go.mod"},
+				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -51,7 +54,7 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
 				},
 				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{"go.mod"},
+				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -60,7 +63,7 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
 				},
 				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{"go.mod"},
+				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
 			},
 		},
 
