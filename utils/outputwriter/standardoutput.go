@@ -2,9 +2,10 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
 )
 
 type StandardOutput struct {
@@ -136,8 +137,27 @@ func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 </div>
 
 `,
-		iacTableHeader,
-		getIacTableContent(iacRows, so))
+		sourceCodeTableHeader,
+		getSourceCodeTableContent(iacRows, so))
+}
+
+func (so *StandardOutput) SastContent(sastRows []formats.SourceCodeRow) string {
+	if len(sastRows) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+## 🔐 Static Application Security Testing (SAST) 
+
+<div align="center">
+
+%s %s
+
+</div>
+
+`,
+		sourceCodeTableHeader,
+		getSourceCodeTableContent(sastRows, so))
 }
 
 func (so *StandardOutput) Footer() string {
@@ -165,7 +185,7 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 			`
 <div align="center">
 
-**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
+**Frogbot** also supports **Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
 
 </div>
 `

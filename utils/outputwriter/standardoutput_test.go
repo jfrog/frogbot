@@ -2,11 +2,12 @@ package outputwriter
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestStandardOutput_TableRow(t *testing.T) {
@@ -271,9 +272,9 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					Severity:         "High",
 					SeverityNumValue: 3,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn:       "11:1",
-						Text:             "Missing Periodic patching was detected",
+						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
+						LineColumn: "11:1",
+						Text:       "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -286,18 +287,18 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					Severity:         "High",
 					SeverityNumValue: 3,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "applicable/req_sw_terraform_azure_redis_patch.tf",
-						LineColumn:       "11:1",
-						Text:             "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
+						LineColumn: "11:1",
+						Text:       "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
 					},
 				},
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn:       "11:1",
-						Text:             "Missing Periodic patching was detected",	
+						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
+						LineColumn: "11:1",
+						Text:       "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -332,11 +333,11 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					Severity:         "Medium",
 					SeverityNumValue: 2,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file1",
-						LineColumn:       "1:10",
-						Text:             "Public access to MySQL was detected",
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Public access to MySQL was detected",
 					},
-					Type:             "azure_mysql_no_public",
+					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected |",
@@ -348,21 +349,21 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					Severity:         "High",
 					SeverityNumValue: 3,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file1",
-						LineColumn:       "1:10",
-						Text:             "Public access to MySQL was detected",
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Public access to MySQL was detected",
 					},
-					Type:             "azure_mysql_no_public",
+					Type: "azure_mysql_no_public",
 				},
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file2",
-						LineColumn:       "2:5",
-						Text:             "Public access to MySQL was detected",
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "Public access to MySQL was detected",
 					},
-					Type:             "azure_mysql_no_public",
+					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected |",
@@ -371,7 +372,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := getIacTableContent(tc.iacRows, &StandardOutput{})
+			output := getSourceCodeTableContent(tc.iacRows, &StandardOutput{})
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}

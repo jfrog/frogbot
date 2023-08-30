@@ -5,6 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -18,14 +27,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -379,7 +380,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities, nil, &outputwriter.StandardOutput{})
+	message := createPullRequestMessage(vulnerabilities, nil, nil, &outputwriter.StandardOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -388,7 +389,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 
 	outputWriter := &outputwriter.StandardOutput{}
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, nil, outputWriter)
+	message = createPullRequestMessage(vulnerabilities, nil, nil, outputWriter)
 
 	expectedMessageByte, err = os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilitiesMR.md"))
 	assert.NoError(t, err)
@@ -442,33 +443,33 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	iac := []formats.SourceCodeRow{
 		{
-			Severity:   "Low",
+			Severity: "Low",
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test.js",
 				LineColumn: "1:20",
 				Text:       "kms_key_id='' was detected",
 			},
-			Type:       "aws_cloudtrail_encrypt",
+			Type: "aws_cloudtrail_encrypt",
 		},
 		{
-			Severity:   "High",
+			Severity: "High",
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test2.js",
 				LineColumn: "4:30",
 				Text:       "Deprecated TLS version was detected",
 			},
-			Type:       "aws_cloudfront_tls_version",
+			Type: "aws_cloudfront_tls_version",
 		},
 	}
 	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
-	message := createPullRequestMessage(vulnerabilities, iac, writerOutput)
+	message := createPullRequestMessage(vulnerabilities, iac, nil, writerOutput)
 
 	expectedMessage := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, iac, writerOutput)
+	message = createPullRequestMessage(vulnerabilities, iac, nil, writerOutput)
 	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 }
@@ -725,7 +726,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			name: "No vulnerabilities in source IaC results",
 			targetIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
@@ -741,7 +742,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			targetIacResults: []xrayutils.SourceCodeScanResult{},
 			sourceIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
@@ -751,11 +752,11 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "High",
+					Severity: "High",
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file1",
-						LineColumn:       "1:10",
-						Text:             "aws violation",
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "aws violation",
 					},
 					SeverityNumValue: 10,
 				},
@@ -765,7 +766,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			name: "Some new vulnerabilities in source IaC results",
 			targetIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
@@ -775,7 +776,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			sourceIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "Medium",
+					Severity: "Medium",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file2",
 						LineColumn: "2:5",
@@ -788,9 +789,9 @@ func TestCreateNewIacRows(t *testing.T) {
 					Severity:         "Medium",
 					SeverityNumValue: 8,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file2",
-						LineColumn:       "2:5",
-						Text:             "gcp violation",
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "gcp violation",
 					},
 				},
 			},
@@ -801,7 +802,7 @@ func TestCreateNewIacRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetIacRows := xrayutils.PrepareSecrets(tc.targetIacResults)
 			sourceIacRows := xrayutils.PrepareSecrets(tc.sourceIacResults)
-			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
@@ -818,13 +819,13 @@ func TestCreateNewSecretRows(t *testing.T) {
 			name: "No vulnerabilities in source secrets results",
 			targetSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
 						Text:       "Sensitive information",
 					},
-					Type:       "Secret",
+					Type: "Secret",
 				},
 			},
 			sourceSecretsResults:                []xrayutils.SourceCodeScanResult{},
@@ -835,22 +836,22 @@ func TestCreateNewSecretRows(t *testing.T) {
 			targetSecretsResults: []xrayutils.SourceCodeScanResult{},
 			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
 						Text:       "Sensitive information",
 					},
-					Type:       "Secret",
+					Type: "Secret",
 				},
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "High",
+					Severity: "High",
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file1",
-						LineColumn:       "1:10",
-						Text:             "Sensitive information",
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Sensitive information",
 					},
 					Type:             "Secret",
 					SeverityNumValue: 10,
@@ -861,24 +862,24 @@ func TestCreateNewSecretRows(t *testing.T) {
 			name: "Some new vulnerabilities in source secrets results",
 			targetSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
+					Severity: "High",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
 						Text:       "Sensitive information",
 					},
-					Type:       "Secret",
+					Type: "Secret",
 				},
 			},
 			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "Medium",
+					Severity: "Medium",
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file2",
 						LineColumn: "2:5",
 						Text:       "Confidential data",
 					},
-					Type:       "Secret",
+					Type: "Secret",
 				},
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
@@ -886,11 +887,11 @@ func TestCreateNewSecretRows(t *testing.T) {
 					Severity:         "Medium",
 					SeverityNumValue: 8,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:             "file2",
-						LineColumn:       "2:5",
-						Text:             "Confidential data",
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "Confidential data",
 					},
-					Type:             "Secret",
+					Type: "Secret",
 				},
 			},
 		},
@@ -900,7 +901,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetSecretsRows := xrayutils.PrepareSecrets(tc.targetSecretsResults)
 			sourceSecretsRows := xrayutils.PrepareSecrets(tc.sourceSecretsResults)
-			addedSecretsVulnerabilities := createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}

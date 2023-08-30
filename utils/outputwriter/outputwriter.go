@@ -2,11 +2,12 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"strings"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	sourceCodeTableHeader                            = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -99,6 +100,7 @@ type OutputWriter interface {
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	IacContent(iacRows []formats.SourceCodeRow) string
+	SastContent(sastRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
 	FormattedSeverity(severity, applicability string) string
@@ -183,10 +185,10 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 	return tableContent
 }
 
-func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
+func getSourceCodeTableContent(rows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
-	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
+	for _, row := range rows {
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(row.Severity, xrayutils.ApplicableStringValue), row.File, row.LineColumn, row.Text)
 	}
 	return tableContent
 }
