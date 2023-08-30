@@ -3,7 +3,6 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"strings"
 )
 
@@ -33,7 +32,6 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	commandArgs = append(commandArgs, installationCommand, dotnetPackageUpgradeExtraArg, impactedPackage, operator, vulnDetails.SuggestedFixedVersion)
 	err = runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
 	if err != nil {
-		log.Debug("Fixing vulnerabilities for .NET projects is performed using .NET CLI. Make sure to have .NET CLI v3.1+ installed")
 		err = fmt.Errorf("failed to update nuget package with error:\n%w", err)
 	}
 	return
