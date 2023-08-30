@@ -65,7 +65,75 @@ func TestUpdateDependency(t *testing.T) {
 			},
 		},
 
-		// TODO Python test cases
+		// Python test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.25.9",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
+				},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.25.9",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"},
+				},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproejct.toml"}},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.25.9",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"},
+				},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+					IsDirectDependency:          true,
+				},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
+					IsDirectDependency:          true},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+					IsDirectDependency:          true},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "setup.py"}},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
+					IsDirectDependency:          true},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
+					IsDirectDependency:          true},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
+				fixSupported: true,
+			},
+		},
+
 		// Npm test cases
 		{
 			{
@@ -135,14 +203,12 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: false,
 			},
 		},
-
-		// TODO NuGet test cases
 	}
 
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
 			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
-			t.Run(test.vulnDetails.Technology.ToString()+test.specificTechVersion+":"+test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency),
+			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.ToString()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 					cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString()+test.specificTechVersion)
