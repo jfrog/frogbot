@@ -30,8 +30,6 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	case coreutils.Maven:
 		handler = &MavenPackageHandler{depsRepo: details.DepsRepo, ServerDetails: details.ServerDetails}
-	case coreutils.Nuget, coreutils.Dotnet:
-		// TODO add NugetPackageHandler after merge of nuget fix
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
