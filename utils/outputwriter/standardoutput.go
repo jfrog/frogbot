@@ -14,19 +14,22 @@ type StandardOutput struct {
 }
 
 func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	var directDependencies strings.Builder
+	directDependencies := strings.Builder{}
 	for _, dependency := range vulnerability.Components {
 		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Separator()))
 	}
 
+	cves := getTableRowCves(vulnerability, so)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, so)
 	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
-	row += fmt.Sprintf("%s | %s | %s |",
+	row += fmt.Sprintf("%s | %s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Separator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, so.Separator()),
+		fixedVersions,
+		cves,
 	)
 	return row
 }
@@ -80,9 +83,9 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+%s
 
-### ✍️ Summary
+%s
 
 <div align="center">
 
@@ -90,22 +93,42 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 
 </div>
 
-## 👇 Details
-
 `,
+		vulnerableDependenciesTitle,
+		dependenciesSummaryTitle,
 		getVulnerabilitiesTableHeader(so.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, so)))
-	// Write details for each vulnerability
-	for i := range vulnerabilities {
-		if len(vulnerabilities) == 1 {
-			contentBuilder.WriteString(fmt.Sprintf(`
+		getVulnerabilitiesTableContent(vulnerabilities, so),
+	))
 
+	// Write details for each vulnerability
+	details := addVulnerabilitiesResearchDetails(vulnerabilities)
+	if details != "" {
+		contentBuilder.WriteString(researchDetailsTitle)
+		contentBuilder.WriteString(details)
+	}
+	return contentBuilder.String()
+}
+
+func addVulnerabilitiesResearchDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
+	detailsBuilder := strings.Builder{}
+	if len(vulnerabilities) == 1 {
+		description := createVulnerabilityDescription(&vulnerabilities[0])
+		if description == "" {
+			return ""
+		}
+		detailsBuilder.WriteString(fmt.Sprintf(`
 %s
 
-`, createVulnerabilityDescription(&vulnerabilities[i])))
-			break
+`, description))
+		return detailsBuilder.String()
+	}
+
+	for i := range vulnerabilities {
+		description := createVulnerabilityDescription(&vulnerabilities[i])
+		if description == "" {
+			continue
 		}
-		contentBuilder.WriteString(fmt.Sprintf(`
+		detailsBuilder.WriteString(fmt.Sprintf(`
 <details>
 <summary> <b>%s %s</b> </summary>
 <br>
@@ -116,9 +139,10 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 `,
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i])))
+			description))
 	}
-	return contentBuilder.String()
+
+	return detailsBuilder.String()
 }
 
 func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
@@ -127,7 +151,7 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 	}
 
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code 
+%s 
 
 <div align="center">
 
@@ -136,6 +160,7 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 </div>
 
 `,
+		iacTitle,
 		iacTableHeader,
 		getIacTableContent(iacRows, so))
 }
@@ -151,7 +176,7 @@ func (so *StandardOutput) Footer() string {
 }
 
 func (so *StandardOutput) Separator() string {
-	return "<br><br>"
+	return "<br>"
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
@@ -178,7 +203,7 @@ func (so *StandardOutput) LicensesContent(licenses []formats.LicenseBaseWithKey)
 		return ""
 	}
 	return fmt.Sprintf(`
-## 🪪 Forbidden Licenses 
+%s 
 
 <div align="center">
 
@@ -187,6 +212,7 @@ func (so *StandardOutput) LicensesContent(licenses []formats.LicenseBaseWithKey)
 </div>
 
 `,
+		licenseTitle,
 		licenseTableHeader,
 		getLicensesTableContent(licenses, so))
 }

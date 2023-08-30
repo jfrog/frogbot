@@ -29,10 +29,14 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	if len(vulnerability.Components) > 0 {
 		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
 	}
-	row += fmt.Sprintf(" %s | %s | %s |",
+
+	cves := getTableRowCves(vulnerability, smo)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, smo)
+	row += fmt.Sprintf(" %s | %s | %s | %s |",
 		firstDirectDependency,
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, smo.Separator()),
+		fixedVersions,
+		cves,
 	)
 	for i := 1; i < len(vulnerability.Components); i++ {
 		currDirect := vulnerability.Components[i]
@@ -78,20 +82,23 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
 ---
-## 📦 Vulnerable Dependencies
+%s
 ---
 
-### ✍️ Summary 
+%s 
 
 %s %s
 
 ---
-### 👇 Details
+%s
 ---
 
 `,
+		vulnerableDependenciesTitle,
+		dependenciesSummaryTitle,
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, smo)))
+		getVulnerabilitiesTableContent(vulnerabilities, smo),
+		researchDetailsTitle))
 	for i := range vulnerabilities {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s %s
@@ -113,11 +120,14 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 	}
 
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code 
+---
+%s 
+---
 
 %s %s
 
 `,
+		iacTitle,
 		iacTableHeader,
 		getIacTableContent(iacRows, smo))
 }
@@ -128,11 +138,14 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseBaseWithK
 	}
 
 	return fmt.Sprintf(`
-## 🪪 Forbidden Licenses 
+---
+%s
+---
 
 %s %s
 
 `,
+		licenseTitle,
 		licenseTableHeader,
 		getLicensesTableContent(licenses, smo))
 }

@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	securityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
+	securityIssueFoundErr   = "issues were detected by Frogbot\nYou can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	frogbotCommentNotFound  = -1
@@ -200,10 +200,13 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 
+	issues = &issuesRows{}
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
-		var projectIssues *issuesRows
-		projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+		projectIssues := &issuesRows{}
+		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails, sourceBranchWd, targetBranchWd); err != nil {
+			return
+		}
 		issues.Append(projectIssues)
 	}
 	return
@@ -384,6 +387,9 @@ func getScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []s
 }
 
 func getForbiddenLicenses(allowedLicenses []string, licenses []formats.LicenseBaseWithKey) []formats.LicenseBaseWithKey {
+	if len(allowedLicenses) == 0 {
+		return nil
+	}
 	var forbiddenLicenses []formats.LicenseBaseWithKey
 	for _, license := range licenses {
 		if !slices.Contains(allowedLicenses, license.LicenseKey) {
@@ -450,14 +456,18 @@ func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseBaseWithKey) [
 	existingLicenses := make(map[string]formats.LicenseBaseWithKey)
 	var newLicenses []formats.LicenseBaseWithKey
 	for _, row := range targetRows {
-		existingLicenses[row.LicenseKey] = row
+		existingLicenses[getUniqueLicenseKey(row)] = row
 	}
 	for _, row := range sourceRows {
-		if _, exists := existingLicenses[row.LicenseKey]; !exists {
+		if _, exists := existingLicenses[getUniqueLicenseKey(row)]; !exists {
 			newLicenses = append(newLicenses, row)
 		}
 	}
 	return newLicenses
+}
+
+func getUniqueLicenseKey(license formats.LicenseBaseWithKey) string {
+	return license.LicenseKey + license.ImpactedDependencyName + license.ImpactedDependencyType
 }
 
 func getNewSecurityVulnerabilities(targetScan, sourceScan *services.ScanResponse, auditResults *audit.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {

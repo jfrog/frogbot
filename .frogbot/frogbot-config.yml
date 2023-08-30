@@ -4,6 +4,8 @@
       branches:
         - dev
     scan:
+      emailReceivers:
+        - eco-system@jfrog.com
       projects:
         - workingDirs:
             - action

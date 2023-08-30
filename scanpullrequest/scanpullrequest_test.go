@@ -702,6 +702,10 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NoError(t, err)
 			_, err = w.Write(comments)
 			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s", "%2F"+projectName):
+			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
+			_, err := w.Write([]byte(jsonResponse))
+			assert.NoError(t, err)
 		}
 	}
 }
