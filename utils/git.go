@@ -462,25 +462,12 @@ func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vc
 	return &scan.XscGitInfoContext{
 		GitRepoUrl:    repoInfo.CloneInfo.HTTP, // Clone URLs on browsers redirects to repository URLS.
 		GitRepoName:   repoName,
-		GitProvider:   trimProviderNameForXSC(vcsProvider),
+		GitProvider:   vcsProvider.String(),
 		GitProject:    gitProject,
 		BranchName:    branchName,
 		LastCommit:    latestCommit.Url,
 		CommitHash:    latestCommit.Hash,
 		CommitMessage: latestCommit.Message,
 		CommitAuthor:  latestCommit.AuthorName,
-		Date:          time.Now().UTC().Format(time.RFC3339),
 	}
-}
-
-// In order to show in UI, supply trimmed name of the VCS provider and lowercase.
-func trimProviderNameForXSC(provider vcsutils.VcsProvider) string {
-	switch provider {
-	case vcsutils.BitbucketServer:
-	case vcsutils.BitbucketCloud:
-		return "bitbucket"
-	case vcsutils.AzureRepos:
-		return "azure"
-	}
-	return strings.ToLower(provider.String())
 }
