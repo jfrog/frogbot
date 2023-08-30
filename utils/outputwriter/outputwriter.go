@@ -98,7 +98,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	IacContent(iacRows []formats.IacSecretsRow) string
+	IacContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
 	FormattedSeverity(severity, applicability string) string
@@ -183,7 +183,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 	return tableContent
 }
 
-func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
+func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
 		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
