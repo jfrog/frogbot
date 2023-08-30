@@ -18,6 +18,7 @@ import (
 
 type dependencyFixTest struct {
 	vulnDetails         *utils.VulnerabilityDetails
+	scanDetails         *utils.ScanDetails // This field is required for several package handlers only
 	fixSupported        bool
 	specificTechVersion string
 }
@@ -32,6 +33,131 @@ const requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\npar
 type pipPackageRegexTest struct {
 	packageName         string
 	expectedRequirement string
+}
+
+func TestUpdateDependency(t *testing.T) {
+	testCases := [][]dependencyFixTest{
+		// Go test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
+				},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.7.7",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
+				},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.3.0",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
+				},
+				fixSupported: true,
+			},
+		},
+
+		// TODO Python test cases
+		// Npm test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "0.8.4",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "mpath"},
+				},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.0.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "minimatch"},
+				},
+				fixSupported: true,
+			},
+		},
+
+		// Yarn test cases
+		{
+			{
+				// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.2.6",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+				},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.2.6",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+				},
+				fixSupported:        true,
+				specificTechVersion: "1",
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.2.6",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+				},
+				fixSupported:        true,
+				specificTechVersion: "2",
+			},
+		},
+
+		// Maven test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.7",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
+					IsDirectDependency:          true},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
+				fixSupported: true,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.3.20",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
+					IsDirectDependency:          false},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
+				fixSupported: false,
+			},
+		},
+
+		// TODO NuGet test cases
+	}
+
+	for _, testBatch := range testCases {
+		for _, test := range testBatch {
+			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
+			t.Run(test.vulnDetails.Technology.ToString()+test.specificTechVersion+":"+test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency),
+				func(t *testing.T) {
+					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
+					cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString()+test.specificTechVersion)
+					defer cleanup()
+					err := packageHandler.UpdateDependency(test.vulnDetails)
+					if test.fixSupported {
+						assert.NoError(t, err)
+					} else {
+						assert.Error(t, err, "Expected error to occur")
+						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+					}
+				})
+		}
+	}
+
 }
 
 // Go
