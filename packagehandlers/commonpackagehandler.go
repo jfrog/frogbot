@@ -46,9 +46,9 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
 	commandArgs := []string{installationCommand}
 	commandArgs = append(commandArgs, extraArgs...)
-	operator := vulnDetails.Technology.GetPackageVersionOperator()
-	fixedPackage := impactedPackage + operator + vulnDetails.SuggestedFixedVersion
-	commandArgs = append(commandArgs, fixedPackage)
+	versionOperator := vulnDetails.Technology.GetPackageVersionOperator()
+	fixedPackage := strings.TrimSpace(impactedPackage) + versionOperator + strings.TrimSpace(vulnDetails.SuggestedFixedVersion)
+	commandArgs = append(commandArgs, strings.Split(fixedPackage, " ")...)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
 }
 
