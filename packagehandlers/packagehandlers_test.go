@@ -314,18 +314,19 @@ func TestNugetPackageHandler_UpdateDependency(t *testing.T) {
 	}
 	for _, test := range testcases {
 
-		t.Run(test.vulnDetails.ImpactedDependencyName+" direct:"+strconv.FormatBool(test.vulnDetails.IsDirectDependency), func(t *testing.T) {
-			testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-			cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
-			defer cleanup()
-			err := nugetPackageHandler.UpdateDependency(test.vulnDetails)
-			if test.fixSupported {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err, "Expected error to occur")
-				assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
-			}
-		})
+		t.Run(fmt.Sprintf("%s direct:%s", test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
+			func(t *testing.T) {
+				testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
+				cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.ToString())
+				defer cleanup()
+				err := nugetPackageHandler.UpdateDependency(test.vulnDetails)
+				if test.fixSupported {
+					assert.NoError(t, err)
+				} else {
+					assert.Error(t, err)
+					assert.ErrorAs(t, err, &utils.ErrUnsupportedFix{})
+				}
+			})
 	}
 }
 
