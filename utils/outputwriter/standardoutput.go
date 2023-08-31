@@ -97,28 +97,26 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
-		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		if len(vulnerabilities) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilities[i], cves)))
+`, createVulnerabilityDescription(&vulnerabilities[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
 <details>
-<summary> <b>%s%s %s</b> </summary>
+<summary> <b>%s %s</b> </summary>
 <br>
 %s
 
 </details>
 
 `,
-			getDescriptionBulletCveTitle(cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 	return contentBuilder.String()
 }
