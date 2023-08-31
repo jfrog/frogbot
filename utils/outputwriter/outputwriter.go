@@ -215,7 +215,9 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 func getCveIdSliceFromCveRows(cves []formats.CveRow) []string {
 	var cveIds []string
 	for _, cve := range cves {
-		cveIds = append(cveIds, cve.Id)
+		if cve.Id != "" {
+			cveIds = append(cveIds, cve.Id)
+		}
 	}
 	return cveIds
 }
