@@ -197,6 +197,27 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: false,
 			},
 		},
+
+		// NuGet test cases
+		{
+			{
+				// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.1.1",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+				},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.1.1",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+				},
+				fixSupported: true,
+			},
+		},
 	}
 
 	for _, testBatch := range testCases {
@@ -548,5 +569,32 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
 	default:
+	}
+}
+
+func TestGetFixedPackage(t *testing.T) {
+	var testcases = []struct {
+		impactedPackage       string
+		versionOperator       string
+		suggestedFixedVersion string
+		expectedOutput        []string
+	}{
+		{
+			impactedPackage:       "snappier",
+			versionOperator:       " -v ",
+			suggestedFixedVersion: "1.1.1",
+			expectedOutput:        []string{"snappier", "-v", "1.1.1"},
+		},
+		{
+			impactedPackage:       "json",
+			versionOperator:       "@",
+			suggestedFixedVersion: "10.0.0",
+			expectedOutput:        []string{"json@10.0.0"},
+		},
+	}
+
+	for _, test := range testcases {
+		fixedPackageArgs := getFixedPackage(test.impactedPackage, test.versionOperator, test.suggestedFixedVersion)
+		assert.Equal(t, test.expectedOutput, fixedPackageArgs)
 	}
 }
