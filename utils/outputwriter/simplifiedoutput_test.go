@@ -151,26 +151,24 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 ---
 
 
-#### %s %s %s
+#### %s %s
 
 %s
 
 
-#### %s %s %s
+#### %s %s
 
 %s
 
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
-		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[0].Cves[0].Id),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id}),
-		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[1].Cves[0].Id),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -203,7 +201,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 			Severity:                  "Low",
 			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			FixedVersions:             []string{"2.2.3"},
-			Cves:                      []formats.CveRow{{Id: "CVE-2024-1234"}},
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
 			Applicable:                "Not Applicable",
 			Technology:                coreutils.Poetry,
 		},
@@ -223,26 +221,24 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 ---
 
 
-#### %s %s %s
+#### %s %s
 
 %s
 
 
-#### %s %s %s
+#### %s %s
 
 %s
 
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
-		fmt.Sprintf("[ %s ]", "CVE-2023-1234"),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{"CVE-2023-1234"}),
-		fmt.Sprintf("[ %s ]", "CVE-2024-1234"),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{"CVE-2024-1234"}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
