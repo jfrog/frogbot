@@ -93,15 +93,17 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, smo)))
 	for i := range vulnerabilities {
+		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		contentBuilder.WriteString(fmt.Sprintf(`
-#### %s %s
+#### %s%s %s
 
 %s
 
 `,
+			getDescriptionBulletCveTitle(cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i])))
+			createVulnerabilityDescription(&vulnerabilities[i], cves)))
 	}
 
 	return contentBuilder.String()
