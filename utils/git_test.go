@@ -1,20 +1,22 @@
 package utils
 
 import (
+	"errors"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/jfrog/frogbot/utils/outputwriter"
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 )
 
 func TestGitManager_GenerateCommitMessage(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		gitManager      GitManager
 		impactedPackage string
 		fixVersion      VulnerabilityDetails
@@ -40,7 +42,7 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 			description: "Default template",
 		},
 	}
-	for _, test := range tests {
+	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commitMessage := test.gitManager.GenerateCommitMessage(test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.Equal(t, test.expected, commitMessage)
@@ -49,7 +51,7 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 }
 
 func TestGitManager_GenerateFixBranchName(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		gitManager      GitManager
 		impactedPackage string
 		fixVersion      VulnerabilityDetails
@@ -77,7 +79,7 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 			description:     "Custom template without inputs",
 		},
 	}
-	for _, test := range tests {
+	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.NoError(t, err)
@@ -87,7 +89,7 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 }
 
 func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		gitManager      GitManager
 		impactedPackage string
 		fixVersion      VulnerabilityDetails
@@ -116,7 +118,7 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 			description:     "No prefix",
 		},
 	}
-	for _, test := range tests {
+	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
 			assert.Equal(t, test.expected, titleOutput)
@@ -125,7 +127,7 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 }
 
 func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		gitManager GitManager
 		expected   string
 		desc       string
@@ -141,7 +143,7 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		},
 	}
-	for _, test := range tests {
+	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
 			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName(coreutils.Go)
 			assert.NoError(t, err)
@@ -151,100 +153,17 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 }
 
 func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		gitManager GitManager
 		expected   string
 	}{
 		{gitManager: GitManager{}, expected: outputwriter.GetAggregatedPullRequestTitle(coreutils.Pipenv)},
 		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
 	}
-	for _, test := range tests {
+	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage(coreutils.Pipenv)
 			assert.Equal(t, commit, test.expected)
-		})
-	}
-}
-
-func TestConvertSSHtoHTTPS(t *testing.T) {
-	testsCases := []struct {
-		repoName    string
-		repoOwner   string
-		projectName string
-		expected    string
-		apiEndpoint string
-		vcsProvider vcsutils.VcsProvider
-	}{
-		{
-			repoName:    "npmExample",
-			repoOwner:   "repoOwner",
-			expected:    "https://github.com/repoOwner/npmExample.git",
-			apiEndpoint: "https://github.com",
-			vcsProvider: vcsutils.GitHub,
-		}, {
-			repoName:    "npmExample",
-			repoOwner:   "repoOwner",
-			expected:    "https://api.github.com/repoOwner/npmExample.git",
-			apiEndpoint: "https://api.github.com",
-			vcsProvider: vcsutils.GitHub,
-		},
-		{
-			repoName:    "npmProject",
-			repoOwner:   "myTest5551218",
-			apiEndpoint: "https://gitlab.com",
-			expected:    "https://gitlab.com/myTest5551218/npmProject.git",
-			vcsProvider: vcsutils.GitLab,
-		}, {
-			repoName:    "onPremProject",
-			repoOwner:   "myTest5551218",
-			apiEndpoint: "https://gitlab.example.com",
-			expected:    "https://gitlab.example.com/myTest5551218/onPremProject.git",
-			vcsProvider: vcsutils.GitLab,
-		},
-		{
-			repoName:    "npmExample",
-			projectName: "firstProject",
-			repoOwner:   "azureReposOwner",
-			apiEndpoint: "https://dev.azure.com/azureReposOwner/",
-			expected:    "https://azureReposOwner@dev.azure.com/azureReposOwner/firstProject/_git/npmExample",
-			vcsProvider: vcsutils.AzureRepos,
-		}, {
-			repoName:    "npmExample",
-			projectName: "onPremProject",
-			repoOwner:   "organization",
-			apiEndpoint: "https://your-server-name:port/organization/",
-			expected:    "https://organization@your-server-name:port/organization/onPremProject/_git/npmExample",
-			vcsProvider: vcsutils.AzureRepos,
-		},
-		{
-			repoName:    "npmExample",
-			repoOwner:   "~bitbucketServerOwner", // Bitbucket server private projects owners start with ~ prefix.
-			apiEndpoint: "https://git.company.info",
-			expected:    "https://git.company.info/scm/~bitbucketServerOwner/npmExample.git",
-			vcsProvider: vcsutils.BitbucketServer,
-		}, {
-			repoName:    "npmExample",
-			repoOwner:   "bitbucketServerOwner", // Public on prem repo
-			apiEndpoint: "https://git.company.info",
-			expected:    "https://git.company.info/scm/bitbucketServerOwner/npmExample.git",
-			vcsProvider: vcsutils.BitbucketServer,
-		}, {
-			repoName:    "notSupported",
-			repoOwner:   "cloudOwner",
-			expected:    "",
-			vcsProvider: vcsutils.BitbucketCloud,
-		},
-	}
-	for _, test := range testsCases {
-		t.Run(test.vcsProvider.String(), func(t *testing.T) {
-			gm := GitManager{git: &Git{GitProvider: test.vcsProvider, RepoName: test.repoName, RepoOwner: test.repoOwner, VcsInfo: vcsclient.VcsInfo{Project: test.projectName, APIEndpoint: test.apiEndpoint}}}
-			remoteUrl, err := gm.generateHTTPSCloneUrl()
-			if remoteUrl == "" {
-				assert.Equal(t, err.Error(), "unsupported version control provider: Bitbucket Cloud")
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, test.expected, remoteUrl)
-			}
 		})
 	}
 }
@@ -263,19 +182,19 @@ func TestGitManager_Checkout(t *testing.T) {
 	}()
 	gitManager := createFakeDotGit(t, tmpDir)
 	// Get the current branch that is set as HEAD
-	headRef, err := gitManager.repository.Head()
+	headRef, err := gitManager.localGitRepository.Head()
 	assert.NoError(t, err)
 	assert.Equal(t, headRef.Name().Short(), "master")
 	// Create 'dev' branch and checkout
 	err = gitManager.CreateBranchAndCheckout("dev")
 	assert.NoError(t, err)
 	var currBranch string
-	currBranch, err = getCurrentBranch(gitManager.repository)
+	currBranch, err = getCurrentBranch(gitManager.localGitRepository)
 	assert.NoError(t, err)
 	assert.Equal(t, "dev", currBranch)
 	// Checkout back to 'master'
 	assert.NoError(t, gitManager.Checkout("master"))
-	currBranch, err = getCurrentBranch(gitManager.repository)
+	currBranch, err = getCurrentBranch(gitManager.localGitRepository)
 	assert.NoError(t, err)
 	assert.Equal(t, "master", currBranch)
 }
@@ -301,8 +220,78 @@ func createFakeDotGit(t *testing.T, testPath string) *GitManager {
 		},
 	})
 	assert.NoError(t, err)
-	manager, err := NewGitManager("", "", &Git{}, true, testPath)
-	manager.repository = repo
+	manager := NewGitManager().SetDryRun(true, testPath)
+	manager.localGitRepository = repo
+	manager.remoteName = vcsutils.RemoteName
 	assert.NoError(t, err)
 	return manager
+}
+
+func TestGitManager_SetRemoteGitUrl(t *testing.T) {
+	testCases := []struct {
+		description       string
+		dotGitExists      bool
+		remoteGitUrl      string
+		remoteHttpsGitUrl string
+		existingRemoteUrl string
+		expectedError     error
+		expectedGitUrl    string
+	}{
+		{
+			description:       "DotGit does not exist",
+			dotGitExists:      false,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			expectedGitUrl:    "https://example.com/owner/repo.git",
+		},
+		{
+			description:       "DotGit exists, no remote found",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			expectedError:     errors.New("'git remote origin' failed with error: remote not found"),
+		},
+		{
+			description:       "DotGit exists, remote URL exists with HTTPS protocol",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			existingRemoteUrl: "https://example.com/owner/repo.git",
+			expectedGitUrl:    "https://example.com/owner/repo.git",
+		},
+		{
+			description:       "DotGit exists, remote URL is not HTTPS",
+			dotGitExists:      true,
+			remoteHttpsGitUrl: "https://example.com/owner/repo.git",
+			existingRemoteUrl: "ssh://example.com/owner/repo.git",
+			// Should be updated to the new HTTPS URL
+			expectedGitUrl: "https://example.com/owner/repo.git",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			tmpDir, err := fileutils.CreateTempDir()
+			assert.NoError(t, err)
+			baseDir, err := os.Getwd()
+			assert.NoError(t, err)
+			restoreFunc := tests.ChangeDirWithCallback(t, baseDir, tmpDir)
+			defer restoreFunc()
+			gm := NewGitManager().SetDryRun(true, tmpDir)
+			if tc.dotGitExists {
+				gm = createFakeDotGit(t, tmpDir)
+			}
+			if tc.existingRemoteUrl != "" {
+				_, err = gm.localGitRepository.CreateRemote(&config.RemoteConfig{
+					Name: vcsutils.RemoteName,
+					URLs: []string{tc.existingRemoteUrl},
+				})
+				assert.NoError(t, err)
+			}
+			_, err = gm.SetRemoteGitUrl(tc.remoteHttpsGitUrl)
+			if err != nil {
+				assert.EqualError(t, tc.expectedError, err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+			assert.Equal(t, tc.expectedGitUrl, gm.remoteGitUrl)
+		})
+	}
 }

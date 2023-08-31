@@ -124,6 +124,12 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 				assert.NoError(t, err)
 				return
 			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s", projectName) {
+				jsonResponse := `{"id": 1296269,"node_id": "MDEwOlJlcG9zaXRvcnkxMjk2MjY5","name": "Hello-World","full_name": "octocat/Hello-World","private": false,"description": "This your first repo!","ssh_url": "git@github.com:octocat/Hello-World.git","clone_url": "https://github.com/octocat/Hello-World.git","visibility": "public"}`
+				_, err := w.Write([]byte(jsonResponse))
+				assert.NoError(t, err)
+				return
+			}
 		}
 	}
 }
