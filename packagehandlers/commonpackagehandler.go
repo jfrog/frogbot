@@ -30,6 +30,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
 	case coreutils.Maven:
 		handler = &MavenPackageHandler{depsRepo: details.DepsRepo, ServerDetails: details.ServerDetails}
+	case coreutils.Nuget:
+		handler = &NugetPackageHandler{}
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
@@ -44,18 +46,27 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
 	commandArgs := []string{installationCommand}
 	commandArgs = append(commandArgs, extraArgs...)
-	operator := vulnDetails.Technology.GetPackageOperator()
-	fixedPackage := impactedPackage + operator + vulnDetails.SuggestedFixedVersion
-	commandArgs = append(commandArgs, fixedPackage)
-	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), commandArgs)
+	versionOperator := vulnDetails.Technology.GetPackageVersionOperator()
+	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
+	commandArgs = append(commandArgs, fixedPackageArgs...)
+	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
 }
 
-func runPackageMangerCommand(commandName string, commandArgs []string) error {
+func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
 	if err != nil {
-		return fmt.Errorf("%s command failed: %s\n%s", fullCommand, err.Error(), output)
+		return fmt.Errorf("failed to update %s dependency: '%s' command failed: %s\n%s", techName, fullCommand, err.Error(), output)
 	}
 	return nil
+}
+
+// Returns the updated package and version as it should be run in the update command:
+// If the package manager expects a single string (example: <packName>@<version>) it returns []string{<packName>@<version>}
+// If the command args suppose to be seperated by spaces (example: <packName> -v <version>) it returns []string{<packName>, "-v", <version>}
+func getFixedPackage(impactedPackage string, versionOperator string, suggestedFixedVersion string) (fixedPackageArgs []string) {
+	fixedPackageString := strings.TrimSpace(impactedPackage) + versionOperator + strings.TrimSpace(suggestedFixedVersion)
+	fixedPackageArgs = strings.Split(fixedPackageString, " ")
+	return
 }

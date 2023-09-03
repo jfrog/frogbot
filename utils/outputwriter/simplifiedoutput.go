@@ -101,11 +101,12 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 		researchDetailsTitle))
 	for i := range vulnerabilities {
 		contentBuilder.WriteString(fmt.Sprintf(`
-#### %s %s
+#### %s%s %s
 
 %s
 
 `,
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i])))
@@ -114,7 +115,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -132,7 +133,7 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string 
 		getIacTableContent(iacRows, smo))
 }
 
-func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseBaseWithKey) string {
+func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) string {
 	if len(licenses) == 0 {
 		return ""
 	}
@@ -142,7 +143,8 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseBaseWithK
 %s
 ---
 
-%s %s
+%s 
+%s
 
 `,
 		licenseTitle,

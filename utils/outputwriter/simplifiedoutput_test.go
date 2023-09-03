@@ -151,24 +151,26 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 ---
 
 
-#### %s %s
+#### %s %s %s
 
 %s
 
 
-#### %s %s
+#### %s %s %s
 
 %s
 
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
+		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[0].Cves[0].Id),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id}),
+		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[1].Cves[0].Id),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -201,7 +203,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 			Severity:                  "Low",
 			Components:                []formats.ComponentRow{{Name: "Direct1", Version: "1.0.0"}, {Name: "Direct2", Version: "2.0.0"}},
 			FixedVersions:             []string{"2.2.3"},
-			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}},
+			Cves:                      []formats.CveRow{{Id: "CVE-2024-1234"}},
 			Applicable:                "Not Applicable",
 			Technology:                coreutils.Poetry,
 		},
@@ -221,24 +223,26 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 ---
 
 
-#### %s %s
+#### %s %s %s
 
 %s
 
 
-#### %s %s
+#### %s %s %s
 
 %s
 
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
+		fmt.Sprintf("[ %s ]", "CVE-2023-1234"),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{"CVE-2023-1234"}),
+		fmt.Sprintf("[ %s ]", "CVE-2024-1234"),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{"CVE-2024-1234"}),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -263,7 +267,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.IacSecretsRow{
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					SeverityNumValue: 3,
 					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
 					LineColumn:       "11:1",
@@ -277,14 +281,14 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.IacSecretsRow{
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					SeverityNumValue: 3,
 					File:             "applicable/req_sw_terraform_azure_redis_patch.tf",
 					LineColumn:       "11:1",
 					Text:             "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
 				},
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					SeverityNumValue: 3,
 					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
 					LineColumn:       "11:1",
@@ -319,7 +323,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.IacSecretsRow{
 				{
-					Severity:         "Medium",
+					SeverityDetails:  "Medium",
 					SeverityNumValue: 2,
 					File:             "file1",
 					LineColumn:       "1:10",
@@ -333,7 +337,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.IacSecretsRow{
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					SeverityNumValue: 3,
 					File:             "file1",
 					LineColumn:       "1:10",
@@ -341,7 +345,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 					Type:             "azure_mysql_no_public",
 				},
 				{
-					Severity:         "Medium",
+					SeverityDetails:  "Medium",
 					SeverityNumValue: 2,
 					File:             "file2",
 					LineColumn:       "2:5",

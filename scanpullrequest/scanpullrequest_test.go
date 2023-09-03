@@ -11,7 +11,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -73,19 +73,21 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	rows, err := createNewVulnerabilitiesRows(
+	securityViolationsRows, licenseViolations, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		nil,
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 2)
-	assert.Equal(t, "XRAY-2", rows[0].IssueId)
-	assert.Equal(t, "low", rows[0].Severity)
-	assert.Equal(t, "XRAY-2", rows[1].IssueId)
-	assert.Equal(t, "low", rows[1].Severity)
+	assert.Nil(t, licenseViolations)
+	assert.Len(t, securityViolationsRows, 2)
+	assert.Equal(t, "XRAY-2", securityViolationsRows[0].IssueId)
+	assert.Equal(t, "low", securityViolationsRows[0].SeverityDetails)
+	assert.Equal(t, "XRAY-2", securityViolationsRows[1].IssueId)
+	assert.Equal(t, "low", securityViolationsRows[1].SeverityDetails)
 
-	impactedPackageOne := rows[0].ImpactedDependencyName
-	impactedPackageTwo := rows[1].ImpactedDependencyName
+	impactedPackageOne := securityViolationsRows[0].ImpactedDependencyName
+	impactedPackageTwo := securityViolationsRows[1].ImpactedDependencyName
 	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
 }
 
@@ -117,29 +119,35 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-A",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 		},
 		{
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
 		},
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	rows, err := createNewVulnerabilitiesRows(
+	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		[]string{},
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 2)
-	assert.ElementsMatch(t, expected, rows)
+	assert.Nil(t, licenses)
+	assert.Len(t, vulnerabilities, 2)
+	assert.ElementsMatch(t, expected, vulnerabilities)
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
-	// Previous scan with 2 violations - XRAY-1 and XRAY-2
+	// Previous scan with 2 security violations and 1 license violation - XRAY-1 and XRAY-2
 	previousScan := services.ScanResponse{
 		Violations: []services.Violation{
 			{
@@ -155,6 +163,12 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 				Severity:      "low",
 				Components:    map[string]services.Component{"component-C": {}},
 			},
+			{
+				IssueId:       "XRAY-2",
+				LicenseKey:    "MIT",
+				ViolationType: "license",
+				Components:    map[string]services.Component{"component-B": {}},
+			},
 		},
 	}
 
@@ -164,12 +178,14 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	rows, err := createNewVulnerabilitiesRows(
+	securityViolations, licenseViolations, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		[]string{"MIT"},
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 0)
+	assert.Len(t, securityViolations, 0)
+	assert.Len(t, licenseViolations, 0)
 }
 
 func TestGetAllVulnerabilities(t *testing.T) {
@@ -193,36 +209,45 @@ func TestGetAllVulnerabilities(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                "summary-1",
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-A",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 		},
 		{
-			Summary:                "summary-1",
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-B",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-B",
+			},
 		},
 		{
-			Summary:                "summary-2",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
 		},
 		{
-			Summary:                "summary-2",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-D",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-D",
+			},
 		},
 	}
 
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	rows, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}})
+	vulnerabilities, licenses, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}}, nil)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 4)
-	assert.ElementsMatch(t, expected, rows)
+	assert.Len(t, vulnerabilities, 4)
+	assert.Len(t, licenses, 0)
+	assert.ElementsMatch(t, expected, vulnerabilities)
 }
 
 func TestGetNewVulnerabilities(t *testing.T) {
@@ -234,7 +259,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Severity:   "high",
 			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-			Technology: coreutils.Maven.ToString(),
+			Technology: coreutils.Maven.String(),
 		}},
 	}
 
@@ -247,7 +272,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "high",
 				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-				Technology: coreutils.Maven.ToString(),
+				Technology: coreutils.Maven.String(),
 			},
 			{
 				IssueId:    "XRAY-2",
@@ -255,40 +280,46 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "low",
 				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
 				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
-				Technology: coreutils.Yarn.ToString(),
+				Technology: coreutils.Yarn.String(),
 			},
 		},
 	}
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                "summary-2",
-			Applicable:             "Applicable",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
-			Technology:             coreutils.Yarn,
+			Summary:    "summary-2",
+			Applicable: "Applicable",
+			IssueId:    "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Technology: coreutils.Yarn,
 		},
 		{
-			Summary:                "summary-2",
-			Applicable:             "Applicable",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
-			ImpactedDependencyName: "component-D",
-			Technology:             coreutils.Yarn,
+			Summary:    "summary-2",
+			Applicable: "Applicable",
+			IssueId:    "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-D",
+			},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Technology: coreutils.Yarn,
 		},
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]string{"CVE-2023-4321": "Applicable"}}},
+	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]xrayutils.ApplicabilityStatus{"CVE-2023-4321": xrayutils.Applicable}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]xrayutils.ApplicabilityStatus{"CVE-2023-4321": xrayutils.Applicable}}},
+		[]string{},
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 2)
-	assert.ElementsMatch(t, expected, rows)
+	assert.Len(t, vulnerabilities, 2)
+	assert.Len(t, licenses, 0)
+	assert.ElementsMatch(t, expected, vulnerabilities)
 }
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
@@ -319,29 +350,35 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                  "summary-2",
-			IssueId:                  "XRAY-2",
-			Severity:                 "low",
-			ImpactedDependencyName:   "component-B",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-B",
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
 		},
 		{
-			Summary:                  "summary-1",
-			IssueId:                  "XRAY-1",
-			Severity:                 "high",
-			ImpactedDependencyName:   "component-A",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
 		},
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	rows, err := createNewVulnerabilitiesRows(
+	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		nil,
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 2)
-	assert.ElementsMatch(t, expected, rows)
+	assert.Len(t, vulnerabilities, 2)
+	assert.Len(t, licenses, 0)
+	assert.ElementsMatch(t, expected, vulnerabilities)
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
@@ -369,17 +406,19 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	rows, err := createNewVulnerabilitiesRows(
+	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
 		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		nil,
 	)
 	assert.NoError(t, err)
-	assert.Len(t, rows, 0)
+	assert.Len(t, vulnerabilities, 0)
+	assert.Len(t, licenses, 0)
 }
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestComment(vulnerabilities, nil, &outputwriter.StandardOutput{})
+	message := createPullRequestComment(&issuesRows{Vulnerabilities: vulnerabilities}, &outputwriter.StandardOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -388,7 +427,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 
 	outputWriter := &outputwriter.StandardOutput{}
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestComment(vulnerabilities, nil, outputWriter)
+	message = createPullRequestComment(&issuesRows{Vulnerabilities: vulnerabilities}, outputWriter)
 
 	expectedMessageByte, err = os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilitiesMR.md"))
 	assert.NoError(t, err)
@@ -399,73 +438,79 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 func TestCreatePullRequestMessage(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
-			Severity:                  "High",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedDependencyVersion: "v0.21.0",
-			FixedVersions:             []string{"[0.24.1]"},
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/nats-io/nats-streaming-server",
-					Version: "v0.21.0",
+			Applicable: "Undetermined",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+				ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/nats-io/nats-streaming-server",
+						Version: "v0.21.0",
+					},
 				},
 			},
-			Cves: []formats.CveRow{{Id: "CVE-2022-24450"}},
+			FixedVersions: []string{"[0.24.1]"},
+			Cves:          []formats.CveRow{{Id: "CVE-2022-24450"}},
 		},
 		{
-			Severity:                  "High",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/mholt/archiver/v3",
-			ImpactedDependencyVersion: "v3.5.1",
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/mholt/archiver/v3",
-					Version: "v3.5.1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+				ImpactedDependencyName:    "github.com/mholt/archiver/v3",
+				ImpactedDependencyVersion: "v3.5.1",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/mholt/archiver/v3",
+						Version: "v3.5.1",
+					},
 				},
 			},
-			Cves: []formats.CveRow{},
+			Applicable: "Undetermined",
+			Cves:       []formats.CveRow{},
 		},
 		{
-			Severity:                  "Medium",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedDependencyVersion: "v0.21.0",
-			FixedVersions:             []string{"[0.24.3]"},
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/nats-io/nats-streaming-server",
-					Version: "v0.21.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Medium"},
+				ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/nats-io/nats-streaming-server",
+						Version: "v0.21.0",
+					},
 				},
 			},
-			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
+			Applicable:    "Undetermined",
+			FixedVersions: []string{"[0.24.3]"},
+			Cves:          []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
-	iac := []formats.IacSecretsRow{
+	iac := []formats.SourceCodeRow{
 		{
-			Severity:   "Low",
-			File:       "test.js",
-			LineColumn: "1:20",
-			Text:       "kms_key_id='' was detected",
-			Type:       "aws_cloudtrail_encrypt",
+			SeverityDetails: "Low",
+			File:            "test.js",
+			LineColumn:      "1:20",
+			Text:            "kms_key_id='' was detected",
+			Type:            "aws_cloudtrail_encrypt",
 		},
 		{
-			Severity:   "High",
-			File:       "test2.js",
-			LineColumn: "4:30",
-			Text:       "Deprecated TLS version was detected",
-			Type:       "aws_cloudfront_tls_version",
+			SeverityDetails: "High",
+			File:            "test2.js",
+			LineColumn:      "4:30",
+			Text:            "Deprecated TLS version was detected",
+			Type:            "aws_cloudfront_tls_version",
 		},
 	}
 	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
 	message := createPullRequestComment(vulnerabilities, iac, writerOutput)
 
-	expectedMessage := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	expectedMessage := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
 	message = createPullRequestComment(vulnerabilities, iac, writerOutput)
-	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.1]\n- **CVE:** CVE-2022-24450\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **Fixed Version:** [0.24.3]\n- **CVE:** CVE-2022-26652\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
+	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 }
 
@@ -743,7 +788,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					File:             "file1",
 					LineColumn:       "1:10",
 					Text:             "aws violation",
@@ -771,7 +816,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
 				{
-					Severity:         "Medium",
+					SeverityDetails:  "Medium",
 					SeverityNumValue: 8,
 					File:             "file2",
 					LineColumn:       "2:5",
@@ -785,7 +830,7 @@ func TestCreateNewIacRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetIacRows := xrayutils.PrepareSecrets(tc.targetIacResults)
 			sourceIacRows := xrayutils.PrepareSecrets(tc.sourceIacResults)
-			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
@@ -826,7 +871,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
 				{
-					Severity:         "High",
+					SeverityDetails:  "High",
 					File:             "file1",
 					LineColumn:       "1:10",
 					Type:             "Secret",
@@ -857,7 +902,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
 				{
-					Severity:         "Medium",
+					SeverityDetails:  "Medium",
 					SeverityNumValue: 8,
 					File:             "file2",
 					LineColumn:       "2:5",
@@ -872,7 +917,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetSecretsRows := xrayutils.PrepareSecrets(tc.targetSecretsResults)
 			sourceSecretsRows := xrayutils.PrepareSecrets(tc.sourceSecretsResults)
-			addedSecretsVulnerabilities := createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}

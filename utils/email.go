@@ -20,12 +20,12 @@ type SecretsEmailDetails struct {
 	branch          string
 	repoName        string
 	repoOwner       string
-	detectedSecrets []formats.IacSecretsRow
+	detectedSecrets []formats.SourceCodeRow
 	pullRequestLink string
 	EmailDetails
 }
 
-func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, repoConfig *Repository, pullRequestDetails *vcsclient.PullRequestInfo, secrets []formats.IacSecretsRow) *SecretsEmailDetails {
+func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, repoConfig *Repository, pullRequestDetails *vcsclient.PullRequestInfo, secrets []formats.SourceCodeRow) *SecretsEmailDetails {
 	secretsEmailDetails := &SecretsEmailDetails{}
 	secretsEmailDetails.gitClient = gitClient
 	secretsEmailDetails.EmailDetails = repoConfig.EmailDetails
@@ -55,7 +55,7 @@ func AlertSecretsExposed(secretsDetails *SecretsEmailDetails) (err error) {
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 
-func getSecretsEmailContent(secrets []formats.IacSecretsRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
+func getSecretsEmailContent(secrets []formats.SourceCodeRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
 		tableContent.WriteString(

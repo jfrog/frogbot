@@ -130,13 +130,14 @@ func addVulnerabilitiesResearchDetails(vulnerabilities []formats.VulnerabilityOr
 		}
 		detailsBuilder.WriteString(fmt.Sprintf(`
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
 </details>
 
 `,
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			description))
@@ -145,7 +146,7 @@ func addVulnerabilitiesResearchDetails(vulnerabilities []formats.VulnerabilityOr
 	return detailsBuilder.String()
 }
 
-func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -198,7 +199,7 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 	return msg
 }
 
-func (so *StandardOutput) LicensesContent(licenses []formats.LicenseBaseWithKey) string {
+func (so *StandardOutput) LicensesContent(licenses []formats.LicenseRow) string {
 	if len(licenses) == 0 {
 		return ""
 	}

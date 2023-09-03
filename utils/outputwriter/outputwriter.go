@@ -19,7 +19,7 @@ const (
 	dependenciesSummaryTitle                         = "### ✍️ Summary"
 	researchDetailsTitle                             = "## 🔬 Research Details"
 	iacTitle                                         = "## 🛠️ Infrastructure as Code"
-	licenseTitle                                     = "## ⚖️ Forbidden Licenses"
+	licenseTitle                                     = "## ⚖️ Violated Licenses"
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
@@ -101,11 +101,11 @@ const (
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	LicensesContent(licenses []formats.LicenseBaseWithKey) string
+	LicensesContent(licenses []formats.LicenseRow) string
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	IacContent(iacRows []formats.IacSecretsRow) string
+	IacContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
 	FormattedSeverity(severity, applicability string) string
@@ -156,18 +156,16 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 	return tableContent
 }
 
-func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
+func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent strings.Builder
 	for _, iac := range iacRows {
-		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text))
+		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.Applicable.String()), iac.File, iac.LineColumn, iac.Text))
 	}
 	return tableContent.String()
 }
 
-func getLicensesTableContent(licenses []formats.LicenseBaseWithKey, writer OutputWriter) string {
+func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
 	var tableContent strings.Builder
-	tableContent.WriteString("`\n")
-	tableContent.WriteString(licenseTableHeader)
 	for _, license := range licenses {
 		var directDependenciesBuilder strings.Builder
 		for _, component := range license.Components {
@@ -177,7 +175,6 @@ func getLicensesTableContent(licenses []formats.LicenseBaseWithKey, writer Outpu
 		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
 		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
 	}
-	tableContent.WriteString("\n`")
 	return tableContent.String()
 }
 
@@ -186,7 +183,7 @@ func MarkdownComment(text string) string {
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech.ToString() == "" {
+	if tech.String() == "" {
 		return FrogbotTitlePrefix + " Update dependencies"
 	}
 	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
@@ -199,18 +196,18 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 	return vulnerabilitiesTableHeader
 }
 
-func convertCveRowsToCveIds(cveRows []formats.CveRow, writer OutputWriter) string {
+func convertCveRowsToCveIds(cveRows []formats.CveRow, seperator string) string {
 	cvesBuilder := strings.Builder{}
 	for _, cve := range cveRows {
 		if cve.Id != "" {
-			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, writer.Separator()))
+			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, seperator))
 		}
 	}
-	return strings.TrimSuffix(cvesBuilder.String(), writer.Separator())
+	return strings.TrimSuffix(cvesBuilder.String(), seperator)
 }
 
 func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	cves := convertCveRowsToCveIds(row.Cves, writer)
+	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
 	if cves == "" {
 		cves = " - "
 	}
@@ -223,4 +220,12 @@ func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer O
 		fixedVersions = " - "
 	}
 	return strings.TrimSuffix(fixedVersions, writer.Separator())
+}
+
+func getVulnerabilityCvesPrefix(cveRows []formats.CveRow) string {
+	if len(cveRows) == 0 {
+		return ""
+	}
+	cves := convertCveRowsToCveIds(cveRows, ", ")
+	return fmt.Sprintf("[ %s ] ", cves)
 }

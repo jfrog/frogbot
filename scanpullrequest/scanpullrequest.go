@@ -9,7 +9,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -30,9 +30,9 @@ type ScanPullRequestCmd struct{}
 
 type issuesRows struct {
 	Vulnerabilities []formats.VulnerabilityOrViolationRow
-	Iacs            []formats.IacSecretsRow
-	Secrets         []formats.IacSecretsRow
-	Licenses        []formats.LicenseBaseWithKey
+	Iacs            []formats.SourceCodeRow
+	Secrets         []formats.SourceCodeRow
+	Licenses        []formats.LicenseRow
 }
 
 func (ir *issuesRows) VulnerabilitiesExists() bool {
@@ -245,7 +245,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 func getAllIssues(results *audit.Results, allowedLicenses []string) (*issuesRows, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	scanResults := results.ExtendedScanResults
-	allVulnerabilitiesRows, forbiddenLicenses, err := getScanVulnerabilitiesRows(results, allowedLicenses)
+	allVulnerabilitiesRows, violatedLicenses, err := getScanVulnerabilitiesRows(results, allowedLicenses)
 	if err != nil {
 		return nil, err
 	}
@@ -253,13 +253,13 @@ func getAllIssues(results *audit.Results, allowedLicenses []string) (*issuesRows
 		Vulnerabilities: allVulnerabilitiesRows,
 		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
 		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
-		Licenses:        forbiddenLicenses,
+		Licenses:        violatedLicenses,
 	}, nil
 }
 
 func getNewIssues(targetResults, sourceResults *audit.Results, allowedLicenses []string) (*issuesRows, error) {
 	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
-	var newLicenses []formats.LicenseBaseWithKey
+	var newLicenses []formats.LicenseRow
 	var err error
 	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
 		if newVulnerabilitiesOrViolations, newLicenses, err = createNewVulnerabilitiesRows(targetResults, sourceResults, allowedLicenses); err != nil {
@@ -267,18 +267,18 @@ func getNewIssues(targetResults, sourceResults *audit.Results, allowedLicenses [
 		}
 	}
 
-	var newIacs []formats.IacSecretsRow
+	var newIacs []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
 		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
 		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
-		newIacs = createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+		newIacs = createNewSourceCodeRows(targetIacRows, sourceIacRows)
 	}
 
-	var newSecrets []formats.IacSecretsRow
+	var newSecrets []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
 		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.SecretsScanResults)
 		sourceSecretsRows := xrayutils.PrepareSecrets(sourceResults.ExtendedScanResults.SecretsScanResults)
-		newSecrets = createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+		newSecrets = createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 	}
 
 	return &issuesRows{
@@ -289,12 +289,12 @@ func getNewIssues(targetResults, sourceResults *audit.Results, allowedLicenses [
 	}, nil
 }
 
-func createNewIacOrSecretsRows(targetResults, sourceResults []formats.IacSecretsRow) []formats.IacSecretsRow {
+func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
 		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Text)
 	}
-	var addedIacOrSecretsVulnerabilities []formats.IacSecretsRow
+	var addedIacOrSecretsVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
 		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Text) {
 			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
@@ -304,7 +304,7 @@ func createNewIacOrSecretsRows(targetResults, sourceResults []formats.IacSecrets
 }
 
 // The rows should contain only the new issues added by this PR
-func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseBaseWithKey, err error) {
+func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseRow, err error) {
 	targetScanAggregatedResults := aggregateScanResults(targetResults.ExtendedScanResults.XrayResults)
 	sourceScanAggregatedResults := aggregateScanResults(sourceResults.ExtendedScanResults.XrayResults)
 
@@ -316,15 +316,15 @@ func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results, a
 			return
 		}
 	}
-	var newLicenses []formats.LicenseBaseWithKey
+	var newLicenses []formats.LicenseRow
 	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
 		return
 	}
-	licenseRows = getForbiddenLicenses(allowedLicenses, newLicenses)
+	licenseRows = getViolatedLicenses(allowedLicenses, newLicenses)
 	return
 }
 
-func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicenses []formats.LicenseBaseWithKey, err error) {
+func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicenses []formats.LicenseRow, err error) {
 	targetLicenses, err := xrayutils.PrepareLicenses(targetScan.Licenses)
 	if err != nil {
 		return
@@ -333,14 +333,7 @@ func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicens
 	if err != nil {
 		return
 	}
-	var sourceLicensesWithKeys, targetLicensesWithKeys []formats.LicenseBaseWithKey
-	if sourceLicensesWithKeys, err = getBaseLicensesWithKeys(sourceLicenses); err != nil {
-		return
-	}
-	if targetLicensesWithKeys, err = getBaseLicensesWithKeys(targetLicenses); err != nil {
-		return
-	}
-	newLicenses = getUniqueLicenseRows(targetLicensesWithKeys, sourceLicensesWithKeys)
+	newLicenses = getUniqueLicenseRows(targetLicenses, sourceLicenses)
 	return
 }
 
@@ -359,47 +352,42 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 }
 
 // Create vulnerability rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, forbiddenLicenses []formats.LicenseBaseWithKey, err error) {
+func getScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, violatedLicenses []formats.LicenseRow, err error) {
 	violations, vulnerabilities, licenses := xrayutils.SplitScanResults(auditResults.ExtendedScanResults.XrayResults)
-	var baseLicensesWithKey []formats.LicenseBaseWithKey
 	if len(violations) > 0 {
-		var licenseViolationsRows []formats.LicenseViolationRow
+		var licenseViolationsRows []formats.LicenseRow
 		if vulnerabilitiesRows, licenseViolationsRows, _, err = xrayutils.PrepareViolations(violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
 			return nil, nil, err
 		}
-		baseLicensesWithKey, err = getBaseLicensesWithKeys(licenseViolationsRows)
-		return vulnerabilitiesRows, baseLicensesWithKey, err
+		return vulnerabilitiesRows, licenseViolationsRows, err
 	}
 	if len(vulnerabilities) > 0 {
 		if vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
 			return
 		}
 	}
-	var licensesRows []formats.LicenseRow
-	if licensesRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
+	var licenseRows []formats.LicenseRow
+	if licenseRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
 		return
 	}
-	if baseLicensesWithKey, err = getBaseLicensesWithKeys(licensesRows); err != nil {
-		return
-	}
-	forbiddenLicenses = getForbiddenLicenses(allowedLicenses, baseLicensesWithKey)
+	violatedLicenses = getViolatedLicenses(allowedLicenses, licenseRows)
 	return
 }
 
-func getForbiddenLicenses(allowedLicenses []string, licenses []formats.LicenseBaseWithKey) []formats.LicenseBaseWithKey {
+func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow) []formats.LicenseRow {
 	if len(allowedLicenses) == 0 {
 		return nil
 	}
-	var forbiddenLicenses []formats.LicenseBaseWithKey
+	var violatedLicenses []formats.LicenseRow
 	for _, license := range licenses {
 		if !slices.Contains(allowedLicenses, license.LicenseKey) {
-			forbiddenLicenses = append(forbiddenLicenses, license)
+			violatedLicenses = append(violatedLicenses, license)
 		}
 	}
-	return forbiddenLicenses
+	return violatedLicenses
 }
 
-func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *audit.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseBaseWithKey, err error) {
+func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *audit.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseRow, err error) {
 	targetSecurityViolationsRows, targetLicenseViolationsRows, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
 	if err != nil {
 		return
@@ -410,30 +398,7 @@ func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResult
 	}
 	newSecurityViolationsRows = getUniqueVulnerabilityOrViolationRows(targetSecurityViolationsRows, sourceSecurityViolationsRows)
 	if len(sourceLicenseViolationsRows) > 0 {
-		var sourceLicensesWithKeys, targetLicensesWithKeys []formats.LicenseBaseWithKey
-		if sourceLicensesWithKeys, err = getBaseLicensesWithKeys(sourceLicenseViolationsRows); err != nil {
-			return
-		}
-		if targetLicensesWithKeys, err = getBaseLicensesWithKeys(targetLicenseViolationsRows); err != nil {
-			return
-		}
-		newLicenseViolationsRows = getUniqueLicenseRows(targetLicensesWithKeys, sourceLicensesWithKeys)
-	}
-	return
-}
-
-func getBaseLicensesWithKeys(licenses interface{}) (results []formats.LicenseBaseWithKey, err error) {
-	switch rows := licenses.(type) {
-	case []formats.LicenseViolationRow:
-		for _, row := range rows {
-			results = append(results, row.LicenseBaseWithKey)
-		}
-	case []formats.LicenseRow:
-		for _, row := range rows {
-			results = append(results, row.LicenseBaseWithKey)
-		}
-	default:
-		err = fmt.Errorf("unexpected license type received: %T", rows)
+		newLicenseViolationsRows = getUniqueLicenseRows(targetLicenseViolationsRows, sourceLicenseViolationsRows)
 	}
 	return
 }
@@ -452,9 +417,9 @@ func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.Vuln
 	return newRows
 }
 
-func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseBaseWithKey) []formats.LicenseBaseWithKey {
-	existingLicenses := make(map[string]formats.LicenseBaseWithKey)
-	var newLicenses []formats.LicenseBaseWithKey
+func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseRow) []formats.LicenseRow {
+	existingLicenses := make(map[string]formats.LicenseRow)
+	var newLicenses []formats.LicenseRow
 	for _, row := range targetRows {
 		existingLicenses[getUniqueLicenseKey(row)] = row
 	}
@@ -466,7 +431,7 @@ func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseBaseWithKey) [
 	return newLicenses
 }
 
-func getUniqueLicenseKey(license formats.LicenseBaseWithKey) string {
+func getUniqueLicenseKey(license formats.LicenseRow) string {
 	return license.LicenseKey + license.ImpactedDependencyName + license.ImpactedDependencyType
 }
 

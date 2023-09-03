@@ -379,7 +379,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology)
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", tech.ToString(), false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", tech.String(), false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.

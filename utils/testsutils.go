@@ -5,6 +5,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	goGitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
@@ -42,7 +43,7 @@ func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restor
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
-	err = fileutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
+	err = utils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 	restoreFunc = func() {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
