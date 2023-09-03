@@ -6,6 +6,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
@@ -151,7 +152,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
@@ -159,7 +160,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
@@ -168,12 +169,14 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
+		"",
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], nil),
+		"",
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], nil),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -196,12 +199,14 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 			ImpactedDependencyVersion: "1.0.0",
 			Applicable:                "Applicable",
 			Technology:                coreutils.Pip,
+			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
 		},
 		{
 			ImpactedDependencyName:    "Dependency2",
 			ImpactedDependencyVersion: "2.0.0",
 			Applicable:                "Not Applicable",
 			Technology:                coreutils.Pip,
+			Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
 		},
 	}
 
@@ -221,7 +226,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
@@ -229,7 +234,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
@@ -238,12 +243,14 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
+		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[0].Cves[0].Id, vulnerabilitiesRows[0].Cves[1].Id}, ",")),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id, vulnerabilitiesRows[0].Cves[1].Id}),
+		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[1].Cves[0].Id}, ",")),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
 	)
 
 	actualContent = so.VulnerabilitiesContent(vulnerabilitiesRows)
