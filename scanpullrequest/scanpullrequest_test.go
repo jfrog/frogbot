@@ -757,7 +757,7 @@ func TestCreateNewIacRows(t *testing.T) {
 						LineColumn: "1:10",
 						Text:       "aws violation",
 					},
-					SeverityNumValue: 10,
+					SeverityNumValue: 13,
 				},
 			},
 		},
@@ -786,7 +786,7 @@ func TestCreateNewIacRows(t *testing.T) {
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity:         "Medium",
-					SeverityNumValue: 8,
+					SeverityNumValue: 11,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
@@ -853,7 +853,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 						Text:       "Sensitive information",
 					},
 					Type:             "Secret",
-					SeverityNumValue: 10,
+					SeverityNumValue: 13,
 				},
 			},
 		},
@@ -884,7 +884,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity:         "Medium",
-					SeverityNumValue: 8,
+					SeverityNumValue: 11,
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
