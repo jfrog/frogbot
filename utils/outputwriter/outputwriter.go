@@ -125,7 +125,7 @@ type descriptionBullet struct {
 
 func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow, cves []string) string {
 	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.Applicable).Emoji(), vulnerability.Severity)},
 		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
 		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
 		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
@@ -189,7 +189,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, iac.LineColumn, iac.Text)
 	}
 	return tableContent
 }
