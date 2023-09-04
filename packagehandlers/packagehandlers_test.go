@@ -42,7 +42,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "golang.org/x/crypto"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "golang.org/x/crypto"}},
 				},
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
@@ -51,7 +51,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.7.7",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/gin-gonic/gin"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/gin-gonic/gin"}},
 				},
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
@@ -60,7 +60,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.3.0",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyName: "github.com/google/uuid"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/google/uuid"}},
 				},
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
@@ -72,7 +72,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
 				fixSupported: false,
@@ -80,7 +80,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproejct.toml"}},
 				fixSupported: false,
@@ -88,7 +88,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
 				fixSupported: false,
@@ -96,7 +96,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true,
 				},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
@@ -105,7 +105,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Pyjwt"}},
 					IsDirectDependency:          true},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
 				fixSupported: true,
@@ -113,7 +113,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "setup.py"}},
 				fixSupported: true,
@@ -121,7 +121,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
 				fixSupported: true,
@@ -133,7 +133,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "0.8.4",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "mpath"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
 				},
 				fixSupported: false,
 			},
@@ -141,7 +141,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.0.2",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyName: "minimatch"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimatch"}},
 				},
 				fixSupported: true,
 			},
@@ -154,7 +154,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.2.6",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
 				},
 				fixSupported: false,
 			},
@@ -162,7 +162,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.2.6",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
 				},
 				fixSupported:        true,
 				specificTechVersion: "1",
@@ -171,7 +171,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.2.6",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyName: "minimist"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
 				},
 				fixSupported:        true,
 				specificTechVersion: "2",
@@ -183,7 +183,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.7",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
 					IsDirectDependency:          true},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
 				fixSupported: true,
@@ -191,7 +191,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.3.20",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
 					IsDirectDependency:          false},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
 				fixSupported: false,
@@ -205,7 +205,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier"}},
 				},
 				fixSupported: false,
 			},
@@ -213,7 +213,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier"}},
 				},
 				fixSupported: true,
 			},

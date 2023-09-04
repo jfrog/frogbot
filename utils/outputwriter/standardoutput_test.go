@@ -19,21 +19,25 @@ func TestStandardOutput_TableRow(t *testing.T) {
 		{
 			name: "Single CVE and no direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "Critical",
-				ImpactedDependencyName:    "testdep",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+					ImpactedDependencyName:    "testdep",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "High",
-				ImpactedDependencyName:    "testdep2",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0", "3.0.0"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName:    "testdep2",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"2.0.0", "3.0.0"},
 				Cves: []formats.CveRow{
 					{Id: "CVE-2022-1234"},
 					{Id: "CVE-2022-5678"},
@@ -44,33 +48,37 @@ func TestStandardOutput_TableRow(t *testing.T) {
 		{
 			name: "Single CVE and direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "Low",
-				ImpactedDependencyName:    "testdep3",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
-				Components: []formats.ComponentRow{
-					{Name: "dep1", Version: "1.0.0"},
-					{Name: "dep2", Version: "2.0.0"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "Low"},
+					ImpactedDependencyName:    "testdep3",
+					ImpactedDependencyVersion: "1.0.0",
+					Components: []formats.ComponentRow{
+						{Name: "dep1", Version: "1.0.0"},
+						{Name: "dep2", Version: "2.0.0"},
+					},
 				},
+				FixedVersions: []string{"2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br><br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity: "High",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName:    "impacted",
+					ImpactedDependencyVersion: "3.0.0",
+					Components: []formats.ComponentRow{
+						{Name: "dep1", Version: "1.0.0"},
+						{Name: "dep2", Version: "2.0.0"},
+					},
+				},
 				Cves: []formats.CveRow{
 					{Id: "CVE-1"},
 					{Id: "CVE-2"},
 				},
-				Components: []formats.ComponentRow{
-					{Name: "dep1", Version: "1.0.0"},
-					{Name: "dep2", Version: "2.0.0"},
-				},
-				ImpactedDependencyName:    "impacted",
-				ImpactedDependencyVersion: "3.0.0",
-				FixedVersions:             []string{"4.0.0", "5.0.0"},
+				FixedVersions: []string{"4.0.0", "5.0.0"},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br><br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br><br>5.0.0 |",
 		},
@@ -127,12 +135,16 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
-			ImpactedDependencyName:    "Dependency1",
-			ImpactedDependencyVersion: "1.0.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency1",
+				ImpactedDependencyVersion: "1.0.0",
+			},
 		},
 		{
-			ImpactedDependencyName:    "Dependency2",
-			ImpactedDependencyVersion: "2.0.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
 		},
 	}
 
@@ -172,11 +184,11 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 		"",
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], nil),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		"",
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], nil),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -195,18 +207,22 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows = []formats.VulnerabilityOrViolationRow{
 		{
-			ImpactedDependencyName:    "Dependency1",
-			ImpactedDependencyVersion: "1.0.0",
-			Applicable:                "Applicable",
-			Technology:                coreutils.Pip,
-			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency1",
+				ImpactedDependencyVersion: "1.0.0",
+			},
+			Applicable: "Applicable",
+			Technology: coreutils.Pip,
+			Cves:       []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
 		},
 		{
-			ImpactedDependencyName:    "Dependency2",
-			ImpactedDependencyVersion: "2.0.0",
-			Applicable:                "Not Applicable",
-			Technology:                coreutils.Pip,
-			Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
+			Applicable: "Not Applicable",
+			Technology: coreutils.Pip,
+			Cves:       []formats.CveRow{{Id: "CVE-2022-4321"}},
 		},
 	}
 
@@ -246,11 +262,11 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[0].Cves[0].Id, vulnerabilitiesRows[0].Cves[1].Id}, ",")),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id, vulnerabilitiesRows[0].Cves[1].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[1].Cves[0].Id}, ",")),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent = so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -275,8 +291,10 @@ func TestStandardOutput_IacContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 3,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
 						LineColumn: "11:1",
@@ -290,8 +308,10 @@ func TestStandardOutput_IacContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 3,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
 						LineColumn: "11:1",
@@ -299,8 +319,10 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					},
 				},
 				{
-					SeverityDetails:  "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 3,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
 						LineColumn: "11:1",
@@ -336,8 +358,10 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "Medium",
-					SeverityNumValue: 2,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 2,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
@@ -352,8 +376,10 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 3,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
@@ -362,8 +388,10 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					Type: "azure_mysql_no_public",
 				},
 				{
-					SeverityDetails:  "Medium",
-					SeverityNumValue: 2,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 2,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",

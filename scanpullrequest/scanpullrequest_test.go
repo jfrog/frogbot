@@ -487,7 +487,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	iac := []formats.SourceCodeRow{
 		{
-			Severity: "Low",
+			SeverityDetails: formats.SeverityDetails{Severity: "Low"},
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test.js",
 				LineColumn: "1:20",
@@ -496,7 +496,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Type: "aws_cloudtrail_encrypt",
 		},
 		{
-			Severity: "High",
+			SeverityDetails: formats.SeverityDetails{Severity: "High"},
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test2.js",
 				LineColumn: "4:30",
@@ -507,13 +507,13 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
-	message := createPullRequestComment(vulnerabilities, iac, writerOutput)
+	message := createPullRequestComment(&issuesRows{Vulnerabilities: vulnerabilities, Iacs: iac}, writerOutput)
 
 	expectedMessage := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestComment(vulnerabilities, iac, writerOutput)
+	message = createPullRequestComment(&issuesRows{Vulnerabilities: vulnerabilities, Iacs: iac}, writerOutput)
 	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n</details>\n\n\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |\n\n</div>\n\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n"
 	assert.Equal(t, expectedMessage, message)
 }
@@ -796,13 +796,15 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity: "High",
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 10,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
 						Text:       "aws violation",
 					},
-					SeverityNumValue: 10,
 				},
 			},
 		},
@@ -830,8 +832,10 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "Medium",
-					SeverityNumValue: 8,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 8,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
@@ -891,14 +895,16 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity: "High",
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 10,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
 						Text:       "Sensitive information",
 					},
-					Type:             "Secret",
-					SeverityNumValue: 10,
+					Type: "Secret",
 				},
 			},
 		},
@@ -928,8 +934,10 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "Medium",
-					SeverityNumValue: 8,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 8,
+					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
