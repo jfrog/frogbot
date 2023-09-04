@@ -11,7 +11,7 @@ import (
 	rtutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	mvnutils "github.com/jfrog/jfrog-cli-core/v2/utils/mvn"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/audit/java"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/sca/java"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
 	"io"
