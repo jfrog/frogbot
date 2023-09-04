@@ -1,4 +1,4 @@
-name: "Frogbot Scan and Fix"
+name: "Frogbot Scan Repository"
 on:
   workflow_dispatch:
   schedule:
@@ -11,38 +11,25 @@ permissions:
 jobs:
   scan-repository:
     runs-on: ubuntu-latest
+    name: Scan Repository (${{ matrix.branch }})
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
         branch: [ "dev" ]
     steps:
-
-      # Install prerequisites
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.20.x
-
       - uses: jfrog/frogbot@v2
         env:
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
           # [Mandatory]
-          # JFrog platform URL
+          # JFrog platform URL (This functionality requires version 3.29.0 or above of Xray)
           JF_URL: ${{ secrets.FROGBOT_URL }}
 
           # [Mandatory if JF_USER and JF_PASSWORD are not provided]
           # JFrog access token with 'read' permissions on Xray service
           JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
 
-          # [Mandatory if JF_ACCESS_TOKEN is not provided]
-          # JFrog username with 'read' permissions for Xray. Must be provided with JF_PASSWORD
-          # JF_USER: ${{ secrets.JF_USER }}
-
-          # [Mandatory if JF_ACCESS_TOKEN is not provided]
-          # JFrog password. Must be provided with JF_USER
-          # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
-
           # [Mandatory]
-          # The GitHub token automatically generated for the job
+          # The GitHub token is automatically generated for the job
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # [Mandatory]
@@ -59,7 +46,7 @@ jobs:
           # If the machine that runs Frogbot has no access to the internet, follow these steps to allow the
           # executable to be downloaded from an Artifactory instance, which the machine has access to:
           #
-          # 1. Login to the Artifactory UI, with a user which has admin credentials.
+          # 1. Login to the Artifactory UI, with a user who has admin credentials.
           # 2. Create a Remote Repository with the following properties set.
           #    Under the 'Basic' tab:
           #       Package Type: Generic
@@ -125,3 +112,7 @@ jobs:
           # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
           # The following values are accepted: Low, Medium, High or Critical
           # JF_MIN_SEVERITY: ""
+
+          # [Optional, Default: eco-system+frogbot@jfrog.com]
+          # Set the email of the commit author
+          # JF_GIT_EMAIL_AUTHOR: ""
