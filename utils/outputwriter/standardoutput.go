@@ -123,7 +123,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}

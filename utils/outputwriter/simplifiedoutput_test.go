@@ -255,17 +255,17 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 func TestSimplifiedOutput_IacContent(t *testing.T) {
 	testCases := []struct {
 		name           string
-		iacRows        []formats.IacSecretsRow
+		iacRows        []formats.SourceCodeRow
 		expectedOutput string
 	}{
 		{
 			name:           "Empty IAC rows",
-			iacRows:        []formats.IacSecretsRow{},
+			iacRows:        []formats.SourceCodeRow{},
 			expectedOutput: "",
 		},
 		{
 			name: "Single IAC row",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
@@ -279,7 +279,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 		},
 		{
 			name: "Multiple IAC rows",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
@@ -311,17 +311,17 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 	testCases := []struct {
 		name           string
-		iacRows        []formats.IacSecretsRow
+		iacRows        []formats.SourceCodeRow
 		expectedOutput string
 	}{
 		{
 			name:           "Empty IAC rows",
-			iacRows:        []formats.IacSecretsRow{},
+			iacRows:        []formats.SourceCodeRow{},
 			expectedOutput: "",
 		},
 		{
 			name: "Single IAC row",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
@@ -335,7 +335,7 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 		},
 		{
 			name: "Multiple IAC rows",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,

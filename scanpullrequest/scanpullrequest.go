@@ -131,7 +131,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, secretsRows []formats.IacSecretsRow, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, secretsRows []formats.SourceCodeRow, err error) {
 	// Download source branch
 	sourceBranchInfo := pullRequestDetails.Source
 	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(client, sourceBranchInfo.Owner, sourceBranchInfo.Repository, sourceBranchInfo.Name)
@@ -198,7 +198,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Get new issues
 		var newVulnerabilities []formats.VulnerabilityOrViolationRow
-		var newIacs, newSecrets []formats.IacSecretsRow
+		var newIacs, newSecrets []formats.SourceCodeRow
 		if newVulnerabilities, newIacs, newSecrets, err = getNewIssues(targetResults, sourceResults); err != nil {
 			return
 		}
@@ -209,7 +209,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	return
 }
 
-func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.IacSecretsRow, []formats.IacSecretsRow, error) {
+func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.SourceCodeRow, []formats.SourceCodeRow, error) {
 	var newVulnerabilities []formats.VulnerabilityOrViolationRow
 	var err error
 	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
@@ -218,14 +218,14 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 		}
 	}
 
-	var newIacs []formats.IacSecretsRow
+	var newIacs []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
 		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
 		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
 		newIacs = createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
 	}
 
-	var newSecrets []formats.IacSecretsRow
+	var newSecrets []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
 		targetSecretsRows := xrayutils.PrepareSecrets(targetResults.ExtendedScanResults.SecretsScanResults)
 		sourceSecretsRows := xrayutils.PrepareSecrets(sourceResults.ExtendedScanResults.SecretsScanResults)
@@ -235,12 +235,12 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 	return newVulnerabilities, newIacs, newSecrets, nil
 }
 
-func createNewIacOrSecretsRows(targetResults, sourceResults []formats.IacSecretsRow) []formats.IacSecretsRow {
+func createNewIacOrSecretsRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
 		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Text)
 	}
-	var addedIacOrSecretsVulnerabilities []formats.IacSecretsRow
+	var addedIacOrSecretsVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
 		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Text) {
 			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
@@ -338,7 +338,7 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 	return
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.IacSecretsRow, writer outputwriter.OutputWriter) string {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, writer outputwriter.OutputWriter) string {
 	if len(vulnerabilitiesRows) == 0 && len(iacRows) == 0 {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
