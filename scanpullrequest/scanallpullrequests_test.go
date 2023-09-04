@@ -3,18 +3,17 @@ package scanpullrequest
 import (
 	"context"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	biutils "github.com/jfrog/build-info-go/utils"
+	"github.com/jfrog/frogbot/testdata"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/testdata"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )
 
 var gitParams = &utils.Repository{
@@ -222,7 +221,7 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) er
 	if err != nil {
 		return err
 	}
-	return fileutils.CopyDir(sourceDir, targetDir, true, []string{})
+	return biutils.CopyDir(sourceDir, targetDir, true, []string{})
 }
 
 func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
