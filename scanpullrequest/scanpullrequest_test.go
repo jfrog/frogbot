@@ -487,18 +487,22 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	iac := []formats.SourceCodeRow{
 		{
-			SeverityDetails: "Low",
-			File:            "test.js",
-			LineColumn:      "1:20",
-			Text:            "kms_key_id='' was detected",
-			Type:            "aws_cloudtrail_encrypt",
+			Severity: "Low",
+			SourceCodeLocationRow: formats.SourceCodeLocationRow{
+				File:       "test.js",
+				LineColumn: "1:20",
+				Text:       "kms_key_id='' was detected",
+			},
+			Type: "aws_cloudtrail_encrypt",
 		},
 		{
-			SeverityDetails: "High",
-			File:            "test2.js",
-			LineColumn:      "4:30",
-			Text:            "Deprecated TLS version was detected",
-			Type:            "aws_cloudfront_tls_version",
+			Severity: "High",
+			SourceCodeLocationRow: formats.SourceCodeLocationRow{
+				File:       "test2.js",
+				LineColumn: "4:30",
+				Text:       "Deprecated TLS version was detected",
+			},
+			Type: "aws_cloudfront_tls_version",
 		},
 	}
 	writerOutput := &outputwriter.StandardOutput{}
@@ -758,69 +762,81 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 func TestCreateNewIacRows(t *testing.T) {
 	testCases := []struct {
 		name                            string
-		targetIacResults                []xrayutils.IacOrSecretResult
-		sourceIacResults                []xrayutils.IacOrSecretResult
-		expectedAddedIacVulnerabilities []formats.IacSecretsRow
+		targetIacResults                []xrayutils.SourceCodeScanResult
+		sourceIacResults                []xrayutils.SourceCodeScanResult
+		expectedAddedIacVulnerabilities []formats.SourceCodeRow
 	}{
 		{
 			name: "No vulnerabilities in source IaC results",
-			targetIacResults: []xrayutils.IacOrSecretResult{
+			targetIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Text:       "aws violation",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "aws violation",
+					},
 				},
 			},
-			sourceIacResults:                []xrayutils.IacOrSecretResult{},
-			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{},
+			sourceIacResults:                []xrayutils.SourceCodeScanResult{},
+			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{},
 		},
 		{
 			name:             "No vulnerabilities in target IaC results",
-			targetIacResults: []xrayutils.IacOrSecretResult{},
-			sourceIacResults: []xrayutils.IacOrSecretResult{
+			targetIacResults: []xrayutils.SourceCodeScanResult{},
+			sourceIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Text:       "aws violation",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "aws violation",
+					},
 				},
 			},
-			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "High",
-					File:             "file1",
-					LineColumn:       "1:10",
-					Text:             "aws violation",
+					Severity: "High",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "aws violation",
+					},
 					SeverityNumValue: 10,
 				},
 			},
 		},
 		{
 			name: "Some new vulnerabilities in source IaC results",
-			targetIacResults: []xrayutils.IacOrSecretResult{
+			targetIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Text:       "aws violation",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "aws violation",
+					},
 				},
 			},
-			sourceIacResults: []xrayutils.IacOrSecretResult{
+			sourceIacResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "Medium",
-					File:       "file2",
-					LineColumn: "2:5",
-					Text:       "gcp violation",
+					Severity: "Medium",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "gcp violation",
+					},
 				},
 			},
-			expectedAddedIacVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "Medium",
+					Severity:         "Medium",
 					SeverityNumValue: 8,
-					File:             "file2",
-					LineColumn:       "2:5",
-					Text:             "gcp violation",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "gcp violation",
+					},
 				},
 			},
 		},
@@ -839,75 +855,87 @@ func TestCreateNewIacRows(t *testing.T) {
 func TestCreateNewSecretRows(t *testing.T) {
 	testCases := []struct {
 		name                                string
-		targetSecretsResults                []xrayutils.IacOrSecretResult
-		sourceSecretsResults                []xrayutils.IacOrSecretResult
-		expectedAddedSecretsVulnerabilities []formats.IacSecretsRow
+		targetSecretsResults                []xrayutils.SourceCodeScanResult
+		sourceSecretsResults                []xrayutils.SourceCodeScanResult
+		expectedAddedSecretsVulnerabilities []formats.SourceCodeRow
 	}{
 		{
 			name: "No vulnerabilities in source secrets results",
-			targetSecretsResults: []xrayutils.IacOrSecretResult{
+			targetSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Sensitive information",
+					},
+					Type: "Secret",
 				},
 			},
-			sourceSecretsResults:                []xrayutils.IacOrSecretResult{},
-			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{},
+			sourceSecretsResults:                []xrayutils.SourceCodeScanResult{},
+			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{},
 		},
 		{
 			name:                 "No vulnerabilities in target secrets results",
-			targetSecretsResults: []xrayutils.IacOrSecretResult{},
-			sourceSecretsResults: []xrayutils.IacOrSecretResult{
+			targetSecretsResults: []xrayutils.SourceCodeScanResult{},
+			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Sensitive information",
+					},
+					Type: "Secret",
 				},
 			},
-			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "High",
-					File:             "file1",
-					LineColumn:       "1:10",
+					Severity: "High",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Sensitive information",
+					},
 					Type:             "Secret",
-					Text:             "Sensitive information",
 					SeverityNumValue: 10,
 				},
 			},
 		},
 		{
 			name: "Some new vulnerabilities in source secrets results",
-			targetSecretsResults: []xrayutils.IacOrSecretResult{
+			targetSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "High",
-					File:       "file1",
-					LineColumn: "1:10",
-					Type:       "Secret",
-					Text:       "Sensitive information",
+					Severity: "High",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Sensitive information",
+					},
+					Type: "Secret",
 				},
 			},
-			sourceSecretsResults: []xrayutils.IacOrSecretResult{
+			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
 				{
-					Severity:   "Medium",
-					File:       "file2",
-					LineColumn: "2:5",
-					Type:       "Secret",
-					Text:       "Confidential data",
+					Severity: "Medium",
+					SourceCodeLocation: xrayutils.SourceCodeLocation{
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "Confidential data",
+					},
+					Type: "Secret",
 				},
 			},
-			expectedAddedSecretsVulnerabilities: []formats.IacSecretsRow{
+			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					SeverityDetails:  "Medium",
+					Severity:         "Medium",
 					SeverityNumValue: 8,
-					File:             "file2",
-					LineColumn:       "2:5",
-					Text:             "Confidential data",
-					Type:             "Secret",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "Confidential data",
+					},
+					Type: "Secret",
 				},
 			},
 		},

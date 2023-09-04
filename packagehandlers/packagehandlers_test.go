@@ -3,10 +3,10 @@ package packagehandlers
 import (
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
+	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -440,7 +440,7 @@ func TestMavenGavReader(t *testing.T) {
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
-	assert.NoError(t, fileutils.CopyDir(filepath.Join("..", "testdata", "projects", "maven"), tmpDir, true, nil))
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "maven"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
@@ -480,7 +480,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
-	assert.NoError(t, fileutils.CopyDir(testProjectPath, tmpDir, true, nil))
+	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
@@ -511,7 +511,7 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
-	assert.NoError(t, fileutils.CopyDir(testProjectPath, tmpDir, true, nil))
+	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))

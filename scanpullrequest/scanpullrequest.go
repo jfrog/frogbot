@@ -188,7 +188,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(client, targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
 			return
 		}
-
 	}
 	defer func() {
 		err = errors.Join(err, cleanupSource(), cleanupTarget())

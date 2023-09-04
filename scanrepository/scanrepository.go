@@ -582,10 +582,10 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 
 // 1.0         --> 1.0 ≤ x
 // (,1.0]      --> x ≤ 1.0
-// (,1.0)      --> x &lt; 1.0
+// (,1.0)      --> x < 1.0
 // [1.0]       --> x == 1.0
-// (1.0,)      --> 1.0 &lt; x
-// (1.0, 2.0)  --> 1.0 &lt; x &lt; 2.0
+// (1.0,)      --> 1.0 >= x
+// (1.0, 2.0)  --> 1.0 < x < 2.0
 // [1.0, 2.0]  --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]

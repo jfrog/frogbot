@@ -255,44 +255,50 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 func TestSimplifiedOutput_IacContent(t *testing.T) {
 	testCases := []struct {
 		name           string
-		iacRows        []formats.IacSecretsRow
+		iacRows        []formats.SourceCodeRow
 		expectedOutput string
 	}{
 		{
 			name:           "Empty IAC rows",
-			iacRows:        []formats.IacSecretsRow{},
+			iacRows:        []formats.SourceCodeRow{},
 			expectedOutput: "",
 		},
 		{
 			name: "Single IAC row",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					SeverityDetails:  "High",
 					SeverityNumValue: 3,
-					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
-					LineColumn:       "11:1",
-					Text:             "Missing Periodic patching was detected",
-					Type:             "azure_redis_patch",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
+						LineColumn: "11:1",
+						Text:       "Missing Periodic patching was detected",
+					},
+					Type: "azure_redis_patch",
 				},
 			},
 			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
 		},
 		{
 			name: "Multiple IAC rows",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					SeverityDetails:  "High",
 					SeverityNumValue: 3,
-					File:             "applicable/req_sw_terraform_azure_redis_patch.tf",
-					LineColumn:       "11:1",
-					Text:             "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
+						LineColumn: "11:1",
+						Text:       "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+					},
 				},
 				{
 					SeverityDetails:  "High",
 					SeverityNumValue: 3,
-					File:             "applicable/req_sw_terraform_azure_redis_auth.tf",
-					LineColumn:       "11:1",
-					Text:             "Missing Periodic patching was detected",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
+						LineColumn: "11:1",
+						Text:       "Missing Periodic patching was detected",
+					},
 				},
 			},
 			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
@@ -311,46 +317,52 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 	testCases := []struct {
 		name           string
-		iacRows        []formats.IacSecretsRow
+		iacRows        []formats.SourceCodeRow
 		expectedOutput string
 	}{
 		{
 			name:           "Empty IAC rows",
-			iacRows:        []formats.IacSecretsRow{},
+			iacRows:        []formats.SourceCodeRow{},
 			expectedOutput: "",
 		},
 		{
 			name: "Single IAC row",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					SeverityDetails:  "Medium",
 					SeverityNumValue: 2,
-					File:             "file1",
-					LineColumn:       "1:10",
-					Text:             "Public access to MySQL was detected",
-					Type:             "azure_mysql_no_public",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Public access to MySQL was detected",
+					},
+					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| Medium | file1 | 1:10 | Public access to MySQL was detected |",
 		},
 		{
 			name: "Multiple IAC rows",
-			iacRows: []formats.IacSecretsRow{
+			iacRows: []formats.SourceCodeRow{
 				{
 					SeverityDetails:  "High",
 					SeverityNumValue: 3,
-					File:             "file1",
-					LineColumn:       "1:10",
-					Text:             "Public access to MySQL was detected",
-					Type:             "azure_mysql_no_public",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file1",
+						LineColumn: "1:10",
+						Text:       "Public access to MySQL was detected",
+					},
+					Type: "azure_mysql_no_public",
 				},
 				{
 					SeverityDetails:  "Medium",
 					SeverityNumValue: 2,
-					File:             "file2",
-					LineColumn:       "2:5",
-					Text:             "Public access to MySQL was detected",
-					Type:             "azure_mysql_no_public",
+					SourceCodeLocationRow: formats.SourceCodeLocationRow{
+						File:       "file2",
+						LineColumn: "2:5",
+						Text:       "Public access to MySQL was detected",
+					},
+					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| High | file1 | 1:10 | Public access to MySQL was detected |\n| Medium | file2 | 2:5 | Public access to MySQL was detected |",
