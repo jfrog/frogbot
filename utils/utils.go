@@ -18,7 +18,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"

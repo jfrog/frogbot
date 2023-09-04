@@ -11,7 +11,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	audit "github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/generic"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -582,10 +582,10 @@ func getMinimalFixVersion(impactedPackageVersion string, fixVersions []string) s
 
 // 1.0         --> 1.0 ≤ x
 // (,1.0]      --> x ≤ 1.0
-// (,1.0)      --> x &lt; 1.0
+// (,1.0)      --> x < 1.0
 // [1.0]       --> x == 1.0
-// (1.0,)      --> 1.0 &lt; x
-// (1.0, 2.0)  --> 1.0 &lt; x &lt; 2.0
+// (1.0,)      --> 1.0 >= x
+// (1.0, 2.0)  --> 1.0 < x < 2.0
 // [1.0, 2.0]  --> 1.0 ≤ x ≤ 2.0
 func parseVersionChangeString(fixVersion string) string {
 	latestVersion := strings.Split(fixVersion, ",")[0]

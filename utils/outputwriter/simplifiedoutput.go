@@ -109,7 +109,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
