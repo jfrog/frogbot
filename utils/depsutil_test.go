@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/jfrog/jfrog-client-go/auth"
@@ -20,7 +21,7 @@ func setTestEnvironment(t *testing.T, project string, server *config.ServerDetai
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
 	sourceDir := filepath.Join("..", "testdata", "projects", project)
-	assert.NoError(t, fileutils.CopyDir(sourceDir, tmpDir, true, nil))
+	assert.NoError(t, biutils.CopyDir(sourceDir, tmpDir, true, nil))
 	restoreDir, err := Chdir(tmpDir)
 	assert.NoError(t, err)
 	deleteRemoteRepoFunc, repoKey := createRemoteRepo(t, project, server)
