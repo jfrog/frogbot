@@ -119,18 +119,19 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 		}
 	}
 
-	graphBasicParams := (&xrayutils.GraphBasicParams{}).
+	auditBasicParams := (&xrayutils.AuditBasicParams{}).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails)
+
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
-		SetGraphBasicParams(graphBasicParams)
+		SetGraphBasicParams(auditBasicParams)
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
