@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v45/github"
+	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -372,7 +373,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 				err = fileutils.RemoveTempDir(tmpDir)
 			}()
 			assert.NoError(t, err)
-			assert.NoError(t, fileutils.CopyDir(projectPath, tmpDir, true, nil))
+			assert.NoError(t, biutils.CopyDir(projectPath, tmpDir, true, nil))
 			if pkg.packageType == coreutils.Gradle.ToString() {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
