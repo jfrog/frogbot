@@ -23,7 +23,7 @@ jobs:
           labels: "safe to test"
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -60,7 +60,7 @@ jobs:
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup Go
@@ -120,7 +120,7 @@ jobs:
           go-version: 1.20.x
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
