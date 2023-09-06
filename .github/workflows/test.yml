@@ -89,6 +89,11 @@ jobs:
       - name: Install python components
         run: python -m pip install pipenv poetry
 
+      - name: Install dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "6.x"
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
