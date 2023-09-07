@@ -55,6 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: [ ubuntu, windows, macos ]
         suite:
           - name: 'Unit'
             package: ''
@@ -67,7 +68,6 @@ jobs:
 
           - name: 'Package Handlers'
             package: 'packagehandlers'
-        os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
       - uses: actions/checkout@v4
