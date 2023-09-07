@@ -58,7 +58,6 @@ jobs:
         os: [ ubuntu, windows, macos ]
         suite:
           - name: 'Unit'
-            package: ''
 
           - name: 'Scan Repository'
             package: 'scanrepository'
