@@ -13,6 +13,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 
 	"net/http"
 	"strings"
@@ -441,7 +442,7 @@ func setGoGitCustomClient() {
 
 // CreateGitInfoContext Creates GitInfoContest for XSC scans,this is optional.
 // only log warning if fails to get information.
-func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *scan.XscGitInfoContext) {
+func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *services.XscGitInfoContext) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, branchName)
 	if err != nil {
 		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
@@ -459,7 +460,7 @@ func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vc
 	if gitProject == "" {
 		gitProject = repoOwner
 	}
-	return &scan.XscGitInfoContext{
+	return &services.XscGitInfoContext{
 		GitRepoUrl:    repoInfo.CloneInfo.HTTP, // Clone URLs on browsers redirects to repository URLS.
 		GitRepoName:   repoName,
 		GitProvider:   vcsProvider.String(),
