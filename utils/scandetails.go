@@ -8,7 +8,8 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/scan"
+	"github.com/jfrog/jfrog-client-go/xray/services"
+
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,7 @@ const (
 type ScanDetails struct {
 	*Project
 	*Git
-	*scan.XrayGraphScanParams
+	*services.XrayGraphScanParams
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
@@ -94,9 +95,9 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func createXrayScanParams(watches []string, project string) (params *scan.XrayGraphScanParams) {
-	params = &scan.XrayGraphScanParams{
-		ScanType:        scan.Dependency,
+func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
+	params = &services.XrayGraphScanParams{
+		ScanType:        services.Dependency,
 		IncludeLicenses: false,
 	}
 	if len(watches) > 0 {

@@ -14,7 +14,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/scan"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http/httptest"
@@ -387,7 +387,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: &scan.XrayGraphScanParams{},
+				XrayGraphScanParams: &services.XrayGraphScanParams{},
 				Project:             &frogbotParams.Projects[0],
 				ServerDetails:       &frogbotParams.Server,
 			}
@@ -431,39 +431,39 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with no violations and vulnerabilities",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []scan.ScanResponse{},
+				XrayResults: []services.ScanResponse{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []scan.ScanResponse{
+				XrayResults: []services.ScanResponse{
 					{
-						Vulnerabilities: []scan.Vulnerability{
+						Vulnerabilities: []services.Vulnerability{
 							{
-								Cves: []scan.Cve{
+								Cves: []services.Cve{
 									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
 									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
 								},
 								Severity: "Critical",
-								Components: map[string]scan.Component{
+								Components: map[string]services.Component{
 									"vuln1": {
 										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
 									},
 								},
 							},
 							{
-								Cves: []scan.Cve{
+								Cves: []services.Cve{
 									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
 									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
 								},
 								Severity: "High",
-								Components: map[string]scan.Component{
+								Components: map[string]services.Component{
 									"vuln2": {
 										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
 									},
 								},
 							},
@@ -486,34 +486,34 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []scan.ScanResponse{
+				XrayResults: []services.ScanResponse{
 					{
-						Violations: []scan.Violation{
+						Violations: []services.Violation{
 							{
 								ViolationType: "security",
-								Cves: []scan.Cve{
+								Cves: []services.Cve{
 									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
 									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
 								},
 								Severity: "Critical",
-								Components: map[string]scan.Component{
+								Components: map[string]services.Component{
 									"viol1": {
 										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
 									},
 								},
 							},
 							{
 								ViolationType: "security",
-								Cves: []scan.Cve{
+								Cves: []services.Cve{
 									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
 									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
 								},
 								Severity: "High",
-								Components: map[string]scan.Component{
+								Components: map[string]services.Component{
 									"viol2": {
 										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]scan.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
 									},
 								},
 							},
@@ -703,7 +703,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, expectedPrBody, prBody)
 }
 
-func verifyTechnologyNaming(t *testing.T, scanResponse []scan.ScanResponse, expectedType string) {
+func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType string) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
 			assert.Equal(t, expectedType, vulnerability.Technology)
