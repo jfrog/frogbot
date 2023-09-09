@@ -77,7 +77,7 @@ const (
             </tbody>
         </table>
 		<div class="ignore-comments">
-		To make Frogbot ignore the lines with the potential secrets, add a comment above the line which includes the <b>jfrog-ignore</b> keyword.	
+		<b>NOTE:</b> If you'd like Frogbot to ignore the lines with the potential secrets, add a comment which includes the <b>jfrog-ignore</b> keyword above the lines with the secrets.	
 		</div>
 	</div>
 </body>
