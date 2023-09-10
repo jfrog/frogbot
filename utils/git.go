@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5/config"
@@ -9,12 +8,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/frogbot/utils/outputwriter"
-	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"github.com/jfrog/jfrog-client-go/xray/services"
-
 	"net/http"
 	"strings"
 	"time"
@@ -438,39 +434,4 @@ func setGoGitCustomClient() {
 
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 	client.InstallProtocol("https", githttp.NewClient(customClient))
-}
-
-// CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
-// Only log warning if fails to get information.
-func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *services.XscGitInfoContext, err error) {
-	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, branchName)
-	if err != nil {
-		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s, branch: %s. error: %s ", repoName, branchName, err.Error()))
-		return
-	}
-	if vcsProvider == vcsutils.AzureRepos {
-		repoOwner = gitProject
-	}
-	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
-	if err != nil {
-		log.Warn(fmt.Sprintf("failed getting repository information, for repository: %s, branch: %s. error: %s ", repoName, branchName, err.Error()))
-		return
-	}
-	// In some VCS providers, there are no projects, fallback to the repository owner.
-	if gitProject == "" {
-		gitProject = repoOwner
-	}
-	gitInfo = &services.XscGitInfoContext{
-		// Clone URLs on browsers redirects to repository URLS.
-		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
-		GitRepoName:   repoName,
-		GitProvider:   vcsProvider.String(),
-		GitProject:    gitProject,
-		BranchName:    branchName,
-		LastCommit:    latestCommit.Url,
-		CommitHash:    latestCommit.Hash,
-		CommitMessage: latestCommit.Message,
-		CommitAuthor:  latestCommit.AuthorName,
-	}
-	return
 }

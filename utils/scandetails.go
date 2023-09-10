@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -172,14 +174,52 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
 }
 
-func (sc *ScanDetails) SetXscGitInfoContext(branchName, gitProject string, client vcsclient.VcsClient) *ScanDetails {
-	XscGitInfoContext, err := CreateGitInfoContext(sc.RepoName, sc.RepoOwner, gitProject, sc.GitProvider, client, branchName)
+func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
+	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client)
 	if err != nil {
-		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ",err.Error())
+		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ", err.Error())
 		return sc
 	}
 	sc.XscGitInfoContext = XscGitInfoContext
 	return sc
+}
+
+// CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
+// scannedBranch - name of the branch we are scanning.
+// gitProject - [Optional] relevant for azure repos.
+// client vscClient
+// Only log warning if fails to get information.
+func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
+	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
+	if err != nil {
+		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error()))
+		return
+	}
+	if sc.GitProvider == vcsutils.AzureRepos {
+		sc.RepoOwner = gitProject
+	}
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), sc.RepoOwner, sc.RepoName)
+	if err != nil {
+		log.Warn(fmt.Sprintf("failed getting repository information, for repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error()))
+		return
+	}
+	// In some VCS providers, there are no projects, fallback to the repository owner.
+	if gitProject == "" {
+		gitProject = sc.RepoOwner
+	}
+	gitInfo = &services.XscGitInfoContext{
+		// Clone URLs on browsers redirects to repository URLS.
+		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
+		GitRepoName:   sc.RepoName,
+		GitProvider:   sc.GitProvider.String(),
+		GitProject:    gitProject,
+		BranchName:    scannedBranch,
+		LastCommit:    latestCommit.Url,
+		CommitHash:    latestCommit.Hash,
+		CommitMessage: latestCommit.Message,
+		CommitAuthor:  latestCommit.AuthorName,
+	}
+	return
 }
 
 func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
