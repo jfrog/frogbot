@@ -280,7 +280,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
 						LineColumn: "11:1",
-						Text:       "Missing Periodic patching was detected",
+						Snippet:       "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -295,7 +295,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
 						LineColumn: "11:1",
-						Text:       "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+						Snippet:       "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
 					},
 				},
 				{
@@ -304,7 +304,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
 						LineColumn: "11:1",
-						Text:       "Missing Periodic patching was detected",
+						Snippet:       "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -341,7 +341,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "Public access to MySQL was detected",
+						Snippet:       "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},
@@ -357,7 +357,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "Public access to MySQL was detected",
+						Snippet:       "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},
@@ -367,7 +367,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "Public access to MySQL was detected",
+						Snippet:       "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},

@@ -446,7 +446,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test.js",
 				LineColumn: "1:20",
-				Text:       "kms_key_id='' was detected",
+				Snippet:       "kms_key_id='' was detected",
 			},
 			Type: "aws_cloudtrail_encrypt",
 		},
@@ -455,7 +455,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test2.js",
 				LineColumn: "4:30",
-				Text:       "Deprecated TLS version was detected",
+				Snippet:       "Deprecated TLS version was detected",
 			},
 			Type: "aws_cloudfront_tls_version",
 		},
@@ -755,7 +755,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "aws violation",
+						Snippet:       "aws violation",
 					},
 					SeverityNumValue: 13,
 				},
@@ -790,7 +790,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "gcp violation",
+						Snippet:       "gcp violation",
 					},
 				},
 			},
@@ -850,7 +850,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "Sensitive information",
+						Snippet:       "Sensitive information",
 					},
 					Type:             "Secret",
 					SeverityNumValue: 13,
@@ -865,7 +865,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "Sensitive information",
+						Snippet:       "Sensitive information",
 					},
 					Type: "Secret",
 				},
@@ -876,7 +876,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocation: xrayutils.SourceCodeLocation{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "Confidential data",
+						Snippet:       "Confidential data",
 					},
 					Type: "Secret",
 				},
@@ -888,7 +888,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "Confidential data",
+						Snippet:       "Confidential data",
 					},
 					Type: "Secret",
 				},
