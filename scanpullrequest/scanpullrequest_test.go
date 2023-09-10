@@ -798,7 +798,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 10,
+						SeverityNumValue: 13,
 					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
@@ -834,7 +834,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 8,
+						SeverityNumValue: 11,
 					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
@@ -897,7 +897,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 10,
+						SeverityNumValue: 13,
 					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
@@ -936,7 +936,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 8,
+						SeverityNumValue: 11,
 					},
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
