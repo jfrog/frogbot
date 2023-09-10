@@ -411,3 +411,8 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 		})
 	}
 }
+
+func TestStandardOutput_GetLicensesTableContent(t *testing.T) {
+	writer := &StandardOutput{}
+	testGetLicensesTableContent(t, writer)
+}
