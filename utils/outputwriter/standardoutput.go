@@ -2,9 +2,12 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
+	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 type StandardOutput struct {
@@ -119,6 +122,126 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+	}
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) JasResultSummary(applicability, iac, sast *sarif.Run) string {
+	if len(applicability.Results) == 0 && len(iac.Results) == 0 && len(sast.Results) == 0 {
+		return ""
+	}
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(`
+	## JFrog Advanced Security Finding:
+	
+	`)
+	if len(applicability.Results) > 0 {
+		contentBuilder.WriteString(getSummaryRowContent(applicability, "📦🔍", "Applicable Cve Vulnerability"))
+	}
+	if len(iac.Results) > 0 {
+		contentBuilder.WriteString(getSummaryRowContent(iac, "🛠️", "Infrastructure as Code Vulnerability"))
+	}
+	if len(sast.Results) > 0 {
+		contentBuilder.WriteString(getSummaryRowContent(sast, "🔐", "Static Application Security Testing (SAST) Vulnerability"))
+	}
+
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails string) string {
+	return fmt.Sprintf(`
+## 📦🔍 Applicable dependency CVE Vulnerability %s
+	
+Finding: %s
+
+### 👇 Details
+
+#### Description
+	
+%s	
+
+#### Cve details
+
+%s
+
+`,
+		so.FormattedSeverity(severity, "Applicable"),
+		finding,
+		fullDetails,
+		cveDetails)
+}
+
+func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
+	return fmt.Sprintf(`
+## 🛠️ Infrastructure as Code Vulnerability %s
+	
+Finding: %s
+
+### 👇 Details
+
+%s	
+
+`,
+		so.FormattedSeverity(severity, "Applicable"),
+		finding,
+		fullDetails)
+}
+
+func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+## 🔐 Static Application Security Testing (SAST) Vulnerability %s
+	
+Finding: %s
+
+### 👇 Details
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+%s
+
+</details>
+
+`,
+		so.FormattedSeverity(severity, "Applicable"),
+		finding,
+		fullDetails,
+	))
+
+	if len(codeFlows) > 0 {
+		dataFlowId := 1
+		for _, codeFlow := range codeFlows {
+			for _, threadFlow := range codeFlow.ThreadFlows {
+				contentBuilder.WriteString(fmt.Sprintf(`
+
+<details>
+<summary> <b>%d. Vulnerable data flow analysis result</b> </summary>
+<br>
+`,
+					dataFlowId,
+				))
+
+				for i, threadFlowLocation := range threadFlow.Locations {
+					contentBuilder.WriteString(fmt.Sprintf(`
+%d. %s (at %s line %d)
+`,
+						i+1,
+						xrayutils.GetLocationSnippet(threadFlowLocation.Location),
+						xrayutils.GetLocationFileName(threadFlowLocation.Location),
+						xrayutils.GetLocationStartLine(threadFlowLocation.Location),
+					))
+				}
+
+				contentBuilder.WriteString(`
+
+</details>
+
+`,
+				)
+				dataFlowId = dataFlowId + 1
+			}
+		}
 	}
 	return contentBuilder.String()
 }

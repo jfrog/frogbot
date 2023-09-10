@@ -23,6 +23,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -43,6 +44,10 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
+
+	// Sarif run output tool annotator
+	sarifToolName = "JFrog Frogbot"
+	sarifToolUrl  = "https://github.com/jfrog/frogbot"
 )
 
 var (
@@ -211,17 +216,41 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
 		return nil
 	}
-
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true, "JFrog Frogbot", "https://github.com/jfrog/frogbot")
+	report, err := GenerateFrogbotSarifReport(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, report)
 	if err != nil {
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
 	return err
+}
+
+func CombineRunsAndMarkAsFrogbot(applicable []*sarif.Run, iac []*sarif.Run, secrets []*sarif.Run, sast []*sarif.Run) (combinedApplicable *sarif.Run, combinedIac *sarif.Run, combinedSecrets *sarif.Run, combinedSast *sarif.Run) {
+	combinedApplicable = combineRunsAndMark(applicable)
+	combinedIac = combineRunsAndMark(iac)
+	combinedSecrets = combineRunsAndMark(secrets)
+	combinedSast = combineRunsAndMark(sast)
+	return
+}
+
+func combineRunsAndMark(runs []*sarif.Run) (combined *sarif.Run) {
+	combined = sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl)
+	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
+	return
+}
+
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
+	// For PR or Repo scan, we can combine all the runs for each scanner to a single run
+	combinedApplicable, combinedIac, combinedSecrets, combinedSast := CombineRunsAndMarkAsFrogbot(extendedResults.ApplicabilityScanResults, extendedResults.IacScanResults, extendedResults.SecretsScanResults, extendedResults.SastScanResults)
+	extendedResults.ApplicabilityScanResults = []*sarif.Run{combinedApplicable}
+	extendedResults.IacScanResults = []*sarif.Run{combinedIac}
+	extendedResults.SecretsScanResults = []*sarif.Run{combinedSecrets}
+	extendedResults.SastScanResults = []*sarif.Run{combinedSast}
+	// Generate report from the data
+	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
@@ -324,4 +353,16 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
 	})
 	return pullRequestsComments, nil
+}
+
+
+func GetJasMarkdownDescription(scanType xrayutils.JasScanType, location *sarif.Location, severity, content string) string {
+	dataColumnHeader := "Finding"
+	if scanType == xrayutils.Secrets {
+		dataColumnHeader = "Secret"
+	}
+	headerRow := fmt.Sprintf("| Severity | File | Line:Column | %s |\n", dataColumnHeader)
+	separatorRow := "| :---: | :---: | :---: | :---: |\n"
+	tableHeader := headerRow + separatorRow
+	return tableHeader + fmt.Sprintf("| %s | %s | %s | %s |", severity, xrayutils.GetLocationFileName(location), xrayutils.GetStartLocationInFile(location), content)
 }

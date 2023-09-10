@@ -2,16 +2,19 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"strings"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	ReviewCommentGeneratedByFrogbot                  = "[[🐸 JFrog Frogbot]](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -107,6 +110,11 @@ type OutputWriter interface {
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
+
+	JasResultSummary(applicability, iac, sast *sarif.Run) string
+	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails string) string
+	IacReviewContent(severity, finding, fullDetails string) string
+	SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -178,6 +186,24 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	return descriptionBuilder.String()
 }
 
+func getSummaryRowContent(run *sarif.Run, icon, finding string) string {
+	plural := "s"
+	if len(run.Results) == 1 {
+		plural = ""
+	}
+	return fmt.Sprintf(`
+
+* %s Found %d location%s with %s
+
+`,
+		icon,
+		xrayutils.GetResultsLocationCount(run),
+		plural,
+		finding,
+	)
+
+}
+
 func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var tableContent string
 	for _, vulnerability := range vulnerabilities {
@@ -189,7 +215,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, iac.LineColumn, iac.Text)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, iac.LineColumn, iac.Snippet)
 	}
 	return tableContent
 }
