@@ -66,7 +66,6 @@ func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	}
 	server.Url = url
 	server.XrayUrl = url + "/xray/"
-	server.XscUrl = url + "/xsc/"
 	server.ArtifactoryUrl = url + "/artifactory/"
 	server.User = username
 	server.Password = password
