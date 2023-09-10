@@ -355,7 +355,6 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	return pullRequestsComments, nil
 }
 
-
 func GetJasMarkdownDescription(scanType xrayutils.JasScanType, location *sarif.Location, severity, content string) string {
 	dataColumnHeader := "Finding"
 	if scanType == xrayutils.Secrets {

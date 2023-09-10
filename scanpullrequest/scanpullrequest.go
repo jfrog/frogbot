@@ -200,7 +200,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 				return
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
-			applicableIssues = append(applicableIssues, xrayutils.FilterNotApplicableResults(sourceScanResults.ApplicabilityScanResults)...)
+			applicableIssues = append(applicableIssues, filterNotApplicableResults(sourceScanResults.ApplicabilityScanResults)...)
 			iacIssues = append(iacIssues, sourceScanResults.IacScanResults...)
 			secretsIssues = append(secretsIssues, sourceScanResults.SecretsScanResults...)
 			continue
@@ -230,6 +230,23 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	return
 }
 
+func filterNotApplicableResults(applicableInfo []*sarif.Run) []*sarif.Run {
+	var applicableEvidenceRows []*sarif.Run
+	for _, cveContextualAnalysisRun := range applicableInfo {
+		onlyApplicableRun := sarif.NewRun(cveContextualAnalysisRun.Tool)
+		for _, cveContextualAnalysis := range cveContextualAnalysisRun.Results {
+			if xrayutils.isApplicableResult(cveContextualAnalysis) {
+				onlyApplicableRun.Results = append(onlyApplicableRun.Results, cveContextualAnalysis)
+			}
+		}
+		if len(onlyApplicableRun.Results) > 0 {
+			applicableEvidenceRows = append(applicableEvidenceRows, onlyApplicableRun)
+		}
+	}
+
+	return applicableEvidenceRows
+}
+
 func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, *sarif.Run, *sarif.Run, *sarif.Run, *sarif.Run, error) {
 	var newVulnerabilities []formats.VulnerabilityOrViolationRow
 	var err error
@@ -240,9 +257,9 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 	}
 
 	var newApplicable *sarif.Run
-	sourceApplicability := xrayutils.FilterNotApplicableResults(sourceResults.ExtendedScanResults.ApplicabilityScanResults)
+	sourceApplicability := filterNotApplicableResults(sourceResults.ExtendedScanResults.ApplicabilityScanResults)
 	if len(sourceApplicability) > 0 {
-		targetApplicability := xrayutils.FilterNotApplicableResults(targetResults.ExtendedScanResults.ApplicabilityScanResults)
+		targetApplicability := filterNotApplicableResults(targetResults.ExtendedScanResults.ApplicabilityScanResults)
 		newApplicable = xrayutils.GetDiffFromRun(sourceApplicability, targetApplicability)
 	}
 
