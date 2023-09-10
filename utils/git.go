@@ -44,12 +44,10 @@ type GitManager struct {
 	dryRun bool
 	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
 	dryRunRepoPath string
-	// When dryRun is enabled, skipClone allows skipping the cloning of a repository for testing purposes
-	SkipClone bool
 	// Custom naming formats
 	customTemplates CustomTemplates
-	// Git details
-	git *Git
+	// Email author of the commits
+	emailAuthor string
 }
 
 type CustomTemplates struct {
@@ -59,6 +57,14 @@ type CustomTemplates struct {
 	branchNameTemplate string
 	// New pull request title template
 	pullRequestTitleTemplate string
+}
+
+func NewCustomTemplates(commitMessage, branchName, prTitle string) *CustomTemplates {
+	return &CustomTemplates{
+		commitMessageTemplate:    commitMessage,
+		branchNameTemplate:       branchName,
+		pullRequestTitleTemplate: prTitle,
+	}
 }
 
 func NewGitManager() *GitManager {
@@ -117,18 +123,22 @@ func (gm *GitManager) SetLocalRepository() (*GitManager, error) {
 	return gm, err
 }
 
-func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
+func (gm *GitManager) SetTemplates(templates *CustomTemplates) (*GitManager, error) {
 	var err error
-	if gm.customTemplates, err = loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate); err != nil {
+	if gm.customTemplates, err = loadCustomTemplates(templates.commitMessageTemplate, templates.branchNameTemplate, templates.pullRequestTitleTemplate); err != nil {
 		return nil, err
 	}
-	gm.git = gitParams
 	return gm, nil
 }
 
 func (gm *GitManager) SetDryRun(dryRun bool, dryRunRepoPath string) *GitManager {
 	gm.dryRun = dryRun
 	gm.dryRunRepoPath = dryRunRepoPath
+	return gm
+}
+
+func (gm *GitManager) SetEmailAuthor(emailAuthor string) *GitManager {
+	gm.emailAuthor = emailAuthor
 	return gm
 }
 
@@ -252,7 +262,7 @@ func (gm *GitManager) commit(commitMessage string) error {
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  frogbotAuthorName,
-			Email: gm.git.EmailAuthor,
+			Email: gm.emailAuthor,
 			When:  time.Now(),
 		},
 	})

@@ -89,57 +89,49 @@ func TestResolveDependencies(t *testing.T) {
 	testCases := []struct {
 		name              string
 		tech              string
-		scanSetup         *ScanDetails
+		project           Project
 		repoKey           string
-		resolveFunc       func(scanSetup *ScanDetails) ([]byte, error)
+		resolveFunc       func(scanDetails *ScanDetails) ([]byte, error)
 		shouldExpectError bool
 	}{
 		{
 			name: "Resolve NPM dependencies",
 			tech: "npm",
-			scanSetup: &ScanDetails{
-				ServerDetails: &params,
-				Project: &Project{
-					InstallCommandName: "npm",
-					InstallCommandArgs: []string{"install"},
-				}},
+			project: Project{
+				InstallCommandName: "npm",
+				InstallCommandArgs: []string{"install"},
+			},
 			resolveFunc:       resolveNpmDependencies,
 			shouldExpectError: false,
 		},
 		{
 			name: "Resolve Yarn V2 dependencies",
 			tech: "yarn2",
-			scanSetup: &ScanDetails{
-				ServerDetails: &params,
-				Project: &Project{
-					InstallCommandName: "yarn",
-					InstallCommandArgs: []string{"install"},
-				}},
+			project: Project{
+				InstallCommandName: "yarn",
+				InstallCommandArgs: []string{"install"},
+			},
 			resolveFunc:       resolveYarnDependencies,
 			shouldExpectError: false,
 		},
 		{
 			name: "Resolve Yarn V1 dependencies",
 			tech: "yarn1",
-			scanSetup: &ScanDetails{
-				ServerDetails: &params,
-				Project: &Project{
-					InstallCommandName: "yarn",
-					InstallCommandArgs: []string{"install"},
-				}},
+			project: Project{
+				InstallCommandName: "yarn",
+				InstallCommandArgs: []string{"install"},
+			},
 			resolveFunc:       resolveYarnDependencies,
 			shouldExpectError: true,
 		},
 		{
 			name: "Resolve .NET dependencies",
 			tech: "dotnet",
-			scanSetup: &ScanDetails{
-				ServerDetails: &params,
-				Project: &Project{
-					DepsRepo:           "frogbot-nuget-remote-tests",
-					InstallCommandName: "dotnet",
-					InstallCommandArgs: []string{"restore"},
-				}},
+			project: Project{
+				DepsRepo:           "frogbot-nuget-remote-tests",
+				InstallCommandName: "dotnet",
+				InstallCommandArgs: []string{"restore"},
+			},
 			resolveFunc:       resolveDotnetDependencies,
 			shouldExpectError: false,
 		},
@@ -149,8 +141,9 @@ func TestResolveDependencies(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
-			test.scanSetup.Project.DepsRepo = repoKey
-			output, err := test.resolveFunc(test.scanSetup)
+			scanDetails := &ScanDetails{project: test.project, serverDetails: params}
+			scanDetails.project.DepsRepo = repoKey
+			output, err := test.resolveFunc(scanDetails)
 			if test.shouldExpectError {
 				assert.Error(t, err)
 			} else {

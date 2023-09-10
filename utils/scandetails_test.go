@@ -11,31 +11,31 @@ func TestCreateXrayScanParams(t *testing.T) {
 	// Project
 	scanDetails := &ScanDetails{}
 	scanDetails.SetXrayGraphScanParams(nil, "")
-	assert.Empty(t, scanDetails.Watches)
-	assert.Equal(t, "", scanDetails.ProjectKey)
-	assert.True(t, scanDetails.IncludeVulnerabilities)
-	assert.False(t, scanDetails.IncludeLicenses)
+	assert.Empty(t, scanDetails.xrayGraphScanParams.Watches)
+	assert.Equal(t, "", scanDetails.xrayGraphScanParams.ProjectKey)
+	assert.True(t, scanDetails.xrayGraphScanParams.IncludeVulnerabilities)
+	assert.False(t, scanDetails.xrayGraphScanParams.IncludeLicenses)
 
 	// Watches
 	scanDetails.SetXrayGraphScanParams([]string{"watch-1", "watch-2"}, "")
-	assert.Equal(t, []string{"watch-1", "watch-2"}, scanDetails.Watches)
-	assert.Equal(t, "", scanDetails.ProjectKey)
-	assert.False(t, scanDetails.IncludeVulnerabilities)
-	assert.False(t, scanDetails.IncludeLicenses)
+	assert.Equal(t, []string{"watch-1", "watch-2"}, scanDetails.xrayGraphScanParams.Watches)
+	assert.Equal(t, "", scanDetails.xrayGraphScanParams.ProjectKey)
+	assert.False(t, scanDetails.xrayGraphScanParams.IncludeVulnerabilities)
+	assert.False(t, scanDetails.xrayGraphScanParams.IncludeLicenses)
 
 	// Project
 	scanDetails.SetXrayGraphScanParams(nil, "project")
-	assert.Empty(t, scanDetails.Watches)
-	assert.Equal(t, "project", scanDetails.ProjectKey)
-	assert.False(t, scanDetails.IncludeVulnerabilities)
-	assert.False(t, scanDetails.IncludeLicenses)
+	assert.Empty(t, scanDetails.xrayGraphScanParams.Watches)
+	assert.Equal(t, "project", scanDetails.xrayGraphScanParams.ProjectKey)
+	assert.False(t, scanDetails.xrayGraphScanParams.IncludeVulnerabilities)
+	assert.False(t, scanDetails.xrayGraphScanParams.IncludeLicenses)
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup := ScanDetails{
-		Project: &Project{},
+		project: Project{},
 	}
-	scanSetup.SetFailOnInstallationErrors(true)
+	scanSetup.SetFailOnSecurityIssues(true)
 	assert.NoError(t, scanSetup.runInstallIfNeeded(""))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -47,20 +47,20 @@ func TestRunInstallIfNeeded(t *testing.T) {
 		InstallCommandName: "echo",
 		InstallCommandArgs: []string{"Hello"},
 	}
-	scanSetup.Project = params
+	scanSetup.SetProject(params)
 	assert.NoError(t, scanSetup.runInstallIfNeeded(tmpDir))
 
-	scanSetup.InstallCommandName = "not-exist"
-	scanSetup.InstallCommandArgs = []string{"1", "2"}
-	scanSetup.SetFailOnInstallationErrors(false)
+	scanSetup.project.InstallCommandName = "not-exist"
+	scanSetup.project.InstallCommandArgs = []string{"1", "2"}
+	scanSetup.SetFailOnSecurityIssues(false)
 	assert.NoError(t, scanSetup.runInstallIfNeeded(tmpDir))
 
 	params = &Project{
 		InstallCommandName: "not-existed",
 		InstallCommandArgs: []string{"1", "2"},
 	}
-	scanSetup.Project = params
-	scanSetup.SetFailOnInstallationErrors(true)
+	scanSetup.SetProject(params)
+	scanSetup.SetFailOnSecurityIssues(true)
 	assert.Error(t, scanSetup.runInstallIfNeeded(tmpDir))
 }
 

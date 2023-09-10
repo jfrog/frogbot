@@ -18,7 +18,7 @@ import (
 
 type dependencyFixTest struct {
 	vulnDetails           *utils.VulnerabilityDetails
-	scanDetails           *utils.ScanDetails
+	project               *utils.Project
 	fixSupported          bool
 	specificTechVersion   string
 	uniqueChecksExtraArgs []string
@@ -74,7 +74,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "1.25.9",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "urllib3"},
 				},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				project:      &utils.Project{PipRequirementsFile: "requirements.txt"},
 				fixSupported: false,
 			},
 			{
@@ -82,7 +82,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "1.25.9",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "urllib3"},
 				},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproejct.toml"}},
+				project:      &utils.Project{PipRequirementsFile: "pyproejct.toml"},
 				fixSupported: false,
 			},
 			{
@@ -90,7 +90,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "1.25.9",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyName: "urllib3"},
 				},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
+				project:      &utils.Project{PipRequirementsFile: "Pipfile"},
 				fixSupported: false,
 			},
 			{
@@ -99,7 +99,7 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
 					IsDirectDependency:          true,
 				},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				project:      &utils.Project{PipRequirementsFile: "requirements.txt"},
 				fixSupported: true,
 			},
 			{
@@ -107,7 +107,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "Pyjwt"},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				project:      &utils.Project{PipRequirementsFile: "requirements.txt"},
 				fixSupported: true,
 			},
 			{
@@ -115,7 +115,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyName: "pyjwt"},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "setup.py"}},
+				project:      &utils.Project{PipRequirementsFile: "setup.py"},
 				fixSupported: true,
 			},
 			{
@@ -123,7 +123,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyName: "pyjwt"},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
+				project:      &utils.Project{PipRequirementsFile: "pyproject.toml"},
 				fixSupported: true,
 			},
 		},
@@ -185,7 +185,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "2.7",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "commons-io:commons-io"},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
+				project:      &utils.Project{DepsRepo: ""},
 				fixSupported: true,
 			},
 			{
@@ -193,7 +193,7 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "4.3.20",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyName: "org.springframework:spring-core"},
 					IsDirectDependency:          false},
-				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
+				project:      &utils.Project{DepsRepo: ""},
 				fixSupported: false,
 			},
 		},
@@ -222,7 +222,11 @@ func TestUpdateDependency(t *testing.T) {
 
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
-			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
+			repositoryScanDetails := utils.NewRepositoryScanDetails(nil, nil)
+			if test.project != nil {
+				repositoryScanDetails.SetProject(test.project)
+			}
+			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, repositoryScanDetails)
 			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.ToString()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)

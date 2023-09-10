@@ -14,7 +14,7 @@ type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
 
-func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.RepositoryScanDetails) (handler PackageHandler) {
 	switch vulnDetails.Technology {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
@@ -27,9 +27,9 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case coreutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case coreutils.Pip:
-		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
+		handler = &PythonPackageHandler{pipRequirementsFile: details.Project().PipRequirementsFile}
 	case coreutils.Maven:
-		handler = &MavenPackageHandler{depsRepo: details.DepsRepo, ServerDetails: details.ServerDetails}
+		handler = &MavenPackageHandler{depsRepo: details.Project().DepsRepo, ServerDetails: details.ServerDetails()}
 	case coreutils.Nuget:
 		handler = &NugetPackageHandler{}
 	default:

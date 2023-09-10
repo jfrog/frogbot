@@ -15,37 +15,77 @@ import (
 )
 
 const (
-	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
+	installationCmdFailedMsg = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 )
 
 type ScanDetails struct {
-	*Project
-	*Git
-	*services.XrayGraphScanParams
-	*config.ServerDetails
-	client                   vcsclient.VcsClient
-	failOnInstallationErrors bool
-	fixableOnly              bool
-	minSeverityFilter        string
-	baseBranch               string
+	project              Project
+	xrayGraphScanParams  services.XrayGraphScanParams
+	serverDetails        config.ServerDetails
+	git                  Git
+	client               vcsclient.VcsClient
+	failOnSecurityIssues bool
+	fixableOnly          bool
+	minSeverityFilter    string
 }
 
-func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
-	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+func newScanDetails(client vcsclient.VcsClient, repository *Repository) *ScanDetails {
+	if repository == nil {
+		return &ScanDetails{}
+	}
+	scanDetails := ScanDetails{client: client, serverDetails: repository.Server, git: repository.Git}
+	scanDetails.SetFailOnSecurityIssues(*repository.FailOnSecurityIssues).
+		SetMinSeverity(repository.MinSeverity).
+		SetFixableOnly(repository.FixableOnly).
+		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey)
+	return &scanDetails
 }
 
-func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
-	sc.failOnInstallationErrors = toFail
+func (sc *ScanDetails) Project() *Project {
+	return &sc.project
+}
+
+func (sc *ScanDetails) XrayGraphScanParams() *services.XrayGraphScanParams {
+	return &sc.xrayGraphScanParams
+}
+
+func (sc *ScanDetails) ServerDetails() *config.ServerDetails {
+	return &sc.serverDetails
+}
+
+func (sc *ScanDetails) GitClient() vcsclient.VcsClient {
+	return sc.client
+}
+
+func (sc *ScanDetails) FailOnSecurityIssues() bool {
+	return sc.failOnSecurityIssues
+}
+
+func (sc *ScanDetails) FixableOnly() bool {
+	return sc.fixableOnly
+}
+
+func (sc *ScanDetails) MinSeverityFilter() string {
+	return sc.minSeverityFilter
+}
+
+func (sc *ScanDetails) SetMinSeverityFilter(minSeverityFilter string) *ScanDetails {
+	sc.minSeverityFilter = minSeverityFilter
+	return sc
+}
+
+func (sc *ScanDetails) SetFailOnSecurityIssues(toFail bool) *ScanDetails {
+	sc.failOnSecurityIssues = toFail
 	return sc
 }
 
 func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
-	sc.Project = project
+	sc.project = *project
 	return sc
 }
 
 func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey)
+	sc.xrayGraphScanParams = *createXrayScanParams(watches, jfrogProjectKey)
 	return sc
 }
 
@@ -59,38 +99,8 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
-	sc.baseBranch = branch
-	return sc
-}
-
-func (sc *ScanDetails) Client() vcsclient.VcsClient {
-	return sc.client
-}
-
-func (sc *ScanDetails) BaseBranch() string {
-	return sc.baseBranch
-}
-
-func (sc *ScanDetails) FailOnInstallationErrors() bool {
-	return sc.failOnInstallationErrors
-}
-
-func (sc *ScanDetails) FixableOnly() bool {
-	return sc.fixableOnly
-}
-
-func (sc *ScanDetails) MinSeverityFilter() string {
-	return sc.minSeverityFilter
-}
-
-func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
-	sc.RepoOwner = owner
-	return sc
-}
-
-func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
-	sc.RepoName = repoName
+func (sc *ScanDetails) SetServerDetails(serverDetails *config.ServerDetails) *ScanDetails {
+	sc.serverDetails = *serverDetails
 	return sc
 }
 
@@ -120,17 +130,17 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 	}
 
 	auditBasicParams := (&xrayutils.AuditBasicParams{}).
-		SetPipRequirementsFile(sc.PipRequirementsFile).
-		SetUseWrapper(*sc.UseWrapper).
-		SetDepsRepo(sc.DepsRepo).
+		SetPipRequirementsFile(sc.project.PipRequirementsFile).
+		SetUseWrapper(*sc.project.UseWrapper).
+		SetDepsRepo(sc.project.DepsRepo).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(sc.ServerDetails)
+		SetServerDetails(&sc.serverDetails)
 
 	auditParams := audit.NewAuditParams().
-		SetXrayGraphScanParams(sc.XrayGraphScanParams).
+		SetXrayGraphScanParams(&sc.xrayGraphScanParams).
 		SetWorkingDirs(workDirs).
-		SetMinSeverityFilter(sc.MinSeverityFilter()).
-		SetFixableOnly(sc.FixableOnly()).
+		SetMinSeverityFilter(sc.minSeverityFilter).
+		SetFixableOnly(sc.fixableOnly).
 		SetGraphBasicParams(auditBasicParams)
 
 	auditResults, err = audit.RunAudit(auditParams)
@@ -141,34 +151,34 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 }
 
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
-	if sc.InstallCommandName == "" {
+	if sc.project.InstallCommandName == "" {
 		return nil
 	}
 	restoreDir, err := Chdir(workDir)
 	defer func() {
 		err = errors.Join(err, restoreDir())
 	}()
-	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
+	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.project.InstallCommandName, strings.Join(sc.project.InstallCommandArgs, " "), workDir))
 	output, err := sc.runInstallCommand()
-	if err != nil && !sc.FailOnInstallationErrors() {
-		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
-		// failOnInstallationErrors set to 'false'
+	if err != nil && !sc.failOnSecurityIssues {
+		log.Info(installationCmdFailedMsg, err.Error(), "\n", string(output))
+		// failOnSecurityIssues set to 'false'
 		err = nil
 	}
 	return
 }
 
 func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
-	if sc.DepsRepo == "" {
+	if sc.project.DepsRepo == "" {
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
-		return exec.Command(sc.InstallCommandName, sc.InstallCommandArgs...).CombinedOutput()
+		return exec.Command(sc.project.InstallCommandName, sc.project.InstallCommandArgs...).CombinedOutput()
 	}
 
-	if _, exists := MapTechToResolvingFunc[sc.InstallCommandName]; !exists {
-		return nil, fmt.Errorf(sc.InstallCommandName, "isn't recognized as an install command")
+	if _, exists := MapTechToResolvingFunc[sc.project.InstallCommandName]; !exists {
+		return nil, fmt.Errorf(sc.project.InstallCommandName, "isn't recognized as an install command")
 	}
-	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
-	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
+	log.Info("Resolving dependencies from", sc.serverDetails.Url, "from repo", sc.project.DepsRepo)
+	return MapTechToResolvingFunc[sc.project.InstallCommandName](sc)
 }
 
 func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
