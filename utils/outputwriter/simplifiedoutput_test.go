@@ -402,3 +402,8 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 		})
 	}
 }
+
+func TestSimplifiedOutput_GetLicensesTableContent(t *testing.T) {
+	writer := &SimplifiedOutput{}
+	testGetLicensesTableContent(t, writer)
+}
