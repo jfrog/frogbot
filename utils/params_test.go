@@ -260,6 +260,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 	}
 	assert.Equal(t, "http://127.0.0.1:8081/artifactory/", configServer.ArtifactoryUrl)
 	assert.Equal(t, "http://127.0.0.1:8081/xray/", configServer.XrayUrl)
+	assert.Equal(t, "http://127.0.0.1:8081/xsc/", configServer.XscUrl)
 	if basicAuth {
 		assert.Equal(t, "admin", configServer.User)
 		assert.Equal(t, "password", configServer.Password)

@@ -440,12 +440,12 @@ func setGoGitCustomClient() {
 	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
-// CreateGitInfoContext Creates GitInfoContest for XSC scans,this is optional.
-// only log warning if fails to get information.
-func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *services.XscGitInfoContext) {
+// CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
+// Only log warning if fails to get information.
+func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vcsutils.VcsProvider, client vcsclient.VcsClient, branchName string) (gitInfo *services.XscGitInfoContext, err error) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), repoOwner, repoName, branchName)
 	if err != nil {
-		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
+		log.Warn(fmt.Sprintf("failed getting latest commit, repository: %s, branch: %s. error: %s ", repoName, branchName, err.Error()))
 		return
 	}
 	if vcsProvider == vcsutils.AzureRepos {
@@ -453,15 +453,16 @@ func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vc
 	}
 	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
 	if err != nil {
-		log.Warn(fmt.Sprintf("failed getting repository information,for repository: %s,branch: %s. error: %s ", repoName, branchName, err.Error()))
+		log.Warn(fmt.Sprintf("failed getting repository information, for repository: %s, branch: %s. error: %s ", repoName, branchName, err.Error()))
 		return
 	}
 	// In some VCS providers, there are no projects, fallback to the repository owner.
 	if gitProject == "" {
 		gitProject = repoOwner
 	}
-	return &services.XscGitInfoContext{
-		GitRepoUrl:    repoInfo.CloneInfo.HTTP, // Clone URLs on browsers redirects to repository URLS.
+	gitInfo = &services.XscGitInfoContext{
+		// Clone URLs on browsers redirects to repository URLS.
+		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
 		GitRepoName:   repoName,
 		GitProvider:   vcsProvider.String(),
 		GitProject:    gitProject,
@@ -471,4 +472,5 @@ func CreateGitInfoContext(repoName, repoOwner, gitProject string, vcsProvider vc
 		CommitMessage: latestCommit.Message,
 		CommitAuthor:  latestCommit.AuthorName,
 	}
+	return
 }

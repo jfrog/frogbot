@@ -173,7 +173,12 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 }
 
 func (sc *ScanDetails) SetXscGitInfoContext(branchName, gitProject string, client vcsclient.VcsClient) *ScanDetails {
-	sc.XscGitInfoContext = CreateGitInfoContext(sc.RepoName, sc.RepoOwner, gitProject, sc.GitProvider, client, branchName)
+	XscGitInfoContext, err := CreateGitInfoContext(sc.RepoName, sc.RepoOwner, gitProject, sc.GitProvider, client, branchName)
+	if err != nil {
+		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ",err.Error())
+		return sc
+	}
+	sc.XscGitInfoContext = XscGitInfoContext
 	return sc
 }
 

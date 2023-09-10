@@ -388,7 +388,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	rtUrl := strings.TrimSuffix(getTrimmedEnv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
 		server.XrayUrl = xrUrl + "/"
-		server.XscUrl = platformUrl + "xsc/"
+		server.XscUrl = strings.TrimSuffix(xrUrl,"/xray") + "/xsc/"
 		server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if platformUrl == "" {
