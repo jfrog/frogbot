@@ -35,7 +35,7 @@ func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup := ScanDetails{
 		Project: &Project{},
 	}
-	scanSetup.SetFailOnInstallationErrors(true)
+	scanSetup.SetFailOnSecurityIssues(true)
 	assert.NoError(t, scanSetup.runInstallIfNeeded(""))
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestRunInstallIfNeeded(t *testing.T) {
 
 	scanSetup.InstallCommandName = "not-exist"
 	scanSetup.InstallCommandArgs = []string{"1", "2"}
-	scanSetup.SetFailOnInstallationErrors(false)
+	scanSetup.SetFailOnSecurityIssues(false)
 	assert.NoError(t, scanSetup.runInstallIfNeeded(tmpDir))
 
 	params = &Project{
@@ -60,7 +60,7 @@ func TestRunInstallIfNeeded(t *testing.T) {
 		InstallCommandArgs: []string{"1", "2"},
 	}
 	scanSetup.Project = params
-	scanSetup.SetFailOnInstallationErrors(true)
+	scanSetup.SetFailOnSecurityIssues(true)
 	assert.Error(t, scanSetup.runInstallIfNeeded(tmpDir))
 }
 

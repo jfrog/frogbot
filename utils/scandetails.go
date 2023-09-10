@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -20,22 +21,29 @@ const (
 
 type ScanDetails struct {
 	*Project
-	*Git
 	*services.XrayGraphScanParams
 	*config.ServerDetails
-	client                   vcsclient.VcsClient
-	failOnInstallationErrors bool
-	fixableOnly              bool
-	minSeverityFilter        string
-	baseBranch               string
+	git                  *Git
+	client               vcsclient.VcsClient
+	failOnSecurityIssues bool
+	fixableOnly          bool
+	minSeverityFilter    string
 }
 
-func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
-	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+func newScanDetails(client vcsclient.VcsClient, repository *Repository) *ScanDetails {
+	if repository == nil {
+		return &ScanDetails{}
+	}
+	scanDetails := ScanDetails{client: client, ServerDetails: &repository.Server, git: &repository.Git}
+	scanDetails.SetFailOnSecurityIssues(*repository.FailOnSecurityIssues).
+		SetMinSeverity(repository.MinSeverity).
+		SetFixableOnly(repository.FixableOnly).
+		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey)
+	return &scanDetails
 }
 
-func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
-	sc.failOnInstallationErrors = toFail
+func (sc *ScanDetails) SetFailOnSecurityIssues(toFail bool) *ScanDetails {
+	sc.failOnSecurityIssues = toFail
 	return sc
 }
 
@@ -59,39 +67,173 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
-	sc.baseBranch = branch
-	return sc
+type RepositoryScanDetails struct {
+	scanDetails *ScanDetails
+	baseBranch  string
 }
 
-func (sc *ScanDetails) Client() vcsclient.VcsClient {
-	return sc.client
+func NewRepositoryScanDetails(client vcsclient.VcsClient, repository *Repository) *RepositoryScanDetails {
+	return &RepositoryScanDetails{scanDetails: newScanDetails(client, repository)}
 }
 
-func (sc *ScanDetails) BaseBranch() string {
-	return sc.baseBranch
+func (rsd *RepositoryScanDetails) SetBaseBranch(branch string) *RepositoryScanDetails {
+	rsd.baseBranch = branch
+	return rsd
 }
 
-func (sc *ScanDetails) FailOnInstallationErrors() bool {
-	return sc.failOnInstallationErrors
+func (rsd *RepositoryScanDetails) BaseBranch() string {
+	return rsd.baseBranch
 }
 
-func (sc *ScanDetails) FixableOnly() bool {
-	return sc.fixableOnly
+func (rsd *RepositoryScanDetails) SetRepoOwner(owner string) *RepositoryScanDetails {
+	rsd.scanDetails.git.RepoOwner = owner
+	return rsd
 }
 
-func (sc *ScanDetails) MinSeverityFilter() string {
-	return sc.minSeverityFilter
+func (rsd *RepositoryScanDetails) RepoOwner() string {
+	return rsd.scanDetails.git.RepoOwner
 }
 
-func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
-	sc.RepoOwner = owner
-	return sc
+func (rsd *RepositoryScanDetails) SetRepoName(repoName string) *RepositoryScanDetails {
+	rsd.scanDetails.git.RepoName = repoName
+	return rsd
 }
 
-func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
-	sc.RepoName = repoName
-	return sc
+func (rsd *RepositoryScanDetails) RepoName() string {
+	return rsd.scanDetails.git.RepoName
+}
+
+func (rsd *RepositoryScanDetails) BranchNameTemplate() string {
+	return rsd.scanDetails.git.BranchNameTemplate
+}
+
+func (rsd *RepositoryScanDetails) CommitMessageTemplate() string {
+	return rsd.scanDetails.git.CommitMessageTemplate
+}
+
+func (rsd *RepositoryScanDetails) PullRequestTitleTemplate() string {
+	return rsd.scanDetails.git.PullRequestTitleTemplate
+}
+
+func (rsd *RepositoryScanDetails) EmailAuthor() string {
+	return rsd.scanDetails.git.EmailAuthor
+}
+
+func (rsd *RepositoryScanDetails) GitClient() vcsclient.VcsClient {
+	return rsd.scanDetails.client
+}
+
+func (rsd *RepositoryScanDetails) FailOnInstallationErrors() bool {
+	return rsd.scanDetails.failOnSecurityIssues
+}
+
+func (rsd *RepositoryScanDetails) FixableOnly() bool {
+	return rsd.scanDetails.fixableOnly
+}
+
+func (rsd *RepositoryScanDetails) MinSeverityFilter() string {
+	return rsd.scanDetails.minSeverityFilter
+}
+
+func (rsd *RepositoryScanDetails) GitProvider() vcsutils.VcsProvider {
+	return rsd.scanDetails.git.GitProvider
+}
+
+func (rsd *RepositoryScanDetails) VcsInfo() vcsclient.VcsInfo {
+	return rsd.scanDetails.git.VcsInfo
+}
+
+func (rsd *RepositoryScanDetails) SetAggregateFixes(toAggregate bool) *RepositoryScanDetails {
+	rsd.scanDetails.git.AggregateFixes = toAggregate
+	return rsd
+}
+
+func (rsd *RepositoryScanDetails) AggregateFixes() bool {
+	return rsd.scanDetails.git.AggregateFixes
+}
+
+func (rsd *RepositoryScanDetails) SetProject(project *Project) *RepositoryScanDetails {
+	rsd.scanDetails.Project = project
+	return rsd
+}
+
+func (rsd *RepositoryScanDetails) Project() *Project {
+	return rsd.scanDetails.Project
+}
+
+func (rsd *RepositoryScanDetails) SetServerDetails(serverDetails *config.ServerDetails) *RepositoryScanDetails {
+	rsd.scanDetails.ServerDetails = serverDetails
+	return rsd
+}
+
+func (rsd *RepositoryScanDetails) ServerDetails() *config.ServerDetails {
+	return rsd.scanDetails.ServerDetails
+}
+
+func (rsd *RepositoryScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+	return rsd.scanDetails.runInstallAndAudit(workDirs...)
+}
+
+type PullRequestScanDetails struct {
+	scanDetails *ScanDetails
+}
+
+func NewPullRequestScanDetails(client vcsclient.VcsClient, repository *Repository) *PullRequestScanDetails {
+	return &PullRequestScanDetails{scanDetails: newScanDetails(client, repository)}
+}
+
+func (prd *PullRequestScanDetails) PullRequestInfo() vcsclient.PullRequestInfo {
+	return prd.scanDetails.git.PullRequestDetails
+}
+
+func (prd *PullRequestScanDetails) EmailAuthor() string {
+	return prd.scanDetails.git.EmailAuthor
+}
+
+func (prd *PullRequestScanDetails) GitClient() vcsclient.VcsClient {
+	return prd.scanDetails.client
+}
+
+func (prd *PullRequestScanDetails) FailOnInstallationErrors() bool {
+	return prd.scanDetails.failOnSecurityIssues
+}
+
+func (prd *PullRequestScanDetails) FixableOnly() bool {
+	return prd.scanDetails.fixableOnly
+}
+
+func (prd *PullRequestScanDetails) MinSeverityFilter() string {
+	return prd.scanDetails.minSeverityFilter
+}
+
+func (prd *PullRequestScanDetails) GitProvider() vcsutils.VcsProvider {
+	return prd.scanDetails.git.GitProvider
+}
+
+func (prd *PullRequestScanDetails) VcsInfo() vcsclient.VcsInfo {
+	return prd.scanDetails.git.VcsInfo
+}
+
+func (prd *PullRequestScanDetails) SetProject(project *Project) *PullRequestScanDetails {
+	prd.scanDetails.Project = project
+	return prd
+}
+
+func (prd *PullRequestScanDetails) Project() *Project {
+	return prd.scanDetails.Project
+}
+
+func (prd *PullRequestScanDetails) SetServerDetails(serverDetails *config.ServerDetails) *PullRequestScanDetails {
+	prd.scanDetails.ServerDetails = serverDetails
+	return prd
+}
+
+func (prd *PullRequestScanDetails) ServerDetails() *config.ServerDetails {
+	return prd.scanDetails.ServerDetails
+}
+
+func (prd *PullRequestScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+	return prd.scanDetails.runInstallAndAudit(workDirs...)
 }
 
 func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
@@ -112,7 +254,7 @@ func createXrayScanParams(watches []string, project string) (params *services.Xr
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+func (sc *ScanDetails) runInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err
@@ -129,8 +271,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
-		SetMinSeverityFilter(sc.MinSeverityFilter()).
-		SetFixableOnly(sc.FixableOnly()).
+		SetMinSeverityFilter(sc.minSeverityFilter).
+		SetFixableOnly(sc.fixableOnly).
 		SetGraphBasicParams(auditBasicParams)
 
 	auditResults, err = audit.RunAudit(auditParams)
@@ -150,9 +292,9 @@ func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	}()
 	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
 	output, err := sc.runInstallCommand()
-	if err != nil && !sc.FailOnInstallationErrors() {
+	if err != nil && !sc.failOnSecurityIssues {
 		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
-		// failOnInstallationErrors set to 'false'
+		// failOnSecurityIssues set to 'false'
 		err = nil
 	}
 	return

@@ -153,18 +153,13 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		err = errors.Join(err, cleanupSource(), cleanupTarget())
 	}()
 
-	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
-		SetMinSeverity(repoConfig.MinSeverity).
-		SetFixableOnly(repoConfig.FixableOnly).
-		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
-
+	scanDetails := utils.NewPullRequestScanDetails(client, repoConfig)
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
 
 		// Audit source branch
 		var sourceResults *audit.Results
-		workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+		workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project().WorkingDirs, sourceBranchWd)
 		sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 		if err != nil {
 			return
@@ -190,7 +185,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 
 		// Set target branch scan details
 		var targetResults *audit.Results
-		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project().WorkingDirs, targetBranchWd)
 		targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 		if err != nil {
 			return

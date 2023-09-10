@@ -222,7 +222,9 @@ func TestUpdateDependency(t *testing.T) {
 
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
-			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
+			reposiotryScanDetails := utils.NewRepositoryScanDetails(nil, nil)
+			reposiotryScanDetails.SetProject(test.scanDetails.Project)
+			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, reposiotryScanDetails)
 			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.ToString()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)

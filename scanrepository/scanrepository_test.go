@@ -115,8 +115,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-cant-fix",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-pip-dependencies": {}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-pip-dependencies": {}},
-			packageDescriptorPaths:         []string{"setup.py"}, // This is a build tool dependency which should not be fixed
-			aggregateFixes:                 true,
+			// This is a build tool dependency that should not be fixed
+			packageDescriptorPaths: []string{"setup.py"},
+			aggregateFixes:         true,
 		},
 		{
 			testName:                       "non-aggregate",
@@ -365,7 +366,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 		Params: params,
 	}
 	for _, pkg := range testPackagesData {
-		// Create temp technology project
+		// Create a temp technology project
 		projectPath := filepath.Join("..", "testdata", "projects", pkg.packageType)
 		t.Run(pkg.packageType, func(t *testing.T) {
 			tmpDir, err := fileutils.CreateTempDir()
@@ -386,12 +387,9 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
-			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: &services.XrayGraphScanParams{},
-				Project:             &frogbotParams.Projects[0],
-				ServerDetails:       &frogbotParams.Server,
-			}
-			testScan.details = &scanSetup
+			scanDetails := utils.RepositoryScanDetails{}
+			scanDetails.SetProject(&frogbotParams.Projects[0]).SetServerDetails(&frogbotParams.Server)
+			testScan.scanDetails = &scanDetails
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
@@ -689,7 +687,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	cfp.aggregateFixes = true
+	cfp.scanDetails.SetAggregateFixes(true)
 	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br><br>2.0.0 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br><br>3.0.0 |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-1234 ] package1 1.0.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Package Name:** package1\n- **Current Version:** 1.0.0\n- **CVE:** CVE-2022-1234\n- **Fixed Versions:** 1.0.0,2.0.0\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-4321 ] package2 2.0.0</b> </summary>\n<br>\n\n- **Severity** 💀 Critical\n- **Package Name:** package2\n- **Current Version:** 2.0.0\n- **CVE:** CVE-2022-4321\n- **Fixed Versions:** 2.0.0,3.0.0\n\n**Description:**\n\nsummary\n\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n<div align=\"center\">\n\n[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
