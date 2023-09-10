@@ -128,8 +128,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 
-		if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
-			log.Warn(err)
+		if repository.GitProvider.String() == vcsutils.GitHub.String() {
+			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
+			// Currently available on GitHub only
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
+				log.Warn(err)
+			}
 		}
 
 		// Prepare the vulnerabilities map for each working dir path

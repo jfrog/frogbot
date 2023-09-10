@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -205,13 +204,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	if repo.GitProvider.String() != vcsutils.GitHub.String() {
-		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
-		return nil
-	}
-
+func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
 	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true, "JFrog Frogbot", "https://github.com/jfrog/frogbot")
 	if err != nil {
 		return err
@@ -221,7 +214,7 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
-	return err
+	return nil
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
