@@ -182,6 +182,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 
+	issuesCollection = &IssuesCollection{}
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
 		var projectIssues *IssuesCollection
