@@ -22,7 +22,7 @@ type SimplifiedOutput struct {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
 	directsRowFmt := directDependencyRow
 	if smo.showCaColumn {
 		row += vulnerability.Applicable + " |"
@@ -129,7 +129,7 @@ Finding: %s
 %s
 
 `,
-		smo.FormattedSeverity(severity, "Applicable"),
+		smo.FormattedSeverity(severity, "Applicable", false),
 		finding,
 		fullDetails,
 		cveDetails)
@@ -146,7 +146,7 @@ Finding: %s
 %s	
 
 `,
-		smo.FormattedSeverity(severity, "Applicable"),
+		smo.FormattedSeverity(severity, "Applicable", false),
 		finding,
 		fullDetails)
 }
@@ -169,7 +169,7 @@ Finding: %s
 #### Vulnerable data flows
 
 `,
-		smo.FormattedSeverity(severity, "Applicable"),
+		smo.FormattedSeverity(severity, "Applicable", false),
 		finding,
 		fullDetails,
 	))
@@ -230,11 +230,21 @@ func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
 }
 
+func (smo *SimplifiedOutput) ReviewFooter() string {
+	return fmt.Sprintf(`
+
+---
+
+%s
+
+`, ReviewCommentGeneratedByFrogbot)
+}
+
 func (smo *SimplifiedOutput) Separator() string {
 	return ", "
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
 	return severity
 }
 

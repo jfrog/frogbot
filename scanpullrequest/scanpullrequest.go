@@ -206,6 +206,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 			applicableIssues = append(applicableIssues, filterNotApplicableResults(sourceScanResults.ApplicabilityScanResults)...)
 			iacIssues = append(iacIssues, sourceScanResults.IacScanResults...)
 			secretsIssues = append(secretsIssues, sourceScanResults.SecretsScanResults...)
+			sastIssues = append(sastIssues, sourceScanResults.SastScanResults...)
 			continue
 		}
 

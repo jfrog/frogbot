@@ -354,14 +354,3 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	})
 	return pullRequestsComments, nil
 }
-
-func GetJasMarkdownDescription(scanType xrayutils.JasScanType, location *sarif.Location, severity, content string) string {
-	dataColumnHeader := "Finding"
-	if scanType == xrayutils.Secrets {
-		dataColumnHeader = "Secret"
-	}
-	headerRow := fmt.Sprintf("| Severity | File | Line:Column | %s |\n", dataColumnHeader)
-	separatorRow := "| :---: | :---: | :---: | :---: |\n"
-	tableHeader := headerRow + separatorRow
-	return tableHeader + fmt.Sprintf("| %s | %s | %s | %s |", severity, xrayutils.GetLocationFileName(location), xrayutils.GetStartLocationInFile(location), content)
-}

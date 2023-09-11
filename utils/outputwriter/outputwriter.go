@@ -14,7 +14,7 @@ import (
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	ReviewCommentGeneratedByFrogbot                  = "[[🐸 JFrog Frogbot]](https://github.com/jfrog/frogbot#readme)"
+	ReviewCommentGeneratedByFrogbot                  = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -104,7 +104,7 @@ type OutputWriter interface {
 	IacContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
-	FormattedSeverity(severity, applicability string) string
+	FormattedSeverity(severity, applicability string, addName bool) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
@@ -114,6 +114,7 @@ type OutputWriter interface {
 	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string
+	ReviewFooter() string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -196,7 +197,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, iac.LineColumn, iac.Snippet)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, iac.LineColumn, iac.Snippet)
 	}
 	return tableContent
 }
@@ -207,6 +208,12 @@ func MarkdownComment(text string) string {
 
 func MarkAsQuote(s string) string {
 	return fmt.Sprintf("`%s`", s)
+}
+
+func GetJasMarkdownDescription(severity, finding string) string {
+	headerRow := "| Severity | Finding |\n"
+	separatorRow := "| :---: | :---: |\n"
+	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {

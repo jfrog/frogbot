@@ -22,7 +22,7 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Separator()))
 	}
 
-	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
@@ -130,15 +130,14 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 	return fmt.Sprintf(`
 ### 📦🔍 Applicable dependency CVE Vulnerability
 
-Severity: %s
-
-Finding: %s
+%s
 
 #### 👇 Details
 
 <details>
 <summary> <b>Description</b> </summary>
 <br>
+
 %s
 
 </details>
@@ -146,6 +145,7 @@ Finding: %s
 <details>
 <summary> <b>CVE details</b> </summary>
 <br>
+
 %s
 
 </details>
@@ -153,13 +153,13 @@ Finding: %s
 <details>
 <summary> <b>Remediation</b> </summary>
 <br>
+
 %s
 
 </details>
 
 `,
-		so.FormattedSeverity(severity, "Applicable"),
-		finding,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
 		fullDetails,
 		cveDetails,
 		remediation)
@@ -169,68 +169,67 @@ func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string
 	return fmt.Sprintf(`
 ### 🛠️ Infrastructure as Code Vulnerability
 	
-Severity: %s
-
-Finding: %s
-
-#### 👇 Details
+%s
 
 <details>
 <summary> <b>Full description</b> </summary>
 <br>
+
 %s
 
 </details>
 
 `,
-		so.FormattedSeverity(severity, "Applicable"),
-		MarkAsQuote(finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
 		fullDetails)
 }
 
 func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-### 🔐 Static Application Security Testing (SAST) Vulnerability 
-	
-Severity: %s
+<div align="center"> 
 
-Finding: %s
+### 🎯 Static Application Security Testing (SAST) Vulnerability 
+	
+%s
 
 #### 👇 Details
 
 <details>
 <summary> <b>Full description</b> </summary>
 <br>
+
 %s
 
 </details>
 
 `,
-		so.FormattedSeverity(severity, "Applicable"),
-		MarkAsQuote(finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
 		fullDetails,
 	))
 
 	if len(codeFlows) > 0 {
+		contentBuilder.WriteString(`
+
+`)
 		dataFlowId := 1
 		for _, codeFlow := range codeFlows {
 			for _, threadFlow := range codeFlow.ThreadFlows {
 				contentBuilder.WriteString(fmt.Sprintf(`
 
 <details>
-<summary> <b>%d. Vulnerable data flow analysis result</b> </summary>
+<summary> <b>Vulnerable data flow analysis result</b> </summary>
 <br>
 `,
 					dataFlowId,
 				))
 
-				for i, threadFlowLocation := range threadFlow.Locations {
+				for _, threadFlowLocation := range threadFlow.Locations {
 					contentBuilder.WriteString(fmt.Sprintf(`
-%d. %s (at %s line %d)
+%s. %s (at %s line %d)
 `,
-						i+1,
-						xrayutils.GetLocationSnippet(threadFlowLocation.Location),
+					"↘️",
+						MarkAsQuote(xrayutils.GetLocationSnippet(threadFlowLocation.Location)),
 						xrayutils.GetLocationFileName(threadFlowLocation.Location),
 						xrayutils.GetLocationStartLine(threadFlowLocation.Location),
 					))
@@ -278,12 +277,27 @@ func (so *StandardOutput) Footer() string {
 `, CommentGeneratedByFrogbot)
 }
 
+func (so *StandardOutput) ReviewFooter() string {
+	return fmt.Sprintf(`
+---
+<div align="center">
+
+%s
+
+</div>
+`, ReviewCommentGeneratedByFrogbot)
+}
+
 func (so *StandardOutput) Separator() string {
 	return "<br><br>"
 }
 
-func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
-	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
+	s := fmt.Sprintf("%s", getSeverityTag(IconName(severity), applicability))
+	if addName {
+		s = fmt.Sprintf(s + "%8s", severity)
+	}
+	return s
 }
 
 func (so *StandardOutput) UntitledForJasMsg() string {
@@ -299,4 +313,13 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 `
 	}
 	return msg
+}
+
+func wrapInDetails(str, summary string) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(`
+
+`)
+
+	return contentBuilder.String()	
 }

@@ -186,7 +186,11 @@ func getCommentsToUpdate(repo *Repository, pullRequestID int, client vcsclient.V
 		err = errors.New("couldn't list existing review comments: " + err.Error())
 		return
 	}
+	log.Debug("Detected", len(existingComments), "existing comments")
 	existingApplicableComments, existingIacComments, existingSastComments := extractFrogbotReviewComments(existingComments)
+	log.Debug("Detected", len(existingApplicableComments), "JFrog Applicable review comments")
+	log.Debug("Detected", len(existingIacComments), "JFrog Iac review comments")
+	log.Debug("Detected", len(existingSastComments), "JFrog Sast review comments")
 	writer := repo.OutputWriter
 
 	// Get comments related to updates on applicable review
@@ -247,6 +251,7 @@ func extractRunReviewChanges(commentType ReviewCommentType, data *sarif.Run, exi
 			id := generateFrogbotReviewCommentId(commentType, location)
 			if _, exists := existingCommentsForType[id]; exists {
 				// Location review comment for this type exist already and not changed
+				log.Debug("Review comment still relevant", id)
 				delete(existingCommentsForType, id)
 			} else {
 				log.Debug("Adding new review comment", id)
@@ -303,7 +308,7 @@ func generateReviewCommentContent(id string, commentType ReviewCommentType, loca
 		)
 	}
 
-	content += outputwriter.ReviewCommentGeneratedByFrogbot
+	content += writer.ReviewFooter()
 	return
 }
 
