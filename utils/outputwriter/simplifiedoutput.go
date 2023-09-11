@@ -204,7 +204,7 @@ Finding: %s
 
 `,
 				)
-				dataFlowId = dataFlowId + 1
+				dataFlowId++
 			}
 		}
 	}

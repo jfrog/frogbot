@@ -47,7 +47,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		}
 	}
 	// Add review comments for the given data
-	commentsToAdd, err := getNewReviewComments(repo, pullRequestID, client, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues)
+	commentsToAdd, err := getNewReviewComments(repo, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues)
 	if err != nil {
 		return
 	}
@@ -70,7 +70,7 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 	return
 }
 
-func getNewReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run) (commentsToAdd []vcsclient.PullRequestComment, err error) {
+func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run) (commentsToAdd []vcsclient.PullRequestComment, err error) {
 	writer := repo.OutputWriter
 
 	if len(applicableIssues.Results) > 0 {
@@ -95,18 +95,18 @@ func getNewReviewComments(repo *Repository, pullRequestID int, client vcsclient.
 		}
 		commentsToAdd = append(commentsToAdd, comments...)
 	}
-	
+
 	return
 }
 
 func generateCommentsForType(commentType ReviewCommentType, data *sarif.Run, writer outputwriter.OutputWriter) (commentsToAdd []vcsclient.PullRequestComment, err error) {
 	for _, result := range data.Results {
 		for _, location := range result.Locations {
-			log.Debug("Adding new review comment", location)
-				var rule *sarif.ReportingDescriptor
-				if rule, err = data.GetRuleById(*result.RuleID); err != nil {
-					return
-				}
+			log.Debug("Adding new review comment", xrayutils.GetLocationFileName(location))
+			var rule *sarif.ReportingDescriptor
+			if rule, err = data.GetRuleById(*result.RuleID); err != nil {
+				return
+			}
 			commentsToAdd = append(commentsToAdd, generateReviewComment(location, commentType, result, rule, writer))
 		}
 	}
