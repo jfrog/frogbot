@@ -302,11 +302,11 @@ func getNewlyAddedIssues(targetResults, sourceResults *audit.Results, allowedLic
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Text)
+		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Snippet)
 	}
 	var addedIacOrSecretsVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Text) {
+		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
 			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
 		}
 	}

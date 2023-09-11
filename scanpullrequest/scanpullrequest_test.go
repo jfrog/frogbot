@@ -5,6 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -17,15 +26,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -342,10 +344,17 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]xrayutils.ApplicabilityStatus{"CVE-2023-4321": xrayutils.Applicable}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: map[string]xrayutils.ApplicabilityStatus{"CVE-2023-4321": xrayutils.Applicable}}},
-		[]string{},
+	rrows, err := createNewVulnerabilitiesRows(
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults([]*sarif.Result{
+			sarif.NewRuleResult("applic_CVE-2023-4321").WithLocations([]*sarif.Location{
+				sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10))),
+			}),
+		})}}},
+		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults([]*sarif.Result{
+			sarif.NewRuleResult("applic_CVE-2023-4321").WithLocations([]*sarif.Location{
+				sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10))),
+			}),
+		})}}},
 	)
 	assert.NoError(t, err)
 	assert.Len(t, vulnerabilities, 2)
@@ -565,7 +574,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test.js",
 				LineColumn: "1:20",
-				Text:       "kms_key_id='' was detected",
+				Snippet:    "kms_key_id='' was detected",
 			},
 			Type: "aws_cloudtrail_encrypt",
 		},
@@ -574,7 +583,7 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			SourceCodeLocationRow: formats.SourceCodeLocationRow{
 				File:       "test2.js",
 				LineColumn: "4:30",
-				Text:       "Deprecated TLS version was detected",
+				Snippet:    "Deprecated TLS version was detected",
 			},
 			Type: "aws_cloudfront_tls_version",
 		},
@@ -856,37 +865,33 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 func TestCreateNewIacRows(t *testing.T) {
 	testCases := []struct {
 		name                            string
-		targetIacResults                []xrayutils.SourceCodeScanResult
-		sourceIacResults                []xrayutils.SourceCodeScanResult
+		targetIacResults                []*sarif.Result
+		sourceIacResults                []*sarif.Result
 		expectedAddedIacVulnerabilities []formats.SourceCodeRow
 	}{
 		{
 			name: "No vulnerabilities in source IaC results",
-			targetIacResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "aws violation",
-					},
-				},
+			targetIacResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
+					),
+				}),
 			},
-			sourceIacResults:                []xrayutils.SourceCodeScanResult{},
+			sourceIacResults:                []*sarif.Result{},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{},
 		},
 		{
 			name:             "No vulnerabilities in target IaC results",
-			targetIacResults: []xrayutils.SourceCodeScanResult{},
-			sourceIacResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "aws violation",
-					},
-				},
+			targetIacResults: []*sarif.Result{},
+			sourceIacResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
+					),
+				}),
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -897,32 +902,28 @@ func TestCreateNewIacRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "aws violation",
+						Snippet:    "aws violation",
 					},
 				},
 			},
 		},
 		{
 			name: "Some new vulnerabilities in source IaC results",
-			targetIacResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "aws violation",
-					},
-				},
+			targetIacResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
+					),
+				}),
 			},
-			sourceIacResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "Medium",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file2",
-						LineColumn: "2:5",
-						Text:       "gcp violation",
-					},
-				},
+			sourceIacResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("medium")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file2")).
+						WithRegion(sarif.NewRegion().WithStartLine(2).WithStartColumn(5).WithSnippet(sarif.NewArtifactContent().WithText("gcp violation"))),
+					),
+				}),
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -933,7 +934,7 @@ func TestCreateNewIacRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "gcp violation",
+						Snippet:    "gcp violation",
 					},
 				},
 			},
@@ -942,8 +943,8 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetIacRows := xrayutils.PrepareSecrets(tc.targetIacResults)
-			sourceIacRows := xrayutils.PrepareSecrets(tc.sourceIacResults)
+			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetIacResults)})
+			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceIacResults)})
 			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
@@ -953,39 +954,33 @@ func TestCreateNewIacRows(t *testing.T) {
 func TestCreateNewSecretRows(t *testing.T) {
 	testCases := []struct {
 		name                                string
-		targetSecretsResults                []xrayutils.SourceCodeScanResult
-		sourceSecretsResults                []xrayutils.SourceCodeScanResult
+		targetSecretsResults                []*sarif.Result
+		sourceSecretsResults                []*sarif.Result
 		expectedAddedSecretsVulnerabilities []formats.SourceCodeRow
 	}{
 		{
 			name: "No vulnerabilities in source secrets results",
-			targetSecretsResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "Sensitive information",
-					},
-					Type: "Secret",
-				},
+			targetSecretsResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
+					),
+				}),
 			},
-			sourceSecretsResults:                []xrayutils.SourceCodeScanResult{},
+			sourceSecretsResults:                []*sarif.Result{},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{},
 		},
 		{
 			name:                 "No vulnerabilities in target secrets results",
-			targetSecretsResults: []xrayutils.SourceCodeScanResult{},
-			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "Sensitive information",
-					},
-					Type: "Secret",
-				},
+			targetSecretsResults: []*sarif.Result{},
+			sourceSecretsResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
+					),
+				}),
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -996,7 +991,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file1",
 						LineColumn: "1:10",
-						Text:       "Sensitive information",
+						Snippet:    "Sensitive information",
 					},
 					Type: "Secret",
 				},
@@ -1004,27 +999,21 @@ func TestCreateNewSecretRows(t *testing.T) {
 		},
 		{
 			name: "Some new vulnerabilities in source secrets results",
-			targetSecretsResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "High",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "Sensitive information",
-					},
-					Type: "Secret",
-				},
+			targetSecretsResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
+						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
+					),
+				}),
 			},
-			sourceSecretsResults: []xrayutils.SourceCodeScanResult{
-				{
-					Severity: "Medium",
-					SourceCodeLocation: xrayutils.SourceCodeLocation{
-						File:       "file2",
-						LineColumn: "2:5",
-						Text:       "Confidential data",
-					},
-					Type: "Secret",
-				},
+			sourceSecretsResults: []*sarif.Result{
+				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("medium")).WithLocations([]*sarif.Location{
+					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file2")).
+						WithRegion(sarif.NewRegion().WithStartLine(2).WithStartColumn(5).WithSnippet(sarif.NewArtifactContent().WithText("Confidential data"))),
+					),
+				}),
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -1035,7 +1024,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SourceCodeLocationRow: formats.SourceCodeLocationRow{
 						File:       "file2",
 						LineColumn: "2:5",
-						Text:       "Confidential data",
+						Snippet:    "Confidential data",
 					},
 					Type: "Secret",
 				},
@@ -1045,8 +1034,8 @@ func TestCreateNewSecretRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetSecretsRows := xrayutils.PrepareSecrets(tc.targetSecretsResults)
-			sourceSecretsRows := xrayutils.PrepareSecrets(tc.sourceSecretsResults)
+			targetSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetSecretsResults)})
+			sourceSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceSecretsResults)})
 			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})

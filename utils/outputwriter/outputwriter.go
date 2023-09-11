@@ -159,7 +159,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent strings.Builder
 	for _, iac := range iacRows {
-		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.Applicable.String()), iac.File, iac.LineColumn, iac.Text))
+		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.Applicable.String()), iac.File, iac.LineColumn, iac.Snippet))
 	}
 	return tableContent.String()
 }
