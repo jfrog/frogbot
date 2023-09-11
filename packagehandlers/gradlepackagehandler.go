@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -32,13 +33,6 @@ type buildFileData struct {
 	fileType    string
 	fileContent []string
 	filePath    string
-}
-
-type vulnRowData struct {
-	content  string
-	rowType  string
-	fileType string
-	filepath string // TODO DEL? check if needed
 }
 
 var buildFileToType = map[string]string{
@@ -79,7 +73,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 
 		//get vulnerable rows
 		//TODO check what to do if there are several rows with the same package, or in different build files
-		vulnerableRows := getVulnerableRowsInFile(&buildFile, vulnDetails.ImpactedDependencyName)
+		vulnerableRows := getVulnerableRowsWithData(&buildFile, vulnDetails.ImpactedDependencyName)
 
 		// detect kind of row
 		vulnerableRows = detectVulnerableRowsType(vulnerableRows)
@@ -93,8 +87,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 
 		// issue a fix for each row in the current build file
 		for rowNumber, fixer := range vulnRowsFixers {
-			rowFix := fixer.GetVulnRowFix()
-			fmt.Println(rowFix)
+			rowFix := fixer.GetVulnerableRowFix(vulnDetails)
 			buildFile.fileContent[rowNumber] = rowFix
 		}
 
@@ -103,8 +96,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 			return
 		}
 	}
-
-	return //errors.New("stop at updateDirectDependency")
+	return
 }
 
 func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
@@ -119,37 +111,49 @@ func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
 	}
 	return
 
-	/* todo check if its better to iterate once with this implementation
-	file, err := os.OpenFile(buildFile.filePath, os.O_WRONLY, 0644)
-	if err != nil {
-		err = fmt.Errorf("couldn't open file '%s': %q", buildFile.filePath, err)
-		return
-	}
-	defer func() {
-		err = errors.Join(err, file.Close())
-	}()
-
-	for rowIdx, row := range buildFile.fileContent {
-		_, err = file.WriteString(row + "\n") //TODO make sure that the newline doesn't make problems with new line in the middle of a dependency or anywhere else
+	/*
+		// todo check if its better to iterate once with this implementation
+		// TODO if using this check the 'true' value added un-intentionally at the end of the file
+		file, err := os.OpenFile(buildFile.filePath, os.O_WRONLY, 0644)
 		if err != nil {
-			err = fmt.Errorf("couldn't write a fix at row %d in file %s: %q", rowIdx, buildFile.filePath, err)
+			err = fmt.Errorf("couldn't open file '%s': %q", buildFile.filePath, err)
 			return
 		}
-	}
+		defer func() {
+			err = errors.Join(err, file.Close())
+		}()
 
+		fileLineAmount := len(buildFile.fileContent)
+		for rowIdx, row := range buildFile.fileContent {
+			if rowIdx == fileLineAmount-2 {
+				_, err = file.WriteString(row) //TODO make sure that the newline doesn't make problems with new line in the middle of a dependency or anywhere else
+				if err != nil {
+					err = fmt.Errorf("couldn't write a fix at row %d in file %s: %q", rowIdx, buildFile.filePath, err)
+					return
+				}
+				break
+			} else {
+				_, err = file.WriteString(row + "\n") //TODO make sure that the newline doesn't make problems with new line in the middle of a dependency or anywhere else
+			}
+			if err != nil {
+				err = fmt.Errorf("couldn't write a fix at row %d in file %s: %q", rowIdx, buildFile.filePath, err)
+				return
+			}
+		}
+		return
 	*/
+
 }
 
 // getVulnerableRowsFixers returns a slice of fixers, one for each of the vulnerable rows, according to the row type detected sooner
 // in case there are un
-func getVulnerableRowsFixers(vulnerableRows map[int]vulnRowData) (map[int]resources.VulnerableRowFixer, error) {
+func getVulnerableRowsFixers(vulnerableRows map[int]resources.VulnRowData) (map[int]resources.VulnerableRowFixer, error) {
 	vulnRowsFixers := make(map[int]resources.VulnerableRowFixer)
 	unsupportedRowsCount := 0
 	for rowNumber, rowData := range vulnerableRows {
-		// TODO use builder/ sent all those params of rowData as a single struct (and move this struct to gradlefixhelper.go): see Omer
-		fixer, err := resources.GetFixerByRowType(rowData.content, rowData.rowType, rowData.fileType, rowData.filepath, rowNumber)
+		fixer, err := resources.GetFixerByRowType(rowData, rowNumber)
 		if err != nil {
-			log.Warn(fmt.Sprintf("couldn't get row fixer for row '%s' (row number: %d, file: %s): %q", rowData.content, rowNumber, rowData.filepath, err))
+			log.Warn(fmt.Sprintf("couldn't get row fixer for row '%s' (row number: %d, file: %s): %q", rowData.Content, rowNumber, rowData.Filepath, err))
 			unsupportedRowsCount++
 		} else {
 			vulnRowsFixers[rowNumber] = fixer
@@ -200,34 +204,46 @@ func readBuildFiles() (buildFiles []buildFileData, err error) {
 	return
 }
 
-func getVulnerableRowsInFile(buildFileData *buildFileData, impactedPackageName string) map[int]vulnRowData {
+func getVulnerableRowsWithData(buildFileData *buildFileData, impactedPackageName string) map[int]resources.VulnRowData {
 	//TODO check if better implementation is needed (finding 'dependencies' in the file and look below it, counting { and } )
-	idxToRowMap := make(map[int]vulnRowData)
+	idxToRowMap := make(map[int]resources.VulnRowData)
 
 	for rowIdx, rowContent := range buildFileData.fileContent {
 		if strings.Contains(rowContent, impactedPackageName) {
-			idxToRowMap[rowIdx] = vulnRowData{content: rowContent, fileType: buildFileData.fileType, filepath: buildFileData.filePath}
+			idxToRowMap[rowIdx] = resources.VulnRowData{Content: rowContent, FileType: buildFileData.fileType, Filepath: buildFileData.filePath, LeftIndentation: getLeftWhitespaces(rowContent)}
 		}
 	}
 	return idxToRowMap
 }
 
+func getLeftWhitespaces(str string) string {
+	firstNonWhiteSpace := 0
+	for idx, char := range str {
+		if !unicode.IsSpace(char) {
+			firstNonWhiteSpace = idx
+			break
+		}
+	}
+	return str[:firstNonWhiteSpace]
+}
+
 // detectVulnerableRowsType detects each vulnerable row's type and updates vulnRowData map
 // if there is no match for some row with any known type, the row's type will be set to 'unknown'
-func detectVulnerableRowsType(vulnerableRows map[int]vulnRowData) map[int]vulnRowData {
+func detectVulnerableRowsType(vulnerableRows map[int]resources.VulnRowData) map[int]resources.VulnRowData {
 	for rowIdx, data := range vulnerableRows {
-		row := data.content //strings.TrimLeft(data.content, " ") //TODO make sure trimming spaces doesn't interfere fix in correct indentation/ or no trimmimg doesnnt interfere regexp detection
+		rowToCheck := strings.TrimLeft(data.Content, " ")
 		rowType := unknownRowType
 		for patternName, regexpCompiler := range patternsCompilers {
-			if regexpCompiler.MatchString(row) {
+			if regexpCompiler.MatchString(rowToCheck) {
 				rowType = patternName
 			}
 		}
-		vulnerableRows[rowIdx] = vulnRowData{
-			content:  vulnerableRows[rowIdx].content,
-			rowType:  rowType,
-			fileType: vulnerableRows[rowIdx].fileType,
-			filepath: vulnerableRows[rowIdx].filepath,
+		vulnerableRows[rowIdx] = resources.VulnRowData{
+			Content:         vulnerableRows[rowIdx].Content,
+			RowType:         rowType,
+			FileType:        vulnerableRows[rowIdx].FileType,
+			Filepath:        vulnerableRows[rowIdx].Filepath,
+			LeftIndentation: vulnerableRows[rowIdx].LeftIndentation,
 		}
 	}
 	return vulnerableRows
