@@ -134,7 +134,7 @@ func (smo *SimplifiedOutput) JasResultSummary(applicability, iac, sast *sarif.Ru
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails string) string {
+func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	return fmt.Sprintf(`
 ## 📦🔍 Applicable dependency CVE Vulnerability %s
 	

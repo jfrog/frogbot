@@ -19,9 +19,9 @@ import (
 type ReviewCommentType string
 
 type FrogbotReviewComment struct {
+	Location    *sarif.Location
 	CommentInfo vcsclient.CommentInfo
 	Type        ReviewCommentType
-	Location    *sarif.Location
 }
 
 type ApplicabilityWithRelatedInfo struct {
@@ -51,10 +51,22 @@ func generateFrogbotReviewCommentId(commentType ReviewCommentType, location *sar
 		xrayutils.GetLocationStartColumn(location),
 		xrayutils.GetLocationEndLine(location),
 		xrayutils.GetLocationEndColumn(location),
-		xrayutils.GetLocationSnippet(location),
-		xrayutils.GetLocationFileName(location),
+		escapeIdCharacters(xrayutils.GetLocationSnippet(location)),
+		escapeIdCharacters(xrayutils.GetLocationFileName(location)),
 	)
 	return id
+}
+
+func escapeIdCharacters(input string) string {
+	escaped := strings.ReplaceAll(input, "(", "\\(")
+	escaped = strings.ReplaceAll(escaped, ")", "\\)")
+	return escaped
+}
+
+func unescapeIdCharacters(input string) string {
+	unescaped := strings.ReplaceAll(input, "\\(", "(")
+	unescaped = strings.ReplaceAll(unescaped, "\\)", ")")
+	return unescaped
 }
 
 func convertToFrogbotReviewComment(comment vcsclient.CommentInfo) (*FrogbotReviewComment, string) {
@@ -72,7 +84,7 @@ func convertToFrogbotReviewComment(comment vcsclient.CommentInfo) (*FrogbotRevie
 func extractFrogbotReviewCommentId(comment vcsclient.CommentInfo) (string, bool) {
 	match := commentIdRegex.FindStringSubmatch(comment.Content)
 	if len(match) >= 2 {
-		return match[1], true
+		return unescapeIdCharacters(match[1]), true
 	}
 	return "", false
 }
@@ -145,6 +157,7 @@ func convertToReviewCommentType(typeValue string) (commentType ReviewCommentType
 func UpdateReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run) (err error) {
 	var commentsToDelete []vcsclient.CommentInfo
 	var commentsToAdd []vcsclient.PullRequestComment
+
 	// Calculate changes to review comments
 	if commentsToDelete, commentsToAdd, err = getCommentsToUpdate(repo, pullRequestID, client, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues); err != nil {
 		err = errors.New("couldn't calculate updates on review comments: " + err.Error())
@@ -247,7 +260,7 @@ func extractRunReviewChanges(commentType ReviewCommentType, data *sarif.Run, exi
 	}
 	// All the comments that are left are comments not in the current data = fixed and should be removed.
 	for id, fixedComment := range existingCommentsForType {
-		log.Debug("Removing fixed review comment", id)
+		log.Debug("Fixed review comment", id)
 		commentsToDelete = append(commentsToDelete, fixedComment.CommentInfo)
 	}
 	return
@@ -273,6 +286,7 @@ func generateReviewCommentContent(id string, commentType ReviewCommentType, loca
 			xrayutils.GetResultMsgText(relatedResult),
 			*relatedRule.FullDescription.Markdown,
 			applicableCveInfo.Summary,
+			getCveRemediation(applicableCveInfo),
 		)
 	case IacComment:
 		content += writer.IacReviewContent(
@@ -329,7 +343,7 @@ func setCveInfoToRule(rule *sarif.ReportingDescriptor, vulnerabilitiesRows []for
 
 func getApplicabilityCveInformation(relatedRule *sarif.ReportingDescriptor) formats.VulnerabilityOrViolationRow {
 	if relatedRule.Properties != nil {
-		if information, exist := relatedRule.Properties["cve-severity"]; exist {
+		if information, exist := relatedRule.Properties["cve-information"]; exist {
 			if vRow, ok := information.(formats.VulnerabilityOrViolationRow); ok {
 				return vRow
 			} else {
@@ -338,4 +352,11 @@ func getApplicabilityCveInformation(relatedRule *sarif.ReportingDescriptor) form
 		}
 	}
 	return formats.VulnerabilityOrViolationRow{}
+}
+
+func getCveRemediation(info formats.VulnerabilityOrViolationRow) string {
+	if info.JfrogResearchInformation != nil {
+		return info.JfrogResearchInformation.Remediation
+	}
+	return ""
 }

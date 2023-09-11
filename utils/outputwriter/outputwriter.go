@@ -112,7 +112,7 @@ type OutputWriter interface {
 	UntitledForJasMsg() string
 
 	JasResultSummary(applicability, iac, sast *sarif.Run) string
-	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails string) string
+	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string
 }
@@ -222,6 +222,10 @@ func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) st
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func MarkAsQuote(s string) string {
+	return fmt.Sprintf("`%s`", s)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {

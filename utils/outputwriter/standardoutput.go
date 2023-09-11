@@ -132,9 +132,10 @@ func (so *StandardOutput) JasResultSummary(applicability, iac, sast *sarif.Run) 
 	}
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(`
-	## JFrog Advanced Security Finding:
-	
-	`)
+
+## JFrog Advanced Security Finding:
+
+`)
 	if len(applicability.Results) > 0 {
 		contentBuilder.WriteString(getSummaryRowContent(applicability, "📦🔍", "Applicable Cve Vulnerability"))
 	}
@@ -148,53 +149,54 @@ func (so *StandardOutput) JasResultSummary(applicability, iac, sast *sarif.Run) 
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails string) string {
+func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	return fmt.Sprintf(`
-## 📦🔍 Applicable dependency CVE Vulnerability %s
-	
+### 📦🔍 Applicable dependency CVE Vulnerability
+
+Severity: %s
+
 Finding: %s
 
-### 👇 Details
+#### 👇 Details
 
-#### Description
-	
-%s	
-
-#### Cve details
-
+<details>
+<summary> <b>Description</b> </summary>
+<br>
 %s
+
+</details>
+
+<details>
+<summary> <b>CVE details</b> </summary>
+<br>
+%s
+
+</details>
+
+<details>
+<summary> <b>Remediation</b> </summary>
+<br>
+%s
+
+</details>
 
 `,
 		so.FormattedSeverity(severity, "Applicable"),
 		finding,
 		fullDetails,
-		cveDetails)
+		cveDetails,
+		remediation)
 }
 
 func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code Vulnerability %s
+### 🛠️ Infrastructure as Code Vulnerability
 	
+Severity: %s
+
 Finding: %s
 
-### 👇 Details
-
-%s	
-
-`,
-		so.FormattedSeverity(severity, "Applicable"),
-		finding,
-		fullDetails)
-}
-
-func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf(`
-## 🔐 Static Application Security Testing (SAST) Vulnerability %s
-	
-Finding: %s
-
-### 👇 Details
+#### 👇 Details
 
 <details>
 <summary> <b>Full description</b> </summary>
@@ -205,7 +207,31 @@ Finding: %s
 
 `,
 		so.FormattedSeverity(severity, "Applicable"),
-		finding,
+		MarkAsQuote(finding),
+		fullDetails)
+}
+
+func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+### 🔐 Static Application Security Testing (SAST) Vulnerability 
+	
+Severity: %s
+
+Finding: %s
+
+#### 👇 Details
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+%s
+
+</details>
+
+`,
+		so.FormattedSeverity(severity, "Applicable"),
+		MarkAsQuote(finding),
 		fullDetails,
 	))
 

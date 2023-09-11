@@ -186,7 +186,10 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if err != nil {
 			return
 		}
-
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.ApplicabilityScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.IacScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SecretsScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SastScanResults)
 		// Set JAS output flags
 		sourceScanResults := sourceResults.ExtendedScanResults
 		repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
@@ -210,6 +213,11 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		var targetResults *audit.Results
 		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 		targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
+
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.ApplicabilityScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.IacScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SecretsScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SastScanResults)
 		if err != nil {
 			return
 		}
@@ -235,7 +243,7 @@ func filterNotApplicableResults(applicableInfo []*sarif.Run) []*sarif.Run {
 	for _, cveContextualAnalysisRun := range applicableInfo {
 		onlyApplicableRun := sarif.NewRun(cveContextualAnalysisRun.Tool)
 		for _, cveContextualAnalysis := range cveContextualAnalysisRun.Results {
-			if xrayutils.isApplicableResult(cveContextualAnalysis) {
+			if xrayutils.IsApplicableResult(cveContextualAnalysis) {
 				onlyApplicableRun.Results = append(onlyApplicableRun.Results, cveContextualAnalysis)
 			}
 		}
@@ -265,7 +273,7 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 
 	var newIacs *sarif.Run
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
-		newApplicable = xrayutils.GetDiffFromRun(sourceResults.ExtendedScanResults.IacScanResults, targetResults.ExtendedScanResults.IacScanResults)
+		newIacs = xrayutils.GetDiffFromRun(sourceResults.ExtendedScanResults.IacScanResults, targetResults.ExtendedScanResults.IacScanResults)
 	}
 
 	var newSecrets *sarif.Run
