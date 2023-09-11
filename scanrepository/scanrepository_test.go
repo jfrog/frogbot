@@ -387,7 +387,11 @@ func TestPackageTypeFromScan(t *testing.T) {
 			testScan.scanDetails = scanDetails
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
-			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
+			packageName := pkg.packageType
+			if pkg.commandName != "" {
+				packageName = pkg.commandName
+			}
+			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, packageName)
 		})
 	}
 }
