@@ -188,7 +188,7 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 // scannedBranch - name of the branch we are scanning.
 // gitProject - [Optional] relevant for azure repos.
 // client vscClient
-// Only log warning if fails to get information.
+// In case of failure, log and don't fail the entire Frogbot scan.
 func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
 	if err != nil {
@@ -208,7 +208,7 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 		gitProject = sc.RepoOwner
 	}
 	gitInfo = &services.XscGitInfoContext{
-		// Clone URLs on browsers redirects to repository URLS.
+		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
 		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
 		GitRepoName:   sc.RepoName,
 		GitProvider:   sc.GitProvider.String(),
