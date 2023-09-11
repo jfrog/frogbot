@@ -126,8 +126,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Handle review comments at the pull request
-	if err = utils.UpdateReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues); err != nil {
-		err = errors.New("couldn't finish updating review comments: " + err.Error())
+	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues); err != nil {
+		err = errors.New("couldn't add review comments: " + err.Error())
 		return
 	}
 
