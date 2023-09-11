@@ -111,7 +111,6 @@ type OutputWriter interface {
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
 
-	JasResultSummary(applicability, iac, sast *sarif.Run) string
 	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string
@@ -184,24 +183,6 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	}
 
 	return descriptionBuilder.String()
-}
-
-func getSummaryRowContent(run *sarif.Run, icon, finding string) string {
-	plural := "s"
-	if len(run.Results) == 1 {
-		plural = ""
-	}
-	return fmt.Sprintf(`
-
-* %s Found %d location%s with %s
-
-`,
-		icon,
-		xrayutils.GetResultsLocationCount(run),
-		plural,
-		finding,
-	)
-
 }
 
 func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {

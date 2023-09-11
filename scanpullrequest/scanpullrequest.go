@@ -396,7 +396,7 @@ func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViola
 	if len(vulnerabilitiesRows) == 0 && !isDetectedJasIssues(applicableIssues, iacIssues, sastIssues) {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.JasResultSummary(applicableIssues, iacIssues, sastIssues) + writer.UntitledForJasMsg() + writer.Footer()
+	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.UntitledForJasMsg() + writer.Footer()
 }
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {

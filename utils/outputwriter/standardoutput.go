@@ -126,29 +126,6 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) JasResultSummary(applicability, iac, sast *sarif.Run) string {
-	if len(applicability.Results) == 0 && len(iac.Results) == 0 && len(sast.Results) == 0 {
-		return ""
-	}
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(`
-
-## JFrog Advanced Security Finding:
-
-`)
-	if len(applicability.Results) > 0 {
-		contentBuilder.WriteString(getSummaryRowContent(applicability, "📦🔍", "Applicable Cve Vulnerability"))
-	}
-	if len(iac.Results) > 0 {
-		contentBuilder.WriteString(getSummaryRowContent(iac, "🛠️", "Infrastructure as Code Vulnerability"))
-	}
-	if len(sast.Results) > 0 {
-		contentBuilder.WriteString(getSummaryRowContent(sast, "🔐", "Static Application Security Testing (SAST) Vulnerability"))
-	}
-
-	return contentBuilder.String()
-}
-
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	return fmt.Sprintf(`
 ### 📦🔍 Applicable dependency CVE Vulnerability
