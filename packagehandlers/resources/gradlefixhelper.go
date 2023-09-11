@@ -7,12 +7,15 @@ import (
 )
 
 const (
-	directStringWithVersionRegex = "[a-zA-Z]+\\s[\\\"|\\'][a-zA-Z]+:[a-zA-Z]+:[0-9]+\\.[0-9]+\\.?[0-9]*[\\\"|\\']"
+	directStringWithVersionRegexp = "[a-zA-Z]+\\s[\\\"|\\'][a-zA-Z-\\.]+:[a-zA-Z-\\.]+:[0-9]+\\.[0-9]+\\.?[0-9]*[:a-zA-Z-\\.0-1]*[\\\"|\\'].*"
+	directMapWithVersionRegexp    = "[a-zA-Z]+\\s?group:\\s?[\\\"|\\'].+[\\\"|\\'],\\s?name:\\s?[\\\"|\\'].+[\\\"|\\'],\\s?version:\\s?[\\\"|\\'].+[\\\"|\\'].*"
 )
 
 // TODO case: no version at the end
 // TODO case: more at the end of the string after the version
 // TODO case: map with newline in the middle
+// TODO case: wrapped in ()
+// TODO case: wrapped in []
 
 type VulnRowData struct {
 	Content         string
@@ -22,7 +25,9 @@ type VulnRowData struct {
 	LeftIndentation string //TODO DEL? check if needed to any fixer
 }
 
-var RegexpNameToPattern = map[string]string{"directStringWithVersion": directStringWithVersionRegex}
+var RegexpNameToPattern = map[string][]string{
+	"directWithVersion": {directStringWithVersionRegexp, directMapWithVersionRegexp},
+}
 
 type VulnerableRowFixer interface {
 	GetVulnerableRowFix(vulnDetails *utils.VulnerabilityDetails) string
@@ -32,8 +37,8 @@ type VulnerableRowFixer interface {
 // The known types can be found in RegexpNameToPattern map
 func GetFixerByRowType(rowData VulnRowData, rowNumberInFile int) (VulnerableRowFixer, error) {
 	switch rowData.RowType {
-	case "directStringWithVersion":
-		return &DirectStringRowFixer{CommonVulnerableRowFixer{
+	case "directWithVersion":
+		return &DirectRowFixer{CommonVulnerableRowFixer{
 			rowData:         rowData,
 			rowNumberInFile: rowNumberInFile,
 		}}, nil
@@ -51,11 +56,14 @@ func (cvrf *CommonVulnerableRowFixer) GetVulnerableRowFix() string {
 	return "common fixer"
 }
 
-type DirectStringRowFixer struct {
+// DirectRowFixer captures the following types:
+// string with version (<configName> 'a:b:c', <configName> "a:b:c") with possibly: additional args after version/single line comment
+// map with version (<configName> group: "a", name: "b", version: "c", <configName> group: 'a', name: 'b', version: 'c') with possibly: additional entries after version/single line comment
+type DirectRowFixer struct {
 	CommonVulnerableRowFixer
 }
 
-func (dsrf *DirectStringRowFixer) GetVulnerableRowFix(vulnDetails *utils.VulnerabilityDetails) string {
+func (dsrf *DirectRowFixer) GetVulnerableRowFix(vulnDetails *utils.VulnerabilityDetails) string {
 	fix := strings.Replace(dsrf.rowData.Content, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, 1)
 	return fix
 }
