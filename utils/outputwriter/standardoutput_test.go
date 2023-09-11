@@ -149,7 +149,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -159,35 +159,9 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 </div>
 
-## 👇 Details
-
-
-<details>
-<summary> <b>%s%s %s</b> </summary>
-<br>
-%s
-
-</details>
-
-
-<details>
-<summary> <b>%s%s %s</b> </summary>
-<br>
-%s
-
-</details>
-
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
-		"",
-		vulnerabilitiesRows[0].ImpactedDependencyName,
-		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
-		"",
-		vulnerabilitiesRows[1].ImpactedDependencyName,
-		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
