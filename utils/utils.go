@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -225,7 +224,49 @@ func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branc
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
-	return err
+	return nil
+}
+
+func setRunsAsFrogbotTool(runs []*sarif.Run) {
+	for _, run := range runs {
+		run.Tool.Driver.Name = sarifToolName
+		run.Tool.Driver.WithInformationURI(sarifToolUrl)
+	}
+	xrayutils.ConvertRunsPathsToRelative(runs)
+}
+
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
+	setRunsAsFrogbotTool(extendedResults.ApplicabilityScanResults)
+	setRunsAsFrogbotTool(extendedResults.IacScanResults)
+	setRunsAsFrogbotTool(extendedResults.SecretsScanResults)
+	setRunsAsFrogbotTool(extendedResults.SastScanResults)
+	// Generate report from the data
+	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
+}
+
+func CombineRunsAndMarkAsFrogbot(applicable []*sarif.Run, iac []*sarif.Run, secrets []*sarif.Run, sast []*sarif.Run) (combinedApplicable *sarif.Run, combinedIac *sarif.Run, combinedSecrets *sarif.Run, combinedSast *sarif.Run) {
+	combinedApplicable = combineRunsAndMark(applicable)
+	combinedIac = combineRunsAndMark(iac)
+	combinedSecrets = combineRunsAndMark(secrets)
+	combinedSast = combineRunsAndMark(sast)
+	return
+}
+
+func combineRunsAndMark(runs []*sarif.Run) (combined *sarif.Run) {
+	combined = sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl)
+	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
+	return
+}
+
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
+	// For PR or Repo scan, we can combine all the runs for each scanner to a single run
+	combinedApplicable, combinedIac, combinedSecrets, combinedSast := CombineRunsAndMarkAsFrogbot(extendedResults.ApplicabilityScanResults, extendedResults.IacScanResults, extendedResults.SecretsScanResults, extendedResults.SastScanResults)
+	extendedResults.ApplicabilityScanResults = []*sarif.Run{combinedApplicable}
+	extendedResults.IacScanResults = []*sarif.Run{combinedIac}
+	extendedResults.SecretsScanResults = []*sarif.Run{combinedSecrets}
+	extendedResults.SastScanResults = []*sarif.Run{combinedSast}
+	// Generate report from the data
+	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
 }
 
 func CombineRunsAndMarkAsFrogbot(applicable []*sarif.Run, iac []*sarif.Run, secrets []*sarif.Run, sast []*sarif.Run) (combinedApplicable *sarif.Run, combinedIac *sarif.Run, combinedSecrets *sarif.Run, combinedSast *sarif.Run) {

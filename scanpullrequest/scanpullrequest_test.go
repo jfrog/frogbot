@@ -450,6 +450,26 @@ func TestCreatePullRequestMessage(t *testing.T) {
 			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
+	iac := []formats.SourceCodeRow{
+		{
+			Severity: "Low",
+			SourceCodeLocationRow: formats.SourceCodeLocationRow{
+				File:       "test.js",
+				LineColumn: "1:20",
+				Snippet:    "kms_key_id='' was detected",
+			},
+			Type: "aws_cloudtrail_encrypt",
+		},
+		{
+			Severity: "High",
+			SourceCodeLocationRow: formats.SourceCodeLocationRow{
+				File:       "test2.js",
+				LineColumn: "4:30",
+				Snippet:    "Deprecated TLS version was detected",
+			},
+			Type: "aws_cloudfront_tls_version",
+		},
+	}
 	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
 	message := createPullRequestMessage(vulnerabilities, nil, nil, nil, writerOutput)
@@ -781,8 +801,8 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetIacRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetIacResults)})
-			sourceIacRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceIacResults)})
+			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetIacResults)})
+			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceIacResults)})
 			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})

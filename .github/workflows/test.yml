@@ -42,21 +42,30 @@ jobs:
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        if: ${{ matrix.suite != 'unit' }}
 
       - name: Lint
         run: go vet -v ./...
 
   tests:
     needs: Pretest
-    name: ${{ matrix.suite }} Tests (${{ matrix.os }})
+    name: ${{ matrix.suite.name }} Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     strategy:
       fail-fast: false
       matrix:
-        suite: [ unit, scanrepository, scanpullrequest, packagehandlers ]
+        suite:
+          - name: 'Unit'
+
+          - name: 'Scan Repository'
+            package: 'scanrepository'
+
+          - name: 'Scan Pull Request'
+            package: 'scanpullrequest'
+
+          - name: 'Package Handlers'
+            package: 'packagehandlers'
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
@@ -97,21 +106,13 @@ jobs:
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        if: ${{ matrix.suite != 'unit' }}
+        if: ${{ matrix.suite.name != 'Unit' }}
 
-      - name: unit Tests
-        run: go test github.com/jfrog/frogbot -v -race -timeout 30m -cover
+      - name: Run Tests
+        run: go test github.com/jfrog/frogbot/${{ matrix.suite.package }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.suite == 'unit' }}
-
-      - name: ${{ matrix.test }} Tests
-        run: go test github.com/jfrog/frogbot/${{ matrix.suite }} -v -race -timeout 30m -cover
-        env:
-          JF_URL: ${{ secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-        if: ${{ matrix.suite != 'unit' }}
 
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:

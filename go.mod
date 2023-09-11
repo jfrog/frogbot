@@ -37,6 +37,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
+	github.com/elazarl/goproxy v0.0.0-20230731152917-f99041a5c027 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/forPelevin/gomoji v1.1.8 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -119,6 +120,6 @@ replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.202
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/attiasas/jfrog-cli-core/v2 v2.0.0-20230911140333-3ce2c2e3c14d
 
-replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230904070427-f3f2a103d9e2
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230906115540-2c3c91d271d6
 
-replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230905120411-62d1bdd4eb38
+replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230907115821-300055da003e
