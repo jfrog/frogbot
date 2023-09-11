@@ -344,17 +344,45 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	rrows, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}, EntitledForJas: true, ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults([]*sarif.Result{
-			sarif.NewRuleResult("applic_CVE-2023-4321").WithLocations([]*sarif.Location{
-				sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10))),
-			}),
-		})}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}, EntitledForJas: true, ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults([]*sarif.Result{
-			sarif.NewRuleResult("applic_CVE-2023-4321").WithLocations([]*sarif.Location{
-				sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10))),
-			}),
-		})}}},
+	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
+		&audit.Results{
+			ExtendedScanResults: &xrayutils.ExtendedScanResults{
+				XrayResults:    []services.ScanResponse{previousScan},
+				EntitledForJas: true,
+				ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").
+					WithResults([]*sarif.Result{
+						sarif.NewRuleResult("applic_CVE-2023-4321").
+							WithLocations([]*sarif.Location{
+								sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+									WithArtifactLocation(sarif.NewArtifactLocation().
+										WithUri("file1")).
+									WithRegion(sarif.NewRegion().
+										WithStartLine(1).
+										WithStartColumn(10))),
+							}),
+					}),
+				},
+			},
+		},
+		&audit.Results{
+			ExtendedScanResults: &xrayutils.ExtendedScanResults{
+				XrayResults:    []services.ScanResponse{currentScan},
+				EntitledForJas: true,
+				ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").
+					WithResults([]*sarif.Result{
+						sarif.NewRuleResult("applic_CVE-2023-4321").
+							WithLocations([]*sarif.Location{sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
+								WithArtifactLocation(sarif.NewArtifactLocation().
+									WithUri("file1")).
+								WithRegion(sarif.NewRegion().
+									WithStartLine(1).
+									WithStartColumn(10))),
+							}),
+					}),
+				},
+			},
+		},
+		nil,
 	)
 	assert.NoError(t, err)
 	assert.Len(t, vulnerabilities, 2)
@@ -486,12 +514,16 @@ func TestGetAllIssues(t *testing.T) {
 				},
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
 			}},
-			ApplicabilityScanResults: map[string]xrayutils.ApplicabilityStatus{"CVE-2022-2122": xrayutils.Applicable, "CVE-2023-3122": xrayutils.NotApplicable},
-			SecretsScanResults: []xrayutils.SourceCodeScanResult{{SourceCodeLocation: xrayutils.SourceCodeLocation{
-				File:       "index.js",
-				LineColumn: "2:13",
-				Text:       "access token exposed",
-			}}},
+			ApplicabilityScanResults: []*sarif.Run{
+				utils.GetRunWithDummyResults(
+					utils.GetDummyResultWithOneLocation("file", 0, 0, "", "applic_CVE-2022-2122", ""),
+					utils.GetDummyPassingResult("applic_CVE-2023-3122")),
+			},
+			SecretsScanResults: []*sarif.Run{
+				utils.GetRunWithDummyResults(
+					utils.GetDummyResultWithOneLocation("index.js", 2, 13, "access token exposed", "", ""),
+				),
+			},
 			EntitledForJas: true,
 		},
 	}
@@ -512,10 +544,9 @@ func TestGetAllIssues(t *testing.T) {
 	assert.Equal(t, vuln2.Components["Dep-2"].FixedVersions[0], issuesRows.Vulnerabilities[1].FixedVersions[0])
 	assert.Equal(t, auditResults.ExtendedScanResults.XrayResults[0].Licenses[0].Key, issuesRows.Licenses[0].LicenseKey)
 	assert.Equal(t, "Dep-1", issuesRows.Licenses[0].ImpactedDependencyName)
-	assert.Equal(t, auditResults.ExtendedScanResults.SecretsScanResults[0].Severity, issuesRows.Secrets[0].Severity)
-	assert.Equal(t, auditResults.ExtendedScanResults.SecretsScanResults[0].Severity, issuesRows.Secrets[0].Severity)
-	assert.Equal(t, auditResults.ExtendedScanResults.SecretsScanResults[0].File, issuesRows.Secrets[0].File)
-	assert.Equal(t, auditResults.ExtendedScanResults.SecretsScanResults[0].Text, issuesRows.Secrets[0].Text)
+	assert.Equal(t, xrayutils.GetResultSeverity(auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0]), issuesRows.Secrets[0].Severity)
+	assert.Equal(t, xrayutils.GetLocationFileName(auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0].Locations[0]), issuesRows.Secrets[0].File)
+	assert.Equal(t, xrayutils.GetResultMsgText(auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0]), issuesRows.Secrets[0].Snippet)
 }
 
 func TestCreatePullRequestMessage(t *testing.T) {
