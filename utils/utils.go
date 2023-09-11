@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -210,12 +209,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// UploadScanToGitProvider uploads scan results to the relevant git provider in order to view the scan in the Git provider code scanning UI
-func UploadScanToGitProvider(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	if repo.GitProvider.String() != vcsutils.GitHub.String() {
-		log.Debug("Upload Scan to " + repo.GitProvider.String() + " is currently unsupported.")
-		return nil
-	}
+func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
 	report, err := GenerateFrogbotSarifReport(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
 	if err != nil {
 		return err

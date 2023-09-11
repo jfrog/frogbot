@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/jfrog/frogbot/packagehandlers"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -18,9 +22,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 type ScanRepositoryCmd struct {
@@ -128,7 +129,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only
-			if err = utils.UploadScanToGitProvider(scanResults, repository, cfp.details.BaseBranch(), cfp.details.Client()); err != nil {
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.details.BaseBranch(), cfp.details.Client()); err != nil {
 				log.Warn(err)
 			}
 		}

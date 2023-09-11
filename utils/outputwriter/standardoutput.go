@@ -218,7 +218,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 				contentBuilder.WriteString(fmt.Sprintf(`
 
 <details>
-<summary> <b>Vulnerable data flow analysis result</b> </summary>
+<summary><b>%d. Vulnerable data flow analysis result</b> </summary>
 <br>
 `,
 					dataFlowId,
@@ -241,7 +241,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 
 `,
 				)
-				dataFlowId = dataFlowId + 1
+				dataFlowId++
 			}
 		}
 	}
@@ -293,7 +293,7 @@ func (so *StandardOutput) Separator() string {
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
-	s := fmt.Sprintf("%s", getSeverityTag(IconName(severity), applicability))
+	s := getSeverityTag(IconName(severity), applicability)
 	if addName {
 		s = fmt.Sprintf(s + "%8s", severity)
 	}
@@ -313,13 +313,4 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 `
 	}
 	return msg
-}
-
-func wrapInDetails(str, summary string) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(`
-
-`)
-
-	return contentBuilder.String()	
 }
