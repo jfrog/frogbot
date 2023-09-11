@@ -6,8 +6,6 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -151,7 +149,7 @@ Finding: %s
 		fullDetails)
 }
 
-func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
+func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
 ## 🔐 Static Application Security Testing (SAST) Vulnerability %s
@@ -176,36 +174,31 @@ Finding: %s
 
 	if len(codeFlows) > 0 {
 		dataFlowId := 1
-		for _, codeFlow := range codeFlows {
-			for _, threadFlow := range codeFlow.ThreadFlows {
-				contentBuilder.WriteString(fmt.Sprintf(`
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(fmt.Sprintf(`
 
 ---
 %d. Vulnerable data flow analysis result:
 `,
-					dataFlowId,
-				))
-
-				for i, threadFlowLocation := range threadFlow.Locations {
-					contentBuilder.WriteString(fmt.Sprintf(`
+				dataFlowId,
+			))
+			for i, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
 	%d. %s (at %s line %d)
 `,
-						i+1,
-						xrayutils.GetLocationSnippet(threadFlowLocation.Location),
-						xrayutils.GetLocationFileName(threadFlowLocation.Location),
-						xrayutils.GetLocationStartLine(threadFlowLocation.Location),
-					))
-				}
-
-				contentBuilder.WriteString(`
-
+					i+1,
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
+			contentBuilder.WriteString(`
 
 ---
 
 `,
-				)
-				dataFlowId++
-			}
+			)
+			dataFlowId++
 		}
 	}
 	return contentBuilder.String()

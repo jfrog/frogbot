@@ -8,7 +8,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -89,7 +88,7 @@ const (
 	SecretsEmailTableRow = `
 				<tr>
 					<td> %s </td>
-					<td> %s </td>
+					<td> %d:%d </td>
 					<td> %s </td>
 				</tr>`
 )
@@ -113,7 +112,7 @@ type OutputWriter interface {
 
 	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
-	SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string
+	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
 	ReviewFooter() string
 }
 
@@ -197,7 +196,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, iac.LineColumn, iac.Snippet)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
 	}
 	return tableContent
 }

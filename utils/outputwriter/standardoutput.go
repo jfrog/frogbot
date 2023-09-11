@@ -6,8 +6,6 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 type StandardOutput struct {
@@ -159,7 +157,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
 		cveDetails,
 		remediation)
@@ -180,11 +178,11 @@ func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails)
 }
 
-func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows []*sarif.CodeFlow) string {
+func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
 <div align="center"> 
@@ -204,46 +202,52 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false),finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
 	))
 
 	if len(codeFlows) > 0 {
 		contentBuilder.WriteString(`
 
+<details>
+<summary><b>Code Flows</b> </summary>
+
 `)
 		dataFlowId := 1
-		for _, codeFlow := range codeFlows {
-			for _, threadFlow := range codeFlow.ThreadFlows {
-				contentBuilder.WriteString(fmt.Sprintf(`
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(fmt.Sprintf(`
 
 <details>
 <summary><b>%d. Vulnerable data flow analysis result</b> </summary>
 <br>
 `,
-					dataFlowId,
-				))
-
-				for _, threadFlowLocation := range threadFlow.Locations {
-					contentBuilder.WriteString(fmt.Sprintf(`
+				dataFlowId,
+			))
+			for _, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
 %s. %s (at %s line %d)
 `,
 					"↘️",
-						MarkAsQuote(xrayutils.GetLocationSnippet(threadFlowLocation.Location)),
-						xrayutils.GetLocationFileName(threadFlowLocation.Location),
-						xrayutils.GetLocationStartLine(threadFlowLocation.Location),
-					))
-				}
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
 
-				contentBuilder.WriteString(`
+			contentBuilder.WriteString(`
 
 </details>
 
 `,
-				)
-				dataFlowId++
-			}
+			)
+			dataFlowId++
 		}
+		contentBuilder.WriteString(`
+
+</details>
+
+`,
+		)
 	}
 	return contentBuilder.String()
 }
@@ -295,7 +299,7 @@ func (so *StandardOutput) Separator() string {
 func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
 	s := getSeverityTag(IconName(severity), applicability)
 	if addName {
-		s = fmt.Sprintf(s + "%8s", severity)
+		s = fmt.Sprintf(s+"%8s", severity)
 	}
 	return s
 }

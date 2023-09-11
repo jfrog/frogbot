@@ -16,7 +16,6 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -93,19 +92,19 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	vulnerabilitiesRows, applicableIssues, iacIssues, secretsIssues, sastIssues, err := auditPullRequest(repo, client, pullRequestDetails)
+	vulnerabilitiesRows, iacIssues, secretsIssues, sastIssues, err := auditPullRequest(repo, client, pullRequestDetails)
 	if err != nil {
 		return
 	}
 
-	shouldSendExposedSecretsEmail := secretsIssues != nil && len(secretsIssues.Results) > 0 && repo.SmtpServer != ""
+	shouldSendExposedSecretsEmail := secretsIssues != nil && len(secretsIssues) > 0 && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		prSourceDetails := pullRequestDetails.Source
 		secretsEmailDetails := utils.NewSecretsEmailDetails(
 			client, repo.GitProvider,
 			prSourceDetails.Owner, prSourceDetails.Repository,
 			prSourceDetails.Name, pullRequestDetails.URL,
-			xrayutils.PrepareSecrets([]*sarif.Run{secretsIssues}), repo.EmailDetails)
+			secretsIssues, repo.EmailDetails)
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
 		}
@@ -117,7 +116,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues, repo.OutputWriter)
+	message := createPullRequestMessage(vulnerabilitiesRows, iacIssues, sastIssues, repo.OutputWriter)
 
 	// Add main comment to the pull request
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
@@ -126,26 +125,35 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Handle review comments at the pull request
-	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues); err != nil {
-		err = errors.New("couldn't add review comments: " + err.Error())
-		return
+	if !repo.IncludeAllVulnerabilities {
+		if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, iacIssues, sastIssues); err != nil {
+			err = errors.New("couldn't add review comments: " + err.Error())
+			return
+		}
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && (len(vulnerabilitiesRows) > 0 || isDetectedJasIssues(applicableIssues, iacIssues, sastIssues)) {
+	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && (len(vulnerabilitiesRows) > 0 || isDetectedJasIssues(vulnerabilitiesRows, iacIssues, sastIssues)) {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return
 }
 
-func isDetectedJasIssues(applicableIssues *sarif.Run, iacIssues *sarif.Run, sastIssues *sarif.Run) bool {
-	return (applicableIssues != nil && len(applicableIssues.Results) > 0) ||
-		(iacIssues != nil && len(iacIssues.Results) > 0) ||
-		(sastIssues != nil && len(sastIssues.Results) > 0)
+func isDetectedJasIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, sastIssues []formats.SourceCodeRow) bool {
+	return hasApplicabilityIssues(vulnerabilitiesRows) || len(iacRows) > 0 || len(sastIssues) > 0
+}
+
+func hasApplicabilityIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) bool {
+	for _, row := range vulnerabilitiesRows {
+		if row.Applicable == string(xrayutils.Applicability) {
+			return true
+		}
+	}
+	return false
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, combinedApplicable *sarif.Run, combinedIac *sarif.Run, combinedSecrets *sarif.Run, combinedSast *sarif.Run, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, secretsRows []formats.SourceCodeRow, sastRows []formats.SourceCodeRow, err error) {
 	// Download source branch
 	sourceBranchInfo := pullRequestDetails.Source
 	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(client, sourceBranchInfo.Owner, sourceBranchInfo.Repository, sourceBranchInfo.Name)
@@ -168,7 +176,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	}()
 
 	// Accumulated Jas source code issues from all Projects
-	var applicableIssues, iacIssues, secretsIssues, sastIssues []*sarif.Run
+	//var applicableIssues, iacIssues, secretsIssues, sastIssues []*sarif.Run
 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
@@ -186,10 +194,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if err != nil {
 			return
 		}
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.ApplicabilityScanResults)
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.IacScanResults)
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SecretsScanResults)
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SastScanResults)
+
 		// Set JAS output flags
 		sourceScanResults := sourceResults.ExtendedScanResults
 		repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
@@ -203,10 +208,9 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 				return
 			}
 			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
-			applicableIssues = append(applicableIssues, filterNotApplicableResults(sourceScanResults.ApplicabilityScanResults)...)
-			iacIssues = append(iacIssues, sourceScanResults.IacScanResults...)
-			secretsIssues = append(secretsIssues, sourceScanResults.SecretsScanResults...)
-			sastIssues = append(sastIssues, sourceScanResults.SastScanResults...)
+			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceScanResults.IacScanResults)...)
+			secretsRows = append(secretsRows, xrayutils.PrepareSecrets(sourceScanResults.SecretsScanResults)...)
+			sastRows = append(sastRows, xrayutils.PrepareSast(sourceScanResults.SastScanResults)...)
 			continue
 		}
 
@@ -215,93 +219,75 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 		targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.ApplicabilityScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.IacScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SecretsScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SastScanResults)
 		if err != nil {
 			return
 		}
 
 		// Get new issues
 		var newVulnerabilities []formats.VulnerabilityOrViolationRow
-		var newApplicable, newIacs, newSecrets, newSast *sarif.Run
-		if newVulnerabilities, newApplicable, newIacs, newSecrets, newSast, err = getNewIssues(targetResults, sourceResults); err != nil {
+		var newIacs, newSecrets, newSast []formats.SourceCodeRow
+		if newVulnerabilities, newIacs, newSecrets, newSast, err = getNewIssues(targetResults, sourceResults); err != nil {
 			return
 		}
 		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
-		applicableIssues = append(applicableIssues, newApplicable)
-		iacIssues = append(iacIssues, newIacs)
-		secretsIssues = append(secretsIssues, newSecrets)
-		sastIssues = append(sastIssues, newSast)
+		iacRows = append(iacRows, newIacs...)
+		secretsRows = append(secretsRows, newSecrets...)
+		sastRows = append(sastRows, newSast...)
 	}
-	combinedApplicable, combinedIac, combinedSecrets, combinedSast = utils.CombineRunsAndMarkAsFrogbot(applicableIssues, iacIssues, secretsIssues, sastIssues)
 	return
 }
 
-func filterNotApplicableResults(applicableInfo []*sarif.Run) []*sarif.Run {
-	var applicableEvidenceRows []*sarif.Run
-	for _, cveContextualAnalysisRun := range applicableInfo {
-		onlyApplicableRun := sarif.NewRun(cveContextualAnalysisRun.Tool)
-		for _, cveContextualAnalysis := range cveContextualAnalysisRun.Results {
-			if xrayutils.IsApplicableResult(cveContextualAnalysis) {
-				onlyApplicableRun.Results = append(onlyApplicableRun.Results, cveContextualAnalysis)
-			}
-		}
-		if len(onlyApplicableRun.Results) > 0 {
-			applicableEvidenceRows = append(applicableEvidenceRows, onlyApplicableRun)
-		}
-	}
-
-	return applicableEvidenceRows
-}
-
-func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, *sarif.Run, *sarif.Run, *sarif.Run, *sarif.Run, error) {
+func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.SourceCodeRow, []formats.SourceCodeRow, []formats.SourceCodeRow, error) {
 	var newVulnerabilities []formats.VulnerabilityOrViolationRow
 	var err error
 	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
 		if newVulnerabilities, err = createNewVulnerabilitiesRows(targetResults, sourceResults); err != nil {
-			return nil, nil, nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	}
 
-	var newApplicable *sarif.Run
-	sourceApplicability := filterNotApplicableResults(sourceResults.ExtendedScanResults.ApplicabilityScanResults)
-	if len(sourceApplicability) > 0 {
-		targetApplicability := filterNotApplicableResults(targetResults.ExtendedScanResults.ApplicabilityScanResults)
-		newApplicable = xrayutils.GetDiffFromRun(sourceApplicability, targetApplicability)
-	}
-
-	var newIacs *sarif.Run
+	var newIacs []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
-		newIacs = xrayutils.GetDiffFromRun(sourceResults.ExtendedScanResults.IacScanResults, targetResults.ExtendedScanResults.IacScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.IacScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.IacScanResults)
+		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
+		newIacs = createNewSourceCodeRows(targetIacRows, sourceIacRows)
 	}
 
-	var newSecrets *sarif.Run
+	var newSecrets []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		newSecrets = xrayutils.GetDiffFromRun(sourceResults.ExtendedScanResults.SecretsScanResults, targetResults.ExtendedScanResults.SecretsScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SecretsScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SecretsScanResults)
+		targetSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.SecretsScanResults)
+		sourceSecretsRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.SecretsScanResults)
+		newSecrets = createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 	}
 
-	var newSast *sarif.Run
+	var newSast []formats.SourceCodeRow
 	if len(targetResults.ExtendedScanResults.SastScanResults) > 0 {
-		newSast = xrayutils.GetDiffFromRun(sourceResults.ExtendedScanResults.SastScanResults, targetResults.ExtendedScanResults.SastScanResults)
+		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SastScanResults)
+		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SastScanResults)
+		targetSastRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.SastScanResults)
+		sourceSastRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.SastScanResults)
+		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
 	}
 
-	return newVulnerabilities, newApplicable, newIacs, newSecrets, newSast, nil
+	return newVulnerabilities, newIacs, newSecrets, newSast, nil
 }
 
-func createNewIacOrSecretsRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
-	targetIacOrSecretsVulnerabilitiesKeys := datastructures.MakeSet[string]()
+func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
+	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetIacOrSecretsVulnerabilitiesKeys.Add(row.File + row.Snippet)
+		targetSourceCodeVulnerabilitiesKeys.Add(fmt.Sprintf("%s%d%d%d%d%s", row.File, row.StartColumn, row.StartLine, row.EndLine, row.EndColumn, row.Snippet))
 	}
-	var addedIacOrSecretsVulnerabilities []formats.SourceCodeRow
+	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetIacOrSecretsVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
-			addedIacOrSecretsVulnerabilities = append(addedIacOrSecretsVulnerabilities, row)
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(fmt.Sprintf("%s%d%d%d%d%s", row.File, row.StartColumn, row.StartLine, row.EndLine, row.EndColumn, row.Snippet)) {
+			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}
-	return addedIacOrSecretsVulnerabilities
+	return addedSourceCodeVulnerabilities
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
@@ -393,8 +379,8 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 	return
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run, writer outputwriter.OutputWriter) string {
-	if len(vulnerabilitiesRows) == 0 && !isDetectedJasIssues(applicableIssues, iacIssues, sastIssues) {
+func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow, writer outputwriter.OutputWriter) string {
+	if len(vulnerabilitiesRows) == 0 && !isDetectedJasIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
 	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.UntitledForJasMsg() + writer.Footer()

@@ -32,7 +32,7 @@ const (
 	SastComment       ReviewCommentType = "Sast"
 )
 
-func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run) (err error) {
+func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (err error) {
 	// Get all comments in PR
 	var existingComments []vcsclient.CommentInfo
 	if existingComments, err = client.ListPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID); err != nil {
@@ -47,7 +47,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		}
 	}
 	// Add review comments for the given data
-	commentsToAdd, err := getNewReviewComments(repo, vulnerabilitiesRows, applicableIssues, iacIssues, sastIssues)
+	commentsToAdd, err := getNewReviewComments(repo, vulnerabilitiesRows, iacIssues, sastIssues)
 	if err != nil {
 		return
 	}
@@ -70,81 +70,68 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 	return
 }
 
-func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, applicableIssues, iacIssues, sastIssues *sarif.Run) (commentsToAdd []vcsclient.PullRequestComment, err error) {
+func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []vcsclient.PullRequestComment, err error) {
 	writer := repo.OutputWriter
 
-	if len(applicableIssues.Results) > 0 {
-		attachApplicabilityRelatedInfo(applicableIssues, vulnerabilitiesRows)
-		var comments []vcsclient.PullRequestComment
-		if comments, err = generateCommentsForType(ApplicableComment, applicableIssues, writer); err != nil {
-			return
-		}
-		commentsToAdd = append(commentsToAdd, comments...)
-	}
-	if len(iacIssues.Results) > 0 {
-		var comments []vcsclient.PullRequestComment
-		if comments, err = generateCommentsForType(IacComment, iacIssues, writer); err != nil {
-			return
-		}
-		commentsToAdd = append(commentsToAdd, comments...)
-	}
-	if len(sastIssues.Results) > 0 {
-		var comments []vcsclient.PullRequestComment
-		if comments, err = generateCommentsForType(SastComment, sastIssues, writer); err != nil {
-			return
-		}
-		commentsToAdd = append(commentsToAdd, comments...)
-	}
-
-	return
-}
-
-func generateCommentsForType(commentType ReviewCommentType, data *sarif.Run, writer outputwriter.OutputWriter) (commentsToAdd []vcsclient.PullRequestComment, err error) {
-	for _, result := range data.Results {
-		for _, location := range result.Locations {
-			log.Debug("Adding new review comment", xrayutils.GetLocationFileName(location))
-			var rule *sarif.ReportingDescriptor
-			if rule, err = data.GetRuleById(*result.RuleID); err != nil {
-				return
+	for _, vulnerability := range vulnerabilitiesRows {
+		for _, cve := range vulnerability.Cves {
+			if cve.Applicability != nil {
+				for _, evidence := range cve.Applicability.Evidence {
+					commentsToAdd = append(commentsToAdd, generateReviewComment(evidence.Location, generateApplicabilityReviewContent(evidence, cve, vulnerability, writer)))
+				}
 			}
-			commentsToAdd = append(commentsToAdd, generateReviewComment(location, commentType, result, rule, writer))
 		}
+	}
+
+	for _, iac := range iacIssues {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
+	}
+
+	for _, sast := range sastIssues {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(sast.Location, generateReviewCommentContent(SastComment, sast, writer)))
 	}
 	return
 }
 
-func generateReviewComment(location *sarif.Location, commentType ReviewCommentType, relatedResult *sarif.Result, relatedRule *sarif.ReportingDescriptor, writer outputwriter.OutputWriter) (comment vcsclient.PullRequestComment) {
+func generateReviewComment(location formats.Location, content string) (comment vcsclient.PullRequestComment) {
 	return vcsclient.PullRequestComment{
 		CommentInfo: vcsclient.CommentInfo{
-			Content: generateReviewCommentContent(commentType, location, relatedResult, relatedRule, writer),
+			Content: content,
 		},
 		PullRequestDiff: createPullRequestDiff(location),
 	}
 }
 
-func generateReviewCommentContent(commentType ReviewCommentType, location *sarif.Location, relatedResult *sarif.Result, relatedRule *sarif.ReportingDescriptor, writer outputwriter.OutputWriter) (content string) {
+func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (content string) {
+	remediation := ""
+	if relatedVulnerability.JfrogResearchInformation != nil {
+		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
+	}
+	content += writer.ApplicableCveReviewContent(
+		relatedVulnerability.Severity,
+		issue.Reason,
+		relatedCve.Applicability.ScannerDescription,
+		relatedVulnerability.Summary,
+		remediation,
+	)
+	content += writer.ReviewFooter()
+	return
+}
+
+func generateReviewCommentContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
 	switch commentType {
-	case ApplicableComment:
-		applicableCveInfo := getApplicabilityCveInformation(relatedRule)
-		content += writer.ApplicableCveReviewContent(
-			strings.ToLower(applicableCveInfo.Severity),
-			xrayutils.GetResultMsgText(relatedResult),
-			*relatedRule.FullDescription.Markdown,
-			applicableCveInfo.Summary,
-			getCveRemediation(applicableCveInfo),
-		)
 	case IacComment:
 		content += writer.IacReviewContent(
-			strings.ToLower(xrayutils.GetResultSeverity(relatedResult)),
-			xrayutils.GetResultMsgText(relatedResult),
-			*relatedRule.FullDescription.Markdown,
+			issue.Severity,
+			issue.Finding,
+			issue.ScannerDescription,
 		)
 	case SastComment:
 		content += writer.SastReviewContent(
-			strings.ToLower(xrayutils.GetResultSeverity(relatedResult)),
-			xrayutils.GetResultMsgText(relatedResult),
-			*relatedRule.FullDescription.Markdown,
-			xrayutils.GetLocationRelatedCodeFlowsFromResult(location, relatedResult),
+			issue.Severity,
+			issue.Finding,
+			issue.ScannerDescription,
+			issue.CodeFlow,
 		)
 	}
 
@@ -152,19 +139,19 @@ func generateReviewCommentContent(commentType ReviewCommentType, location *sarif
 	return
 }
 
-func createPullRequestDiff(location *sarif.Location) vcsclient.PullRequestDiff {
+func createPullRequestDiff(location formats.Location) vcsclient.PullRequestDiff {
 	return vcsclient.PullRequestDiff{
-		OriginalFilePath:    xrayutils.GetLocationFileName(location),
-		OriginalStartLine:   xrayutils.GetLocationStartLine(location),
-		OriginalEndLine:     xrayutils.GetLocationEndLine(location),
-		OriginalStartColumn: xrayutils.GetLocationStartColumn(location),
-		OriginalEndColumn:   xrayutils.GetLocationEndColumn(location),
+		OriginalFilePath:    location.File,
+		OriginalStartLine:   location.StartLine,
+		OriginalEndLine:     location.EndLine,
+		OriginalStartColumn: location.StartColumn,
+		OriginalEndColumn:   location.EndColumn,
 
-		NewFilePath:    xrayutils.GetLocationFileName(location),
-		NewStartLine:   xrayutils.GetLocationStartLine(location),
-		NewEndLine:     xrayutils.GetLocationEndLine(location),
-		NewStartColumn: xrayutils.GetLocationStartColumn(location),
-		NewEndColumn:   xrayutils.GetLocationEndColumn(location),
+		NewFilePath:    location.File,
+		NewStartLine:   location.StartLine,
+		NewEndLine:     location.EndLine,
+		NewStartColumn: location.StartColumn,
+		NewEndColumn:   location.EndColumn,
 	}
 }
 
@@ -175,7 +162,7 @@ func attachApplicabilityRelatedInfo(applicability *sarif.Run, vulnerabilitiesRow
 }
 
 func setCveInfoToRule(rule *sarif.ReportingDescriptor, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
-	cve := xrayutils.GetCveIdFromRuleId(rule.ID)
+	cve := xrayutils.ApplicabilityRuleIdToCve(rule.ID)
 	for _, issue := range vulnerabilitiesRows {
 		for _, issueCve := range issue.Cves {
 			if cve == issueCve.Id {

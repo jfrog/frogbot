@@ -389,7 +389,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
-	message := createPullRequestMessage(vulnerabilities, nil, nil, nil, &outputwriter.StandardOutput{})
+	message := createPullRequestMessage(vulnerabilities, nil, nil, &outputwriter.StandardOutput{})
 
 	expectedMessageByte, err := os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilities.md"))
 	assert.NoError(t, err)
@@ -398,7 +398,7 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 
 	outputWriter := &outputwriter.StandardOutput{}
 	outputWriter.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, nil, nil, nil, outputWriter)
+	message = createPullRequestMessage(vulnerabilities, nil, nil, outputWriter)
 
 	expectedMessageByte, err = os.ReadFile(filepath.Join("..", "testdata", "messages", "novulnerabilitiesMR.md"))
 	assert.NoError(t, err)
@@ -452,13 +452,13 @@ func TestCreatePullRequestMessage(t *testing.T) {
 	}
 	writerOutput := &outputwriter.StandardOutput{}
 	writerOutput.SetJasOutputFlags(true, true)
-	message := createPullRequestMessage(vulnerabilities, nil, nil, nil, writerOutput)
+	message := createPullRequestMessage(vulnerabilities, nil, nil, writerOutput)
 
 	expectedMessage := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n"
 	assert.Equal(t, expectedMessage, message)
 
 	writerOutput.SetVcsProvider(vcsutils.GitLab)
-	message = createPullRequestMessage(vulnerabilities, nil, nil, nil, writerOutput)
+	message = createPullRequestMessage(vulnerabilities, nil, nil, writerOutput)
 	expectedMessage = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Undetermined | github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |\n\n</div>\n\n## 👇 Details\n\n\n<details>\n<summary> <b>[ CVE-2022-24450 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-24450\n- **Fixed Version:** [0.24.1]\n\n\n</details>\n\n\n<details>\n<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>\n<br>\n\n- **Severity** 🔥 High\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/mholt/archiver/v3\n- **Current Version:** v3.5.1\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-26652 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>\n<br>\n\n- **Severity** 🎃 Medium\n- **Contextual Analysis:** Undetermined\n- **Package Name:** github.com/nats-io/nats-streaming-server\n- **Current Version:** v0.21.0\n- **CVE:** CVE-2022-26652\n- **Fixed Version:** [0.24.3]\n\n\n"
 	assert.Equal(t, expectedMessage, message)
 }
@@ -738,10 +738,11 @@ func TestCreateNewIacRows(t *testing.T) {
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity: "High",
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Snippet:    "aws violation",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "aws violation",
 					},
 					SeverityNumValue: 13,
 				},
@@ -769,10 +770,11 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 11,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file2",
-						LineColumn: "2:5",
-						Snippet:    "gcp violation",
+					Location: formats.Location{
+						File:        "file2",
+						StartLine:   2,
+						StartColumn: 5,
+						Snippet:     "gcp violation",
 					},
 				},
 			},
@@ -783,7 +785,7 @@ func TestCreateNewIacRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetIacResults)})
 			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceIacResults)})
-			addedIacVulnerabilities := createNewIacOrSecretsRows(targetIacRows, sourceIacRows)
+			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
@@ -823,10 +825,11 @@ func TestCreateNewSecretRows(t *testing.T) {
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity: "High",
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Snippet:    "Sensitive information",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "Sensitive information",
 					},
 					Type:             "Secret",
 					SeverityNumValue: 13,
@@ -855,10 +858,11 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 11,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file2",
-						LineColumn: "2:5",
-						Snippet:    "Confidential data",
+					Location: formats.Location{
+						File:        "file2",
+						StartLine:   2,
+						StartColumn: 5,
+						Snippet:     "Confidential data",
 					},
 					Type: "Secret",
 				},
@@ -870,7 +874,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			targetSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetSecretsResults)})
 			sourceSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceSecretsResults)})
-			addedSecretsVulnerabilities := createNewIacOrSecretsRows(targetSecretsRows, sourceSecretsRows)
+			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}

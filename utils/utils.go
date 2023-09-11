@@ -239,20 +239,6 @@ func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, 
 	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
 }
 
-func CombineRunsAndMarkAsFrogbot(applicable []*sarif.Run, iac []*sarif.Run, secrets []*sarif.Run, sast []*sarif.Run) (combinedApplicable *sarif.Run, combinedIac *sarif.Run, combinedSecrets *sarif.Run, combinedSast *sarif.Run) {
-	combinedApplicable = combineRunsAndMark(applicable)
-	combinedIac = combineRunsAndMark(iac)
-	combinedSecrets = combineRunsAndMark(secrets)
-	combinedSast = combineRunsAndMark(sast)
-	return
-}
-
-func combineRunsAndMark(runs []*sarif.Run) (combined *sarif.Run) {
-	combined = sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl)
-	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
-	return
-}
-
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
