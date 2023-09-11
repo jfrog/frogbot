@@ -35,7 +35,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Nuget,
 			},
-			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
+			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 | CVE-2022-0001 |",
 		},
 		{
 			name: "No CVE and multiple direct dependencies",
@@ -53,7 +53,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				Cves:          []formats.CveRow{},
 				Technology:    coreutils.Dotnet,
 			},
-			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |\n|  | dep2:2.0.0 |  |  |",
+			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |  -  |\n|  | dep2:2.0.0 |  |  |",
 		},
 		{
 			name: "Multiple CVEs",
@@ -72,7 +72,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Pip,
 			},
-			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
+			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 | CVE-2022-0002, CVE-2022-0003 |",
 			showCaColumn:   true,
 		},
 	}
@@ -157,7 +157,7 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 %s %s
 
 ---
-### 👇 Details
+## 🔬 Research Details
 ---
 
 
@@ -233,7 +233,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 %s %s
 
 ---
-### 👇 Details
+## 🔬 Research Details
 ---
 
 
@@ -293,7 +293,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 					Type: "azure_redis_patch",
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
+			expectedOutput: "\n---\n## 🛠️ Infrastructure as Code \n---\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
 		},
 		{
 			name: "Multiple IAC rows",
@@ -321,7 +321,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 					},
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
+			expectedOutput: "\n---\n## 🛠️ Infrastructure as Code \n---\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
 		},
 	}
 

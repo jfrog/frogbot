@@ -6,7 +6,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 )
 
@@ -27,7 +26,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				FixedVersions: []string{"2.0.0"},
 				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 | CVE-2022-1234 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
@@ -43,7 +42,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 					{Id: "CVE-2022-5678"},
 				},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br><br>3.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | testdep2:1.0.0 | 2.0.0<br>3.0.0 | CVE-2022-1234<br>CVE-2022-5678 |",
 		},
 		{
 			name: "Single CVE and direct dependencies",
@@ -60,7 +59,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				FixedVersions: []string{"2.0.0"},
 				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br><br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 | CVE-2022-1234 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
@@ -80,7 +79,7 @@ func TestStandardOutput_TableRow(t *testing.T) {
 				},
 				FixedVersions: []string{"4.0.0", "5.0.0"},
 			},
-			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br><br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br><br>5.0.0 |",
+			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 | CVE-1<br>CVE-2 |",
 		},
 	}
 
@@ -228,7 +227,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent = fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -238,36 +237,9 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 </div>
 
-## 👇 Details
-
-
-<details>
-<summary> <b>%s%s %s</b> </summary>
-<br>
-%s
-
-</details>
-
-
-<details>
-<summary> <b>%s%s %s</b> </summary>
-<br>
-%s
-
-</details>
-
 `,
 		getVulnerabilitiesTableHeader(true),
-		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
-		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[0].Cves[0].Id, vulnerabilitiesRows[0].Cves[1].Id}, ",")),
-		vulnerabilitiesRows[0].ImpactedDependencyName,
-		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
-		fmt.Sprintf("[ %s ] ", strings.Join([]string{vulnerabilitiesRows[1].Cves[0].Id}, ",")),
-		vulnerabilitiesRows[1].ImpactedDependencyName,
-		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
-	)
+		getVulnerabilitiesTableContent(vulnerabilitiesRows, so))
 
 	actualContent = so.VulnerabilitiesContent(vulnerabilitiesRows)
 	assert.Equal(t, expectedContent, actualContent, "Content mismatch")
