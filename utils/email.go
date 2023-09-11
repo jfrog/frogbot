@@ -56,7 +56,7 @@ func getSecretsEmailContent(secrets []formats.SourceCodeRow, gitProvider vcsutil
 			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
 				secret.File,
 				secret.LineColumn,
-				secret.Text))
+				secret.Snippet))
 	}
 	pullOrMergeRequest := "pull request"
 	if gitProvider == vcsutils.GitLab {

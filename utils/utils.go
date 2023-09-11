@@ -22,6 +22,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -42,6 +43,10 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
+
+	// Sarif run output tool annotator
+	sarifToolName = "JFrog Frogbot"
+	sarifToolUrl  = "https://github.com/jfrog/frogbot"
 )
 
 var (
@@ -205,16 +210,33 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	scan, err := xrayutils.GenerateSarifFileFromScan(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject, true, "JFrog Frogbot", "https://github.com/jfrog/frogbot")
+	report, err := GenerateFrogbotSarifReport(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
 	if err != nil {
 		return err
 	}
-	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, scan)
+	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, report)
 	if err != nil {
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
 	return nil
+}
+
+func setRunsAsFrogbotTool(runs []*sarif.Run) {
+	for _, run := range runs {
+		run.Tool.Driver.Name = sarifToolName
+		run.Tool.Driver.WithInformationURI(sarifToolUrl)
+	}
+	xrayutils.ConvertRunsPathsToRelative(runs)
+}
+
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
+	setRunsAsFrogbotTool(extendedResults.ApplicabilityScanResults)
+	setRunsAsFrogbotTool(extendedResults.IacScanResults)
+	setRunsAsFrogbotTool(extendedResults.SecretsScanResults)
+	setRunsAsFrogbotTool(extendedResults.SastScanResults)
+	// Generate report from the data
+	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
