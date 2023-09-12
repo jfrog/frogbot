@@ -269,7 +269,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			IssueId:                "XRAY-2",
 			Severity:               "low",
 			ImpactedDependencyName: "component-C",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
 			Technology:             coreutils.Yarn,
 		},
 		{
@@ -277,7 +277,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Applicable:             "Applicable",
 			IssueId:                "XRAY-2",
 			Severity:               "low",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321"}},
+			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
 			ImpactedDependencyName: "component-D",
 			Technology:             coreutils.Yarn,
 		},
