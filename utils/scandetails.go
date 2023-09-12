@@ -195,12 +195,8 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	if err != nil {
 		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
 	}
-	if sc.GitProvider == vcsutils.AzureRepos {
+	if sc.GitProvider == vcsutils.AzureRepos || sc.GitProvider == vcsutils.BitbucketServer {
 		sc.RepoOwner = gitProject
-	}
-	repoInfo, err := client.GetRepositoryInfo(context.Background(), sc.RepoOwner, sc.RepoName)
-	if err != nil {
-		return nil, fmt.Errorf("failed getting repository information, for repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
 	}
 	// In some VCS providers, there are no git projects, fallback to the repository owner.
 	if gitProject == "" {
@@ -208,7 +204,7 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	}
 	gitInfo = &services.XscGitInfoContext{
 		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
-		GitRepoUrl:    repoInfo.CloneInfo.HTTP,
+		GitRepoUrl:    sc.Git.RepositoryCloneUrl,
 		GitRepoName:   sc.RepoName,
 		GitProvider:   sc.GitProvider.String(),
 		GitProject:    gitProject,

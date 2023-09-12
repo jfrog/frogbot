@@ -104,11 +104,11 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if err != nil {
 		return
 	}
-	remoteHttpsGitUrl := repositoryInfo.CloneInfo.HTTP
+	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
-		SetRemoteGitUrl(remoteHttpsGitUrl)
+		SetRemoteGitUrl(cfp.scanDetails.Git.RepositoryCloneUrl)
 	if err != nil {
 		return
 	}
