@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -9,6 +10,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -169,6 +171,44 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 	}
 	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
 	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
+}
+
+func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
+	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client)
+	if err != nil {
+		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ", err.Error())
+		return sc
+	}
+	sc.XscGitInfoContext = XscGitInfoContext
+	return sc
+}
+
+// CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
+// ScannedBranch - name of the branch we are scanning.
+// GitProject - [Optional] relevant for azure repos and Bitbucket server.
+// Client vscClient
+func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
+	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
+	}
+	// In some VCS providers, there are no git projects, fallback to the repository owner.
+	if gitProject == "" {
+		gitProject = sc.RepoOwner
+	}
+	gitInfo = &services.XscGitInfoContext{
+		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
+		GitRepoUrl:    sc.Git.RepositoryCloneUrl,
+		GitRepoName:   sc.RepoName,
+		GitProvider:   sc.GitProvider.String(),
+		GitProject:    gitProject,
+		BranchName:    scannedBranch,
+		LastCommit:    latestCommit.Url,
+		CommitHash:    latestCommit.Hash,
+		CommitMessage: latestCommit.Message,
+		CommitAuthor:  latestCommit.AuthorName,
+	}
+	return
 }
 
 func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
