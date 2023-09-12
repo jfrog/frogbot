@@ -232,6 +232,7 @@ type Git struct {
 	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails       vcsclient.PullRequestInfo
+	RepositoryCloneUrl       string
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {

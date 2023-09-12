@@ -65,7 +65,7 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 		return
 	}
 
-	restoreYarnrcFunc, err := rtutils.BackupFile(filepath.Join(currWd, yarn.YarnrcFileName), filepath.Join(currWd, yarn.YarnrcBackupFileName))
+	restoreYarnrcFunc, err := rtutils.BackupFile(filepath.Join(currWd, yarn.YarnrcFileName), yarn.YarnrcBackupFileName)
 	if err != nil {
 		return nil, err
 	}

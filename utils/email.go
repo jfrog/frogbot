@@ -20,14 +20,14 @@ type SecretsEmailDetails struct {
 	branch          string
 	repoName        string
 	repoOwner       string
-	detectedSecrets []formats.IacSecretsRow
+	detectedSecrets []formats.SourceCodeRow
 	pullRequestLink string
 	EmailDetails
 }
 
 func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, gitProvider vcsutils.VcsProvider,
 	repoOwner, repoName, branch, pullRequestLink string,
-	detectedSecrets []formats.IacSecretsRow, emailDetails EmailDetails) *SecretsEmailDetails {
+	detectedSecrets []formats.SourceCodeRow, emailDetails EmailDetails) *SecretsEmailDetails {
 	return &SecretsEmailDetails{gitClient: gitClient, gitProvider: gitProvider,
 		repoOwner: repoOwner, repoName: repoName, branch: branch, pullRequestLink: pullRequestLink,
 		detectedSecrets: detectedSecrets, EmailDetails: emailDetails}
@@ -45,18 +45,19 @@ func AlertSecretsExposed(secretsDetails *SecretsEmailDetails) (err error) {
 	emailDetails := secretsDetails.EmailDetails
 	emailContent := getSecretsEmailContent(secretsDetails.detectedSecrets, secretsDetails.gitProvider, secretsDetails.pullRequestLink)
 	sender := fmt.Sprintf("JFrog Frogbot <%s>", emailDetails.SmtpUser)
-	subject := outputwriter.FrogbotTitlePrefix + " detected potential secrets"
+	subject := outputwriter.FrogbotTitlePrefix + " Potential secrets detected"
 	return sendEmail(sender, subject, emailContent, emailDetails)
 }
 
-func getSecretsEmailContent(secrets []formats.IacSecretsRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
+func getSecretsEmailContent(secrets []formats.SourceCodeRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
 		tableContent.WriteString(
 			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
 				secret.File,
-				secret.LineColumn,
-				secret.Text))
+				secret.StartLine,
+				secret.StartColumn,
+				secret.Snippet))
 	}
 	pullOrMergeRequest := "pull request"
 	if gitProvider == vcsutils.GitLab {

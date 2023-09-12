@@ -56,7 +56,7 @@ func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDet
 		return
 	}
 	// Update Poetry lock file as well
-	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), []string{"update"})
+	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), coreutils.Poetry.ToString(), []string{"update"})
 }
 
 func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {

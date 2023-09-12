@@ -2,16 +2,17 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"strings"
 )
 
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
-	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -77,7 +78,7 @@ const (
             </tbody>
         </table>
 		<div class="ignore-comments">
-		To make Frogbot ignore the lines with the potential secrets, add a comment above the line which includes the <b>jfrog-ignore</b> keyword.	
+		<b>NOTE:</b> If you'd like Frogbot to ignore the lines with the potential secrets, add a comment that includes the <b>jfrog-ignore</b> keyword above the lines with the secrets.	
 		</div>
 	</div>
 </body>
@@ -86,7 +87,7 @@ const (
 	SecretsEmailTableRow = `
 				<tr>
 					<td> %s </td>
-					<td> %s </td>
+					<td> %d:%d </td>
 					<td> %s </td>
 				</tr>`
 )
@@ -98,15 +99,19 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	IacContent(iacRows []formats.IacSecretsRow) string
+	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
-	FormattedSeverity(severity, applicability string) string
+	FormattedSeverity(severity, applicability string, addName bool) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
+
+	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
+	IacReviewContent(severity, finding, fullDetails string) string
+	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -123,10 +128,12 @@ type descriptionBullet struct {
 	value string
 }
 
-func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
-	var cves []string
-	for _, cve := range vulnerability.Cves {
-		cves = append(cves, cve.Id)
+func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow, cves []string) string {
+	descriptionBullets := []descriptionBullet{
+		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.Applicable).Emoji(), vulnerability.Severity)},
+		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
+		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
+		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
 	}
 
 	cvesTitle := "**CVE:**"
@@ -139,13 +146,14 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 		fixedVersionsTitle = "**Fixed Versions:**"
 	}
 
-	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.ApplicableStringValue).Emoji(), vulnerability.Severity)},
-		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
-		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
-		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
-		{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")},
-		{title: cvesTitle, value: strings.Join(cves, ", ")},
+	if len(cves) != 0 {
+		cveBullet := descriptionBullet{title: cvesTitle, value: strings.Join(cves, ",")}
+		descriptionBullets = append(descriptionBullets, cveBullet)
+	}
+
+	if len(vulnerability.FixedVersions) != 0 {
+		fixedVersionBullet := descriptionBullet{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")}
+		descriptionBullets = append(descriptionBullets, fixedVersionBullet)
 	}
 
 	var descriptionBuilder strings.Builder
@@ -183,16 +191,41 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 	return tableContent
 }
 
-func getIacTableContent(iacRows []formats.IacSecretsRow, writer OutputWriter) string {
+func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, xrayutils.ApplicableStringValue), iac.File, iac.LineColumn, iac.Text)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
 	}
 	return tableContent
 }
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func MarkAsQuote(s string) string {
+	return fmt.Sprintf("`%s`", s)
+}
+
+func MarkAsCodeSnippet(snippet string) string {
+	return fmt.Sprintf("```\n%s\n```", snippet)
+}
+
+func GetJasMarkdownDescription(severity, finding string) string {
+	headerRow := "| Severity | Finding |\n"
+	separatorRow := "| :--------------: | :---: |\n"
+	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+}
+
+func GetLocationDescription(location formats.Location) string {
+	return fmt.Sprintf(`
+Found issue with the following snippet 
+%s
+at %s (line %d)
+`,
+		MarkAsCodeSnippet(location.Snippet),
+		MarkAsQuote(location.File),
+		location.StartLine)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
@@ -207,4 +240,21 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 		return vulnerabilitiesTableHeaderWithContextualAnalysis
 	}
 	return vulnerabilitiesTableHeader
+}
+
+func getCveIdSliceFromCveRows(cves []formats.CveRow) []string {
+	var cveIds []string
+	for _, cve := range cves {
+		if cve.Id != "" {
+			cveIds = append(cveIds, cve.Id)
+		}
+	}
+	return cveIds
+}
+
+func getDescriptionBulletCveTitle(cves []string) string {
+	if len(cves) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("[ %s ] ", strings.Join(cves, ","))
 }

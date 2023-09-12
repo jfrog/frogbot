@@ -2,9 +2,10 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
 )
 
 type StandardOutput struct {
@@ -19,7 +20,7 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Separator()))
 	}
 
-	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
@@ -97,31 +98,168 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
+		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		if len(vulnerabilities) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
 
 %s
 
-`, createVulnerabilityDescription(&vulnerabilities[i])))
+`, createVulnerabilityDescription(&vulnerabilities[i], cves)))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
 <details>
-<summary> <b>%s %s</b> </summary>
+<summary> <b>%s%s %s</b> </summary>
 <br>
 %s
 
 </details>
 
 `,
+			getDescriptionBulletCveTitle(cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i])))
+			createVulnerabilityDescription(&vulnerabilities[i], cves)))
 	}
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
+func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+<div align="center"> 
+
+### 📦🔍 Contextual Analysis CVE Vulnerability
+
+%s
+
+</div>
+
+<details>
+<summary> <b>Description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+<details>
+<summary> <b>CVE details</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails,
+		cveDetails))
+
+	contentBuilder.WriteString(fmt.Sprintf(`
+<details>
+<summary> <b>Remediation</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		remediation))
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
+	return fmt.Sprintf(`
+<div align="center"> 
+
+### 🛠️ Infrastructure as Code Vulnerability
+	
+%s
+
+</div>
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails)
+}
+
+func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+<div align="center"> 
+
+### 🎯 Static Application Security Testing (SAST) Vulnerability 
+	
+%s
+
+</div>
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails,
+	))
+
+	if len(codeFlows) > 0 {
+		contentBuilder.WriteString(`
+
+<details>
+<summary><b>Code Flows</b> </summary>
+
+`)
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(`
+
+<details>
+<summary><b>Vulnerable data flow analysis result</b> </summary>
+<br>
+`)
+			for _, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
+%s %s (at %s line %d)
+`,
+					"↘️",
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
+
+			contentBuilder.WriteString(`
+
+</details>
+
+`,
+			)
+		}
+		contentBuilder.WriteString(`
+
+</details>
+
+`,
+		)
+	}
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -142,6 +280,7 @@ func (so *StandardOutput) IacContent(iacRows []formats.IacSecretsRow) string {
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
+---
 <div align="center">
 
 %s
@@ -154,8 +293,12 @@ func (so *StandardOutput) Separator() string {
 	return "<br><br>"
 }
 
-func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
-	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
+	s := getSeverityTag(IconName(severity), applicability)
+	if addName {
+		s = fmt.Sprintf(s+"%8s", severity)
+	}
+	return s
 }
 
 func (so *StandardOutput) UntitledForJasMsg() string {
