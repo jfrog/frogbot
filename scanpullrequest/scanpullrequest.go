@@ -133,23 +133,14 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && (len(vulnerabilitiesRows) > 0 || isDetectedJasIssues(vulnerabilitiesRows, iacIssues, sastIssues)) {
+	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && isDetectedIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return
 }
 
-func isDetectedJasIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, sastIssues []formats.SourceCodeRow) bool {
-	return hasApplicabilityIssues(vulnerabilitiesRows) || len(iacRows) > 0 || len(sastIssues) > 0
-}
-
-func hasApplicabilityIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) bool {
-	for _, row := range vulnerabilitiesRows {
-		if row.Applicable == string(xrayutils.Applicability) {
-			return true
-		}
-	}
-	return false
+func isDetectedIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, sastIssues []formats.SourceCodeRow) bool {
+	return len(vulnerabilitiesRows) > 0 || len(iacRows) > 0 || len(sastIssues) > 0
 }
 
 // Downloads Pull Requests branches code and audits them
@@ -234,7 +225,35 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		secretsRows = append(secretsRows, newSecrets...)
 		sastRows = append(sastRows, newSast...)
 	}
+
+	convertPathsToRelative(vulnerabilitiesRows, iacRows, secretsRows, sastRows, sourceBranchWd, targetBranchWd)
+
 	return
+}
+
+func convertPathsToRelative(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, secretsRows []formats.SourceCodeRow, sastRows []formats.SourceCodeRow, sourceWd, targetWd string) {
+	for _, row := range vulnerabilitiesRows {
+		for _, cve := range row.Cves {
+			if cve.Applicability != nil {
+				for i := range cve.Applicability.Evidence {
+					cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, sourceWd)
+					cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, targetWd)
+				}
+			}
+		}
+	}
+	for _, row := range iacRows {
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	}
+	for _, row := range secretsRows {
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	}
+	for _, row := range sastRows {
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
+		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	}
 }
 
 func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.SourceCodeRow, []formats.SourceCodeRow, []formats.SourceCodeRow, error) {
@@ -279,11 +298,11 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetSourceCodeVulnerabilitiesKeys.Add(fmt.Sprintf("%s%d%d%d%d%s", row.File, row.StartColumn, row.StartLine, row.EndLine, row.EndColumn, row.Snippet))
+		targetSourceCodeVulnerabilitiesKeys.Add(fmt.Sprintf("%s%s", row.File, row.Snippet))
 	}
 	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(fmt.Sprintf("%s%d%d%d%d%s", row.File, row.StartColumn, row.StartLine, row.EndLine, row.EndColumn, row.Snippet)) {
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(fmt.Sprintf("%s%s", row.File, row.Snippet)) {
 			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}
@@ -380,7 +399,7 @@ func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditRe
 }
 
 func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow, writer outputwriter.OutputWriter) string {
-	if len(vulnerabilitiesRows) == 0 && !isDetectedJasIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
+	if !isDetectedIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
 	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.UntitledForJasMsg() + writer.Footer()

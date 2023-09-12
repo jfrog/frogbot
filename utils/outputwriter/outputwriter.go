@@ -209,10 +209,25 @@ func MarkAsQuote(s string) string {
 	return fmt.Sprintf("`%s`", s)
 }
 
+func MarkAsCodeSnippet(snippet string) string {
+	return fmt.Sprintf("```\n%s\n```", snippet)
+}
+
 func GetJasMarkdownDescription(severity, finding string) string {
 	headerRow := "| Severity | Finding |\n"
 	separatorRow := "| :---: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+}
+
+func GetLocationDescription(location formats.Location) string {
+	return fmt.Sprintf(`
+Found issue the following snippet 
+%s
+at %s (line %d)
+`,
+		location.Snippet,
+		location.File,
+		location.StartLine)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {

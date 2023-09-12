@@ -16,20 +16,17 @@ import (
 type ReviewCommentType string
 
 type ReviewComment struct {
-	Location    *sarif.Location
-	CommentInfo vcsclient.CommentInfo
+	Location    formats.Location
+	CommentInfo vcsclient.PullRequestComment
 	Type        ReviewCommentType
-}
-
-type ApplicabilityWithRelatedInfo struct {
-	Applicability *sarif.Run
-	RelatedInfo   formats.VulnerabilityOrViolationRow
 }
 
 const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
+
+	CommentId = "FrogbotReviewComment"
 )
 
 func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (err error) {
@@ -52,9 +49,14 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		return
 	}
 	if len(commentsToAdd) > 0 {
-		if err = client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, commentsToAdd...); err != nil {
-			err = errors.New("couldn't add pull request review comment: " + err.Error())
-			return
+		for _, comment := range commentsToAdd {
+			if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
+				log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
+				if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, getRegularCommentContent(comment), pullRequestID); err != nil {
+					err = errors.New("couldn't add pull request review comment, fallback to comment: " + err.Error())
+					return
+				}
+			}
 		}
 	}
 	return
@@ -62,7 +64,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, outputwriter.ReviewCommentGeneratedByFrogbot) {
+		if strings.Contains(comment.Content, outputwriter.ReviewCommentGeneratedByFrogbot) || strings.Contains(comment.Content, CommentId) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
@@ -70,36 +72,46 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 	return
 }
 
-func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []vcsclient.PullRequestComment, err error) {
+func getRegularCommentContent(comment ReviewComment) string {
+	content := outputwriter.MarkdownComment(CommentId)
+	return content + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
+}
+
+func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []ReviewComment, err error) {
 	writer := repo.OutputWriter
 
 	for _, vulnerability := range vulnerabilitiesRows {
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil {
 				for _, evidence := range cve.Applicability.Evidence {
-					commentsToAdd = append(commentsToAdd, generateReviewComment(evidence.Location, generateApplicabilityReviewContent(evidence, cve, vulnerability, writer)))
+					commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, evidence.Location, generateApplicabilityReviewContent(evidence, cve, vulnerability, writer)))
 				}
 			}
 		}
 	}
 
 	for _, iac := range iacIssues {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
 	}
 
 	for _, sast := range sastIssues {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(sast.Location, generateReviewCommentContent(SastComment, sast, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateReviewCommentContent(SastComment, sast, writer)))
 	}
 	return
 }
 
-func generateReviewComment(location formats.Location, content string) (comment vcsclient.PullRequestComment) {
-	return vcsclient.PullRequestComment{
-		CommentInfo: vcsclient.CommentInfo{
-			Content: content,
+func generateReviewComment(commentType ReviewCommentType, location formats.Location, content string) (comment ReviewComment) {
+	return ReviewComment{
+		Location: location,
+		CommentInfo: vcsclient.PullRequestComment{
+			CommentInfo: vcsclient.CommentInfo{
+				Content: content,
+			},
+			PullRequestDiff: createPullRequestDiff(location),
 		},
-		PullRequestDiff: createPullRequestDiff(location),
+		Type: commentType,
 	}
+
 }
 
 func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (content string) {
