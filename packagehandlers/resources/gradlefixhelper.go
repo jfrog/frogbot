@@ -19,7 +19,7 @@ type VulnRowData struct {
 	Content         string
 	RowType         string
 	FileType        string
-	Filepath        string // TODO DEL? check if needed
+	Filepath        string // needed just for some error
 	LeftIndentation string //TODO DEL? check if needed to any fixer
 }
 

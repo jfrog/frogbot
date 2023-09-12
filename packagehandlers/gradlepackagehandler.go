@@ -20,34 +20,22 @@ const (
 	groovyBuildFile = "build.gradle"
 	kotlinBuildFile = "build.gradle.kts"
 	unknownRowType  = "unknown"
-	mapLinePattern  = "group:\\s[\\\"|\\']%s[\\\"|\\'],\\s?name:\\s?[\\\"|\\']%s[\\\"|\\']"
 )
-
-//[a-zA-Z]+\s?
 
 type GradlePackageHandler struct {
 	CommonPackageHandler
 }
 
 type buildFileData struct {
-	fileName    string
 	fileType    string
-	fileContent []string
-	filePath    string
+	fileContent []string //needed
+	filePath    string   //needed
 }
 
 var buildFileToType = map[string]string{
 	"build.gradle":     groovyFileType,
 	"build.gradle.kts": kotlinFileType,
 }
-
-//var patternsCompilers map[string][]*regexp.Regexp
-/*
-func init() {
-	patternsCompilers = getAllPatternsCompilers()
-}
-
-*/
 
 func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
@@ -70,7 +58,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 
 	// fixing every build file separately
 	for _, buildFile := range buildFiles {
-		err = fixBuildFile2(buildFile, vulnDetails)
+		err = fixBuildFile(buildFile, vulnDetails)
 		if err != nil {
 			return
 		}
@@ -114,7 +102,6 @@ func readBuildFiles() (buildFiles []buildFileData, err error) {
 				return
 			}
 			buildFiles = append(buildFiles, buildFileData{
-				fileName:    fileName,
 				fileType:    buildFileToType[fileName],
 				fileContent: fileContent,
 				filePath:    filepath.Join(wd, fileName),
@@ -127,39 +114,6 @@ func readBuildFiles() (buildFiles []buildFileData, err error) {
 	return
 }
 
-/*
-func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// TODO improve implementation (finding 'dependencies' in the file and look below it, counting { and } )
-	// TODO what should we do if the line doesn't contain any version?
-	patternsCompilers, err := getAllPatternsCompilers2(vulnDetails)
-	if err != nil {
-		return
-	}
-
-	for rowIdx, rowContent := range buildFileData.fileContent {
-		if strings.Contains(rowContent, vulnDetails.ImpactedDependencyName) || (isMapFormat(rowContent) && mapLineContainsImpactedPackage(rowContent, vulnDetails.ImpactedDependencyName)) {
-			rowData := resources.VulnRowData{
-				Content:         rowContent,
-				RowType:         detectVulnerableRowType(rowContent, patternsCompilers),
-				FileType:        buildFileData.fileType,
-				Filepath:        buildFileData.filePath,
-				LeftIndentation: getLeftWhitespaces(rowContent)}
-
-			var fixer resources.VulnerableRowFixer
-			fixer, err = getVulnerableRowFixer(rowData, rowIdx)
-			if err != nil {
-				return
-			}
-			buildFileData.fileContent[rowIdx] = fixer.GetVulnerableRowFix(vulnDetails)
-		}
-	}
-
-	err = writeUpdatedBuildFile(buildFileData)
-	return
-}
-
-*/
-
 // getVulnerableRowFixer returns a fixer object for each row type
 func getVulnerableRowFixer(rowData resources.VulnRowData, rowNumberInFile int) (resources.VulnerableRowFixer, error) {
 	fixer, err := resources.GetFixerByRowType(rowData, rowNumberInFile)
@@ -169,9 +123,9 @@ func getVulnerableRowFixer(rowData resources.VulnRowData, rowNumberInFile int) (
 	return fixer, nil
 }
 
-func fixBuildFile2(buildFileData buildFileData, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// TODO what should we do if the line doesn't contain any version?
-	patternsCompilers, err := getAllPatternsCompilers2(vulnDetails)
+	patternsCompilers, err := getPattenCompilersForVulnerability(vulnDetails)
 	if err != nil {
 		return
 	}
@@ -203,6 +157,7 @@ func fixBuildFile2(buildFileData buildFileData, vulnDetails *utils.Vulnerability
 	return
 }
 
+// isInsideDependenciesScope detects if we are inside a 'dependencies' scope and the given row need to be further checked for a possible fix
 func isInsideDependenciesScope(rowContent string, insideDependenciesScope *bool, dependenciesScopeOpenCurlyParenthesis *int) bool {
 	if strings.Contains(rowContent, "dependencies") {
 		*insideDependenciesScope = true
@@ -235,30 +190,6 @@ func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[string]
 	return unknownRowType
 }
 
-/*
-// mapLineContainsImpactedPackage when 'map' format dependency line was detected- checks if it contains the vulnerable package
-func mapLineContainsImpactedPackage(rowContent string, impactedPackageName string) bool {
-	seperatedVulnerability := strings.Split(impactedPackageName, ":")
-	var re *regexp.Regexp
-	re = regexp.MustCompile(fmt.Sprintf(mapLinePattern, seperatedVulnerability[0], seperatedVulnerability[1]))
-	tmp := re.FindString(strings.TrimLeft(rowContent, " "))
-	fmt.Println(tmp)
-	if re.MatchString(strings.TrimLeft(rowContent, " ")) {
-		return true
-	}
-	return false
-}
-
-*/
-
-/*
-// isMapFormat checks if a given line is in 'map' format
-func isMapFormat(dependencyRow string) bool {
-	return strings.Contains(dependencyRow, "group:") && strings.Contains(dependencyRow, "name:")
-}
-
-*/
-
 func getLeftWhitespaces(str string) string {
 	firstNonWhiteSpace := 0
 	for idx, char := range str {
@@ -270,20 +201,7 @@ func getLeftWhitespaces(str string) string {
 	return str[:firstNonWhiteSpace]
 }
 
-// getAllPatternsCompilers init function that creates all regexp compilers for the predefined regexps defined in ./resources/gradlefixhelper.go
-func getAllPatternsCompilers() (patternsCompilers map[string][]*regexp.Regexp) {
-	patternsCompilers = make(map[string][]*regexp.Regexp)
-	for patternName, patterns := range resources.RegexpNameToPattern {
-		for _, pattern := range patterns {
-			var re *regexp.Regexp
-			re = regexp.MustCompile(pattern)
-			patternsCompilers[patternName] = append(patternsCompilers[patternName], re)
-		}
-	}
-	return
-}
-
-func getAllPatternsCompilers2(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[string][]*regexp.Regexp, err error) {
+func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[string][]*regexp.Regexp, err error) {
 	seperatedImpactedDepName := strings.Split(vulnDetails.ImpactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
 		err = errorutils.CheckErrorf("unable to parse impacted dependency name '%s'", vulnDetails.ImpactedDependencyName)
