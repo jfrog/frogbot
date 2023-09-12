@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/jfrog/frogbot/packagehandlers"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -18,9 +22,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 type ScanRepositoryCmd struct {
