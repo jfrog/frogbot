@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
@@ -194,9 +193,6 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
-	}
-	if sc.GitProvider == vcsutils.AzureRepos || sc.GitProvider == vcsutils.BitbucketServer {
-		sc.RepoOwner = gitProject
 	}
 	// In some VCS providers, there are no git projects, fallback to the repository owner.
 	if gitProject == "" {
