@@ -164,9 +164,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		err = errors.Join(err, cleanupSource(), cleanupTarget())
 	}()
 
-	// Accumulated Jas source code issues from all Projects
-	//var applicableIssues, iacIssues, secretsIssues, sastIssues []*sarif.Run
-
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
 		SetMinSeverity(repoConfig.MinSeverity).
@@ -302,11 +299,11 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetSourceCodeVulnerabilitiesKeys.Add(fmt.Sprintf("%s%s", row.File, row.Snippet))
+		targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
 	}
 	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(fmt.Sprintf("%s%s", row.File, row.Snippet)) {
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
 			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}
