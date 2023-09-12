@@ -291,8 +291,8 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 	if len(targetResults.ExtendedScanResults.SastScanResults) > 0 {
 		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SastScanResults)
 		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SastScanResults)
-		targetSastRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.SastScanResults)
-		sourceSastRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.SastScanResults)
+		targetSastRows := xrayutils.PrepareSast(targetResults.ExtendedScanResults.SastScanResults)
+		sourceSastRows := xrayutils.PrepareSast(sourceResults.ExtendedScanResults.SastScanResults)
 		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
 	}
 
