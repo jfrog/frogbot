@@ -113,7 +113,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-### 📦🔍 Applicable dependency CVE Vulnerability
+### 📦🔍 Contextual Analysis CVE Vulnerability
 	
 %s
 

@@ -129,7 +129,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 	contentBuilder.WriteString(fmt.Sprintf(`
 <div align="center"> 
 
-### 📦🔍 Applicable dependency CVE Vulnerability
+### 📦🔍 Contextual Analysis CVE Vulnerability
 
 %s
 
