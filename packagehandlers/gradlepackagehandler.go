@@ -1,11 +1,14 @@
 package packagehandlers
 
 import (
+	"errors"
 	"fmt"
 	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/packagehandlers/resources"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,11 +18,11 @@ import (
 )
 
 const (
-	groovyFileType  = "groovy"
-	kotlinFileType  = "kotlin"
-	groovyBuildFile = "build.gradle"
-	kotlinBuildFile = "build.gradle.kts"
-	unknownRowType  = "unknown"
+	groovyFileType        = "groovy"
+	kotlinFileType        = "kotlin"
+	groovyBuildFileSuffix = ".gradle"
+	kotlinBuildFileSuffix = ".gradle.kts"
+	unknownRowType        = "unknown"
 )
 
 type GradlePackageHandler struct {
@@ -28,13 +31,14 @@ type GradlePackageHandler struct {
 
 type buildFileData struct {
 	fileType    string
-	fileContent []string //needed
-	filePath    string   //needed
+	fileContent []string    //needed
+	filePath    string      //needed
+	filePerm    os.FileMode //needed
 }
 
 var buildFileToType = map[string]string{
-	"build.gradle":     groovyFileType,
-	"build.gradle.kts": kotlinFileType,
+	".gradle":     groovyFileType,
+	".gradle.kts": kotlinFileType,
 }
 
 func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
@@ -50,6 +54,14 @@ func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 }
 
 func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	if unsupportedType, isUnsupported := isUnsupportedVulnVersion(vulnDetails.ImpactedDependencyVersion); isUnsupported {
+		log.Warn("frogbot currently doesn't support fixing %s: %s %s", unsupportedType, vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
+		return &utils.ErrUnsupportedFix{
+			PackageName:  vulnDetails.ImpactedDependencyName,
+			FixedVersion: vulnDetails.SuggestedFixedVersion,
+			ErrorType:    utils.UnsupportedGradleDependencyVersion,
+		}
+	}
 	// get all build files
 	buildFiles, err := readBuildFiles()
 	if err != nil {
@@ -73,7 +85,7 @@ func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
 		bytesSlice = append(bytesSlice, []byte(row+"\n")...)
 	}
 	bytesSlice = bytesSlice[:len(bytesSlice)-1]
-	err = os.WriteFile(buildFile.filePath, bytesSlice, 0644)
+	err = os.WriteFile(buildFile.filePath, bytesSlice, buildFile.filePerm)
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", buildFile.filePath, err)
 	}
@@ -81,33 +93,50 @@ func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
 }
 
 func readBuildFiles() (buildFiles []buildFileData, err error) {
-	dirContent, err := os.ReadDir(".")
-	if err != nil {
-		err = fmt.Errorf("couldn't read working directory: %q", err)
-		return
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return
-	}
+	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			err = fmt.Errorf("error has occured when trying to access or traverse the files system")
+			return err
+		}
 
-	//TODO check if this process is working for multi-dir and can detect build files not in main dir
-	for _, dirEntry := range dirContent {
-		fileName := dirEntry.Name()
-		if fileName == groovyBuildFile || fileName == kotlinBuildFile {
+		if d.Type().IsRegular() && (filepath.Ext(path) == groovyBuildFileSuffix || filepath.Ext(path) == kotlinBuildFileSuffix) {
+			fileName := "build" + filepath.Ext(path)
+
+			wd, internalErr := os.Getwd()
+			if internalErr != nil {
+				return errors.Join(internalErr, err)
+			}
+
+			// Read file's content
 			var fileContent []string
 			fileContent, err = fileutils.ReadNLines(fileName, math.MaxInt)
 			if err != nil {
-				err = fmt.Errorf("couldn't read %s file: %q", fileName, err)
-				return
+				return fmt.Errorf("couldn't read %s file: %q", fileName, err)
 			}
+
+			// Get file permissions
+			fileInfo, statErr := os.Stat(path)
+			if statErr != nil {
+				return fmt.Errorf("couldn't get file info for %s: %q", path, statErr)
+			}
+			filePerm := fileInfo.Mode()
+
 			buildFiles = append(buildFiles, buildFileData{
 				fileType:    buildFileToType[fileName],
 				fileContent: fileContent,
 				filePath:    filepath.Join(wd, fileName),
+				filePerm:    filePerm,
 			})
+
 		}
+		return err
+	})
+
+	if err != nil {
+		err = fmt.Errorf("failed to read project's directory content: %q", err)
+		return
 	}
+
 	if len(buildFiles) == 0 {
 		err = errorutils.CheckErrorf("couldn't detect any build file in the project")
 	}
@@ -179,7 +208,7 @@ func isInsideDependenciesScope(rowContent string, insideDependenciesScope *bool,
 // detectVulnerableRowType returns the row's type according to predefined patterns defined by RegexpNameToPattern in ./resources/gradlefixhelper.go
 // if there is no match for some row with any known type, the row's type will be set to 'unknown'
 func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[string][]*regexp.Regexp) string {
-	rowToCheck := strings.TrimLeft(vulnerableRow, " ")
+	rowToCheck := strings.TrimSpace(vulnerableRow)
 	for patternName, regexpCompilers := range patternsCompilers {
 		for _, compiler := range regexpCompilers {
 			if compiler.FindString(rowToCheck) != "" {
@@ -218,4 +247,25 @@ func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails)
 		}
 	}
 	return
+}
+
+func isUnsupportedVulnVersion(impactedVersion string) (string, bool) {
+	// capture dynamic dep | V
+	// capture range | V
+	// capture latest.release | V
+
+	// TODO should fix those two or reject?
+	// capture var version
+	// capture property version - something that directs to take the value from properties.gradle (starts with $)
+
+	if strings.Contains(impactedVersion, "+") {
+		return "dynamic dependency version", true
+	}
+	if strings.Contains(impactedVersion, "latest.release") {
+		return "latest release version", true
+	}
+	if strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "(") {
+		return "range version", true
+	}
+	return "", false
 }

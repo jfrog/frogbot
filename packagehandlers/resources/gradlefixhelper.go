@@ -14,6 +14,7 @@ const (
 
 // TODO case: no version at the end
 // TODO case: map with newline in the middle
+// TODO case: dynamic version
 
 type VulnRowData struct {
 	Content         string
@@ -24,7 +25,7 @@ type VulnRowData struct {
 }
 
 var RegexpNameToPattern = map[string][]string{
-	"directWithVersion": {directMapWithVersionRegexp, directStringWithVersionRegexp},
+	"directStaticVersion": {directMapWithVersionRegexp, directStringWithVersionRegexp},
 }
 
 type VulnerableRowFixer interface {
@@ -34,8 +35,9 @@ type VulnerableRowFixer interface {
 // GetFixerByRowType returns suitable fixer object for the row according to the row's type.
 // The known types can be found in RegexpNameToPattern map
 func GetFixerByRowType(rowData VulnRowData, rowNumberInFile int) (VulnerableRowFixer, error) {
+	// TODO put all in ENUM
 	switch rowData.RowType {
-	case "directWithVersion":
+	case "directStaticVersion":
 		return &DirectRowFixer{CommonVulnerableRowFixer{
 			rowData:         rowData,
 			rowNumberInFile: rowNumberInFile,
