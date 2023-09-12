@@ -213,7 +213,7 @@ func MarkAsCodeSnippet(snippet string) string {
 
 func GetJasMarkdownDescription(severity, finding string) string {
 	headerRow := "| Severity | Finding |\n"
-	separatorRow := "| :---: | :---: |\n"
+	separatorRow := "| :--------------: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
 }
 
@@ -224,7 +224,7 @@ Found issue with the following snippet
 at %s (line %d)
 `,
 		MarkAsCodeSnippet(location.Snippet),
-		location.File,
+		MarkAsQuote(location.File),
 		location.StartLine)
 }
 
