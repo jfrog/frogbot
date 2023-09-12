@@ -700,6 +700,11 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
 			_, err := w.Write([]byte(jsonResponse))
 			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/discussions", "%2F"+projectName):
+			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(discussions)
+			assert.NoError(t, err)
 		}
 	}
 }

@@ -222,7 +222,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	}
 
 	convertPathsToRelative(vulnerabilitiesRows, iacRows, secretsRows, sastRows, sourceBranchWd, targetBranchWd)
-
 	return
 }
 
