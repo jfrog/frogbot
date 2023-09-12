@@ -277,10 +277,11 @@ func TestStandardOutput_IacContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn: "11:1",
-						Snippet:    "Missing Periodic patching was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -292,19 +293,21 @@ func TestStandardOutput_IacContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
-						LineColumn: "11:1",
-						Snippet:    "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_patch.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
 					},
 				},
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn: "11:1",
-						Snippet:    "Missing Periodic patching was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -338,10 +341,11 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Snippet:    "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},
@@ -354,20 +358,22 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Snippet:    "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file2",
-						LineColumn: "2:5",
-						Snippet:    "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file2",
+						StartLine:   2,
+						StartColumn: 5,
+						Snippet:     "Public access to MySQL was detected",
 					},
 					Type: "azure_mysql_no_public",
 				},
