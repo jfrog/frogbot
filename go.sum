@@ -960,8 +960,8 @@ github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/froggit-go v1.2.1-0.20230911115053-3e608eb019eb h1:ZYO83H8KXxKRhfiI3KqEa06vCh+N4dDi6H3s4lkcsMs=
-github.com/omerzi/froggit-go v1.2.1-0.20230911115053-3e608eb019eb/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
+github.com/omerzi/froggit-go v1.2.1-0.20230912072324-fe9427a63b0a h1:h0sL6HuM4IqWH91sETQkOYelwug04I3jJPOO/aOJX5k=
+github.com/omerzi/froggit-go v1.2.1-0.20230912072324-fe9427a63b0a/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.2.0 h1:1DmZaijK0HBZCR1fgcDSGa7VzYkU9NDmbZ7qC2QfUjE=
 github.com/owenrumney/go-sarif/v2 v2.2.0/go.mod h1:MSqMMx9WqlBSY7pXoOZWgEsVB4FDNfhcaXDA1j6Sr+w=

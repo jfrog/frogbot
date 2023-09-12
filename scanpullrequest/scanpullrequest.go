@@ -97,7 +97,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	shouldSendExposedSecretsEmail := secretsIssues != nil && len(secretsIssues) > 0 && repo.SmtpServer != ""
+	shouldSendExposedSecretsEmail := len(secretsIssues) > 0 && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		prSourceDetails := pullRequestDetails.Source
 		secretsEmailDetails := utils.NewSecretsEmailDetails(
