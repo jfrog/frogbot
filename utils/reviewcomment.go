@@ -33,7 +33,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		return
 	}
 	if err = deleteOldFallbackComments(repo, pullRequestID, client); err != nil {
-		err = errors.New("couldn't delete pull request review comment: " + err.Error())
+		err = errors.New("couldn't delete pull request comment: " + err.Error())
 		return
 	}
 	// Add review comments for the given data

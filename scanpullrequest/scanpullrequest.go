@@ -118,7 +118,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	// Create a pull request message
 	message := createPullRequestMessage(vulnerabilitiesRows, iacIssues, sastIssues, repo.OutputWriter)
 
-	// Add main comment to the pull request
+	// Add SCA scan comment
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
 		err = errors.New("couldn't add pull request comment: " + err.Error())
 		return
@@ -268,8 +268,6 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 
 	var newIacs []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.IacScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.IacScanResults)
 		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
 		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
 		newIacs = createNewSourceCodeRows(targetIacRows, sourceIacRows)
@@ -277,8 +275,6 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 
 	var newSecrets []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SecretsScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SecretsScanResults)
 		targetSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.SecretsScanResults)
 		sourceSecretsRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.SecretsScanResults)
 		newSecrets = createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
@@ -286,8 +282,6 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 
 	var newSast []formats.SourceCodeRow
 	if len(targetResults.ExtendedScanResults.SastScanResults) > 0 {
-		xrayutils.ConvertRunsPathsToRelative(sourceResults.ExtendedScanResults.SastScanResults)
-		xrayutils.ConvertRunsPathsToRelative(targetResults.ExtendedScanResults.SastScanResults)
 		targetSastRows := xrayutils.PrepareSast(targetResults.ExtendedScanResults.SastScanResults)
 		sourceSastRows := xrayutils.PrepareSast(sourceResults.ExtendedScanResults.SastScanResults)
 		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
