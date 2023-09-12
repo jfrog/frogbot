@@ -125,11 +125,9 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Handle review comments at the pull request
-	if !repo.IncludeAllVulnerabilities {
-		if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, iacIssues, sastIssues); err != nil {
-			err = errors.New("couldn't add review comments: " + err.Error())
-			return
-		}
+	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, iacIssues, sastIssues); err != nil {
+		err = errors.New("couldn't add review comments: " + err.Error())
+		return
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
@@ -242,17 +240,23 @@ func convertPathsToRelative(vulnerabilitiesRows []formats.VulnerabilityOrViolati
 			}
 		}
 	}
-	for _, row := range iacRows {
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	for i := range iacRows {
+		iacRows[i].Location.File = xrayutils.ExtractRelativePath(iacRows[i].Location.File, sourceWd)
+		iacRows[i].Location.File = xrayutils.ExtractRelativePath(iacRows[i].Location.File, targetWd)
 	}
-	for _, row := range secretsRows {
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	for i := range secretsRows {
+		secretsRows[i].Location.File = xrayutils.ExtractRelativePath(secretsRows[i].Location.File, sourceWd)
+		secretsRows[i].Location.File = xrayutils.ExtractRelativePath(secretsRows[i].Location.File, targetWd)
 	}
-	for _, row := range sastRows {
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, sourceWd)
-		row.Location.File = xrayutils.ExtractRelativePath(row.Location.File, targetWd)
+	for i := range sastRows {
+		sastRows[i].Location.File = xrayutils.ExtractRelativePath(sastRows[i].Location.File, sourceWd)
+		sastRows[i].Location.File = xrayutils.ExtractRelativePath(sastRows[i].Location.File, targetWd)
+		for f := range sastRows[i].CodeFlow {
+			for l := range sastRows[i].CodeFlow[f] {
+				sastRows[i].CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastRows[i].CodeFlow[f][l].File, sourceWd)
+				sastRows[i].CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastRows[i].CodeFlow[f][l].File, targetWd)
+			}
+		}
 	}
 }
 
