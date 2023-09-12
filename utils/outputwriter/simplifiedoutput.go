@@ -184,11 +184,11 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ---
 Vulnerable data flow analysis result:
 `)
-			for i, location := range flow {
+			for _, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
-	%d. %s (at %s line %d)
+%s %s (at %s line %d)
 `,
-					i+1,
+					"↘️",
 					MarkAsQuote(location.Snippet),
 					location.File,
 					location.StartLine,

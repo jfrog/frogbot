@@ -233,7 +233,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 `)
 			for _, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
-%s. %s (at %s line %d)
+%s %s (at %s line %d)
 `,
 					"↘️",
 					MarkAsQuote(location.Snippet),
