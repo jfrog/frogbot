@@ -825,6 +825,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity: "High",
+					Finding:  "Secret",
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
@@ -856,6 +857,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
 					Severity:         "Medium",
+					Finding:          "Secret",
 					SeverityNumValue: 11,
 					Location: formats.Location{
 						File:        "file2",
