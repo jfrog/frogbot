@@ -111,8 +111,9 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 }
 
 func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
-	return fmt.Sprintf(`
-### 📦🔍 Applicable dependency CVE Vulnerability
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+### 📦🔍 Contextual Analysis CVE Vulnerability
 	
 %s
 
@@ -124,15 +125,21 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 
 %s
 
-#### Remediation
-
-%s
-
 `,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
-		cveDetails,
-		remediation)
+		cveDetails))
+
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf(`
+#### Remediation
+	
+%s	
+
+`,
+			remediation))
+	}
+	return contentBuilder.String()
 }
 
 func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
@@ -177,11 +184,11 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ---
 Vulnerable data flow analysis result:
 `)
-			for i, location := range flow {
+			for _, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
-	%d. %s (at %s line %d)
+%s %s (at %s line %d)
 `,
-					i+1,
+					"↘️",
 					MarkAsQuote(location.Snippet),
 					location.File,
 					location.StartLine,

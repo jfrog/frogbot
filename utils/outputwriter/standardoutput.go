@@ -125,10 +125,11 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 }
 
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
-	return fmt.Sprintf(`
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
 <div align="center"> 
 
-### 📦🔍 Applicable dependency CVE Vulnerability
+### 📦🔍 Contextual Analysis CVE Vulnerability
 
 %s
 
@@ -150,6 +151,12 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 
 </details>
 
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails,
+		cveDetails))
+
+	contentBuilder.WriteString(fmt.Sprintf(`
 <details>
 <summary> <b>Remediation</b> </summary>
 <br>
@@ -159,10 +166,8 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
-		fullDetails,
-		cveDetails,
-		remediation)
+		remediation))
+	return contentBuilder.String()
 }
 
 func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
@@ -228,7 +233,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 `)
 			for _, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
-%s. %s (at %s line %d)
+%s %s (at %s line %d)
 `,
 					"↘️",
 					MarkAsQuote(location.Snippet),
