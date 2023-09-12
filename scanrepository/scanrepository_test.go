@@ -391,7 +391,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 				Project:             &frogbotParams.Projects[0],
 				ServerDetails:       &frogbotParams.Server,
 			}
-			testScan.details = &scanSetup
+			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
