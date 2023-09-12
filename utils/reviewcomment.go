@@ -91,7 +91,7 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	log.Debug("Delete old Frogbot review comments")
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, outputwriter.CommentGeneratedByFrogbot) || strings.Contains(comment.Content, CommentId) {
+		if strings.Contains(comment.Content, CommentId) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
@@ -157,6 +157,7 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 }
 
 func generateReviewCommentContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+	content = outputwriter.MarkdownComment(CommentId)
 	switch commentType {
 	case IacComment:
 		content += writer.IacReviewContent(
