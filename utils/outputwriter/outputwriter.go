@@ -224,7 +224,7 @@ Found issue with the following snippet
 at %s (line %d)
 `,
 		MarkAsCodeSnippet(location.Snippet),
-		location.File,
+		MarkAsQuote(location.File),
 		location.StartLine)
 }
 
