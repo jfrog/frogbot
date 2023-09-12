@@ -222,19 +222,45 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Rep
 	return nil
 }
 
-func setRunsAsFrogbotTool(runs []*sarif.Run) {
+func prepareRunsForGithubReport(runs []*sarif.Run) {
 	for _, run := range runs {
 		run.Tool.Driver.Name = sarifToolName
 		run.Tool.Driver.WithInformationURI(sarifToolUrl)
+		// Remove results without locations
+		results := []*sarif.Result{}
+		for _, result := range run.Results {
+			if len(result.Locations) == 0 {
+				continue
+			}
+			results = append(results, result)
+		}
+		run.Results = results
 	}
-	xrayutils.ConvertRunsPathsToRelative(runs)
+	convertToRelativePath(runs)
+}
+
+func convertToRelativePath(runs []*sarif.Run) {
+	for _, run := range runs {
+		for _, result := range run.Results {
+			for _, location := range result.Locations {
+				xrayutils.SetLocationFileName(location, xrayutils.GetRelativeLocationFileName(location, run.Invocations))
+			}
+			for _, flows := range result.CodeFlows {
+				for _, flow := range flows.ThreadFlows {
+					for _, location := range flow.Locations {
+						xrayutils.SetLocationFileName(location.Location, xrayutils.GetRelativeLocationFileName(location.Location, run.Invocations))
+					}
+				}
+			}
+		}
+	}
 }
 
 func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
-	setRunsAsFrogbotTool(extendedResults.ApplicabilityScanResults)
-	setRunsAsFrogbotTool(extendedResults.IacScanResults)
-	setRunsAsFrogbotTool(extendedResults.SecretsScanResults)
-	setRunsAsFrogbotTool(extendedResults.SastScanResults)
+	prepareRunsForGithubReport(extendedResults.ApplicabilityScanResults)
+	prepareRunsForGithubReport(extendedResults.IacScanResults)
+	prepareRunsForGithubReport(extendedResults.SecretsScanResults)
+	prepareRunsForGithubReport(extendedResults.SastScanResults)
 	// Generate report from the data
 	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
 }

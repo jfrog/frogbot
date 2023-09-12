@@ -198,6 +198,7 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 1, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 2, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
 		// Return empty comments slice so expect the code to scan both pull requests.
 		client.EXPECT().ListPullRequestComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
+		client.EXPECT().ListPullRequestReviewComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
 		// Copy test project according to the given branch name, instead of download it.
 		client.EXPECT().DownloadRepository(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).DoAndReturn(fakeRepoDownload).AnyTimes()
 		// Capture the result comment post
@@ -205,7 +206,12 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 			*frogbotMessages = append(*frogbotMessages, content)
 			return nil
 		}).AnyTimes()
+		client.EXPECT().AddPullRequestReviewComments(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _, _, content string, _ int) error {
+			*frogbotMessages = append(*frogbotMessages, content)
+			return nil
+		}).AnyTimes()
 		client.EXPECT().DeletePullRequestComment(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		client.EXPECT().DeletePullRequestReviewComments(context.Background(), params.repoOwner, params.repoName, gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		// Return private repositories visibility
 		client.EXPECT().GetRepositoryInfo(context.Background(), gomock.Any(), gomock.Any()).Return(vcsclient.RepositoryInfo{RepositoryVisibility: vcsclient.Private}, nil).AnyTimes()
 	}

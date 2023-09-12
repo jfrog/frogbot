@@ -6,11 +6,11 @@ require (
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.9.9
+	github.com/jfrog/build-info-go v1.9.10
 	github.com/jfrog/froggit-go v1.13.4
 	github.com/jfrog/gofrog v1.3.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.41.4
-	github.com/jfrog/jfrog-client-go v1.31.6
+	github.com/jfrog/jfrog-cli-core/v2 v2.41.6
+	github.com/jfrog/jfrog-client-go v1.32.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.2.0
 	github.com/stretchr/testify v1.8.4
@@ -29,7 +29,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
-	github.com/andybalholm/brotli v1.0.4 // indirect
+	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -116,8 +116,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20230910172216-6e94c82ee5ab
+replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.20230912072324-fe9427a63b0a
 
-replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20230906115540-2c3c91d271d6
-
-replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20230907115821-300055da003e
+//replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev

@@ -2,9 +2,10 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
 )
 
 const (
@@ -19,7 +20,7 @@ type SimplifiedOutput struct {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
 	directsRowFmt := directDependencyRow
 	if smo.showCaColumn {
 		row += vulnerability.Applicable + " |"
@@ -109,7 +110,95 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string {
+func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
+	return fmt.Sprintf(`
+### 📦🔍 Applicable dependency CVE Vulnerability
+	
+%s
+
+#### Description
+	
+%s	
+
+#### CVE details
+
+%s
+
+#### Remediation
+
+%s
+
+`,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails,
+		cveDetails,
+		remediation)
+}
+
+func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
+	return fmt.Sprintf(`
+### 🛠️ Infrastructure as Code Vulnerability
+	
+%s
+
+### 👇 Details
+
+%s	
+
+`,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails)
+}
+
+func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+### 🎯 Static Application Security Testing (SAST) Vulnerability
+	
+%s
+
+---
+#### Full description
+
+%s
+
+---
+#### Code Flows
+
+`,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		fullDetails,
+	))
+
+	if len(codeFlows) > 0 {
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(`
+
+---
+Vulnerable data flow analysis result:
+`)
+			for i, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
+	%d. %s (at %s line %d)
+`,
+					i+1,
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
+			contentBuilder.WriteString(`
+
+---
+
+`,
+			)
+		}
+	}
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -132,7 +221,7 @@ func (smo *SimplifiedOutput) Separator() string {
 	return ", "
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
 	return severity
 }
 
