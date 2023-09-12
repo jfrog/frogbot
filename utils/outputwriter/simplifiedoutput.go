@@ -144,7 +144,7 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 
 func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code Vulnerability
+## 🛠️ Infrastructure as Code (Iac) Vulnerability
 	
 %s
 
