@@ -111,7 +111,8 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 }
 
 func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
-	return fmt.Sprintf(`
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
 ### 📦🔍 Applicable dependency CVE Vulnerability
 	
 %s
@@ -124,15 +125,21 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 
 %s
 
-#### Remediation
-
-%s
-
 `,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
-		cveDetails,
-		remediation)
+		cveDetails))
+
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf(`
+#### Remediation
+	
+%s	
+
+`,
+			remediation))
+	}
+	return contentBuilder.String()
 }
 
 func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
