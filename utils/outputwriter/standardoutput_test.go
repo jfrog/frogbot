@@ -347,7 +347,6 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 						StartColumn: 10,
 						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected |",
@@ -364,7 +363,6 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 						StartColumn: 10,
 						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 				{
 					Severity:         "Medium",
@@ -375,7 +373,6 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 						StartColumn: 5,
 						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected |",
