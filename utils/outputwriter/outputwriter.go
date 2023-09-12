@@ -213,7 +213,7 @@ func MarkAsCodeSnippet(snippet string) string {
 
 func GetJasMarkdownDescription(severity, finding string) string {
 	headerRow := "| Severity | Finding |\n"
-	separatorRow := "| :---: | :---: |\n"
+	separatorRow := "| :--------------: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
 }
 
