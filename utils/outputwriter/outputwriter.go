@@ -219,7 +219,6 @@ func GetJasMarkdownDescription(severity, finding string) string {
 
 func GetLocationDescription(location formats.Location) string {
 	return fmt.Sprintf(`
-Found issue with the following snippet 
 %s
 at %s (line %d)
 `,

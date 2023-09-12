@@ -127,9 +127,9 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-<div align="center"> 
+## 📦🔍 Contextual Analysis CVE Vulnerability
 
-### 📦🔍 Contextual Analysis CVE Vulnerability
+<div align="center">
 
 %s
 
@@ -155,8 +155,8 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
 		cveDetails))
-
-	contentBuilder.WriteString(fmt.Sprintf(`
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf(`
 <details>
 <summary> <b>Remediation</b> </summary>
 <br>
@@ -166,16 +166,18 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 </details>
 
 `,
-		remediation))
+			remediation))
+	}
+
 	return contentBuilder.String()
 }
 
 func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-<div align="center"> 
+## 🛠️ Infrastructure as Code (Iac) Vulnerability
 
-### 🛠️ Infrastructure as Code Vulnerability
-	
+<div align="center">
+
 %s
 
 </div>
@@ -196,10 +198,10 @@ func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string
 func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-<div align="center"> 
-
-### 🎯 Static Application Security Testing (SAST) Vulnerability 
+## 🎯 Static Application Security Testing (SAST) Vulnerability 
 	
+<div align="center">
+
 %s
 
 </div>
