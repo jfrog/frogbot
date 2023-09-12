@@ -8,9 +8,7 @@ import (
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 type ReviewCommentType string
@@ -39,10 +37,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		return
 	}
 	// Add review comments for the given data
-	commentsToAdd, err := getNewReviewComments(repo, vulnerabilitiesRows, iacIssues, sastIssues)
-	if err != nil {
-		return
-	}
+	commentsToAdd := getNewReviewComments(repo, vulnerabilitiesRows, iacIssues, sastIssues)
 	if len(commentsToAdd) > 0 {
 		for _, comment := range commentsToAdd {
 			if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
@@ -109,7 +104,7 @@ func getRegularCommentContent(comment ReviewComment) string {
 	return content + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
 }
 
-func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []ReviewComment, err error) {
+func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
 
 	for _, vulnerability := range vulnerabilitiesRows {
@@ -121,7 +116,6 @@ func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.Vulner
 			}
 		}
 	}
-
 	for _, iac := range iacIssues {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
 	}
@@ -197,42 +191,4 @@ func createPullRequestDiff(location formats.Location) vcsclient.PullRequestDiff 
 		NewStartColumn: location.StartColumn,
 		NewEndColumn:   location.EndColumn,
 	}
-}
-
-func attachApplicabilityRelatedInfo(applicability *sarif.Run, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
-	for _, rule := range applicability.Tool.Driver.Rules {
-		setCveInfoToRule(rule, vulnerabilitiesRows)
-	}
-}
-
-func setCveInfoToRule(rule *sarif.ReportingDescriptor, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow) {
-	cve := xrayutils.ApplicabilityRuleIdToCve(rule.ID)
-	for _, issue := range vulnerabilitiesRows {
-		for _, issueCve := range issue.Cves {
-			if cve == issueCve.Id {
-				rule.Properties["cve-information"] = issue
-				return
-			}
-		}
-	}
-}
-
-func getApplicabilityCveInformation(relatedRule *sarif.ReportingDescriptor) formats.VulnerabilityOrViolationRow {
-	if relatedRule.Properties != nil {
-		if information, exist := relatedRule.Properties["cve-information"]; exist {
-			if vRow, ok := information.(formats.VulnerabilityOrViolationRow); ok {
-				return vRow
-			} else {
-				return formats.VulnerabilityOrViolationRow{}
-			}
-		}
-	}
-	return formats.VulnerabilityOrViolationRow{}
-}
-
-func getCveRemediation(info formats.VulnerabilityOrViolationRow) string {
-	if info.JfrogResearchInformation != nil {
-		return info.JfrogResearchInformation.Remediation
-	}
-	return ""
 }
