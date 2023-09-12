@@ -7,15 +7,13 @@ import (
 )
 
 const (
-	directStringWithVersionRegexp = "[a-zA-Z]+\\s[\\\"|\\'][a-zA-Z-\\.]+:[a-zA-Z-\\.]+:[0-9]+\\.[0-9]+\\.?[0-9]*[:a-zA-Z-\\.0-1]*[\\\"|\\'].*"
-	directMapWithVersionRegexp    = "[a-zA-Z]+\\s?group:\\s?[\\\"|\\'].+[\\\"|\\'],\\s?name:\\s?[\\\"|\\'].+[\\\"|\\'],\\s?version:\\s?[\\\"|\\'].+[\\\"|\\'].*"
+	apostrophes                   = "[\\\"|\\']"
+	directMapWithVersionRegexp    = "group:\\s?" + apostrophes + "%s" + apostrophes + ", name:\\s?" + apostrophes + "%s" + apostrophes + ", version:\\s?" + apostrophes + "%s" + apostrophes
+	directStringWithVersionRegexp = apostrophes + "%s:%s:%s" + ".*" + apostrophes
 )
 
 // TODO case: no version at the end
-// TODO case: more at the end of the string after the version
 // TODO case: map with newline in the middle
-// TODO case: wrapped in ()
-// TODO case: wrapped in []
 
 type VulnRowData struct {
 	Content         string
@@ -26,7 +24,7 @@ type VulnRowData struct {
 }
 
 var RegexpNameToPattern = map[string][]string{
-	"directWithVersion": {directStringWithVersionRegexp, directMapWithVersionRegexp},
+	"directWithVersion": {directMapWithVersionRegexp, directStringWithVersionRegexp},
 }
 
 type VulnerableRowFixer interface {
