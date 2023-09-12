@@ -318,7 +318,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 	writer := &StandardOutput{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := writer.IacContent(tc.iacRows)
+			output := writer.IacTableContent(tc.iacRows)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}

@@ -126,11 +126,13 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	return fmt.Sprintf(`
+<div align="center"> 
+
 ### 📦🔍 Applicable dependency CVE Vulnerability
 
 %s
 
-#### 👇 Details
+</div>
 
 <details>
 <summary> <b>Description</b> </summary>
@@ -165,9 +167,13 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 
 func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
+<div align="center"> 
+
 ### 🛠️ Infrastructure as Code Vulnerability
 	
 %s
+
+</div>
 
 <details>
 <summary> <b>Full description</b> </summary>
@@ -191,7 +197,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 	
 %s
 
-#### 👇 Details
+</div>
 
 <details>
 <summary> <b>Full description</b> </summary>
@@ -213,16 +219,13 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 <summary><b>Code Flows</b> </summary>
 
 `)
-		dataFlowId := 1
 		for _, flow := range codeFlows {
-			contentBuilder.WriteString(fmt.Sprintf(`
+			contentBuilder.WriteString(`
 
 <details>
-<summary><b>%d. Vulnerable data flow analysis result</b> </summary>
+<summary><b>Vulnerable data flow analysis result</b> </summary>
 <br>
-`,
-				dataFlowId,
-			))
+`)
 			for _, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
 %s. %s (at %s line %d)
@@ -240,7 +243,6 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 
 `,
 			)
-			dataFlowId++
 		}
 		contentBuilder.WriteString(`
 
@@ -252,7 +254,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
+func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -273,23 +275,13 @@ func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
-<div align="center">
-
-%s
-
-</div>
-`, CommentGeneratedByFrogbot)
-}
-
-func (so *StandardOutput) ReviewFooter() string {
-	return fmt.Sprintf(`
 ---
 <div align="center">
 
 %s
 
 </div>
-`, ReviewCommentGeneratedByFrogbot)
+`, CommentGeneratedByFrogbot)
 }
 
 func (so *StandardOutput) Separator() string {

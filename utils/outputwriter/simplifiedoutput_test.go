@@ -310,7 +310,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 	writer := &SimplifiedOutput{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := writer.IacContent(tc.iacRows)
+			output := writer.IacTableContent(tc.iacRows)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}

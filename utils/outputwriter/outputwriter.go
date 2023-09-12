@@ -12,8 +12,7 @@ import (
 
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
-	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	ReviewCommentGeneratedByFrogbot                  = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -100,7 +99,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	IacContent(iacRows []formats.SourceCodeRow) string
+	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
 	FormattedSeverity(severity, applicability string, addName bool) string
@@ -113,7 +112,6 @@ type OutputWriter interface {
 	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
-	ReviewFooter() string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {

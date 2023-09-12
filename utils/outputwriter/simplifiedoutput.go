@@ -112,51 +112,50 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 
 func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
 	return fmt.Sprintf(`
-## 📦🔍 Applicable dependency CVE Vulnerability %s
+### 📦🔍 Applicable dependency CVE Vulnerability
 	
-Finding: %s
-
-### 👇 Details
+%s
 
 #### Description
 	
 %s	
 
-#### Cve details
+#### CVE details
+
+%s
+
+#### Remediation
 
 %s
 
 `,
-		smo.FormattedSeverity(severity, "Applicable", false),
-		finding,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
-		cveDetails)
+		cveDetails,
+		remediation)
 }
 
 func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code Vulnerability %s
+### 🛠️ Infrastructure as Code Vulnerability
 	
-Finding: %s
+%s
 
 ### 👇 Details
 
 %s	
 
 `,
-		smo.FormattedSeverity(severity, "Applicable", false),
-		finding,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails)
 }
 
 func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-## 🔐 Static Application Security Testing (SAST) Vulnerability %s
+### 🎯 Static Application Security Testing (SAST) Vulnerability
 	
-Finding: %s
-
-### 👇 Details
+%s
 
 ---
 #### Full description
@@ -164,24 +163,20 @@ Finding: %s
 %s
 
 ---
-#### Vulnerable data flows
+#### Code Flows
 
 `,
-		smo.FormattedSeverity(severity, "Applicable", false),
-		finding,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
 		fullDetails,
 	))
 
 	if len(codeFlows) > 0 {
-		dataFlowId := 1
 		for _, flow := range codeFlows {
-			contentBuilder.WriteString(fmt.Sprintf(`
+			contentBuilder.WriteString(`
 
 ---
-%d. Vulnerable data flow analysis result:
-`,
-				dataFlowId,
-			))
+Vulnerable data flow analysis result:
+`)
 			for i, location := range flow {
 				contentBuilder.WriteString(fmt.Sprintf(`
 	%d. %s (at %s line %d)
@@ -198,13 +193,12 @@ Finding: %s
 
 `,
 			)
-			dataFlowId++
 		}
 	}
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string {
+func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -221,16 +215,6 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string 
 
 func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
-}
-
-func (smo *SimplifiedOutput) ReviewFooter() string {
-	return fmt.Sprintf(`
-
----
-
-%s
-
-`, ReviewCommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Separator() string {
