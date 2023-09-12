@@ -186,9 +186,7 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 // CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
 // ScannedBranch - name of the branch we are scanning.
 // GitProject - [Optional] relevant for azure repos and Bitbucket server.
-// In other VCS providers project is replaced by repository owner
 // Client vscClient
-// In case of failure, log and don't fail the entire Frogbot scan.
 func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
 	if err != nil {
