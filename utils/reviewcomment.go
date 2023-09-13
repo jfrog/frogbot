@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -80,7 +81,7 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 	if len(existingComments) > 0 {
 		for _, commentToDelete := range getFrogbotReviewComments(existingComments) {
 			if err = client.DeletePullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, int(commentToDelete.ID)); err != nil {
-				err = errors.New("couldn't delete pull request review comment: " + err.Error())
+				err = errors.New("couldn't delete pull request regular comment: " + err.Error())
 				return
 			}
 		}
@@ -89,9 +90,8 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 }
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
-	log.Debug("Delete old Frogbot review comments")
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, outputwriter.CommentGeneratedByFrogbot) || strings.Contains(comment.Content, CommentId) {
+		if strings.Contains(comment.Content, CommentId) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
@@ -141,6 +141,7 @@ func generateReviewComment(commentType ReviewCommentType, location formats.Locat
 }
 
 func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (content string) {
+	content = outputwriter.MarkdownComment(CommentId)
 	remediation := ""
 	if relatedVulnerability.JfrogResearchInformation != nil {
 		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
@@ -149,7 +150,9 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 		relatedVulnerability.Severity,
 		issue.Reason,
 		relatedCve.Applicability.ScannerDescription,
+		relatedCve.Id,
 		relatedVulnerability.Summary,
+		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
 		remediation,
 	)
 	content += writer.Footer()
@@ -157,6 +160,7 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 }
 
 func generateReviewCommentContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+	content = outputwriter.MarkdownComment(CommentId)
 	switch commentType {
 	case IacComment:
 		content += writer.IacReviewContent(

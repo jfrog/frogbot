@@ -13,8 +13,8 @@ import (
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
+	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
@@ -102,14 +102,14 @@ type OutputWriter interface {
 	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
-	FormattedSeverity(severity, applicability string, addName bool) string
+	FormattedSeverity(severity, applicability string) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
 
-	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
+	ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
 }
@@ -123,48 +123,8 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	}
 }
 
-type descriptionBullet struct {
-	title string
-	value string
-}
-
-func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow, cves []string) string {
-	descriptionBullets := []descriptionBullet{
-		{title: "**Severity**", value: fmt.Sprintf("%s %s", xrayutils.GetSeverity(vulnerability.Severity, xrayutils.Applicable).Emoji(), vulnerability.Severity)},
-		{title: "**Contextual Analysis:**", value: vulnerability.Applicable},
-		{title: "**Package Name:**", value: vulnerability.ImpactedDependencyName},
-		{title: "**Current Version:**", value: vulnerability.ImpactedDependencyVersion},
-	}
-
-	cvesTitle := "**CVE:**"
-	if len(cves) > 1 {
-		cvesTitle = "**CVEs:**"
-	}
-
-	fixedVersionsTitle := "**Fixed Version:**"
-	if len(vulnerability.FixedVersions) > 1 {
-		fixedVersionsTitle = "**Fixed Versions:**"
-	}
-
-	if len(cves) != 0 {
-		cveBullet := descriptionBullet{title: cvesTitle, value: strings.Join(cves, ",")}
-		descriptionBullets = append(descriptionBullets, cveBullet)
-	}
-
-	if len(vulnerability.FixedVersions) != 0 {
-		fixedVersionBullet := descriptionBullet{title: fixedVersionsTitle, value: strings.Join(vulnerability.FixedVersions, ",")}
-		descriptionBullets = append(descriptionBullets, fixedVersionBullet)
-	}
-
+func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var descriptionBuilder strings.Builder
-	descriptionBuilder.WriteString("\n")
-	// Write the bullets of the description
-	for _, bullet := range descriptionBullets {
-		if strings.TrimSpace(bullet.value) != "" {
-			descriptionBuilder.WriteString(fmt.Sprintf("- %s %s\n", bullet.title, bullet.value))
-		}
-	}
-
 	vulnResearch := vulnerability.JfrogResearchInformation
 	if vulnerability.JfrogResearchInformation == nil {
 		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
@@ -172,12 +132,12 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 
 	// Write description if exists:
 	if vulnResearch.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n\n%s\n\n", vulnResearch.Details))
+		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n%s\n", vulnResearch.Details))
 	}
 
 	// Write remediation if exists
 	if vulnResearch.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n\n%s\n\n", vulnResearch.Remediation))
+		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n%s\n", vulnResearch.Remediation))
 	}
 
 	return descriptionBuilder.String()
@@ -194,13 +154,13 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
 	}
 	return tableContent
 }
 
 func MarkdownComment(text string) string {
-	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+	return fmt.Sprintf("\n\n[comment]: <> (%s)\n", text)
 }
 
 func MarkAsQuote(s string) string {
@@ -213,18 +173,23 @@ func MarkAsCodeSnippet(snippet string) string {
 
 func GetJasMarkdownDescription(severity, finding string) string {
 	headerRow := "| Severity | Finding |\n"
-	separatorRow := "| :---: | :---: |\n"
+	separatorRow := "| :--------------: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+}
+
+func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
+	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
+	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
+	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
 }
 
 func GetLocationDescription(location formats.Location) string {
 	return fmt.Sprintf(`
-Found issue with the following snippet 
 %s
 at %s (line %d)
 `,
 		MarkAsCodeSnippet(location.Snippet),
-		location.File,
+		MarkAsQuote(location.File),
 		location.StartLine)
 }
 
@@ -242,19 +207,36 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 	return vulnerabilitiesTableHeader
 }
 
-func getCveIdSliceFromCveRows(cves []formats.CveRow) []string {
-	var cveIds []string
-	for _, cve := range cves {
+func convertCveRowsToCveIds(cveRows []formats.CveRow, seperator string) string {
+	cvesBuilder := strings.Builder{}
+	for _, cve := range cveRows {
 		if cve.Id != "" {
-			cveIds = append(cveIds, cve.Id)
+			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, seperator))
 		}
 	}
-	return cveIds
+	return strings.TrimSuffix(cvesBuilder.String(), seperator)
 }
 
-func getDescriptionBulletCveTitle(cves []string) string {
-	if len(cves) == 0 {
+func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
+	if cves == "" {
+		cves = " - "
+	}
+	return cves
+}
+
+func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
+	if fixedVersions == "" {
+		fixedVersions = " - "
+	}
+	return strings.TrimSuffix(fixedVersions, writer.Separator())
+}
+
+func getVulnerabilityCvesPrefix(cveRows []formats.CveRow) string {
+	if len(cveRows) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("[ %s ] ", strings.Join(cves, ","))
+	cves := convertCveRowsToCveIds(cveRows, ", ")
+	return fmt.Sprintf("[ %s ] ", cves)
 }
