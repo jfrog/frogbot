@@ -18,11 +18,14 @@ import (
 )
 
 const (
-	groovyFileType        = "groovy"
-	kotlinFileType        = "kotlin"
-	groovyBuildFileSuffix = ".gradle"
-	kotlinBuildFileSuffix = ".gradle.kts"
-	unknownRowType        = "unknown"
+	groovyFileType            = "groovy"
+	kotlinFileType            = "kotlin"
+	groovyBuildFileSuffix     = ".gradle"
+	kotlinBuildFileSuffix     = ".gradle.kts"
+	unknownRowType            = "unknown"
+	unsupportedDynamicVersion = "dynamic dependency version"
+	unsupportedLatestVersion  = "latest release version"
+	unsupportedRangeVersion   = "range version"
 )
 
 type GradlePackageHandler struct {
@@ -207,7 +210,7 @@ func isInsideDependenciesScope(rowContent string, insideDependenciesScope *bool,
 
 // detectVulnerableRowType returns the row's type according to predefined patterns defined by RegexpNameToPattern in ./resources/gradlefixhelper.go
 // if there is no match for some row with any known type, the row's type will be set to 'unknown'
-func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[string][]*regexp.Regexp) string {
+func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[resources.RowType][]*regexp.Regexp) resources.RowType {
 	rowToCheck := strings.TrimSpace(vulnerableRow)
 	for patternName, regexpCompilers := range patternsCompilers {
 		for _, compiler := range regexpCompilers {
@@ -230,14 +233,14 @@ func getLeftWhitespaces(str string) string {
 	return str[:firstNonWhiteSpace]
 }
 
-func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[string][]*regexp.Regexp, err error) {
+func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[resources.RowType][]*regexp.Regexp, err error) {
 	seperatedImpactedDepName := strings.Split(vulnDetails.ImpactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
 		err = errorutils.CheckErrorf("unable to parse impacted dependency name '%s'", vulnDetails.ImpactedDependencyName)
 		return
 	}
 
-	patternsCompilers = make(map[string][]*regexp.Regexp)
+	patternsCompilers = make(map[resources.RowType][]*regexp.Regexp)
 	for patternName, patterns := range resources.RegexpNameToPattern {
 		for _, pattern := range patterns {
 			completedPattern := fmt.Sprintf(pattern, seperatedImpactedDepName[0], seperatedImpactedDepName[1], vulnDetails.ImpactedDependencyVersion)
@@ -250,22 +253,18 @@ func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails)
 }
 
 func isUnsupportedVulnVersion(impactedVersion string) (string, bool) {
-	// capture dynamic dep | V
-	// capture range | V
-	// capture latest.release | V
-
 	// TODO should fix those two or reject?
 	// capture var version
 	// capture property version - something that directs to take the value from properties.gradle (starts with $)
 
 	if strings.Contains(impactedVersion, "+") {
-		return "dynamic dependency version", true
+		return unsupportedDynamicVersion, true
 	}
 	if strings.Contains(impactedVersion, "latest.release") {
-		return "latest release version", true
+		return unsupportedLatestVersion, true
 	}
 	if strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "(") {
-		return "range version", true
+		return unsupportedRangeVersion, true
 	}
 	return "", false
 }

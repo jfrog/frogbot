@@ -6,10 +6,13 @@ import (
 	"strings"
 )
 
+type RowType string
+
 const (
-	apostrophes                   = "[\\\"|\\']"
-	directMapWithVersionRegexp    = "group:\\s?" + apostrophes + "%s" + apostrophes + ", name:\\s?" + apostrophes + "%s" + apostrophes + ", version:\\s?" + apostrophes + "%s" + apostrophes
-	directStringWithVersionRegexp = apostrophes + "%s:%s:%s" + ".*" + apostrophes
+	apostrophes                           = "[\\\"|\\']"
+	directMapWithVersionRegexp            = "group:\\s?" + apostrophes + "%s" + apostrophes + ", name:\\s?" + apostrophes + "%s" + apostrophes + ", version:\\s?" + apostrophes + "%s" + apostrophes
+	directStringWithVersionRegexp         = apostrophes + "%s:%s:%s" + ".*" + apostrophes
+	DirectStaticVersion           RowType = "directStaticVersion"
 )
 
 // TODO case: no version at the end
@@ -18,14 +21,14 @@ const (
 
 type VulnRowData struct {
 	Content         string
-	RowType         string
+	RowType         RowType
 	FileType        string
 	Filepath        string // needed just for some error
 	LeftIndentation string //TODO DEL? check if needed to any fixer
 }
 
-var RegexpNameToPattern = map[string][]string{
-	"directStaticVersion": {directMapWithVersionRegexp, directStringWithVersionRegexp},
+var RegexpNameToPattern = map[RowType][]string{
+	DirectStaticVersion: {directMapWithVersionRegexp, directStringWithVersionRegexp},
 }
 
 type VulnerableRowFixer interface {
@@ -35,9 +38,8 @@ type VulnerableRowFixer interface {
 // GetFixerByRowType returns suitable fixer object for the row according to the row's type.
 // The known types can be found in RegexpNameToPattern map
 func GetFixerByRowType(rowData VulnRowData, rowNumberInFile int) (VulnerableRowFixer, error) {
-	// TODO put all in ENUM
 	switch rowData.RowType {
-	case "directStaticVersion":
+	case DirectStaticVersion:
 		return &DirectRowFixer{CommonVulnerableRowFixer{
 			rowData:         rowData,
 			rowNumberInFile: rowNumberInFile,
@@ -56,7 +58,7 @@ func (cvrf *CommonVulnerableRowFixer) GetVulnerableRowFix() string {
 	return "common fixer"
 }
 
-// DirectRowFixer captures the following types:
+// DirectRowFixer captures the following types: todo complete
 // string with version (<configName> 'a:b:c', <configName> "a:b:c") with possibly: additional args after version/single line comment
 // map with version (<configName> group: "a", name: "b", version: "c", <configName> group: 'a', name: 'b', version: 'c') with possibly: additional entries after version/single line comment
 type DirectRowFixer struct {
