@@ -20,7 +20,7 @@ type SimplifiedOutput struct {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	directsRowFmt := directDependencyRow
 	if smo.showCaColumn {
 		row += vulnerability.Applicable + " |"
@@ -112,7 +112,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
+func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
 ## 📦🔍 Contextual Analysis CVE Vulnerability
@@ -128,7 +128,7 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 %s
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
 		fullDetails,
 		cveDetails))
 
@@ -155,7 +155,7 @@ func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails str
 %s	
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails)
 }
 
@@ -175,7 +175,7 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ### Code Flows
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails,
 	))
 
@@ -230,7 +230,7 @@ func (smo *SimplifiedOutput) Separator() string {
 	return ", "
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
 }
 

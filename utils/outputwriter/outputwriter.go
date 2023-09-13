@@ -102,14 +102,14 @@ type OutputWriter interface {
 	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
-	FormattedSeverity(severity, applicability string, addName bool) string
+	FormattedSeverity(severity, applicability string) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
 
-	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
+	ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string
 	IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
 }
@@ -154,7 +154,7 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
 	}
 	return tableContent
 }
@@ -175,6 +175,12 @@ func GetJasMarkdownDescription(severity, finding string) string {
 	headerRow := "| Severity | Finding |\n"
 	separatorRow := "| :--------------: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+}
+
+func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
+	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
+	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
+	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
 }
 
 func GetLocationDescription(location formats.Location) string {

@@ -20,7 +20,7 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 		directDependencies.WriteString(fmt.Sprintf("%s:%s%s", dependency.Name, dependency.Version, so.Separator()))
 	}
 
-	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
+	row := fmt.Sprintf("| %s | ", so.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
@@ -123,7 +123,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
+func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
 ## 📦🔍 Contextual Analysis CVE Vulnerability
@@ -151,7 +151,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		GetApplicabilityMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
 		fullDetails,
 		cveDetails))
 	if len(remediation) > 0 {
@@ -190,7 +190,7 @@ func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails)
 }
 
@@ -214,7 +214,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 </details>
 
 `,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails,
 	))
 
@@ -293,12 +293,8 @@ func (so *StandardOutput) Separator() string {
 	return "<br>"
 }
 
-func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
-	s := getSeverityTag(IconName(severity), applicability)
-	if addName {
-		s = fmt.Sprintf(s+"%8s", severity)
-	}
-	return s
+func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
+	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
 }
 
 func (so *StandardOutput) UntitledForJasMsg() string {
