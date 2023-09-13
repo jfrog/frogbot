@@ -13,8 +13,8 @@ import (
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
+	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
@@ -251,9 +251,36 @@ func getCveIdSliceFromCveRows(cves []formats.CveRow) []string {
 	return cveIds
 }
 
-func getDescriptionBulletCveTitle(cves []string) string {
-	if len(cves) == 0 {
+func convertCveRowsToCveIds(cveRows []formats.CveRow, seperator string) string {
+	cvesBuilder := strings.Builder{}
+	for _, cve := range cveRows {
+		if cve.Id != "" {
+			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, seperator))
+		}
+	}
+	return strings.TrimSuffix(cvesBuilder.String(), seperator)
+}
+
+func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
+	if cves == "" {
+		cves = " - "
+	}
+	return cves
+}
+
+func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
+	if fixedVersions == "" {
+		fixedVersions = " - "
+	}
+	return strings.TrimSuffix(fixedVersions, writer.Separator())
+}
+
+func getVulnerabilityCvesPrefix(cveRows []formats.CveRow) string {
+	if len(cveRows) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("[ %s ] ", strings.Join(cves, ","))
+	cves := convertCveRowsToCveIds(cveRows, ", ")
+	return fmt.Sprintf("[ %s ] ", cves)
 }

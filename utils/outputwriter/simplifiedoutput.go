@@ -30,10 +30,14 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	if len(vulnerability.Components) > 0 {
 		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
 	}
-	row += fmt.Sprintf(" %s | %s | %s |",
+
+	cves := getTableRowCves(vulnerability, smo)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, smo)
+	row += fmt.Sprintf(" %s | %s | %s | %s |",
 		firstDirectDependency,
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, smo.Separator()),
+		fixedVersions,
+		cves,
 	)
 	for i := 1; i < len(vulnerability.Components); i++ {
 		currDirect := vulnerability.Components[i]
@@ -101,7 +105,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 %s
 
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i], cves)))

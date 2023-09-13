@@ -24,10 +24,13 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
-	row += fmt.Sprintf("%s | %s | %s |",
+	cves := getTableRowCves(vulnerability, so)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, so)
+	row += fmt.Sprintf("%s | %s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Separator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, so.Separator()),
+		fixedVersions,
+		cves,
 	)
 	return row
 }
@@ -116,7 +119,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </details>
 
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i], cves)))
