@@ -11,8 +11,9 @@
 
 </div>
 
+---
 <div align="center">
 
-[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
+[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
 
 </div>

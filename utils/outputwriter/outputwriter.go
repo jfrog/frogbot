@@ -2,16 +2,17 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
-	"strings"
 )
 
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
-	CommentGeneratedByFrogbot                        = "[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -86,7 +87,7 @@ const (
 	SecretsEmailTableRow = `
 				<tr>
 					<td> %s </td>
-					<td> %s </td>
+					<td> %d:%d </td>
 					<td> %s </td>
 				</tr>`
 )
@@ -98,15 +99,19 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	IacContent(iacRows []formats.SourceCodeRow) string
+	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
-	FormattedSeverity(severity, applicability string) string
+	FormattedSeverity(severity, applicability string, addName bool) string
 	IsFrogbotResultComment(comment string) bool
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	UntitledForJasMsg() string
+
+	ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string
+	IacReviewContent(severity, finding, fullDetails string) string
+	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -189,13 +194,37 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
 	var tableContent string
 	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, iac.LineColumn, iac.Text)
+		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable), true), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
 	}
 	return tableContent
 }
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n[comment]: <> (%s)\n", text)
+}
+
+func MarkAsQuote(s string) string {
+	return fmt.Sprintf("`%s`", s)
+}
+
+func MarkAsCodeSnippet(snippet string) string {
+	return fmt.Sprintf("```\n%s\n```", snippet)
+}
+
+func GetJasMarkdownDescription(severity, finding string) string {
+	headerRow := "| Severity | Finding |\n"
+	separatorRow := "| :--------------: | :---: |\n"
+	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+}
+
+func GetLocationDescription(location formats.Location) string {
+	return fmt.Sprintf(`
+%s
+at %s (line %d)
+`,
+		MarkAsCodeSnippet(location.Snippet),
+		MarkAsQuote(location.File),
+		location.StartLine)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
