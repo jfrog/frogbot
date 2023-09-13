@@ -103,7 +103,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 
 %s
 `,
-			getVulnerabilityDescriptionPrefix(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i])))
