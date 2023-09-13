@@ -43,6 +43,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 	}
 	// Add review comments for the given data
 	for _, comment := range commentsToAdd {
+		log.Debug("creating a review comment for", comment.Type, comment.Location.File, comment.Location.StartLine, comment.Location.StartColumn)
 		if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
 			log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, getRegularCommentContent(comment), pullRequestID); err != nil {
