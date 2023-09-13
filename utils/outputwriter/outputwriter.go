@@ -160,7 +160,7 @@ func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) st
 }
 
 func MarkdownComment(text string) string {
-	return fmt.Sprintf("\n\n[comment]: <> (%s)\n", text)
+	return fmt.Sprintf("[comment]: <> (%s)\n", text)
 }
 
 func MarkAsQuote(s string) string {

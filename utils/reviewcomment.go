@@ -37,16 +37,17 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		err = errors.New("couldn't delete pull request comment: " + err.Error())
 		return
 	}
-	// Add review comments for the given data
 	commentsToAdd := getNewReviewComments(repo, vulnerabilitiesRows, iacIssues, sastIssues)
-	if len(commentsToAdd) > 0 {
-		for _, comment := range commentsToAdd {
-			if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
-				log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
-				if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, getRegularCommentContent(comment), pullRequestID); err != nil {
-					err = errors.New("couldn't add pull request  comment, fallback to comment: " + err.Error())
-					return
-				}
+	if len(commentsToAdd) == 0 {
+		return
+	}
+	// Add review comments for the given data
+	for _, comment := range commentsToAdd {
+		if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
+			log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
+			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, getRegularCommentContent(comment), pullRequestID); err != nil {
+				err = errors.New("couldn't add pull request  comment, fallback to comment: " + err.Error())
+				return
 			}
 		}
 	}
