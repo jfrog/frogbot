@@ -17,14 +17,12 @@ const (
 
 // TODO case: no version at the end
 // TODO case: map with newline in the middle
-// TODO case: dynamic version
 
 type VulnRowData struct {
-	Content         string
-	RowType         RowType
-	FileType        string
-	Filepath        string // needed just for some error
-	LeftIndentation string //TODO DEL? check if needed to any fixer
+	Content  string
+	RowType  RowType
+	FileType string
+	Filepath string // needed just for some error
 }
 
 var RegexpNameToPattern = map[RowType][]string{

@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 const (
@@ -138,7 +137,6 @@ func readBuildFiles() (buildFiles []buildFileData, err error) {
 		return
 	}
 
-	//todo check how error looks here
 	if len(buildFiles) == 0 {
 		err = errorutils.CheckErrorf("couldn't detect any build file in the project")
 	}
@@ -168,11 +166,11 @@ func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityD
 		if isInsideDependenciesScope(rowContent, &insideDependenciesScope, &dependenciesScopeOpenCurlyParenthesis) {
 			if vulnerableRowType := detectVulnerableRowType(rowContent, patternsCompilers); vulnerableRowType != unknownRowType {
 				rowData := resources.VulnRowData{
-					Content:         rowContent,
-					RowType:         vulnerableRowType,
-					FileType:        buildFileData.fileType,
-					Filepath:        buildFileData.filePath,
-					LeftIndentation: getLeftWhitespaces(rowContent)}
+					Content:  rowContent,
+					RowType:  vulnerableRowType,
+					FileType: buildFileData.fileType,
+					Filepath: buildFileData.filePath,
+				}
 
 				var fixer resources.VulnerableRowFixer
 				fixer, err = getVulnerableRowFixer(rowData, rowIdx)
@@ -219,17 +217,6 @@ func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[resourc
 		}
 	}
 	return unknownRowType
-}
-
-func getLeftWhitespaces(str string) string {
-	firstNonWhiteSpace := 0
-	for idx, char := range str {
-		if !unicode.IsSpace(char) {
-			firstNonWhiteSpace = idx
-			break
-		}
-	}
-	return str[:firstNonWhiteSpace]
 }
 
 func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[resources.RowType][]*regexp.Regexp, err error) {
