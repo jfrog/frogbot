@@ -17,6 +17,32 @@ repositories {
 dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
     implementation group: 'commons-collections', name: 'commons-collections', version: '3.2.1'
+
+    implementation 'junit:junit:4.7'
+    implementation "junit:junit:4.7"
+    implementation 'junit:junit:4.7:javadoc'
+    implementation('junit:junit:4.7')
+
+    implementation group: 'junit', name: 'junit', version: '4.7'
+    implementation group: "junit", name: "junit", version: "4.7"
+    implementation group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc'
+    implementation(group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc')
+
+    implementation 'junit:junit:4.7',
+            'commons-io:commons-io:2.7'
+
+    implementation(
+            group: 'junit', name: 'junit', version: '4.7'
+    )
+
+    implementation("junit:junit:4.7") {
+        exclude module: "SomeModule"
+    }
+
+    implementation(
+            [group: 'junit', name: 'junit', version: '4.7'],
+            ['junit:junit:4.7']
+    )
 }
 
 sourceSets {

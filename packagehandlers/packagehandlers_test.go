@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -214,6 +215,50 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyName: "snappier"},
+				},
+				fixSupported: true,
+			},
+		},
+
+		// Gradle test cases
+		{
+			{ // indirect dependency
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.13.1",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"},
+				},
+				fixSupported: false,
+			},
+			{ // dynamic version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"},
+				},
+				fixSupported: false,
+			},
+			{ // latest version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"},
+				},
+				fixSupported: false,
+			},
+			{ // range version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"},
+				},
+				fixSupported: false,
+			},
+			{ // TODO make sure to put STRING and MAP formats in build file for this test
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.13.1",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"},
 				},
 				fixSupported: true,
 			},
@@ -568,6 +613,9 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	case coreutils.Go:
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+	case coreutils.Gradle:
+		checkVulnVersionFixInBuildFile(t, test)
+
 	default:
 	}
 }
@@ -596,5 +644,23 @@ func TestGetFixedPackage(t *testing.T) {
 	for _, test := range testcases {
 		fixedPackageArgs := getFixedPackage(test.impactedPackage, test.versionOperator, test.suggestedFixedVersion)
 		assert.Equal(t, test.expectedOutput, fixedPackageArgs)
+	}
+}
+
+func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
+	impactedPackage := testcase.vulnDetails.ImpactedDependencyName
+	impactedVersion := testcase.vulnDetails.ImpactedDependencyVersion
+	suggestedVersion := testcase.vulnDetails.SuggestedFixedVersion
+
+	dir, err := os.Getwd()
+	assert.NoError(t, err, "couldn't get current dir path for build file check")
+	buildFileContent, err := biutils.ReadNLines(filepath.Join(dir, "build.gradle"), math.MaxInt)
+	assert.NoError(t, err, fmt.Sprintf("couldn't read build file from project dir: %q", err))
+
+	for lineIdx, line := range buildFileContent {
+		if strings.Contains(line, impactedPackage) {
+			assert.NotContains(t, line, impactedVersion, fmt.Sprintf("line %d contains a vulnerable version %s for package %s that should have been fixed", lineIdx+1, impactedVersion, impactedPackage))
+			assert.Contains(t, line, suggestedVersion, fmt.Sprintf("package %s version in line %d should have been fixed to %s", impactedPackage, lineIdx+1, suggestedVersion))
+		}
 	}
 }
