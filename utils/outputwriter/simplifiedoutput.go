@@ -20,7 +20,7 @@ type SimplifiedOutput struct {
 }
 
 func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string {
-	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, true))
+	row := fmt.Sprintf("| %s | ", smo.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable))
 	directsRowFmt := directDependencyRow
 	if smo.showCaColumn {
 		row += vulnerability.Applicable + " |"
@@ -30,10 +30,14 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	if len(vulnerability.Components) > 0 {
 		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
 	}
-	row += fmt.Sprintf(" %s | %s | %s |",
+
+	cves := getTableRowCves(vulnerability, smo)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, smo)
+	row += fmt.Sprintf(" %s | %s | %s | %s |",
 		firstDirectDependency,
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, smo.Separator()),
+		fixedVersions,
+		cves,
 	)
 	for i := 1; i < len(vulnerability.Components); i++ {
 		currDirect := vulnerability.Components[i]
@@ -94,23 +98,21 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, smo)))
 	for i := range vulnerabilities {
-		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
 
 %s
-
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cveDetails, remediation string) string {
+func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
 ## 📦🔍 Contextual Analysis CVE Vulnerability
@@ -126,7 +128,7 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 %s
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
 		fullDetails,
 		cveDetails))
 
@@ -153,7 +155,7 @@ func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails str
 %s	
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails)
 }
 
@@ -173,7 +175,7 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ### Code Flows
 
 `,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable", false), finding),
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails,
 	))
 
@@ -221,21 +223,21 @@ func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) st
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
+	return fmt.Sprintf("\n%s", CommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Separator() string {
 	return ", "
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
 }
 
 func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !smo.entitledForJas {
-		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n"
 	}
 	return msg
 }
