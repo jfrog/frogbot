@@ -115,7 +115,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </details>
 
 `,
-			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
+			getVulnerabilityDescriptionPrefix(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
 			createVulnerabilityDescription(&vulnerabilities[i])))

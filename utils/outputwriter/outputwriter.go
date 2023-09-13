@@ -233,10 +233,13 @@ func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer O
 	return strings.TrimSuffix(fixedVersions, writer.Separator())
 }
 
-func getVulnerabilityCvesPrefix(cveRows []formats.CveRow) string {
+func getVulnerabilityDescriptionPrefix(cveRows []formats.CveRow, xrayId string) string {
 	if len(cveRows) == 0 {
 		return ""
 	}
 	cves := convertCveRowsToCveIds(cveRows, ", ")
+	if cves == "" {
+		cves = xrayId
+	}
 	return fmt.Sprintf("[ %s ] ", cves)
 }
