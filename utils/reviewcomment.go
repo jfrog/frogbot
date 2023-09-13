@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -149,7 +150,9 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 		relatedVulnerability.Severity,
 		issue.Reason,
 		relatedCve.Applicability.ScannerDescription,
+		relatedCve.Id,
 		relatedVulnerability.Summary,
+		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
 		remediation,
 	)
 	content += writer.Footer()
