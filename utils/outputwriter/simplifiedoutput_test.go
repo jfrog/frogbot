@@ -33,7 +33,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Nuget,
 			},
-			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
+			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 | CVE-2022-0001 |",
 		},
 		{
 			name: "No CVE and multiple direct dependencies",
@@ -49,7 +49,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				Cves:                      []formats.CveRow{},
 				Technology:                coreutils.Dotnet,
 			},
-			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |\n|  | dep2:2.0.0 |  |  |",
+			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |  -  |\n|  | dep2:2.0.0 |  |  |",
 		},
 		{
 			name: "Multiple CVEs",
@@ -66,7 +66,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Pip,
 			},
-			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
+			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 | CVE-2022-0002, CVE-2022-0003 |",
 			showCaColumn:   true,
 		},
 	}
@@ -166,11 +166,11 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[0].Cves[0].Id),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[1].Cves[0].Id),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -238,11 +238,11 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 		fmt.Sprintf("[ %s ]", "CVE-2023-1234"),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{"CVE-2023-1234"}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ]", "CVE-2024-1234"),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{"CVE-2024-1234"}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)

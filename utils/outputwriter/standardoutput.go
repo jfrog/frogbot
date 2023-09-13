@@ -24,10 +24,13 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
-	row += fmt.Sprintf("%s | %s | %s |",
+	cves := getTableRowCves(vulnerability, so)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, so)
+	row += fmt.Sprintf("%s | %s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Separator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, so.Separator()),
+		fixedVersions,
+		cves,
 	)
 	return row
 }
@@ -92,19 +95,15 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </div>
 
 ## 👇 Details
-
 `,
 		getVulnerabilitiesTableHeader(so.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
-		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		if len(vulnerabilities) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
-
 %s
-
-`, createVulnerabilityDescription(&vulnerabilities[i], cves)))
+`, createVulnerabilityDescription(&vulnerabilities[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -116,10 +115,10 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </details>
 
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityCvesPrefix(vulnerabilities[i].Cves),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 	return contentBuilder.String()
 }
@@ -287,12 +286,11 @@ func (so *StandardOutput) Footer() string {
 
 %s
 
-</div>
-`, CommentGeneratedByFrogbot)
+</div>`, CommentGeneratedByFrogbot)
 }
 
 func (so *StandardOutput) Separator() string {
-	return "<br><br>"
+	return "<br>"
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string, addName bool) string {
