@@ -8,7 +8,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -222,7 +221,7 @@ func TestUpdateDependency(t *testing.T) {
 
 		// Gradle test cases
 		{
-			{ // indirect dependency
+			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.13.1",
 					IsDirectDependency:          false,
@@ -230,7 +229,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				fixSupported: false,
 			},
-			{ // dynamic version
+			{ // Unsupported fix: dynamic version
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
 					IsDirectDependency:          true,
@@ -238,7 +237,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				fixSupported: false,
 			},
-			{ // latest version
+			{ // Unsupported fix: latest version
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
 					IsDirectDependency:          true,
@@ -246,7 +245,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				fixSupported: false,
 			},
-			{ // range version
+			{ // Unsupported fix: range version
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
 					IsDirectDependency:          true,
@@ -254,7 +253,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				fixSupported: false,
 			},
-			{ // TODO make sure to put STRING and MAP formats in build file for this test
+			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.13.1",
 					IsDirectDependency:          true,
@@ -615,7 +614,6 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
 	case coreutils.Gradle:
 		checkVulnVersionFixInBuildFile(t, test)
-
 	default:
 	}
 }
@@ -652,15 +650,23 @@ func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	impactedVersion := testcase.vulnDetails.ImpactedDependencyVersion
 	suggestedVersion := testcase.vulnDetails.SuggestedFixedVersion
 
-	dir, err := os.Getwd()
-	assert.NoError(t, err, "couldn't get current dir path for build file check")
-	buildFileContent, err := biutils.ReadNLines(filepath.Join(dir, "build.gradle"), math.MaxInt)
-	assert.NoError(t, err, fmt.Sprintf("couldn't read build file from project dir: %q", err))
+	buildFiles, err := readBuildFiles()
+	assert.NoError(t, err)
 
-	for lineIdx, line := range buildFileContent {
-		if strings.Contains(line, impactedPackage) {
-			assert.NotContains(t, line, impactedVersion, fmt.Sprintf("line %d contains a vulnerable version %s for package %s that should have been fixed", lineIdx+1, impactedVersion, impactedPackage))
-			assert.Contains(t, line, suggestedVersion, fmt.Sprintf("package %s version in line %d should have been fixed to %s", impactedPackage, lineIdx+1, suggestedVersion))
+	for _, buildFile := range buildFiles {
+		for lineIdx, line := range buildFile.fileContent {
+			if strings.Contains(line, impactedPackage) {
+				assert.NotContains(t, line, impactedVersion, fmt.Sprintf("line %d contains a vulnerable version %s for package %s that should have been fixed", lineIdx+1, impactedVersion, impactedPackage))
+				assert.Contains(t, line, suggestedVersion, fmt.Sprintf("package %s version in line %d should have been fixed to %s", impactedPackage, lineIdx+1, suggestedVersion))
+			}
 		}
 	}
 }
+
+// TODO tests to add:
+// readBuildFiles
+// getVulnerableRowFixer ?
+// fixBuildFile
+// isInsideDependenciesScope
+// detectVulnerableRowType
+// isUnsupportedVulnVersion

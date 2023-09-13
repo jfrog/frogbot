@@ -1,7 +1,6 @@
 package packagehandlers
 
 import (
-	"errors"
 	"fmt"
 	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/packagehandlers/resources"
@@ -18,10 +17,10 @@ import (
 )
 
 const (
-	groovyFileType            = "groovy"
-	kotlinFileType            = "kotlin"
-	groovyBuildFileSuffix     = ".gradle"
-	kotlinBuildFileSuffix     = ".gradle.kts"
+	groovyFileType            = "groovy" //TODO needed?
+	kotlinFileType            = "kotlin" //TODO needed?
+	groovyBuildFileSuffix     = "build.gradle"
+	kotlinBuildFileSuffix     = "build.gradle.kts"
 	unknownRowType            = "unknown"
 	unsupportedDynamicVersion = "dynamic dependency version"
 	unsupportedLatestVersion  = "latest release version"
@@ -33,15 +32,15 @@ type GradlePackageHandler struct {
 }
 
 type buildFileData struct {
-	fileType    string
+	fileType    string      // TODO needed?
 	fileContent []string    //needed
 	filePath    string      //needed
 	filePerm    os.FileMode //needed
 }
 
-var buildFileToType = map[string]string{
-	".gradle":     groovyFileType,
-	".gradle.kts": kotlinFileType,
+var fileExtensionToType = map[string]string{
+	".gradle": groovyFileType,
+	".kts":    kotlinFileType,
 }
 
 func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
@@ -68,7 +67,8 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	// get all build files
 	buildFiles, err := readBuildFiles()
 	if err != nil {
-		err = fmt.Errorf("error occured while getting project's build files: %q", err)
+		err = fmt.Errorf("error has occurred while getting project's build files: %s", err.Error())
+		return
 	}
 
 	// fixing every build file separately
@@ -96,38 +96,37 @@ func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
 }
 
 func readBuildFiles() (buildFiles []buildFileData, err error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			err = fmt.Errorf("error has occured when trying to access or traverse the files system")
-			return err
+			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
 		}
 
-		if d.Type().IsRegular() && (filepath.Ext(path) == groovyBuildFileSuffix || filepath.Ext(path) == kotlinBuildFileSuffix) {
-			fileName := "build" + filepath.Ext(path)
-
-			wd, internalErr := os.Getwd()
-			if internalErr != nil {
-				return errors.Join(internalErr, err)
-			}
+		if d.Type().IsRegular() && (strings.HasSuffix(path, groovyBuildFileSuffix) || strings.HasSuffix(path, kotlinBuildFileSuffix)) {
+			fullFilePath := filepath.Join(wd, path)
 
 			// Read file's content
-			var fileContent []string
-			fileContent, err = fileutils.ReadNLines(fileName, math.MaxInt)
-			if err != nil {
-				return fmt.Errorf("couldn't read %s file: %q", fileName, err)
+			fileContent, readErr := fileutils.ReadNLines(path, math.MaxInt)
+			if readErr != nil {
+				return readErr
 			}
 
 			// Get file permissions
 			fileInfo, statErr := os.Stat(path)
 			if statErr != nil {
-				return fmt.Errorf("couldn't get file info for %s: %q", path, statErr)
+				return statErr
 			}
+
 			filePerm := fileInfo.Mode()
 
 			buildFiles = append(buildFiles, buildFileData{
-				fileType:    buildFileToType[fileName],
+				fileType:    fileExtensionToType[filepath.Ext(path)],
 				fileContent: fileContent,
-				filePath:    filepath.Join(wd, fileName),
+				filePath:    fullFilePath,
 				filePerm:    filePerm,
 			})
 
@@ -136,10 +135,10 @@ func readBuildFiles() (buildFiles []buildFileData, err error) {
 	})
 
 	if err != nil {
-		err = fmt.Errorf("failed to read project's directory content: %q", err)
 		return
 	}
 
+	//todo check how error looks here
 	if len(buildFiles) == 0 {
 		err = errorutils.CheckErrorf("couldn't detect any build file in the project")
 	}
@@ -244,8 +243,7 @@ func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails)
 	for patternName, patterns := range resources.RegexpNameToPattern {
 		for _, pattern := range patterns {
 			completedPattern := fmt.Sprintf(pattern, seperatedImpactedDepName[0], seperatedImpactedDepName[1], vulnDetails.ImpactedDependencyVersion)
-			var re *regexp.Regexp
-			re = regexp.MustCompile(completedPattern)
+			re := regexp.MustCompile(completedPattern)
 			patternsCompilers[patternName] = append(patternsCompilers[patternName], re)
 		}
 	}

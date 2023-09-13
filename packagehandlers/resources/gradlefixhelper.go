@@ -10,7 +10,7 @@ type RowType string
 
 const (
 	apostrophes                           = "[\\\"|\\']"
-	directMapWithVersionRegexp            = "group:\\s?" + apostrophes + "%s" + apostrophes + ", name:\\s?" + apostrophes + "%s" + apostrophes + ", version:\\s?" + apostrophes + "%s" + apostrophes
+	directMapWithVersionRegexp            = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
 	directStringWithVersionRegexp         = apostrophes + "%s:%s:%s" + ".*" + apostrophes
 	DirectStaticVersion           RowType = "directStaticVersion"
 )

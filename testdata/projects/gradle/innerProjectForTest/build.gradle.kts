@@ -1,0 +1,25 @@
+val spi: Configuration by configurations.creating
+
+dependencies {
+    // This repeated dependency is required in order to check 'create-fix' captures all formats of direct dependencies
+    runtimeOnly('junit:junit:4.7')
+    runtimeOnly("junit:junit:4.7")
+    runtimeOnly('junit:junit:4.7:javadoc')
+    runtimeOnly("junit:junit:4.7") {
+        isTransitive = true
+    }
+
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.7')
+    runtimeOnly(group = "junit", name = "junit", version = "4.7")
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.7', classifier = 'javadoc')
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.7') {
+        isTransitive = true
+    }
+
+    // This repeated dependency is required to check that 'create-fix' doesn't fix lines with unsupported-version fix
+    // When the package was found as vulnerable by xRay and fix is applicable somewhere else in the build file
+    runtimeOnly(group = 'commons-io', name = 'commons-io', version = '1.+')
+    runtimeOnly(group = 'commons-io', name = 'commons-io', version = '[1.1, 3.5)')
+    runtimeOnly('commons-io:commons-io:latest.release')
+}
+
