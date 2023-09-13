@@ -150,7 +150,6 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 ## 👇 Details
 
-
 <details>
 <summary> <b>%s%s %s</b> </summary>
 <br>
@@ -223,7 +222,6 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 </div>
 
 ## 👇 Details
-
 
 <details>
 <summary> <b>%s%s %s</b> </summary>

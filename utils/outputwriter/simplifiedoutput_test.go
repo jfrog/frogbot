@@ -155,11 +155,9 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 
 %s
 
-
 #### %s %s %s
 
 %s
-
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
@@ -227,11 +225,9 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 %s
 
-
 #### %s %s %s
 
 %s
-
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
