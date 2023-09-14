@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	groovyFileType            = "groovy" //TODO needed?
-	kotlinFileType            = "kotlin" //TODO needed?
-	groovyBuildFileSuffix     = "build.gradle"
-	kotlinBuildFileSuffix     = "build.gradle.kts"
-	unknownRowType            = "unknown"
+	groovyFileType        = "groovy" // Needed???
+	kotlinFileType        = "kotlin" // Needed???
+	groovyBuildFileSuffix = "build.gradle"
+	kotlinBuildFileSuffix = "build.gradle.kts"
+
 	unsupportedDynamicVersion = "dynamic dependency version"
 	unsupportedLatestVersion  = "latest release version"
 	unsupportedRangeVersion   = "range version"
@@ -31,10 +31,10 @@ type GradlePackageHandler struct {
 }
 
 type buildFileData struct {
-	fileType    string      // TODO needed?
-	fileContent []string    //needed
-	filePath    string      //needed
-	filePerm    os.FileMode //needed
+	fileType    string // Needed???
+	fileContent []string
+	filePath    string
+	filePerm    os.FileMode
 }
 
 var fileExtensionToType = map[string]string{
@@ -55,7 +55,7 @@ func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 }
 
 func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	if unsupportedType, isUnsupported := isUnsupportedVulnVersion(vulnDetails.ImpactedDependencyVersion); isUnsupported {
+	if unsupportedType, isSupported := isSupportedVulnVersion(vulnDetails.ImpactedDependencyVersion); !isSupported {
 		log.Warn(fmt.Sprintf("frogbot currently doesn't support fixing %s: %s %s", unsupportedType, vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion))
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
@@ -81,7 +81,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 }
 
 func writeUpdatedBuildFile(buildFile buildFileData) (err error) {
-	// todo fix the end of the file doesnt change with this flow
+	// Todo fix the end of the file doesnt change with this flow
 	var bytesSlice []byte
 	for _, row := range buildFile.fileContent {
 		bytesSlice = append(bytesSlice, []byte(row+"\n")...)
@@ -153,8 +153,7 @@ func getVulnerableRowFixer(rowData resources.VulnRowData, rowNumberInFile int) (
 }
 
 func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// TODO what should we do if the line doesn't contain any version?
-	patternsCompilers, err := getPattenCompilersForVulnerability(vulnDetails)
+	patternsCompilers, err := getPatternCompilersForVulnerability(vulnDetails)
 	if err != nil {
 		return
 	}
@@ -162,9 +161,15 @@ func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityD
 	dependenciesScopeOpenCurlyParenthesis := 0
 	insideDependenciesScope := false
 
+	depGroup, depName, err := getSeparatedGroupAndName(vulnDetails.ImpactedDependencyName)
+	if err != nil {
+		return
+	}
+
 	for rowIdx, rowContent := range buildFileData.fileContent {
 		if isInsideDependenciesScope(rowContent, &insideDependenciesScope, &dependenciesScopeOpenCurlyParenthesis) {
-			if vulnerableRowType := detectVulnerableRowType(rowContent, patternsCompilers); vulnerableRowType != unknownRowType {
+			vulnerableRowType := detectVulnerableRowType(rowContent, depGroup, depName, patternsCompilers)
+			if vulnerableRowType != resources.UnknownRowType && vulnerableRowType != resources.UnsupportedLineFormat {
 				rowData := resources.VulnRowData{
 					Content:  rowContent,
 					RowType:  vulnerableRowType,
@@ -178,6 +183,10 @@ func fixBuildFile(buildFileData buildFileData, vulnDetails *utils.VulnerabilityD
 					return
 				}
 				buildFileData.fileContent[rowIdx] = fixer.GetVulnerableRowFix(vulnDetails)
+			}
+
+			if vulnerableRowType == resources.UnsupportedLineFormat {
+				log.Warn(fmt.Sprintf("vulnerable package detected in line %d with an unsupported line format. Please consider manual update if necessary.", rowIdx+1))
 			}
 		}
 	}
@@ -207,7 +216,7 @@ func isInsideDependenciesScope(rowContent string, insideDependenciesScope *bool,
 
 // detectVulnerableRowType returns the row's type according to predefined patterns defined by RegexpNameToPattern in ./resources/gradlefixhelper.go
 // if there is no match for some row with any known type, the row's type will be set to 'unknown'
-func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[resources.RowType][]*regexp.Regexp) resources.RowType {
+func detectVulnerableRowType(vulnerableRow string, depGroup string, depName string, patternsCompilers map[resources.RowType][]*regexp.Regexp) resources.RowType {
 	rowToCheck := strings.TrimSpace(vulnerableRow)
 	for patternName, regexpCompilers := range patternsCompilers {
 		for _, compiler := range regexpCompilers {
@@ -216,20 +225,24 @@ func detectVulnerableRowType(vulnerableRow string, patternsCompilers map[resourc
 			}
 		}
 	}
-	return unknownRowType
+
+	// This check and type is for lines where vulnerable group/name detected but the line format is not supported for fix currently
+	if strings.Contains(rowToCheck, depGroup) || strings.Contains(rowToCheck, depName) {
+		return resources.UnsupportedLineFormat
+	}
+	return resources.UnknownRowType
 }
 
-func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[resources.RowType][]*regexp.Regexp, err error) {
-	seperatedImpactedDepName := strings.Split(vulnDetails.ImpactedDependencyName, ":")
-	if len(seperatedImpactedDepName) != 2 {
-		err = errorutils.CheckErrorf("unable to parse impacted dependency name '%s'", vulnDetails.ImpactedDependencyName)
+func getPatternCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers map[resources.RowType][]*regexp.Regexp, err error) {
+	depGroup, depName, err := getSeparatedGroupAndName(vulnDetails.ImpactedDependencyName)
+	if err != nil {
 		return
 	}
 
 	patternsCompilers = make(map[resources.RowType][]*regexp.Regexp)
 	for patternName, patterns := range resources.RegexpNameToPattern {
 		for _, pattern := range patterns {
-			completedPattern := fmt.Sprintf(pattern, seperatedImpactedDepName[0], seperatedImpactedDepName[1], vulnDetails.ImpactedDependencyVersion)
+			completedPattern := fmt.Sprintf(pattern, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
 			re := regexp.MustCompile(completedPattern)
 			patternsCompilers[patternName] = append(patternsCompilers[patternName], re)
 		}
@@ -237,19 +250,28 @@ func getPattenCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails)
 	return
 }
 
-func isUnsupportedVulnVersion(impactedVersion string) (string, bool) {
+func getSeparatedGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
+	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
+	if len(seperatedImpactedDepName) != 2 {
+		err = errorutils.CheckErrorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
+		return
+	}
+	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
+}
+
+func isSupportedVulnVersion(impactedVersion string) (string, bool) {
 	// TODO should fix those two or reject?
 	// capture var version
 	// capture property version - something that directs to take the value from properties.gradle (starts with $)
 
 	if strings.Contains(impactedVersion, "+") {
-		return unsupportedDynamicVersion, true
+		return unsupportedDynamicVersion, false
 	}
 	if strings.Contains(impactedVersion, "latest.release") {
-		return unsupportedLatestVersion, true
+		return unsupportedLatestVersion, false
 	}
 	if strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "(") {
-		return unsupportedRangeVersion, true
+		return unsupportedRangeVersion, false
 	}
-	return "", false
+	return "", true
 }

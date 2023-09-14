@@ -13,16 +13,15 @@ const (
 	directMapWithVersionRegexp            = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
 	directStringWithVersionRegexp         = apostrophes + "%s:%s:%s" + ".*" + apostrophes
 	DirectStaticVersion           RowType = "directStaticVersion"
+	UnsupportedLineFormat         RowType = "vulnerable package detected with unsupported pattern in line"
+	UnknownRowType                RowType = "unknown"
 )
-
-// TODO case: no version at the end
-// TODO case: map with newline in the middle
 
 type VulnRowData struct {
 	Content  string
-	RowType  RowType
-	FileType string
-	Filepath string // needed just for some error
+	RowType  RowType // DELETE IF NOT SEPARATING BY ROW TYPE
+	FileType string  // Needed???
+	Filepath string
 }
 
 var RegexpNameToPattern = map[RowType][]string{

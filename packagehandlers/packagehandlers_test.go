@@ -4,10 +4,12 @@ import (
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	biutils "github.com/jfrog/build-info-go/utils"
+	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -663,10 +665,138 @@ func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	}
 }
 
+func TestGradleReadBuildFiles(t *testing.T) {
+	groovyBuildFilePath := filepath.Join("..", "testdata", "projects", "gradle", "build.gradle")
+	groovyFileContent, err := fileutils.ReadNLines(groovyBuildFilePath, math.MaxInt)
+	assert.NoError(t, err)
+
+	kotlinBuildFilePath := filepath.Join("..", "testdata", "projects", "gradle", "innerProjectForTest", "build.gradle.kts")
+	kotlinFileContent, err := fileutils.ReadNLines(kotlinBuildFilePath, math.MaxInt)
+	assert.NoError(t, err)
+
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(currDir))
+	}()
+
+	finalPath, err := os.Getwd()
+	assert.NoError(t, err)
+
+	var testcase = struct {
+		expectedResult []buildFileData
+	}{
+		expectedResult: []buildFileData{
+			{
+				fileType:    groovyFileType,
+				fileContent: groovyFileContent,
+				filePath:    filepath.Join(finalPath, "build.gradle"),
+				filePerm:    os.FileMode(493),
+			},
+			{
+				fileType:    kotlinFileType,
+				fileContent: kotlinFileContent,
+				filePath:    filepath.Join(finalPath, "innerProjectForTest", "build.gradle.kts"),
+				filePerm:    os.FileMode(420),
+			},
+		},
+	}
+
+	buildFiles, err := readBuildFiles()
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, testcase.expectedResult, buildFiles)
+}
+
+func TestGradleFixBuildFile(t *testing.T) {
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle", "innerProjectForTest"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(currDir))
+	}()
+
+	buildFiles, err := readBuildFiles()
+	assert.NoError(t, err)
+
+	err = fixBuildFile(buildFiles[0], &utils.VulnerabilityDetails{
+		SuggestedFixedVersion:       "4.13.1",
+		IsDirectDependency:          true,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}})
+
+	assert.NoError(t, err)
+
+	finalPath, err := os.Getwd()
+	assert.NoError(t, err)
+
+	expectedFileContent, err := fileutils.ReadNLines(filepath.Join(finalPath, "fixedBuildGradleKtsForCompare.txt"), math.MaxInt)
+	assert.NoError(t, err)
+
+	fixedFileContent, err := fileutils.ReadNLines(filepath.Join(finalPath, "build.gradle.kts"), math.MaxInt)
+	assert.NoError(t, err)
+
+	assert.ElementsMatch(t, expectedFileContent, fixedFileContent)
+}
+
+func TestGradleIsInsideDependenciesScope(t *testing.T) {
+	kotlinBuildFilePath := filepath.Join("..", "testdata", "projects", "gradle", "innerProjectForTest", "build.gradle.kts")
+	kotlinFileContent, err := fileutils.ReadNLines(kotlinBuildFilePath, math.MaxInt)
+	assert.NoError(t, err)
+
+	dependenciesScopeOpenCurlyParenthesis := 0
+	insideDependenciesScope := false
+
+	expectedResults := []bool{false, false, false, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false}
+
+	for lineIdx, line := range kotlinFileContent {
+		assert.Equal(t, expectedResults[lineIdx], isInsideDependenciesScope(line, &insideDependenciesScope, &dependenciesScopeOpenCurlyParenthesis))
+	}
+}
+
+func TestGradleIsUnsupportedVulnVersion(t *testing.T) {
+	var testcases = []struct {
+		impactedVersion string
+		expectedResult  bool
+	}{
+		{
+			impactedVersion: "10.+",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "latest.release",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "[10.3, 11.0)",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "(10.4.2, 11.7.8)",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "5.5",
+			expectedResult:  true,
+		},
+		{
+			impactedVersion: "9.0.13-beta",
+			expectedResult:  true,
+		},
+	}
+
+	for _, testcase := range testcases {
+		_, isSupported := isSupportedVulnVersion(testcase.impactedVersion)
+		assert.Equal(t, testcase.expectedResult, isSupported)
+	}
+}
+
 // TODO tests to add:
-// readBuildFiles
-// getVulnerableRowFixer ?
-// fixBuildFile
-// isInsideDependenciesScope
-// detectVulnerableRowType
-// isUnsupportedVulnVersion
+// detectVulnerableRowType ?? todo create test only if resources.VulnRowData.RowType field stays
+// test regexp detection ?? todo see how to implemment after michael fixes

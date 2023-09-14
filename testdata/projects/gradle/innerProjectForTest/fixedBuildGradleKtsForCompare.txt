@@ -4,17 +4,17 @@ val spi: Configuration by configurations.creating
 
 dependencies {
     // This repeated dependency is required in order to check 'create-fix' captures all formats of direct dependencies
-    runtimeOnly('junit:junit:4.7')
-    runtimeOnly("junit:junit:4.7")
-    runtimeOnly('junit:junit:4.7:javadoc')
-    runtimeOnly("junit:junit:4.7") {
+    runtimeOnly('junit:junit:4.13.1')
+    runtimeOnly("junit:junit:4.13.1")
+    runtimeOnly('junit:junit:4.13.1:javadoc')
+    runtimeOnly("junit:junit:4.13.1") {
         isTransitive = true
     }
 
-    runtimeOnly(group = 'junit', name = 'junit', version = '4.7')
-    runtimeOnly(group = "junit", name = "junit", version = "4.7")
-    runtimeOnly(group = 'junit', name = 'junit', version = '4.7', classifier = 'javadoc')
-    runtimeOnly(group = 'junit', name = 'junit', version = '4.7') {
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.13.1')
+    runtimeOnly(group = "junit", name = "junit", version = "4.13.1")
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.13.1', classifier = 'javadoc')
+    runtimeOnly(group = 'junit', name = 'junit', version = '4.13.1') {
         isTransitive = true
     }
 
