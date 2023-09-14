@@ -117,3 +117,4 @@ require (
 )
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20230914053530-3af338318251
+replace github.com/jfrog/froggit-go => github.com/eyaldelarea/froggit-go v1.6.1-0.20230914115103-b64a6000671d
