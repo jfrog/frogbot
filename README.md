@@ -1,5 +1,5 @@
 <div align="center">
-
+  
 # JFrog Frogbot
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
@@ -14,15 +14,6 @@
 
 </div>
 
-## Table of contents
-
-- [🤖 About JFrog Frogbot](#-about-jfrog-frogbot)
-- [🖥️ Setting up Frogbot](#️-setting-up-frogbot)
-- [🚥 Using Frogbot](#-using-frogbot)
-- [📛 Adding the Frogbot badge](#-adding-the-frogbot-badge)
-- [🔥 Reporting issues](#-reporting-issues)
-- [💻 Contributions](#-contributions)
-
 <div id="what-is-frogbot"></div>
 
 ## 🤖 About JFrog Frogbot
@@ -32,11 +23,18 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 1. It scans pull requests immediately after they are opened but before they are merged. This process notifies you if the pull request is about to introduce new vulnerabilities to your code. This unique capability ensures the code is scanned and can be fixed even before vulnerabilities are introduced into the codebase.
 2. It scans the Git repository periodically and creates pull requests with fixes for detected vulnerabilities.
 
-It supports the following Git providers:
-- Azure Repos
-- Bitbucket Server
-- GitHub
-- GitLab
+#### It supports the following Git providers:
+
+| <img height="20" width="20"  src="https://cdn.simpleicons.org/GitHub" alt="GitHub" /> GitHub | <img height="20" width="20"  src="https://cdn.simpleicons.org/GitLab" alt="GitLab" />  GitLab | <img height="20" width="20"  src="https://cdn.simpleicons.org/AzureDevops" alt="Azure" />  Azure Repos | <img height="20" width="20"  src="https://cdn.simpleicons.org/Bitbucket" alt="Bitbucket" />  Bitbucket Server |
+|----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+
+
+#### It supports the following package managers are:
+
+|<img height="20" width="20"  src="https://cdn.simpleicons.org/Go" alt="Go" /> Go|<img height="20" width="20"  src="https://cdn.simpleicons.org/Gradle" alt="Gradle" /> Gradle|<img height="20" width="20"  src="https://cdn.simpleicons.org/ApacheMaven" alt="Maven" /> Maven|<img height="20" width="20"  src="https://cdn.simpleicons.org/npm" alt="npm" /> npm|<img height="20" width="20"  src="https://cdn.simpleicons.org/Yarn" alt="Yarn" /> Yarn|
+|:----|:----|:----|:----|:----|
+|<img height="20" width="20"  src="https://cdn.simpleicons.org/.NET" alt=".NET" /> .NET|<img height="20" width="20"  src="https://cdn.simpleicons.org/NuGet" alt="NuGet" /> NuGet|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pip" /> Pip|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pipenv" /> Pipenv|<img height="20" width="20"  src="https://cdn.simpleicons.org/Poetry" alt="Poetry" /> Poetry|
+
 
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data from our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
@@ -51,11 +49,16 @@ It supports the following Git providers:
 ## 🖥️ Setting up Frogbot
 
 Set up Frogbot on your preferred CI server:
-- [GitHub Actions](docs/install-github.md)
-- [Jenkins](docs/templates/jenkins/README.md)
-- [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
-- [GitLab Pipelines](docs/install-gitlab.md)
-- [Azure Pipelines](docs/install-azure-pipelines.md)
+
+<img height="20" width="20"  src="https://cdn.simpleicons.org/GitHubActions" alt="GitHubActions" /> [GitHub Actions](docs/install-github.md)
+
+<img height="20" width="20"  src="https://cdn.simpleicons.org/Jenkins" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
+
+<img height="20" width="20"  src="https://cdn.simpleicons.org/JfrogPipelines" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+
+<img height="20" width="20"  src="https://cdn.simpleicons.org/Gitlab" alt="Gitlab" /> [GitLab Pipelines](docs/install-gitlab.md)
+
+<img height="20" width="20"  src="https://cdn.simpleicons.org/AzurePipelines" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
 
 <details>
   <summary> Optional - set up a FREE JFrog Environment in the Cloud</summary>
@@ -93,6 +96,7 @@ After the setup is complete, you'll receive an email with your JFrog environment
 <div id="reporting-issues"></div>
 
 ## 🚥 Using Frogbot
+
 <details>
   <summary>Scanning pull requests</summary>
 
@@ -104,58 +108,7 @@ The following features use the package manager used for building the project:
 * Software Composition Analysis (SCA)
 * Vulnerability Contextual Analysis
 
-The supported package managers are:
-- Go
-- Gradle
-- Maven
-- .NET
-- npm
-- NuGet
-- Pip
-- Pipenv
-- Poetry
-- Yarn
-
 ### How to use Pull Request scanning?
-
-  <details>
-    <summary>Azure Repos</summary>
-
-After you create a new pull request, Frogbot will automatically scan it.
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
-
-The Frogbot Azure Repos scan workflow is:
-
-1. The developer opens a pull request.
-2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
-
-  </details>
-
-  <details>
-    <summary>Bitbucket Server</summary>
-
-After you create a new pull request, Frogbot will automatically scan it.
-
-> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
-> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
-> the
-> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
-> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
-
-The Frogbot scan on Bitbucket Server workflow:
-
-1. The developer opens a pull request.
-2. Frogbot scans the pull request and adds a comment with the scan results.
-3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
-
-  </details>
-
   <details>
     <summary>GitHub</summary>
 
@@ -196,6 +149,44 @@ The Frogbot GitLab flow is as follows:
 3. Frogbot is then triggered by the job, it scans the merge request and adds a comment with the scan results.
 4. Frogbot can be triggered again following new commits, by triggering the _frogbot-scan_ job again.
    ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-run-button.png)
+
+  </details>
+  
+  <details>
+    <summary>Azure Repos</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
+
+The Frogbot Azure Repos scan workflow is:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
+
+  </details>
+
+  <details>
+    <summary>Bitbucket Server</summary>
+
+After you create a new pull request, Frogbot will automatically scan it.
+
+> **_NOTE:_** The scan output will include only new vulnerabilities added by the pull request.
+> Vulnerabilities that aren't new, and existed in the code before the pull request was created, will not be included in
+> the
+> report. In order to include all of the vulnerabilities in the report, including older ones that weren't added by this
+> PR, use the includeAllVulnerabilities parameter in the frogbot-config.yml file.
+
+The Frogbot scan on Bitbucket Server workflow:
+
+1. The developer opens a pull request.
+2. Frogbot scans the pull request and adds a comment with the scan results.
+3. Frogbot can be triggered again following new commits, by adding a comment with the `rescan` text.
 
   </details>
 
@@ -251,17 +242,6 @@ When Frogbot detects secrets that have been inadvertently exposed within the cod
 
 ### Automatic pull requests creation
 Frogbot scans your Git repositories periodically and automatically creates pull requests for upgrading vulnerable dependencies to a version with a fix.
-Supported package management tools:
-
-- Go
-- Maven
-- NuGet
-- .NET
-- npm
-- Pip
-- Pipenv
-- Poetry
-- Yarn
 
 ![](./images/fix-pr.png)
 
