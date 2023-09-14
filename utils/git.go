@@ -395,21 +395,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech []coreutils.Technolog
 	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech), false), nil
 }
 
-func techArrayToString(techsArray []coreutils.Technology) string {
-	var techString string
-	if len(techsArray) < 2 {
-		return techsArray[0].ToFormal()
-	}
-	// Append each tech with a separator
-	for index, tech := range techsArray {
-		techString += tech.ToFormal()
-		if index != len(techsArray)-1 {
-			techString += ","
-		}
-	}
-	return techString
-}
-
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
 // We should call this function when the current working directory is the repository we want to clone.
 func (gm *GitManager) dryRunClone(destination string) error {
@@ -463,6 +448,7 @@ func setGoGitCustomClient() {
 	client.InstallProtocol("https", githttp.NewClient(customClient))
 }
 
+// Clean user template from input strings and add suffix.
 func parseCustomTemplate(customTemplate string) string {
 	trimSpace := strings.TrimSpace(customTemplate)
 	// Find any input format strings
@@ -471,4 +457,18 @@ func parseCustomTemplate(customTemplate string) string {
 	result := re.ReplaceAllString(trimSpace, "")
 	// Remove any middle spaces
 	return strings.Join(strings.Fields(result), " ") + " - %s Dependencies"
+}
+
+func techArrayToString(techsArray []coreutils.Technology) (result string) {
+	if len(techsArray) < 2 {
+		return techsArray[0].ToFormal()
+	}
+	// Append each tech with a separator
+	for index, tech := range techsArray {
+		result += tech.ToFormal()
+		if index != len(techsArray)-1 {
+			result += ","
+		}
+	}
+	return result
 }
