@@ -7,11 +7,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
-	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -326,7 +326,8 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = outputwriter.GetAggregatedPullRequestTitle(tech)
+		// Aggregate commit message could not include each package, use PR title.
+		template = gm.GenerateAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -370,6 +371,18 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 		template = pullRequestFormat
 	}
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
+}
+
+func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech coreutils.Technology) string {
+	if tech == "" {
+		return AggregatePullRequestTitle
+	}
+	template := AggregatePullRequestTitleDefaultTemplate
+	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
+	if pullRequestFormat != "" {
+		template = parseCustomTemplate(pullRequestFormat)
+	}
+	return fmt.Sprintf(template, tech.ToFormal())
 }
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
@@ -431,7 +444,16 @@ func setGoGitCustomClient() {
 	customClient := &http.Client{
 		Timeout: goGitTimeoutSeconds * time.Second,
 	}
-
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 	client.InstallProtocol("https", githttp.NewClient(customClient))
+}
+
+func parseCustomTemplate(customTemplate string) string {
+	trimSpace := strings.TrimSpace(customTemplate)
+	// Find any input format strings
+	re := regexp.MustCompile(`%[sdvTtqwxXbcdoUxfeEgGp]`)
+	// Replace all matching substrings with an empty string
+	result := re.ReplaceAllString(trimSpace, "")
+	// Remove any middle spaces
+	return strings.Join(strings.Fields(result), " ") + " - %s Dependencies"
 }

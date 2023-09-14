@@ -81,10 +81,12 @@ const (
 	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
 
 	// Default naming templates
-	BranchNameTemplate           = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
-	AggregatedBranchNameTemplate = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
-	CommitMessageTemplate        = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
-	PullRequestTitleTemplate     = outputwriter.FrogbotTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	BranchNameTemplate                       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
+	AggregatedBranchNameTemplate             = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
+	CommitMessageTemplate                    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	PullRequestTitleTemplate                 = outputwriter.FrogbotTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
+	AggregatePullRequestTitleDefaultTemplate = outputwriter.FrogbotTitlePrefix + " Update %s dependencies"
+	AggregatePullRequestTitle                = outputwriter.FrogbotTitlePrefix + " Update dependencies"
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
