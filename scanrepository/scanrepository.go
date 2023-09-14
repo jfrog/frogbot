@@ -40,7 +40,7 @@ type ScanRepositoryCmd struct {
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request
 	aggregateFixes bool
 	// The current project technology
-	projectTech coreutils.Technology
+	projectTech []coreutils.Technology
 	// Stores all package manager handlers for detected issues
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
@@ -81,7 +81,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	}()
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
-		cfp.projectTech = ""
+		cfp.projectTech = []coreutils.Technology{}
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
 		}
@@ -164,6 +164,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, er
 	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
 	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
 	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
+	cfp.projectTech = auditResults.ExtendedScanResults.ScannedTechnologies
 	return auditResults, nil
 }
 
@@ -437,8 +438,8 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	if cfp.projectTech == "" {
-		cfp.projectTech = vulnerability.Technology
+	if len(cfp.projectTech) == 0 {
+		cfp.projectTech = []coreutils.Technology{vulnerability.Technology}
 	}
 	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {

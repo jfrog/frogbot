@@ -323,7 +323,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
 		// Aggregate commit message could not include each package, use PR title.
@@ -373,8 +373,8 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech == "" {
+func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
+	if len(tech) == 0 || tech[0] == "" {
 		return AggregatePullRequestTitle
 	}
 	template := AggregatePullRequestTitleDefaultTemplate
@@ -382,17 +382,32 @@ func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech coreutils.Technolo
 	if pullRequestFormat != "" {
 		template = parseCustomTemplate(pullRequestFormat)
 	}
-	return fmt.Sprintf(template, tech.ToFormal())
+	return fmt.Sprintf(template, techArrayToString(tech))
 }
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot branch in aggregated mode.
-func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology) (fixBranchName string, err error) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(tech []coreutils.Technology) (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", tech.ToString(), false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech), false), nil
+}
+
+func techArrayToString(techsArray []coreutils.Technology) string {
+	var techString string
+	if len(techsArray) < 2 {
+		return techsArray[0].ToFormal()
+	}
+	// Append each tech with a separator
+	for index, tech := range techsArray {
+		techString += tech.ToFormal()
+		if index != len(techsArray)-1 {
+			techString += ","
+		}
+	}
+	return techString
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
