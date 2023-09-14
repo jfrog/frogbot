@@ -374,15 +374,21 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 }
 
 func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
-	if len(tech) == 0 || tech[0] == "" {
-		return AggregatePullRequestTitle
-	}
-	template := AggregatePullRequestTitleDefaultTemplate
-	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
-	if pullRequestFormat != "" {
-		template = parseCustomTemplate(pullRequestFormat)
+	template := gm.getPullRequestTitleTemplate(tech)
+	// If no technologies are provided, return the template as-is
+	if len(tech) == 0 {
+		return removeMiddleSpaces(strings.ReplaceAll(template, "%s", ""))
 	}
 	return fmt.Sprintf(template, techArrayToString(tech))
+}
+
+func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) string {
+	// Check if a custom template is available
+	if customTemplate := gm.customTemplates.pullRequestTitleTemplate; customTemplate != "" {
+		return parseCustomTemplate(customTemplate, tech)
+	}
+	// If no custom template, use the default template
+	return AggregatePullRequestTitleDefaultTemplate
 }
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
@@ -449,17 +455,25 @@ func setGoGitCustomClient() {
 }
 
 // Clean user template from input strings and add suffix.
-func parseCustomTemplate(customTemplate string) string {
+func parseCustomTemplate(customTemplate string, tech []coreutils.Technology) string {
 	trimSpace := strings.TrimSpace(customTemplate)
 	// Find any input format strings
 	re := regexp.MustCompile(`%[sdvTtqwxXbcdoUxfeEgGp]`)
 	// Replace all matching substrings with an empty string
 	result := re.ReplaceAllString(trimSpace, "")
 	// Remove any middle spaces
-	return strings.Join(strings.Fields(result), " ") + " - %s Dependencies"
+	result = strings.Join(strings.Fields(result), " ")
+	var suffix string
+	if len(tech) > 0 {
+		suffix = " - %s Dependencies"
+	}
+	return removeMiddleSpaces(result) + suffix
 }
 
 func techArrayToString(techsArray []coreutils.Technology) (result string) {
+	if len(techsArray) == 0 {
+		return ""
+	}
 	if len(techsArray) < 2 {
 		return techsArray[0].ToFormal()
 	}
@@ -471,4 +485,8 @@ func techArrayToString(techsArray []coreutils.Technology) (result string) {
 		}
 	}
 	return result
+}
+
+func removeMiddleSpaces(text string) string {
+	return strings.Join(strings.Fields(text), " ")
 }

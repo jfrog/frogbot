@@ -302,7 +302,7 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 		gm       GitManager
 		expected string
 	}{
-		{gm: defaultGm, tech: []coreutils.Technology{""}, expected: "[🐸 Frogbot] Update dependencies"},
+		{gm: defaultGm, tech: []coreutils.Technology{}, expected: "[🐸 Frogbot] Update dependencies"},
 		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Maven}, expected: "[🐸 Frogbot] Update Maven dependencies"},
 		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Gradle}, expected: "[🐸 Frogbot] Update Gradle dependencies"},
 		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Npm}, expected: "[🐸 Frogbot] Update npm dependencies"},
@@ -312,11 +312,12 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
 		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
 		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go}, expected: "[Feature] hello - Yarn,Go Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %f hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go}, expected: "[Feature] hello - Yarn,Go Dependencies"},
 		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go, coreutils.Npm}, expected: "[Feature] hello - Yarn,Go,npm Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{}, expected: "[Feature] hello"},
 	}
 	for _, test := range testsCases {
-		t.Run(test.tech[0].ToString(), func(t *testing.T) {
+		t.Run(test.expected, func(t *testing.T) {
 			title := test.gm.GenerateAggregatedPullRequestTitle(test.tech)
 			assert.Equal(t, test.expected, title)
 		})
