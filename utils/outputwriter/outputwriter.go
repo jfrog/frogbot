@@ -194,7 +194,7 @@ at %s (line %d)
 }
 
 func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech.ToString() == "" {
+	if tech.String() == "" {
 		return FrogbotTitlePrefix + " Update dependencies"
 	}
 	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())

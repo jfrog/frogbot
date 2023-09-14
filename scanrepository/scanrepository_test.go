@@ -33,16 +33,16 @@ var testPackagesData = []struct {
 	commandArgs []string
 }{
 	{
-		packageType: coreutils.Go.ToString(),
+		packageType: coreutils.Go.String(),
 	},
 	{
-		packageType: coreutils.Maven.ToString(),
+		packageType: coreutils.Maven.String(),
 	},
 	{
-		packageType: coreutils.Gradle.ToString(),
+		packageType: coreutils.Gradle.String(),
 	},
 	{
-		packageType: coreutils.Npm.ToString(),
+		packageType: coreutils.Npm.String(),
 		commandName: "npm",
 		commandArgs: []string{"install"},
 	},
@@ -57,18 +57,18 @@ var testPackagesData = []struct {
 		commandArgs: []string{"install"},
 	},
 	{
-		packageType: coreutils.Nuget.ToString(),
+		packageType: coreutils.Nuget.String(),
 		commandName: "nuget",
 		commandArgs: []string{"restore"},
 	},
 	{
-		packageType: coreutils.Pip.ToString(),
+		packageType: coreutils.Pip.String(),
 	},
 	{
-		packageType: coreutils.Pipenv.ToString(),
+		packageType: coreutils.Pipenv.String(),
 	},
 	{
-		packageType: coreutils.Poetry.ToString(),
+		packageType: coreutils.Poetry.String(),
 	},
 }
 
@@ -374,7 +374,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}()
 			assert.NoError(t, err)
 			assert.NoError(t, biutils.CopyDir(projectPath, tmpDir, true, nil))
-			if pkg.packageType == coreutils.Gradle.ToString() {
+			if pkg.packageType == coreutils.Gradle.String() {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
@@ -556,7 +556,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan ScanRepositoryCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
+			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: impactedDependency}}, IsDirectDependency: true}
 			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -663,12 +663,14 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	vulnerabilities := []*utils.VulnerabilityDetails{
 		{
 			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-				Summary:                   "summary",
-				Severity:                  "High",
-				ImpactedDependencyName:    "package1",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"1.0.0", "2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
+				Summary: "summary",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName:    "package1",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"1.0.0", "2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			SuggestedFixedVersion: "1.0.0",
 		},
@@ -680,12 +682,14 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, expectedPrBody, prBody)
 	vulnerabilities = append(vulnerabilities, &utils.VulnerabilityDetails{
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Summary:                   "summary",
-			Severity:                  "Critical",
-			ImpactedDependencyName:    "package2",
-			ImpactedDependencyVersion: "2.0.0",
-			FixedVersions:             []string{"2.0.0", "3.0.0"},
-			Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
+			Summary: "summary",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+				ImpactedDependencyName:    "package2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
+			FixedVersions: []string{"2.0.0", "3.0.0"},
+			Cves:          []formats.CveRow{{Id: "CVE-2022-4321"}},
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})

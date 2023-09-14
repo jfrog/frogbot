@@ -119,14 +119,18 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-A",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 		},
 		{
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
+			IssueId: "XRAY-2",
 		},
 	}
 
@@ -195,28 +199,36 @@ func TestGetAllVulnerabilities(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                "summary-1",
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-A",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 		},
 		{
-			Summary:                "summary-1",
-			IssueId:                "XRAY-1",
-			Severity:               "high",
-			ImpactedDependencyName: "component-B",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-B",
+			},
 		},
 		{
-			Summary:                "summary-2",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
 		},
 		{
-			Summary:                "summary-2",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-D",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-D",
+			},
 		},
 	}
 
@@ -236,7 +248,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Severity:   "high",
 			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-			Technology: coreutils.Maven.ToString(),
+			Technology: coreutils.Maven.String(),
 		}},
 	}
 
@@ -249,7 +261,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "high",
 				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-				Technology: coreutils.Maven.ToString(),
+				Technology: coreutils.Maven.String(),
 			},
 			{
 				IssueId:    "XRAY-2",
@@ -257,29 +269,33 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "low",
 				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
 				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
-				Technology: coreutils.Yarn.ToString(),
+				Technology: coreutils.Yarn.String(),
 			},
 		},
 	}
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                "summary-2",
-			Applicable:             "Applicable",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			ImpactedDependencyName: "component-C",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
-			Technology:             coreutils.Yarn,
+			Summary:    "summary-2",
+			Applicable: "Applicable",
+			IssueId:    "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-C",
+			},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
+			Technology: coreutils.Yarn,
 		},
 		{
-			Summary:                "summary-2",
-			Applicable:             "Applicable",
-			IssueId:                "XRAY-2",
-			Severity:               "low",
-			Cves:                   []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
-			ImpactedDependencyName: "component-D",
-			Technology:             coreutils.Yarn,
+			Summary:    "summary-2",
+			Applicable: "Applicable",
+			IssueId:    "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-D",
+			},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
+			Technology: coreutils.Yarn,
 		},
 	}
 
@@ -329,17 +345,21 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	expected := []formats.VulnerabilityOrViolationRow{
 		{
-			Summary:                  "summary-2",
-			IssueId:                  "XRAY-2",
-			Severity:                 "low",
-			ImpactedDependencyName:   "component-B",
+			Summary: "summary-2",
+			IssueId: "XRAY-2",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				ImpactedDependencyName: "component-B",
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
 		},
 		{
-			Summary:                  "summary-1",
-			IssueId:                  "XRAY-1",
-			Severity:                 "high",
-			ImpactedDependencyName:   "component-A",
+			Summary: "summary-1",
+			IssueId: "XRAY-1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				ImpactedDependencyName: "component-A",
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
 		},
 	}
@@ -409,46 +429,52 @@ func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 func TestCreatePullRequestMessage(t *testing.T) {
 	vulnerabilities := []formats.VulnerabilityOrViolationRow{
 		{
-			Severity:                  "High",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedDependencyVersion: "v0.21.0",
-			FixedVersions:             []string{"[0.24.1]"},
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/nats-io/nats-streaming-server",
-					Version: "v0.21.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+				ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/nats-io/nats-streaming-server",
+						Version: "v0.21.0",
+					},
 				},
 			},
-			IssueId: "XRAY-122345",
-			Cves:    []formats.CveRow{{}},
+			Applicable:    "Undetermined",
+			FixedVersions: []string{"[0.24.1]"},
+			IssueId:       "XRAY-122345",
+			Cves:          []formats.CveRow{{}},
 		},
 		{
-			Severity:                  "High",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/mholt/archiver/v3",
-			ImpactedDependencyVersion: "v3.5.1",
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/mholt/archiver/v3",
-					Version: "v3.5.1",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+				ImpactedDependencyName:    "github.com/mholt/archiver/v3",
+				ImpactedDependencyVersion: "v3.5.1",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/mholt/archiver/v3",
+						Version: "v3.5.1",
+					},
 				},
 			},
-			Cves: []formats.CveRow{},
+			Applicable: "Undetermined",
+			Cves:       []formats.CveRow{},
 		},
 		{
-			Severity:                  "Medium",
-			Applicable:                "Undetermined",
-			ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
-			ImpactedDependencyVersion: "v0.21.0",
-			FixedVersions:             []string{"[0.24.3]"},
-			Components: []formats.ComponentRow{
-				{
-					Name:    "github.com/nats-io/nats-streaming-server",
-					Version: "v0.21.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Medium"},
+				ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/nats-io/nats-streaming-server",
+						Version: "v0.21.0",
+					},
 				},
 			},
-			Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
+			Applicable:    "Undetermined",
+			FixedVersions: []string{"[0.24.3]"},
+			Cves:          []formats.CveRow{{Id: "CVE-2022-26652"}},
 		},
 	}
 	writerOutput := &outputwriter.StandardOutput{}
@@ -743,14 +769,16 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity: "High",
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 13,
+					},
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
 						StartColumn: 10,
 						Snippet:     "aws violation",
 					},
-					SeverityNumValue: 13,
 				},
 			},
 		},
@@ -774,8 +802,10 @@ func TestCreateNewIacRows(t *testing.T) {
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "Medium",
-					SeverityNumValue: 11,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 11,
+					},
 					Location: formats.Location{
 						File:        "file2",
 						StartLine:   2,
@@ -830,15 +860,17 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity: "High",
-					Finding:  "Secret",
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 13,
+					},
+					Finding: "Secret",
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
 						StartColumn: 10,
 						Snippet:     "Sensitive information",
 					},
-					SeverityNumValue: 13,
 				},
 			},
 		},
@@ -862,9 +894,11 @@ func TestCreateNewSecretRows(t *testing.T) {
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
-					Severity:         "Medium",
-					Finding:          "Secret",
-					SeverityNumValue: 11,
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 11,
+					},
+					Finding: "Secret",
 					Location: formats.Location{
 						File:        "file2",
 						StartLine:   2,
