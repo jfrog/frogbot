@@ -62,6 +62,4 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           with:
-            ignore_paths: >-
-              .husky
-              *test*
+            ignore_paths: .husky *test*
