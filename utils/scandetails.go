@@ -46,8 +46,8 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey)
+func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, includeLicenses bool) *ScanDetails {
+	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, includeLicenses)
 	return sc
 }
 
@@ -96,10 +96,10 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func createXrayScanParams(watches []string, project string) (params *services.XrayGraphScanParams) {
+func createXrayScanParams(watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
-		IncludeLicenses: false,
+		IncludeLicenses: includeLicenses,
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
@@ -109,7 +109,6 @@ func createXrayScanParams(watches []string, project string) (params *services.Xr
 		params.ProjectKey = project
 		return
 	}
-	// No context was supplied. We therefore request from Xray to return all known vulnerabilities.
 	params.IncludeVulnerabilities = true
 	return
 }

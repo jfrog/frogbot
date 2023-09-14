@@ -150,7 +150,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -160,7 +160,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 </div>
 
-## 👇 Details
+## 🔬 Research Details
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -227,7 +227,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 	// Set the expected content string based on the sample data
 	expectedContent = fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -237,7 +237,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 </div>
 
-## 👇 Details
+## 🔬 Research Details
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -393,4 +393,9 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
+}
+
+func TestStandardOutput_GetLicensesTableContent(t *testing.T) {
+	writer := &StandardOutput{}
+	testGetLicensesTableContent(t, writer)
 }

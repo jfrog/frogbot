@@ -10,25 +10,25 @@ import (
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
 	scanDetails := &ScanDetails{}
-	scanDetails.SetXrayGraphScanParams(nil, "")
+	scanDetails.SetXrayGraphScanParams(nil, "", false)
 	assert.Empty(t, scanDetails.Watches)
 	assert.Equal(t, "", scanDetails.ProjectKey)
 	assert.True(t, scanDetails.IncludeVulnerabilities)
 	assert.False(t, scanDetails.IncludeLicenses)
 
 	// Watches
-	scanDetails.SetXrayGraphScanParams([]string{"watch-1", "watch-2"}, "")
+	scanDetails.SetXrayGraphScanParams([]string{"watch-1", "watch-2"}, "", false)
 	assert.Equal(t, []string{"watch-1", "watch-2"}, scanDetails.Watches)
 	assert.Equal(t, "", scanDetails.ProjectKey)
 	assert.False(t, scanDetails.IncludeVulnerabilities)
 	assert.False(t, scanDetails.IncludeLicenses)
 
 	// Project
-	scanDetails.SetXrayGraphScanParams(nil, "project")
+	scanDetails.SetXrayGraphScanParams(nil, "project", true)
 	assert.Empty(t, scanDetails.Watches)
 	assert.Equal(t, "project", scanDetails.ProjectKey)
 	assert.False(t, scanDetails.IncludeVulnerabilities)
-	assert.False(t, scanDetails.IncludeLicenses)
+	assert.True(t, scanDetails.IncludeLicenses)
 }
 
 func TestRunInstallIfNeeded(t *testing.T) {

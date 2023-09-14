@@ -153,12 +153,12 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
-### ✍️ Summary 
+### ✍️ Summary
 
 %s %s
 
 ---
-### 👇 Details
+## 🔬 Research Details
 ---
 
 
@@ -227,12 +227,12 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
-### ✍️ Summary 
+### ✍️ Summary
 
 %s %s
 
 ---
-### 👇 Details
+## 🔬 Research Details
 ---
 
 
@@ -287,7 +287,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 					},
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
+			expectedOutput: "\n## 🛠️ Infrastructure as Code\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
 		},
 		{
 			name: "Multiple IAC rows",
@@ -311,7 +311,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 					},
 				},
 			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
+			expectedOutput: "\n## 🛠️ Infrastructure as Code\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
 		},
 	}
 
@@ -382,4 +382,9 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
+}
+
+func TestSimplifiedOutput_GetLicensesTableContent(t *testing.T) {
+	writer := &SimplifiedOutput{}
+	testGetLicensesTableContent(t, writer)
 }
