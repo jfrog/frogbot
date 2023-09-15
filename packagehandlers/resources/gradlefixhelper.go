@@ -13,7 +13,6 @@ const (
 	directMapWithVersionRegexp            = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
 	directStringWithVersionRegexp         = apostrophes + "%s:%s:%s" + ".*" + apostrophes
 	DirectStaticVersion           RowType = "directStaticVersion"
-	UnsupportedLineFormat         RowType = "vulnerable package detected with unsupported pattern in line"
 	UnknownRowType                RowType = "unknown"
 )
 

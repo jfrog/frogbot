@@ -95,5 +95,5 @@ type UnsupportedErrorType string
 const (
 	IndirectDependencyFixNotSupported   UnsupportedErrorType = "IndirectDependencyFixNotSupported"
 	BuildToolsDependencyFixNotSupported UnsupportedErrorType = "BuildToolsDependencyFixNotSupported"
-	UnsupportedGradleDependencyVersion  UnsupportedErrorType = "UnsupportedGradleDependencyVersion"
+	UnsupportedForFixVulnerableVersion  UnsupportedErrorType = "UnsupportedForFixVulnerableVersion"
 )
