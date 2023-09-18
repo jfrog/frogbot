@@ -47,7 +47,7 @@ func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 }
 
 func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	//TODO check why latest.release enters here. fix it sooner in the chain - do not let it enter (if there is a specific build of vuln map for gradle- fix it there)
+	// Check why latest.release enters here. fix it sooner in the chain - do not let it enter (if there is a specific build of vuln map for gradle- fix it there)
 	if unsupportedType := getUnsupportedForFixVersionType(vulnDetails.ImpactedDependencyVersion); unsupportedType != "" {
 		log.Warn(fmt.Sprintf("frogbot currently doesn't support fixing %s: %s %s", unsupportedType, vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion))
 		return &utils.ErrUnsupportedFix{
@@ -57,7 +57,6 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 		}
 	}
 
-	//collect all build files
 	buildFilesPaths, err := getBuildFilesPaths()
 	if err != nil {
 		return
@@ -119,7 +118,6 @@ func fixBuildFile(buildFilePath string, vulnDetails *utils.VulnerabilityDetails)
 		return
 	}
 
-	// Read file's content
 	fileContent, err := fileutils.ReadNLines(buildFilePath, math.MaxInt)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", buildFilePath, err.Error())
@@ -178,8 +176,8 @@ func getUnsupportedForFixVersionType(impactedVersion string) UnsupportedForFixTy
 	switch {
 	case strings.Contains(impactedVersion, "+"):
 		return unsupportedDynamicVersion
-	//case strings.Contains(impactedVersion, "latest.release"):
-	//	return unsupportedLatestVersion
+	// Case strings.Contains(impactedVersion, "latest.release"):
+	//	Return unsupportedLatestVersion
 	case strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "("):
 		// In case a version range will be supported- regexps need to be modified to identify '[' as a char
 		return unsupportedRangeVersion
