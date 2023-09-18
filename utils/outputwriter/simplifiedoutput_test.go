@@ -33,7 +33,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Nuget,
 			},
-			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 |",
+			expectedOutput: "| High |  dep1:1.0.0 | impacted_dep:2.0.0 | 3.0.0 | CVE-2022-0001 |",
 		},
 		{
 			name: "No CVE and multiple direct dependencies",
@@ -49,7 +49,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				Cves:                      []formats.CveRow{},
 				Technology:                coreutils.Dotnet,
 			},
-			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |\n|  | dep2:2.0.0 |  |  |",
+			expectedOutput: "| Low |  dep1:1.0.0 | impacted_dep:3.0.0 | 4.0.0, 4.1.0, 4.2.0, 5.0.0 |  -  |\n|  | dep2:2.0.0 |  |  |",
 		},
 		{
 			name: "Multiple CVEs",
@@ -66,7 +66,7 @@ func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 				},
 				Technology: coreutils.Pip,
 			},
-			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 |",
+			expectedOutput: "| Critical | Applicable | direct:1.0.2 | impacted_dep:4.0.0 | 5.0.0, 6.0.0 | CVE-2022-0002, CVE-2022-0003 |",
 			showCaColumn:   true,
 		},
 	}
@@ -155,22 +155,20 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 
 %s
 
-
 #### %s %s %s
 
 %s
-
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[0].Cves[0].Id),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{vulnerabilitiesRows[0].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[1].Cves[0].Id),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{vulnerabilitiesRows[1].Cves[0].Id}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -227,22 +225,20 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 %s
 
-
 #### %s %s %s
 
 %s
-
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
 		fmt.Sprintf("[ %s ]", "CVE-2023-1234"),
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0], []string{"CVE-2023-1234"}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ]", "CVE-2024-1234"),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1], []string{"CVE-2024-1234"}),
+		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -269,12 +265,12 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn: "11:1",
-						Text:       "Missing Periodic patching was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing Periodic patching was detected",
 					},
-					Type: "azure_redis_patch",
 				},
 			},
 			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n",
@@ -285,19 +281,21 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_patch.tf",
-						LineColumn: "11:1",
-						Text:       "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_patch.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
 					},
 				},
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "applicable/req_sw_terraform_azure_redis_auth.tf",
-						LineColumn: "11:1",
-						Text:       "Missing Periodic patching was detected",
+					Location: formats.Location{
+						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+						StartLine:   11,
+						StartColumn: 1,
+						Snippet:     "Missing Periodic patching was detected",
 					},
 				},
 			},
@@ -308,7 +306,7 @@ func TestSimplifiedOutput_IacContent(t *testing.T) {
 	writer := &SimplifiedOutput{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := writer.IacContent(tc.iacRows)
+			output := writer.IacTableContent(tc.iacRows)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
@@ -331,12 +329,12 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| Medium | file1 | 1:10 | Public access to MySQL was detected |",
@@ -347,22 +345,22 @@ func TestSimplifiedOutput_GetIacTableContent(t *testing.T) {
 				{
 					Severity:         "High",
 					SeverityNumValue: 3,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file1",
-						LineColumn: "1:10",
-						Text:       "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 				{
 					Severity:         "Medium",
 					SeverityNumValue: 2,
-					SourceCodeLocationRow: formats.SourceCodeLocationRow{
-						File:       "file2",
-						LineColumn: "2:5",
-						Text:       "Public access to MySQL was detected",
+					Location: formats.Location{
+						File:        "file2",
+						StartLine:   2,
+						StartColumn: 5,
+						Snippet:     "Public access to MySQL was detected",
 					},
-					Type: "azure_mysql_no_public",
 				},
 			},
 			expectedOutput: "\n| High | file1 | 1:10 | Public access to MySQL was detected |\n| Medium | file2 | 2:5 | Public access to MySQL was detected |",

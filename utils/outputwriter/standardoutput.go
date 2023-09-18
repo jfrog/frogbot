@@ -2,9 +2,10 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
 )
 
 type StandardOutput struct {
@@ -23,10 +24,13 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	if so.showCaColumn {
 		row += vulnerability.Applicable + " | "
 	}
-	row += fmt.Sprintf("%s | %s | %s |",
+	cves := getTableRowCves(vulnerability, so)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, so)
+	row += fmt.Sprintf("%s | %s | %s | %s |",
 		strings.TrimSuffix(directDependencies.String(), so.Separator()),
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, so.Separator()),
+		fixedVersions,
+		cves,
 	)
 	return row
 }
@@ -91,19 +95,15 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </div>
 
 ## 👇 Details
-
 `,
 		getVulnerabilitiesTableHeader(so.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, so)))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
-		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		if len(vulnerabilities) == 1 {
 			contentBuilder.WriteString(fmt.Sprintf(`
-
 %s
-
-`, createVulnerabilityDescription(&vulnerabilities[i], cves)))
+`, createVulnerabilityDescription(&vulnerabilities[i])))
 			break
 		}
 		contentBuilder.WriteString(fmt.Sprintf(`
@@ -115,15 +115,152 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 </details>
 
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
+func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+## 📦🔍 Contextual Analysis CVE Vulnerability
+
+<div align="center">
+
+%s
+
+</div>
+
+<details>
+<summary> <b>Description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+<details>
+<summary> <b>CVE details</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetApplicabilityMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
+		fullDetails,
+		cveDetails))
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf(`
+<details>
+<summary> <b>Remediation</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+			remediation))
+	}
+
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
+	return fmt.Sprintf(`
+## 🛠️ Infrastructure as Code (Iac) Vulnerability
+
+<div align="center">
+
+%s
+
+</div>
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
+		fullDetails)
+}
+
+func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+## 🎯 Static Application Security Testing (SAST) Vulnerability 
+	
+<div align="center">
+
+%s
+
+</div>
+
+<details>
+<summary> <b>Full description</b> </summary>
+<br>
+
+%s
+
+</details>
+
+`,
+		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
+		fullDetails,
+	))
+
+	if len(codeFlows) > 0 {
+		contentBuilder.WriteString(`
+
+<details>
+<summary><b>Code Flows</b> </summary>
+
+`)
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(`
+
+<details>
+<summary><b>Vulnerable data flow analysis result</b> </summary>
+<br>
+`)
+			for _, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
+%s %s (at %s line %d)
+`,
+					"↘️",
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
+
+			contentBuilder.WriteString(`
+
+</details>
+
+`,
+			)
+		}
+		contentBuilder.WriteString(`
+
+</details>
+
+`,
+		)
+	}
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -144,16 +281,16 @@ func (so *StandardOutput) IacContent(iacRows []formats.SourceCodeRow) string {
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
+---
 <div align="center">
 
 %s
 
-</div>
-`, CommentGeneratedByFrogbot)
+</div>`, CommentGeneratedByFrogbot)
 }
 
 func (so *StandardOutput) Separator() string {
-	return "<br><br>"
+	return "<br>"
 }
 
 func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {

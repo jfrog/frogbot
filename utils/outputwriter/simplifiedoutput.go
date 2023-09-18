@@ -2,9 +2,10 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"strings"
 )
 
 const (
@@ -29,10 +30,14 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	if len(vulnerability.Components) > 0 {
 		firstDirectDependency = fmt.Sprintf("%s:%s", vulnerability.Components[0].Name, vulnerability.Components[0].Version)
 	}
-	row += fmt.Sprintf(" %s | %s | %s |",
+
+	cves := getTableRowCves(vulnerability, smo)
+	fixedVersions := GetTableRowsFixedVersions(vulnerability, smo)
+	row += fmt.Sprintf(" %s | %s | %s | %s |",
 		firstDirectDependency,
 		fmt.Sprintf("%s:%s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion),
-		strings.Join(vulnerability.FixedVersions, smo.Separator()),
+		fixedVersions,
+		cves,
 	)
 	for i := 1; i < len(vulnerability.Components); i++ {
 		currDirect := vulnerability.Components[i]
@@ -93,23 +98,116 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
 		getVulnerabilitiesTableContent(vulnerabilities, smo)))
 	for i := range vulnerabilities {
-		cves := getCveIdSliceFromCveRows(vulnerabilities[i].Cves)
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
 
 %s
-
 `,
-			getDescriptionBulletCveTitle(cves),
+			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i], cves)))
+			createVulnerabilityDescription(&vulnerabilities[i])))
 	}
 
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string {
+func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+## 📦🔍 Contextual Analysis CVE Vulnerability
+	
+%s
+
+### Description
+	
+%s	
+
+### CVE details
+
+%s
+
+`,
+		GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
+		fullDetails,
+		cveDetails))
+
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf(`
+### Remediation
+	
+%s	
+
+`,
+			remediation))
+	}
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
+	return fmt.Sprintf(`
+## 🛠️ Infrastructure as Code (Iac) Vulnerability
+	
+%s
+
+### 👇 Details
+
+%s	
+
+`,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
+		fullDetails)
+}
+
+func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(fmt.Sprintf(`
+## 🎯 Static Application Security Testing (SAST) Vulnerability
+	
+%s
+
+---
+### Full description
+
+%s
+
+---
+### Code Flows
+
+`,
+		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
+		fullDetails,
+	))
+
+	if len(codeFlows) > 0 {
+		for _, flow := range codeFlows {
+			contentBuilder.WriteString(`
+
+---
+Vulnerable data flow analysis result:
+`)
+			for _, location := range flow {
+				contentBuilder.WriteString(fmt.Sprintf(`
+%s %s (at %s line %d)
+`,
+					"↘️",
+					MarkAsQuote(location.Snippet),
+					location.File,
+					location.StartLine,
+				))
+			}
+			contentBuilder.WriteString(`
+
+---
+
+`,
+			)
+		}
+	}
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
@@ -125,7 +223,7 @@ func (smo *SimplifiedOutput) IacContent(iacRows []formats.SourceCodeRow) string 
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("\n\n%s", CommentGeneratedByFrogbot)
+	return fmt.Sprintf("\n%s", CommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Separator() string {
@@ -139,7 +237,7 @@ func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !smo.entitledForJas {
-		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n"
 	}
 	return msg
 }

@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/jfrog/frogbot/packagehandlers"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -18,9 +22,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 type ScanRepositoryCmd struct {
@@ -55,6 +56,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 		if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
 			return
 		}
+		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
 		if err = cfp.scanAndFixBranch(repository); err != nil {
 			return
 		}
@@ -94,7 +96,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if err != nil {
 		return
 	}
-	remoteHttpsGitUrl := repositoryInfo.CloneInfo.HTTP
+	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.VcsInfo().Username, cfp.scanDetails.VcsInfo().Username).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
@@ -111,8 +113,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
 	var fixNeeded bool
 	// A map that contains the full project paths as a keys
-	// The value is a map of vulnerable package names -> the details of the vulnerable packages.
-	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full details.
+	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
+	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project().WorkingDirs, cfp.baseWd)
 	for _, fullPathWd := range projectFullPathWorkingDirs {
