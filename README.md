@@ -39,7 +39,7 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data from our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
 - **Static Application Security Testing (SAST)**: Provides fast and accurate security-focused engines that detect zero-day security vulnerabilities on your source code sensitive operations, while minimizing false positives.
-- **CVE Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not *applicable* to the code. Vulnerability Contextual Analysis is currently supported for Python and JavaScript code.
+- **CVE Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. For CVE vulnerabilities that are applicable to your code, Frogbot will create pull request comments on the relevant code lines with full descriptions regarding the security issues caused by the CVE. Vulnerability Contextual Analysis is currently supported for Python, JavaScript, and Java code.
 - **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
@@ -56,7 +56,7 @@ Set up Frogbot on your preferred CI server:
 
 <img height="20" width="20"  src="https://cdn.simpleicons.org/JfrogPipelines" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/Gitlab" alt="Gitlab" /> [GitLab Pipelines](docs/install-gitlab.md)
+<img height="20" width="20"  src="https://cdn.simpleicons.org/Gitlab" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
 
 <img height="20" width="20"  src="https://cdn.simpleicons.org/AzurePipelines" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
 
