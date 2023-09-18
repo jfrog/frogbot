@@ -4,10 +4,12 @@ import (
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	biutils "github.com/jfrog/build-info-go/utils"
+	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -613,8 +615,7 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
 	case coreutils.Gradle:
-		// todo fix here after fixing all tests
-		//checkVulnVersionFixInBuildFile(t, test)
+		checkVulnVersionFixInBuildFile(t, test)
 	default:
 	}
 }
@@ -646,17 +647,18 @@ func TestGetFixedPackage(t *testing.T) {
 	}
 }
 
-/* todo fix and replace tests
 func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	impactedPackage := testcase.vulnDetails.ImpactedDependencyName
 	impactedVersion := testcase.vulnDetails.ImpactedDependencyVersion
 	suggestedVersion := testcase.vulnDetails.SuggestedFixedVersion
 
-	buildFiles, err := readBuildFiles()
+	buildFilesPaths, err := getBuildFilesPaths()
 	assert.NoError(t, err)
 
-	for _, buildFile := range buildFiles {
-		for lineIdx, line := range buildFile.fileContent {
+	for _, buildFilePath := range buildFilesPaths {
+		fileContent, err := fileutils.ReadNLines(buildFilePath, math.MaxInt)
+		assert.NoError(t, err)
+		for lineIdx, line := range fileContent {
 			if strings.Contains(line, impactedPackage) {
 				assert.NotContains(t, line, impactedVersion, fmt.Sprintf("line %d contains a vulnerable version %s for package %s that should have been fixed", lineIdx+1, impactedVersion, impactedPackage))
 				assert.Contains(t, line, suggestedVersion, fmt.Sprintf("package %s version in line %d should have been fixed to %s", impactedPackage, lineIdx+1, suggestedVersion))
@@ -665,17 +667,7 @@ func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	}
 }
 
-
-
-func TestGradleReadBuildFiles(t *testing.T) {
-	groovyBuildFilePath := filepath.Join("..", "testdata", "projects", "gradle", "build.gradle")
-	groovyFileContent, err := fileutils.ReadNLines(groovyBuildFilePath, math.MaxInt)
-	assert.NoError(t, err)
-
-	kotlinBuildFilePath := filepath.Join("..", "testdata", "projects", "gradle", "innerProjectForTest", "build.gradle.kts")
-	kotlinFileContent, err := fileutils.ReadNLines(kotlinBuildFilePath, math.MaxInt)
-	assert.NoError(t, err)
-
+func TestGradleGetBuildFilesPaths(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -685,32 +677,14 @@ func TestGradleReadBuildFiles(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-
 	finalPath, err := os.Getwd()
 	assert.NoError(t, err)
 
-	var testcase = struct {
-		expectedResult []buildFileData
-	}{
-		expectedResult: []buildFileData{
-			{
-				fileType:    groovyFileType,
-				fileContent: groovyFileContent,
-				filePath:    filepath.Join(finalPath, "build.gradle"),
-				filePerm:    os.FileMode(493),
-			},
-			{
-				fileType:    kotlinFileType,
-				fileContent: kotlinFileContent,
-				filePath:    filepath.Join(finalPath, "innerProjectForTest", "build.gradle.kts"),
-				filePerm:    os.FileMode(420),
-			},
-		},
-	}
+	expectedResults := []string{filepath.Join(finalPath, "build.gradle"), filepath.Join(finalPath, "innerProjectForTest", "build.gradle.kts")}
 
-	buildFiles, err := readBuildFiles()
+	buildFilesPaths, err := getBuildFilesPaths()
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, testcase.expectedResult, buildFiles)
+	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
 
 func TestGradleFixBuildFile(t *testing.T) {
@@ -725,7 +699,7 @@ func TestGradleFixBuildFile(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	buildFiles, err := readBuildFiles()
+	buildFiles, err := getBuildFilesPaths()
 	assert.NoError(t, err)
 
 	err = fixBuildFile(buildFiles[0], &utils.VulnerabilityDetails{
@@ -747,46 +721,107 @@ func TestGradleFixBuildFile(t *testing.T) {
 	assert.ElementsMatch(t, expectedFileContent, fixedFileContent)
 }
 
-
 func TestGradleIsUnsupportedVulnVersion(t *testing.T) {
 	var testcases = []struct {
 		impactedVersion string
-		expectedResult  bool
+		expectedResult  UnsupportedForFixType
 	}{
 		{
 			impactedVersion: "10.+",
-			expectedResult:  false,
+			expectedResult:  unsupportedDynamicVersion,
 		},
 		{
 			impactedVersion: "latest.release",
-			expectedResult:  false,
+			expectedResult:  unsupportedLatestVersion,
 		},
 		{
 			impactedVersion: "[10.3, 11.0)",
-			expectedResult:  false,
+			expectedResult:  unsupportedRangeVersion,
 		},
 		{
 			impactedVersion: "(10.4.2, 11.7.8)",
-			expectedResult:  false,
+			expectedResult:  unsupportedRangeVersion,
 		},
 		{
 			impactedVersion: "5.5",
-			expectedResult:  true,
+			expectedResult:  "",
 		},
 		{
 			impactedVersion: "9.0.13-beta",
-			expectedResult:  true,
+			expectedResult:  "",
 		},
 	}
 
 	for _, testcase := range testcases {
-		_, isSupported := getUnsupportedForFixVersionType(testcase.impactedVersion)
-		assert.Equal(t, testcase.expectedResult, isSupported)
+		unsupportedType := getUnsupportedForFixVersionType(testcase.impactedVersion)
+		assert.Equal(t, testcase.expectedResult, unsupportedType)
 	}
 }
 
-*/
+func TestIsFixRequiredForLine(t *testing.T) {
+	type lineToResult struct {
+		line           string
+		expectedResult bool
+	}
 
-// TODO tests to add:
-// detectVulnerableRowType ?? todo create test only if resources.VulnRowData.RowType field stays
-// test regexp detection ?? todo see how to implemment after michael fixes
+	var testcase = struct {
+		vulnDetails     *utils.VulnerabilityDetails
+		linesAndResults []lineToResult
+	}{
+		vulnDetails: &utils.VulnerabilityDetails{
+			SuggestedFixedVersion:       "4.13.1",
+			IsDirectDependency:          true,
+			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"},
+		},
+		linesAndResults: []lineToResult{
+			{
+				line:           "    implementation 'junit:junit:4.7'",
+				expectedResult: true,
+			},
+			{
+				line:           "    implementation 'junit:junit:4.7:javadoc'",
+				expectedResult: true,
+			},
+			{
+				line:           "    implementation('junit:junit:4.7')",
+				expectedResult: true,
+			},
+			{
+				line:           "    implementation group: 'junit', name: 'junit', version: '4.7'",
+				expectedResult: true,
+			},
+			{
+				line:           "    implementation group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc",
+				expectedResult: true,
+			},
+			{
+				line:           "    implementation(group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc')",
+				expectedResult: true,
+			},
+			{
+				line:           "            [group: 'junit', name: 'junit', version: '4.7'],",
+				expectedResult: true,
+			},
+			{
+				line:           "            ['junit:junit:4.7']",
+				expectedResult: true,
+			},
+
+			{
+				line:           "    implementation group: 'junit', name: 'junit',\n            version: '4.7'",
+				expectedResult: false,
+			},
+			{
+				line:           "implementation(\"junit:junit\") ",
+				expectedResult: false,
+			},
+		},
+	}
+
+	patternsCompilers, err := getPatternCompilersForVulnerability(testcase.vulnDetails)
+	assert.NoError(t, err)
+	for _, lineWithResult := range testcase.linesAndResults {
+		assert.Equal(t, lineWithResult.expectedResult, isFixRequiredForLine(lineWithResult.line, patternsCompilers))
+	}
+
+}
