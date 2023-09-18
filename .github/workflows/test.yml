@@ -120,15 +120,15 @@ jobs:
     if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.20.x
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
 
       - name: Build Frogbot
         run: buildscripts/build.sh
