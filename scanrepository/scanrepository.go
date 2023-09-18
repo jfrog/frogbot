@@ -88,7 +88,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner(), cfp.scanDetails.RepoName())
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repository.RepoOwner, repository.RepoName)
 	if err != nil {
 		return
 	}
