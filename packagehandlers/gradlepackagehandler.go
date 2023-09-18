@@ -1,7 +1,6 @@
 package packagehandlers
 
 import (
-	"errors"
 	"fmt"
 	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
@@ -18,10 +17,10 @@ import (
 type UnsupportedForFixType string
 
 const (
-	groovyBuildFileSuffix                               = "build.gradle"
-	kotlinBuildFileSuffix                               = "build.gradle.kts"
-	unsupportedDynamicVersion     UnsupportedForFixType = "dynamic dependency version"
-	unsupportedLatestVersion      UnsupportedForFixType = "latest release version"
+	groovyBuildFileSuffix                           = "build.gradle"
+	kotlinBuildFileSuffix                           = "build.gradle.kts"
+	unsupportedDynamicVersion UnsupportedForFixType = "dynamic dependency version"
+	// D: unsupportedLatestVersion      UnsupportedForFixType = "latest release version"
 	unsupportedRangeVersion       UnsupportedForFixType = "range version"
 	apostrophes                                         = "[\\\"|\\']"
 	directMapWithVersionRegexp                          = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
@@ -68,7 +67,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 		}
 	}
 
-	return errors.New("stop")
+	return
 }
 
 func writeUpdatedBuildFile(filePath string, fileContent []string) (err error) {
