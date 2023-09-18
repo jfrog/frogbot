@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"context"
+	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
 type RepositoryScanDetails struct {
@@ -72,4 +76,47 @@ func (rsd *RepositoryScanDetails) SetAggregateFixes(toAggregate bool) *Repositor
 
 func (rsd *RepositoryScanDetails) AggregateFixes() bool {
 	return rsd.git.AggregateFixes
+}
+
+func (rsd *RepositoryScanDetails) SetRepositoryCloneUrl(cloneUrl string) *RepositoryScanDetails {
+	rsd.git.RepositoryCloneUrl = cloneUrl
+	return rsd
+}
+
+func (rsd *RepositoryScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *RepositoryScanDetails {
+	XscGitInfoContext, err := rsd.createGitInfoContext(scannedBranch, gitProject, client)
+	if err != nil {
+		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ", err.Error())
+		return rsd
+	}
+	rsd.xrayGraphScanParams.XscGitInfoContext = XscGitInfoContext
+	return rsd
+}
+
+// CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
+// ScannedBranch - name of the branch we are scanning.
+// GitProject - [Optional] relevant for azure repos and Bitbucket server.
+// Client vscClient
+func (rsd *RepositoryScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
+	latestCommit, err := client.GetLatestCommit(context.Background(), rsd.git.RepoOwner, rsd.git.RepoName, scannedBranch)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", rsd.git.RepoName, scannedBranch, err.Error())
+	}
+	// In some VCS providers, there are no git projects, fallback to the repository owner.
+	if gitProject == "" {
+		gitProject = rsd.git.RepoOwner
+	}
+	gitInfo = &services.XscGitInfoContext{
+		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
+		GitRepoUrl:    rsd.git.RepositoryCloneUrl,
+		GitRepoName:   rsd.git.RepoName,
+		GitProvider:   rsd.git.GitProvider.String(),
+		GitProject:    gitProject,
+		BranchName:    scannedBranch,
+		LastCommit:    latestCommit.Url,
+		CommitHash:    latestCommit.Hash,
+		CommitMessage: latestCommit.Message,
+		CommitAuthor:  latestCommit.AuthorName,
+	}
+	return
 }

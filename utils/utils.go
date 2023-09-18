@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -365,4 +366,20 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
 	})
 	return pullRequestsComments, nil
+}
+
+func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
+	var fullPathWds []string
+	if len(workingDirs) != 0 {
+		for _, workDir := range workingDirs {
+			if workDir == RootDir {
+				fullPathWds = append(fullPathWds, baseWd)
+				continue
+			}
+			fullPathWds = append(fullPathWds, filepath.Join(baseWd, workDir))
+		}
+	} else {
+		fullPathWds = append(fullPathWds, baseWd)
+	}
+	return fullPathWds
 }

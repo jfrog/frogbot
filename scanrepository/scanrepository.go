@@ -56,7 +56,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 		if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
 			return
 		}
-		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
 		if err = cfp.scanAndFixBranch(repository); err != nil {
 			return
 		}
@@ -88,20 +87,23 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-	cfp.scanDetails = utils.NewRepositoryScanDetails(client, repository).
-		SetBaseBranch(branch).
-		SetAggregateFixes(repository.Git.AggregateFixes)
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
 	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner(), cfp.scanDetails.RepoName())
 	if err != nil {
 		return
 	}
-	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+
+	cfp.scanDetails = utils.NewRepositoryScanDetails(client, repository).
+		SetBaseBranch(branch).
+		SetAggregateFixes(repository.Git.AggregateFixes).
+		SetRepositoryCloneUrl(repositoryInfo.CloneInfo.HTTP).
+		SetXscGitInfoContext(branch, repository.Project, client)
+
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.VcsInfo().Username, cfp.scanDetails.VcsInfo().Username).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
 		SetEmailAuthor(repository.EmailAuthor).
-		SetRemoteGitUrl(remoteHttpsGitUrl)
+		SetRemoteGitUrl(repositoryInfo.CloneInfo.HTTP)
 	if err != nil {
 		return
 	}
