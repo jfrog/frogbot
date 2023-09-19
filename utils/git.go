@@ -477,14 +477,11 @@ func techArrayToString(techsArray []coreutils.Technology) (result string) {
 	if len(techsArray) < 2 {
 		return techsArray[0].ToFormal()
 	}
-	// Append each tech with a separator
-	for index, tech := range techsArray {
-		result += tech.ToFormal()
-		if index != len(techsArray)-1 {
-			result += ","
-		}
+	var techString []string
+	for _, tech := range techsArray {
+		techString = append(techString, tech.ToFormal())
 	}
-	return result
+	return strings.Join(techString, ",")
 }
 
 func removeMiddleSpaces(text string) string {
