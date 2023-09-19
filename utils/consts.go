@@ -52,6 +52,7 @@ const (
 	DepsRepoEnv                  = "JF_DEPS_REPO"
 	MinSeverityEnv               = "JF_MIN_SEVERITY"
 	FixableOnlyEnv               = "JF_FIXABLE_ONLY"
+	AllowedLicensesEnv           = "JF_ALLOWED_LICENSES"
 	WatchesDelimiter             = ","
 
 	// Email related environment variables
