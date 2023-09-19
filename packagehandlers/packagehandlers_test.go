@@ -227,7 +227,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.13.1",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
 				},
 				fixSupported: false,
 			},
@@ -235,7 +235,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
 				},
 				fixSupported: false,
 			},
@@ -244,7 +244,7 @@ func TestUpdateDependency(t *testing.T) {
 					vulnDetails: &utils.VulnerabilityDetails{
 						SuggestedFixedVersion:       "3.2.2",
 						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"},
+						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
 					},
 					fixSupported: false,
 				},
@@ -253,7 +253,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
 				},
 				fixSupported: false,
 			},
@@ -261,7 +261,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.13.1",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
 				},
 				fixSupported: true,
 			},
@@ -707,7 +707,7 @@ func TestGradleFixBuildFile(t *testing.T) {
 	err = fixBuildFile(buildFiles[0], &utils.VulnerabilityDetails{
 		SuggestedFixedVersion:       "4.13.1",
 		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}})
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}})
 
 	assert.NoError(t, err)
 
@@ -775,7 +775,7 @@ func TestIsFixRequiredForLine(t *testing.T) {
 		vulnDetails: &utils.VulnerabilityDetails{
 			SuggestedFixedVersion:       "4.13.1",
 			IsDirectDependency:          true,
-			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"},
+			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
 		},
 		linesAndResults: []lineToResult{
 			{
