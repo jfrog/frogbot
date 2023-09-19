@@ -19,10 +19,10 @@ import (
 type resolveDependenciesFunc func(scanSetup *ScanDetails) ([]byte, error)
 
 var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
-	coreutils.Npm.ToString():    resolveNpmDependencies,
-	coreutils.Yarn.ToString():   resolveYarnDependencies,
-	coreutils.Dotnet.ToString(): resolveDotnetDependencies,
-	coreutils.Nuget.ToString():  resolveDotnetDependencies,
+	coreutils.Npm.String():    resolveNpmDependencies,
+	coreutils.Yarn.String():   resolveYarnDependencies,
+	coreutils.Dotnet.String(): resolveDotnetDependencies,
+	coreutils.Nuget.String():  resolveDotnetDependencies,
 }
 
 const yarnV2Version = "2.0.0"
@@ -41,7 +41,7 @@ func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 			err = restoreNpmrc()
 		}
 	}()
-	return exec.Command(coreutils.Npm.ToString(), scanSetup.InstallCommandArgs...).CombinedOutput()
+	return exec.Command(coreutils.Npm.String(), scanSetup.InstallCommandArgs...).CombinedOutput()
 }
 
 func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) {

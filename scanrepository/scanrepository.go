@@ -90,9 +90,8 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
-
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey).
+		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, false).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetBaseBranch(branch).
 		SetFixableOnly(repository.FixableOnly).
@@ -366,7 +365,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
-	prBody = cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + "\n---\n" + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
+	prBody = cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
 		var scanHash string
 		if scanHash, err = utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesRows...); err != nil {

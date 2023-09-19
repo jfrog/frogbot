@@ -33,16 +33,16 @@ var testPackagesData = []struct {
 	commandArgs []string
 }{
 	{
-		packageType: coreutils.Go.ToString(),
+		packageType: coreutils.Go.String(),
 	},
 	{
-		packageType: coreutils.Maven.ToString(),
+		packageType: coreutils.Maven.String(),
 	},
 	{
-		packageType: coreutils.Gradle.ToString(),
+		packageType: coreutils.Gradle.String(),
 	},
 	{
-		packageType: coreutils.Npm.ToString(),
+		packageType: coreutils.Npm.String(),
 		commandName: "npm",
 		commandArgs: []string{"install"},
 	},
@@ -57,18 +57,18 @@ var testPackagesData = []struct {
 		commandArgs: []string{"install"},
 	},
 	{
-		packageType: coreutils.Nuget.ToString(),
+		packageType: coreutils.Nuget.String(),
 		commandName: "nuget",
 		commandArgs: []string{"restore"},
 	},
 	{
-		packageType: coreutils.Pip.ToString(),
+		packageType: coreutils.Pip.String(),
 	},
 	{
-		packageType: coreutils.Pipenv.ToString(),
+		packageType: coreutils.Pipenv.String(),
 	},
 	{
-		packageType: coreutils.Poetry.ToString(),
+		packageType: coreutils.Poetry.String(),
 	},
 }
 
@@ -374,7 +374,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}()
 			assert.NoError(t, err)
 			assert.NoError(t, biutils.CopyDir(projectPath, tmpDir, true, nil))
-			if pkg.packageType == coreutils.Gradle.ToString() {
+			if pkg.packageType == coreutils.Gradle.String() {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
@@ -556,7 +556,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 	var testScan ScanRepositoryCmd
 	for tech, buildToolsDependencies := range utils.BuildToolsDependenciesMap {
 		for _, impactedDependency := range buildToolsDependencies {
-			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyName: impactedDependency}, IsDirectDependency: true}
+			vulnDetails := &utils.VulnerabilityDetails{SuggestedFixedVersion: "3.3.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: tech, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: impactedDependency}}, IsDirectDependency: true}
 			err := testScan.updatePackageToFixedVersion(vulnDetails)
 			assert.Error(t, err, "Expected error to occur")
 			assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -660,43 +660,48 @@ random body
 
 func TestPreparePullRequestDetails(t *testing.T) {
 	cfp := ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}, gitManager: &utils.GitManager{}}
+	cfp.OutputWriter.SetJasOutputFlags(true, false)
 	vulnerabilities := []*utils.VulnerabilityDetails{
 		{
 			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-				Summary:                   "summary",
-				Severity:                  "High",
-				ImpactedDependencyName:    "package1",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"1.0.0", "2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
+				Summary: "summary",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High", SeverityNumValue: 10},
+					ImpactedDependencyName:    "package1",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"1.0.0", "2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			SuggestedFixedVersion: "1.0.0",
 		},
 	}
-	expectedPrBody := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n\n</div>\n\n## 👇 Details\n\n\n**Description:**\nsummary\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>"
+	expectedPrBody := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies\n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n\n</div>\n\n## 🔬 Research Details\n\n\n**Description:**\nsummary\n\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>"
 	prTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	vulnerabilities = append(vulnerabilities, &utils.VulnerabilityDetails{
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Summary:                   "summary",
-			Severity:                  "Critical",
-			ImpactedDependencyName:    "package2",
-			ImpactedDependencyVersion: "2.0.0",
-			FixedVersions:             []string{"2.0.0", "3.0.0"},
-			Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
+			Summary: "summary",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Critical", SeverityNumValue: 12},
+				ImpactedDependencyName:    "package2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
+			FixedVersions: []string{"2.0.0", "3.0.0"},
+			Cves:          []formats.CveRow{{Id: "CVE-2022-4321"}},
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
 	cfp.aggregateFixes = true
-	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies \n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br>3.0.0 | CVE-2022-4321 |\n\n</div>\n\n## 👇 Details\n\n<details>\n<summary> <b>[ CVE-2022-1234 ] package1 1.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-4321 ] package2 2.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n---\n\n<div align=\"center\">\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n</div>\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
+	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies\n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br>3.0.0 | CVE-2022-4321 |\n\n</div>\n\n## 🔬 Research Details\n\n<details>\n<summary> <b>[ CVE-2022-1234 ] package1 1.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-4321 ] package2 2.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
-	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary \n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| High |   | package1:1.0.0 | 1.0.0, 2.0.0 | CVE-2022-1234 |\n| Critical |   | package2:2.0.0 | 2.0.0, 3.0.0 | CVE-2022-4321 |\n\n---\n### 👇 Details\n---\n\n\n#### [ CVE-2022-1234 ] package1 1.0.0\n\n\n**Description:**\nsummary\n\n\n#### [ CVE-2022-4321 ] package2 2.0.0\n\n\n**Description:**\nsummary\n\n\n---\n\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
+	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| High |   | package1:1.0.0 | 1.0.0, 2.0.0 | CVE-2022-1234 |\n| Critical |   | package2:2.0.0 | 2.0.0, 3.0.0 | CVE-2022-4321 |\n\n---\n## 🔬 Research Details\n---\n\n\n#### [ CVE-2022-1234 ] package1 1.0.0\n\n\n**Description:**\nsummary\n\n\n#### [ CVE-2022-4321 ] package2 2.0.0\n\n\n**Description:**\nsummary\n\n\n\n---\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
