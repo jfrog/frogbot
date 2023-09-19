@@ -311,7 +311,8 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (err error) {
 		SetOutputWriter(&buf)
 	if err = mvnutils.RunMvn(mvnParams); err != nil {
 		readerOutput := make([]byte, 0)
-		if _, e := io.ReadFull(&buf, readerOutput); e == nil {
+		_, _ = io.ReadFull(&buf, readerOutput)
+		if len(readerOutput) > 0 {
 			// Log output if exists
 			log.Info(string(readerOutput))
 		}
