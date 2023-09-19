@@ -101,5 +101,6 @@ func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error
 	toolType := dotnetutils.ConvertNameToToolType(scanSetup.InstallCommandName)
 	args := scanSetup.InstallCommandArgs
 	args = append(args, toolType.GetTypeFlagPrefix()+"configfile", configFile.Name())
-	return exec.Command(toolType.String(), args...).CombinedOutput()
+	output, err = exec.Command(toolType.String(), args...).CombinedOutput()
+	return
 }
