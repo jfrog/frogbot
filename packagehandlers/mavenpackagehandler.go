@@ -231,12 +231,13 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
-		return nil
+		return
 	}
 	goals := []string{"com.jfrog.frogbot:maven-gav-reader:gav", "-q"}
 	var readerOutput []byte
 	if err = mph.runMvnCommand(goals); err != nil {
-		return fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
+		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
+		return
 	}
 	for _, jsonContent := range strings.Split(string(readerOutput), "\n") {
 		if jsonContent == "" {
@@ -246,12 +247,12 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			return err
+			return
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
 	}
 	if len(mph.pomPaths) == 0 {
-		return errors.New("couldn't find any pom.xml files in the current project'")
+		err = errors.New("couldn't find any pom.xml files in the current project")
 	}
 	return
 }
