@@ -1,6 +1,7 @@
 package outputwriter
 
 import (
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

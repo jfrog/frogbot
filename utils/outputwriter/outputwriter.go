@@ -214,13 +214,6 @@ at %s (line %d)
 		location.StartLine)
 }
 
-func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech.String() == "" {
-		return FrogbotTitlePrefix + " Update dependencies"
-	}
-	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
-}
-
 func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 	if showCaColumn {
 		return vulnerabilitiesTableHeaderWithContextualAnalysis
