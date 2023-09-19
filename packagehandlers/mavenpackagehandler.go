@@ -202,14 +202,7 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 		return fmt.Errorf("failed to create a temp %s file: \n%s", mavenGavReader, err.Error())
 	}
 	defer func() {
-		closeError := mavenGavReaderFile.Close()
-		deleteError := os.Remove(mavenGavReaderFile.Name())
-		if err == nil {
-			err = closeError
-			if err == nil {
-				err = deleteError
-			}
-		}
+		err = errors.Join(err, mavenGavReaderFile.Close(), os.Remove(mavenGavReaderFile.Name()))
 	}()
 	gavReaderFolder := path.Dir(mavenGavReaderFile.Name())
 	currentWd, err := os.Getwd()
@@ -217,13 +210,10 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 		return
 	}
 	if err = os.Chdir(gavReaderFolder); err != nil {
-		return err
+		return fmt.Errorf("failed to change dir to the maven gav reader temp dir:\n%w", err)
 	}
 	defer func() {
-		e := os.Chdir(currentWd)
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, os.Chdir(currentWd))
 	}()
 
 	if _, err = mavenGavReaderFile.Write(mavenGavReaderContent); err != nil {
@@ -232,7 +222,7 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 	// Install the plugin
 	var output []byte
 	installProperties := []string{"org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file", "-Dfile=" + mavenGavReaderFile.Name()}
-	if output, err = exec.Command("mvn", installProperties...).CombinedOutput(); err != nil {
+	if output, err = mph.runMvnCommand(installProperties); err != nil {
 		return fmt.Errorf("failed to install the maven-gav-reader plugin. Maven output: %s\n Error received:\n%s", string(output), err.Error())
 	}
 	mph.isMavenGavReaderInstalled = true

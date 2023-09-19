@@ -6,8 +6,10 @@ import (
 	goGitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	biutils "github.com/jfrog/build-info-go/utils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,5 +105,42 @@ func CreateDotGitWithCommit(t *testing.T, wd, port string, repositoriesPath ...s
 			},
 		})
 		assert.NoError(t, err)
+	}
+}
+
+func GetRunWithDummyResults(results ...*sarif.Result) *sarif.Run {
+	run := sarif.NewRunWithInformationURI("", "")
+	ids := datastructures.MakeSet[string]()
+	for _, result := range results {
+		if !ids.Exists(*result.RuleID) {
+			run.Tool.Driver.Rules = append(run.Tool.Driver.Rules, sarif.NewRule(*result.RuleID))
+			ids.Add(*result.RuleID)
+		}
+	}
+	return run.WithResults(results)
+}
+
+func GetDummyPassingResult(ruleId string) *sarif.Result {
+	kind := "pass"
+	return &sarif.Result{
+		Kind:   &kind,
+		RuleID: &ruleId,
+	}
+}
+
+func GetDummyResultWithOneLocation(fileName string, startLine, startCol int, snippet, ruleId string, level string) *sarif.Result {
+	return &sarif.Result{
+		Locations: []*sarif.Location{
+			{
+				PhysicalLocation: &sarif.PhysicalLocation{
+					ArtifactLocation: &sarif.ArtifactLocation{URI: &fileName},
+					Region: &sarif.Region{
+						StartLine:   &startLine,
+						StartColumn: &startCol,
+						Snippet:     &sarif.ArtifactContent{Text: &snippet}}},
+			},
+		},
+		Level:  &level,
+		RuleID: &ruleId,
 	}
 }

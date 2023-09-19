@@ -83,20 +83,24 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
 ---
-## 📦 Vulnerable Dependencies
+%s
 ---
 
-### ✍️ Summary 
+%s
 
 %s %s
 
 ---
-### 👇 Details
+%s
 ---
 
 `,
+
+		vulnerableDependenciesTitle,
+		summaryTitle,
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, smo)))
+		getVulnerabilitiesTableContent(vulnerabilities, smo),
+		researchDetailsTitle))
 	for i := range vulnerabilities {
 		contentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
@@ -146,16 +150,18 @@ func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullD
 
 func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code (Iac) Vulnerability
-	
 %s
 
-### 👇 Details
+%s
+
+%s
 
 %s	
 
 `,
+		iacTitle,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
+		researchDetailsTitle,
 		fullDetails)
 }
 
@@ -207,17 +213,37 @@ Vulnerable data flow analysis result:
 	return contentBuilder.String()
 }
 
+func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) string {
+	if len(licenses) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(`
+---
+%s
+---
+
+%s 
+%s
+
+`,
+		licenseTitle,
+		licenseTableHeader,
+		getLicensesTableContent(licenses, smo))
+}
+
 func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
 	if len(iacRows) == 0 {
 		return ""
 	}
 
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code 
+%s
 
 %s %s
 
 `,
+		iacTitle,
 		iacTableHeader,
 		getIacTableContent(iacRows, smo))
 }
@@ -237,7 +263,7 @@ func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !smo.entitledForJas {
-		msg = "\n\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n"
+		msg = "\n\n---\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n"
 	}
 	return msg
 }

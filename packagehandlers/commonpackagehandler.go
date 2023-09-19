@@ -49,7 +49,7 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	versionOperator := vulnDetails.Technology.GetPackageVersionOperator()
 	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
 	commandArgs = append(commandArgs, fixedPackageArgs...)
-	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.ToString(), commandArgs)
+	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
 }
 
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {

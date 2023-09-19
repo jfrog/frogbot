@@ -19,21 +19,25 @@ func TestStandardOutput_TableRow(t *testing.T) {
 		{
 			name: "Single CVE and no direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "Critical",
-				ImpactedDependencyName:    "testdep",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+					ImpactedDependencyName:    "testdep",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | testdep:1.0.0 | 2.0.0 | CVE-2022-1234 |",
 		},
 		{
 			name: "Multiple CVEs and no direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "High",
-				ImpactedDependencyName:    "testdep2",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0", "3.0.0"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName:    "testdep2",
+					ImpactedDependencyVersion: "1.0.0",
+				},
+				FixedVersions: []string{"2.0.0", "3.0.0"},
 				Cves: []formats.CveRow{
 					{Id: "CVE-2022-1234"},
 					{Id: "CVE-2022-5678"},
@@ -44,33 +48,37 @@ func TestStandardOutput_TableRow(t *testing.T) {
 		{
 			name: "Single CVE and direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity:                  "Low",
-				ImpactedDependencyName:    "testdep3",
-				ImpactedDependencyVersion: "1.0.0",
-				FixedVersions:             []string{"2.0.0"},
-				Cves:                      []formats.CveRow{{Id: "CVE-2022-1234"}},
-				Components: []formats.ComponentRow{
-					{Name: "dep1", Version: "1.0.0"},
-					{Name: "dep2", Version: "2.0.0"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "Low"},
+					ImpactedDependencyName:    "testdep3",
+					ImpactedDependencyVersion: "1.0.0",
+					Components: []formats.ComponentRow{
+						{Name: "dep1", Version: "1.0.0"},
+						{Name: "dep2", Version: "2.0.0"},
+					},
 				},
+				FixedVersions: []string{"2.0.0"},
+				Cves:          []formats.CveRow{{Id: "CVE-2022-1234"}},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | dep1:1.0.0<br>dep2:2.0.0 | testdep3:1.0.0 | 2.0.0 | CVE-2022-1234 |",
 		},
 		{
 			name: "Multiple CVEs and direct dependencies",
 			vulnerability: formats.VulnerabilityOrViolationRow{
-				Severity: "High",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName:    "impacted",
+					ImpactedDependencyVersion: "3.0.0",
+					Components: []formats.ComponentRow{
+						{Name: "dep1", Version: "1.0.0"},
+						{Name: "dep2", Version: "2.0.0"},
+					},
+				},
 				Cves: []formats.CveRow{
 					{Id: "CVE-1"},
 					{Id: "CVE-2"},
 				},
-				Components: []formats.ComponentRow{
-					{Name: "dep1", Version: "1.0.0"},
-					{Name: "dep2", Version: "2.0.0"},
-				},
-				ImpactedDependencyName:    "impacted",
-				ImpactedDependencyVersion: "3.0.0",
-				FixedVersions:             []string{"4.0.0", "5.0.0"},
+				FixedVersions: []string{"4.0.0", "5.0.0"},
 			},
 			expected: "| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | dep1:1.0.0<br>dep2:2.0.0 | impacted:3.0.0 | 4.0.0<br>5.0.0 | CVE-1<br>CVE-2 |",
 		},
@@ -127,18 +135,22 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
-			ImpactedDependencyName:    "Dependency1",
-			ImpactedDependencyVersion: "1.0.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency1",
+				ImpactedDependencyVersion: "1.0.0",
+			},
 		},
 		{
-			ImpactedDependencyName:    "Dependency2",
-			ImpactedDependencyVersion: "2.0.0",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
 		},
 	}
 
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -148,7 +160,7 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 </div>
 
-## 👇 Details
+## 🔬 Research Details
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -194,24 +206,28 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows = []formats.VulnerabilityOrViolationRow{
 		{
-			ImpactedDependencyName:    "Dependency1",
-			ImpactedDependencyVersion: "1.0.0",
-			Applicable:                "Applicable",
-			Technology:                coreutils.Pip,
-			Cves:                      []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency1",
+				ImpactedDependencyVersion: "1.0.0",
+			},
+			Applicable: "Applicable",
+			Technology: coreutils.Pip,
+			Cves:       []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
 		},
 		{
-			ImpactedDependencyName:    "Dependency2",
-			ImpactedDependencyVersion: "2.0.0",
-			Applicable:                "Not Applicable",
-			Technology:                coreutils.Pip,
-			Cves:                      []formats.CveRow{{Id: "CVE-2022-4321"}},
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    "Dependency2",
+				ImpactedDependencyVersion: "2.0.0",
+			},
+			Applicable: "Not Applicable",
+			Technology: coreutils.Pip,
+			Cves:       []formats.CveRow{{Id: "CVE-2022-4321"}},
 		},
 	}
 
 	// Set the expected content string based on the sample data
 	expectedContent = fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+## 📦 Vulnerable Dependencies
 
 ### ✍️ Summary
 
@@ -221,7 +237,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 </div>
 
-## 👇 Details
+## 🔬 Research Details
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -273,8 +289,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.SourceCodeRow{
 				{
-					Severity:         "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
 					Location: formats.Location{
 						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
 						StartLine:   11,
@@ -289,8 +304,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.SourceCodeRow{
 				{
-					Severity:         "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
 					Location: formats.Location{
 						File:        "applicable/req_sw_terraform_azure_redis_patch.tf",
 						StartLine:   11,
@@ -299,8 +313,7 @@ func TestStandardOutput_IacContent(t *testing.T) {
 					},
 				},
 				{
-					Severity:         "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
 					Location: formats.Location{
 						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
 						StartLine:   11,
@@ -337,8 +350,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			name: "Single IAC row",
 			iacRows: []formats.SourceCodeRow{
 				{
-					Severity:         "Medium",
-					SeverityNumValue: 2,
+					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
@@ -353,8 +365,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			name: "Multiple IAC rows",
 			iacRows: []formats.SourceCodeRow{
 				{
-					Severity:         "High",
-					SeverityNumValue: 3,
+					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
@@ -363,8 +374,7 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 					},
 				},
 				{
-					Severity:         "Medium",
-					SeverityNumValue: 2,
+					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
 					Location: formats.Location{
 						File:        "file2",
 						StartLine:   2,
@@ -383,4 +393,9 @@ func TestStandardOutput_GetIacTableContent(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
+}
+
+func TestStandardOutput_GetLicensesTableContent(t *testing.T) {
+	writer := &StandardOutput{}
+	testGetLicensesTableContent(t, writer)
 }
