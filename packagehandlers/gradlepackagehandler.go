@@ -17,10 +17,10 @@ import (
 type UnsupportedForFixType string
 
 const (
-	groovyBuildFileSuffix                           = "build.gradle"
-	kotlinBuildFileSuffix                           = "build.gradle.kts"
-	unsupportedDynamicVersion UnsupportedForFixType = "dynamic dependency version"
-	// D: unsupportedLatestVersion      UnsupportedForFixType = "latest release version"
+	groovyBuildFileSuffix                               = "build.gradle"
+	kotlinBuildFileSuffix                               = "build.gradle.kts"
+	unsupportedDynamicVersion     UnsupportedForFixType = "dynamic dependency version"
+	unsupportedLatestVersion      UnsupportedForFixType = "latest release version"
 	unsupportedRangeVersion       UnsupportedForFixType = "range version"
 	apostrophes                                         = "[\\\"|\\']"
 	directMapWithVersionRegexp                          = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
@@ -177,9 +177,8 @@ func getUnsupportedForFixVersionType(impactedVersion string) UnsupportedForFixTy
 	case strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "("):
 		// In case a version range will be supported- regexps need to be modified to identify '[' as a char
 		return unsupportedRangeVersion
-		// D: case strings.Contains(impactedVersion, "latest.release"):
-		//	D: return unsupportedLatestVersion
-
+	case strings.Contains(impactedVersion, "latest.release"):
+		return unsupportedLatestVersion
 	}
 
 	return ""

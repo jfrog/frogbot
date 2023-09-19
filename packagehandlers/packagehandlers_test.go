@@ -239,16 +239,14 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				fixSupported: false,
 			},
-			/*
-				{ // Unsupported fix: latest version
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.2.2",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
-					},
-					fixSupported: false,
+			{ // Unsupported fix: latest version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
 				},
-			*/
+				fixSupported: false,
+			},
 			{ // Unsupported fix: range version
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.2.2",
@@ -748,12 +746,10 @@ func TestGradleIsUnsupportedVulnVersion(t *testing.T) {
 			impactedVersion: "9.0.13-beta",
 			expectedResult:  "",
 		},
-		/*
-			{
-				impactedVersion: "latest.release",
-				expectedResult:  unsupportedLatestVersion,
-			},
-		*/
+		{
+			impactedVersion: "latest.release",
+			expectedResult:  unsupportedLatestVersion,
+		},
 	}
 
 	for _, testcase := range testcases {
