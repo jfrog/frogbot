@@ -419,3 +419,23 @@ func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string
 		}
 	}
 }
+
+// Normalizes whitespace in text, ensuring that words are separated by a single space, and any extra whitespace is removed.
+func normalizeWhitespaces(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}
+
+// Converts Technology array into a string with a separator.
+func techArrayToString(techsArray []coreutils.Technology, separator string) (result string) {
+	if len(techsArray) == 0 {
+		return ""
+	}
+	if len(techsArray) < 2 {
+		return techsArray[0].ToFormal()
+	}
+	var techString []string
+	for _, tech := range techsArray {
+		techString = append(techString, tech.ToFormal())
+	}
+	return strings.Join(techString, separator)
+}
