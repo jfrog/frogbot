@@ -98,8 +98,8 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		},
 		{
 			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies": {"uuid", "minimatch", "mpath"}, "frogbot-update-pip-dependencies": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-pip-dependencies": {"2.4.0"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies": {"pyjwt", "pexpect"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies": {"2.4.0"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
@@ -113,8 +113,8 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		},
 		{
 			testName:                       "aggregate-cant-fix",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-pip-dependencies": {}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-pip-dependencies": {}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-Pip-dependencies": {}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-Pip-dependencies": {}},
 			packageDescriptorPaths:         []string{"setup.py"}, // This is a build tool dependency which should not be fixed
 			aggregateFixes:                 true,
 		},
