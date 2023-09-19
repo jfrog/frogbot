@@ -419,3 +419,8 @@ func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string
 		}
 	}
 }
+
+// Normalizes whitespace in text, ensuring that words are separated by a single space, and any extra whitespace is removed.
+func normalizeWhitespaces(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}

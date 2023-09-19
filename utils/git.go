@@ -326,7 +326,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		// Aggregate commit message could not include each package, use PR title.
+		// In aggregated mode, commit message and PR title are the same.
 		template = gm.GenerateAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
@@ -377,7 +377,7 @@ func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Techno
 	template := gm.getPullRequestTitleTemplate(tech)
 	// If no technologies are provided, return the template as-is
 	if len(tech) == 0 {
-		return removeMiddleSpaces(strings.ReplaceAll(template, "%s", ""))
+		return normalizeWhitespaces(strings.ReplaceAll(template, "%s", ""))
 	}
 	return fmt.Sprintf(template, techArrayToString(tech))
 }
@@ -467,7 +467,7 @@ func parseCustomTemplate(customTemplate string, tech []coreutils.Technology) str
 	if len(tech) > 0 {
 		suffix = " - %s Dependencies"
 	}
-	return removeMiddleSpaces(result) + suffix
+	return normalizeWhitespaces(result) + suffix
 }
 
 func techArrayToString(techsArray []coreutils.Technology) (result string) {
@@ -482,8 +482,4 @@ func techArrayToString(techsArray []coreutils.Technology) (result string) {
 		techString = append(techString, tech.ToFormal())
 	}
 	return strings.Join(techString, ",")
-}
-
-func removeMiddleSpaces(text string) string {
-	return strings.Join(strings.Fields(text), " ")
 }

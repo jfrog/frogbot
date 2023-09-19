@@ -324,3 +324,22 @@ func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeWhiteSpace(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{input: "hello  world", expected: "hello world"},
+		{input: "hello     world", expected: "hello world"},
+		{input: "  hello     world", expected: "hello world"},
+		{input: "  hello     world  ", expected: "hello world"},
+		{input: "  hello     world   a   ", expected: "hello world a"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			output := normalizeWhitespaces(tc.input)
+			assert.Equal(t, tc.expected, output)
+		})
+	}
+}
