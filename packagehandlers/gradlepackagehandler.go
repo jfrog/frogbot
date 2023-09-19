@@ -178,7 +178,7 @@ func getUnsupportedForFixVersionType(impactedVersion string) UnsupportedForFixTy
 		// In case a version range will be supported- regexps need to be modified to identify '[' as a char
 		return unsupportedRangeVersion
 	case strings.Contains(impactedVersion, "latest.release"):
-		return unsupportedLatestVersion
+		return unsupportedLatestVersion // Bla
 	}
 
 	return ""
