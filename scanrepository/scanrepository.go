@@ -40,7 +40,7 @@ type ScanRepositoryCmd struct {
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request
 	aggregateFixes bool
 	// The current project technology
-	projectTech coreutils.Technology
+	projectTech []coreutils.Technology
 	// Stores all package manager handlers for detected issues
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
@@ -81,7 +81,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	}()
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
-		cfp.projectTech = ""
+		cfp.projectTech = []coreutils.Technology{}
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
 		}
@@ -163,6 +163,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, er
 	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
 	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
 	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
+	cfp.projectTech = auditResults.ExtendedScanResults.ScannedTechnologies
 	return auditResults, nil
 }
 
@@ -358,19 +359,19 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pu
 	return cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open)
 }
 
-func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (string, string, error) {
+func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle string, prBody string, err error) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
-		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), "", nil
+		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
-	prBody := cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
+	prBody = cfp.OutputWriter.VulnerabilitiesTitle(false) + "\n" + cfp.OutputWriter.VulnerabilitiesContent(vulnerabilitiesRows) + cfp.OutputWriter.UntitledForJasMsg() + cfp.OutputWriter.Footer()
 	if cfp.aggregateFixes {
-		scanHash, err := utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesRows...)
-		if err != nil {
-			return "", "", err
+		var scanHash string
+		if scanHash, err = utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesRows...); err != nil {
+			return
 		}
-		return outputwriter.GetAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash)), nil
+		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash)), nil
 	}
 	// In separate pull requests there is only one vulnerability
 	vulnDetails := vulnerabilitiesDetails[0]
@@ -435,8 +436,8 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
-	if cfp.projectTech == "" {
-		cfp.projectTech = vulnerability.Technology
+	if len(cfp.projectTech) == 0 {
+		cfp.projectTech = []coreutils.Technology{vulnerability.Technology}
 	}
 	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {
