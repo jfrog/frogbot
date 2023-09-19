@@ -221,7 +221,7 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 	}
 	// Install the plugin
 	installProperties := []string{"org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file", "-Dfile=" + mavenGavReaderFile.Name()}
-	if err = mph.runMvnCommand(installProperties); err != nil {
+	if _, err = mph.runMvnCommand(installProperties); err != nil {
 		return fmt.Errorf("failed to install the maven-gav-reader plugin: %s", err.Error())
 	}
 	mph.isMavenGavReaderInstalled = true
@@ -235,7 +235,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	}
 	goals := []string{"com.jfrog.frogbot:maven-gav-reader:gav", "-q"}
 	var readerOutput []byte
-	if err = mph.runMvnCommand(goals); err != nil {
+	if readerOutput, err = mph.runMvnCommand(goals); err != nil {
 		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
 		return
 	}
@@ -266,7 +266,7 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	err = mph.runMvnCommand(updateVersionArgs)
+	_, err = mph.runMvnCommand(updateVersionArgs)
 	return
 }
 
@@ -280,16 +280,15 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 			fmt.Sprintf("-DprocessDependencyManagement=%t", depDetails.foundInDependencyManagement)}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-		if err := mph.runMvnCommand(updatePropertyArgs); err != nil { // #nosec G204
+		if _, err := mph.runMvnCommand(updatePropertyArgs); err != nil { // #nosec G204
 			return fmt.Errorf("failed updating %s property: %s\n", property, err.Error())
 		}
 	}
 	return nil
 }
 
-func (mph *MavenPackageHandler) runMvnCommand(goals []string) (err error) {
+func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []byte, err error) {
 	if mph.depsRepo == "" {
-		var readerOutput []byte
 		if readerOutput, err = exec.Command("mvn", goals...).CombinedOutput(); err != nil {
 			if len(readerOutput) > 0 {
 				log.Info(string(readerOutput))
@@ -311,7 +310,7 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (err error) {
 		SetDisableDeploy(true).
 		SetOutputWriter(&buf)
 	if err = mvnutils.RunMvn(mvnParams); err != nil {
-		readerOutput := make([]byte, 0)
+		readerOutput = make([]byte, 0)
 		_, _ = io.ReadFull(&buf, readerOutput)
 		if len(readerOutput) > 0 {
 			// Log output if exists
