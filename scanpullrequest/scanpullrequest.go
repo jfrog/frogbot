@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"os"
+	"strings"
 
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -92,19 +94,14 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	vulnerabilitiesRows, iacIssues, secretsIssues, sastIssues, err := auditPullRequest(repo, client, pullRequestDetails)
+	issues, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
 	}
 
-	shouldSendExposedSecretsEmail := len(secretsIssues) > 0 && repo.SmtpServer != ""
+	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
-		prSourceDetails := pullRequestDetails.Source
-		secretsEmailDetails := utils.NewSecretsEmailDetails(
-			client, repo.GitProvider,
-			prSourceDetails.Owner, prSourceDetails.Repository,
-			prSourceDetails.Name, pullRequestDetails.URL,
-			secretsIssues, repo.EmailDetails)
+		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.Secrets)
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
 		}
@@ -116,7 +113,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Create a pull request message
-	message := createPullRequestMessage(vulnerabilitiesRows, iacIssues, sastIssues, repo.OutputWriter)
+	message := createPullRequestComment(issues, repo.OutputWriter)
 
 	// Add SCA scan comment
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
@@ -125,143 +122,133 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Handle review comments at the pull request
-	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, vulnerabilitiesRows, iacIssues, sastIssues); err != nil {
+	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, issues); err != nil {
 		err = errors.New("couldn't add review comments: " + err.Error())
 		return
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues && isDetectedIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
+	if toFailTaskStatus(repo, issues) {
 		err = errors.New(securityIssueFoundErr)
 	}
 	return
 }
 
-func isDetectedIssues(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, sastIssues []formats.SourceCodeRow) bool {
-	return len(vulnerabilitiesRows) > 0 || len(iacRows) > 0 || len(sastIssues) > 0
+func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bool {
+	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
+	return failFlagSet && issues.IssuesExists()
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, pullRequestDetails vcsclient.PullRequestInfo) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, secretsRows []formats.SourceCodeRow, sastRows []formats.SourceCodeRow, err error) {
-	// Download source branch
-	sourceBranchInfo := pullRequestDetails.Source
-	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(client, sourceBranchInfo.Owner, sourceBranchInfo.Repository, sourceBranchInfo.Name)
-	if err != nil {
-		return
-	}
-
-	// Download target branch (if needed)
-	targetBranchWd := ""
-	cleanupTarget := func() error { return nil }
-	if !repoConfig.IncludeAllVulnerabilities {
-		targetBranchInfo := pullRequestDetails.Target
-		targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(client, targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name)
-		if err != nil {
-			return
-		}
-	}
-	defer func() {
-		err = errors.Join(err, cleanupSource(), cleanupTarget())
-	}()
-
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, true).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 
+	issuesCollection = &utils.IssuesCollection{}
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
-
-		// Audit source branch
-		var sourceResults *audit.Results
-		workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
-		sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
-		if err != nil {
+		var projectIssues *utils.IssuesCollection
+		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
 			return
 		}
-
-		// Set JAS output flags
-		sourceScanResults := sourceResults.ExtendedScanResults
-		repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
-
-		// Get all issues that were found in the source branch
-		if repoConfig.IncludeAllVulnerabilities {
-			log.Info("Frogbot is configured to show all vulnerabilities")
-			var allIssuesRows []formats.VulnerabilityOrViolationRow
-			allIssuesRows, err = getScanVulnerabilitiesRows(sourceResults)
-			if err != nil {
-				return
-			}
-			vulnerabilitiesRows = append(vulnerabilitiesRows, allIssuesRows...)
-			iacRows = append(iacRows, xrayutils.PrepareIacs(sourceScanResults.IacScanResults)...)
-			secretsRows = append(secretsRows, xrayutils.PrepareSecrets(sourceScanResults.SecretsScanResults)...)
-			sastRows = append(sastRows, xrayutils.PrepareSast(sourceScanResults.SastScanResults)...)
-			continue
-		}
-
-		// Set target branch scan details
-		var targetResults *audit.Results
-		workingDirs = utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
-		targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
-
-		if err != nil {
-			return
-		}
-
-		// Get new issues
-		var newVulnerabilities []formats.VulnerabilityOrViolationRow
-		var newIacs, newSecrets, newSast []formats.SourceCodeRow
-		if newVulnerabilities, newIacs, newSecrets, newSast, err = getNewIssues(targetResults, sourceResults); err != nil {
-			return
-		}
-		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
-		iacRows = append(iacRows, newIacs...)
-		secretsRows = append(secretsRows, newSecrets...)
-		sastRows = append(sastRows, newSast...)
+		issuesCollection.Append(projectIssues)
 	}
-
-	convertPathsToRelative(vulnerabilitiesRows, iacRows, secretsRows, sastRows, sourceBranchWd, targetBranchWd)
 	return
 }
 
-func convertPathsToRelative(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacRows []formats.SourceCodeRow, secretsRows []formats.SourceCodeRow, sastRows []formats.SourceCodeRow, sourceWd, targetWd string) {
-	for _, row := range vulnerabilitiesRows {
-		for _, cve := range row.Cves {
-			if cve.Applicability != nil {
-				for i := range cve.Applicability.Evidence {
-					cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, sourceWd)
-					cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, targetWd)
-				}
-			}
+func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (auditIssues *utils.IssuesCollection, err error) {
+	// Download source branch
+	sourcePullRequestInfo := scanDetails.PullRequestDetails.Source
+	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(scanDetails.Client(), sourcePullRequestInfo.Owner, sourcePullRequestInfo.Repository, sourcePullRequestInfo.Name)
+	if err != nil {
+		return
+	}
+	defer func() {
+		err = errors.Join(err, cleanupSource())
+	}()
+
+	// Audit source branch
+	var sourceResults *audit.Results
+	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
+	if err != nil {
+		return
+	}
+
+	// Set JAS output flags
+	sourceScanResults := sourceResults.ExtendedScanResults
+	repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
+
+	// Get all issues that exist in the source branch
+	if repoConfig.IncludeAllVulnerabilities {
+		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses); err != nil {
+			return
 		}
+		utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd)
+		return
 	}
-	for i := range iacRows {
-		iacRows[i].Location.File = xrayutils.ExtractRelativePath(iacRows[i].Location.File, sourceWd)
-		iacRows[i].Location.File = xrayutils.ExtractRelativePath(iacRows[i].Location.File, targetWd)
+
+	var targetBranchWd string
+	if auditIssues, targetBranchWd, err = auditTargetBranch(repoConfig, scanDetails, sourceResults); err != nil {
+		return
 	}
-	for i := range secretsRows {
-		secretsRows[i].Location.File = xrayutils.ExtractRelativePath(secretsRows[i].Location.File, sourceWd)
-		secretsRows[i].Location.File = xrayutils.ExtractRelativePath(secretsRows[i].Location.File, targetWd)
-	}
-	for i := range sastRows {
-		sastRows[i].Location.File = xrayutils.ExtractRelativePath(sastRows[i].Location.File, sourceWd)
-		sastRows[i].Location.File = xrayutils.ExtractRelativePath(sastRows[i].Location.File, targetWd)
-		for f := range sastRows[i].CodeFlow {
-			for l := range sastRows[i].CodeFlow[f] {
-				sastRows[i].CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastRows[i].CodeFlow[f][l].File, sourceWd)
-				sastRows[i].CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastRows[i].CodeFlow[f][l].File, targetWd)
-			}
-		}
-	}
+	utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd, targetBranchWd)
+	return
 }
 
-func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, []formats.SourceCodeRow, []formats.SourceCodeRow, []formats.SourceCodeRow, error) {
-	var newVulnerabilities []formats.VulnerabilityOrViolationRow
+func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *audit.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
+	// Download target branch (if needed)
+	cleanupTarget := func() error { return nil }
+	if !repoConfig.IncludeAllVulnerabilities {
+		targetBranchInfo := repoConfig.PullRequestDetails.Target
+		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
+			return
+		}
+	}
+	defer func() {
+		err = errors.Join(err, cleanupTarget())
+	}()
+
+	// Set target branch scan details
+	var targetResults *audit.Results
+	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
+	if err != nil {
+		return
+	}
+
+	// Get newly added issues
+	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses)
+	return
+}
+
+func getAllIssues(results *audit.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
+	log.Info("Frogbot is configured to show all vulnerabilities")
+	scanResults := results.ExtendedScanResults
+	allVulnerabilitiesRows, violatedLicenses, err := getScanVulnerabilitiesRows(results, allowedLicenses)
+	if err != nil {
+		return nil, err
+	}
+	return &utils.IssuesCollection{
+		Vulnerabilities: allVulnerabilitiesRows,
+		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
+		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
+		Sast:            xrayutils.PrepareSast(scanResults.SastScanResults),
+		Licenses:        violatedLicenses,
+	}, nil
+}
+
+// Returns all the issues found in the source branch that didn't exist in the target branch.
+func getNewlyAddedIssues(targetResults, sourceResults *audit.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
+	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
+	var newLicenses []formats.LicenseRow
 	var err error
 	if len(sourceResults.ExtendedScanResults.XrayResults) > 0 {
-		if newVulnerabilities, err = createNewVulnerabilitiesRows(targetResults, sourceResults); err != nil {
-			return nil, nil, nil, nil, err
+		if newVulnerabilitiesOrViolations, newLicenses, err = createNewVulnerabilitiesRows(targetResults, sourceResults, allowedLicenses); err != nil {
+			return nil, err
 		}
 	}
 
@@ -286,7 +273,13 @@ func getNewIssues(targetResults, sourceResults *audit.Results) ([]formats.Vulner
 		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
 	}
 
-	return newVulnerabilities, newIacs, newSecrets, newSast, nil
+	return &utils.IssuesCollection{
+		Vulnerabilities: newVulnerabilitiesOrViolations,
+		Iacs:            newIacs,
+		Secrets:         newSecrets,
+		Sast:            newSast,
+		Licenses:        newLicenses,
+	}, nil
 }
 
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
@@ -304,25 +297,98 @@ func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRo
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseRow, err error) {
 	targetScanAggregatedResults := aggregateScanResults(targetResults.ExtendedScanResults.XrayResults)
 	sourceScanAggregatedResults := aggregateScanResults(sourceResults.ExtendedScanResults.XrayResults)
 
 	if len(sourceScanAggregatedResults.Violations) > 0 {
-		newViolations, err := getNewViolations(targetScanAggregatedResults, sourceScanAggregatedResults, sourceResults)
-		if err != nil {
-			return vulnerabilitiesRows, err
-		}
-		vulnerabilitiesRows = append(vulnerabilitiesRows, newViolations...)
-	} else if len(sourceScanAggregatedResults.Vulnerabilities) > 0 {
-		newVulnerabilities, err := getNewVulnerabilities(targetScanAggregatedResults, sourceScanAggregatedResults, sourceResults)
-		if err != nil {
-			return vulnerabilitiesRows, err
-		}
-		vulnerabilitiesRows = append(vulnerabilitiesRows, newVulnerabilities...)
+		return getNewViolations(&targetScanAggregatedResults, &sourceScanAggregatedResults, sourceResults)
 	}
+	if len(sourceScanAggregatedResults.Vulnerabilities) > 0 {
+		if vulnerabilityOrViolationRows, err = getNewSecurityVulnerabilities(&targetScanAggregatedResults, &sourceScanAggregatedResults, sourceResults); err != nil {
+			return
+		}
+	}
+	var newLicenses []formats.LicenseRow
+	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
+		return
+	}
+	licenseRows = getViolatedLicenses(allowedLicenses, newLicenses)
+	return
+}
 
-	return vulnerabilitiesRows, nil
+func getNewSecurityVulnerabilities(targetScan, sourceScan *services.ScanResponse, auditResults *audit.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+	targetVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
+	if err != nil {
+		return newVulnerabilitiesRows, err
+	}
+	sourceVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
+	if err != nil {
+		return newVulnerabilitiesRows, err
+	}
+	newVulnerabilitiesRows = getUniqueVulnerabilityOrViolationRows(targetVulnerabilitiesRows, sourceVulnerabilitiesRows)
+	return
+}
+
+func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
+	existingRows := make(map[string]formats.VulnerabilityOrViolationRow)
+	var newRows []formats.VulnerabilityOrViolationRow
+	for _, row := range targetRows {
+		existingRows[utils.GetVulnerabiltiesUniqueID(row)] = row
+	}
+	for _, row := range sourceRows {
+		if _, exists := existingRows[utils.GetVulnerabiltiesUniqueID(row)]; !exists {
+			newRows = append(newRows, row)
+		}
+	}
+	return newRows
+}
+
+func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *audit.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseRow, err error) {
+	targetSecurityViolationsRows, targetLicenseViolationsRows, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
+	if err != nil {
+		return
+	}
+	sourceSecurityViolationsRows, sourceLicenseViolationsRows, _, err := xrayutils.PrepareViolations(sourceScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
+	if err != nil {
+		return
+	}
+	newSecurityViolationsRows = getUniqueVulnerabilityOrViolationRows(targetSecurityViolationsRows, sourceSecurityViolationsRows)
+	if len(sourceLicenseViolationsRows) > 0 {
+		newLicenseViolationsRows = getUniqueLicenseRows(targetLicenseViolationsRows, sourceLicenseViolationsRows)
+	}
+	return
+}
+
+func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicenses []formats.LicenseRow, err error) {
+	targetLicenses, err := xrayutils.PrepareLicenses(targetScan.Licenses)
+	if err != nil {
+		return
+	}
+	sourceLicenses, err := xrayutils.PrepareLicenses(sourceScan.Licenses)
+	if err != nil {
+		return
+	}
+	newLicenses = getUniqueLicenseRows(targetLicenses, sourceLicenses)
+	return
+}
+
+func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseRow) []formats.LicenseRow {
+	existingLicenses := make(map[string]formats.LicenseRow)
+	var newLicenses []formats.LicenseRow
+	for _, row := range targetRows {
+		existingLicenses[getUniqueLicenseKey(row)] = row
+	}
+	for _, row := range sourceRows {
+		if _, exists := existingLicenses[getUniqueLicenseKey(row)]; !exists {
+			newLicenses = append(newLicenses, row)
+		}
+	}
+	return newLicenses
+}
+
+func getUniqueLicenseKey(license formats.LicenseRow) string {
+	return license.LicenseKey + license.ImpactedDependencyName + license.ImpactedDependencyType
 }
 
 func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResponse {
@@ -338,65 +404,53 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 }
 
 // Create vulnerability rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(auditResults *audit.Results) ([]formats.VulnerabilityOrViolationRow, error) {
-	violations, vulnerabilities, _ := xrayutils.SplitScanResults(auditResults.ExtendedScanResults.XrayResults)
+func getScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, violatedLicenses []formats.LicenseRow, err error) {
+	violations, vulnerabilities, licenses := xrayutils.SplitScanResults(auditResults.ExtendedScanResults.XrayResults)
 	if len(violations) > 0 {
-		violationsRows, _, _, err := xrayutils.PrepareViolations(violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-		return violationsRows, err
+		var licenseViolationsRows []formats.LicenseRow
+		if vulnerabilitiesRows, licenseViolationsRows, _, err = xrayutils.PrepareViolations(violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
+			return nil, nil, err
+		}
+		return vulnerabilitiesRows, licenseViolationsRows, err
 	}
 	if len(vulnerabilities) > 0 {
-		return xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-	}
-	return []formats.VulnerabilityOrViolationRow{}, nil
-}
-
-func getNewViolations(targetScan, sourceScan services.ScanResponse, auditResults *audit.Results) (newViolationsRows []formats.VulnerabilityOrViolationRow, err error) {
-	existsViolationsMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	violationsRows, _, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-	if err != nil {
-		return violationsRows, err
-	}
-	for _, violation := range violationsRows {
-		existsViolationsMap[utils.GetUniqueID(violation)] = violation
-	}
-	violationsRows, _, _, err = xrayutils.PrepareViolations(sourceScan.Violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-	if err != nil {
-		return newViolationsRows, err
-	}
-	for _, violation := range violationsRows {
-		if _, exists := existsViolationsMap[utils.GetUniqueID(violation)]; !exists {
-			newViolationsRows = append(newViolationsRows, violation)
+		if vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
+			return
 		}
 	}
+	var licenseRows []formats.LicenseRow
+	if licenseRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
+		return
+	}
+	violatedLicenses = getViolatedLicenses(allowedLicenses, licenseRows)
 	return
 }
 
-func getNewVulnerabilities(targetScan, sourceScan services.ScanResponse, auditResults *audit.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
-	targetVulnerabilitiesMap := make(map[string]formats.VulnerabilityOrViolationRow)
-	targetVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-	if err != nil {
-		return newVulnerabilitiesRows, err
+func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow) []formats.LicenseRow {
+	if len(allowedLicenses) == 0 {
+		return nil
 	}
-	for _, vulnerability := range targetVulnerabilitiesRows {
-		targetVulnerabilitiesMap[utils.GetUniqueID(vulnerability)] = vulnerability
-	}
-	sourceVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true)
-	if err != nil {
-		return newVulnerabilitiesRows, err
-	}
-	for _, vulnerability := range sourceVulnerabilitiesRows {
-		if _, exists := targetVulnerabilitiesMap[utils.GetUniqueID(vulnerability)]; !exists {
-			newVulnerabilitiesRows = append(newVulnerabilitiesRows, vulnerability)
+	var violatedLicenses []formats.LicenseRow
+	for _, license := range licenses {
+		if !slices.Contains(allowedLicenses, license.LicenseKey) {
+			violatedLicenses = append(violatedLicenses, license)
 		}
 	}
-	return
+	return violatedLicenses
 }
 
-func createPullRequestMessage(vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow, writer outputwriter.OutputWriter) string {
-	if !isDetectedIssues(vulnerabilitiesRows, iacIssues, sastIssues) {
+func createPullRequestComment(issues *utils.IssuesCollection, writer outputwriter.OutputWriter) string {
+	if !issues.IssuesExists() {
 		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
 	}
-	return writer.VulnerabilitiesTitle(true) + writer.VulnerabilitiesContent(vulnerabilitiesRows) + writer.UntitledForJasMsg() + writer.Footer()
+	comment := strings.Builder{}
+	comment.WriteString(writer.VulnerabilitiesTitle(true))
+	comment.WriteString(writer.VulnerabilitiesContent(issues.Vulnerabilities))
+	comment.WriteString(writer.LicensesContent(issues.Licenses))
+	comment.WriteString(writer.UntitledForJasMsg())
+	comment.WriteString(writer.Footer())
+
+	return comment.String()
 }
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {

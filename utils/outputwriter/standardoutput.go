@@ -84,9 +84,9 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
-## 📦 Vulnerable Dependencies 
+%s
 
-### ✍️ Summary
+%s
 
 <div align="center">
 
@@ -94,10 +94,13 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 
 </div>
 
-## 👇 Details
+%s
 `,
+		vulnerableDependenciesTitle,
+		summaryTitle,
 		getVulnerabilitiesTableHeader(so.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, so)))
+		getVulnerabilitiesTableContent(vulnerabilities, so),
+		researchDetailsTitle))
 	// Write details for each vulnerability
 	for i := range vulnerabilities {
 		if len(vulnerabilities) == 1 {
@@ -126,7 +129,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf(`
-## 📦🔍 Contextual Analysis CVE Vulnerability
+%s
 
 <div align="center">
 
@@ -151,6 +154,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 </details>
 
 `,
+		contextualAnalysisTitle,
 		GetApplicabilityMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
 		fullDetails,
 		cveDetails))
@@ -173,7 +177,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 
 func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
 	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code (Iac) Vulnerability
+%s
 
 <div align="center">
 
@@ -190,6 +194,7 @@ func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string
 </details>
 
 `,
+		iacTitle,
 		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails)
 }
@@ -302,6 +307,7 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 	if !so.entitledForJas {
 		msg =
 			`
+---
 <div align="center">
 
 **Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
@@ -310,4 +316,23 @@ func (so *StandardOutput) UntitledForJasMsg() string {
 `
 	}
 	return msg
+}
+
+func (so *StandardOutput) LicensesContent(licenses []formats.LicenseRow) string {
+	if len(licenses) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(`
+%s 
+
+<div align="center">
+
+%s %s
+
+</div>
+
+`,
+		licenseTitle,
+		licenseTableHeader,
+		getLicensesTableContent(licenses, so))
 }
