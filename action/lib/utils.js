@@ -156,7 +156,8 @@ class Utils {
         return __awaiter(this, void 0, void 0, function* () {
             let cliDir = yield (0, tool_cache_1.cacheFile)(downloadDir, fileName, Utils.TOOL_NAME, version);
             if (!Utils.isWindows()) {
-                (0, fs_1.chmodSync)((0, path_1.join)(cliDir, fileName), 0o555);
+                let filePath = (0, path_1.normalize)((0, path_1.join)(cliDir, fileName));
+                (0, fs_1.chmodSync)(filePath, 0o555);
             }
             core.addPath(cliDir);
         });

@@ -4,8 +4,8 @@ import { context as githubContext } from '@actions/github';
 import { downloadTool, find, cacheFile } from '@actions/tool-cache';
 import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
-import { join } from 'path';
-import {BranchSummary, SimpleGit, simpleGit} from 'simple-git';
+import { normalize, join } from 'path';
+import { BranchSummary, SimpleGit, simpleGit } from 'simple-git';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
@@ -68,7 +68,7 @@ export class Utils {
      */
     public static async execScanPullRequest() {
         if (!process.env.JF_GIT_BASE_BRANCH) {
-            core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref)
+            core.exportVariable('JF_GIT_BASE_BRANCH', githubContext.ref);
         }
         let res: number = await exec(Utils.getExecutableName(), ['scan-pull-request']);
         if (res !== core.ExitCode.Success) {
@@ -121,7 +121,8 @@ export class Utils {
     private static async cacheAndAddPath(downloadDir: string, version: string, fileName: string) {
         let cliDir: string = await cacheFile(downloadDir, fileName, Utils.TOOL_NAME, version);
         if (!Utils.isWindows()) {
-            chmodSync(join(cliDir, fileName), 0o555);
+            let filePath: string = normalize(join(cliDir, fileName));
+            chmodSync(filePath, 0o555);
         }
         core.addPath(cliDir);
     }
