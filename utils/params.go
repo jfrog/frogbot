@@ -427,8 +427,8 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if branch != "" {
 		gitEnvParams.Branches = []string{branch}
 	}
-	// Set the repository name
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && !e.IsMissingEnvErr(err) {
+	// Set the repository name, mandatory.
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
 		return nil, err
 	}
 
