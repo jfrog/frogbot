@@ -28,7 +28,7 @@ const (
 	CommentId = "FrogbotReviewComment"
 )
 
-func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (err error) {
+func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
 	if err = deleteOldReviewComments(repo, pullRequestID, client); err != nil {
 		err = errors.New("couldn't delete pull request review comment: " + err.Error())
 		return
@@ -37,7 +37,7 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		err = errors.New("couldn't delete pull request comment: " + err.Error())
 		return
 	}
-	commentsToAdd := getNewReviewComments(repo, vulnerabilitiesRows, iacIssues, sastIssues)
+	commentsToAdd := getNewReviewComments(repo, issues)
 	if len(commentsToAdd) == 0 {
 		return
 	}
@@ -106,10 +106,10 @@ func getRegularCommentContent(comment ReviewComment) string {
 	return content + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
 }
 
-func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, iacIssues, sastIssues []formats.SourceCodeRow) (commentsToAdd []ReviewComment) {
+func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
 
-	for _, vulnerability := range vulnerabilitiesRows {
+	for _, vulnerability := range issues.Vulnerabilities {
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil {
 				for _, evidence := range cve.Applicability.Evidence {
@@ -118,11 +118,11 @@ func getNewReviewComments(repo *Repository, vulnerabilitiesRows []formats.Vulner
 			}
 		}
 	}
-	for _, iac := range iacIssues {
+	for _, iac := range issues.Iacs {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
 	}
 
-	for _, sast := range sastIssues {
+	for _, sast := range issues.Sast {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateReviewCommentContent(SastComment, sast, writer)))
 	}
 	return
