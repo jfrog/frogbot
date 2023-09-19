@@ -143,6 +143,10 @@ func TestExtractClientInfo(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
 	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
+
+	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token"})
+	_, err = extractGitParamsFromEnvs()
+	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
