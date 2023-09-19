@@ -26,16 +26,16 @@ type SecretsEmailDetails struct {
 }
 
 func NewSecretsEmailDetails(gitClient vcsclient.VcsClient, repoConfig *Repository, secrets []formats.SourceCodeRow) *SecretsEmailDetails {
-	secretsEmailDetails := &SecretsEmailDetails{}
-	secretsEmailDetails.gitClient = gitClient
-	secretsEmailDetails.EmailDetails = repoConfig.EmailDetails
-	secretsEmailDetails.gitProvider = repoConfig.GitProvider
-	sourcePullRequestInfo := repoConfig.PullRequestDetails.Source
-	secretsEmailDetails.repoOwner = sourcePullRequestInfo.Owner
-	secretsEmailDetails.repoName = sourcePullRequestInfo.Repository
-	secretsEmailDetails.detectedSecrets = secrets
-	secretsEmailDetails.pullRequestLink = repoConfig.PullRequestDetails.URL
-	secretsEmailDetails.branch = sourcePullRequestInfo.Name
+	secretsEmailDetails := &SecretsEmailDetails{
+		gitClient:       gitClient,
+		EmailDetails:    repoConfig.EmailDetails,
+		gitProvider:     repoConfig.GitProvider,
+		repoOwner:       repoConfig.PullRequestDetails.Source.Owner,
+		repoName:        repoConfig.PullRequestDetails.Source.Repository,
+		branch:          repoConfig.PullRequestDetails.Source.Name,
+		detectedSecrets: secrets,
+		pullRequestLink: repoConfig.PullRequestDetails.URL,
+	}
 	return secretsEmailDetails
 }
 
