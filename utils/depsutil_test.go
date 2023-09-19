@@ -91,7 +91,7 @@ func TestResolveDependencies(t *testing.T) {
 		tech              string
 		scanSetup         *ScanDetails
 		repoKey           string
-		resolveFunc       func(scanSetup *ScanDetails) ([]byte, error)
+		resolveFunc       func(scanSetup *ScanDetails) error
 		shouldExpectError bool
 	}{
 		{
@@ -150,11 +150,11 @@ func TestResolveDependencies(t *testing.T) {
 			restoreFunc, repoKey := setTestEnvironment(t, test.tech, &params)
 			defer restoreFunc()
 			test.scanSetup.Project.DepsRepo = repoKey
-			output, err := test.resolveFunc(test.scanSetup)
+			err := test.resolveFunc(test.scanSetup)
 			if test.shouldExpectError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err, "command's output:ֿֿֿ\n"+string(output))
+				assert.NoError(t, err)
 			}
 		})
 	}

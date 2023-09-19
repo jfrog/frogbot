@@ -143,33 +143,40 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	if sc.InstallCommandName == "" {
-		return nil
+		return
 	}
 	restoreDir, err := Chdir(workDir)
+	if err != nil {
+		return err
+	}
 	defer func() {
 		err = errors.Join(err, restoreDir())
 	}()
 	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
-	output, err := sc.runInstallCommand()
+	err = sc.runInstallCommand()
 	if err != nil && !sc.FailOnInstallationErrors() {
 		log.Info(installationCmdFailedErr, err.Error())
-		if len(output) > 0 {
-			log.Info(string(output))
-		}
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}
 	return
 }
 
-func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
+func (sc *ScanDetails) runInstallCommand() (err error) {
 	if sc.DepsRepo == "" {
+		var output []byte
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
-		return exec.Command(sc.InstallCommandName, sc.InstallCommandArgs...).CombinedOutput()
+		output, err = exec.Command(sc.InstallCommandName, sc.InstallCommandArgs...).CombinedOutput()
+		if err != nil && len(output) > 0 {
+			// Log output if exists
+			log.Info(output)
+		}
+		return
 	}
 
 	if _, exists := MapTechToResolvingFunc[sc.InstallCommandName]; !exists {
-		return nil, fmt.Errorf(sc.InstallCommandName, "isn't recognized as an install command")
+		err = fmt.Errorf(sc.InstallCommandName + " isn't recognized as an install command")
+		return
 	}
 	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
 	return MapTechToResolvingFunc[sc.InstallCommandName](sc)

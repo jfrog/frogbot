@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 )
 
-type resolveDependenciesFunc func(scanSetup *ScanDetails) ([]byte, error)
+type resolveDependenciesFunc func(scanSetup *ScanDetails) error
 
 var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 	coreutils.Npm.String():    resolveNpmDependencies,
@@ -27,23 +27,14 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 
 const yarnV2Version = "2.0.0"
 
-func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
-	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
-	if err = npmCmd.PreparePrerequisites(scanSetup.DepsRepo); err != nil {
-		return
-	}
-	if err = npmCmd.CreateTempNpmrc(); err != nil {
-		return
-	}
-	defer func() {
-		restoreNpmrc := npmCmd.RestoreNpmrcFunc()
-		err = errors.Join(err, restoreNpmrc())
-	}()
-	output, err = exec.Command(coreutils.Npm.String(), scanSetup.InstallCommandArgs...).CombinedOutput()
-	return
+func resolveNpmDependencies(scanSetup *ScanDetails) error {
+	return npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).
+		SetServerDetails(scanSetup.ServerDetails).
+		SetRepo(scanSetup.DepsRepo).
+		Run()
 }
 
-func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) {
+func resolveYarnDependencies(scanSetup *ScanDetails) (err error) {
 	currWd, err := coreutils.GetWorkingDirectory()
 	if err != nil {
 		return
@@ -90,7 +81,7 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 	return
 }
 
-func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error) {
+func resolveDotnetDependencies(scanSetup *ScanDetails) (err error) {
 	wd, err := fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -105,6 +96,7 @@ func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error
 	toolType := dotnetutils.ConvertNameToToolType(scanSetup.InstallCommandName)
 	args := scanSetup.InstallCommandArgs
 	args = append(args, toolType.GetTypeFlagPrefix()+"configfile", configFile.Name())
-	output, err = exec.Command(toolType.String(), args...).CombinedOutput()
+	//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
+	_, err = exec.Command(toolType.String(), args...).CombinedOutput()
 	return
 }

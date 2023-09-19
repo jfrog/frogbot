@@ -289,6 +289,7 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 
 func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []byte, err error) {
 	if mph.depsRepo == "" {
+		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		if readerOutput, err = exec.Command("mvn", goals...).CombinedOutput(); err != nil {
 			if len(readerOutput) > 0 {
 				log.Info(string(readerOutput))
