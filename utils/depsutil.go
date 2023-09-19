@@ -76,13 +76,13 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 	}
 	backupEnvMap, err := yarn.ModifyYarnConfigurations(yarnExecPath, registry, repoAuthIdent)
 	if err != nil {
-		if backupEnvMap != nil && len(backupEnvMap) > 0 {
+		if len(backupEnvMap) > 0 {
 			err = errors.Join(err, yarn.RestoreConfigurationsFromBackup(backupEnvMap, restoreYarnrcFunc))
 		}
 		return
 	}
 	defer func() {
-		if backupEnvMap != nil && len(backupEnvMap) > 0 {
+		if len(backupEnvMap) > 0 {
 			err = errors.Join(err, yarn.RestoreConfigurationsFromBackup(backupEnvMap, restoreYarnrcFunc))
 		}
 	}()
