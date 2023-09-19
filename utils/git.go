@@ -29,6 +29,10 @@ const (
 
 	// Timout is seconds for the git operations performed by the go-git client.
 	goGitTimeoutSeconds = 120
+
+	// Separators used to convert technologies array into string
+	fixBranchTechSeparator        = "-"
+	pullRequestTitleTechSeparator = ","
 )
 
 type GitManager struct {
@@ -379,7 +383,7 @@ func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Techno
 	if len(tech) == 0 {
 		return normalizeWhitespaces(strings.ReplaceAll(template, "%s", ""))
 	}
-	return fmt.Sprintf(template, techArrayToString(tech))
+	return fmt.Sprintf(template, techArrayToString(tech, pullRequestTitleTechSeparator))
 }
 
 func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) string {
@@ -398,7 +402,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(tech []coreutils.Technolog
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech), false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -468,18 +472,4 @@ func parseCustomTemplate(customTemplate string, tech []coreutils.Technology) str
 		suffix = " - %s Dependencies"
 	}
 	return normalizeWhitespaces(result) + suffix
-}
-
-func techArrayToString(techsArray []coreutils.Technology) (result string) {
-	if len(techsArray) == 0 {
-		return ""
-	}
-	if len(techsArray) < 2 {
-		return techsArray[0].ToFormal()
-	}
-	var techString []string
-	for _, tech := range techsArray {
-		techString = append(techString, tech.ToFormal())
-	}
-	return strings.Join(techString, ",")
 }
