@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/build-info-go v1.9.10
 	github.com/jfrog/froggit-go v1.14.2
 	github.com/jfrog/gofrog v1.3.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.43.2
+	github.com/jfrog/jfrog-cli-core/v2 v2.43.3
 	github.com/jfrog/jfrog-client-go v1.32.3
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.2.2
