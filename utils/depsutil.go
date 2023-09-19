@@ -30,28 +30,27 @@ const yarnV2Version = "2.0.0"
 func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
 	if err = npmCmd.PreparePrerequisites(scanSetup.DepsRepo); err != nil {
-		return nil, err
+		return
 	}
 	if err = npmCmd.CreateTempNpmrc(); err != nil {
-		return nil, err
+		return
 	}
 	defer func() {
 		restoreNpmrc := npmCmd.RestoreNpmrcFunc()
-		if err == nil {
-			err = restoreNpmrc()
-		}
+		err = errors.Join(err, restoreNpmrc())
 	}()
-	return exec.Command(coreutils.Npm.ToString(), scanSetup.InstallCommandArgs...).CombinedOutput()
+	output, err = exec.Command(coreutils.Npm.ToString(), scanSetup.InstallCommandArgs...).CombinedOutput()
+	return
 }
 
 func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	currWd, err := coreutils.GetWorkingDirectory()
 	if err != nil {
-		return nil, err
+		return
 	}
 	yarnExecPath, err := exec.LookPath("yarn")
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	executableYarnVersion, err := biUtils.GetVersion(yarnExecPath, currWd)
@@ -67,24 +66,24 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 
 	restoreYarnrcFunc, err := rtutils.BackupFile(filepath.Join(currWd, yarn.YarnrcFileName), yarn.YarnrcBackupFileName)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	registry, repoAuthIdent, err := yarn.GetYarnAuthDetails(scanSetup.ServerDetails, scanSetup.DepsRepo)
 	if err != nil {
-		return nil, yarn.RestoreConfigurationsAndError(nil, restoreYarnrcFunc, err)
+		err = yarn.RestoreConfigurationsAndError(nil, restoreYarnrcFunc, err)
+		return
 	}
 	backupEnvMap, err := yarn.ModifyYarnConfigurations(yarnExecPath, registry, repoAuthIdent)
 	if err != nil {
-		return nil, yarn.RestoreConfigurationsAndError(backupEnvMap, restoreYarnrcFunc, err)
+		err = yarn.RestoreConfigurationsAndError(backupEnvMap, restoreYarnrcFunc, err)
+		return
 	}
 	defer func() {
-		e := yarn.RestoreConfigurationsFromBackup(backupEnvMap, restoreYarnrcFunc)
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, yarn.RestoreConfigurationsFromBackup(backupEnvMap, restoreYarnrcFunc))
 	}()
-	return nil, build.RunYarnCommand(yarnExecPath, currWd, scanSetup.InstallCommandArgs...)
+	err = build.RunYarnCommand(yarnExecPath, currWd, scanSetup.InstallCommandArgs...)
+	return
 }
 
 func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error) {
@@ -93,10 +92,7 @@ func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error
 		return
 	}
 	defer func() {
-		e := fileutils.RemoveTempDir(wd)
-		if err == nil {
-			err = e
-		}
+		err = errors.Join(err, fileutils.RemoveTempDir(wd))
 	}()
 	configFile, err := dotnet.InitNewConfig(wd, scanSetup.DepsRepo, scanSetup.ServerDetails, false)
 	if err != nil {

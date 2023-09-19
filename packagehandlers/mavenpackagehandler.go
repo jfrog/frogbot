@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -91,7 +92,7 @@ func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 // fillDependenciesMap collects direct dependencies from the pomPath pom.xml file.
 // If the version of a dependency is set in another property section, it is added as its value in the map.
 func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
-	contentBytes, err := os.ReadFile(pomPath) // #nosec G304
+	contentBytes, err := os.ReadFile(filepath.Clean(pomPath))
 	if err != nil {
 		return errors.New("couldn't read pom.xml file: " + err.Error())
 	}

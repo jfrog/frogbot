@@ -550,7 +550,7 @@ func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []by
 	}
 
 	log.Debug(FrogbotConfigFile, "found in", fullConfigDirPath)
-	configFileContent, err = os.ReadFile(fullConfigDirPath)
+	configFileContent, err = os.ReadFile(filepath.Clean(fullConfigDirPath))
 	if err != nil {
 		err = fmt.Errorf("an error occurd while reading the %s file at: %s\n%s", FrogbotConfigFile, configRelativePath, err.Error())
 	}
