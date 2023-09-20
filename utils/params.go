@@ -58,8 +58,8 @@ type Params struct {
 	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
 }
 
-func (p *Params) setDefaultsIfNeeded(gitParamsFromEnv *Git) error {
-	if err := p.Git.setDefaultsIfNeeded(gitParamsFromEnv); err != nil {
+func (p *Params) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) error {
+	if err := p.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 		return err
 	}
 	if err := p.JFrogPlatform.setDefaultsIfNeeded(); err != nil {
@@ -235,7 +235,7 @@ type Git struct {
 	RepositoryCloneUrl       string
 }
 
-func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
+func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
 	g.RepoOwner = gitParamsFromEnv.RepoOwner
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
@@ -251,11 +251,19 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git) (err error) {
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	// When pull request ID is provided, no need to continue and extract unrelated env params.
-	isPullRequestContext := gitParamsFromEnv.PullRequestDetails.ID != 0
-	if isPullRequestContext {
-		return
+	// Check that PR ID was provided when scanning specific pull request.
+	if commandName == ScanPullRequest && gitParamsFromEnv.PullRequestDetails.ID == 0 {
+		return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
 	}
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
+		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) {
 	// Continue to extract ScanRepository related env params
 	noBranchesProvidedViaConfig := len(g.Branches) == 0
 	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
@@ -299,7 +307,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	gitParamsFromEnv, err := extractGitParamsFromEnvs()
+	gitParamsFromEnv, err := extractGitParamsFromEnvs(commandName)
 	if err != nil {
 		return
 	}
@@ -337,7 +345,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if !errors.As(err, &errMissingConfig) && len(configFileContent) == 0 {
 		return nil, err
 	}
-	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer)
+	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
 // The getConfigFileContent function retrieves the frogbot-config.yml file content.
@@ -353,7 +361,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -362,7 +370,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
 		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
-		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv); err != nil {
+		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}
 		resultAggregator = append(resultAggregator, repository)
@@ -412,7 +420,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
-func extractGitParamsFromEnvs() (*Git, error) {
+func extractGitParamsFromEnvs(commandName string) (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	gitEnvParams := &Git{}
@@ -447,8 +455,8 @@ func extractGitParamsFromEnvs() (*Git, error) {
 		return nil, err
 	}
 
-	// [Mandatory] Set the repository name
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
+	// [Mandatory] Set the repository name, except for multi repository.
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && commandName != ScanMultipleRepositories {
 		return nil, err
 	}
 

@@ -46,25 +46,23 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 		GitTokenEnv:         "123456789",
 		GitPullRequestIDEnv: "1",
 	})
-	extractAndAssertParamsFromEnv(t, true, true)
+	extractAndAssertParamsFromEnv(t, true, true, ScanPullRequest)
 }
 
 // Test extraction in ScanRepository command
 // Pull request ID's default is 0, which means we will have branches related variables.
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:              "http://127.0.0.1:8081",
-		JFrogUserEnv:             "admin",
-		JFrogPasswordEnv:         "password",
-		GitProvider:              string(BitbucketServer),
-		GitRepoOwnerEnv:          "jfrog",
-		GitRepoEnv:               "frogbot",
-		GitTokenEnv:              "123456789",
-		CommitMessageTemplateEnv: "my-custom-commit-template",
-		GitBaseBranchEnv:         "dev",
-		GitPullRequestIDEnv:      "0",
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogUserEnv:     "admin",
+		JFrogPasswordEnv: "password",
+		GitProvider:      string(BitbucketServer),
+		GitRepoOwnerEnv:  "jfrog",
+		GitRepoEnv:       "frogbot",
+		GitTokenEnv:      "123456789",
+		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, true)
+	extractAndAssertParamsFromEnv(t, true, true, ScanRepository)
 }
 
 func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
@@ -79,25 +77,23 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
 		GitBaseBranchEnv:       "dev",
-		GitPullRequestIDEnv:    "1",
 	})
-	extractAndAssertParamsFromEnv(t, false, true)
+	extractAndAssertParamsFromEnv(t, false, true, ScanRepository)
 }
 
 func TestExtractParamsFromEnvToken(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogUserEnv:        "",
-		JFrogPasswordEnv:    "",
-		JFrogTokenEnv:       "token",
-		GitProvider:         string(BitbucketServer),
-		GitRepoOwnerEnv:     "jfrog",
-		GitRepoEnv:          "frogbot",
-		GitTokenEnv:         "123456789",
-		GitBaseBranchEnv:    "dev",
-		GitPullRequestIDEnv: "1",
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogUserEnv:     "",
+		JFrogPasswordEnv: "",
+		JFrogTokenEnv:    "token",
+		GitProvider:      string(BitbucketServer),
+		GitRepoOwnerEnv:  "jfrog",
+		GitRepoEnv:       "frogbot",
+		GitTokenEnv:      "123456789",
+		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, false)
+	extractAndAssertParamsFromEnv(t, true, false, ScanRepository)
 }
 
 func TestExtractVcsProviderFromEnv(t *testing.T) {
@@ -133,19 +129,19 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitParamsFromEnvs()
+	_, err := extractGitParamsFromEnvs(ScanRepository)
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitParamsFromEnvs()
+	_, err = extractGitParamsFromEnvs(ScanRepository)
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitParamsFromEnvs()
+	_, err = extractGitParamsFromEnvs(ScanRepository)
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token"})
-	_, err = extractGitParamsFromEnvs()
+	_, err = extractGitParamsFromEnvs(ScanRepository)
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
@@ -173,11 +169,11 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -217,11 +213,11 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	}()
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server)
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -250,12 +246,12 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 	assert.Equal(t, "", project.PipRequirementsFile)
 }
 
-func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
+func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, commandName string) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs(commandName)
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator(nil, gitParams, server)
+	configFile, err := BuildRepoAggregator(nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -279,10 +275,9 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool) {
 		assert.Equal(t, "frogbot", configParams.RepoName)
 		assert.Equal(t, "123456789", configParams.Token)
 		// ScanRepository command context
-		if len(configParams.Branches) != 0 {
+		if commandName == ScanRepository {
 			assert.Equal(t, "dev", configParams.Branches[0])
 			assert.Equal(t, int64(0), configParams.PullRequestDetails.ID)
-			assert.Equal(t, "my-custom-commit-template", configParams.Git.CommitMessageTemplate)
 		} else {
 			// ScanPullRequest context
 			assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
@@ -345,7 +340,6 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
 		AllowedLicensesEnv:           "MIT, Apache-2.0",
-		GitPullRequestIDEnv:          "0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -367,7 +361,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server)
+	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -518,7 +512,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server)
+	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
