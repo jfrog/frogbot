@@ -179,7 +179,7 @@ func convertToUsageReports(commandName FrogbotCommandName, repositories RepoAggr
 			err = errors.Join(err, e)
 		} else {
 			reports = append(reports, usage.ReportFeature{
-				FeatureId: string(commandName),
+				FeatureId: commandName.ToString(),
 				ClientId:  clientId,
 			})
 		}
