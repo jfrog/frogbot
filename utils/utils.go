@@ -27,6 +27,10 @@ import (
 
 type FrogbotCommandName string
 
+func (fgc FrogbotCommandName) ToString() string {
+	return string(fgc)
+}
+
 const (
 	ScanPullRequest          FrogbotCommandName = "scan-pull-request"
 	ScanAllPullRequests      FrogbotCommandName = "scan-all-pull-requests"

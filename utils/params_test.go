@@ -191,7 +191,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, "")
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -235,7 +235,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, "")
+	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -364,7 +364,6 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
 		AllowedLicensesEnv:           "MIT, Apache-2.0",
-		GitPullRequestIDEnv:          "0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -386,7 +385,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server, "")
+	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	assert.Equal(t, "repoName", repo.RepoName)
@@ -537,7 +536,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server, "")
+	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
