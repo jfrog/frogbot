@@ -546,9 +546,6 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	}
 	log.Info("-----------------------------------------------------------------")
 	err = errors.Join(err, cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()))
-	//if e = cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()); e != nil {
-	//	err = errors.Join(err, e)
-	//}
 	return
 }
 
