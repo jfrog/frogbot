@@ -22,45 +22,45 @@ type FrogbotCommand interface {
 func GetCommands() []*clitool.Command {
 	return []*clitool.Command{
 		{
-			Name:    utils.ScanPullRequest,
+			Name:    string(utils.ScanPullRequest),
 			Aliases: []string{"spr"},
 			Usage:   "Scans a pull request with JFrog Xray for security vulnerabilities.",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanpullrequest.ScanPullRequestCmd{}, ctx.Command.Name)
+				return Exec(&scanpullrequest.ScanPullRequestCmd{}, utils.FrogbotCommandName(ctx.Command.Name))
 			},
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    utils.ScanRepository,
+			Name:    string(utils.ScanRepository),
 			Aliases: []string{"cfpr", "create-fix-pull-requests"},
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanrepository.ScanRepositoryCmd{}, ctx.Command.Name)
+				return Exec(&scanrepository.ScanRepositoryCmd{}, utils.FrogbotCommandName(ctx.Command.Name))
 			},
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    utils.ScanAllPullRequests,
+			Name:    string(utils.ScanAllPullRequests),
 			Aliases: []string{"sprs", "scan-pull-requests"},
 			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanpullrequest.ScanAllPullRequestsCmd{}, ctx.Command.Name)
+				return Exec(&scanpullrequest.ScanAllPullRequestsCmd{}, utils.FrogbotCommandName(ctx.Command.Name))
 			},
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    utils.ScanMultipleRepositories,
+			Name:    string(utils.ScanMultipleRepositories),
 			Aliases: []string{"scan-and-fix-repos", "safr"},
 			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanrepository.ScanMultipleRepositories{}, ctx.Command.Name)
+				return Exec(&scanrepository.ScanMultipleRepositories{}, utils.FrogbotCommandName(ctx.Command.Name))
 			},
 			Flags: []clitool.Flag{},
 		},
 	}
 }
 
-func Exec(command FrogbotCommand, commandName string) (err error) {
+func Exec(command FrogbotCommand, commandName utils.FrogbotCommandName) (err error) {
 	// Get frogbotDetails that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
 	frogbotDetails, err := utils.GetFrogbotDetails(commandName)

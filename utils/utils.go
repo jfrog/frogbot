@@ -25,13 +25,15 @@ import (
 	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
+type FrogbotCommandName string
+
 const (
-	ScanPullRequest          = "scan-pull-request"
-	ScanAllPullRequests      = "scan-all-pull-requests"
-	ScanRepository           = "scan-repository"
-	ScanMultipleRepositories = "scan-multiple-repositories"
-	RootDir                  = "."
-	branchNameRegex          = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest          FrogbotCommandName = "scan-pull-request"
+	ScanAllPullRequests      FrogbotCommandName = "scan-all-pull-requests"
+	ScanRepository           FrogbotCommandName = "scan-repository"
+	ScanMultipleRepositories FrogbotCommandName = "scan-multiple-repositories"
+	RootDir                                     = "."
+	branchNameRegex                             = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -152,7 +154,7 @@ func Chdir(dir string) (cbk func() error, err error) {
 	return func() error { return os.Chdir(wd) }, err
 }
 
-func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) func() {
+func ReportUsageOnCommand(commandName FrogbotCommandName, serverDetails *config.ServerDetails, repositories RepoAggregator) func() {
 	reporter := usage.NewUsageReporter(productId, serverDetails)
 	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
@@ -166,14 +168,14 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	}
 }
 
-func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
+func convertToUsageReports(commandName FrogbotCommandName, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
 	for _, repository := range repositories {
 		// Report one entry for each repository as client
 		if clientId, e := Md5Hash(repository.RepoName); e != nil {
 			err = errors.Join(err, e)
 		} else {
 			reports = append(reports, usage.ReportFeature{
-				FeatureId: commandName,
+				FeatureId: string(commandName),
 				ClientId:  clientId,
 			})
 		}
