@@ -251,15 +251,20 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName FrogbotComm
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-
-	if commandName == ScanPullRequest || commandName == ScanAllPullRequests {
-		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
-			return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
-		}
-		// When scan pull request is called, no need to continue and extract unrelated env params.
-		return
+	// Verify PR ID was provided
+	if commandName == ScanPullRequest && gitParamsFromEnv.PullRequestDetails.ID == 0 {
+		return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
 	}
+	// Extract extra params for Scan Repository commands
+	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
+		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
+			return
+		}
+	}
+	return
+}
 
+func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) {
 	// Continue to extract ScanRepository related env params
 	noBranchesProvidedViaConfig := len(g.Branches) == 0
 	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
