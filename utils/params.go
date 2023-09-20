@@ -252,7 +252,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName FrogbotComm
 		}
 	}
 
-	if commandName == ScanPullRequest {
+	if commandName == ScanPullRequest || commandName == ScanAllPullRequests {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
 			return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
 		}
