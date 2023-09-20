@@ -254,7 +254,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 
 	if commandName == ScanPullRequest {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
-			return fmt.Errorf("no pull request id provided. Please set via `JF_GIT_PULL_REQUEST_ID` environment variable")
+			return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
 		}
 		// When scan pull request is called, no need to continue and extract unrelated env params.
 		return
