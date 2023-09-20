@@ -455,7 +455,7 @@ func extractGitParamsFromEnvs(commandName string) (*Git, error) {
 		return nil, err
 	}
 
-	// [Mandatory] Set the repository name, expect for multi repository.
+	// [Mandatory] Set the repository name, except for multi repository.
 	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && commandName != ScanMultipleRepositories {
 		return nil, err
 	}
