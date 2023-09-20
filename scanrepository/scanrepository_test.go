@@ -169,7 +169,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams)
+			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams, "")
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -289,7 +289,7 @@ pr body
 			// Load default configurations
 			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
+			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams, "")
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
