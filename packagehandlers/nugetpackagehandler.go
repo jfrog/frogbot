@@ -23,5 +23,19 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	return nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
+	//wd, err := os.Getwd()
+	//if err != nil {
+	//	return
+	//}
+	//buildFilesDirPath := filepath.Join(wd, "obj")
+	//exists, err := fileutils.IsDirExists(buildFilesDirPath, false)
+	err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
+	if err != nil {
+		return
+	}
+
+	//if !exists {
+	//	err = fileutils.RemoveTempDir(buildFilesDirPath)
+	//}
+	return
 }
