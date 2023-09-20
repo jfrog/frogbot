@@ -198,7 +198,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	hash := crypto.MD5.New()
 	var keys []string
 	for _, vuln := range vulnerabilities {
-		keys = append(keys, GetUniqueID(vuln))
+		keys = append(keys, GetVulnerabiltiesUniqueID(vuln))
 	}
 	sort.Strings(keys)
 	for key, value := range keys {
@@ -347,7 +347,7 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 	return
 }
 
-func GetUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
+func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
 	return xrayutils.GetUniqueKey(
 		vulnerability.ImpactedDependencyName,
 		vulnerability.ImpactedDependencyVersion,
@@ -365,4 +365,77 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
 	})
 	return pullRequestsComments, nil
+}
+
+func ConvertSarifPathsToRelative(issues *IssuesCollection, workingDirs ...string) {
+	convertSarifPathsInCveApplicability(issues.Vulnerabilities, workingDirs...)
+	convertSarifPathsInIacs(issues.Iacs, workingDirs...)
+	convertSarifPathsInSecrets(issues.Secrets, workingDirs...)
+	convertSarifPathsInSast(issues.Sast, workingDirs...)
+}
+
+func convertSarifPathsInCveApplicability(vulnerabilities []formats.VulnerabilityOrViolationRow, workingDirs ...string) {
+	for _, row := range vulnerabilities {
+		for _, cve := range row.Cves {
+			if cve.Applicability != nil {
+				for i := range cve.Applicability.Evidence {
+					for _, wd := range workingDirs {
+						cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, wd)
+					}
+				}
+			}
+		}
+	}
+}
+
+func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string) {
+	for i := range iacs {
+		iac := &iacs[i]
+		for _, wd := range workingDirs {
+			iac.Location.File = xrayutils.ExtractRelativePath(iac.Location.File, wd)
+		}
+	}
+}
+
+func convertSarifPathsInSecrets(secrets []formats.SourceCodeRow, workingDirs ...string) {
+	for i := range secrets {
+		secret := &secrets[i]
+		for _, wd := range workingDirs {
+			secret.Location.File = xrayutils.ExtractRelativePath(secret.Location.File, wd)
+		}
+	}
+}
+
+func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string) {
+	for i := range sast {
+		sastIssue := &sast[i]
+		for _, wd := range workingDirs {
+			sastIssue.Location.File = xrayutils.ExtractRelativePath(sastIssue.Location.File, wd)
+			for f := range sastIssue.CodeFlow {
+				for l := range sastIssue.CodeFlow[f] {
+					sastIssue.CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastIssue.CodeFlow[f][l].File, wd)
+				}
+			}
+		}
+	}
+}
+
+// Normalizes whitespace in text, ensuring that words are separated by a single space, and any extra whitespace is removed.
+func normalizeWhitespaces(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}
+
+// Converts Technology array into a string with a separator.
+func techArrayToString(techsArray []coreutils.Technology, separator string) (result string) {
+	if len(techsArray) == 0 {
+		return ""
+	}
+	if len(techsArray) < 2 {
+		return techsArray[0].ToFormal()
+	}
+	var techString []string
+	for _, tech := range techsArray {
+		techString = append(techString, tech.ToFormal())
+	}
+	return strings.Join(techString, separator)
 }

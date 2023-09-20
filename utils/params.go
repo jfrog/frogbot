@@ -113,6 +113,7 @@ type Scan struct {
 	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
+	AllowedLicenses           []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
 	EmailDetails              `yaml:",inline"`
 }
@@ -182,6 +183,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})
 	}
+	if len(s.AllowedLicenses) == 0 {
+		if s.AllowedLicenses, err = readArrayParamFromEnv(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
+			return
+		}
+	}
 	for i := range s.Projects {
 		if err = s.Projects[i].setDefaultsIfNeeded(); err != nil {
 			return
@@ -198,15 +204,9 @@ type JFrogPlatform struct {
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 	e := &ErrMissingEnv{}
-	if jp.Watches == nil {
-		var watches string
-		if err = readParamFromEnv(jfrogWatchesEnv, &watches); err != nil && !e.IsMissingEnvErr(err) {
+	if len(jp.Watches) == 0 {
+		if jp.Watches, err = readArrayParamFromEnv(jfrogWatchesEnv, WatchesDelimiter); err != nil && !e.IsMissingEnvErr(err) {
 			return
-		}
-		if watches != "" {
-			// Remove spaces if exists
-			watches = strings.ReplaceAll(watches, " ", "")
-			jp.Watches = strings.Split(watches, WatchesDelimiter)
 		}
 	}
 
@@ -427,11 +427,6 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if branch != "" {
 		gitEnvParams.Branches = []string{branch}
 	}
-	// Set the repository name
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && !e.IsMissingEnvErr(err) {
-		return nil, err
-	}
-
 	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitEnvParams.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
@@ -439,16 +434,21 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if err = verifyValidApiEndpoint(gitEnvParams.APIEndpoint); err != nil {
 		return nil, err
 	}
-	// Set the Git provider
+	// [Mandatory] Set the Git provider
 	if gitEnvParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
-	// Set the git repository owner name (organization)
+	// [Mandatory] Set the git repository owner name (organization)
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitEnvParams.RepoOwner); err != nil {
 		return nil, err
 	}
-	// Set the access token to the git provider
+	// [Mandatory] Set the access token to the git provider
 	if err = readParamFromEnv(GitTokenEnv, &gitEnvParams.Token); err != nil {
+		return nil, err
+	}
+
+	// [Mandatory] Set the repository name
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
 		return nil, err
 	}
 
@@ -486,6 +486,21 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 		return errors.New("the given API endpoint is invalid. Please note that the API endpoint format should be provided with the 'HTTPS' protocol as a prefix")
 	}
 	return nil
+}
+
+func readArrayParamFromEnv(envKey, delimiter string) ([]string, error) {
+	var envValue string
+	var err error
+	e := &ErrMissingEnv{}
+	if err = readParamFromEnv(envKey, &envValue); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
+	if envValue == "" {
+		return nil, &ErrMissingEnv{VariableName: envKey}
+	}
+	// Remove spaces if exists
+	envValue = strings.ReplaceAll(envValue, " ", "")
+	return strings.Split(envValue, delimiter), nil
 }
 
 func readParamFromEnv(envKey string, paramValue *string) error {
@@ -550,7 +565,7 @@ func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []by
 	}
 
 	log.Debug(FrogbotConfigFile, "found in", fullConfigDirPath)
-	configFileContent, err = os.ReadFile(fullConfigDirPath)
+	configFileContent, err = os.ReadFile(filepath.Clean(fullConfigDirPath))
 	if err != nil {
 		err = fmt.Errorf("an error occurd while reading the %s file at: %s\n%s", FrogbotConfigFile, configRelativePath, err.Error())
 	}

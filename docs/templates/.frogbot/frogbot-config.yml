@@ -53,6 +53,14 @@
       # fixableOnly: true
 
       # [Optional]
+      # Set the list of allowed licenses
+      # The full list of licenses can be found in:
+      # https://github.com/jfrog/frogbot/blob/master/docs/licenses.md
+      # allowedLicenses:
+      #  - MIT
+      #  - Apache-2.0
+
+      # [Optional]
       # Set the minimum severity for vulnerabilities that should be fixed and commented on in pull requests
       # The following values are accepted: Low, Medium, High or Critical
       # minSeverity: ""
@@ -61,7 +69,7 @@
       # List of email addresses to receive emails about secrets that has been detected in a pull request scan.
       # Applies only to servers that are entitled to JFrog Advanced Security.
       # emailReceivers:
-      # - user@company.com
+      #  - user@company.com
 
       # List of subprojects / project dirs inside the Git repository
       projects:

@@ -7,11 +7,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
-	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -29,6 +29,10 @@ const (
 
 	// Timout is seconds for the git operations performed by the go-git client.
 	goGitTimeoutSeconds = 120
+
+	// Separators used to convert technologies array into string
+	fixBranchTechSeparator        = "-"
+	pullRequestTitleTechSeparator = ","
 )
 
 type GitManager struct {
@@ -323,10 +327,11 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitMessage(tech coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
-		template = outputwriter.GetAggregatedPullRequestTitle(tech)
+		// In aggregated mode, commit message and PR title are the same.
+		template = gm.GenerateAggregatedPullRequestTitle(tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -372,14 +377,32 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
+func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
+	template := gm.getPullRequestTitleTemplate(tech)
+	// If no technologies are provided, return the template as-is
+	if len(tech) == 0 {
+		return normalizeWhitespaces(strings.ReplaceAll(template, "%s", ""))
+	}
+	return fmt.Sprintf(template, techArrayToString(tech, pullRequestTitleTechSeparator))
+}
+
+func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) string {
+	// Check if a custom template is available
+	if customTemplate := gm.customTemplates.pullRequestTitleTemplate; customTemplate != "" {
+		return parseCustomTemplate(customTemplate, tech)
+	}
+	// If no custom template, use the default template
+	return AggregatePullRequestTitleDefaultTemplate
+}
+
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot branch in aggregated mode.
-func (gm *GitManager) GenerateAggregatedFixBranchName(tech coreutils.Technology) (fixBranchName string, err error) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(tech []coreutils.Technology) (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", tech.ToString(), false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -431,7 +454,22 @@ func setGoGitCustomClient() {
 	customClient := &http.Client{
 		Timeout: goGitTimeoutSeconds * time.Second,
 	}
-
 	client.InstallProtocol("http", githttp.NewClient(customClient))
 	client.InstallProtocol("https", githttp.NewClient(customClient))
+}
+
+// Clean user template from input strings and add suffix.
+func parseCustomTemplate(customTemplate string, tech []coreutils.Technology) string {
+	trimSpace := strings.TrimSpace(customTemplate)
+	// Find any input format strings
+	re := regexp.MustCompile(`%[sdvTtqwxXbcdoUxfeEgGp]`)
+	// Replace all matching substrings with an empty string
+	result := re.ReplaceAllString(trimSpace, "")
+	// Remove any middle spaces
+	result = strings.Join(strings.Fields(result), " ")
+	var suffix string
+	if len(tech) > 0 {
+		suffix = " - %s Dependencies"
+	}
+	return normalizeWhitespaces(result) + suffix
 }

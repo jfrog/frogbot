@@ -113,23 +113,23 @@ func TestFixVersionsMapToMd5Hash(t *testing.T) {
 	}{
 		{
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Npm}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pkg"}, Technology: coreutils.Npm}, IsDirectDependency: false}},
 			expectedHash: "5ce60f326e1d1e329b74e3310b34c969",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false},
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pkg"}, Technology: coreutils.Go}, IsDirectDependency: false},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pkg2"}, Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "bf6e3f3204b8df46400785c60e9ff4c9",
 		},
 		{
 			// The Same map with different order should be the same hash.
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg2", Technology: coreutils.Go}, IsDirectDependency: false},
-				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "pkg", Technology: coreutils.Go}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "1.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pkg2"}, Technology: coreutils.Go}, IsDirectDependency: false},
+				{SuggestedFixedVersion: "5.2.3", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pkg"}, Technology: coreutils.Go}, IsDirectDependency: false}},
 			expectedHash: "bf6e3f3204b8df46400785c60e9ff4c9",
 		}, {
 			vulnerabilities: []*VulnerabilityDetails{
-				{SuggestedFixedVersion: "0.2.33", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyName: "myNuget", Technology: coreutils.Nuget}, IsDirectDependency: false}},
+				{SuggestedFixedVersion: "0.2.33", VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "myNuget"}, Technology: coreutils.Nuget}, IsDirectDependency: false}},
 			expectedHash: "ee2d3be06ca4fe53f6ab769e06d74702",
 		},
 	}
@@ -321,6 +321,54 @@ func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualRows := ExtractVulnerabilitiesDetailsToRows(tc.vulnDetails)
 			assert.ElementsMatch(t, tc.expectedRows, actualRows)
+		})
+	}
+}
+
+func TestNormalizeWhiteSpace(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{input: "hello  world", expected: "hello world"},
+		{input: "hello     world", expected: "hello world"},
+		{input: "  hello     world", expected: "hello world"},
+		{input: "  hello     world  ", expected: "hello world"},
+		{input: "  hello     world   a   ", expected: "hello world a"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			output := normalizeWhitespaces(tc.input)
+			assert.Equal(t, tc.expected, output)
+		})
+	}
+}
+
+func TestTechArrayToString(t *testing.T) {
+	testCases := []struct {
+		techArray []coreutils.Technology
+		separator string
+		expected  string
+	}{{
+		techArray: []coreutils.Technology{coreutils.Maven, coreutils.Go},
+		separator: fixBranchTechSeparator, expected: "Maven-Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go},
+		separator: fixBranchTechSeparator, expected: "Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go},
+		separator: pullRequestTitleTechSeparator, expected: "Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go, coreutils.Pip, coreutils.Npm},
+		separator: pullRequestTitleTechSeparator, expected: "Go,Pip,npm",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go, coreutils.Pip, coreutils.Npm},
+		separator: fixBranchTechSeparator, expected: "Go-Pip-npm",
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			output := techArrayToString(tc.techArray, tc.separator)
+			assert.Equal(t, tc.expected, output)
 		})
 	}
 }

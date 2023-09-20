@@ -62,7 +62,7 @@ setLinuxProperties() {
          ;;
       *)
           echo "Unknown machine type: $MACHINE_TYPE"
-          exit -1
+          exit 1
           ;;
   esac
   URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
@@ -70,9 +70,9 @@ setLinuxProperties() {
 }
 
 setFrogbotDownloadProperties() {
-  if $(echo "${OSTYPE}" | grep -q msys); then
+  if echo "${OSTYPE}" | grep -q msys; then
     setWindowsProperties
-  elif $(echo "${OSTYPE}" | grep -q darwin); then
+  elif echo "${OSTYPE}" | grep -q darwin; then
     setMacProperties
   else
     setLinuxProperties

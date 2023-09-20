@@ -168,6 +168,12 @@ frogbot-scan:
     # in the committer git profile regardless of whether this variable is set or not.
     # JF_EMAIL_RECEIVERS: ""
     
+    # [Optional]
+    # Set the list of allowed licenses
+    # The full list of licenses can be found in:
+    # https://github.com/jfrog/frogbot/blob/master/docs/licenses.md
+    # JF_ALLOWED_LICENSES: "MIT, Apache-2.0"
+    
   script:
     # For Linux / MacOS runner:
     - |

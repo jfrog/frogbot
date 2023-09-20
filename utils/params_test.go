@@ -143,6 +143,10 @@ func TestExtractClientInfo(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
 	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
+
+	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token"})
+	_, err = extractGitParamsFromEnvs()
+	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
 func TestExtractAndAssertRepoParams(t *testing.T) {
@@ -161,6 +165,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitEmailAuthorEnv:    "myemail@jfrog.com",
 		MinSeverityEnv:       "high",
 		FixableOnlyEnv:       "true",
+		AllowedLicensesEnv:   "MIT, Apache-2.0, ISC",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -191,6 +196,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, true, repo.AggregateFixes)
 		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
+		assert.ElementsMatch(t, []string{"MIT", "ISC", "Apache-2.0"}, repo.AllowedLicenses)
 		for _, project := range repo.Projects {
 			testExtractAndAssertProjectParams(t, project)
 		}
@@ -224,6 +230,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.False(t, scan.IncludeAllVulnerabilities)
 	assert.False(t, scan.FixableOnly)
 	assert.Empty(t, scan.MinSeverity)
+	assert.Empty(t, scan.AllowedLicenses)
 	assert.True(t, *scan.FailOnSecurityIssues)
 	assert.Len(t, scan.Projects, 1)
 	project := scan.Projects[0]
@@ -337,6 +344,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FailOnSecurityIssuesEnv:      "false",
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
+		AllowedLicensesEnv:           "MIT, Apache-2.0",
 		GitPullRequestIDEnv:          "0",
 	})
 	defer func() {
@@ -367,6 +375,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
+	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
@@ -521,6 +530,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 	assert.Equal(t, "commit-msg", repo.CommitMessageTemplate)
 	assert.Equal(t, "proj", repo.JFrogProjectKey)
 	assert.Equal(t, "myPullRequests", repo.PullRequestTitleTemplate)
+	assert.ElementsMatch(t, []string{"ISC", "MIT"}, repo.AllowedLicenses)
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, repo.Watches)
 	project := repo.Projects[0]
 	assert.ElementsMatch(t, []string{"a/b"}, project.WorkingDirs)

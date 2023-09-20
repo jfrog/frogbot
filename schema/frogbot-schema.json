@@ -117,6 +117,22 @@
         "description": "Handle vulnerabilities with fix versions only.",
         "title": "Handle vulnerabilities with fix versions only"
       },
+	  "allowedLicenses": {
+		"type": [
+		  "array",
+		  "null"
+		],
+		"description": "List of allowed package licenses.",
+		"title": "List of allowed package licenses",
+		"items": {
+		  "type": "string",
+		  "title": "Allowed Package Licenses",
+		  "examples": [
+			"MIT",
+			"Apache-2.0"
+		  ]
+		}
+	  },
       "emailReceivers": {
         "type": [
           "array",

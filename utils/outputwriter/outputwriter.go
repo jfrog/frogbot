@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 )
@@ -16,6 +15,13 @@ const (
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	vulnerableDependenciesTitle                      = "## 📦 Vulnerable Dependencies"
+	summaryTitle                                     = "### ✍️ Summary"
+	researchDetailsTitle                             = "## 🔬 Research Details"
+	iacTitle                                         = "## 🛠️ Infrastructure as Code"
+	licenseTitle                                     = "## ⚖️ Violated Licenses"
+	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability\n"
+	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -99,6 +105,7 @@ type OutputWriter interface {
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
+	LicensesContent(licenses []formats.LicenseRow) string
 	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
@@ -126,7 +133,7 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var descriptionBuilder strings.Builder
 	vulnResearch := vulnerability.JfrogResearchInformation
-	if vulnerability.JfrogResearchInformation == nil {
+	if vulnResearch == nil {
 		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
 	}
 
@@ -149,6 +156,20 @@ func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrVio
 		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
 	}
 	return tableContent
+}
+
+func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
+	var tableContent strings.Builder
+	for _, license := range licenses {
+		var directDependenciesBuilder strings.Builder
+		for _, component := range license.Components {
+			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
+		}
+		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
+		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
+		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
+	}
+	return tableContent.String()
 }
 
 func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
@@ -191,13 +212,6 @@ at %s (line %d)
 		MarkAsCodeSnippet(location.Snippet),
 		MarkAsQuote(location.File),
 		location.StartLine)
-}
-
-func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech.ToString() == "" {
-		return FrogbotTitlePrefix + " Update dependencies"
-	}
-	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
 }
 
 func getVulnerabilitiesTableHeader(showCaColumn bool) string {

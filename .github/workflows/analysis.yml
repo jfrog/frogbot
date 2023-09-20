@@ -50,3 +50,17 @@ jobs:
         uses: securego/gosec@master
         with:
           args: -exclude=G204,G301,G302,G304,G306 -exclude-dir=\.*test\.* ./...
+
+  ShellCheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          ignore_paths:
+            .husky
+            *test*
