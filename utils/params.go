@@ -427,11 +427,6 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if branch != "" {
 		gitEnvParams.Branches = []string{branch}
 	}
-	// Set the repository name
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && !e.IsMissingEnvErr(err) {
-		return nil, err
-	}
-
 	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitEnvParams.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
@@ -439,16 +434,21 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if err = verifyValidApiEndpoint(gitEnvParams.APIEndpoint); err != nil {
 		return nil, err
 	}
-	// Set the Git provider
+	// [Mandatory] Set the Git provider
 	if gitEnvParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
-	// Set the git repository owner name (organization)
+	// [Mandatory] Set the git repository owner name (organization)
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitEnvParams.RepoOwner); err != nil {
 		return nil, err
 	}
-	// Set the access token to the git provider
+	// [Mandatory] Set the access token to the git provider
 	if err = readParamFromEnv(GitTokenEnv, &gitEnvParams.Token); err != nil {
+		return nil, err
+	}
+
+	// [Mandatory] Set the repository name
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
 		return nil, err
 	}
 
@@ -565,7 +565,7 @@ func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []by
 	}
 
 	log.Debug(FrogbotConfigFile, "found in", fullConfigDirPath)
-	configFileContent, err = os.ReadFile(fullConfigDirPath)
+	configFileContent, err = os.ReadFile(filepath.Clean(fullConfigDirPath))
 	if err != nil {
 		err = fmt.Errorf("an error occurd while reading the %s file at: %s\n%s", FrogbotConfigFile, configRelativePath, err.Error())
 	}

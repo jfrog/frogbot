@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 )
@@ -213,13 +212,6 @@ at %s (line %d)
 		MarkAsCodeSnippet(location.Snippet),
 		MarkAsQuote(location.File),
 		location.StartLine)
-}
-
-func GetAggregatedPullRequestTitle(tech coreutils.Technology) string {
-	if tech.String() == "" {
-		return FrogbotTitlePrefix + " Update dependencies"
-	}
-	return fmt.Sprintf("%s Update %s dependencies", FrogbotTitlePrefix, tech.ToFormal())
 }
 
 func getVulnerabilitiesTableHeader(showCaColumn bool) string {
