@@ -106,7 +106,6 @@ type OutputWriter interface {
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	LicensesContent(licenses []formats.LicenseRow) string
-	IacTableContent(iacRows []formats.SourceCodeRow) string
 	Footer() string
 	Separator() string
 	FormattedSeverity(severity, applicability string) string
@@ -170,14 +169,6 @@ func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter)
 		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
 	}
 	return tableContent.String()
-}
-
-func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
-	var tableContent string
-	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
-	}
-	return tableContent
 }
 
 func MarkdownComment(text string) string {

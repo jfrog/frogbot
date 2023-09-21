@@ -265,24 +265,24 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
-	if len(iacRows) == 0 {
-		return ""
-	}
+// func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
+// 	if len(iacRows) == 0 {
+// 		return ""
+// 	}
 
-	return fmt.Sprintf(`
-## 🛠️ Infrastructure as Code 
+// 	return fmt.Sprintf(`
+// ## 🛠️ Infrastructure as Code
 
-<div align="center">
+// <div align="center">
 
-%s %s
+// %s %s
 
-</div>
+// </div>
 
-`,
-		iacTableHeader,
-		getIacTableContent(iacRows, so))
-}
+// `,
+// 		iacTableHeader,
+// 		getIacTableContent(iacRows, so))
+// }
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
@@ -335,4 +335,33 @@ func (so *StandardOutput) LicensesContent(licenses []formats.LicenseRow) string 
 		licenseTitle,
 		licenseTableHeader,
 		getLicensesTableContent(licenses, so))
+}
+
+func MarkInCenter(content string) string {
+	return fmt.Sprintf(`
+
+<div align="center">
+
+%s
+	
+</div>
+
+`,
+		content)
+}
+
+func MarkAsDetails(summary, content string) string {
+	return fmt.Sprintf(`
+
+<details>
+<summary><b>%s</b></summary>
+<br>
+	
+%s
+
+</details>
+
+`,
+		summary,
+		content)
 }

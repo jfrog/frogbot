@@ -232,21 +232,21 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) stri
 		getLicensesTableContent(licenses, smo))
 }
 
-func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
-	if len(iacRows) == 0 {
-		return ""
-	}
+// func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
+// 	if len(iacRows) == 0 {
+// 		return ""
+// 	}
 
-	return fmt.Sprintf(`
-%s
+// 	return fmt.Sprintf(`
+// %s
 
-%s %s
+// %s %s
 
-`,
-		iacTitle,
-		iacTableHeader,
-		getIacTableContent(iacRows, smo))
-}
+// `,
+// 		iacTitle,
+// 		iacTableHeader,
+// 		getIacTableContent(iacRows, smo))
+// }
 
 func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n%s", CommentGeneratedByFrogbot)

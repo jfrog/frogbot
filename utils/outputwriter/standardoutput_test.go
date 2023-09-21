@@ -274,126 +274,126 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	assert.Contains(t, actualContent, "| Not Applicable |")
 }
 
-func TestStandardOutput_IacContent(t *testing.T) {
-	testCases := []struct {
-		name           string
-		iacRows        []formats.SourceCodeRow
-		expectedOutput string
-	}{
-		{
-			name:           "Empty IAC rows",
-			iacRows:        []formats.SourceCodeRow{},
-			expectedOutput: "",
-		},
-		{
-			name: "Single IAC row",
-			iacRows: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
-					Location: formats.Location{
-						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
-						StartLine:   11,
-						StartColumn: 1,
-						Snippet:     "Missing Periodic patching was detected",
-					},
-				},
-			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
-		},
-		{
-			name: "Multiple IAC rows",
-			iacRows: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
-					Location: formats.Location{
-						File:        "applicable/req_sw_terraform_azure_redis_patch.tf",
-						StartLine:   11,
-						StartColumn: 1,
-						Snippet:     "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
-					},
-				},
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
-					Location: formats.Location{
-						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
-						StartLine:   11,
-						StartColumn: 1,
-						Snippet:     "Missing Periodic patching was detected",
-					},
-				},
-			},
-			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
-		},
-	}
+// func TestStandardOutput_IacContent(t *testing.T) {
+// 	testCases := []struct {
+// 		name           string
+// 		iacRows        []formats.SourceCodeRow
+// 		expectedOutput string
+// 	}{
+// 		{
+// 			name:           "Empty IAC rows",
+// 			iacRows:        []formats.SourceCodeRow{},
+// 			expectedOutput: "",
+// 		},
+// 		{
+// 			name: "Single IAC row",
+// 			iacRows: []formats.SourceCodeRow{
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
+// 					Location: formats.Location{
+// 						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+// 						StartLine:   11,
+// 						StartColumn: 1,
+// 						Snippet:     "Missing Periodic patching was detected",
+// 					},
+// 				},
+// 			},
+// 			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
+// 		},
+// 		{
+// 			name: "Multiple IAC rows",
+// 			iacRows: []formats.SourceCodeRow{
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
+// 					Location: formats.Location{
+// 						File:        "applicable/req_sw_terraform_azure_redis_patch.tf",
+// 						StartLine:   11,
+// 						StartColumn: 1,
+// 						Snippet:     "Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected",
+// 					},
+// 				},
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
+// 					Location: formats.Location{
+// 						File:        "applicable/req_sw_terraform_azure_redis_auth.tf",
+// 						StartLine:   11,
+// 						StartColumn: 1,
+// 						Snippet:     "Missing Periodic patching was detected",
+// 					},
+// 				},
+// 			},
+// 			expectedOutput: "\n## 🛠️ Infrastructure as Code \n\n<div align=\"center\">\n\n\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_patch.tf | 11:1 | Missing redis firewall definition or start_ip=0.0.0.0 was detected, Missing redis firewall definition or start_ip=0.0.0.0 was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | applicable/req_sw_terraform_azure_redis_auth.tf | 11:1 | Missing Periodic patching was detected |\n\n</div>\n\n",
+// 		},
+// 	}
 
-	writer := &StandardOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := writer.IacTableContent(tc.iacRows)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}
+// 	writer := &StandardOutput{}
+// 	for _, tc := range testCases {
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			output := writer.IacTableContent(tc.iacRows)
+// 			assert.Equal(t, tc.expectedOutput, output)
+// 		})
+// 	}
+// }
 
-func TestStandardOutput_GetIacTableContent(t *testing.T) {
-	testCases := []struct {
-		name           string
-		iacRows        []formats.SourceCodeRow
-		expectedOutput string
-	}{
-		{
-			name:           "Empty IAC rows",
-			iacRows:        []formats.SourceCodeRow{},
-			expectedOutput: "",
-		},
-		{
-			name: "Single IAC row",
-			iacRows: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
-					Location: formats.Location{
-						File:        "file1",
-						StartLine:   1,
-						StartColumn: 10,
-						Snippet:     "Public access to MySQL was detected",
-					},
-				},
-			},
-			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected |",
-		},
-		{
-			name: "Multiple IAC rows",
-			iacRows: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
-					Location: formats.Location{
-						File:        "file1",
-						StartLine:   1,
-						StartColumn: 10,
-						Snippet:     "Public access to MySQL was detected",
-					},
-				},
-				{
-					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
-					Location: formats.Location{
-						File:        "file2",
-						StartLine:   2,
-						StartColumn: 5,
-						Snippet:     "Public access to MySQL was detected",
-					},
-				},
-			},
-			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected |",
-		},
-	}
+// func TestStandardOutput_GetIacTableContent(t *testing.T) {
+// 	testCases := []struct {
+// 		name           string
+// 		iacRows        []formats.SourceCodeRow
+// 		expectedOutput string
+// 	}{
+// 		{
+// 			name:           "Empty IAC rows",
+// 			iacRows:        []formats.SourceCodeRow{},
+// 			expectedOutput: "",
+// 		},
+// 		{
+// 			name: "Single IAC row",
+// 			iacRows: []formats.SourceCodeRow{
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
+// 					Location: formats.Location{
+// 						File:        "file1",
+// 						StartLine:   1,
+// 						StartColumn: 10,
+// 						Snippet:     "Public access to MySQL was detected",
+// 					},
+// 				},
+// 			},
+// 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file1 | 1:10 | Public access to MySQL was detected |",
+// 		},
+// 		{
+// 			name: "Multiple IAC rows",
+// 			iacRows: []formats.SourceCodeRow{
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "High", SeverityNumValue: 3},
+// 					Location: formats.Location{
+// 						File:        "file1",
+// 						StartLine:   1,
+// 						StartColumn: 10,
+// 						Snippet:     "Public access to MySQL was detected",
+// 					},
+// 				},
+// 				{
+// 					SeverityDetails: formats.SeverityDetails{Severity: "Medium", SeverityNumValue: 2},
+// 					Location: formats.Location{
+// 						File:        "file2",
+// 						StartLine:   2,
+// 						StartColumn: 5,
+// 						Snippet:     "Public access to MySQL was detected",
+// 					},
+// 				},
+// 			},
+// 			expectedOutput: "\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | file1 | 1:10 | Public access to MySQL was detected |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | file2 | 2:5 | Public access to MySQL was detected |",
+// 		},
+// 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := getIacTableContent(tc.iacRows, &StandardOutput{})
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}
+// 	for _, tc := range testCases {
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			output := getIacTableContent(tc.iacRows, &StandardOutput{})
+// 			assert.Equal(t, tc.expectedOutput, output)
+// 		})
+// 	}
+// }
 
 func TestStandardOutput_GetLicensesTableContent(t *testing.T) {
 	writer := &StandardOutput{}
