@@ -327,7 +327,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
 				ImpactedDependencyName: "component-C",
 			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			Technology: coreutils.Yarn,
 		},
 		{
@@ -338,7 +338,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
 				ImpactedDependencyName: "component-D",
 			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10}}}}}},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			Technology: coreutils.Yarn,
 		},
 	}
@@ -347,39 +347,16 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
 		&audit.Results{
 			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				XrayResults:    []services.ScanResponse{previousScan},
-				EntitledForJas: true,
-				ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").
-					WithResults([]*sarif.Result{
-						sarif.NewRuleResult("applic_CVE-2023-4321").
-							WithLocations([]*sarif.Location{
-								sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-									WithArtifactLocation(sarif.NewArtifactLocation().
-										WithUri("file1")).
-									WithRegion(sarif.NewRegion().
-										WithStartLine(1).
-										WithStartColumn(10))),
-							}),
-					}),
-				},
+				XrayResults:              []services.ScanResponse{previousScan},
+				EntitledForJas:           true,
+				ApplicabilityScanResults: []*sarif.Run{xrayutils.CreateRunWithDummyResults(xrayutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
 			},
 		},
 		&audit.Results{
 			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				XrayResults:    []services.ScanResponse{currentScan},
-				EntitledForJas: true,
-				ApplicabilityScanResults: []*sarif.Run{sarif.NewRunWithInformationURI("", "").
-					WithResults([]*sarif.Result{
-						sarif.NewRuleResult("applic_CVE-2023-4321").
-							WithLocations([]*sarif.Location{sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-								WithArtifactLocation(sarif.NewArtifactLocation().
-									WithUri("file1")).
-								WithRegion(sarif.NewRegion().
-									WithStartLine(1).
-									WithStartColumn(10))),
-							}),
-					}),
-				},
+				XrayResults:              []services.ScanResponse{currentScan},
+				EntitledForJas:           true,
+				ApplicabilityScanResults: []*sarif.Run{xrayutils.CreateRunWithDummyResults(xrayutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
 			},
 		},
 		nil,
@@ -515,38 +492,126 @@ func TestGetAllIssues(t *testing.T) {
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
 			}},
 			ApplicabilityScanResults: []*sarif.Run{
-				utils.GetRunWithDummyResults(
-					utils.GetDummyResultWithOneLocation("file", 0, 0, "", "applic_CVE-2022-2122", ""),
-					utils.GetDummyPassingResult("applic_CVE-2023-3122")),
+				xrayutils.CreateRunWithDummyResults(
+					xrayutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
+					xrayutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
+				),
+			},
+			IacScanResults: []*sarif.Run{
+				xrayutils.CreateRunWithDummyResults(
+					xrayutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", xrayutils.ConvertToSarifLevel("high"),
+						xrayutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+					),
+				),
 			},
 			SecretsScanResults: []*sarif.Run{
-				utils.GetRunWithDummyResults(
-					utils.GetDummyResultWithOneLocation("index.js", 2, 13, "access token exposed", "", ""),
+				xrayutils.CreateRunWithDummyResults(
+					xrayutils.CreateResultWithLocations("Secret", "rule", xrayutils.ConvertToSarifLevel("high"),
+						xrayutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
+					),
+				),
+			},
+			SastScanResults: []*sarif.Run{
+				xrayutils.CreateRunWithDummyResults(
+					xrayutils.CreateResultWithLocations("XSS Vulnerability", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+				),
 				),
 			},
 			EntitledForJas: true,
 		},
 	}
+	expectedOutput := &utils.IssuesCollection{
+		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+			{
+				Applicable: "Applicable",
+				FixedVersions: []string{"1.2.3"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:        formats.SeverityDetails{Severity: "High" ,SeverityNumValue: 13},
+					ImpactedDependencyName: "Dep-1",
+				},
+				Cves:       []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+			},
+			{
+				Applicable: "Not Applicable",
+				FixedVersions: []string{"1.2.2"},
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 2},
+					ImpactedDependencyName: "Dep-2",
+				},
+				Cves:       []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+			},
+		},
+		Iacs: []formats.SourceCodeRow{
+			{
+				SeverityDetails: formats.SeverityDetails{
+					Severity:         "High",
+					SeverityNumValue: 13,
+				},
+				Finding: "Missing auto upgrade was detected",
+				Location: formats.Location{
+					File:        "file1",
+					StartLine:   1,
+					StartColumn: 10,
+					EndLine:     2,
+					EndColumn:   11,
+					Snippet:     "aws-violation",
+				},
+			},
+		},
+		Secrets: []formats.SourceCodeRow{
+			{
+				SeverityDetails: formats.SeverityDetails{
+					Severity:         "High",
+					SeverityNumValue: 13,
+				},
+				Finding: "Secret",
+				Location: formats.Location{
+					File:        "index.js",
+					StartLine:   5,
+					StartColumn: 6,
+					EndLine:     7,
+					EndColumn:   8,
+					Snippet:     "access token exposed",
+				},
+			},
+		},
+		Sast: []formats.SourceCodeRow{
+			{
+				SeverityDetails: formats.SeverityDetails{
+					Severity:         "High",
+					SeverityNumValue: 13,
+				},
+				Finding: "XSS Vulnerability",
+				Location: formats.Location{
+					File:        "file1",
+					StartLine:   1,
+					StartColumn: 10,
+					EndLine:     2,
+					EndColumn:   11,
+					Snippet:     "snippet",
+				},
+			},
+		},
+		Licenses: []formats.LicenseRow{
+			{
+				LicenseKey: "Apache-2.0",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ 
+					ImpactedDependencyName: "Dep-1",
+				},
+			},
+		},
+	}
+
 	issuesRows, err := getAllIssues(auditResults, allowedLicenses)
-	assert.NoError(t, err)
-	assert.Len(t, issuesRows.Licenses, 1)
-	assert.Len(t, issuesRows.Vulnerabilities, 2)
-	assert.Len(t, issuesRows.Secrets, 1)
-	assert.Equal(t, auditResults.ExtendedScanResults.XrayResults[0].Licenses[0].Key, "Apache-2.0")
-	assert.Equal(t, "Dep-1", issuesRows.Licenses[0].ImpactedDependencyName)
-	vuln1 := auditResults.ExtendedScanResults.XrayResults[0].Vulnerabilities[0]
-	assert.Equal(t, vuln1.Cves[0].Id, issuesRows.Vulnerabilities[0].Cves[0].Id)
-	assert.Equal(t, vuln1.Severity, issuesRows.Vulnerabilities[0].Severity)
-	assert.Equal(t, vuln1.Components["Dep-1"].FixedVersions[0], issuesRows.Vulnerabilities[0].FixedVersions[0])
-	vuln2 := auditResults.ExtendedScanResults.XrayResults[0].Vulnerabilities[1]
-	assert.Equal(t, vuln2.Cves[0].Id, issuesRows.Vulnerabilities[1].Cves[0].Id)
-	assert.Equal(t, vuln2.Severity, issuesRows.Vulnerabilities[1].Severity)
-	assert.Equal(t, vuln2.Components["Dep-2"].FixedVersions[0], issuesRows.Vulnerabilities[1].FixedVersions[0])
-	assert.Equal(t, auditResults.ExtendedScanResults.XrayResults[0].Licenses[0].Key, issuesRows.Licenses[0].LicenseKey)
-	assert.Equal(t, "Dep-1", issuesRows.Licenses[0].ImpactedDependencyName)
-	assert.Equal(t, xrayutils.GetResultSeverity(auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0]), issuesRows.Secrets[0].Severity)
-	assert.Equal(t, xrayutils.GetLocationFileName(auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0].Locations[0]), issuesRows.Secrets[0].File)
-	assert.Equal(t, *auditResults.ExtendedScanResults.SecretsScanResults[0].Results[0].Locations[0].PhysicalLocation.Region.Snippet.Text, issuesRows.Secrets[0].Snippet)
+
+	if assert.NoError(t, err) {
+		assert.ElementsMatch(t, expectedOutput.Vulnerabilities, issuesRows.Vulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.Iacs, issuesRows.Iacs)
+		assert.ElementsMatch(t, expectedOutput.Secrets, issuesRows.Secrets)
+		assert.ElementsMatch(t, expectedOutput.Sast, issuesRows.Sast)
+		assert.ElementsMatch(t, expectedOutput.Licenses, issuesRows.Licenses)
+	}
 }
 
 func TestCreatePullRequestComment(t *testing.T) {
@@ -890,12 +955,9 @@ func TestCreateNewIacRows(t *testing.T) {
 		{
 			name: "No vulnerabilities in source IaC results",
 			targetIacResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+				),
 			},
 			sourceIacResults:                []*sarif.Result{},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{},
@@ -904,12 +966,9 @@ func TestCreateNewIacRows(t *testing.T) {
 			name:             "No vulnerabilities in target IaC results",
 			targetIacResults: []*sarif.Result{},
 			sourceIacResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+				),
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -917,11 +976,14 @@ func TestCreateNewIacRows(t *testing.T) {
 						Severity:         "High",
 						SeverityNumValue: 13,
 					},
+					Finding: "Missing auto upgrade was detected",
 					Location: formats.Location{
 						File:        "file1",
 						StartLine:   1,
 						StartColumn: 10,
-						Snippet:     "aws violation",
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "aws-violation",
 					},
 				},
 			},
@@ -929,20 +991,14 @@ func TestCreateNewIacRows(t *testing.T) {
 		{
 			name: "Some new vulnerabilities in source IaC results",
 			targetIacResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("aws violation"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+				),
 			},
 			sourceIacResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithLevel(xrayutils.ConvertToSarifLevel("medium")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file2")).
-						WithRegion(sarif.NewRegion().WithStartLine(2).WithStartColumn(5).WithSnippet(sarif.NewArtifactContent().WithText("gcp violation"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("enable_private_endpoint=false was detected", "rule", xrayutils.ConvertToSarifLevel("medium"),
+					xrayutils.CreateLocation("file2", 2, 5, 3, 6, "gcp-violation"),
+				),
 			},
 			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -950,11 +1006,14 @@ func TestCreateNewIacRows(t *testing.T) {
 						Severity:         "Medium",
 						SeverityNumValue: 11,
 					},
+					Finding: "enable_private_endpoint=false was detected",
 					Location: formats.Location{
 						File:        "file2",
 						StartLine:   2,
 						StartColumn: 5,
-						Snippet:     "gcp violation",
+						EndLine:     3,
+						EndColumn:   6,
+						Snippet:     "gcp-violation",
 					},
 				},
 			},
@@ -963,8 +1022,8 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetIacResults)})
-			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceIacResults)})
+			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.targetIacResults...)})
+			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.sourceIacResults...)})
 			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
@@ -981,12 +1040,9 @@ func TestCreateNewSecretRows(t *testing.T) {
 		{
 			name: "No vulnerabilities in source secrets results",
 			targetSecretsResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Secret", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
+				),
 			},
 			sourceSecretsResults:                []*sarif.Result{},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{},
@@ -995,12 +1051,9 @@ func TestCreateNewSecretRows(t *testing.T) {
 			name:                 "No vulnerabilities in target secrets results",
 			targetSecretsResults: []*sarif.Result{},
 			sourceSecretsResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Secret", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
+				),
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -1013,6 +1066,8 @@ func TestCreateNewSecretRows(t *testing.T) {
 						File:        "file1",
 						StartLine:   1,
 						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
 						Snippet:     "Sensitive information",
 					},
 				},
@@ -1021,20 +1076,14 @@ func TestCreateNewSecretRows(t *testing.T) {
 		{
 			name: "Some new vulnerabilities in source secrets results",
 			targetSecretsResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("high")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file1")).
-						WithRegion(sarif.NewRegion().WithStartLine(1).WithStartColumn(10).WithSnippet(sarif.NewArtifactContent().WithText("Sensitive information"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Secret", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
+				),
 			},
 			sourceSecretsResults: []*sarif.Result{
-				sarif.NewRuleResult("").WithMessage(sarif.NewTextMessage("Secret")).WithLevel(xrayutils.ConvertToSarifLevel("medium")).WithLocations([]*sarif.Location{
-					sarif.NewLocationWithPhysicalLocation(sarif.NewPhysicalLocation().
-						WithArtifactLocation(sarif.NewArtifactLocation().WithUri("file2")).
-						WithRegion(sarif.NewRegion().WithStartLine(2).WithStartColumn(5).WithSnippet(sarif.NewArtifactContent().WithText("Confidential data"))),
-					),
-				}),
+				xrayutils.CreateResultWithLocations("Secret", "rule", xrayutils.ConvertToSarifLevel("medium"),
+					xrayutils.CreateLocation("file2", 2, 5, 3, 6, "Confidential data"),
+				),
 			},
 			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
 				{
@@ -1047,6 +1096,8 @@ func TestCreateNewSecretRows(t *testing.T) {
 						File:        "file2",
 						StartLine:   2,
 						StartColumn: 5,
+						EndLine:     3,
+						EndColumn:   6,
 						Snippet:     "Confidential data",
 					},
 				},
@@ -1056,10 +1107,95 @@ func TestCreateNewSecretRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.targetSecretsResults)})
-			sourceSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarif.NewRunWithInformationURI("", "").WithResults(tc.sourceSecretsResults)})
+			targetSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.targetSecretsResults...)})
+			sourceSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.sourceSecretsResults...)})
 			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
+		})
+	}
+}
+
+func TestCreateNewSastRows(t *testing.T) {
+	testCases := []struct {
+		name                             string
+		targetSastResults                []*sarif.Result
+		sourceSastResults                []*sarif.Result
+		expectedAddedSastVulnerabilities []formats.SourceCodeRow
+	}{
+		{
+			name: "No vulnerabilities in source Sast results",
+			targetSastResults: []*sarif.Result{
+				xrayutils.CreateResultWithLocations("XSS Vulnerability", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+				),
+			},
+			sourceSastResults:                []*sarif.Result{},
+			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{},
+		},
+		{
+			name:              "No vulnerabilities in target Sast results",
+			targetSastResults: []*sarif.Result{},
+			sourceSastResults: []*sarif.Result{
+				xrayutils.CreateResultWithLocations("XSS Vulnerability", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+				),
+			},
+			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{
+				{
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "High",
+						SeverityNumValue: 13,
+					},
+					Finding: "XSS Vulnerability",
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "snippet",
+					},
+				},
+			},
+		},
+		{
+			name: "Some new vulnerabilities in source Sast results",
+			targetSastResults: []*sarif.Result{
+				xrayutils.CreateResultWithLocations("XSS Vulnerability", "rule", xrayutils.ConvertToSarifLevel("high"),
+					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+				),
+			},
+			sourceSastResults: []*sarif.Result{
+				xrayutils.CreateResultWithLocations("Stack Trace Exposure", "rule", xrayutils.ConvertToSarifLevel("medium"),
+					xrayutils.CreateLocation("file2", 2, 5, 3, 6, "other-snippet"),
+				),
+			},
+			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{
+				{
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
+						SeverityNumValue: 11,
+					},
+					Finding: "Stack Trace Exposure",
+					Location: formats.Location{
+						File:        "file2",
+						StartLine:   2,
+						StartColumn: 5,
+						EndLine:     3,
+						EndColumn:   6,
+						Snippet:     "other-snippet",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			targetSastRows := xrayutils.PrepareSast([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.targetSastResults...)})
+			sourceSastRows := xrayutils.PrepareSast([]*sarif.Run{xrayutils.CreateRunWithDummyResults(tc.sourceSastResults...)})
+			addedSastVulnerabilities := createNewSourceCodeRows(targetSastRows, sourceSastRows)
+			assert.ElementsMatch(t, tc.expectedAddedSastVulnerabilities, addedSastVulnerabilities)
 		})
 	}
 }
