@@ -614,7 +614,7 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 		} else {
 			// We encounter this scenario when the JF_GIT_BASE_BRANCH is defined. In this situation, we have only one branch.
 			branch = branches[0]
-			log.Debug("the", FrogbotConfigFile, "will be downloaded from the", branch, "branch")
+			log.Debug("the", FrogbotConfigFile, "will be downloaded from", branch, "branch")
 		}
 
 		gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
@@ -624,6 +624,9 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 			log.Debug(fmt.Sprintf("the %s file wasn't recognized in the %s repository owned by %s", gitFrogbotConfigPath, repoName, repoOwner))
 			// If .frogbot/frogbot-config.yml isn't found, we'll try to run Frogbot using environment variables
 			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
+		}
+		if statusCode == http.StatusUnauthorized {
+			log.Warn("tokens seems to be invalid, if you are using on-prem provider, please check you 'JF_GIT_API_ENDPOINT' env var or check tokens permissions.")
 		}
 	}
 
