@@ -169,7 +169,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 
 func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
 	if len(repositories) == 0 {
-		err = fmt.Errorf("provided empty repositories")
+		err = fmt.Errorf("no repositories info provided")
 		return
 	}
 	for _, repository := range repositories {
