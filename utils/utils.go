@@ -156,7 +156,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	reporter := usage.NewUsageReporter(productId, serverDetails)
 	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report")
+		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report", err.Error())
 	}
 	reporter.Report(reports...)
 	return func() {
@@ -167,6 +167,10 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 }
 
 func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
+	if len(repositories) == 0 {
+		err = fmt.Errorf("provided empty repositories, can't send report")
+		return
+	}
 	for _, repository := range repositories {
 		// Report one entry for each repository as client
 		if clientId, e := Md5Hash(repository.RepoName); e != nil {

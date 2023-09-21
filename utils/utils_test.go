@@ -65,6 +65,8 @@ func TestConvertToUsageReports(t *testing.T) {
 		assert.Equal(t, commandName, feature.FeatureId)
 		assert.NotContains(t, repoNames, feature.ClientId)
 	}
+	_, err = convertToUsageReports(commandName, repo)
+	assert.Error(t, err)
 }
 
 func TestMd5Hash(t *testing.T) {
