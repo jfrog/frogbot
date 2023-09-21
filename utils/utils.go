@@ -157,6 +157,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
 		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report", err.Error())
+		return func() {}
 	}
 	reporter.Report(reports...)
 	return func() {
