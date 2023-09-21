@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -65,7 +66,7 @@ func TestConvertToUsageReports(t *testing.T) {
 		assert.Equal(t, commandName, feature.FeatureId)
 		assert.NotContains(t, repoNames, feature.ClientId)
 	}
-	_, err = convertToUsageReports(commandName, repo)
+	_, err = convertToUsageReports(commandName, RepoAggregator{})
 	assert.Error(t, err)
 }
 
