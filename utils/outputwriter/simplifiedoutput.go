@@ -98,8 +98,8 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 		getVulnerabilitiesTableContent(vulnerabilities, smo)))
 
 	// Write for each vulnerability details part
-	var researchContentBuilder strings.Builder
-	researchContentBuilder.WriteString(fmt.Sprintf(`
+	var descriptionContentBuilder strings.Builder
+	descriptionContentBuilder.WriteString(fmt.Sprintf(`
 ---
 %s
 ---
@@ -109,13 +109,13 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 
 	hasAtLeastOneDefinedDetails := false
 	for i := range vulnerabilities {
-		vulResearchContent := createVulnerabilityDescription(&vulnerabilities[i])
-		if strings.Trim(vulResearchContent, " ") == "" {
+		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
+		if strings.Trim(vulDescriptionContent, " ") == "" {
 			// No content
 			continue
 		}
 
-		researchContentBuilder.WriteString(fmt.Sprintf(`
+		descriptionContentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
 
 %s
@@ -123,11 +123,11 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			vulResearchContent))
+			vulDescriptionContent))
 	}
 
 	if hasAtLeastOneDefinedDetails {
-		return contentBuilder.String() + researchContentBuilder.String()
+		return contentBuilder.String() + descriptionContentBuilder.String()
 	}
 	return contentBuilder.String()
 }
