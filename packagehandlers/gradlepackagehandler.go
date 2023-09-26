@@ -2,12 +2,10 @@ package packagehandlers
 
 import (
 	"fmt"
-	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"io/fs"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,17 +13,14 @@ import (
 )
 
 const (
-	groovyBuildFileSuffix                  = "build.gradle"
-	kotlinBuildFileSuffix                  = "build.gradle.kts"
-	apostrophes                            = "[\\\"|\\']"
-	ORIGINAL_directMapWithVersionRegexp    = "group\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", name\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes + ", version\\s?[:|=]\\s?" + apostrophes + "%s" + apostrophes
-	directMapRegexpEntry                   = "\\s*%s\\s*[:|=]\\s*"
-	regexpMapValueWithApostrophes          = apostrophes + "%s" + apostrophes
-	ORIGINAL_directStringWithVersionRegexp = apostrophes + "%s:%s:%s" + ".*" + apostrophes
-	directStringWithVersionRegexp          = "%s:%s:%s"
+	groovyBuildFileSuffix         = "build.gradle"
+	kotlinBuildFileSuffix         = "build.gradle.kts"
+	apostrophes                   = "[\\\"|\\']"
+	directMapRegexpEntry          = "\\s*%s\\s*[:|=]\\s*"
+	regexpMapValueWithApostrophes = apostrophes + "%s" + apostrophes
+	directStringWithVersionRegexp = "%s:%s:%s"
 )
 
-// var regexpPatterns = []string{directMapWithVersionRegexp, directStringWithVersionRegexp}
 var regexpPatterns []string
 
 func init() {
@@ -46,7 +41,6 @@ type GradlePackageHandler struct {
 }
 
 func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	fmt.Println("############### reached: " + vulnDetails.ImpactedDependencyName + ", version: " + vulnDetails.ImpactedDependencyVersion + " ###############")
 	if vulnDetails.IsDirectDependency {
 		return gph.updateDirectDependency(vulnDetails)
 	}
@@ -66,7 +60,6 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 			ErrorType:    utils.UnsupportedForFixVulnerableVersion,
 		}
 	}
-	fmt.Println("############### pass block for: " + vulnDetails.ImpactedDependencyName + " ###############")
 
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
@@ -76,7 +69,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	}
 
 	for _, descriptorFilePath := range descriptorFilesPaths {
-		err = fixVulnerabilityInDescriptorFileIfExists2(descriptorFilePath, vulnDetails)
+		err = fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
 		if err != nil {
 			return
 		}
@@ -85,6 +78,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	return
 }
 
+// isVersionSupportedForFix checks if the impacted version is currently supported for fix
 func isVersionSupportedForFix(impactedVersion string) bool {
 	if strings.Contains(impactedVersion, "+") ||
 		(strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "(")) ||
@@ -94,6 +88,7 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 	return true
 }
 
+// getDescriptorFilesPaths collects all descriptor files absolute paths
 func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -113,6 +108,7 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 	return
 }
 
+/*
 func fixVulnerabilityInDescriptorFileIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	patternsCompilers, err := getPatternCompilersForVulnerability(vulnDetails)
 	if err != nil {
@@ -135,7 +131,10 @@ func fixVulnerabilityInDescriptorFileIfExists(descriptorFilePath string, vulnDet
 	return
 }
 
-func fixVulnerabilityInDescriptorFileIfExists2(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+*/
+
+// fixVulnerabilityIfExists fixes all direct occurrences (string/map) of the given vulnerability in the given descriptor file if vulnerability occurs
+func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	vulnerabilityPatterns, err := getPatternCompilersForVulnerability(vulnDetails)
 	if err != nil {
 		return
@@ -149,12 +148,9 @@ func fixVulnerabilityInDescriptorFileIfExists2(descriptorFilePath string, vulnDe
 	fileContent := string(byteFileContent)
 
 	for _, regexpCompiler := range vulnerabilityPatterns {
-		//if matches := regexpCompiler.FindAll(byteFileContent, -1); matches != nil {
 		if matches := regexpCompiler.FindAllString(fileContent, -1); matches != nil {
-			fmt.Println("############### found matching pattern for: " + vulnDetails.ImpactedDependencyName + " ###############")
 			set := datastructures.MakeSet[string]()
 			for _, match := range matches {
-				//set.Add(strings.TrimSpace(string(match)))
 				set.Add(strings.TrimSpace(match))
 			}
 			for _, entry := range set.ToSlice() {
@@ -165,10 +161,11 @@ func fixVulnerabilityInDescriptorFileIfExists2(descriptorFilePath string, vulnDe
 	}
 
 	byteFileContent = []byte(fileContent)
-	err = writeUpdatedBuildFile2(descriptorFilePath, fileContent)
+	err = writeUpdatedBuildFile(descriptorFilePath, fileContent)
 	return
 }
 
+// getPatternCompilersForVulnerability creates all possible supported patterns for a vulnerability to appear in a descriptor file
 func getPatternCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers []*regexp.Regexp, err error) {
 	depGroup, depName, err := getVulnerabilityGroupAndName(vulnDetails.ImpactedDependencyName)
 	if err != nil {
@@ -183,6 +180,7 @@ func getPatternCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails
 	return
 }
 
+// getVulnerabilityGroupAndName returns separated 'group' and 'name' for a given vulnerability name
 func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
 	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
@@ -196,6 +194,7 @@ func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry)
 }
 
+/*
 func isFixRequiredForLine(vulnerableRow string, patternsCompilers []*regexp.Regexp) bool {
 	rowToCheck := strings.TrimSpace(vulnerableRow)
 	for _, regexpCompiler := range patternsCompilers {
@@ -207,10 +206,16 @@ func isFixRequiredForLine(vulnerableRow string, patternsCompilers []*regexp.Rege
 	return false
 }
 
+*/
+
+/*
 func getFixedLine(line string, vulnDetails *utils.VulnerabilityDetails) string {
 	return strings.Replace(line, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, 1)
 }
 
+*/
+
+/*
 func writeUpdatedBuildFile(filePath string, fileContent []string) (err error) {
 	var bytesSlice []byte
 	for _, row := range fileContent {
@@ -232,7 +237,10 @@ func writeUpdatedBuildFile(filePath string, fileContent []string) (err error) {
 	return
 }
 
-func writeUpdatedBuildFile2(filePath string, fileContent string) (err error) {
+*/
+
+// writeUpdatedBuildFile writes the updated content of the descriptor's file into the file
+func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't get file info for file '%s': %s", filePath, err.Error())

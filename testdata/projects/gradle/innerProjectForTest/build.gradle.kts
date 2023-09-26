@@ -17,6 +17,8 @@ dependencies {
     runtimeOnly(group = 'junit', name = 'junit', version = '4.7') {
         isTransitive = true
     }
+    runtimeOnly(group = "junit", name = "junit",
+            version = "4.7")
 
     // This repeated dependency is required to check that 'create-fix' doesn't fix lines with unsupported-version fix
     // When the package was found as vulnerable by xRay and fix is applicable somewhere else in the build file
