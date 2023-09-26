@@ -289,6 +289,7 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 
 func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []byte, err error) {
 	if mph.depsRepo == "" {
+		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		if readerOutput, err = exec.Command("mvn", goals...).CombinedOutput(); err != nil {
 			if len(readerOutput) > 0 {
 				log.Info(string(readerOutput))
@@ -309,9 +310,11 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []by
 		SetGoals(goals).
 		SetDisableDeploy(true).
 		SetOutputWriter(&buf)
-	if err = mvnutils.RunMvn(mvnParams); err != nil {
-		readerOutput = make([]byte, 0)
-		_, _ = io.ReadFull(&buf, readerOutput)
+	readerOutput = make([]byte, 0)
+	err = mvnutils.RunMvn(mvnParams)
+	// readerOutput should return from this function
+	_, _ = io.ReadFull(&buf, readerOutput)
+	if err != nil {
 		if len(readerOutput) > 0 {
 			// Log output if exists
 			log.Info(string(readerOutput))
