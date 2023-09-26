@@ -312,6 +312,7 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []by
 		SetOutputWriter(&buf)
 	readerOutput = make([]byte, 0)
 	err = mvnutils.RunMvn(mvnParams)
+	// readerOutput should return from this function
 	_, _ = io.ReadFull(&buf, readerOutput)
 	if err = mvnutils.RunMvn(mvnParams); err != nil {
 		if len(readerOutput) > 0 {
