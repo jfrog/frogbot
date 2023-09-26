@@ -652,7 +652,7 @@ func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	impactedVersion := testcase.vulnDetails.ImpactedDependencyVersion
 	suggestedVersion := testcase.vulnDetails.SuggestedFixedVersion
 
-	buildFilesPaths, err := getBuildFilesPaths()
+	buildFilesPaths, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 
 	for _, buildFilePath := range buildFilesPaths {
@@ -682,7 +682,7 @@ func TestGradleGetBuildFilesPaths(t *testing.T) {
 
 	expectedResults := []string{filepath.Join(finalPath, "build.gradle"), filepath.Join(finalPath, "innerProjectForTest", "build.gradle.kts")}
 
-	buildFilesPaths, err := getBuildFilesPaths()
+	buildFilesPaths, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
@@ -699,10 +699,10 @@ func TestGradleFixBuildFile(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	buildFiles, err := getBuildFilesPaths()
+	buildFiles, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 
-	err = fixBuildFile(buildFiles[0], &utils.VulnerabilityDetails{
+	err = fixVulnerabilityInDescriptorFileIfExists(buildFiles[0], &utils.VulnerabilityDetails{
 		SuggestedFixedVersion:       "4.13.1",
 		IsDirectDependency:          true,
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}})
@@ -724,37 +724,36 @@ func TestGradleFixBuildFile(t *testing.T) {
 func TestGradleIsUnsupportedVulnVersion(t *testing.T) {
 	var testcases = []struct {
 		impactedVersion string
-		expectedResult  UnsupportedForFixType
+		expectedResult  bool
 	}{
 		{
 			impactedVersion: "10.+",
-			expectedResult:  unsupportedDynamicVersion,
+			expectedResult:  false,
 		},
 		{
 			impactedVersion: "[10.3, 11.0)",
-			expectedResult:  unsupportedRangeVersion,
+			expectedResult:  false,
 		},
 		{
 			impactedVersion: "(10.4.2, 11.7.8)",
-			expectedResult:  unsupportedRangeVersion,
-		},
-		{
-			impactedVersion: "5.5",
-			expectedResult:  "",
-		},
-		{
-			impactedVersion: "9.0.13-beta",
-			expectedResult:  "",
+			expectedResult:  false,
 		},
 		{
 			impactedVersion: "latest.release",
-			expectedResult:  unsupportedLatestVersion,
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "5.5",
+			expectedResult:  true,
+		},
+		{
+			impactedVersion: "9.0.13-beta",
+			expectedResult:  true,
 		},
 	}
 
 	for _, testcase := range testcases {
-		unsupportedType := getUnsupportedForFixVersionType(testcase.impactedVersion)
-		assert.Equal(t, testcase.expectedResult, unsupportedType)
+		assert.Equal(t, testcase.expectedResult, isVersionSupportedForFix(testcase.impactedVersion))
 	}
 }
 
