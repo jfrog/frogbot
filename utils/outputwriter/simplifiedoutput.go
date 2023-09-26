@@ -107,14 +107,14 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 `,
 		researchDetailsTitle))
 
-	hasAtLeastOneDefinedDetails := false
+	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
-		if strings.Trim(vulDescriptionContent, " ") == "" {
+		if strings.TrimSpace(vulDescriptionContent) == "" {
 			// No content
 			continue
 		}
-
+		shouldOutputDescriptionSection = true
 		descriptionContentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
 
@@ -126,7 +126,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 			vulDescriptionContent))
 	}
 
-	if hasAtLeastOneDefinedDetails {
+	if shouldOutputDescriptionSection {
 		return contentBuilder.String() + descriptionContentBuilder.String()
 	}
 	return contentBuilder.String()
