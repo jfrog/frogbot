@@ -108,31 +108,6 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 	return
 }
 
-/*
-func fixVulnerabilityInDescriptorFileIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
-	patternsCompilers, err := getPatternCompilersForVulnerability(vulnDetails)
-	if err != nil {
-		return
-	}
-
-	fileContent, err := fileutils.ReadNLines(descriptorFilePath, math.MaxInt)
-	if err != nil {
-		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
-		return
-	}
-
-	for rowIdx, line := range fileContent {
-		if isFixRequiredForLine(line, patternsCompilers) {
-			fileContent[rowIdx] = getFixedLine(line, vulnDetails)
-		}
-	}
-
-	err = writeUpdatedBuildFile(descriptorFilePath, fileContent)
-	return
-}
-
-*/
-
 // fixVulnerabilityIfExists fixes all direct occurrences (string/map) of the given vulnerability in the given descriptor file if vulnerability occurs
 func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	vulnerabilityPatterns, err := getPatternCompilersForVulnerability(vulnDetails)
@@ -193,51 +168,6 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry)
 }
-
-/*
-func isFixRequiredForLine(vulnerableRow string, patternsCompilers []*regexp.Regexp) bool {
-	rowToCheck := strings.TrimSpace(vulnerableRow)
-	for _, regexpCompiler := range patternsCompilers {
-		if regexpCompiler.FindString(rowToCheck) != "" {
-			return true
-		}
-	}
-
-	return false
-}
-
-*/
-
-/*
-func getFixedLine(line string, vulnDetails *utils.VulnerabilityDetails) string {
-	return strings.Replace(line, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, 1)
-}
-
-*/
-
-/*
-func writeUpdatedBuildFile(filePath string, fileContent []string) (err error) {
-	var bytesSlice []byte
-	for _, row := range fileContent {
-		bytesSlice = append(bytesSlice, []byte(row+"\n")...)
-	}
-	bytesSlice = bytesSlice[:len(bytesSlice)-1]
-
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		err = fmt.Errorf("couldn't get file info for file '%s': %s", filePath, err.Error())
-		return
-	}
-	filePerm := fileInfo.Mode()
-
-	err = os.WriteFile(filePath, bytesSlice, filePerm)
-	if err != nil {
-		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
-	}
-	return
-}
-
-*/
 
 // writeUpdatedBuildFile writes the updated content of the descriptor's file into the file
 func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
