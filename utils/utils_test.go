@@ -65,6 +65,8 @@ func TestConvertToUsageReports(t *testing.T) {
 		assert.Equal(t, commandName, feature.FeatureId)
 		assert.NotContains(t, repoNames, feature.ClientId)
 	}
+	_, err = convertToUsageReports(commandName, RepoAggregator{})
+	assert.Error(t, err)
 }
 
 func TestMd5Hash(t *testing.T) {
@@ -321,6 +323,54 @@ func TestExtractVunerabilitiesDetailsToRows(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualRows := ExtractVulnerabilitiesDetailsToRows(tc.vulnDetails)
 			assert.ElementsMatch(t, tc.expectedRows, actualRows)
+		})
+	}
+}
+
+func TestNormalizeWhiteSpace(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{input: "hello  world", expected: "hello world"},
+		{input: "hello     world", expected: "hello world"},
+		{input: "  hello     world", expected: "hello world"},
+		{input: "  hello     world  ", expected: "hello world"},
+		{input: "  hello     world   a   ", expected: "hello world a"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			output := normalizeWhitespaces(tc.input)
+			assert.Equal(t, tc.expected, output)
+		})
+	}
+}
+
+func TestTechArrayToString(t *testing.T) {
+	testCases := []struct {
+		techArray []coreutils.Technology
+		separator string
+		expected  string
+	}{{
+		techArray: []coreutils.Technology{coreutils.Maven, coreutils.Go},
+		separator: fixBranchTechSeparator, expected: "Maven-Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go},
+		separator: fixBranchTechSeparator, expected: "Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go},
+		separator: pullRequestTitleTechSeparator, expected: "Go",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go, coreutils.Pip, coreutils.Npm},
+		separator: pullRequestTitleTechSeparator, expected: "Go,Pip,npm",
+	}, {
+		techArray: []coreutils.Technology{coreutils.Go, coreutils.Pip, coreutils.Npm},
+		separator: fixBranchTechSeparator, expected: "Go-Pip-npm",
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			output := techArrayToString(tc.techArray, tc.separator)
+			assert.Equal(t, tc.expected, output)
 		})
 	}
 }

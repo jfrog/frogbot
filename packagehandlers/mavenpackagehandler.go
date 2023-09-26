@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -91,7 +92,7 @@ func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 // fillDependenciesMap collects direct dependencies from the pomPath pom.xml file.
 // If the version of a dependency is set in another property section, it is added as its value in the map.
 func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
-	contentBytes, err := os.ReadFile(pomPath) // #nosec G304
+	contentBytes, err := os.ReadFile(filepath.Clean(pomPath))
 	if err != nil {
 		return errors.New("couldn't read pom.xml file: " + err.Error())
 	}
@@ -126,10 +127,10 @@ func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
 func getMavenDependencies(pomXmlContent []byte) (result []gavCoordinate, err error) {
 	var dependencies mavenDependency
 	if err = xml.Unmarshal(pomXmlContent, &dependencies); err != nil {
-		return result, err
+		return
 	}
 	result = append(result, dependencies.collectMavenDependencies(false)...)
-	return result, err
+	return
 }
 
 type pomPath struct {
@@ -219,10 +220,9 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 		return fmt.Errorf("failed writing content to the %s file: \n%s", mavenGavReader, err.Error())
 	}
 	// Install the plugin
-	var output []byte
 	installProperties := []string{"org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file", "-Dfile=" + mavenGavReaderFile.Name()}
-	if output, err = mph.runMvnCommand(installProperties); err != nil {
-		return fmt.Errorf("failed to install the maven-gav-reader plugin. Maven output: %s\n Error received:\n%s", string(output), err.Error())
+	if _, err = mph.runMvnCommand(installProperties); err != nil {
+		return fmt.Errorf("failed to install the maven-gav-reader plugin: %s", err.Error())
 	}
 	mph.isMavenGavReaderInstalled = true
 	return
@@ -231,12 +231,13 @@ func (mph *MavenPackageHandler) installMavenGavReader() (err error) {
 func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
-		return nil
+		return
 	}
 	goals := []string{"com.jfrog.frogbot:maven-gav-reader:gav", "-q"}
 	var readerOutput []byte
 	if readerOutput, err = mph.runMvnCommand(goals); err != nil {
-		return fmt.Errorf("failed to get project poms while running maven-gav-reader:\n%s\n%s", readerOutput, err.Error())
+		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
+		return
 	}
 	for _, jsonContent := range strings.Split(string(readerOutput), "\n") {
 		if jsonContent == "" {
@@ -246,12 +247,12 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			return err
+			return
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
 	}
 	if len(mph.pomPaths) == 0 {
-		return errors.New("couldn't find any pom.xml files in the current project'")
+		err = errors.New("couldn't find any pom.xml files in the current project")
 	}
 	return
 }
@@ -279,8 +280,8 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 			fmt.Sprintf("-DprocessDependencyManagement=%t", depDetails.foundInDependencyManagement)}
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-		if updatePropertyOutput, err := mph.runMvnCommand(updatePropertyArgs); err != nil { // #nosec G204
-			return fmt.Errorf("failed updating %s property: %s\n%s", property, err.Error(), updatePropertyOutput)
+		if _, err := mph.runMvnCommand(updatePropertyArgs); err != nil { // #nosec G204
+			return fmt.Errorf("failed updating %s property: %s\n", property, err.Error())
 		}
 	}
 	return nil
@@ -288,8 +289,12 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 
 func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []byte, err error) {
 	if mph.depsRepo == "" {
+		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		if readerOutput, err = exec.Command("mvn", goals...).CombinedOutput(); err != nil {
-			return nil, fmt.Errorf("failed running maven command: \n%s\n%s", readerOutput, err.Error())
+			if len(readerOutput) > 0 {
+				log.Info(string(readerOutput))
+			}
+			err = fmt.Errorf("failed running command 'mvn %s': %s", strings.Join(goals, " "), err.Error())
 		}
 		return
 	}
@@ -305,11 +310,16 @@ func (mph *MavenPackageHandler) runMvnCommand(goals []string) (readerOutput []by
 		SetGoals(goals).
 		SetDisableDeploy(true).
 		SetOutputWriter(&buf)
-	if err = mvnutils.RunMvn(mvnParams); err != nil {
-		return
+	readerOutput = make([]byte, 0)
+	err = mvnutils.RunMvn(mvnParams)
+	// readerOutput should return from this function
+	_, _ = io.ReadFull(&buf, readerOutput)
+	if err != nil {
+		if len(readerOutput) > 0 {
+			// Log output if exists
+			log.Info(string(readerOutput))
+		}
+		err = fmt.Errorf("failed running command 'mvn %s': %s", strings.Join(goals, " "), err.Error())
 	}
-
-	readerOutput = make([]byte, buf.Len())
-	_, err = io.ReadFull(&buf, readerOutput)
 	return
 }

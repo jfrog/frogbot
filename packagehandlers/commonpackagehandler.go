@@ -57,7 +57,8 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
-	output, err := exec.Command(commandName, commandArgs...).CombinedOutput() // #nosec G204
+	//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
+	output, err := exec.Command(commandName, commandArgs...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to update %s dependency: '%s' command failed: %s\n%s", techName, fullCommand, err.Error(), output)
 	}

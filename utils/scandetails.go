@@ -152,7 +152,10 @@ func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
 	output, err := sc.runInstallCommand()
 	if err != nil && !sc.FailOnInstallationErrors() {
-		log.Info(installationCmdFailedErr, err.Error(), "\n", string(output))
+		log.Info(installationCmdFailedErr, err.Error())
+		if len(output) > 0 {
+			log.Info(string(output))
+		}
 		// failOnInstallationErrors set to 'false'
 		err = nil
 	}
