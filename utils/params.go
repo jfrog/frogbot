@@ -614,16 +614,19 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 		} else {
 			// We encounter this scenario when the JF_GIT_BASE_BRANCH is defined. In this situation, we have only one branch.
 			branch = branches[0]
-			log.Debug("the", FrogbotConfigFile, "will be downloaded from the", branch, "branch")
+			log.Debug("The", FrogbotConfigFile, "will be downloaded from", branch, "branch")
 		}
 
 		gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
 		var statusCode int
 		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), repoOwner, repoName, branch, gitFrogbotConfigPath)
 		if statusCode == http.StatusNotFound {
-			log.Debug(fmt.Sprintf("the %s file wasn't recognized in the %s repository owned by %s", gitFrogbotConfigPath, repoName, repoOwner))
+			log.Debug(fmt.Sprintf("The %s file wasn't recognized in the %s repository owned by %s", gitFrogbotConfigPath, repoName, repoOwner))
 			// If .frogbot/frogbot-config.yml isn't found, we'll try to run Frogbot using environment variables
 			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
+		}
+		if statusCode == http.StatusUnauthorized {
+			log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
 		}
 	}
 
