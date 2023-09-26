@@ -234,7 +234,8 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 
 	// 'CD' into the relevant working directory
 	if projectWorkingDir != "" {
-		restoreDir, err := utils.Chdir(projectWorkingDir)
+		var restoreDir func() error
+		restoreDir, err = utils.Chdir(projectWorkingDir)
 		if err != nil {
 			return nil, err
 		}
@@ -531,7 +532,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		fixedVulnerabilities = append(fixedVulnerabilities, currentFixes...)
 	}
 	updateRequired, e := cfp.isUpdateRequired(fixedVulnerabilities, existingPullRequestInfo)
-	if err != nil {
+	if e != nil {
 		err = errors.Join(err, e)
 		return
 	}
@@ -540,14 +541,12 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		return
 	}
 	if len(fixedVulnerabilities) > 0 {
-		if e := cfp.openAggregatedPullRequest(aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", err.Error()))
+		if e = cfp.openAggregatedPullRequest(aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
+			err = errors.Join(err, fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", e.Error()))
 		}
 	}
 	log.Info("-----------------------------------------------------------------")
-	if e := cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()); e != nil {
-		err = errors.Join(err, e)
-	}
+	err = errors.Join(err, cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()))
 	return
 }
 

@@ -790,7 +790,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams)
+	configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
