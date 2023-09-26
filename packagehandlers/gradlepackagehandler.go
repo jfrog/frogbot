@@ -135,7 +135,6 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 		}
 	}
 
-	byteFileContent = []byte(fileContent)
 	err = writeUpdatedBuildFile(descriptorFilePath, fileContent)
 	return
 }
