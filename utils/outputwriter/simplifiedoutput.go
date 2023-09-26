@@ -89,7 +89,6 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 %s
 
 %s %s
-
 `,
 
 		vulnerableDependenciesTitle,

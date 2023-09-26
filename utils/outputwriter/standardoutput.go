@@ -93,7 +93,6 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 %s %s
 
 </div>
-
 `,
 		vulnerableDependenciesTitle,
 		summaryTitle,
@@ -103,7 +102,6 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	var descriptionContentBuilder strings.Builder
 	descriptionContentBuilder.WriteString(fmt.Sprintf(`
 %s
-
 `,
 		researchDetailsTitle))
 	shouldOutputDescriptionSection := false
