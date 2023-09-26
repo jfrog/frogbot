@@ -17,22 +17,21 @@ const (
 	kotlinBuildFileSuffix         = "build.gradle.kts"
 	apostrophes                   = "[\\\"|\\']"
 	directMapRegexpEntry          = "\\s*%s\\s*[:|=]\\s*"
-	regexpMapValueWithApostrophes = apostrophes + "%s" + apostrophes
 	directStringWithVersionRegexp = "%s:%s:%s"
 )
 
 var regexpPatterns []string
 
 func init() {
-	// Example: <groupName>:<packageName>:<version>
+	// Example: junit:junit:1.0.0
 	regexpPatterns = append(regexpPatterns, directStringWithVersionRegexp)
 
 	groupEntry := getMapRegexpEntry("group")
 	nameEntry := getMapRegexpEntry("name")
 	versionEntry := getMapRegexpEntry("version")
 
-	// Example: group: "<groupName>", name: "<packageName>", version: "<version>" | group = "<groupName>", name = "<packageName>", version = "<version>"
-	directMapRegexpPattern := groupEntry + regexpMapValueWithApostrophes + "," + nameEntry + regexpMapValueWithApostrophes + "," + versionEntry + regexpMapValueWithApostrophes
+	// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
+	directMapRegexpPattern := groupEntry + "," + nameEntry + "," + versionEntry
 	regexpPatterns = append(regexpPatterns, directMapRegexpPattern)
 }
 
@@ -165,7 +164,7 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 }
 
 func getMapRegexpEntry(mapEntry string) string {
-	return fmt.Sprintf(directMapRegexpEntry, mapEntry)
+	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
 
 // writeUpdatedBuildFile writes the updated content of the descriptor's file into the file
