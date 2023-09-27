@@ -18,12 +18,12 @@ const (
 	directStringWithVersionFormat = "%s:%s:%s"
 )
 
-var directMapWithVersionRegexp string
+// Regexp pattern for "map" format dependencies
+// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
+var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
 
-func init() {
-	// Initializing a regexp pattern for map dependencies
-	// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
-	directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
+func getMapRegexpEntry(mapEntry string) string {
+	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
 
 type GradlePackageHandler struct {
@@ -107,8 +107,6 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
 func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
-	isFileChanged = false
-
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
@@ -155,10 +153,6 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 		return
 	}
 	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
-}
-
-func getMapRegexpEntry(mapEntry string) string {
-	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
 
 // Writes the updated content of the descriptor's file into the file
