@@ -277,25 +277,6 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 	return contentBuilder.String()
 }
 
-// func (so *StandardOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
-// 	if len(iacRows) == 0 {
-// 		return ""
-// 	}
-
-// 	return fmt.Sprintf(`
-// ## 🛠️ Infrastructure as Code
-
-// <div align="center">
-
-// %s %s
-
-// </div>
-
-// `,
-// 		iacTableHeader,
-// 		getIacTableContent(iacRows, so))
-// }
-
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
 ---

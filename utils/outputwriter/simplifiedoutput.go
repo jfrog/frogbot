@@ -169,14 +169,13 @@ func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails str
 
 %s
 
-%s
+### Full description
 
 %s	
 
 `,
 		iacTitle,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
-		researchDetailsTitle,
 		fullDetails)
 }
 
@@ -191,16 +190,16 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ### Full description
 
 %s
-
----
-### Code Flows
-
 `,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails,
 	))
 
 	if len(codeFlows) > 0 {
+		contentBuilder.WriteString(`
+---
+### Code Flows
+`)
 		for _, flow := range codeFlows {
 			contentBuilder.WriteString(`
 
@@ -246,22 +245,6 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) stri
 		licenseTableHeader,
 		getLicensesTableContent(licenses, smo))
 }
-
-// func (smo *SimplifiedOutput) IacTableContent(iacRows []formats.SourceCodeRow) string {
-// 	if len(iacRows) == 0 {
-// 		return ""
-// 	}
-
-// 	return fmt.Sprintf(`
-// %s
-
-// %s %s
-
-// `,
-// 		iacTitle,
-// 		iacTableHeader,
-// 		getIacTableContent(iacRows, smo))
-// }
 
 func (smo *SimplifiedOutput) Footer() string {
 	return fmt.Sprintf("\n%s", CommentGeneratedByFrogbot)
