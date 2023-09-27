@@ -648,8 +648,12 @@ func TestGetFixedPackage(t *testing.T) {
 }
 
 func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
-	vulnerabilityPatterns, err := getPatternCompilersForVulnerability(testcase.vulnDetails)
+	depGroup, depName, err := getVulnerabilityGroupAndName(testcase.vulnDetails.ImpactedDependencyName)
 	assert.NoError(t, err)
+
+	stringPatternForVulnerability := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, testcase.vulnDetails.ImpactedDependencyVersion)
+	mapRegexpForVulnerability := fmt.Sprintf(directMapWithVersionRegexp, depGroup, depName, testcase.vulnDetails.ImpactedDependencyVersion)
+	mapRegexpCompiler := regexp.MustCompile(mapRegexpForVulnerability)
 
 	descriptorFilesPaths, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
@@ -657,10 +661,13 @@ func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
 	for _, filePath := range descriptorFilesPaths {
 		fileContent, readErr := os.ReadFile(filePath)
 		assert.NoError(t, readErr)
-		for _, vulnerabilityPattern := range vulnerabilityPatterns {
-			matches := vulnerabilityPattern.FindAllString(string(fileContent), -1)
-			assert.Nil(t, matches, "matches for vulnerability patterns should be empty after fix")
-		}
+
+		// Checking there is no unfixed rows in a string format
+		assert.NotContains(t, fileContent, stringPatternForVulnerability)
+
+		// Checking there is no unfixed rows in a map format
+		rowsMatches := mapRegexpCompiler.FindAllString(string(fileContent), -1)
+		assert.Empty(t, rowsMatches)
 	}
 }
 

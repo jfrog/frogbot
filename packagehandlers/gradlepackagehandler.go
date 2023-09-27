@@ -86,7 +86,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	return
 }
 
-// isVersionSupportedForFix checks if the impacted version is currently supported for fix
+// Checks if the impacted version is currently supported for fix
 func isVersionSupportedForFix(impactedVersion string) bool {
 	if strings.Contains(impactedVersion, "+") ||
 		(strings.Contains(impactedVersion, "[") || strings.Contains(impactedVersion, "(")) ||
@@ -96,7 +96,7 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 	return true
 }
 
-// getDescriptorFilesPaths collects all descriptor files absolute paths
+// Collects all descriptor files absolute paths
 func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -104,19 +104,18 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 		}
 
 		if d.Type().IsRegular() && (strings.HasSuffix(path, groovyBuildFileSuffix) || strings.HasSuffix(path, kotlinBuildFileSuffix)) {
-			absFilePath, err := filepath.Abs(path)
-			if err != nil {
-				err = fmt.Errorf("couldn't retrieve file's absolute path for ./%s", path)
-				return err
+			absFilePath, innerErr := filepath.Abs(path)
+			if innerErr != nil {
+				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
 			}
 			descriptorFilesPaths = append(descriptorFilesPaths, absFilePath)
 		}
-		return err
+		return nil
 	})
 	return
 }
 
-// fixVulnerabilityIfExists fixes all direct occurrences (string/map) of the given vulnerability in the given descriptor file if vulnerability occurs
+// Fixes all direct occurrences (string/map) of the given vulnerability in the given descriptor file if vulnerability occurs
 func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
@@ -129,6 +128,7 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 	if err != nil {
 		return
 	}
+
 	// Fixing all vulnerable rows in string format
 	directStringVulnerableRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
 	directStringFixedRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.SuggestedFixedVersion)
@@ -144,48 +144,11 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 		}
 	}
 
-	/*
-		vulnerabilityPatterns, err := getPatternCompilersForVulnerability(vulnDetails)
-		if err != nil {
-			return
-		}
-
-		for _, regexpCompiler := range vulnerabilityPatterns {
-			if matches := regexpCompiler.FindAllString(fileContent, -1); matches != nil {
-				uniqueMatches := datastructures.MakeSet[string]()
-				for _, match := range matches {
-					uniqueMatches.Add(strings.TrimSpace(match))
-				}
-
-				for _, entry := range uniqueMatches.ToSlice() {
-					modifiedContent := strings.Replace(entry, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, 1)
-					fileContent = strings.ReplaceAll(fileContent, entry, modifiedContent)
-				}
-			}
-		}
-
-	*/
-
 	err = writeUpdatedBuildFile(descriptorFilePath, fileContent)
 	return
 }
 
-// getPatternCompilersForVulnerability creates all possible supported patterns for a vulnerability to appear in a descriptor file
-func getPatternCompilersForVulnerability(vulnDetails *utils.VulnerabilityDetails) (patternsCompilers []*regexp.Regexp, err error) {
-	depGroup, depName, err := getVulnerabilityGroupAndName(vulnDetails.ImpactedDependencyName)
-	if err != nil {
-		return
-	}
-
-	for _, pattern := range regexpPatterns {
-		completedPattern := fmt.Sprintf(pattern, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
-		re := regexp.MustCompile(completedPattern)
-		patternsCompilers = append(patternsCompilers, re)
-	}
-	return
-}
-
-// getVulnerabilityGroupAndName returns separated 'group' and 'name' for a given vulnerability name
+// Returns separated 'group' and 'name' for a given vulnerability name
 func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
 	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
@@ -199,7 +162,7 @@ func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
 
-// writeUpdatedBuildFile writes the updated content of the descriptor's file into the file
+// Writes the updated content of the descriptor's file into the file
 func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
