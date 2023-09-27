@@ -2,12 +2,13 @@ package outputwriter
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
@@ -126,6 +127,7 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
 				ImpactedDependencyName:    "Dependency1",
@@ -165,10 +167,6 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 #### %s %s %s
 
 %s
-
-#### %s %s %s
-
-%s
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
@@ -176,10 +174,6 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 		vulnerabilitiesRows[0].ImpactedDependencyName,
 		vulnerabilitiesRows[0].ImpactedDependencyVersion,
 		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
-		fmt.Sprintf("[ %s ]", vulnerabilitiesRows[1].Cves[0].Id),
-		vulnerabilitiesRows[1].ImpactedDependencyName,
-		vulnerabilitiesRows[1].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[1]),
 	)
 
 	actualContent := so.VulnerabilitiesContent(vulnerabilitiesRows)
@@ -209,6 +203,7 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 			Technology:    coreutils.Npm,
 		},
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				SeverityDetails:           formats.SeverityDetails{Severity: "Low"},
 				ImpactedDependencyName:    "Dependency2",
@@ -239,17 +234,9 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 #### %s %s %s
 
 %s
-
-#### %s %s %s
-
-%s
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
-		fmt.Sprintf("[ %s ]", "CVE-2023-1234"),
-		vulnerabilitiesRows[0].ImpactedDependencyName,
-		vulnerabilitiesRows[0].ImpactedDependencyVersion,
-		createVulnerabilityDescription(&vulnerabilitiesRows[0]),
 		fmt.Sprintf("[ %s ]", "CVE-2024-1234"),
 		vulnerabilitiesRows[1].ImpactedDependencyName,
 		vulnerabilitiesRows[1].ImpactedDependencyVersion,

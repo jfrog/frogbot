@@ -93,23 +93,32 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 %s %s
 
 </div>
-
-%s
 `,
 		vulnerableDependenciesTitle,
 		summaryTitle,
 		getVulnerabilitiesTableHeader(so.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, so),
-		researchDetailsTitle))
-	// Write details for each vulnerability
-	for i := range vulnerabilities {
-		if len(vulnerabilities) == 1 {
-			contentBuilder.WriteString(fmt.Sprintf(`
+		getVulnerabilitiesTableContent(vulnerabilities, so)))
+	// Write for each vulnerability details part
+	var descriptionContentBuilder strings.Builder
+	descriptionContentBuilder.WriteString(fmt.Sprintf(`
 %s
-`, createVulnerabilityDescription(&vulnerabilities[i])))
+`,
+		researchDetailsTitle))
+	shouldOutputDescriptionSection := false
+	for i := range vulnerabilities {
+		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
+		if strings.TrimSpace(vulDescriptionContent) == "" {
+			// No content
+			continue
+		}
+		shouldOutputDescriptionSection = true
+		if len(vulnerabilities) == 1 {
+			descriptionContentBuilder.WriteString(fmt.Sprintf(`
+%s
+`, vulDescriptionContent))
 			break
 		}
-		contentBuilder.WriteString(fmt.Sprintf(`
+		descriptionContentBuilder.WriteString(fmt.Sprintf(`
 <details>
 <summary> <b>%s%s %s</b> </summary>
 <br>
@@ -121,7 +130,10 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i])))
+			vulDescriptionContent))
+	}
+	if shouldOutputDescriptionSection {
+		return contentBuilder.String() + descriptionContentBuilder.String()
 	}
 	return contentBuilder.String()
 }

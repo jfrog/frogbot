@@ -135,12 +135,14 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows := []formats.VulnerabilityOrViolationRow{
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName:    "Dependency1",
 				ImpactedDependencyVersion: "1.0.0",
 			},
 		},
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName:    "Dependency2",
 				ImpactedDependencyVersion: "2.0.0",
@@ -206,6 +208,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Create some sample vulnerabilitiesRows for testing
 	vulnerabilitiesRows = []formats.VulnerabilityOrViolationRow{
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName:    "Dependency1",
 				ImpactedDependencyVersion: "1.0.0",
@@ -215,6 +218,7 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 			Cves:       []formats.CveRow{{Id: "CVE-2023-1234"}, {Id: "CVE-2023-4321"}},
 		},
 		{
+			Summary: "CVE-2023-1234 summary",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName:    "Dependency2",
 				ImpactedDependencyVersion: "2.0.0",
