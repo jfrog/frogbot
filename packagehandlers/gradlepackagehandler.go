@@ -19,7 +19,6 @@ const (
 	directStringWithVersionFormat = "%s:%s:%s"
 )
 
-var regexpPatterns []string
 var directMapWithVersionRegexp string
 
 func init() {
