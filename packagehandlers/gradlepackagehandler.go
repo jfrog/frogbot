@@ -22,19 +22,6 @@ const (
 var directMapWithVersionRegexp string
 
 func init() {
-	/*
-		// Example: junit:junit:1.0.0
-		regexpPatterns = append(regexpPatterns, directStringWithVersionFormat)
-
-		groupEntry := getMapRegexpEntry("group")
-		nameEntry := getMapRegexpEntry("name")
-		versionEntry := getMapRegexpEntry("version")
-
-		// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
-		directMapRegexpPattern := groupEntry + "," + nameEntry + "," + versionEntry
-		regexpPatterns = append(regexpPatterns, directMapRegexpPattern)
-	*/
-
 	// Initializing a regexp pattern for map dependencies
 	// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
 	groupEntry := getMapRegexpEntry("group")
@@ -81,7 +68,6 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 			return
 		}
 	}
-
 	return
 }
 
