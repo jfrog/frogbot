@@ -4,12 +4,10 @@ import (
 	"fmt"
 	testdatautils "github.com/jfrog/build-info-go/build/testdata"
 	biutils "github.com/jfrog/build-info-go/utils"
-	fileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -597,13 +595,11 @@ func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func()
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
 	file, err := os.ReadFile(packageDescriptor)
 	assert.NoError(t, err)
-	if test.fixSupported {
-		assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
-		// Verify that case-sensitive packages in python are lowered
-		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
-	} else {
-		assert.NotContains(t, string(file), test.vulnDetails)
-	}
+
+	assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
+	// Verify that case-sensitive packages in python are lowered
+	assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
+
 }
 
 // This function is intended to add unique checks for specific package managers
@@ -615,7 +611,12 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
 	case coreutils.Gradle:
-		checkVulnVersionFixInBuildFile(t, test)
+		descriptorFilesPaths, err := getDescriptorFilesPaths()
+		assert.NoError(t, err)
+		assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
+		for _, packageDescriptor := range descriptorFilesPaths {
+			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+		}
 	default:
 	}
 }
@@ -647,30 +648,6 @@ func TestGetFixedPackage(t *testing.T) {
 	}
 }
 
-func checkVulnVersionFixInBuildFile(t *testing.T, testcase dependencyFixTest) {
-	depGroup, depName, err := getVulnerabilityGroupAndName(testcase.vulnDetails.ImpactedDependencyName)
-	assert.NoError(t, err)
-
-	stringPatternForVulnerability := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, testcase.vulnDetails.ImpactedDependencyVersion)
-	mapRegexpForVulnerability := fmt.Sprintf(directMapWithVersionRegexp, depGroup, depName, testcase.vulnDetails.ImpactedDependencyVersion)
-	mapRegexpCompiler := regexp.MustCompile(mapRegexpForVulnerability)
-
-	descriptorFilesPaths, err := getDescriptorFilesPaths()
-	assert.NoError(t, err)
-
-	for _, filePath := range descriptorFilesPaths {
-		fileContent, readErr := os.ReadFile(filePath)
-		assert.NoError(t, readErr)
-
-		// Checking there is no unfixed rows in a string format
-		assert.NotContains(t, fileContent, stringPatternForVulnerability)
-
-		// Checking there is no unfixed rows in a map format
-		rowsMatches := mapRegexpCompiler.FindAllString(string(fileContent), -1)
-		assert.Empty(t, rowsMatches)
-	}
-}
-
 func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -684,7 +661,7 @@ func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	finalPath, err := os.Getwd()
 	assert.NoError(t, err)
 
-	expectedResults := []string{filepath.Join(finalPath, "build.gradle"), filepath.Join(finalPath, "innerProjectForTest", "build.gradle.kts")}
+	expectedResults := []string{filepath.Join(finalPath, groovyDescriptorFileSuffix), filepath.Join(finalPath, "innerProjectForTest", kotlinDescriptorFileSuffix)}
 
 	buildFilesPaths, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
@@ -697,29 +674,43 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 
 	tmpDir, err := os.MkdirTemp("", "")
 	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle", "innerProjectForTest"), tmpDir, true, nil))
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	buildFiles, err := getDescriptorFilesPaths()
+	descriptorFiles, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 
-	err = fixVulnerabilityIfExists(buildFiles[0], &utils.VulnerabilityDetails{
+	vulnerabilityDetails := &utils.VulnerabilityDetails{
 		SuggestedFixedVersion:       "4.13.1",
 		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}})
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}}
 
+	for _, descriptorFile := range descriptorFiles {
+		var isFileChanged bool
+		isFileChanged, err = fixVulnerabilityIfExists(descriptorFile, vulnerabilityDetails)
+		assert.NoError(t, err)
+		assert.True(t, isFileChanged)
+		compareFixedFileToComparisonFile(t, descriptorFile)
+	}
+}
+
+func compareFixedFileToComparisonFile(t *testing.T, descriptorFileAbsPath string) {
+	var compareFilePath string
+	if strings.HasSuffix(descriptorFileAbsPath, groovyDescriptorFileSuffix) {
+		curDirPath := strings.TrimSuffix(descriptorFileAbsPath, groovyDescriptorFileSuffix)
+		compareFilePath = filepath.Join(curDirPath, "fixedBuildGradleForCompare.txt")
+	} else {
+		curDirPath := strings.TrimSuffix(descriptorFileAbsPath, kotlinDescriptorFileSuffix)
+		compareFilePath = filepath.Join(curDirPath, "fixedBuildGradleKtsForCompare.txt")
+	}
+
+	expectedFileContent, err := os.ReadFile(descriptorFileAbsPath)
 	assert.NoError(t, err)
 
-	finalPath, err := os.Getwd()
-	assert.NoError(t, err)
-
-	expectedFileContent, err := fileutils.ReadNLines(filepath.Join(finalPath, "fixedBuildGradleKtsForCompare.txt"), math.MaxInt)
-	assert.NoError(t, err)
-
-	fixedFileContent, err := fileutils.ReadNLines(filepath.Join(finalPath, "build.gradle.kts"), math.MaxInt)
+	fixedFileContent, err := os.ReadFile(compareFilePath)
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, expectedFileContent, fixedFileContent)

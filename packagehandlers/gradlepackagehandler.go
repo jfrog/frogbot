@@ -3,7 +3,6 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,8 +11,8 @@ import (
 )
 
 const (
-	groovyBuildFileSuffix         = "build.gradle"
-	kotlinBuildFileSuffix         = "build.gradle.kts"
+	groovyDescriptorFileSuffix    = "build.gradle"
+	kotlinDescriptorFileSuffix    = "build.gradle.kts"
 	apostrophes                   = "[\\\"|\\']"
 	directMapRegexpEntry          = "\\s*%s\\s*[:|=]\\s*"
 	directStringWithVersionFormat = "%s:%s:%s"
@@ -24,10 +23,7 @@ var directMapWithVersionRegexp string
 func init() {
 	// Initializing a regexp pattern for map dependencies
 	// Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
-	groupEntry := getMapRegexpEntry("group")
-	nameEntry := getMapRegexpEntry("name")
-	versionEntry := getMapRegexpEntry("version")
-	directMapWithVersionRegexp = groupEntry + "," + nameEntry + "," + versionEntry
+	directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
 }
 
 type GradlePackageHandler struct {
@@ -62,11 +58,19 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 		return
 	}
 
+	isAnyDescriptorFileChanged := false
 	for _, descriptorFilePath := range descriptorFilesPaths {
-		err = fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
+		var isFileChanged bool
+		isFileChanged, err = fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
 		if err != nil {
 			return
 		}
+		// We use logical OR to save information over all descriptor files whether there is at least one file that has been changed
+		isAnyDescriptorFileChanged = isAnyDescriptorFileChanged || isFileChanged
+	}
+
+	if !isAnyDescriptorFileChanged {
+		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
 	}
 	return
 }
@@ -83,13 +87,14 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 
 // Collects all descriptor files absolute paths
 func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
+		if innerErr != nil {
 			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
 		}
 
-		if d.Type().IsRegular() && (strings.HasSuffix(path, groovyBuildFileSuffix) || strings.HasSuffix(path, kotlinBuildFileSuffix)) {
-			absFilePath, innerErr := filepath.Abs(path)
+		if strings.HasSuffix(path, groovyDescriptorFileSuffix) || strings.HasSuffix(path, kotlinDescriptorFileSuffix) {
+			var absFilePath string
+			absFilePath, innerErr = filepath.Abs(path)
 			if innerErr != nil {
 				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
 			}
@@ -100,26 +105,29 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 	return
 }
 
-// Fixes all direct occurrences (string/map) of the given vulnerability in the given descriptor file if vulnerability occurs
-func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+// Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
+func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+	isFileChanged = false
+
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
 		return
 	}
 	fileContent := string(byteFileContent)
+	originalFile := fileContent
 
 	depGroup, depName, err := getVulnerabilityGroupAndName(vulnDetails.ImpactedDependencyName)
 	if err != nil {
 		return
 	}
 
-	// Fixing all vulnerable rows in string format
+	// Fixing all vulnerable rows given in a string format. For Example: implementation "junit:junit:4.7"
 	directStringVulnerableRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
 	directStringFixedRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.SuggestedFixedVersion)
 	fileContent = strings.ReplaceAll(fileContent, directStringVulnerableRow, directStringFixedRow)
 
-	// Fixing all vulnerable rows in a map format
+	// Fixing all vulnerable rows given in a map format. For Example: implementation group: "junit", name: "junit", version: "4.7"
 	mapRegexpForVulnerability := fmt.Sprintf(directMapWithVersionRegexp, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
 	regexpCompiler := regexp.MustCompile(mapRegexpForVulnerability)
 	if rowsMatches := regexpCompiler.FindAllString(fileContent, -1); rowsMatches != nil {
@@ -129,6 +137,12 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 		}
 	}
 
+	// If there is no changes in the file we finish dealing with the current descriptor file
+	if fileContent == originalFile {
+		return
+	}
+	isFileChanged = true
+
 	err = writeUpdatedBuildFile(descriptorFilePath, fileContent)
 	return
 }
@@ -137,7 +151,7 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
 	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
-		err = errorutils.CheckErrorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
+		err = fmt.Errorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
 		return
 	}
 	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
@@ -154,9 +168,8 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 		err = fmt.Errorf("couldn't get file info for file '%s': %s", filePath, err.Error())
 		return
 	}
-	filePerm := fileInfo.Mode()
 
-	err = os.WriteFile(filePath, []byte(fileContent), filePerm)
+	err = os.WriteFile(filePath, []byte(fileContent), fileInfo.Mode())
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
 	}
