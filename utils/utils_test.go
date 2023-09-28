@@ -379,11 +379,11 @@ func TestTechArrayToString(t *testing.T) {
 
 func TestPrepareRunsForGithubReport(t *testing.T) {
 	testCases := []struct {
-		run *sarif.Run
+		run            *sarif.Run
 		expectedOutput *sarif.Run
 	}{
 		{
-			run: utils.CreateRunWithDummyResults(),
+			run:            utils.CreateRunWithDummyResults(),
 			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl),
 		},
 		{
@@ -396,7 +396,7 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 		},
 		{
 			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
-				utils.CreateResultWithLocations("findings", "rule", "level", 
+				utils.CreateResultWithLocations("findings", "rule", "level",
 					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
 					utils.CreateLocation("file://root/dir/dir2/file2", 1, 1, 1, 1, "snippet2"),
 				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(
@@ -405,7 +405,7 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 				))}),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl).WithResults([]*sarif.Result{
-				utils.CreateResultWithLocations("findings", "rule", "level", 
+				utils.CreateResultWithLocations("findings", "rule", "level",
 					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
 					utils.CreateLocation("dir2/file2", 1, 1, 1, 1, "snippet2"),
 				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(

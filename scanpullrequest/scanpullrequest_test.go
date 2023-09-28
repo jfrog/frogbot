@@ -514,8 +514,8 @@ func TestGetAllIssues(t *testing.T) {
 			SastScanResults: []*sarif.Run{
 				xrayutils.CreateRunWithDummyResults(
 					xrayutils.CreateResultWithLocations("XSS Vulnerability", "rule", xrayutils.ConvertToSarifLevel("high"),
-					xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
-				),
+						xrayutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+					),
 				),
 			},
 			EntitledForJas: true,
@@ -524,22 +524,22 @@ func TestGetAllIssues(t *testing.T) {
 	expectedOutput := &utils.IssuesCollection{
 		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
-				Applicable: "Applicable",
+				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High" ,SeverityNumValue: 13},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 13},
 					ImpactedDependencyName: "Dep-1",
 				},
-				Cves:       []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			},
 			{
-				Applicable: "Not Applicable",
+				Applicable:    "Not Applicable",
 				FixedVersions: []string{"1.2.2"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 2},
 					ImpactedDependencyName: "Dep-2",
 				},
-				Cves:       []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
 			},
 		},
 		Iacs: []formats.SourceCodeRow{
@@ -596,7 +596,7 @@ func TestGetAllIssues(t *testing.T) {
 		Licenses: []formats.LicenseRow{
 			{
 				LicenseKey: "Apache-2.0",
-				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ 
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 					ImpactedDependencyName: "Dep-1",
 				},
 			},

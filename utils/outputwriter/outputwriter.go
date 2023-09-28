@@ -12,6 +12,7 @@ import (
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	ReviewCommentId                                  = "FrogbotReviewComment"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
@@ -19,8 +20,9 @@ const (
 	summaryTitle                                     = "### ✍️ Summary"
 	researchDetailsTitle                             = "## 🔬 Research Details"
 	iacTitle                                         = "## 🛠️ Infrastructure as Code"
+	sastTitle                                        = "## 🎯 Static Application Security Testing (SAST) Vulnerability"
 	licenseTitle                                     = "## ⚖️ Violated Licenses"
-	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability\n"
+	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability"
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
@@ -116,8 +118,11 @@ type OutputWriter interface {
 	UntitledForJasMsg() string
 
 	ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string
-	IacReviewContent(severity, finding, fullDetails string) string
+	// IacReviewContent(severity, finding, fullDetails string) string
 	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
+
+	MarkInCenter(content string) string
+	MarkAsDetails(summary, content string) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -177,6 +182,10 @@ func MarkdownComment(text string) string {
 
 func MarkAsQuote(s string) string {
 	return fmt.Sprintf("`%s`", s)
+}
+
+func SectionDivider() string {
+	return "\n---\n"
 }
 
 func MarkAsCodeSnippet(snippet string) string {
@@ -244,4 +253,19 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 		return ""
 	}
 	return fmt.Sprintf("[ %s ] ", identifier)
+}
+
+func GenerateReviewCommentContent(content string, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + content + writer.Footer()
+}
+
+func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + GetLocationDescription(location) + content + writer.Footer()
+}
+
+func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
+	return fmt.Sprintf("\n%s%s%s\n",
+		iacTitle,
+		writer.MarkInCenter(GetJasMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), finding)),
+		writer.MarkAsDetails("Full description", fullDetails))
 }

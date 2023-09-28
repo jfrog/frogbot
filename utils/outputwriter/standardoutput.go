@@ -83,27 +83,14 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf(`
-%s
-
-%s
-
-<div align="center">
-
-%s %s
-
-</div>
-`,
+	contentBuilder.WriteString(fmt.Sprintf("\n%s\n\n%s\n%s\n",
 		vulnerableDependenciesTitle,
 		summaryTitle,
-		getVulnerabilitiesTableHeader(so.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, so)))
+		so.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(so.showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, so)))),
+	)
 	// Write for each vulnerability details part
 	var descriptionContentBuilder strings.Builder
-	descriptionContentBuilder.WriteString(fmt.Sprintf(`
-%s
-`,
-		researchDetailsTitle))
+	descriptionContentBuilder.WriteString(fmt.Sprintf("\n%s\n", researchDetailsTitle))
 	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
@@ -113,24 +100,16 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 		}
 		shouldOutputDescriptionSection = true
 		if len(vulnerabilities) == 1 {
-			descriptionContentBuilder.WriteString(fmt.Sprintf(`
-%s
-`, vulDescriptionContent))
+			descriptionContentBuilder.WriteString(fmt.Sprintf("\n%s\n", vulDescriptionContent))
 			break
 		}
-		descriptionContentBuilder.WriteString(fmt.Sprintf(`
-<details>
-<summary> <b>%s%s %s</b> </summary>
-<br>
-%s
-
-</details>
-
-`,
-			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
-			vulnerabilities[i].ImpactedDependencyName,
-			vulnerabilities[i].ImpactedDependencyVersion,
-			vulDescriptionContent))
+		descriptionContentBuilder.WriteString(fmt.Sprintf("%s\n",
+		so.MarkAsDetails(fmt.Sprintf(`%s%s %s`,
+				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+				vulnerabilities[i].ImpactedDependencyName,
+				vulnerabilities[i].ImpactedDependencyVersion,
+			), vulDescriptionContent)),
+		)
 	}
 	if shouldOutputDescriptionSection {
 		return contentBuilder.String() + descriptionContentBuilder.String()
@@ -140,151 +119,69 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 
 func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf(`
-%s
-
-<div align="center">
-
-%s
-
-</div>
-
-<details>
-<summary> <b>Description</b> </summary>
-<br>
-
-%s
-
-</details>
-
-<details>
-<summary> <b>CVE details</b> </summary>
-<br>
-
-%s
-
-</details>
-
-`,
+	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
 		contextualAnalysisTitle,
-		GetApplicabilityMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
-		fullDetails,
-		cveDetails))
+		so.MarkInCenter(GetApplicabilityMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding)),
+		so.MarkAsDetails("Description", fullDetails),
+		so.MarkAsDetails("CVE details", cveDetails)),
+	)
 	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf(`
-<details>
-<summary> <b>Remediation</b> </summary>
-<br>
-
-%s
-
-</details>
-
-`,
-			remediation))
+		contentBuilder.WriteString(fmt.Sprintf("%s\n",
+		so.MarkAsDetails("Remediation", remediation)),
+		)
 	}
-
 	return contentBuilder.String()
 }
 
-func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
-	return fmt.Sprintf(`
-%s
-
-<div align="center">
-
-%s
-
-</div>
-
-<details>
-<summary> <b>Full description</b> </summary>
-<br>
-
-%s
-
-</details>
-
-`,
-		iacTitle,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
-		fullDetails)
-}
+// func (so *StandardOutput) IacReviewContent(severity, finding, fullDetails string) string {
+// 	return fmt.Sprintf("\n%s%s%s\n",
+// 		iacTitle,
+// 		so.MarkInCenter(GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding)),
+// 		so.MarkAsDetails("Full description", fullDetails))
+// }
 
 func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf(`
-## 🎯 Static Application Security Testing (SAST) Vulnerability 
-	
-<div align="center">
-
-%s
-
-</div>
-
-<details>
-<summary> <b>Full description</b> </summary>
-<br>
-
-%s
-
-</details>
-
-`,
-		GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding),
-		fullDetails,
+	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
+		sastTitle,
+		so.MarkInCenter(GetJasMarkdownDescription(so.FormattedSeverity(severity, "Applicable"), finding)),
+		so.MarkAsDetails("Full description", fullDetails),
 	))
 
 	if len(codeFlows) > 0 {
-		contentBuilder.WriteString(`
+		contentBuilder.WriteString(fmt.Sprintf("%s\n",
+		so.MarkAsDetails("Code Flows", so.sastCodeFlowsReviewContent(codeFlows)),
+		))
+	}
+	return contentBuilder.String()
+}
 
-<details>
-<summary><b>Code Flows</b> </summary>
+func (so *StandardOutput) sastCodeFlowsReviewContent(codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	for _, flow := range codeFlows {
+		contentBuilder.WriteString(so.MarkAsDetails("Vulnerable data flow analysis result", so.sastDataFlowLocationsReviewContent(flow)))
+	}
+	return contentBuilder.String()
+}
 
-`)
-		for _, flow := range codeFlows {
-			contentBuilder.WriteString(`
-
-<details>
-<summary><b>Vulnerable data flow analysis result</b> </summary>
-<br>
-`)
-			for _, location := range flow {
-				contentBuilder.WriteString(fmt.Sprintf(`
+func (so *StandardOutput) sastDataFlowLocationsReviewContent(flow []formats.Location) string {
+	var contentBuilder strings.Builder
+	for _, location := range flow {
+		contentBuilder.WriteString(fmt.Sprintf(`
 %s %s (at %s line %d)
 `,
-					"↘️",
-					MarkAsQuote(location.Snippet),
-					location.File,
-					location.StartLine,
-				))
-			}
-
-			contentBuilder.WriteString(`
-
-</details>
-
-`,
-			)
-		}
-		contentBuilder.WriteString(`
-
-</details>
-
-`,
-		)
+			"↘️",
+			MarkAsQuote(location.Snippet),
+			location.File,
+			location.StartLine,
+		))
 	}
 	return contentBuilder.String()
 }
 
 func (so *StandardOutput) Footer() string {
 	return fmt.Sprintf(`
----
-<div align="center">
-
-%s
-
-</div>`, CommentGeneratedByFrogbot)
+---%s`, so.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func (so *StandardOutput) Separator() string {
@@ -298,15 +195,9 @@ func (so *StandardOutput) FormattedSeverity(severity, applicability string) stri
 func (so *StandardOutput) UntitledForJasMsg() string {
 	msg := ""
 	if !so.entitledForJas {
-		msg =
-			`
----
-<div align="center">
-
-**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.
-
-</div>
-`
+		msg = fmt.Sprintf("\n---%s\n",
+			so.MarkInCenter("**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."),
+		)
 	}
 	return msg
 }
@@ -316,45 +207,28 @@ func (so *StandardOutput) LicensesContent(licenses []formats.LicenseRow) string 
 		return ""
 	}
 	return fmt.Sprintf(`
-%s 
-
-<div align="center">
-
-%s %s
-
-</div>
+%s%s
 
 `,
 		licenseTitle,
-		licenseTableHeader,
-		getLicensesTableContent(licenses, so))
+		so.MarkInCenter(fmt.Sprintf("%s %s", licenseTableHeader, getLicensesTableContent(licenses, so))))
 }
 
-func MarkInCenter(content string) string {
+func (so *StandardOutput) MarkInCenter(content string) string {
 	return fmt.Sprintf(`
-
 <div align="center">
 
 %s
-	
-</div>
 
-`,
-		content)
+</div>`, content)
 }
 
-func MarkAsDetails(summary, content string) string {
+func (so *StandardOutput) MarkAsDetails(summary, content string) string {
 	return fmt.Sprintf(`
-
 <details>
-<summary><b>%s</b></summary>
+<summary> <b>%s</b> </summary>
 <br>
-	
 %s
 
-</details>
-
-`,
-		summary,
-		content)
+</details>`, summary, content)
 }

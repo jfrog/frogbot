@@ -78,7 +78,6 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	if len(vulnerabilities) == 0 {
 		return ""
 	}
-
 	var contentBuilder strings.Builder
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf(`
@@ -133,96 +132,61 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 
 func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf(`
-## 📦🔍 Contextual Analysis CVE Vulnerability
-	
-%s
-
-### Description
-	
-%s	
-
-### CVE details
-
-%s
-
-`,
-		GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding),
-		fullDetails,
-		cveDetails))
-
+	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
+		contextualAnalysisTitle,
+		smo.MarkInCenter(GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding)),
+		smo.MarkAsDetails("Description", fullDetails),
+		smo.MarkAsDetails("CVE details", cveDetails)),
+	)
 	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf(`
-### Remediation
-	
-%s	
-
-`,
-			remediation))
+		contentBuilder.WriteString(fmt.Sprintf("%s\n",
+			smo.MarkAsDetails("Remediation", remediation)),
+		)
 	}
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
-	return fmt.Sprintf(`
-%s
-
-%s
-
-### Full description
-
-%s	
-
-`,
-		iacTitle,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
-		fullDetails)
-}
+// func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
+// 	return fmt.Sprintf("\n%s%s%s\n",
+// 		iacTitle,
+// 		smo.MarkInCenter(GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding)),
+// 		smo.MarkAsDetails("Full description", fullDetails))
+// }
 
 func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf(`
-## 🎯 Static Application Security Testing (SAST) Vulnerability
-	
-%s
-
----
-### Full description
-
-%s
-`,
-		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
-		fullDetails,
+	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
+		sastTitle,
+		smo.MarkInCenter(GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding)),
+		smo.MarkAsDetails("Full description", fullDetails),
 	))
-
 	if len(codeFlows) > 0 {
-		contentBuilder.WriteString(`
----
-### Code Flows
-`)
-		for _, flow := range codeFlows {
-			contentBuilder.WriteString(`
+		contentBuilder.WriteString(fmt.Sprintf("%s\n",
+		smo.MarkAsDetails("Code Flows", smo.sastCodeFlowsReviewContent(codeFlows)),
+		))
+	}
+	return contentBuilder.String()
+}
 
----
-Vulnerable data flow analysis result:
-`)
-			for _, location := range flow {
-				contentBuilder.WriteString(fmt.Sprintf(`
+func (smo *SimplifiedOutput) sastCodeFlowsReviewContent(codeFlows [][]formats.Location) string {
+	var contentBuilder strings.Builder
+	for _, flow := range codeFlows {
+		contentBuilder.WriteString(smo.MarkAsDetails("Vulnerable data flow analysis result", smo.sastDataFlowLocationsReviewContent(flow)))
+	}
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) sastDataFlowLocationsReviewContent(flow []formats.Location) string {
+	var contentBuilder strings.Builder
+	for _, location := range flow {
+		contentBuilder.WriteString(fmt.Sprintf(`
 %s %s (at %s line %d)
 `,
-					"↘️",
-					MarkAsQuote(location.Snippet),
-					location.File,
-					location.StartLine,
-				))
-			}
-			contentBuilder.WriteString(`
-
----
-
-`,
-			)
-		}
+			"↘️",
+			MarkAsQuote(location.Snippet),
+			location.File,
+			location.StartLine,
+		))
 	}
 	return contentBuilder.String()
 }
@@ -247,7 +211,7 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) stri
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("\n%s", CommentGeneratedByFrogbot)
+	return fmt.Sprintf("%s%s", SectionDivider(), CommentGeneratedByFrogbot)
 }
 
 func (smo *SimplifiedOutput) Separator() string {
@@ -264,4 +228,12 @@ func (smo *SimplifiedOutput) UntitledForJasMsg() string {
 		msg = "\n\n---\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n"
 	}
 	return msg
+}
+
+func (smo *SimplifiedOutput) MarkInCenter(content string) string {
+	return fmt.Sprintf("\n%s", content)
+}
+
+func (smo *SimplifiedOutput) MarkAsDetails(summary, content string) string {
+	return fmt.Sprintf("%s### %s%s%s", SectionDivider(), summary, SectionDivider(), content)
 }
