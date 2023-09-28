@@ -175,7 +175,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: ApplicableComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(repo.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", ""), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", "", repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -231,7 +231,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: SastComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(repo.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}, repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",

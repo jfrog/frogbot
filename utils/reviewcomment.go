@@ -139,7 +139,7 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 	if relatedVulnerability.JfrogResearchInformation != nil {
 		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
 	}
-	return outputwriter.GenerateReviewCommentContent(writer.ApplicableCveReviewContent(
+	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(
 		relatedVulnerability.Severity,
 		issue.Reason,
 		relatedCve.Applicability.ScannerDescription,
@@ -147,6 +147,7 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 		relatedVulnerability.Summary,
 		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
 		remediation,
+		writer,
 	), writer)
 }
 
@@ -160,11 +161,12 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, issue format
 			writer,
 		), writer)
 	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(writer.SastReviewContent(
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(
 			issue.Severity,
 			issue.Finding,
 			issue.ScannerDescription,
 			issue.CodeFlow,
+			writer,
 		), writer)
 	}
 	return

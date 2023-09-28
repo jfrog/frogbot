@@ -130,67 +130,6 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	return contentBuilder.String()
 }
 
-func (smo *SimplifiedOutput) ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
-		contextualAnalysisTitle,
-		smo.MarkInCenter(GetApplicabilityMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding)),
-		smo.MarkAsDetails("Description", fullDetails),
-		smo.MarkAsDetails("CVE details", cveDetails)),
-	)
-	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			smo.MarkAsDetails("Remediation", remediation)),
-		)
-	}
-	return contentBuilder.String()
-}
-
-// func (smo *SimplifiedOutput) IacReviewContent(severity, finding, fullDetails string) string {
-// 	return fmt.Sprintf("\n%s%s%s\n",
-// 		iacTitle,
-// 		smo.MarkInCenter(GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding)),
-// 		smo.MarkAsDetails("Full description", fullDetails))
-// }
-
-func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
-		sastTitle,
-		smo.MarkInCenter(GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding)),
-		smo.MarkAsDetails("Full description", fullDetails),
-	))
-	if len(codeFlows) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			smo.MarkAsDetails("Code Flows", smo.sastCodeFlowsReviewContent(codeFlows)),
-		))
-	}
-	return contentBuilder.String()
-}
-
-func (smo *SimplifiedOutput) sastCodeFlowsReviewContent(codeFlows [][]formats.Location) string {
-	var contentBuilder strings.Builder
-	for _, flow := range codeFlows {
-		contentBuilder.WriteString(smo.MarkAsDetails("Vulnerable data flow analysis result", smo.sastDataFlowLocationsReviewContent(flow)))
-	}
-	return contentBuilder.String()
-}
-
-func (smo *SimplifiedOutput) sastDataFlowLocationsReviewContent(flow []formats.Location) string {
-	var contentBuilder strings.Builder
-	for _, location := range flow {
-		contentBuilder.WriteString(fmt.Sprintf(`
-%s %s (at %s line %d)
-`,
-			"↘️",
-			MarkAsQuote(location.Snippet),
-			location.File,
-			location.StartLine,
-		))
-	}
-	return contentBuilder.String()
-}
-
 func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) string {
 	if len(licenses) == 0 {
 		return ""

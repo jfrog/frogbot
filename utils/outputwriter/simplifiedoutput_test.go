@@ -287,7 +287,7 @@ func TestSimplifiedOutput_ApplicableCveReviewContent(t *testing.T) {
 	so := &SimplifiedOutput{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := so.ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation)
+			output := ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, so)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
@@ -383,7 +383,7 @@ func TestSimplifiedOutput_SastReviewContent(t *testing.T) {
 	so := &SimplifiedOutput{}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := so.SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows)
+			output := SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows, so)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
