@@ -89,20 +89,32 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 %s
 
 %s %s
-
----
-%s
----
-
 `,
 
 		vulnerableDependenciesTitle,
 		summaryTitle,
 		getVulnerabilitiesTableHeader(smo.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, smo),
+		getVulnerabilitiesTableContent(vulnerabilities, smo)))
+
+	// Write for each vulnerability details part
+	var descriptionContentBuilder strings.Builder
+	descriptionContentBuilder.WriteString(fmt.Sprintf(`
+---
+%s
+---
+
+`,
 		researchDetailsTitle))
+
+	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
-		contentBuilder.WriteString(fmt.Sprintf(`
+		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
+		if strings.TrimSpace(vulDescriptionContent) == "" {
+			// No content
+			continue
+		}
+		shouldOutputDescriptionSection = true
+		descriptionContentBuilder.WriteString(fmt.Sprintf(`
 #### %s%s %s
 
 %s
@@ -110,9 +122,12 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 			vulnerabilities[i].ImpactedDependencyName,
 			vulnerabilities[i].ImpactedDependencyVersion,
-			createVulnerabilityDescription(&vulnerabilities[i])))
+			vulDescriptionContent))
 	}
 
+	if shouldOutputDescriptionSection {
+		return contentBuilder.String() + descriptionContentBuilder.String()
+	}
 	return contentBuilder.String()
 }
 
