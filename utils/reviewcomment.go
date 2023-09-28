@@ -96,7 +96,7 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 			reviewComments = append(reviewComments, comment)
 		}
 	}
-	return 
+	return
 }
 
 func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {

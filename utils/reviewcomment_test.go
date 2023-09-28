@@ -11,10 +11,10 @@ import (
 )
 
 func TestGetFrogbotReviewComments(t *testing.T) {
-	testCases := []struct{
-		name string
+	testCases := []struct {
+		name             string
 		existingComments []vcsclient.CommentInfo
-		expectedOutput []vcsclient.CommentInfo
+		expectedOutput   []vcsclient.CommentInfo
 	}{
 		{
 			name: "No frogbot comments",
@@ -70,9 +70,9 @@ func TestGetFrogbotReviewComments(t *testing.T) {
 
 func TestGetNewReviewComments(t *testing.T) {
 	repo := &Repository{OutputWriter: &outputwriter.StandardOutput{}}
-	testCases := []struct{
-		name string
-		issues *IssuesCollection
+	testCases := []struct {
+		name           string
+		issues         *IssuesCollection
 		expectedOutput []ReviewComment
 	}{
 		{
@@ -166,11 +166,11 @@ func TestGetNewReviewComments(t *testing.T) {
 				{
 					Location: formats.Location{
 						File:        "file1",
-							StartLine:   1,
-							StartColumn: 10,
-							EndLine:     2,
-							EndColumn:   11,
-							Snippet:     "snippet",
+						StartLine:   1,
+						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "snippet",
 					},
 					Type: ApplicableComment,
 					CommentInfo: vcsclient.PullRequestComment{
@@ -178,27 +178,27 @@ func TestGetNewReviewComments(t *testing.T) {
 							Content: outputwriter.GenerateReviewCommentContent(repo.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", ""), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
-							OriginalFilePath: "file1",
-							OriginalStartLine: 1,
+							OriginalFilePath:    "file1",
+							OriginalStartLine:   1,
 							OriginalStartColumn: 10,
-							OriginalEndLine: 2,
-							OriginalEndColumn: 11,
-							NewFilePath: "file1",
-							NewStartLine: 1,
-							NewStartColumn: 10,
-							NewEndLine: 2,
-							NewEndColumn: 11,
+							OriginalEndLine:     2,
+							OriginalEndColumn:   11,
+							NewFilePath:         "file1",
+							NewStartLine:        1,
+							NewStartColumn:      10,
+							NewEndLine:          2,
+							NewEndColumn:        11,
 						},
 					},
 				},
 				{
 					Location: formats.Location{
 						File:        "file1",
-							StartLine:   1,
-							StartColumn: 10,
-							EndLine:     2,
-							EndColumn:   11,
-							Snippet:     "aws-violation",
+						StartLine:   1,
+						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "aws-violation",
 					},
 					Type: IacComment,
 					CommentInfo: vcsclient.PullRequestComment{
@@ -206,27 +206,27 @@ func TestGetNewReviewComments(t *testing.T) {
 							Content: outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent("High", "Missing auto upgrade was detected", "", repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
-							OriginalFilePath: "file1",
-							OriginalStartLine: 1,
+							OriginalFilePath:    "file1",
+							OriginalStartLine:   1,
 							OriginalStartColumn: 10,
-							OriginalEndLine: 2,
-							OriginalEndColumn: 11,
-							NewFilePath: "file1",
-							NewStartLine: 1,
-							NewStartColumn: 10,
-							NewEndLine: 2,
-							NewEndColumn: 11,
+							OriginalEndLine:     2,
+							OriginalEndColumn:   11,
+							NewFilePath:         "file1",
+							NewStartLine:        1,
+							NewStartColumn:      10,
+							NewEndLine:          2,
+							NewEndColumn:        11,
 						},
 					},
 				},
 				{
 					Location: formats.Location{
 						File:        "file1",
-							StartLine:   1,
-							StartColumn: 10,
-							EndLine:     2,
-							EndColumn:   11,
-							Snippet:     "snippet",
+						StartLine:   1,
+						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "snippet",
 					},
 					Type: SastComment,
 					CommentInfo: vcsclient.PullRequestComment{
@@ -234,16 +234,16 @@ func TestGetNewReviewComments(t *testing.T) {
 							Content: outputwriter.GenerateReviewCommentContent(repo.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
-							OriginalFilePath: "file1",
-							OriginalStartLine: 1,
+							OriginalFilePath:    "file1",
+							OriginalStartLine:   1,
 							OriginalStartColumn: 10,
-							OriginalEndLine: 2,
-							OriginalEndColumn: 11,
-							NewFilePath: "file1",
-							NewStartLine: 1,
-							NewStartColumn: 10,
-							NewEndLine: 2,
-							NewEndColumn: 11,
+							OriginalEndLine:     2,
+							OriginalEndColumn:   11,
+							NewFilePath:         "file1",
+							NewStartLine:        1,
+							NewStartColumn:      10,
+							NewEndLine:          2,
+							NewEndColumn:        11,
 						},
 					},
 				},

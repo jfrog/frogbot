@@ -189,12 +189,12 @@ func TestGetFallbackReviewCommentContent(t *testing.T) {
 	writer := &StandardOutput{}
 	content := "some review content"
 	location := formats.Location{
-		File: "file",
-		StartLine: 1,
+		File:        "file",
+		StartLine:   1,
 		StartColumn: 2,
-		EndLine: 3,
-		EndColumn: 4,
-		Snippet: "snippet",
+		EndLine:     3,
+		EndColumn:   4,
+		Snippet:     "snippet",
 	}
 	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\n\n```\nsnippet\n```\nat `file` (line 1)\nsome review content" + writer.Footer()
 	assert.Equal(t, expectedOutput, GetFallbackReviewCommentContent(content, location, writer))

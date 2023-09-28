@@ -162,7 +162,7 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 	))
 	if len(codeFlows) > 0 {
 		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-		smo.MarkAsDetails("Code Flows", smo.sastCodeFlowsReviewContent(codeFlows)),
+			smo.MarkAsDetails("Code Flows", smo.sastCodeFlowsReviewContent(codeFlows)),
 		))
 	}
 	return contentBuilder.String()

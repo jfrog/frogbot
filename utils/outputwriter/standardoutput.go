@@ -104,7 +104,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 			break
 		}
 		descriptionContentBuilder.WriteString(fmt.Sprintf("%s\n",
-		so.MarkAsDetails(fmt.Sprintf(`%s%s %s`,
+			so.MarkAsDetails(fmt.Sprintf(`%s%s %s`,
 				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 				vulnerabilities[i].ImpactedDependencyName,
 				vulnerabilities[i].ImpactedDependencyVersion,
@@ -127,7 +127,7 @@ func (so *StandardOutput) ApplicableCveReviewContent(severity, finding, fullDeta
 	)
 	if len(remediation) > 0 {
 		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-		so.MarkAsDetails("Remediation", remediation)),
+			so.MarkAsDetails("Remediation", remediation)),
 		)
 	}
 	return contentBuilder.String()
@@ -150,7 +150,7 @@ func (so *StandardOutput) SastReviewContent(severity, finding, fullDetails strin
 
 	if len(codeFlows) > 0 {
 		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-		so.MarkAsDetails("Code Flows", so.sastCodeFlowsReviewContent(codeFlows)),
+			so.MarkAsDetails("Code Flows", so.sastCodeFlowsReviewContent(codeFlows)),
 		))
 	}
 	return contentBuilder.String()
