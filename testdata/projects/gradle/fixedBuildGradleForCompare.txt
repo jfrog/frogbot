@@ -19,30 +19,30 @@ dependencies {
     implementation group: 'commons-collections', name: 'commons-collections', version: '3.2.1'
 
     // This repeated dependency is required in order to check 'create-fix' captures all formats of direct dependencies
-    implementation 'junit:junit:4.7'
-    implementation "junit:junit:4.7"
-    implementation 'junit:junit:4.7:javadoc'
-    implementation('junit:junit:4.7')
+    implementation 'junit:junit:4.13.1'
+    implementation "junit:junit:4.13.1"
+    implementation 'junit:junit:4.13.1:javadoc'
+    implementation('junit:junit:4.13.1')
 
-    implementation group: 'junit', name: 'junit', version: '4.7'
-    implementation group: "junit", name: "junit", version: "4.7"
-    implementation group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc'
-    implementation(group: 'junit', name: 'junit', version: '4.7', classifier: 'javadoc')
+    implementation group: 'junit', name: 'junit', version: '4.13.1'
+    implementation group: "junit", name: "junit", version: "4.13.1"
+    implementation group: 'junit', name: 'junit', version: '4.13.1', classifier: 'javadoc'
+    implementation(group: 'junit', name: 'junit', version: '4.13.1', classifier: 'javadoc')
 
-    implementation 'junit:junit:4.7',
+    implementation 'junit:junit:4.13.1',
             'commons-io:commons-io:2.7'
 
     implementation(
-            group: 'junit', name: 'junit', version: '4.7'
+            group: 'junit', name: 'junit', version: '4.13.1'
     )
 
-    implementation("junit:junit:4.7") {
+    implementation("junit:junit:4.13.1") {
         exclude module: "SomeModule"
     }
 
     implementation(
-            [group: 'junit', name: 'junit', version: '4.7'],
-            ['junit:junit:4.7']
+            [group: 'junit', name: 'junit', version: '4.13.1'],
+            ['junit:junit:4.13.1']
     )
 
     // This dependency is required in order to check we fix only vulnerable rows
