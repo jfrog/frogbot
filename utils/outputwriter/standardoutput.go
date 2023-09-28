@@ -118,8 +118,7 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 }
 
 func (so *StandardOutput) Footer() string {
-	return fmt.Sprintf(`
----%s`, so.MarkInCenter(CommentGeneratedByFrogbot))
+	return fmt.Sprintf("%s%s", SectionDivider(), so.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func (so *StandardOutput) Separator() string {

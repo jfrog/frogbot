@@ -150,7 +150,7 @@ func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) stri
 }
 
 func (smo *SimplifiedOutput) Footer() string {
-	return fmt.Sprintf("%s%s", SectionDivider(), CommentGeneratedByFrogbot)
+	return fmt.Sprintf("%s%s", SectionDivider(), smo.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func (smo *SimplifiedOutput) Separator() string {

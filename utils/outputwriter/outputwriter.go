@@ -23,6 +23,7 @@ const (
 	sastTitle                                        = "## 🎯 Static Application Security Testing (SAST) Vulnerability"
 	licenseTitle                                     = "## ⚖️ Violated Licenses"
 	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability"
+	jasFeaturesMsgWhenNotEnabled = "**Frogbot** also supports **Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
@@ -103,22 +104,30 @@ const (
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
+	// VCS info
+	SetJasOutputFlags(entitled, showCaColumn bool)
+	VcsProvider() vcsutils.VcsProvider
+	SetVcsProvider(provider vcsutils.VcsProvider)
+
+	// Actual Interface for different type of writers
+	FormattedSeverity(severity, applicability string) string
+	Separator() string
+	MarkInCenter(content string) string
+	MarkAsDetails(summary, content string) string
+
+	// TODO: remove
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	LicensesContent(licenses []formats.LicenseRow) string
-	Footer() string
-	Separator() string
-	FormattedSeverity(severity, applicability string) string
-	IsFrogbotResultComment(comment string) bool
-	SetJasOutputFlags(entitled, showCaColumn bool)
-	VcsProvider() vcsutils.VcsProvider
-	SetVcsProvider(provider vcsutils.VcsProvider)
-	UntitledForJasMsg() string
 
-	MarkInCenter(content string) string
-	MarkAsDetails(summary, content string) string
+	// TODO: move to reviewcomment.go
+	IsFrogbotResultComment(comment string) bool
+
+	// Removed
+	Footer() string
+	UntitledForJasMsg() string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -249,6 +258,14 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 		return ""
 	}
 	return fmt.Sprintf("[ %s ] ", identifier)
+}
+
+func UntitledForJasMsg(writer OutputWriter) string {
+	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
+}
+
+func Footer(writer OutputWriter) string {
+	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func GenerateReviewCommentContent(content string, writer OutputWriter) string {
