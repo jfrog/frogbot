@@ -95,13 +95,13 @@ func (p *Project) setDefaultsIfNeeded() error {
 		p.UseWrapper = &useWrapper
 	}
 	if p.InstallCommand == "" {
-		var err error
-		if p.InstallCommandArgs, err = verifyInstallCommand(getTrimmedEnv(InstallCommandEnv)); err != nil {
-			return fmt.Errorf("%s is invalid: %s", InstallCommandEnv, err.Error())
+		installCommand := getTrimmedEnv(InstallCommandEnv)
+		if installCommand != "" {
+			if err := verifyInstallCommand(installCommand); err != nil {
+				return fmt.Errorf("%s is invalid: %s", InstallCommandEnv, err.Error())
+			}
+			setProjectInstallCommand(p.InstallCommandName, p)
 		}
-	}
-	if p.InstallCommand != "" {
-		setProjectInstallCommand(p.InstallCommand, p)
 	}
 	if p.PipRequirementsFile == "" {
 		p.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
@@ -112,7 +112,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	return nil
 }
 
-func verifyInstallCommand(userInputtedString string) (args []string, err error) {
+func verifyInstallCommand(userInputtedString string) (err error) {
 	if userInputtedString == "" {
 		return
 	}
@@ -122,7 +122,6 @@ func verifyInstallCommand(userInputtedString string) (args []string, err error) 
 		err = fmt.Errorf("user input contains multiple commands")
 		return
 	}
-	args = []string{userInputtedString}
 	return
 }
 
