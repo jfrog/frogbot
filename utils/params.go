@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -94,7 +95,10 @@ func (p *Project) setDefaultsIfNeeded() error {
 		p.UseWrapper = &useWrapper
 	}
 	if p.InstallCommand == "" {
-		p.InstallCommand = getTrimmedEnv(InstallCommandEnv)
+		var err error
+		if p.InstallCommandArgs, err = verifyInstallCommand(getTrimmedEnv(InstallCommandEnv)); err != nil {
+			return fmt.Errorf("%s is invalid: %s", InstallCommandEnv, err.Error())
+		}
 	}
 	if p.InstallCommand != "" {
 		setProjectInstallCommand(p.InstallCommand, p)
@@ -106,6 +110,20 @@ func (p *Project) setDefaultsIfNeeded() error {
 		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
 	}
 	return nil
+}
+
+func verifyInstallCommand(userInputtedString string) (args []string, err error) {
+	if userInputtedString == "" {
+		return
+	}
+	pattern := `(;|\&\&)`
+	re := regexp.MustCompile(pattern)
+	if re.MatchString(userInputtedString) {
+		err = fmt.Errorf("user input contains multiple commands")
+		return
+	}
+	args = []string{userInputtedString}
+	return
 }
 
 type Scan struct {
