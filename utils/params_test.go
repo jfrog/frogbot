@@ -316,6 +316,18 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "a", project.InstallCommandName)
 	assert.Equal(t, []string{"b", "--flagName=flagValue"}, project.InstallCommandArgs)
+
+	// Invalid command, contains more than one command.
+	project = &Project{}
+	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "npm install && npm init"})
+	err = project.setDefaultsIfNeeded()
+	assert.Error(t, err)
+
+	project = &Project{}
+	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "npm install ; npm init"})
+	err = project.setDefaultsIfNeeded()
+	assert.Error(t, err)
+
 }
 
 func TestGenerateConfigAggregatorFromEnv(t *testing.T) {

@@ -100,7 +100,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 			if err := verifyInstallCommand(installCommand); err != nil {
 				return fmt.Errorf("%s is invalid: %s", InstallCommandEnv, err.Error())
 			}
-			setProjectInstallCommand(p.InstallCommandName, p)
+			setProjectInstallCommand(installCommand, p)
 		}
 	}
 	if p.PipRequirementsFile == "" {
