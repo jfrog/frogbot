@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -214,6 +215,50 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier"}},
+				},
+				fixSupported: true,
+			},
+		},
+
+		// Gradle test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.13.1",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
+				},
+				fixSupported: false,
+			},
+			{ // Unsupported fix: dynamic version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
+				},
+				fixSupported: false,
+			},
+			{ // Unsupported fix: latest version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
+				},
+				fixSupported: false,
+			},
+			{ // Unsupported fix: range version
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.2.2",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
+				},
+				fixSupported: false,
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.13.1",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
 				},
 				fixSupported: true,
 			},
@@ -542,22 +587,33 @@ func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func()
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
+	if tech == "go" {
+		err = removeTxtSuffix("go.mod.txt")
+		assert.NoError(t, err)
+		err = removeTxtSuffix("go.sum.txt")
+		assert.NoError(t, err)
+		err = removeTxtSuffix("main.go.txt")
+		assert.NoError(t, err)
+	}
 	return func() {
 		cleanup()
 		assert.NoError(t, os.Chdir(currDir))
 	}
 }
 
+func removeTxtSuffix(txtFileName string) error {
+	// go.sum.txt  >> go.sum
+	return fileutils.MoveFile(txtFileName, strings.TrimSuffix(txtFileName, ".txt"))
+}
+
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
 	file, err := os.ReadFile(packageDescriptor)
 	assert.NoError(t, err)
-	if test.fixSupported {
-		assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
-		// Verify that case-sensitive packages in python are lowered
-		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
-	} else {
-		assert.NotContains(t, string(file), test.vulnDetails)
-	}
+
+	assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
+	// Verify that case-sensitive packages in python are lowered
+	assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
+
 }
 
 // This function is intended to add unique checks for specific package managers
@@ -568,6 +624,13 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	case coreutils.Go:
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+	case coreutils.Gradle:
+		descriptorFilesPaths, err := getDescriptorFilesPaths()
+		assert.NoError(t, err)
+		assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
+		for _, packageDescriptor := range descriptorFilesPaths {
+			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+		}
 	default:
 	}
 }
@@ -596,5 +659,109 @@ func TestGetFixedPackage(t *testing.T) {
 	for _, test := range testcases {
 		fixedPackageArgs := getFixedPackage(test.impactedPackage, test.versionOperator, test.suggestedFixedVersion)
 		assert.Equal(t, test.expectedOutput, fixedPackageArgs)
+	}
+}
+
+func TestGradleGetDescriptorFilesPaths(t *testing.T) {
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(currDir))
+	}()
+	finalPath, err := os.Getwd()
+	assert.NoError(t, err)
+
+	expectedResults := []string{filepath.Join(finalPath, groovyDescriptorFileSuffix), filepath.Join(finalPath, "innerProjectForTest", kotlinDescriptorFileSuffix)}
+
+	buildFilesPaths, err := getDescriptorFilesPaths()
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
+}
+
+func TestGradleFixVulnerabilityIfExists(t *testing.T) {
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(currDir))
+	}()
+
+	descriptorFiles, err := getDescriptorFilesPaths()
+	assert.NoError(t, err)
+
+	vulnerabilityDetails := &utils.VulnerabilityDetails{
+		SuggestedFixedVersion:       "4.13.1",
+		IsDirectDependency:          true,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}}
+
+	for _, descriptorFile := range descriptorFiles {
+		var isFileChanged bool
+		isFileChanged, err = fixVulnerabilityIfExists(descriptorFile, vulnerabilityDetails)
+		assert.NoError(t, err)
+		assert.True(t, isFileChanged)
+		compareFixedFileToComparisonFile(t, descriptorFile)
+	}
+}
+
+func compareFixedFileToComparisonFile(t *testing.T, descriptorFileAbsPath string) {
+	var compareFilePath string
+	if strings.HasSuffix(descriptorFileAbsPath, groovyDescriptorFileSuffix) {
+		curDirPath := strings.TrimSuffix(descriptorFileAbsPath, groovyDescriptorFileSuffix)
+		compareFilePath = filepath.Join(curDirPath, "fixedBuildGradleForCompare.txt")
+	} else {
+		curDirPath := strings.TrimSuffix(descriptorFileAbsPath, kotlinDescriptorFileSuffix)
+		compareFilePath = filepath.Join(curDirPath, "fixedBuildGradleKtsForCompare.txt")
+	}
+
+	expectedFileContent, err := os.ReadFile(descriptorFileAbsPath)
+	assert.NoError(t, err)
+
+	fixedFileContent, err := os.ReadFile(compareFilePath)
+	assert.NoError(t, err)
+
+	assert.ElementsMatch(t, expectedFileContent, fixedFileContent)
+}
+
+func TestGradleIsVersionSupportedForFix(t *testing.T) {
+	var testcases = []struct {
+		impactedVersion string
+		expectedResult  bool
+	}{
+		{
+			impactedVersion: "10.+",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "[10.3, 11.0)",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "(10.4.2, 11.7.8)",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "latest.release",
+			expectedResult:  false,
+		},
+		{
+			impactedVersion: "5.5",
+			expectedResult:  true,
+		},
+		{
+			impactedVersion: "9.0.13-beta",
+			expectedResult:  true,
+		},
+	}
+
+	for _, testcase := range testcases {
+		assert.Equal(t, testcase.expectedResult, isVersionSupportedForFix(testcase.impactedVersion))
 	}
 }
