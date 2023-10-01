@@ -94,15 +94,18 @@ func (p *Project) setDefaultsIfNeeded() error {
 		}
 		p.UseWrapper = &useWrapper
 	}
+	// Attempt to read from ENV if not already set from yaml.
 	if p.InstallCommand == "" {
-		installCommand := getTrimmedEnv(InstallCommandEnv)
-		if installCommand != "" {
-			if err := verifyInstallCommand(installCommand); err != nil {
-				return fmt.Errorf("%s is invalid: %s", InstallCommandEnv, err.Error())
-			}
-			setProjectInstallCommand(installCommand, p)
-		}
+		p.InstallCommand = getTrimmedEnv(InstallCommandEnv)
 	}
+	// If custom command exists,verify and set as project install command.
+	if p.InstallCommand != "" {
+		if err := verifyInstallCommand(p.InstallCommand); err != nil {
+			return err
+		}
+		setProjectInstallCommand(p.InstallCommand, p)
+	}
+
 	if p.PipRequirementsFile == "" {
 		p.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
 	}
@@ -119,7 +122,7 @@ func verifyInstallCommand(userInputtedString string) (err error) {
 	pattern := `(;|\&\&)`
 	re := regexp.MustCompile(pattern)
 	if re.MatchString(userInputtedString) {
-		err = fmt.Errorf("user input contains multiple commands")
+		err = fmt.Errorf("%s is invalid. Cannot contain more than one command within the install command: '%s'", InstallCommandEnv, userInputtedString)
 		return
 	}
 	return
