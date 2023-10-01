@@ -127,25 +127,37 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 
 func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	testCases := []struct {
-		gitManager GitManager
-		expected   string
-		desc       string
+		gitManager   GitManager
+		originBranch string
+		expected     string
+		desc         string
 	}{
 		{
-			expected:   "frogbot-update-Go-dependencies",
-			desc:       "No template",
-			gitManager: GitManager{},
+			expected:     "frogbot-update-Go-dependencies-main",
+			originBranch: "main",
+			desc:         "No template",
+			gitManager:   GitManager{},
+		}, {
+			expected:     "frogbot-update-Go-dependencies-v2",
+			originBranch: "v2",
+			desc:         "No template",
+			gitManager:   GitManager{},
 		},
 		{
-			expected:   "[feature]-Go",
-			desc:       "Custom template hash only",
-			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
+			expected:     "[feature]-Go-main",
+			originBranch: "main",
+			desc:         "Custom template hash only",
+			gitManager:   GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
+		}, {
+			expected:     "[feature]-Go-master",
+			originBranch: "master",
+			desc:         "Custom template hash only",
+			gitManager:   GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
-			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName([]coreutils.Technology{coreutils.Go})
-			assert.NoError(t, err)
+			titleOutput := test.gitManager.GenerateAggregatedFixBranchName(test.originBranch, []coreutils.Technology{coreutils.Go})
 			assert.Equal(t, test.expected, titleOutput)
 		})
 	}

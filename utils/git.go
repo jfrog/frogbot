@@ -354,6 +354,15 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 	return str
 }
 
+func formatAggregatedStringWithPlaceHolders(str, sourceBranch, hash string) string {
+	// Replace branch placeholder
+	str = strings.Replace(str, BranchHashPlaceHolder, hash, 1)
+	// Remove spaces
+	str = strings.ReplaceAll(str, " ", "_")
+	// Add target branch suffix
+	return str + "-" + sourceBranch
+}
+
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
 	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
 	if err != nil {
@@ -396,13 +405,13 @@ func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) s
 }
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
-// and to ensure that there is only one Frogbot branch in aggregated mode.
-func (gm *GitManager) GenerateAggregatedFixBranchName(tech []coreutils.Technology) (fixBranchName string, err error) {
+// and to ensure that there is only one Frogbot branch in aggregated mode for each scanned branch.
+func (gm *GitManager) GenerateAggregatedFixBranchName(originBranch string, tech []coreutils.Technology) (fixBranchName string) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), false), nil
+	return formatAggregatedStringWithPlaceHolders(branchFormat, originBranch, techArrayToString(tech, fixBranchTechSeparator))
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
