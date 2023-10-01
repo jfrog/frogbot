@@ -116,9 +116,6 @@ func (p *Project) setDefaultsIfNeeded() error {
 }
 
 func verifyInstallCommand(userInputtedString string) (err error) {
-	if userInputtedString == "" {
-		return
-	}
 	pattern := `(;|\&\&)`
 	re := regexp.MustCompile(pattern)
 	if re.MatchString(userInputtedString) {
