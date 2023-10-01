@@ -327,11 +327,11 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedCommitMessage(targetBranch string, tech []coreutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
 		// In aggregated mode, commit message and PR title are the same.
-		template = gm.GenerateAggregatedPullRequestTitle(tech)
+		template = gm.GenerateAggregatedPullRequestTitle(targetBranch, tech)
 	}
 	return formatStringWithPlaceHolders(template, "", "", "", true)
 }
@@ -386,13 +386,13 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedPullRequestTitle(targetBranch string, tech []coreutils.Technology) string {
 	template := gm.getPullRequestTitleTemplate(tech)
 	// If no technologies are provided, return the template as-is
 	if len(tech) == 0 {
 		return normalizeWhitespaces(strings.ReplaceAll(template, "%s", ""))
 	}
-	return fmt.Sprintf(template, techArrayToString(tech, pullRequestTitleTechSeparator))
+	return fmt.Sprintf(template, targetBranch+" "+techArrayToString(tech, pullRequestTitleTechSeparator))
 }
 
 func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) string {
