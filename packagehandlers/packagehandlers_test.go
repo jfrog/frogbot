@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
@@ -586,10 +587,23 @@ func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func()
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
+	if tech == "go" {
+		err = removeTxtSuffix("go.mod.txt")
+		assert.NoError(t, err)
+		err = removeTxtSuffix("go.sum.txt")
+		assert.NoError(t, err)
+		err = removeTxtSuffix("main.go.txt")
+		assert.NoError(t, err)
+	}
 	return func() {
 		cleanup()
 		assert.NoError(t, os.Chdir(currDir))
 	}
+}
+
+func removeTxtSuffix(txtFileName string) error {
+	// go.sum.txt  >> go.sum
+	return fileutils.MoveFile(txtFileName, strings.TrimSuffix(txtFileName, ".txt"))
 }
 
 func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
