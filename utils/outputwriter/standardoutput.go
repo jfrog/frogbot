@@ -83,14 +83,23 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf("\n%s\n\n%s\n%s\n",
-		vulnerableDependenciesTitle,
-		summaryTitle,
+	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
+		so.MarkAsTitle(vulnerableDependenciesTitle, 2),
+		so.MarkAsTitle(summaryTitle, 3),
 		so.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(so.showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, so)))),
 	)
 	// Write for each vulnerability details part
+	detailsContent := so.getVulnerabilityDescriptionContent(vulnerabilities)
+	if strings.TrimSpace(detailsContent) != "" {
+		contentBuilder.WriteString(fmt.Sprintf("%s\n", 
+			so.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+		))
+	}
+	return contentBuilder.String()
+}
+
+func (so *StandardOutput) getVulnerabilityDescriptionContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
 	var descriptionContentBuilder strings.Builder
-	descriptionContentBuilder.WriteString(fmt.Sprintf("\n%s\n", researchDetailsTitle))
 	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
@@ -108,13 +117,13 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
 				vulnerabilities[i].ImpactedDependencyName,
 				vulnerabilities[i].ImpactedDependencyVersion,
-			), vulDescriptionContent)),
+			), 4, vulDescriptionContent)),
 		)
 	}
-	if shouldOutputDescriptionSection {
-		return contentBuilder.String() + descriptionContentBuilder.String()
+	if !shouldOutputDescriptionSection {
+		return ""
 	}
-	return contentBuilder.String()
+	return descriptionContentBuilder.String()
 }
 
 func (so *StandardOutput) Footer() string {
@@ -160,7 +169,7 @@ func (so *StandardOutput) MarkInCenter(content string) string {
 </div>`, content)
 }
 
-func (so *StandardOutput) MarkAsDetails(summary, content string) string {
+func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
 	return fmt.Sprintf(`
 <details>
 <summary> <b>%s</b> </summary>
@@ -169,3 +178,7 @@ func (so *StandardOutput) MarkAsDetails(summary, content string) string {
 
 </details>`, summary, content)
 }
+
+func (so *StandardOutput) MarkAsTitle(title string, titleType int) string {
+	return fmt.Sprintf("%s %s", strings.Repeat("#", titleType), title)
+} 

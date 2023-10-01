@@ -153,7 +153,6 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 	// Set the expected content string based on the sample data
 	expectedContent := fmt.Sprintf(`
 ## 📦 Vulnerable Dependencies
-
 ### ✍️ Summary
 
 <div align="center">
@@ -162,7 +161,9 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 
 </div>
 
-## 🔬 Research Details
+<details>
+<summary> <b>🔬 Research Details</b> </summary>
+<br>
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -175,6 +176,9 @@ func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 <summary> <b>%s%s %s</b> </summary>
 <br>
 %s
+
+</details>
+
 
 </details>
 `,
@@ -230,7 +234,6 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 	// Set the expected content string based on the sample data
 	expectedContent = fmt.Sprintf(`
 ## 📦 Vulnerable Dependencies
-
 ### ✍️ Summary
 
 <div align="center">
@@ -239,7 +242,9 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 
 </div>
 
-## 🔬 Research Details
+<details>
+<summary> <b>🔬 Research Details</b> </summary>
+<br>
 
 <details>
 <summary> <b>%s%s %s</b> </summary>
@@ -252,6 +257,9 @@ func TestStandardOutput_ContentWithContextualAnalysis(t *testing.T) {
 <summary> <b>%s%s %s</b> </summary>
 <br>
 %s
+
+</details>
+
 
 </details>
 `,

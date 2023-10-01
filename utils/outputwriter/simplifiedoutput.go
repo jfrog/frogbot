@@ -80,31 +80,23 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf(`
----
-%s
----
-
-%s
-
-%s %s
-`,
-
-		vulnerableDependenciesTitle,
-		summaryTitle,
-		getVulnerabilitiesTableHeader(smo.showCaColumn),
-		getVulnerabilitiesTableContent(vulnerabilities, smo)))
-
+	contentBuilder.WriteString(fmt.Sprintf("%s\n%s\n%s\n",
+		smo.MarkAsTitle(vulnerableDependenciesTitle, 2),
+		smo.MarkAsTitle(summaryTitle, 3),
+		smo.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(smo.showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, smo)))),
+	)
 	// Write for each vulnerability details part
+	detailsContent := smo.getVulnerabilityDescriptionContent(vulnerabilities)
+	if strings.TrimSpace(detailsContent) != "" {
+		contentBuilder.WriteString(fmt.Sprintf("%s\n", 
+			smo.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+		))
+	}
+	return contentBuilder.String()
+}
+
+func (smo *SimplifiedOutput) getVulnerabilityDescriptionContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string {
 	var descriptionContentBuilder strings.Builder
-	descriptionContentBuilder.WriteString(fmt.Sprintf(`
----
-%s
----
-
-`,
-		researchDetailsTitle))
-
 	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
@@ -113,21 +105,22 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 			continue
 		}
 		shouldOutputDescriptionSection = true
-		descriptionContentBuilder.WriteString(fmt.Sprintf(`
-#### %s%s %s
-
-%s
-`,
-			getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
-			vulnerabilities[i].ImpactedDependencyName,
-			vulnerabilities[i].ImpactedDependencyVersion,
-			vulDescriptionContent))
+		if len(vulnerabilities) == 1 {
+			descriptionContentBuilder.WriteString(fmt.Sprintf("\n%s\n", vulDescriptionContent))
+			break
+		}
+		descriptionContentBuilder.WriteString(fmt.Sprintf("%s\n",
+			smo.MarkAsDetails(fmt.Sprintf(`%s%s %s`,
+				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+				vulnerabilities[i].ImpactedDependencyName,
+				vulnerabilities[i].ImpactedDependencyVersion,
+			), 4, vulDescriptionContent)),
+		)
 	}
-
-	if shouldOutputDescriptionSection {
-		return contentBuilder.String() + descriptionContentBuilder.String()
+	if !shouldOutputDescriptionSection {
+		return ""
 	}
-	return contentBuilder.String()
+	return descriptionContentBuilder.String()
 }
 
 func (smo *SimplifiedOutput) LicensesContent(licenses []formats.LicenseRow) string {
@@ -173,6 +166,16 @@ func (smo *SimplifiedOutput) MarkInCenter(content string) string {
 	return fmt.Sprintf("\n%s", content)
 }
 
-func (smo *SimplifiedOutput) MarkAsDetails(summary, content string) string {
-	return fmt.Sprintf("%s### %s%s%s", SectionDivider(), summary, SectionDivider(), content)
+func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
+	return fmt.Sprintf("%s%s", smo.MarkAsTitle(summary, subTitleDepth), content)
+	// return fmt.Sprintf("%s### %s%s%s", SectionDivider(), summary, SectionDivider(), content)
 }
+
+// func (smo *SimplifiedOutput) MarkAsDetails(summary, content string) string {
+// 	// return fmt.Sprintf("%s%s", smo.MarkAsTitle(summary, 3), content)
+// 	return fmt.Sprintf("%s### %s%s%s", SectionDivider(), summary, SectionDivider(), content)
+// }
+
+func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {
+	return fmt.Sprintf("%s%s %s%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
+} 

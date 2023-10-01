@@ -16,13 +16,13 @@ const (
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	vulnerableDependenciesTitle                      = "## 📦 Vulnerable Dependencies"
-	summaryTitle                                     = "### ✍️ Summary"
-	researchDetailsTitle                             = "## 🔬 Research Details"
-	iacTitle                                         = "## 🛠️ Infrastructure as Code"
-	sastTitle                                        = "## 🎯 Static Application Security Testing (SAST) Vulnerability"
+	vulnerableDependenciesTitle                      = "📦 Vulnerable Dependencies"
+	summaryTitle                                     = "✍️ Summary"
+	researchDetailsTitle                             = "🔬 Research Details"
+	iacTitle                                         = "🛠️ Infrastructure as Code"
+	sastTitle                                        = "🎯 Static Application Security Testing (SAST) Vulnerability"
 	licenseTitle                                     = "## ⚖️ Violated Licenses"
-	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability"
+	contextualAnalysisTitle                          = "📦🔍 Contextual Analysis CVE Vulnerability"
 	jasFeaturesMsgWhenNotEnabled = "**Frogbot** also supports **Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
@@ -113,16 +113,18 @@ type OutputWriter interface {
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
 	MarkInCenter(content string) string
-	MarkAsDetails(summary, content string) string
+	MarkAsDetails(summary string, subTitleDepth int, content string) string
+	MarkAsTitle(title string, titleType int) string
+
+	NoVulnerabilitiesTitle() string
+	VulnerabilitiesTitle(isComment bool) string
 
 	// TODO: remove
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	NoVulnerabilitiesTitle() string
-	VulnerabilitiesTitle(isComment bool) string
 	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	LicensesContent(licenses []formats.LicenseRow) string
 
-	// TODO: move to reviewcomment.go
+	// TODO: maybe combine and move to reviewcomment.go
 	IsFrogbotResultComment(comment string) bool
 
 	// Removed
@@ -274,66 +276,4 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 
 func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
 	return MarkdownComment(ReviewCommentId) + GetLocationDescription(location) + content + writer.Footer()
-}
-
-func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
-		contextualAnalysisTitle,
-		writer.MarkInCenter(GetApplicabilityMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding)),
-		writer.MarkAsDetails("Description", fullDetails),
-		writer.MarkAsDetails("CVE details", cveDetails)),
-	)
-	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			writer.MarkAsDetails("Remediation", remediation)),
-		)
-	}
-	return contentBuilder.String()
-}
-
-func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
-	return fmt.Sprintf("\n%s%s%s\n",
-		iacTitle,
-		writer.MarkInCenter(GetJasMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), finding)),
-		writer.MarkAsDetails("Full description", fullDetails))
-}
-
-func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
-		sastTitle,
-		writer.MarkInCenter(GetJasMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), finding)),
-		writer.MarkAsDetails("Full description", fullDetails),
-	))
-
-	if len(codeFlows) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			writer.MarkAsDetails("Code Flows", sastCodeFlowsReviewContent(codeFlows, writer)),
-		))
-	}
-	return contentBuilder.String()
-}
-
-func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	for _, flow := range codeFlows {
-		contentBuilder.WriteString(writer.MarkAsDetails("Vulnerable data flow analysis result", sastDataFlowLocationsReviewContent(flow)))
-	}
-	return contentBuilder.String()
-}
-
-func sastDataFlowLocationsReviewContent(flow []formats.Location) string {
-	var contentBuilder strings.Builder
-	for _, location := range flow {
-		contentBuilder.WriteString(fmt.Sprintf(`
-%s %s (at %s line %d)
-`,
-			"↘️",
-			MarkAsQuote(location.Snippet),
-			location.File,
-			location.StartLine,
-		))
-	}
-	return contentBuilder.String()
 }

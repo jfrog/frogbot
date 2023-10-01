@@ -155,18 +155,23 @@ func TestSimplifiedOutput_VulnerabilitiesContent(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
+
+---
 ### ✍️ Summary
+---
+
 
 %s %s
 
 ---
-## 🔬 Research Details
+### 🔬 Research Details
 ---
 
-
+---
 #### %s %s %s
-
+---
 %s
+
 `,
 		getVulnerabilitiesTableHeader(false),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
@@ -222,18 +227,23 @@ func TestSimplifiedOutput_ContentWithContextualAnalysis(t *testing.T) {
 ## 📦 Vulnerable Dependencies
 ---
 
+
+---
 ### ✍️ Summary
+---
+
 
 %s %s
 
 ---
-## 🔬 Research Details
+### 🔬 Research Details
 ---
 
-
+---
 #### %s %s %s
-
+---
 %s
+
 `,
 		getVulnerabilitiesTableHeader(true),
 		getVulnerabilitiesTableContent(vulnerabilitiesRows, so),
@@ -270,7 +280,7 @@ func TestSimplifiedOutput_ApplicableCveReviewContent(t *testing.T) {
 			cveDetails:         "cveDetails",
 			impactedDependency: "werkzeug:1.0.1",
 			remediation:        "some remediation",
-			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n\n---\n### Remediation\n---\nsome remediation\n",
+			expectedOutput:     "\n\n---\n## 📦🔍 Contextual Analysis CVE Vulnerability\n---\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n\n---\n### Remediation\n---\nsome remediation\n",
 		},
 		{
 			name:               "No remediation",
@@ -280,7 +290,7 @@ func TestSimplifiedOutput_ApplicableCveReviewContent(t *testing.T) {
 			cve:                "CVE-2022-29361",
 			cveDetails:         "cveDetails",
 			impactedDependency: "werkzeug:1.0.1",
-			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n",
+			expectedOutput:     "\n\n---\n## 📦🔍 Contextual Analysis CVE Vulnerability\n---\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n",
 		},
 	}
 
@@ -304,7 +314,7 @@ func TestSimplifiedOutput_IacReviewContent(t *testing.T) {
 			severity:       "Medium",
 			finding:        "Missing auto upgrade was detected",
 			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
-			expectedOutput: "\n## 🛠️ Infrastructure as Code\n| Severity | Finding |\n| :--------------: | :---: |\n| Medium | Missing auto upgrade was detected |\n---\n### Full description\n---\nResource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n\n",
+			expectedOutput: "\n\n---\n## 🛠️ Infrastructure as Code\n---\n\n| Severity | Finding |\n| :--------------: | :---: |\n| Medium | Missing auto upgrade was detected |\n---\n### Full description\n---\nResource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n\n",
 		},
 	}
 
@@ -369,14 +379,14 @@ func TestSimplifiedOutput_SastReviewContent(t *testing.T) {
 					},
 				},
 			},
-			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n---\n### Full description\n---\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n---\n### Code Flows\n---\n\n---\n### Vulnerable data flow analysis result\n---\n\n↘️ `other-snippet` (at file2 line 1)\n\n↘️ `snippet` (at file line 0)\n\n---\n### Vulnerable data flow analysis result\n---\n\n↘️ `a-snippet` (at file line 10)\n\n↘️ `snippet` (at file line 0)\n\n",
+			expectedOutput: "\n\n---\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n---\n\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n---\n### Full description\n---\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n---\n### Code Flows\n---\n\n---\n#### Vulnerable data flow analysis result\n---\n\n↘️ `other-snippet` (at file2 line 1)\n\n↘️ `snippet` (at file line 0)\n\n---\n#### Vulnerable data flow analysis result\n---\n\n↘️ `a-snippet` (at file line 10)\n\n↘️ `snippet` (at file line 0)\n\n",
 		},
 		{
 			name:           "No code flows",
 			severity:       "Low",
 			finding:        "Stack Trace Exposure",
 			fullDetails:    "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
-			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n---\n### Full description\n---\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n",
+			expectedOutput: "\n\n---\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n---\n\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n---\n### Full description\n---\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n",
 		},
 	}
 
