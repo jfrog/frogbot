@@ -666,6 +666,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	cfp.OutputWriter.SetJasOutputFlags(true, false)
 	targetBranch := "master"
 	// Base branch refers to the origin
+	cfp.scanDetails = utils.NewScanDetails(nil, nil, nil)
 	cfp.scanDetails.SetBaseBranch(targetBranch)
 	vulnerabilities := []*utils.VulnerabilityDetails{
 		{
