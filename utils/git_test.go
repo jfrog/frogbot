@@ -168,12 +168,12 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		gitManager GitManager
 		expected   string
 	}{
-		{gitManager: GitManager{}, expected: "[🐸 Frogbot] Update master Pipenv dependencies"},
+		{gitManager: GitManager{}, expected: "[🐸 Frogbot] Update Pipenv dependencies"},
 		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
-			commit := test.gitManager.GenerateAggregatedCommitMessage("master", []coreutils.Technology{coreutils.Pipenv})
+			commit := test.gitManager.GenerateAggregatedCommitMessage([]coreutils.Technology{coreutils.Pipenv})
 			assert.Equal(t, commit, test.expected)
 		})
 	}
@@ -315,23 +315,22 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 		expected string
 	}{
 		{gm: defaultGm, tech: []coreutils.Technology{}, expected: "[🐸 Frogbot] Update dependencies"},
-		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Maven}, expected: "[🐸 Frogbot] Update master Maven dependencies"},
-		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Gradle}, expected: "[🐸 Frogbot] Update master Gradle dependencies"},
-		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Npm}, expected: "[🐸 Frogbot] Update master npm dependencies"},
-		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[🐸 Frogbot] Update master Yarn dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Dependencies] My template "}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Dependencies] My template - master Yarn Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[🐸 Frogbot] Update master Yarn dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - master Yarn Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - master Yarn Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - master Yarn Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %f hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go}, expected: "[Feature] hello - master Yarn,Go Dependencies"},
-		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go, coreutils.Npm}, expected: "[Feature] hello - master Yarn,Go,npm Dependencies"},
+		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Maven}, expected: "[🐸 Frogbot] Update Maven dependencies"},
+		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Gradle}, expected: "[🐸 Frogbot] Update Gradle dependencies"},
+		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Npm}, expected: "[🐸 Frogbot] Update npm dependencies"},
+		{gm: defaultGm, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[🐸 Frogbot] Update Yarn dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Dependencies] My template "}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Dependencies] My template - Yarn Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[🐸 Frogbot] Update Yarn dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn}, expected: "[Feature] hello - Yarn Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %f hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go}, expected: "[Feature] hello - Yarn,Go Dependencies"},
+		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{coreutils.Yarn, coreutils.Go, coreutils.Npm}, expected: "[Feature] hello - Yarn,Go,npm Dependencies"},
 		{gm: GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[Feature] %s %d hello"}}, tech: []coreutils.Technology{}, expected: "[Feature] hello"},
 	}
 	for _, test := range testsCases {
 		t.Run(test.expected, func(t *testing.T) {
-			sourceBranch := "master"
-			title := test.gm.GenerateAggregatedPullRequestTitle(sourceBranch, test.tech)
+			title := test.gm.GenerateAggregatedPullRequestTitle(test.tech)
 			assert.Equal(t, test.expected, title)
 		})
 	}
