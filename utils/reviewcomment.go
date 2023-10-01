@@ -24,8 +24,6 @@ const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
-
-	CommentId = "FrogbotReviewComment"
 )
 
 func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
@@ -93,7 +91,7 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, CommentId) {
+		if strings.Contains(comment.Content, outputwriter.ReviewCommentId) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
@@ -102,7 +100,7 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 }
 
 func getRegularCommentContent(comment ReviewComment) string {
-	return outputwriter.MarkdownComment(CommentId) + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
+	return outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
 }
 
 func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
@@ -118,11 +116,11 @@ func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsT
 		}
 	}
 	for _, iac := range issues.Iacs {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateReviewCommentContent(IacComment, iac, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeReviewContent(IacComment, iac, writer)))
 	}
 
 	for _, sast := range issues.Sast {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateReviewCommentContent(SastComment, sast, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
 	}
 	return
 }
@@ -141,13 +139,12 @@ func generateReviewComment(commentType ReviewCommentType, location formats.Locat
 
 }
 
-func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (content string) {
-	content = outputwriter.MarkdownComment(CommentId)
+func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
 	remediation := ""
 	if relatedVulnerability.JfrogResearchInformation != nil {
 		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
 	}
-	content += writer.ApplicableCveReviewContent(
+	return outputwriter.GenerateReviewCommentContent(writer.ApplicableCveReviewContent(
 		relatedVulnerability.Severity,
 		issue.Reason,
 		relatedCve.Applicability.ScannerDescription,
@@ -155,30 +152,25 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 		relatedVulnerability.Summary,
 		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
 		remediation,
-	)
-	content += writer.Footer()
-	return
+	), writer)
 }
 
-func generateReviewCommentContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
-	content = outputwriter.MarkdownComment(CommentId)
+func generateSourceCodeReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
 	switch commentType {
 	case IacComment:
-		content += writer.IacReviewContent(
+		return outputwriter.GenerateReviewCommentContent(writer.IacReviewContent(
 			issue.Severity,
 			issue.Finding,
 			issue.ScannerDescription,
-		)
+		), writer)
 	case SastComment:
-		content += writer.SastReviewContent(
+		return outputwriter.GenerateReviewCommentContent(writer.SastReviewContent(
 			issue.Severity,
 			issue.Finding,
 			issue.ScannerDescription,
 			issue.CodeFlow,
-		)
+		), writer)
 	}
-
-	content += writer.Footer()
 	return
 }
 

@@ -386,9 +386,9 @@ func TestSimplifiedOutput_SastReviewContent(t *testing.T) {
 		codeFlows      [][]formats.Location
 	}{
 		{
-			name: "Sast review comment content",
-			severity: "Low",
-			finding: "Stack Trace Exposure",
+			name:        "Sast review comment content",
+			severity:    "Low",
+			finding:     "Stack Trace Exposure",
 			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
 			codeFlows: [][]formats.Location{
 				{
@@ -431,10 +431,10 @@ func TestSimplifiedOutput_SastReviewContent(t *testing.T) {
 			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n\t\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n\n---\n### Full description\n\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n---\n### Code Flows\n\n\n---\nVulnerable data flow analysis result:\n\n↘️ `other-snippet` (at file2 line 1)\n\n↘️ `snippet` (at file line 0)\n\n\n---\n\n\n\n---\nVulnerable data flow analysis result:\n\n↘️ `a-snippet` (at file line 10)\n\n↘️ `snippet` (at file line 0)\n\n\n---\n\n",
 		},
 		{
-			name: "No code flows",
-			severity: "Low",
-			finding: "Stack Trace Exposure",
-			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			name:           "No code flows",
+			severity:       "Low",
+			finding:        "Stack Trace Exposure",
+			fullDetails:    "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
 			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n\t\n| Severity | Finding |\n| :--------------: | :---: |\n| Low | Stack Trace Exposure |\n\n---\n### Full description\n\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n",
 		},
 	}
