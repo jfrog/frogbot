@@ -102,8 +102,7 @@ func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewC
 }
 
 func getRegularCommentContent(comment ReviewComment) string {
-	content := outputwriter.MarkdownComment(CommentId)
-	return content + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
+	return outputwriter.MarkdownComment(CommentId) + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
 }
 
 func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
