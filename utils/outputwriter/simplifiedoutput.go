@@ -191,16 +191,16 @@ func (smo *SimplifiedOutput) SastReviewContent(severity, finding, fullDetails st
 ### Full description
 
 %s
-
----
-### Code Flows
-
 `,
 		GetJasMarkdownDescription(smo.FormattedSeverity(severity, "Applicable"), finding),
 		fullDetails,
 	))
 
 	if len(codeFlows) > 0 {
+		contentBuilder.WriteString(`
+---
+### Code Flows
+`)
 		for _, flow := range codeFlows {
 			contentBuilder.WriteString(`
 
