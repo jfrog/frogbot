@@ -664,6 +664,9 @@ random body
 func TestPreparePullRequestDetails(t *testing.T) {
 	cfp := ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}, gitManager: &utils.GitManager{}}
 	cfp.OutputWriter.SetJasOutputFlags(true, false)
+	targetBranch := "master"
+	// Base branch refers to the origin
+	cfp.scanDetails.SetBaseBranch(targetBranch)
 	vulnerabilities := []*utils.VulnerabilityDetails{
 		{
 			VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
@@ -681,7 +684,6 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	}
 	expectedPrBody := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies\n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n\n</div>\n\n## 🔬 Research Details\n\n\n**Description:**\nsummary\n\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>"
 	prTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
-	targetBranch := "master"
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
