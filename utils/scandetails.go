@@ -167,12 +167,12 @@ func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 		return exec.Command(sc.InstallCommandName, sc.InstallCommandArgs...).CombinedOutput()
 	}
-
-	if _, exists := MapTechToResolvingFunc[sc.InstallCommandName]; !exists {
+	resolveDepsFunc := MapTechToResolvingFunc[sc.InstallCommandName]
+	if resolveDepsFunc == nil {
 		return nil, fmt.Errorf(sc.InstallCommandName, "isn't recognized as an install command")
 	}
 	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
-	return MapTechToResolvingFunc[sc.InstallCommandName](sc)
+	return resolveDepsFunc(sc)
 }
 
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
