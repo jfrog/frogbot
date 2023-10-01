@@ -119,7 +119,7 @@ func verifyInstallCommand(userInputtedString string) (err error) {
 	pattern := `(;|\&\&)`
 	re := regexp.MustCompile(pattern)
 	if re.MatchString(userInputtedString) {
-		err = fmt.Errorf("%s is invalid. Cannot contain more than one command within the install command: '%s'", InstallCommandEnv, userInputtedString)
+		err = fmt.Errorf("%s is invalid. Cannot contain more than one command within the provided install command: '%s'", InstallCommandEnv, userInputtedString)
 	}
 	return
 }
