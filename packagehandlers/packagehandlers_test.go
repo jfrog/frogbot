@@ -206,7 +206,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
 				},
 				fixSupported: false,
 			},
@@ -214,7 +214,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
 				},
 				fixSupported: true,
 			},
