@@ -704,7 +704,7 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 
 	for _, descriptorFile := range descriptorFiles {
 		var isFileChanged bool
-		isFileChanged, err = fixVulnerabilityIfExists(descriptorFile, vulnerabilityDetails)
+		isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFile, vulnerabilityDetails)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 		compareFixedFileToComparisonFile(t, descriptorFile)

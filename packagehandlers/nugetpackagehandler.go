@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	dotnetPackageUpgradeExtraArg = "package"
-	dotnetAssetsFilesSuffix      = "csproj"
-	dotnetDependencyRegexpFormat = "(?i)Include=[\\\"|\\']%s[\\\"|\\'][\\s^\\n]*Version=[\\\"|\\']%s[\\\"|\\']"
+	dotnetPackageUpgradeExtraArg          = "package"
+	dotnetAssetsFilesSuffix               = "csproj"
+	dotnetDependencyRegexpLowerCaseFormat = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
 )
 
 type NugetPackageHandler struct {
@@ -47,47 +47,24 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
+	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
+	var isAnyFileChanged bool
+
 	for _, assetFilePath := range modulesWithAssetsPaths {
-		modulePath := path.Dir(assetFilePath)
-		objDirPath := filepath.Join(modulePath, "obj")
-
-		var objDirExists bool
-		objDirExists, err = fileutils.IsDirExists(objDirPath, false)
+		var isFileChanged bool
+		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
 		if err != nil {
-			err = fmt.Errorf("couldn't check existence of 'obj' directory in '%s'", modulePath)
+			err = fmt.Errorf("failed to update asset file '%s': %s", assetFilePath, err.Error())
 			return
 		}
 
-		var fileData []byte
-		fileData, err = os.ReadFile(assetFilePath)
-		if err != nil {
-			return
-		}
-		fileContent := string(fileData)
-
-		vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
-		if matchingRow := vulnRegexpCompiler.FindString(fileContent); matchingRow != "" {
-			err = os.Chdir(modulePath)
-			if err != nil {
-				return
-			}
-
-			err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
-			if err != nil {
-				return
-			}
-
-			// 'obj' directory is created every time we update a dependency and if it doesn't already exist, we remove it
-			if !objDirExists {
-				err = fileutils.RemoveTempDir(objDirPath)
-			}
-			continue
-		}
+		// We use logic OR in order to keep track whether any asset file changed during the fix process
+		isAnyFileChanged = isAnyFileChanged || isFileChanged
 	}
-	defer func() {
-		err = errors.Join(err, os.Chdir(wd))
-	}()
 
+	if !isAnyFileChanged {
+		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
+	}
 	return
 }
 
@@ -110,7 +87,51 @@ func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 	return
 }
 
+func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
+	modulePath := path.Dir(assetFilePath)
+	objDirPath := filepath.Join(modulePath, "obj")
+
+	var objDirExists bool
+	objDirExists, err = fileutils.IsDirExists(objDirPath, false)
+	if err != nil {
+		err = fmt.Errorf("couldn't check existence of 'obj' directory in '%s'", modulePath)
+		return
+	}
+
+	var fileData []byte
+	fileData, err = os.ReadFile(assetFilePath)
+	if err != nil {
+		return
+	}
+	fileContent := strings.ToLower(string(fileData))
+
+	if matchingRow := vulnRegexpCompiler.FindString(fileContent); matchingRow != "" {
+		err = os.Chdir(modulePath)
+		if err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, os.Chdir(originalWd))
+		}()
+
+		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
+		if err != nil {
+			return
+		}
+		isFileChanged = true
+
+		// 'obj' directory is created every time we update a dependency and if it doesn't already exist, we remove it
+		if !objDirExists {
+			err = fileutils.RemoveTempDir(objDirPath)
+		}
+	}
+	return
+}
+
 func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
-	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpFormat, impactedName, impactedVersion)
+	// We replace '.' with '\\.' since '.' is a spacial character in regexp patterns and we want to capture the character '.' itself
+	// To avoid dealing with case-sensitivity we lower all characters in the package's name and in the file we check
+	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
+	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, impactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
 }
