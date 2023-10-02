@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,6 +16,7 @@ import (
 const (
 	dotnetPackageUpgradeExtraArg = "package"
 	dotnetAssetsFilesSuffix      = "csproj"
+	dotnetDependencyRegexpFormat = "(?i)Include=[\\\"|\\']%s[\\\"|\\'][\\s^\\n]*Version=[\\\"|\\']%s[\\\"|\\']"
 )
 
 type NugetPackageHandler struct {
@@ -45,16 +47,14 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
-	// FROM HERE IS MULTI MODULE
 	for _, assetFilePath := range modulesWithAssetsPaths {
-		tmp := strings.Split(assetFilePath, string(filepath.Separator)) //TODO check if there is a built in func to remove last entry in a path
-		tmp2 := filepath.Join(tmp[:len(tmp)-1]...)
-		objDirPath := filepath.Join(string(filepath.Separator), tmp2, "obj")
+		modulePath := path.Dir(assetFilePath)
+		objDirPath := filepath.Join(modulePath, "obj")
 
 		var objDirExists bool
 		objDirExists, err = fileutils.IsDirExists(objDirPath, false)
 		if err != nil {
-			err = fmt.Errorf("couldn't check existence of 'obj' directory in '%s'", objDirPath)
+			err = fmt.Errorf("couldn't check existence of 'obj' directory in '%s'", modulePath)
 			return
 		}
 
@@ -64,22 +64,20 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 			return
 		}
 		fileContent := string(fileData)
-		// TODO move regexp preparation to better place
-		// TODO deal with lower/ big letters in package name
-		regexpFormat := fmt.Sprintf("(?i)PackageReference[\\s^\\n]*Include=[\\\"|\\']%s[\\\"|\\'][\\s^\\n]*Version=[\\\"|\\']%s[\\\"|\\']", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
-		regexpCompiler := regexp.MustCompile(regexpFormat)
-		if matchingRow := regexpCompiler.FindString(fileContent); matchingRow != "" {
-			//todo change the names here to be more clear
-			//tmp3 := strings.Split(assetFilePath, string(filepath.Separator))[:len(assetFilePath)-1]
-			moduleToUpdate := filepath.Join(string(filepath.Separator), tmp2)
-			err = os.Chdir(moduleToUpdate)
+
+		vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
+		if matchingRow := vulnRegexpCompiler.FindString(fileContent); matchingRow != "" {
+			err = os.Chdir(modulePath)
 			if err != nil {
 				return
 			}
+
 			err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
 			if err != nil {
 				return
 			}
+
+			// 'obj' directory is created every time we update a dependency and if it doesn't already exist, we remove it
 			if !objDirExists {
 				err = fileutils.RemoveTempDir(objDirPath)
 			}
@@ -90,27 +88,6 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		err = errors.Join(err, os.Chdir(wd))
 	}()
 
-	/*
-		// Fix for multi-module project is currently not supported. Fix is available only for a single asset file resides in the root directory
-		if len(modulesWithAssetsPaths) > 1 {
-			err = fmt.Errorf("fixing multi-module project or project with several assets files is currently unavailable")
-			return
-		}
-		 *
-
-		buildFilesDirPath := filepath.Join(string(filepath.Separator), modulesWithAssetsPaths[0], "obj")
-
-		exists, err := fileutils.IsDirExists(buildFilesDirPath, false)
-		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
-		if err != nil {
-			return
-		}
-
-		if !exists {
-			err = fileutils.RemoveTempDir(buildFilesDirPath)
-		}
-		return
-	*/
 	return
 }
 
@@ -126,11 +103,14 @@ func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 			if innerErr != nil {
 				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
 			}
-			// tmp := strings.Split(absFilePath, string(filepath.Separator)) //TODO check id use of separator is correct
-			// absFilePath = filepath.Join(tmp[:len(tmp)-1]...)
 			modulesWithAssetsPaths = append(modulesWithAssetsPaths, absFilePath)
 		}
 		return nil
 	})
 	return
+}
+
+func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
+	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpFormat, impactedName, impactedVersion)
+	return regexp.MustCompile(regexpCompleteFormat)
 }
