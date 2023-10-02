@@ -83,40 +83,43 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	}{
 		{
 			testName:                       "aggregate",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies": {"uuid", "minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies": {"2.4.0"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies-master": {"pyjwt", "pexpect"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies-master": {"2.4.0"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
-			testName:                       "aggregate-no-vul",
+			testName: "aggregate-no-vul",
+			// No branch is being created because there are no vulnerabilities.
 			expectedPackagesInBranch:       map[string][]string{"master": {}},
 			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
 		},
 		{
-			testName:                       "aggregate-cant-fix",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-Pip-dependencies": {}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-Pip-dependencies": {}},
-			packageDescriptorPaths:         []string{"setup.py"}, // This is a build tool dependency which should not be fixed
-			aggregateFixes:                 true,
+			testName: "aggregate-cant-fix",
+			// Branch name stays master as no new branch is being created
+			expectedPackagesInBranch:       map[string][]string{"master": {}},
+			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
+			// This is a build tool dependency which should not be fixed.
+			packageDescriptorPaths: []string{"setup.py"},
+			aggregateFixes:         true,
 		},
 		{
 			testName:                       "non-aggregate",

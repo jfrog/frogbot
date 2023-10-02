@@ -87,7 +87,6 @@ const (
 	CommitMessageTemplate                    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	PullRequestTitleTemplate                 = outputwriter.FrogbotTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	AggregatePullRequestTitleDefaultTemplate = outputwriter.FrogbotTitlePrefix + " Update %s dependencies"
-	AggregatePullRequestTitle                = outputwriter.FrogbotTitlePrefix + " Update dependencies"
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
