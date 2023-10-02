@@ -319,7 +319,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	// Build a version control client for REST API requests
 	client, err := vcsclient.
 		NewClientBuilder(gitParamsFromEnv.GitProvider).
-		ApiEndpoint(gitParamsFromEnv.APIEndpoint).
+		ApiEndpoint(strings.TrimSuffix(gitParamsFromEnv.APIEndpoint, "/")).
 		Token(gitParamsFromEnv.Token).
 		Project(gitParamsFromEnv.Project).
 		Logger(log.GetLogger()).
