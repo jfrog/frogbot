@@ -346,6 +346,9 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 		{BranchHashPlaceHolder, hash},
 	}
 	for _, r := range replacements {
+		// Backward compatible replace with $.
+		// Template was updated to without $ to avoid CI server unwanted replacing the var.
+		str = strings.Replace(str, "$"+r.placeholder, r.value, 1)
 		str = strings.Replace(str, r.placeholder, r.value, 1)
 	}
 	if !allowSpaces {
@@ -355,7 +358,9 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 }
 
 func formatAggregatedStringWithPlaceHolders(str, baseBranch, hash string) string {
-	// Replace branch placeholder
+	// Replace old branch placeholder
+	str = strings.Replace(str, "$"+BranchHashPlaceHolder, hash, 1)
+	// Replace new branch placeholder
 	str = strings.Replace(str, BranchHashPlaceHolder, hash, 1)
 	// Remove spaces
 	str = strings.ReplaceAll(str, " ", "_")
@@ -445,17 +450,15 @@ func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 
-func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
-	template := CustomTemplates{
+func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
+	customTemplates = CustomTemplates{
 		commitMessageTemplate:    commitMessageTemplate,
 		branchNameTemplate:       branchNameTemplate,
 		pullRequestTitleTemplate: pullRequestTitleTemplate,
 	}
-	err := validateBranchName(template.branchNameTemplate)
-	if err != nil {
-		return CustomTemplates{}, err
-	}
-	return template, nil
+	// Validate correct branch by Git providers restrictions.
+	err = validateBranchName(customTemplates.branchNameTemplate)
+	return
 }
 
 func setGoGitCustomClient() {

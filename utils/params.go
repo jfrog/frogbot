@@ -295,8 +295,14 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 }
 
 func validateHashPlaceHolder(template string) error {
-	if template != "" && !strings.Contains(template, BranchHashPlaceHolder) {
-		return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
+	if template == "" {
+		return nil
+	}
+	// Supported branch placeholder with $ and without.
+	// This is due some CI server replacing this variable and causing crashes.
+	// Backward compatible to support both cases.
+	if !strings.Contains(template, "$"+BranchHashPlaceHolder) && !strings.Contains(template, BranchHashPlaceHolder) {
+		return fmt.Errorf("branch name template must contain %s, provided: %s", BranchHashPlaceHolder, template)
 	}
 	return nil
 }
