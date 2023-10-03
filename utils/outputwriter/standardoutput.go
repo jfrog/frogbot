@@ -89,20 +89,20 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
 		so.MarkAsTitle(vulnerableDependenciesTitle, 2),
-		so.MarkAsTitle(summaryTitle, 3),
+		so.MarkAsTitle(vulnerableDependenciesSummarySubTitle, 3),
 		so.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(so.showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, so)))),
 	)
 	// Write for each vulnerability details part
 	detailsContent := so.getVulnerabilityDescriptionContent(vulnerabilities)
 	if strings.TrimSpace(detailsContent) != "" {
 		if len(vulnerabilities) == 1 {
-			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", 
-				so.MarkAsTitle(researchDetailsTitle, 3),
+			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n",
+				so.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3),
 				detailsContent,
 			))
 		} else {
-			contentBuilder.WriteString(fmt.Sprintf("%s\n", 
-				so.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+			contentBuilder.WriteString(fmt.Sprintf("%s\n",
+				so.MarkAsDetails(vulnerableDependenciesResearchDetailsSubTitle, 3, detailsContent),
 			))
 		}
 	}
@@ -167,7 +167,7 @@ func (so *StandardOutput) LicensesContent(licenses []formats.LicenseRow) string 
 %s%s
 
 `,
-		licenseTitle,
+		violatedLicenseTitle,
 		so.MarkInCenter(fmt.Sprintf("%s %s", licenseTableHeader, getLicensesTableContent(licenses, so))))
 }
 
@@ -192,4 +192,4 @@ func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, conte
 
 func (so *StandardOutput) MarkAsTitle(title string, subTitleDepth int) string {
 	return fmt.Sprintf("%s %s", strings.Repeat("#", subTitleDepth), title)
-} 
+}
