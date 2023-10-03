@@ -4,8 +4,46 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 )
+
+func GenerateReviewCommentContent(content string, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + content + Footer(writer)
+}
+
+func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + GetLocationDescription(location) + content + Footer(writer)
+}
+
+func NoVulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider) ImageSource {
+	if vcsProvider == vcsutils.GitLab {
+		return NoVulnerabilityMrBannerSource
+	}
+	return NoVulnerabilityPrBannerSource
+}
+
+func VulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider, isComment bool) ImageSource {
+	if isComment {
+		if vcsProvider == vcsutils.GitLab {
+			return VulnerabilitiesMrBannerSource
+		}
+		return VulnerabilitiesPrBannerSource
+	} else {
+		if vcsProvider == vcsutils.GitLab {
+			return VulnerabilitiesFixMrBannerSource
+		}
+		return VulnerabilitiesFixPrBannerSource
+	}
+}
+
+func UntitledForJasMsg(writer OutputWriter) string {
+	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
+}
+
+func Footer(writer OutputWriter) string {
+	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
+}
 
 func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, showCaColumn bool, writer OutputWriter) string {
 	if len(vulnerabilities) == 0 {
@@ -13,7 +51,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf("%s\n%s\n%s\n",
+	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
 		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
 		writer.MarkAsTitle(summaryTitle, 3),
 		writer.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, writer)))),
@@ -21,9 +59,16 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	// Write for each vulnerability details part
 	detailsContent := getVulnerabilityDescriptionContent(vulnerabilities, writer)
 	if strings.TrimSpace(detailsContent) != "" {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n", 
-			writer.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
-		))
+		if len(vulnerabilities) == 1 {
+			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", 
+				writer.MarkAsTitle(researchDetailsTitle, 3),
+				detailsContent,
+			))
+		} else {
+			contentBuilder.WriteString(fmt.Sprintf("%s\n", 
+				writer.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+			))
+		}
 	}
 	return contentBuilder.String()
 }

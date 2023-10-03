@@ -115,21 +115,21 @@ type OutputWriter interface {
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
-
-	NoVulnerabilitiesTitle() string
-	VulnerabilitiesTitle(isComment bool) string
+	Image(source ImageSource) string
 
 	// TODO: remove
 	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 	LicensesContent(licenses []formats.LicenseRow) string
 
 	// TODO: maybe combine and move to reviewcomment.go
 	IsFrogbotResultComment(comment string) bool
 
 	// Removed
+	NoVulnerabilitiesTitle() string
+	VulnerabilitiesTitle(isComment bool) string
 	Footer() string
 	UntitledForJasMsg() string
+	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -260,20 +260,4 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 		return ""
 	}
 	return fmt.Sprintf("[ %s ] ", identifier)
-}
-
-func UntitledForJasMsg(writer OutputWriter) string {
-	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
-}
-
-func Footer(writer OutputWriter) string {
-	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
-}
-
-func GenerateReviewCommentContent(content string, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + content + writer.Footer()
-}
-
-func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + GetLocationDescription(location) + content + writer.Footer()
 }

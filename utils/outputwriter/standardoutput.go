@@ -35,6 +35,10 @@ func (so *StandardOutput) VulnerabilitiesTableRow(vulnerability formats.Vulnerab
 	return row
 }
 
+func (so *StandardOutput) Image(source ImageSource) string {
+	return GetBanner(source)
+}
+
 func (so *StandardOutput) NoVulnerabilitiesTitle() string {
 	if so.vcsProvider == vcsutils.GitLab {
 		return GetBanner(NoVulnerabilityMrBannerSource)
@@ -91,9 +95,16 @@ func (so *StandardOutput) VulnerabilitiesContent(vulnerabilities []formats.Vulne
 	// Write for each vulnerability details part
 	detailsContent := so.getVulnerabilityDescriptionContent(vulnerabilities)
 	if strings.TrimSpace(detailsContent) != "" {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n", 
-			so.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
-		))
+		if len(vulnerabilities) == 1 {
+			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", 
+				so.MarkAsTitle(researchDetailsTitle, 3),
+				detailsContent,
+			))
+		} else {
+			contentBuilder.WriteString(fmt.Sprintf("%s\n", 
+				so.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+			))
+		}
 	}
 	return contentBuilder.String()
 }

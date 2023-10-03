@@ -46,6 +46,10 @@ func (smo *SimplifiedOutput) VulnerabilitiesTableRow(vulnerability formats.Vulne
 	return row
 }
 
+func (smo *SimplifiedOutput) Image(source ImageSource) string {
+	return GetSimplifiedTitle(source)
+}
+
 func (smo *SimplifiedOutput) NoVulnerabilitiesTitle() string {
 	return GetSimplifiedTitle(NoVulnerabilityPrBannerSource)
 }
@@ -80,7 +84,7 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf("%s\n%s\n%s\n",
+	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
 		smo.MarkAsTitle(vulnerableDependenciesTitle, 2),
 		smo.MarkAsTitle(summaryTitle, 3),
 		smo.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(smo.showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, smo)))),
@@ -88,9 +92,16 @@ func (smo *SimplifiedOutput) VulnerabilitiesContent(vulnerabilities []formats.Vu
 	// Write for each vulnerability details part
 	detailsContent := smo.getVulnerabilityDescriptionContent(vulnerabilities)
 	if strings.TrimSpace(detailsContent) != "" {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n", 
-			smo.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
-		))
+		if len(vulnerabilities) == 1 {
+			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", 
+				smo.MarkAsTitle(researchDetailsTitle, 3),
+				detailsContent,
+			))
+		} else {
+			contentBuilder.WriteString(fmt.Sprintf("%s\n", 
+				smo.MarkAsDetails(researchDetailsTitle, 3, detailsContent),
+			))
+		}
 	}
 	return contentBuilder.String()
 }
