@@ -260,10 +260,7 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
 func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
-	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.projectTech)
-	if err != nil {
-		return
-	}
+	aggregatedFixBranchName := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech)
 	existingPullRequestDetails, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 	if err != nil {
 		return

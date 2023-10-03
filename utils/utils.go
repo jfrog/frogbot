@@ -38,7 +38,6 @@ const (
 	branchInvalidPrefix            = "branch name cannot start with '-' "
 	branchCharsMaxLength           = 255
 	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
-	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
 	skipIndirectVulnerabilitiesMsg = "\n%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can potentially cause conflicts with other dependencies that depend on the previous version.\nFrogbot skips this to avoid potential incompatibilities and breaking changes."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
@@ -318,7 +317,7 @@ func validateBranchName(branchName string) error {
 	if len(branchName) == 0 {
 		return nil
 	}
-	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
+	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", "", true)
 	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
 		return fmt.Errorf(branchInvalidChars)
 	}
@@ -328,9 +327,6 @@ func validateBranchName(branchName string) error {
 	}
 	if len(branchName) > branchCharsMaxLength {
 		return fmt.Errorf(branchInvalidLength)
-	}
-	if !strings.Contains(branchName, BranchHashPlaceHolder) {
-		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
 }

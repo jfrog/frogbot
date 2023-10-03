@@ -295,8 +295,11 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 }
 
 func validateHashPlaceHolder(template string) error {
-	if template != "" && !strings.Contains(template, BranchHashPlaceHolder) {
-		return fmt.Errorf("branch name template must contain %s", BranchHashPlaceHolder)
+	if template == "" {
+		return nil
+	}
+	if !strings.Contains(template, BranchHashPlaceHolder) {
+		return fmt.Errorf("branch name template must contain %s, provided: %s", BranchHashPlaceHolder, template)
 	}
 	return nil
 }
