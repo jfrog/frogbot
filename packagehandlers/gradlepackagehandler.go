@@ -154,6 +154,7 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 	}
 	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
 	return strings.ReplaceAll(seperatedImpactedDepName[0], ".", "\\."), strings.ReplaceAll(seperatedImpactedDepName[1], ".", "\\."), err
+
 }
 
 // Writes the updated content of the descriptor's file into the file
