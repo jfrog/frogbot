@@ -610,8 +610,8 @@ github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 h1:kkhsdkhsCvIsutKu5zLMgWtgh9YxGCNAw8Ad8hjwfYg=
-github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
+github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c h1:kMFnB0vCcX7IL/m9Y5LO+KQYv+t1CQOiFe6+SV2J7bE=
+github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
 github.com/VividCortex/ewma v1.2.0 h1:f58SaIzcDXrSy3kWaHNvuJgJ3Nmz59Zji6XoJR/q1ow=
 github.com/VividCortex/ewma v1.2.0/go.mod h1:nz4BbCtbLyFDeC9SUHbtcT5644juEuWfUAUnGx7j5l4=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
@@ -883,8 +883,10 @@ github.com/jfrog/froggit-go v1.14.2 h1:55x1anQtaiARlSBMVT59aFU6Mmx90tpcvvAuuPsZm
 github.com/jfrog/froggit-go v1.14.2/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/jfrog/gofrog v1.3.0 h1:o4zgsBZE4QyDbz2M7D4K6fXPTBJht+8lE87mS9bw7Gk=
 github.com/jfrog/gofrog v1.3.0/go.mod h1:IFMc+V/yf7rA5WZ74CSbXe+Lgf0iApEQLxRZVzKRUR0=
-github.com/jfrog/jfrog-cli-core/v2 v2.43.3 h1:aZN+ZP2vIBBw2+U9F/iQ4Q2USmfXcxB8yN755azvjQo=
-github.com/jfrog/jfrog-cli-core/v2 v2.43.3/go.mod h1:DKTOX9TsPkyI68GM4XdDTD7XDr+tOBqeK70DZZmu+4Q=
+github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
+github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231003083535-c17c0f5f731e h1:H7/nUc0tDM9nml3Zov6BI3bDe1d5uBROV9jD4z8HsMM=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231003083535-c17c0f5f731e/go.mod h1:ALnxPIFo/8EsubSGcLjfwSUoJC+YlRMCqM4eXm1zq3w=
 github.com/jfrog/jfrog-client-go v1.32.3 h1:B2M8Gu8EMrokbHWPPDgN1b7YRWwf0oe746epvQASK6c=
 github.com/jfrog/jfrog-client-go v1.32.3/go.mod h1:UewnwkIf/77HzBgwCPzOHZCK6V/Nw5/JwdzN/tRb4aU=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
@@ -1057,8 +1059,9 @@ github.com/xanzy/go-gitlab v0.88.0 h1:9GHBrxyCUNZZNuAsbJ1NbEH6XAYsKyTn6NfE0wYO5S
 github.com/xanzy/go-gitlab v0.88.0/go.mod h1:5ryv+MnpZStBH8I/77HuQBsMbBGANtVpLWC15qOjWAw=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
-github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f h1:J9EGpcZtP0E/raorCMxlFGSTBrsSlaDGf3jU/qvAE2c=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
+github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=
+github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 h1:EzJWgHovont7NscjpAxXsDA8S8BMYve8Y5+7cuRE7R0=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
 github.com/xeipuuv/gojsonschema v1.2.0 h1:LhYJRs+L4fBtjZUfuSZIKGeVu0QRy8e5Xi7D17UxZ74=
