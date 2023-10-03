@@ -410,7 +410,6 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []
 		branchFormat = AggregatedBranchNameTemplate
 	}
 	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), baseBranch, false)
-	//return formatAggregatedStringWithPlaceHolders(branchFormat, baseBranch, techArrayToString(tech, fixBranchTechSeparator))
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
