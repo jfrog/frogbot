@@ -231,7 +231,13 @@ func prepareRunsForGithubReport(runs []*sarif.Run) {
 	for _, run := range runs {
 		run.Tool.Driver.Name = sarifToolName
 		run.Tool.Driver.WithInformationURI(sarifToolUrl)
-		// Remove results without locations
+		for _, rule := range run.Tool.Driver.Rules {
+			// Github security tab can display markdown content on Help attribute and not description
+			if rule.Help == nil && rule.FullDescription != nil {
+				rule.Help = rule.FullDescription
+			}
+		}
+		// Github security tab can't accept results without locations, remove them
 		results := []*sarif.Result{}
 		for _, result := range run.Results {
 			if len(result.Locations) == 0 {
@@ -262,12 +268,12 @@ func convertToRelativePath(runs []*sarif.Run) {
 }
 
 func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
-	prepareRunsForGithubReport(extendedResults.ApplicabilityScanResults)
-	prepareRunsForGithubReport(extendedResults.IacScanResults)
-	prepareRunsForGithubReport(extendedResults.SecretsScanResults)
-	prepareRunsForGithubReport(extendedResults.SastScanResults)
-	// Generate report from the data
-	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
+	if err != nil {
+		return "", err
+	}
+	prepareRunsForGithubReport(sarifReport.Runs)
+	return xrayutils.ConvertSarifReportToString(sarifReport)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
