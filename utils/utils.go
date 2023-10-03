@@ -317,7 +317,7 @@ func validateBranchName(branchName string) error {
 	if len(branchName) == 0 {
 		return nil
 	}
-	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
+	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", "", true)
 	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
 		return fmt.Errorf(branchInvalidChars)
 	}
