@@ -179,6 +179,6 @@ func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, conte
 </details>`, summary, content)
 }
 
-func (so *StandardOutput) MarkAsTitle(title string, titleType int) string {
-	return fmt.Sprintf("%s %s", strings.Repeat("#", titleType), title)
+func (so *StandardOutput) MarkAsTitle(title string, subTitleDepth int) string {
+	return fmt.Sprintf("%s %s", strings.Repeat("#", subTitleDepth), title)
 } 

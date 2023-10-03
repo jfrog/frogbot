@@ -114,7 +114,7 @@ type OutputWriter interface {
 	Separator() string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
-	MarkAsTitle(title string, titleType int) string
+	MarkAsTitle(title string, subTitleDepth int) string
 
 	NoVulnerabilitiesTitle() string
 	VulnerabilitiesTitle(isComment bool) string
