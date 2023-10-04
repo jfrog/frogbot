@@ -11,6 +11,7 @@ import (
 const (
 	directDependencyRow        = "|  | %s |  |  |"
 	directDependencyRowWithJas = "|  |  | %s |  |  |"
+	simpleSeparator       = ", "
 )
 
 type SimplifiedOutput struct {
@@ -158,7 +159,7 @@ func (smo *SimplifiedOutput) Footer() string {
 }
 
 func (smo *SimplifiedOutput) Separator() string {
-	return ", "
+	return simpleSeparator
 }
 
 func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {

@@ -72,37 +72,59 @@ func Footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
-func getVulnerabilitiesTable(showCaColumn bool, vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getVulnerabilitiesSummaryTable(showCaColumn bool, vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	// Construct table
 	columns := []string{"SEVERITY"}
 	if showCaColumn {
 		columns = append(columns, "CONTEXTUAL ANALYSIS")
 	}
 	columns = append(columns, "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY", "FIXED VERSIONS", "CVES")
-	table := NewMarkdownTable(columns...)
-	// Construct table rows data
+	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
+	if _, ok := writer.(*SimplifiedOutput); ok {
+		// The value in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
+		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
+		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
+		table.GetColumnInfo("DIRECT DEPENDENCIES").BuildType = MultiRowColumn
+	}
+	// Construct rows
 	for _, vulnerability := range vulnerabilities {
-
-
-
-
-
-		
-		var directDependenciesBuilder strings.Builder
-		for _, component := range vulnerability.Components {
-			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
-		}
-		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
-		impactedDependency := fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)
-		fixedVersions := strings.Join(vulnerability.FixedVersions, writer.Separator())
-		cves := strings.Join(vulnerability.Cves, writer.Separator())
-		row := []string{vulnerability.Severity}
+		row := []CellData{CellData{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable)}}
 		if showCaColumn {
-			row = append(row, vulnerability.ContextualAnalysis)
+			row = append(row, CellData{vulnerability.Applicable})
 		}
-		row = append(row, directDependencies, impactedDependency, fixedVersions, cves)
-		table.AddRow(row...)
+		row = append(row, 
+			getDirectDependenciesCellData(vulnerability.Components), 
+			CellData{fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)}, 
+			vulnerability.FixedVersions, 
+			getCveIdsCellData(vulnerability.Cves),
+		)
+		table.AddRowWithCellData(row...)
 	}
 	return table.Build()
+}
+
+func getDirectDependenciesCellData(components []formats.ComponentRow) (dependencies CellData) {
+	for _, component := range components {
+		dependencies = append(dependencies, fmt.Sprintf("%s:%s", component.Name, component.Version))
+	}
+	return
+}
+
+func getCveIdsCellData(cveRows []formats.CveRow) (ids CellData) {
+	for _, cve := range cveRows {
+		ids = append(ids, cve.Id)
+	}
+	return
+}
+
+func convertCveRowsToCveIds(cveRows []formats.CveRow, separator string) string {
+	cvesBuilder := strings.Builder{}
+	for _, cve := range cveRows {
+		if cve.Id != "" {
+			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, separator))
+		}
+	}
+	return strings.TrimSuffix(cvesBuilder.String(), separator)
 }
 
 func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, showCaColumn bool, writer OutputWriter) string {
@@ -114,7 +136,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
 		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
 		writer.MarkAsTitle(vulnerableDependenciesSummarySubTitle, 3),
-		writer.MarkInCenter(fmt.Sprintf(`%s %s`, getVulnerabilitiesTableHeader(showCaColumn), getVulnerabilitiesTableContent(vulnerabilities, writer)))),
+		writer.MarkInCenter(getVulnerabilitiesSummaryTable(showCaColumn, vulnerabilities, writer))),
 	)
 	// Write for each vulnerability details part
 	detailsContent := getVulnerabilityDetailsContent(vulnerabilities, writer)
@@ -169,7 +191,8 @@ func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, find
 
 // Replace 'GetApplicabilityMarkdownDescription' with this
 func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string) string {
-	return NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(severity, impactedDependency, finding, cve).Build()
+	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(severity, impactedDependency, finding, cve)
+	return table.Build()
 }
 
 func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {

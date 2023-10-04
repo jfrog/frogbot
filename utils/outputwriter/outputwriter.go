@@ -14,8 +14,6 @@ const (
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
-	tableRowFirstColumnSeparator                     = "| :---------------------: |"
-	tableRowColumnSeparator                          = " :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -132,78 +130,6 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	}
 }
 
-type MarkdownTable struct {
-	columns []string
-	rows    [][]string
-}
-
-func NewMarkdownTable(columns ...string) *MarkdownTable {
-	return &MarkdownTable{columns: columns}
-}
-
-func (t *MarkdownTable) AddRow(values ...string) *MarkdownTable {
-	if len(values) == 0 {
-		return t
-	}
-	nColumns := len(t.columns)
-	row := make([]string, nColumns)
-
-	for c, value := range values {
-		if c < nColumns {
-			row[c] = value
-		}
-	}
-
-	t.rows = append(t.rows, row)
-	return t
-}
-
-func (t *MarkdownTable) Build() string {
-	nColumns := len(t.columns)
-	if nColumns == 0 {
-		return ""
-	}
-	var tableBuilder strings.Builder
-	// Header
-	for c, column := range t.columns {
-		if c == 0 {
-			tableBuilder.WriteString(fmt.Sprintf("| %s                |", column))
-		} else {
-			tableBuilder.WriteString(fmt.Sprintf(" %s                  |", column))
-		}
-	}
-	tableBuilder.WriteString("\n")
-	// Separator
-	for c := range t.columns {
-		if c == 0 {
-			tableBuilder.WriteString(tableRowFirstColumnSeparator)
-		} else {
-			tableBuilder.WriteString(tableRowColumnSeparator)
-		}
-	}
-	// Content
-	for _, row := range t.rows {
-		tableBuilder.WriteString("\n")
-		c := 0
-		for c < nColumns {
-			// No content
-			value := "-"
-			if c < len(row) && strings.TrimSpace(row[c]) != "" {
-				// Provided valid content for entry
-				value = strings.TrimSpace(row[c])
-			}
-			if c == 0 {
-				tableBuilder.WriteString(fmt.Sprintf("| %s |", value))
-			} else {
-				tableBuilder.WriteString(fmt.Sprintf(" %s |", value))
-			}
-			c++
-		}
-	}
-
-	return tableBuilder.String()
-}
-
 func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var descriptionBuilder strings.Builder
 	vulnResearch := vulnerability.JfrogResearchInformation
@@ -273,15 +199,6 @@ func getVulnerabilitiesTableHeader(showCaColumn bool) string {
 	return vulnerabilitiesTableHeader
 }
 
-func convertCveRowsToCveIds(cveRows []formats.CveRow, seperator string) string {
-	cvesBuilder := strings.Builder{}
-	for _, cve := range cveRows {
-		if cve.Id != "" {
-			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, seperator))
-		}
-	}
-	return strings.TrimSuffix(cvesBuilder.String(), seperator)
-}
 
 func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
