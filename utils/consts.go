@@ -77,9 +77,9 @@ const (
 	GitHubActionsEnv = "GITHUB_ACTIONS"
 
 	// Placeholders for templates
-	PackagePlaceHolder    = "${IMPACTED_PACKAGE}"
-	FixVersionPlaceHolder = "${FIX_VERSION}"
-	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
+	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
+	FixVersionPlaceHolder = "{FIX_VERSION}"
+	BranchHashPlaceHolder = "{BRANCH_NAME_HASH}"
 
 	// Default naming templates
 	BranchNameTemplate                       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
@@ -87,7 +87,6 @@ const (
 	CommitMessageTemplate                    = "Upgrade " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	PullRequestTitleTemplate                 = outputwriter.FrogbotTitlePrefix + " Update version of " + PackagePlaceHolder + " to " + FixVersionPlaceHolder
 	AggregatePullRequestTitleDefaultTemplate = outputwriter.FrogbotTitlePrefix + " Update %s dependencies"
-	AggregatePullRequestTitle                = outputwriter.FrogbotTitlePrefix + " Update dependencies"
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"

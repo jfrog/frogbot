@@ -38,7 +38,6 @@ const (
 	branchInvalidPrefix            = "branch name cannot start with '-' "
 	branchCharsMaxLength           = 255
 	branchInvalidLength            = "branch name length exceeded " + string(rune(branchCharsMaxLength)) + " chars"
-	invalidBranchTemplate          = "branch template must contain " + BranchHashPlaceHolder + " placeholder "
 	skipIndirectVulnerabilitiesMsg = "\n%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can potentially cause conflicts with other dependencies that depend on the previous version.\nFrogbot skips this to avoid potential incompatibilities and breaking changes."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
@@ -161,9 +160,8 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	}
 	reporter.Report(reports...)
 	return func() {
-		if err = reporter.WaitForResponses(); err != nil {
-			log.Debug(err.Error())
-		}
+		// Ignoring errors on purpose, we don't want to confuse the user with errors on usage reporting.
+		_ = reporter.WaitForResponses()
 	}
 }
 
@@ -231,7 +229,13 @@ func prepareRunsForGithubReport(runs []*sarif.Run) {
 	for _, run := range runs {
 		run.Tool.Driver.Name = sarifToolName
 		run.Tool.Driver.WithInformationURI(sarifToolUrl)
-		// Remove results without locations
+		for _, rule := range run.Tool.Driver.Rules {
+			// Github security tab can display markdown content on Help attribute and not description
+			if rule.Help == nil && rule.FullDescription != nil {
+				rule.Help = rule.FullDescription
+			}
+		}
+		// Github security tab can't accept results without locations, remove them
 		results := []*sarif.Result{}
 		for _, result := range run.Results {
 			if len(result.Locations) == 0 {
@@ -262,12 +266,12 @@ func convertToRelativePath(runs []*sarif.Run) {
 }
 
 func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
-	prepareRunsForGithubReport(extendedResults.ApplicabilityScanResults)
-	prepareRunsForGithubReport(extendedResults.IacScanResults)
-	prepareRunsForGithubReport(extendedResults.SecretsScanResults)
-	prepareRunsForGithubReport(extendedResults.SastScanResults)
-	// Generate report from the data
-	return xrayutils.GenerateSarifContentFromResults(extendedResults, isMultipleRoots, false, true)
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
+	if err != nil {
+		return "", err
+	}
+	prepareRunsForGithubReport(sarifReport.Runs)
+	return xrayutils.ConvertSarifReportToString(sarifReport)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
@@ -318,7 +322,7 @@ func validateBranchName(branchName string) error {
 	if len(branchName) == 0 {
 		return nil
 	}
-	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", true)
+	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", "", true)
 	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
 		return fmt.Errorf(branchInvalidChars)
 	}
@@ -328,9 +332,6 @@ func validateBranchName(branchName string) error {
 	}
 	if len(branchName) > branchCharsMaxLength {
 		return fmt.Errorf(branchInvalidLength)
-	}
-	if !strings.Contains(branchName, BranchHashPlaceHolder) {
-		return fmt.Errorf(invalidBranchTemplate)
 	}
 	return nil
 }
