@@ -160,6 +160,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	}
 	reporter.Report(reports...)
 	return func() {
+		//#nosec G104 -- ignoring errors on purpose
 		reporter.WaitForResponses()
 	}
 }
