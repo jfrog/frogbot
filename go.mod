@@ -116,5 +116,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231001070210-02ff30b2a6e0

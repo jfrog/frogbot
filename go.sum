@@ -612,8 +612,6 @@ github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c h1:kMFnB0vCcX7IL/m9Y5LO+KQYv+t1CQOiFe6+SV2J7bE=
 github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
-github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c h1:kMFnB0vCcX7IL/m9Y5LO+KQYv+t1CQOiFe6+SV2J7bE=
-github.com/ProtonMail/go-crypto v0.0.0-20230923063757-afb1ddc0824c/go.mod h1:EjAoLdwvbIOoOQr3ihjnSoLZRtE8azugULFRteWMNc0=
 github.com/VividCortex/ewma v1.2.0 h1:f58SaIzcDXrSy3kWaHNvuJgJ3Nmz59Zji6XoJR/q1ow=
 github.com/VividCortex/ewma v1.2.0/go.mod h1:nz4BbCtbLyFDeC9SUHbtcT5644juEuWfUAUnGx7j5l4=
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpHMqeKTCYkitsPqHNxTmd4SNR5r94FGM8=
@@ -885,10 +883,12 @@ github.com/jfrog/froggit-go v1.14.2 h1:55x1anQtaiARlSBMVT59aFU6Mmx90tpcvvAuuPsZm
 github.com/jfrog/froggit-go v1.14.2/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/jfrog/gofrog v1.3.0 h1:o4zgsBZE4QyDbz2M7D4K6fXPTBJht+8lE87mS9bw7Gk=
 github.com/jfrog/gofrog v1.3.0/go.mod h1:IFMc+V/yf7rA5WZ74CSbXe+Lgf0iApEQLxRZVzKRUR0=
-github.com/jfrog/jfrog-cli-core/v2 v2.43.3 h1:aZN+ZP2vIBBw2+U9F/iQ4Q2USmfXcxB8yN755azvjQo=
-github.com/jfrog/jfrog-cli-core/v2 v2.43.3/go.mod h1:DKTOX9TsPkyI68GM4XdDTD7XDr+tOBqeK70DZZmu+4Q=
-github.com/jfrog/jfrog-client-go v1.32.3 h1:B2M8Gu8EMrokbHWPPDgN1b7YRWwf0oe746epvQASK6c=
-github.com/jfrog/jfrog-client-go v1.32.3/go.mod h1:UewnwkIf/77HzBgwCPzOHZCK6V/Nw5/JwdzN/tRb4aU=
+github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
+github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
+github.com/jfrog/jfrog-cli-core/v2 v2.44.0 h1:q4517woN4JgtKRLCiCAWDqO37emyDgN+A0FoAIrqP2o=
+github.com/jfrog/jfrog-cli-core/v2 v2.44.0/go.mod h1:dkYBkc+HygCcjV9ZVEg3Myair89Wl59bq3T3/7NJmv0=
+github.com/jfrog/jfrog-client-go v1.34.0 h1:G+H73T3blf8DQkNZJFIfqlAnF4g+qOFL+IRlbPwD6GY=
+github.com/jfrog/jfrog-client-go v1.34.0/go.mod h1:o1YDnyk8j7CWly23dbQZI9j7mSYcBxrPSfBtkul4N+0=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible/go.mod h1:1c7szIrayyPPB/987hsnvNzLushdWf4o/79s3P08L8A=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
