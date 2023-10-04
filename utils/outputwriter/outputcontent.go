@@ -18,11 +18,11 @@ const (
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
 	violatedLicenseTitle                          = "## ⚖️ Violated Licenses"
 
-	iacTitle                = "🛠️ Infrastructure as Code"
-	sastTitle               = "🎯 Static Application Security Testing (SAST) Vulnerability"
-	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE Vulnerability"
-
 	jasFeaturesMsgWhenNotEnabled = "**Frogbot** also supports **Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system."
+
+	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE Vulnerability"
+	iacTitle                = "🛠️ Infrastructure as Code Vulnerability"
+	sastTitle               = "🎯 Static Application Security Testing (SAST) Vulnerability"
 )
 
 func GenerateReviewCommentContent(content string, writer OutputWriter) string {
@@ -50,18 +50,18 @@ func NoVulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider) ImageSource {
 	return NoVulnerabilityPrBannerSource
 }
 
-func VulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider, isComment bool) ImageSource {
-	if isComment {
-		if vcsProvider == vcsutils.GitLab {
-			return VulnerabilitiesMrBannerSource
-		}
-		return VulnerabilitiesPrBannerSource
-	} else {
-		if vcsProvider == vcsutils.GitLab {
-			return VulnerabilitiesFixMrBannerSource
-		}
-		return VulnerabilitiesFixPrBannerSource
+func UserPRVulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider) ImageSource {
+	if vcsProvider == vcsutils.GitLab {
+		return VulnerabilitiesMrBannerSource
 	}
+	return VulnerabilitiesPrBannerSource
+}
+
+func FrogbotPRVulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider) ImageSource {
+	if vcsProvider == vcsutils.GitLab {
+		return VulnerabilitiesFixMrBannerSource
+	}
+	return VulnerabilitiesFixPrBannerSource
 }
 
 func UntitledForJasMsg(writer OutputWriter) string {
@@ -70,6 +70,39 @@ func UntitledForJasMsg(writer OutputWriter) string {
 
 func Footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
+}
+
+func getVulnerabilitiesTable(showCaColumn bool, vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	columns := []string{"SEVERITY"}
+	if showCaColumn {
+		columns = append(columns, "CONTEXTUAL ANALYSIS")
+	}
+	columns = append(columns, "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY", "FIXED VERSIONS", "CVES")
+	table := NewMarkdownTable(columns...)
+	// Construct table rows data
+	for _, vulnerability := range vulnerabilities {
+
+
+
+
+
+		
+		var directDependenciesBuilder strings.Builder
+		for _, component := range vulnerability.Components {
+			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
+		}
+		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
+		impactedDependency := fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)
+		fixedVersions := strings.Join(vulnerability.FixedVersions, writer.Separator())
+		cves := strings.Join(vulnerability.Cves, writer.Separator())
+		row := []string{vulnerability.Severity}
+		if showCaColumn {
+			row = append(row, vulnerability.ContextualAnalysis)
+		}
+		row = append(row, directDependencies, impactedDependency, fixedVersions, cves)
+		table.AddRow(row...)
+	}
+	return table.Build()
 }
 
 func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, showCaColumn bool, writer OutputWriter) string {
@@ -133,9 +166,10 @@ func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, find
 	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
 }
+
 // Replace 'GetApplicabilityMarkdownDescription' with this
-func GetApplicabilityMarkdownDescriptionTable(severity, cve, impactedDependency, finding string) string {
-	return NewTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(severity, impactedDependency, finding, cve).Build()
+func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string) string {
+	return NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(severity, impactedDependency, finding, cve).Build()
 }
 
 func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
@@ -161,8 +195,8 @@ func GetJasMarkdownDescription(severity, finding string) string {
 }
 
 // Replace 'GetJasMarkdownDescription' with this
-func GetFindingMarkdownDescriptionTable(severity, finding string) string {
-	return NewTable("Severity", "Finding").AddRow(severity, finding).Build()
+func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
+	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), finding).Build()
 }
 
 func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
@@ -219,7 +253,7 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf("\n%s\n", writer.MarkAsTitle(violatedLicenseTitle, 2)))
 	// Content
-	table := NewTable("LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY")
+	table := NewMarkdownTable("LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY")
 	for _, license := range licenses {
 		var directDependenciesBuilder strings.Builder
 		for _, component := range license.Components {

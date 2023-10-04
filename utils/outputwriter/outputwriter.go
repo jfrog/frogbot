@@ -12,8 +12,10 @@ import (
 const (
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"	
+	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
+	tableRowFirstColumnSeparator                     = "| :---------------------: |"
+	tableRowColumnSeparator                          = " :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -132,14 +134,17 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 
 type MarkdownTable struct {
 	columns []string
-	rows [][]string
+	rows    [][]string
 }
 
-func NewTable(columns... string) *MarkdownTable {
-	return &MarkdownTable{columns: columns, rows: make([][]string, len(columns))}
+func NewMarkdownTable(columns ...string) *MarkdownTable {
+	return &MarkdownTable{columns: columns}
 }
 
-func (t *MarkdownTable) AddRow(values... string) *MarkdownTable {
+func (t *MarkdownTable) AddRow(values ...string) *MarkdownTable {
+	if len(values) == 0 {
+		return t
+	}
 	nColumns := len(t.columns)
 	row := make([]string, nColumns)
 
@@ -171,21 +176,18 @@ func (t *MarkdownTable) Build() string {
 	// Separator
 	for c := range t.columns {
 		if c == 0 {
-			tableBuilder.WriteString("| :---------------------: |")
+			tableBuilder.WriteString(tableRowFirstColumnSeparator)
 		} else {
-			tableBuilder.WriteString(" :-----------------------------------: |")
+			tableBuilder.WriteString(tableRowColumnSeparator)
 		}
 	}
 	// Content
 	for _, row := range t.rows {
-		if len(row) == 0 {
-			continue
-		}
 		tableBuilder.WriteString("\n")
 		c := 0
 		for c < nColumns {
 			// No content
-			value := " - "
+			value := "-"
 			if c < len(row) && strings.TrimSpace(row[c]) != "" {
 				// Provided valid content for entry
 				value = strings.TrimSpace(row[c])
