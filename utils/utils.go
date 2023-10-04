@@ -160,9 +160,8 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	}
 	reporter.Report(reports...)
 	return func() {
-		if err = reporter.WaitForResponses(); err != nil {
-			log.Debug(err.Error())
-		}
+		// Ignoring errors on purpose, we don't want to confuse the user with errors on usage reporting.
+		_ = reporter.WaitForResponses()
 	}
 }
 
