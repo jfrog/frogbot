@@ -225,13 +225,13 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 <br>
 
 ##### Vulnerability Contextual Analysis
-![](https://raw.githubusercontent.com/eyalbe4/frogbot/docs-imp-1/images/pr-vuln-contextual-analysis.png)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-vuln-contextual-analysis.png)
 
 ##### Static Application Security Testing (SAST)
-![](https://raw.githubusercontent.com/eyalbe4/frogbot/docs-imp-1/images/pr-sast.png)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-sast.png)
 
 ##### Infrastructure as Code scans (IaC)
-![](https://raw.githubusercontent.com/eyalbe4/frogbot/docs-imp-1/images/pr-iac.png)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-iac.png)
 
 ##### Validate Dependency Licenses
 When Frogbot scans newly opened pull requests, it checks the licenses of any new direct project dependencies introduced by the pull request. If Frogbot identifies licenses that are not listed in a predefined set of approved licenses, it appends a comment to the pull request providing this information.
