@@ -125,7 +125,6 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 	directStringFixedRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.SuggestedFixedVersion)
 	fileContent = strings.ReplaceAll(fileContent, directStringVulnerableRow, directStringFixedRow)
 
-	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
 	regexpAdjustedDepGroup := strings.ReplaceAll(depGroup, ".", "\\.")
 	regexpAdjustedDepName := strings.ReplaceAll(depName, ".", "\\.")
 	regexpAdjustedImpactedVersion := strings.ReplaceAll(vulnDetails.ImpactedDependencyVersion, ".", "\\.")
