@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	directDependencyRow        = "|  | %s |  |  |"
-	directDependencyRowWithJas = "|  |  | %s |  |  |"
-	simpleSeparator       = ", "
+	// directDependencyRow        = "|  | %s |  |  |"
+	// directDependencyRowWithJas = "|  |  | %s |  |  |"
+	simpleSeparator = ", "
 )
 
 type SimplifiedOutput struct {
@@ -50,16 +50,16 @@ type SimplifiedOutput struct {
 // 	return GetSimplifiedTitle(NoVulnerabilityPrBannerSource)
 // }
 
-func (smo *SimplifiedOutput) VulnerabilitiesTitle(isComment bool) string {
-	if isComment {
-		return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
-	}
-	return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
-}
+// func (smo *SimplifiedOutput) VulnerabilitiesTitle(isComment bool) string {
+// 	if isComment {
+// 		return GetSimplifiedTitle(VulnerabilitiesPrBannerSource)
+// 	}
+// 	return GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource)
+// }
 
-func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityPrBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesPrBannerSource))
-}
+// func (smo *SimplifiedOutput) IsFrogbotResultComment(comment string) bool {
+// 	return strings.HasPrefix(comment, GetSimplifiedTitle(NoVulnerabilityPrBannerSource)) || strings.HasPrefix(comment, GetSimplifiedTitle(VulnerabilitiesPrBannerSource))
+// }
 
 func (smo *SimplifiedOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 	smo.vcsProvider = provider
@@ -148,7 +148,7 @@ func (smo *SimplifiedOutput) IsEntitledForJas() bool {
 // %s
 // ---
 
-// %s 
+// %s
 // %s
 
 // `,
@@ -168,10 +168,6 @@ func (smo *SimplifiedOutput) IsEntitledForJas() bool {
 // 	}
 // 	return msg
 // }
-
-
-
-
 
 func (smo *SimplifiedOutput) Separator() string {
 	return simpleSeparator

@@ -14,9 +14,7 @@ const (
 	ReviewCommentId    = "FrogbotReviewComment"
 
 	vulnerableDependenciesTitle                   = "📦 Vulnerable Dependencies"
-	vulnerableDependenciesSummarySubTitle         = "✍️ Summary"
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
-	violatedLicenseTitle                          = "## ⚖️ Violated Licenses"
 
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE Vulnerability"
 	iacTitle                = "🛠️ Infrastructure as Code Vulnerability"
@@ -41,7 +39,7 @@ func GetFallbackReviewCommentContent(content string, location formats.Location, 
 // For summary comment Frogbot creates on Scan PR
 func GeneratePullRequestSummaryComment(issuesExists bool, vulnerabilities []formats.VulnerabilityOrViolationRow, licenses []formats.LicenseRow, writer OutputWriter) string {
 	if !issuesExists {
-		return writer.Image(NoVulnerabilitiesTitle(writer.VcsProvider())) + UntitledForJasMsg(writer) + Footer(writer)
+		return writer.Image(NoVulnerabilitiesTitleSrc(writer.VcsProvider())) + UntitledForJasMsg(writer) + Footer(writer)
 	}
 	comment := strings.Builder{}
 	comment.WriteString(writer.Image(PRSummaryCommentVulnerabilitiesTitleSrc(writer.VcsProvider())))
@@ -68,7 +66,7 @@ at %s (line %d)
 		location.StartLine)
 }
 
-func NoVulnerabilitiesTitle(vcsProvider vcsutils.VcsProvider) ImageSource {
+func NoVulnerabilitiesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
 		return NoVulnerabilityMrBannerSource
 	}
@@ -159,7 +157,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	// Write summary table part
 	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
 		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
-		writer.MarkAsTitle(vulnerableDependenciesSummarySubTitle, 3),
+		writer.MarkAsTitle("✍️ Summary", 3),
 		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer))),
 	)
 	// Write for each vulnerability details part
@@ -235,15 +233,15 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 	return fmt.Sprintf("[ %s ] ", identifier)
 }
 
-func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
-	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
-	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
-	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
-}
+// func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
+// 	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
+// 	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
+// 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
+// }
 
 // Replace 'GetApplicabilityMarkdownDescription' with this
-func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string) string {
-	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(severity, impactedDependency, finding, cve)
+func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string, writer OutputWriter) string {
+	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(writer.FormattedSeverity(severity, "Applicable"), impactedDependency, finding, cve)
 	return table.Build()
 }
 
@@ -251,7 +249,7 @@ func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails,
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
 		writer.MarkAsTitle(contextualAnalysisTitle, 2),
-		writer.MarkInCenter(GetApplicabilityMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), cve, impactedDependency, finding)),
+		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
 		writer.MarkAsDetails("Description", 3, fullDetails),
 		writer.MarkAsDetails("CVE details", 3, cveDetails)),
 	)
@@ -263,11 +261,11 @@ func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails,
 	return contentBuilder.String()
 }
 
-func GetJasMarkdownDescription(severity, finding string) string {
-	headerRow := "| Severity | Finding |\n"
-	separatorRow := "| :--------------: | :---: |\n"
-	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
-}
+// func GetJasMarkdownDescription(severity, finding string) string {
+// 	headerRow := "| Severity | Finding |\n"
+// 	separatorRow := "| :--------------: | :---: |\n"
+// 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
+// }
 
 // Replace 'GetJasMarkdownDescription' with this
 func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
@@ -277,7 +275,7 @@ func getJasDescriptionTable(severity, finding string, writer OutputWriter) strin
 func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
 	return fmt.Sprintf("\n%s%s%s\n",
 		writer.MarkAsTitle(iacTitle, 2),
-		writer.MarkInCenter(GetJasMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), finding)),
+		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
 		writer.MarkAsDetails("Full description", 3, fullDetails))
 }
 
@@ -285,7 +283,7 @@ func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]form
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
 		writer.MarkAsTitle(sastTitle, 2),
-		writer.MarkInCenter(GetJasMarkdownDescription(writer.FormattedSeverity(severity, "Applicable"), finding)),
+		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
 		writer.MarkAsDetails("Full description", 3, fullDetails),
 	))
 
@@ -326,7 +324,7 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 	}
 	// Title
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s\n", writer.MarkAsTitle(violatedLicenseTitle, 2)))
+	contentBuilder.WriteString(fmt.Sprintf("\n%s\n", writer.MarkAsTitle("⚖️ Violated Licenses", 2)))
 	// Content
 	table := NewMarkdownTable("LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY").SetDelimiter(writer.Separator())
 	for _, license := range licenses {

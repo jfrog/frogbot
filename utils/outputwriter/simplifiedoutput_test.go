@@ -151,11 +151,9 @@ func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
 // ## 📦 Vulnerable Dependencies
 // ---
 
-
 // ---
 // ### ✍️ Summary
 // ---
-
 
 // %s %s
 
@@ -223,11 +221,9 @@ func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
 // ## 📦 Vulnerable Dependencies
 // ---
 
-
 // ---
 // ### ✍️ Summary
 // ---
-
 
 // %s %s
 

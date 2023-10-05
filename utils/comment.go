@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -24,7 +25,63 @@ const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
+
+	RescanRequestComment = "rescan"
+
+	frogbotCommentNotFound = -1
 )
+
+func IsFrogbotSummaryComment(writer outputwriter.OutputWriter, comment string) bool {
+	client := writer.VcsProvider()
+	return strings.Contains(comment, writer.Image(outputwriter.NoVulnerabilitiesTitleSrc(client))) ||
+		strings.Contains(comment, writer.Image(outputwriter.PRSummaryCommentVulnerabilitiesTitleSrc(client)))
+}
+
+func IsFrogbotRescanComment(comment string) bool {
+	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), RescanRequestComment)
+}
+
+func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
+	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repoOwner, repoName, prID)
+	if err != nil {
+		return nil, err
+	}
+	// Sort the comment according to time created, the newest comment should be the first one.
+	sort.Slice(pullRequestsComments, func(i, j int) bool {
+		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
+	})
+	return pullRequestsComments, nil
+}
+
+func DeleteExistingPullRequestComment(repository *Repository, client vcsclient.VcsClient) error {
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+	prDetails := repository.PullRequestDetails
+	comments, err := GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
+	if err != nil {
+		return fmt.Errorf(
+			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
+			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
+	}
+
+	commentID := frogbotCommentNotFound
+	for _, comment := range comments {
+		if IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
+			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
+			commentID = int(comment.ID)
+			break
+		}
+	}
+
+	if commentID != frogbotCommentNotFound {
+		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
+	}
+
+	return err
+}
+
+func IsFrogbotReviewComment(comment string) bool {
+	return strings.Contains(comment, outputwriter.ReviewCommentId)
+}
 
 func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
 	if err = deleteOldReviewComments(repo, pullRequestID, client); err != nil {
@@ -91,7 +148,7 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, outputwriter.ReviewCommentId) {
+		if IsFrogbotReviewComment(comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}

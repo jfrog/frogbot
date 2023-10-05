@@ -34,7 +34,6 @@ type StandardOutput struct {
 // 	return row
 // }
 
-
 // func (so *StandardOutput) NoVulnerabilitiesTitle() string {
 // 	if so.vcsProvider == vcsutils.GitLab {
 // 		return GetBanner(NoVulnerabilityMrBannerSource)
@@ -42,27 +41,27 @@ type StandardOutput struct {
 // 	return GetBanner(NoVulnerabilityPrBannerSource)
 // }
 
-func (so *StandardOutput) VulnerabilitiesTitle(isComment bool) string {
-	var banner string
-	switch {
-	case isComment && so.vcsProvider == vcsutils.GitLab:
-		banner = GetBanner(VulnerabilitiesMrBannerSource)
-	case isComment && so.vcsProvider != vcsutils.GitLab:
-		banner = GetBanner(VulnerabilitiesPrBannerSource)
-	case !isComment && so.vcsProvider == vcsutils.GitLab:
-		banner = GetBanner(VulnerabilitiesFixMrBannerSource)
-	case !isComment && so.vcsProvider != vcsutils.GitLab:
-		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
-	}
-	return banner
-}
+// func (so *StandardOutput) VulnerabilitiesTitle(isComment bool) string {
+// 	var banner string
+// 	switch {
+// 	case isComment && so.vcsProvider == vcsutils.GitLab:
+// 		banner = GetBanner(VulnerabilitiesMrBannerSource)
+// 	case isComment && so.vcsProvider != vcsutils.GitLab:
+// 		banner = GetBanner(VulnerabilitiesPrBannerSource)
+// 	case !isComment && so.vcsProvider == vcsutils.GitLab:
+// 		banner = GetBanner(VulnerabilitiesFixMrBannerSource)
+// 	case !isComment && so.vcsProvider != vcsutils.GitLab:
+// 		banner = GetBanner(VulnerabilitiesFixPrBannerSource)
+// 	}
+// 	return banner
+// }
 
-func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
-	return strings.Contains(comment, string(NoVulnerabilityPrBannerSource)) ||
-		strings.Contains(comment, string(VulnerabilitiesPrBannerSource)) ||
-		strings.Contains(comment, string(NoVulnerabilityMrBannerSource)) ||
-		strings.Contains(comment, string(VulnerabilitiesMrBannerSource))
-}
+// func (so *StandardOutput) IsFrogbotResultComment(comment string) bool {
+// 	return strings.Contains(comment, string(NoVulnerabilityPrBannerSource)) ||
+// 		strings.Contains(comment, string(VulnerabilitiesPrBannerSource)) ||
+// 		strings.Contains(comment, string(NoVulnerabilityMrBannerSource)) ||
+// 		strings.Contains(comment, string(VulnerabilitiesMrBannerSource))
+// }
 
 func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 	so.vcsProvider = provider
@@ -166,11 +165,6 @@ func (so *StandardOutput) IsEntitledForJas() bool {
 // 		violatedLicenseTitle,
 // 		so.MarkInCenter(fmt.Sprintf("%s %s", licenseTableHeader, getLicensesTableContent(licenses, so))))
 // }
-
-
-
-
-
 
 func (so *StandardOutput) Separator() string {
 	return "<br>"

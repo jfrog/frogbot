@@ -175,7 +175,6 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 
 // </details>
 
-
 // </details>
 // `,
 // 		getVulnerabilitiesTableHeader(false),
@@ -255,7 +254,6 @@ func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
 // %s
 
 // </details>
-
 
 // </details>
 // `,

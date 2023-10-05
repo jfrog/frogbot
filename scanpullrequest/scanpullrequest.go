@@ -23,7 +23,6 @@ const (
 	securityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	frogbotCommentNotFound  = -1
 )
 
 type ScanPullRequestCmd struct{}
@@ -107,7 +106,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Delete previous Frogbot pull request message if exists
-	if err = deleteExistingPullRequestComment(repo, client); err != nil {
+	if err = utils.DeleteExistingPullRequestComment(repo, client); err != nil {
 		return
 	}
 
@@ -451,29 +450,3 @@ func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow
 
 // 	return comment.String()
 // }
-
-func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
-	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	prDetails := repository.PullRequestDetails
-	comments, err := utils.GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
-	if err != nil {
-		return fmt.Errorf(
-			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
-			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
-	}
-
-	commentID := frogbotCommentNotFound
-	for _, comment := range comments {
-		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
-			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
-			commentID = int(comment.ID)
-			break
-		}
-	}
-
-	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
-	}
-
-	return err
-}

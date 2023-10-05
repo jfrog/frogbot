@@ -129,55 +129,55 @@ func TestGetLocationDescription(t *testing.T) {
 	}
 }
 
-func TestGetJasMarkdownDescription(t *testing.T) {
-	testCases := []struct {
-		severity       string
-		finding        string
-		expectedOutput string
-	}{
-		{
-			severity:       "High",
-			finding:        "finding",
-			expectedOutput: "| Severity | Finding |\n| :--------------: | :---: |\n| High | finding |",
-		},
-		{
-			severity:       "Low",
-			finding:        "finding (other)",
-			expectedOutput: "| Severity | Finding |\n| :--------------: | :---: |\n| Low | finding (other) |",
-		},
-	}
-	for _, tc := range testCases {
-		assert.Equal(t, tc.expectedOutput, GetJasMarkdownDescription(tc.severity, tc.finding))
-	}
-}
+// func TestGetJasMarkdownDescription(t *testing.T) {
+// 	testCases := []struct {
+// 		severity       string
+// 		finding        string
+// 		expectedOutput string
+// 	}{
+// 		{
+// 			severity:       "High",
+// 			finding:        "finding",
+// 			expectedOutput: "| Severity | Finding |\n| :--------------: | :---: |\n| High | finding |",
+// 		},
+// 		{
+// 			severity:       "Low",
+// 			finding:        "finding (other)",
+// 			expectedOutput: "| Severity | Finding |\n| :--------------: | :---: |\n| Low | finding (other) |",
+// 		},
+// 	}
+// 	for _, tc := range testCases {
+// 		assert.Equal(t, tc.expectedOutput, GetJasMarkdownDescription(tc.severity, tc.finding))
+// 	}
+// }
 
-func TestGetApplicabilityMarkdownDescription(t *testing.T) {
-	testCases := []struct {
-		severity           string
-		cve                string
-		impactedDependency string
-		finding            string
-		expectedOutput     string
-	}{
-		{
-			severity:           "High",
-			cve:                "CVE-100-234",
-			impactedDependency: "dependency:1.0.0",
-			finding:            "applicable finding",
-			expectedOutput:     "| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| High | dependency:1.0.0 | applicable finding | CVE-100-234 |",
-		},
-		{
-			severity:           "Low",
-			cve:                "CVE-222-233",
-			impactedDependency: "dependency:3.4.1",
-			finding:            "applicable finding (diff)",
-			expectedOutput:     "| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Low | dependency:3.4.1 | applicable finding (diff) | CVE-222-233 |",
-		},
-	}
-	for _, tc := range testCases {
-		assert.Equal(t, tc.expectedOutput, GetApplicabilityMarkdownDescription(tc.severity, tc.cve, tc.impactedDependency, tc.finding))
-	}
-}
+// func TestGetApplicabilityMarkdownDescription(t *testing.T) {
+// 	testCases := []struct {
+// 		severity           string
+// 		cve                string
+// 		impactedDependency string
+// 		finding            string
+// 		expectedOutput     string
+// 	}{
+// 		{
+// 			severity:           "High",
+// 			cve:                "CVE-100-234",
+// 			impactedDependency: "dependency:1.0.0",
+// 			finding:            "applicable finding",
+// 			expectedOutput:     "| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| High | dependency:1.0.0 | applicable finding | CVE-100-234 |",
+// 		},
+// 		{
+// 			severity:           "Low",
+// 			cve:                "CVE-222-233",
+// 			impactedDependency: "dependency:3.4.1",
+// 			finding:            "applicable finding (diff)",
+// 			expectedOutput:     "| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Low | dependency:3.4.1 | applicable finding (diff) | CVE-222-233 |",
+// 		},
+// 	}
+// 	for _, tc := range testCases {
+// 		assert.Equal(t, tc.expectedOutput, GetApplicabilityMarkdownDescription(tc.severity, tc.cve, tc.impactedDependency, tc.finding))
+// 	}
+// }
 
 func TestGenerateReviewCommentContent(t *testing.T) {
 	writer := &StandardOutput{}

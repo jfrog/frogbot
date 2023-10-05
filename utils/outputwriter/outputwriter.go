@@ -11,7 +11,7 @@ const (
 	// vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	// iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	// licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
-	SecretsEmailCSS                                  = `body {
+	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
         }
@@ -105,10 +105,8 @@ type OutputWriter interface {
 	MarkAsTitle(title string, subTitleDepth int) string
 	Image(source ImageSource) string
 
-	// TODO: maybe combine and move to reviewcomment.go
-	IsFrogbotResultComment(comment string) bool
-
 	// Removed
+	// IsFrogbotResultComment(comment string) bool
 	// NoVulnerabilitiesTitle() string
 	// VulnerabilitiesTitle(isComment bool) string
 	// Footer() string

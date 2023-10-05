@@ -8,7 +8,7 @@ import (
 const (
 	tableRowFirstColumnSeparator = "| :---------------------: |"
 	tableRowColumnSeparator      = " :-----------------------------------: |"
-	cellDefaultValue 		   = "-"
+	cellDefaultValue             = "-"
 
 	// (Default value for columns) If more than one value exists in a cell, the values will be separated by the delimiter.
 	SeparatorDelimited MarkdownColumnType = "single"
@@ -27,8 +27,8 @@ type MarkdownTable struct {
 type MarkdownColumnType string
 
 type MarkdownColumn struct {
-	Name      string
-	BuildType MarkdownColumnType
+	Name         string
+	BuildType    MarkdownColumnType
 	DefaultValue string
 }
 

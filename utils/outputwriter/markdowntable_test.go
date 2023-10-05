@@ -8,21 +8,21 @@ import (
 
 func TestMarkdownTableContent(t *testing.T) {
 	testCases := []struct {
-		name    string
-		columns []string
-		rows    [][]string
+		name           string
+		columns        []string
+		rows           [][]string
 		expectedOutput [][]CellData
 	}{
 		{
-			name:    "Empty",
-			columns: []string{},
-			rows:    [][]string{},
+			name:           "Empty",
+			columns:        []string{},
+			rows:           [][]string{},
 			expectedOutput: [][]CellData{},
 		},
 		{
-			name:    "No rows",
-			columns: []string{"col1"},
-			rows:    [][]string{},
+			name:           "No rows",
+			columns:        []string{"col1"},
+			rows:           [][]string{},
 			expectedOutput: [][]CellData{},
 		},
 		{
@@ -145,24 +145,24 @@ func TestMarkdownTableBuild(t *testing.T) {
 
 func TestMultipleValuesInColumnRow(t *testing.T) {
 	testCases := []struct {
-	name           string
-	expectedOutput string
-	columns        []MarkdownColumn
-	rows           [][]CellData
-}{
+		name           string
+		expectedOutput string
+		columns        []MarkdownColumn
+		rows           [][]CellData
+	}{
 		{
-			name:           "Empty on multi value column",
-			columns:        []MarkdownColumn{{Name: "col1", BuildType: MultiRowColumn}, {Name: "col2"}, {Name: "col3"}},
-			rows:           [][]CellData{
+			name:    "Empty on multi value column",
+			columns: []MarkdownColumn{{Name: "col1", BuildType: MultiRowColumn}, {Name: "col2"}, {Name: "col3"}},
+			rows: [][]CellData{
 				{{""}, {"row1col2"}, {"row1col3"}},
 			},
 			expectedOutput: "| col1                | col2                  | col3                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + tableRowColumnSeparator + `
 | - | row1col2 | row1col3 |`,
 		},
 		{
-			name:           "One value on multi value column",
-			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3", BuildType: MultiRowColumn}},
-			rows:           [][]CellData{
+			name:    "One value on multi value column",
+			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3", BuildType: MultiRowColumn}},
+			rows: [][]CellData{
 				{{"row1col1"}, {"row1col2"}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3"}},
 			},
@@ -171,9 +171,9 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 | row2col1 | row2col2 | row2col3 |`,
 		},
 		{
-			name:           "Multiple values on separator delimited column",
-			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3"}},
-			rows:           [][]CellData{
+			name:    "Multiple values on separator delimited column",
+			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3"}},
+			rows: [][]CellData{
 				{{"row1col1"}, {""}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
 				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
@@ -184,9 +184,9 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 | row3col1 | row3col2val1, row3col2val2, row3col2val3 | row3col3 |`,
 		},
 		{
-			name:           "Multiple values on multi row column",
-			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2", BuildType: MultiRowColumn}, {Name: "col3"}},
-			rows:           [][]CellData{
+			name:    "Multiple values on multi row column",
+			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2", BuildType: MultiRowColumn}, {Name: "col3"}},
+			rows: [][]CellData{
 				{{"row1col1"}, {""}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
 				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
