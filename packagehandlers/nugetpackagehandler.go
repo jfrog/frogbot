@@ -78,7 +78,7 @@ func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 			var absFilePath string
 			absFilePath, innerErr = filepath.Abs(path)
 			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
+				return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
 			}
 			modulesWithAssetsPaths = append(modulesWithAssetsPaths, absFilePath)
 		}
