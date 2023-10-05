@@ -193,13 +193,6 @@ func TestGetLocationDescription(t *testing.T) {
 // 	}
 // }
 
-func TestGenerateReviewCommentContent(t *testing.T) {
-	writer := &StandardOutput{}
-	content := "some review content"
-	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\nsome review content" + Footer(writer)
-	assert.Equal(t, expectedOutput, GenerateReviewCommentContent(content, writer))
-}
-
 func TestGetFallbackReviewCommentContent(t *testing.T) {
 	writer := &StandardOutput{}
 	content := "some review content"

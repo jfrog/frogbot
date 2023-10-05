@@ -95,7 +95,7 @@ func UntitledForJasMsg(writer OutputWriter) string {
 }
 
 func Footer(writer OutputWriter) string {
-	return fmt.Sprintf("%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
+	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {

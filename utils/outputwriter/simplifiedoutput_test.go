@@ -1,7 +1,6 @@
 package outputwriter
 
-import (
-)
+import ()
 
 // func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
 // 	type testCase struct {

@@ -8,6 +8,8 @@ import (
 const (
 	tableRowFirstColumnSeparator = "| :---------------------: |"
 	tableRowColumnSeparator      = " :-----------------------------------: |"
+	cellFirstCellPlaceholder     = "| %s                |"
+	cellCellPlaceholder          = " %s                  |"
 	cellDefaultValue             = "-"
 
 	// (Default value for columns) If more than one value exists in a cell, the values will be separated by the delimiter.
@@ -101,9 +103,9 @@ func (t *MarkdownTable) Build() string {
 	// Header
 	for c, column := range t.columns {
 		if c == 0 {
-			tableBuilder.WriteString(fmt.Sprintf("| %s                |", column.Name))
+			tableBuilder.WriteString(fmt.Sprintf(cellFirstCellPlaceholder, column.Name))
 		} else {
-			tableBuilder.WriteString(fmt.Sprintf(" %s                  |", column.Name))
+			tableBuilder.WriteString(fmt.Sprintf(cellCellPlaceholder, column.Name))
 		}
 	}
 	tableBuilder.WriteString("\n")

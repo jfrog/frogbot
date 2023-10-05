@@ -9,14 +9,103 @@ import (
 )
 
 var (
-	testMessagesDir = filepath.Join("..", "..", "testdata", "messages")
+	testMessagesDir       = filepath.Join("..", "..", "testdata", "messages")
+	testReviewCommentDir  = filepath.Join(testMessagesDir, "reviewcomment")
+	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
 )
+
+// func TestNoVulnerabilitiesContent(t *testing.T) {
+// 	testCases := []struct {
+// 		cases       []OutputTestCase
+// 	}{
+// 		{
+// 			name:               "Standard output",
+// 			writer:             &StandardOutput{},
+// 			expectedOutputPath: filepath.Join(testSummaryCommentDir, "applicable", "applicable_review_content_standard.md"),
+// 		},
+// 		{
+// 			name:               "Simplified output",
+// 			writer:             &SimplifiedOutput{},
+// 			expectedOutputPath: filepath.Join(testSummaryCommentDir, "applicable", "applicable_review_content_simplified.md"),
+// 		},
+// 	}
+// 	for _, tc := range testCases {
+// 		for _, test := range tc.cases {
+// 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+// 				expectedOutput := GetExpectedTestOutput(t, test)
+// 				assert.Equal(t, expectedOutput, ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, test.writer))
+// 			})
+// 		}
+// 	}
+// }
+
+func TestGenerateReviewComment(t *testing.T) {
+	testCases := []struct {
+		name     string
+		location *formats.Location
+		cases    []OutputTestCase
+	}{
+		{
+			name: "Review comment structure",
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_simplified.md"),
+				},
+			},
+		},
+		{
+			name: "Fallback review comment structure",
+			location: &formats.Location{
+				File:        "file",
+				StartLine:   11,
+				StartColumn: 22,
+				EndLine:     33,
+				EndColumn:   44,
+				Snippet:     "snippet",
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_fallback_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_fallback_simplified.md"),
+				},
+			},
+		},
+	}
+
+	content := "\n" + MarkAsCodeSnippet("some review content")
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				output := GenerateReviewCommentContent(content, test.writer)
+				if tc.location != nil {
+					output = GetFallbackReviewCommentContent(content, *tc.location, test.writer)
+				}
+				assert.Equal(t, expectedOutput, output)
+			})
+		}
+	}
+}
 
 func TestApplicableReviewContent(t *testing.T) {
 	testCases := []struct {
 		name                                                                             string
 		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
-		cases       []OutputTestCase
+		cases                                                                            []OutputTestCase
 	}{
 		{
 			name:               "Applicable CVE review comment content",
@@ -31,12 +120,12 @@ func TestApplicableReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_standard.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_standard.md"),
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_simplified.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_simplified.md"),
 				},
 			},
 		},
@@ -52,12 +141,12 @@ func TestApplicableReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_no_remediation_standard.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_standard.md"),
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_no_remediation_simplified.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_simplified.md"),
 				},
 			},
 		},
@@ -77,23 +166,23 @@ func TestIacReviewContent(t *testing.T) {
 	testCases := []struct {
 		name                           string
 		severity, finding, fullDetails string
-		cases       []OutputTestCase
+		cases                          []OutputTestCase
 	}{
 		{
-			name:           "Iac review comment content",
-			severity:       "Medium",
-			finding:        "Missing auto upgrade was detected",
-			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
+			name:        "Iac review comment content",
+			severity:    "Medium",
+			finding:     "Missing auto upgrade was detected",
+			fullDetails: "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "iac", "iac_review_content_standard.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "iac", "iac_review_content_standard.md"),
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "iac", "iac_review_content_simplified.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "iac", "iac_review_content_simplified.md"),
 				},
 			},
 		},
@@ -165,12 +254,12 @@ func TestSastReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_standard.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_standard.md"),
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_simplified.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_simplified.md"),
 				},
 			},
 		},
@@ -183,12 +272,12 @@ func TestSastReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_no_code_flow_standard.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_standard.md"),
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_no_code_flow_simplified.md"),
+					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_simplified.md"),
 				},
 			},
 		},

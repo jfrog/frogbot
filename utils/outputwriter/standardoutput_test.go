@@ -1,7 +1,6 @@
 package outputwriter
 
-import (
-)
+import ()
 
 // func TestStandardOutput_TableRow(t *testing.T) {
 // 	var tests = []struct {
