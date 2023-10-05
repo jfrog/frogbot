@@ -635,7 +635,7 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	}
 }
 
-func TestNugetFixVulnerabilityIfExists(t *testing.T) {
+func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 	var testcases = []struct {
 		vulnerabilityDetails *utils.VulnerabilityDetails
 	}{
