@@ -635,6 +635,42 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	}
 }
 
+func TestNugetFixVulnerabilityIfExists(t *testing.T) {
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "")
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "dotnet"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(currDir))
+	}()
+
+	vulnDetails := &utils.VulnerabilityDetails{
+		SuggestedFixedVersion:       "1.1.1",
+		IsDirectDependency:          true,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}}}
+
+	assetFiles, err := getAssetsFilesPaths()
+	assert.NoError(t, err)
+
+	nph := &NugetPackageHandler{}
+	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
+
+	for _, assetFile := range assetFiles {
+		var isFileChanged bool
+		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, vulnDetails, assetFile, vulnRegexpCompiler, currDir)
+		assert.NoError(t, err)
+		assert.True(t, isFileChanged)
+
+		var expectedFileContent []byte
+		expectedFileContent, err = os.ReadFile(assetFile)
+		assert.NoError(t, err)
+		assert.Contains(t, string(expectedFileContent), "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
+	}
+}
+
 func TestGetFixedPackage(t *testing.T) {
 	var testcases = []struct {
 		impactedPackage       string
