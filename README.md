@@ -239,7 +239,7 @@ When Frogbot detects secrets that have been inadvertently exposed within the cod
 ##### Validate Dependency Licenses
 When Frogbot scans newly opened pull requests, it checks the licenses of any new direct project dependencies introduced by the pull request. If Frogbot identifies licenses that are not listed in a predefined set of approved licenses, it appends a comment to the pull request providing this information.
 
-![](https://raw.githubusercontent.com/eyalbe4/frogbot/docs-licenses/images/violated-licenses.png)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/violated-licenses.png)
 
 </details>
 
