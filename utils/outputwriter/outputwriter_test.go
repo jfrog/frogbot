@@ -1,11 +1,25 @@
 package outputwriter
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 )
+
+type OutputTestCase struct {
+	name               string
+	writer             OutputWriter
+	expectedOutputPath string
+}
+
+func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
+	content, err := os.ReadFile(testCase.expectedOutputPath)
+	assert.NoError(t, err)
+	return strings.ReplaceAll(string(content), "\r\n", "\n")
+}
 
 func TestMarkdownComment(t *testing.T) {
 	text := ""

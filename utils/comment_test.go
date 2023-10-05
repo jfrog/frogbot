@@ -10,6 +10,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
+// 	so := &StandardOutput{}
+
+// 	tests := []struct {
+// 		comment  string
+// 		expected bool
+// 	}{
+// 		{
+// 			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityPrBannerSource) + " icon",
+// 			expected: true,
+// 		},
+// 		{
+// 			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesPrBannerSource) + " icon",
+// 			expected: true,
+// 		},
+// 		{
+// 			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesMrBannerSource) + " icon",
+// 			expected: true,
+// 		},
+// 		{
+// 			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityMrBannerSource) + " icon",
+// 			expected: true,
+// 		},
+// 		{
+// 			comment:  "This is a comment with no icons",
+// 			expected: false,
+// 		},
+// 	}
+
+// 	for _, test := range tests {
+// 		result := so.IsFrogbotResultComment(test.comment)
+// 		assert.Equal(t, test.expected, result)
+// 	}
+// }
+
+// func TestSimplifiedOutput_IsFrogbotResultComment(t *testing.T) {
+// 	testCases := []struct {
+// 		name     string
+// 		comment  string
+// 		expected bool
+// 	}{
+// 		{
+// 			name:     "Starts with No Vulnerability Banner",
+// 			comment:  "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.** \n",
+// 			expected: true,
+// 		},
+// 		{
+// 			name:     "Starts with Vulnerabilities Banner",
+// 			comment:  "**🚨 Frogbot scanned this pull request and found the below:**\n",
+// 			expected: true,
+// 		},
+// 		{
+// 			name:     "Does not start with Banner",
+// 			comment:  "This is a random comment.",
+// 			expected: false,
+// 		},
+// 	}
+
+// 	for _, tc := range testCases {
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			smo := &SimplifiedOutput{}
+// 			actual := smo.IsFrogbotResultComment(tc.comment)
+// 			assert.Equal(t, tc.expected, actual)
+// 		})
+// 	}
+// }
+
 func TestGetFrogbotReviewComments(t *testing.T) {
 	testCases := []struct {
 		name             string

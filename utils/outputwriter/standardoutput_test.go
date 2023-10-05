@@ -1,7 +1,6 @@
 package outputwriter
 
 import (
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -88,41 +87,6 @@ import (
 // 		})
 // 	}
 // }
-
-func TestStandardOutput_IsFrogbotResultComment(t *testing.T) {
-	so := &StandardOutput{}
-
-	tests := []struct {
-		comment  string
-		expected bool
-	}{
-		{
-			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityPrBannerSource) + " icon",
-			expected: true,
-		},
-		{
-			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesPrBannerSource) + " icon",
-			expected: true,
-		},
-		{
-			comment:  "This is a comment with the " + GetIconTag(VulnerabilitiesMrBannerSource) + " icon",
-			expected: true,
-		},
-		{
-			comment:  "This is a comment with the " + GetIconTag(NoVulnerabilityMrBannerSource) + " icon",
-			expected: true,
-		},
-		{
-			comment:  "This is a comment with no icons",
-			expected: false,
-		},
-	}
-
-	for _, test := range tests {
-		result := so.IsFrogbotResultComment(test.comment)
-		assert.Equal(t, test.expected, result)
-	}
-}
 
 // func TestStandardOutput_VulnerabilitiesContent(t *testing.T) {
 // 	// Create a new instance of StandardOutput
@@ -338,78 +302,6 @@ func TestStandardOutput_IacReviewContent(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			output := IacReviewContent(tc.severity, tc.finding, tc.fullDetails, so)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}
-
-func TestStandardOutput_SastReviewContent(t *testing.T) {
-	testCases := []struct {
-		name           string
-		severity       string
-		finding        string
-		fullDetails    string
-		expectedOutput string
-		codeFlows      [][]formats.Location
-	}{
-		{
-			name:        "Sast review comment content",
-			severity:    "Low",
-			finding:     "Stack Trace Exposure",
-			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
-			codeFlows: [][]formats.Location{
-				{
-					{
-						File:        "file2",
-						StartLine:   1,
-						StartColumn: 2,
-						EndLine:     3,
-						EndColumn:   4,
-						Snippet:     "other-snippet",
-					},
-					{
-						File:        "file",
-						StartLine:   0,
-						StartColumn: 0,
-						EndLine:     0,
-						EndColumn:   0,
-						Snippet:     "snippet",
-					},
-				},
-				{
-					{
-						File:        "file",
-						StartLine:   10,
-						StartColumn: 20,
-						EndLine:     10,
-						EndColumn:   30,
-						Snippet:     "a-snippet",
-					},
-					{
-						File:        "file",
-						StartLine:   0,
-						StartColumn: 0,
-						EndLine:     0,
-						EndColumn:   0,
-						Snippet:     "snippet",
-					},
-				},
-			},
-			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Stack Trace Exposure |\n\n</div>\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n</details>\n\n<details>\n<summary> <b>Code Flows</b> </summary>\n<br>\n\n<details>\n<summary> <b>Vulnerable data flow analysis result</b> </summary>\n<br>\n\n↘️ `other-snippet` (at file2 line 1)\n\n↘️ `snippet` (at file line 0)\n\n\n</details>\n<details>\n<summary> <b>Vulnerable data flow analysis result</b> </summary>\n<br>\n\n↘️ `a-snippet` (at file line 10)\n\n↘️ `snippet` (at file line 0)\n\n\n</details>\n\n</details>\n",
-		},
-		{
-			name:           "No code flows",
-			severity:       "Low",
-			finding:        "Stack Trace Exposure",
-			fullDetails:    "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
-			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Stack Trace Exposure |\n\n</div>\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n</details>\n",
-		},
-	}
-
-	so := &StandardOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows, so)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}

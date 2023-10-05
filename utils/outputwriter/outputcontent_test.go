@@ -1,5 +1,112 @@
 package outputwriter
 
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/stretchr/testify/assert"
+)
+
+var (
+	testMessagesDir = filepath.Join("..", "..", "testdata", "messages")
+)
+
+func TestSastReviewContent(t *testing.T) {
+	testCases := []struct {
+		name        string
+		severity    string
+		finding     string
+		fullDetails string
+		codeFlows   [][]formats.Location
+		cases       []OutputTestCase
+	}{
+		{
+			name:        "Sast review comment content",
+			severity:    "Low",
+			finding:     "Stack Trace Exposure",
+			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			codeFlows: [][]formats.Location{
+				{
+					{
+						File:        "file2",
+						StartLine:   1,
+						StartColumn: 2,
+						EndLine:     3,
+						EndColumn:   4,
+						Snippet:     "other-snippet",
+					},
+					{
+						File:        "file",
+						StartLine:   0,
+						StartColumn: 0,
+						EndLine:     0,
+						EndColumn:   0,
+						Snippet:     "snippet",
+					},
+				},
+				{
+					{
+						File:        "file",
+						StartLine:   10,
+						StartColumn: 20,
+						EndLine:     10,
+						EndColumn:   30,
+						Snippet:     "a-snippet",
+					},
+					{
+						File:        "file",
+						StartLine:   0,
+						StartColumn: 0,
+						EndLine:     0,
+						EndColumn:   0,
+						Snippet:     "snippet",
+					},
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_simplified.md"),
+				},
+			},
+		},
+		{
+			name:        "No code flows",
+			severity:    "Low",
+			finding:     "Stack Trace Exposure",
+			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_no_code_flow_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "sast", "sast_review_content_no_code_flow_simplified.md"),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				assert.Equal(t, expectedOutput, SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows, test.writer))
+			})
+		}
+	}
+}
+
 // func TestCreatePullRequestMessageNoVulnerabilities(t *testing.T) {
 // 	vulnerabilities := []formats.VulnerabilityOrViolationRow{}
 // 	message := createPullRequestComment(&utils.IssuesCollection{Vulnerabilities: vulnerabilities}, &outputwriter.StandardOutput{})
