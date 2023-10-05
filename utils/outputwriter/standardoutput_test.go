@@ -282,27 +282,3 @@ func TestStandardOutput_ApplicableCveReviewContent(t *testing.T) {
 		})
 	}
 }
-
-func TestStandardOutput_IacReviewContent(t *testing.T) {
-	testCases := []struct {
-		name                           string
-		severity, finding, fullDetails string
-		expectedOutput                 string
-	}{
-		{
-			name:           "Iac review comment content",
-			severity:       "Medium",
-			finding:        "Missing auto upgrade was detected",
-			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
-			expectedOutput: "\n## 🛠️ Infrastructure as Code\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Missing auto upgrade was detected |\n\n</div>\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\nResource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n\n\n</details>\n",
-		},
-	}
-
-	so := &StandardOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := IacReviewContent(tc.severity, tc.finding, tc.fullDetails, so)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}

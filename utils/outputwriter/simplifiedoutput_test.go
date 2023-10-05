@@ -261,27 +261,3 @@ func TestSimplifiedOutput_ApplicableCveReviewContent(t *testing.T) {
 		})
 	}
 }
-
-func TestSimplifiedOutput_IacReviewContent(t *testing.T) {
-	testCases := []struct {
-		name                           string
-		severity, finding, fullDetails string
-		expectedOutput                 string
-	}{
-		{
-			name:           "Iac review comment content",
-			severity:       "Medium",
-			finding:        "Missing auto upgrade was detected",
-			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
-			expectedOutput: "\n\n---\n## 🛠️ Infrastructure as Code\n---\n\n| Severity | Finding |\n| :--------------: | :---: |\n| Medium | Missing auto upgrade was detected |\n---\n### Full description\n---\nResource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n\n",
-		},
-	}
-
-	so := &SimplifiedOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := IacReviewContent(tc.severity, tc.finding, tc.fullDetails, so)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}

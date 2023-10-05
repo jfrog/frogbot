@@ -12,6 +12,42 @@ var (
 	testMessagesDir = filepath.Join("..", "..", "testdata", "messages")
 )
 
+func TestIacReviewContent(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		severity, finding, fullDetails string
+		cases       []OutputTestCase
+	}{
+		{
+			name:           "Iac review comment content",
+			severity:       "Medium",
+			finding:        "Missing auto upgrade was detected",
+			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "iac", "iac_review_content_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "iac", "iac_review_content_simplified.md"),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				assert.Equal(t, expectedOutput, IacReviewContent(tc.severity, tc.finding, tc.fullDetails, test.writer))
+			})
+		}
+	}
+}
+
 func TestSastReviewContent(t *testing.T) {
 	testCases := []struct {
 		name        string
