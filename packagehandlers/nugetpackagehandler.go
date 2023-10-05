@@ -71,14 +71,14 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
-			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
+			return fmt.Errorf("error has occurred when trying to access or traverse the files system: %s", innerErr.Error())
 		}
 
 		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
 			var absFilePath string
 			absFilePath, innerErr = filepath.Abs(path)
 			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
+				return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
 			}
 			modulesWithAssetsPaths = append(modulesWithAssetsPaths, absFilePath)
 		}
@@ -129,8 +129,8 @@ func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.
 }
 
 func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a spacial character in regexp patterns and we want to capture the character '.' itself
-	// To avoid dealing with case-sensitivity we lower all characters in the package's name and in the file we check
+	// We replace '.' with '\\.' since '.' is a special character in regexp patterns and we want to capture the character '.' itself
+	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
 	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
 	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, impactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
