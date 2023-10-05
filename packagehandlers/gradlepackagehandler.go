@@ -145,14 +145,15 @@ func fixGradleVulnerabilityIfExists(descriptorFilePath string, vulnDetails *util
 	return
 }
 
-// Returns separated 'group' and 'name' for a given vulnerability name
+// Returns separated 'group' and 'name' for a given vulnerability name. In addition replaces every '.' char into '\\.' since the output will be used for a regexp
 func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
 	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
 		err = fmt.Errorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
 		return
 	}
-	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
+	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
+	return strings.ReplaceAll(seperatedImpactedDepName[0], ".", "\\."), strings.ReplaceAll(seperatedImpactedDepName[1], ".", "\\."), err
 }
 
 // Writes the updated content of the descriptor's file into the file

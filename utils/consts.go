@@ -77,9 +77,9 @@ const (
 	GitHubActionsEnv = "GITHUB_ACTIONS"
 
 	// Placeholders for templates
-	PackagePlaceHolder    = "${IMPACTED_PACKAGE}"
-	FixVersionPlaceHolder = "${FIX_VERSION}"
-	BranchHashPlaceHolder = "${BRANCH_NAME_HASH}"
+	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
+	FixVersionPlaceHolder = "{FIX_VERSION}"
+	BranchHashPlaceHolder = "{BRANCH_NAME_HASH}"
 
 	// Default naming templates
 	BranchNameTemplate                       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder

@@ -40,6 +40,19 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 			expected:    "Upgrade mquery to 3.4.5",
 			description: "Default template",
 		},
+		// Test template without $
+		{
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package {IMPACTED_PACKAGE} to {FIX_VERSION}"}},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
+			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
+			description: "Default template",
+		},
+		{
+			gitManager:      GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "<type>[scope]: Upgrade package ${IMPACTED_PACKAGE} to {FIX_VERSION}"}},
+			impactedPackage: "mquery", fixVersion: VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
+			expected:    "<type>[scope]: Upgrade package mquery to 3.4.5",
+			description: "Default template",
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {

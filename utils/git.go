@@ -324,7 +324,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	if template == "" {
 		template = CommitMessageTemplate
 	}
-	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", true)
+	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", "", true)
 }
 
 func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
@@ -333,10 +333,10 @@ func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technolog
 		// In aggregated mode, commit message and PR title are the same.
 		template = gm.GenerateAggregatedPullRequestTitle(tech)
 	}
-	return formatStringWithPlaceHolders(template, "", "", "", true)
+	return formatStringWithPlaceHolders(template, "", "", "", "", true)
 }
 
-func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string, allowSpaces bool) string {
+func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash, baseBranch string, allowSpaces bool) string {
 	replacements := []struct {
 		placeholder string
 		value       string
@@ -346,21 +346,19 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash string,
 		{BranchHashPlaceHolder, hash},
 	}
 	for _, r := range replacements {
+		// Replace placeholders with their corresponding values
+		// Try also with dollar sign ($) prefix, to ensure backward compatibility.
+		str = strings.Replace(str, "$"+r.placeholder, r.value, 1)
 		str = strings.Replace(str, r.placeholder, r.value, 1)
 	}
 	if !allowSpaces {
 		str = strings.ReplaceAll(str, " ", "_")
 	}
+	// Add baseBranch suffix if needed.
+	if baseBranch != "" {
+		str += "-" + baseBranch
+	}
 	return str
-}
-
-func formatAggregatedStringWithPlaceHolders(str, baseBranch, hash string) string {
-	// Replace branch placeholder
-	str = strings.Replace(str, BranchHashPlaceHolder, hash, 1)
-	// Remove spaces
-	str = strings.ReplaceAll(str, " ", "_")
-	// Add base branch as suffix
-	return str + "-" + baseBranch
 }
 
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
@@ -374,7 +372,7 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	if branchFormat == "" {
 		branchFormat = BranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, false), nil
+	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, "", false), nil
 }
 
 func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
@@ -383,7 +381,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	if pullRequestFormat != "" {
 		template = pullRequestFormat
 	}
-	return formatStringWithPlaceHolders(template, impactedPackage, version, "", true)
+	return formatStringWithPlaceHolders(template, impactedPackage, version, "", "", true)
 }
 
 func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
@@ -411,7 +409,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatAggregatedStringWithPlaceHolders(branchFormat, baseBranch, techArrayToString(tech, fixBranchTechSeparator))
+	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), baseBranch, false)
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -445,17 +443,15 @@ func getFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 
-func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (CustomTemplates, error) {
-	template := CustomTemplates{
+func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
+	customTemplates = CustomTemplates{
 		commitMessageTemplate:    commitMessageTemplate,
 		branchNameTemplate:       branchNameTemplate,
 		pullRequestTitleTemplate: pullRequestTitleTemplate,
 	}
-	err := validateBranchName(template.branchNameTemplate)
-	if err != nil {
-		return CustomTemplates{}, err
-	}
-	return template, nil
+	// Validate correct branch by Git providers restrictions.
+	err = validateBranchName(customTemplates.branchNameTemplate)
+	return
 }
 
 func setGoGitCustomClient() {
