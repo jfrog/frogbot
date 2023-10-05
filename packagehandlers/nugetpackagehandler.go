@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"io/fs"
 	"os"
 	"path"
@@ -14,7 +13,8 @@ import (
 )
 
 const (
-	dotnetPackageUpgradeExtraArg          = "package"
+	dotnetUpdateCmdPackageExtraArg        = "package"
+	dotnetNoRestoreFlag                   = "--no-restore"
 	dotnetAssetsFilesSuffix               = "csproj"
 	dotnetDependencyRegexpLowerCaseFormat = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
 )
@@ -71,7 +71,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
-			return fmt.Errorf("error has occurred when trying to access or traverse the files system: %s", innerErr.Error())
+			return fmt.Errorf("error has occurrd when trying to access or traverse the files system: %s", innerErr.Error())
 		}
 
 		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
@@ -89,14 +89,6 @@ func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 
 func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
 	modulePath := path.Dir(assetFilePath)
-	objDirPath := filepath.Join(modulePath, "obj")
-
-	var objDirExists bool
-	objDirExists, err = fileutils.IsDirExists(objDirPath, false)
-	if err != nil {
-		err = fmt.Errorf("couldn't check existence of 'obj' directory in '%s'", modulePath)
-		return
-	}
 
 	var fileData []byte
 	fileData, err = os.ReadFile(assetFilePath)
@@ -114,22 +106,17 @@ func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.
 			err = errors.Join(err, os.Chdir(originalWd))
 		}()
 
-		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetPackageUpgradeExtraArg)
+		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetUpdateCmdPackageExtraArg, dotnetNoRestoreFlag)
 		if err != nil {
 			return
 		}
 		isFileChanged = true
-
-		// 'obj' directory is created every time we update a dependency and if it doesn't already exist, we remove it
-		if !objDirExists {
-			err = fileutils.RemoveTempDir(objDirPath)
-		}
 	}
 	return
 }
 
 func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a special character in regexp patterns and we want to capture the character '.' itself
+	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
 	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
 	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
 	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, impactedVersion)
