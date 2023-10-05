@@ -125,6 +125,7 @@ func fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.Vuln
 	directStringFixedRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.SuggestedFixedVersion)
 	fileContent = strings.ReplaceAll(fileContent, directStringVulnerableRow, directStringFixedRow)
 
+	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
 	regexpAdjustedDepGroup := strings.ReplaceAll(depGroup, ".", "\\.")
 	regexpAdjustedDepName := strings.ReplaceAll(depName, ".", "\\.")
 	regexpAdjustedImpactedVersion := strings.ReplaceAll(vulnDetails.ImpactedDependencyVersion, ".", "\\.")
@@ -156,7 +157,6 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 		err = fmt.Errorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
 		return
 	}
-	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
 	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
 }
 
