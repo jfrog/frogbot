@@ -1,9 +1,6 @@
 package outputwriter
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 // func TestSimplifiedOutput_VulnerabilitiesTableRow(t *testing.T) {
@@ -223,41 +220,3 @@ import (
 // 	writer := &SimplifiedOutput{}
 // 	testGetLicensesTableContent(t, writer)
 // }
-
-func TestSimplifiedOutput_ApplicableCveReviewContent(t *testing.T) {
-	testCases := []struct {
-		name                                                                             string
-		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
-		expectedOutput                                                                   string
-	}{
-		{
-			name:               "Applicable CVE review comment content",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
-			remediation:        "some remediation",
-			expectedOutput:     "\n\n---\n## 📦🔍 Contextual Analysis CVE Vulnerability\n---\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n\n---\n### Remediation\n---\nsome remediation\n",
-		},
-		{
-			name:               "No remediation",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
-			expectedOutput:     "\n\n---\n## 📦🔍 Contextual Analysis CVE Vulnerability\n---\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n---\n### Description\n---\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n---\n### CVE details\n---\ncveDetails\n",
-		},
-	}
-
-	so := &SimplifiedOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, so)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}

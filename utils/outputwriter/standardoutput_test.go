@@ -1,8 +1,6 @@
 package outputwriter
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // func TestStandardOutput_TableRow(t *testing.T) {
@@ -244,41 +242,3 @@ import (
 // 	writer := &StandardOutput{}
 // 	testGetLicensesTableContent(t, writer)
 // }
-
-func TestStandardOutput_ApplicableCveReviewContent(t *testing.T) {
-	testCases := []struct {
-		name                                                                             string
-		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
-		expectedOutput                                                                   string
-	}{
-		{
-			name:               "Applicable CVE review comment content",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
-			remediation:        "some remediation",
-			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n<div align=\"center\">\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n\n</div>\n<details>\n<summary> <b>Description</b> </summary>\n<br>\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n\n</details>\n<details>\n<summary> <b>CVE details</b> </summary>\n<br>\ncveDetails\n\n</details>\n\n<details>\n<summary> <b>Remediation</b> </summary>\n<br>\nsome remediation\n\n</details>\n",
-		},
-		{
-			name:               "No remediation",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
-			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n<div align=\"center\">\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n\n</div>\n<details>\n<summary> <b>Description</b> </summary>\n<br>\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n\n</details>\n<details>\n<summary> <b>CVE details</b> </summary>\n<br>\ncveDetails\n\n</details>\n",
-		},
-	}
-
-	so := &StandardOutput{}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output := ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, so)
-			assert.Equal(t, tc.expectedOutput, output)
-		})
-	}
-}

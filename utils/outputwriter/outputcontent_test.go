@@ -12,6 +12,67 @@ var (
 	testMessagesDir = filepath.Join("..", "..", "testdata", "messages")
 )
 
+func TestApplicableReviewContent(t *testing.T) {
+	testCases := []struct {
+		name                                                                             string
+		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
+		cases       []OutputTestCase
+	}{
+		{
+			name:               "Applicable CVE review comment content",
+			severity:           "Critical",
+			finding:            "The vulnerable function flask.Flask.run is called",
+			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+			cve:                "CVE-2022-29361",
+			cveDetails:         "cveDetails",
+			impactedDependency: "werkzeug:1.0.1",
+			remediation:        "some remediation",
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_simplified.md"),
+				},
+			},
+		},
+		{
+			name:               "No remediation",
+			severity:           "Critical",
+			finding:            "The vulnerable function flask.Flask.run is called",
+			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+			cve:                "CVE-2022-29361",
+			cveDetails:         "cveDetails",
+			impactedDependency: "werkzeug:1.0.1",
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_no_remediation_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testMessagesDir, "applicable", "applicable_review_content_no_remediation_simplified.md"),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				assert.Equal(t, expectedOutput, ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, test.writer))
+			})
+		}
+	}
+}
+
 func TestIacReviewContent(t *testing.T) {
 	testCases := []struct {
 		name                           string

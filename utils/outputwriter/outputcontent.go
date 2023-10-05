@@ -247,7 +247,7 @@ func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding
 
 func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s%s\n",
+	contentBuilder.WriteString(fmt.Sprintf("\n%s%s\n%s\n%s\n",
 		writer.MarkAsTitle(contextualAnalysisTitle, 2),
 		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
 		writer.MarkAsDetails("Description", 3, fullDetails),
