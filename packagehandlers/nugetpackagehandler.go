@@ -36,8 +36,8 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	var modulesWithAssetsPaths []string
-	modulesWithAssetsPaths, err = getAssetsFilesPaths()
+	var assetsFilePaths []string
+	assetsFilePaths, err = getAssetsFilesPaths()
 	if err != nil {
 		return
 	}
@@ -50,7 +50,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 	var isAnyFileChanged bool
 
-	for _, assetFilePath := range modulesWithAssetsPaths {
+	for _, assetFilePath := range assetsFilePaths {
 		var isFileChanged bool
 		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
 		if err != nil {
@@ -68,7 +68,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	return
 }
 
-func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
+func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
 			return fmt.Errorf("error has occurrd when trying to access or traverse the files system: %s", innerErr.Error())
@@ -80,7 +80,7 @@ func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 			if innerErr != nil {
 				return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
 			}
-			modulesWithAssetsPaths = append(modulesWithAssetsPaths, absFilePath)
+			assetsFilePaths = append(assetsFilePaths, absFilePath)
 		}
 		return nil
 	})
@@ -119,6 +119,7 @@ func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) 
 	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
 	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
 	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
-	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, impactedVersion)
+	regexpFitImpactedVersion := strings.ToLower(strings.ReplaceAll(impactedVersion, ".", "\\."))
+	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
 }
