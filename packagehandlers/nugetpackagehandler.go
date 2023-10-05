@@ -129,8 +129,8 @@ func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.
 }
 
 func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a spacial character in regexp patterns and we want to capture the character '.' itself
-	// To avoid dealing with case-sensitivity we lower all characters in the package's name and in the file we check
+	// We replace '.' with '\\.' since '.' is a special character in regexp patterns and we want to capture the character '.' itself
+	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
 	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
 	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, impactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
