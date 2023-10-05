@@ -636,6 +636,24 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 }
 
 func TestNugetFixVulnerabilityIfExists(t *testing.T) {
+	var testcases = []struct {
+		vulnerabilityDetails *utils.VulnerabilityDetails
+	}{
+		// Basic check
+		{
+			vulnerabilityDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.1.1",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}}},
+		},
+		// This testcase checks a fix with a vulnerability that has '.' in the dependency's group and name + more complex version, including letters, to check that the regexp captures them correctly
+		{
+			vulnerabilityDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.9.9",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "my.dep.name", ImpactedDependencyVersion: "1.0.0-beta.test"}}},
+		},
+	}
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 
@@ -647,28 +665,31 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion:       "1.1.1",
-		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}}}
-
 	assetFiles, err := getAssetsFilesPaths()
 	assert.NoError(t, err)
+	testedAssetFile := assetFiles[0]
 
 	nph := &NugetPackageHandler{}
-	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 
-	for _, assetFile := range assetFiles {
+	for _, testcase := range testcases {
+		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
+
 		var isFileChanged bool
-		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, vulnDetails, assetFile, vulnRegexpCompiler, currDir)
+		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, currDir)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
-
-		var expectedFileContent []byte
-		expectedFileContent, err = os.ReadFile(assetFile)
-		assert.NoError(t, err)
-		assert.Contains(t, string(expectedFileContent), "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
 	}
+
+	var fixedFileContent []byte
+	fixedFileContent, err = os.ReadFile(testedAssetFile)
+	fixedFileContentString := string(fixedFileContent)
+
+	assert.NoError(t, err)
+	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.0\" />")
+	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
+	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"my.dep.name\" Version=\"1.0.0-beta.test\" />")
+	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"my.dep.name\" Version=\"1.9.9\" />")
+
 }
 
 func TestGetFixedPackage(t *testing.T) {

@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="snappier" Version="1.1.0" />
+    <PackageReference Include="my.dep.name" Version="1.0.0-beta.test" />
   </ItemGroup>
 
 </Project>
