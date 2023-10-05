@@ -71,7 +71,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 func getAssetsFilesPaths() (modulesWithAssetsPaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
-			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
+			return fmt.Errorf("error has occurred when trying to access or traverse the files system: %s", innerErr.Error())
 		}
 
 		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
