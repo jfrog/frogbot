@@ -6,22 +6,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestMarkdownTableContent(t *testing.T) {
 	testCases := []struct {
 		name    string
 		columns []string
 		rows    [][]string
+		expectedOutput [][]CellData
 	}{
 		{
 			name:    "Empty",
 			columns: []string{},
 			rows:    [][]string{},
+			expectedOutput: [][]CellData{},
 		},
 		{
 			name:    "No rows",
 			columns: []string{"col1"},
 			rows:    [][]string{},
+			expectedOutput: [][]CellData{},
 		},
 		{
 			name:    "Same number of columns",
@@ -30,6 +32,11 @@ func TestMarkdownTableContent(t *testing.T) {
 				{"row1col1", "row1col2", "row1col3"},
 				{"row2col1", "row2col2", "row2col3"},
 				{"row3col1", "row3col2", "row3col3"},
+			},
+			expectedOutput: [][]CellData{
+				{{"row1col1"}, {"row1col2"}, {"row1col3"}},
+				{{"row2col1"}, {"row2col2"}, {"row2col3"}},
+				{{"row3col1"}, {"row3col2"}, {"row3col3"}},
 			},
 		},
 		{
@@ -41,6 +48,12 @@ func TestMarkdownTableContent(t *testing.T) {
 				{"row3col1", "", "row3col3", "row3col4"},
 				{"row4col1"},
 			},
+			expectedOutput: [][]CellData{
+				{{"row1col1"}, {"row1col2"}, {""}},
+				{{"row2col1"}, {"row2col2"}, {""}},
+				{{"row3col1"}, {""}, {"row3col3"}},
+				{{"row4col1"}, {""}, {""}},
+			},
 		},
 	}
 	for _, tc := range testCases {
@@ -49,21 +62,20 @@ func TestMarkdownTableContent(t *testing.T) {
 			for _, row := range tc.rows {
 				table.AddRow(row...)
 			}
-			assert.Len(t, table.rows, len(tc.rows))
+			assert.Len(t, table.rows, len(tc.expectedOutput))
 			for i, row := range table.rows {
-				assertRow(t, row, tc.rows[i], len(tc.columns))
+				assertRow(t, row, tc.expectedOutput[i], len(tc.columns))
 			}
 		})
 	}
 }
 
-func assertRow(t *testing.T, actual []string, expected []string, expectedNumberColumns int) {
+func assertRow(t *testing.T, actual []CellData, expected []CellData, expectedNumberColumns int) {
 	assert.Len(t, actual, expectedNumberColumns)
 	for i, cell := range actual {
-		if i < len(expected) {
-			assert.Equal(t, expected[i], cell)
-		} else {
-			assert.Equal(t, "", cell)
+		assert.Len(t, cell, len(expected[i]))
+		for j, value := range cell {
+			assert.Equal(t, expected[i][j], value)
 		}
 	}
 }
@@ -133,76 +145,75 @@ func TestMarkdownTableBuild(t *testing.T) {
 
 func TestMultipleValuesInColumnRow(t *testing.T) {
 	testCases := []struct {
-		name           string
-		expectedOutput string
-		columns        []string
-		rows           [][]CellData
-		writer   OutputWriter
-	}{
+	name           string
+	expectedOutput string
+	columns        []MarkdownColumn
+	rows           [][]CellData
+}{
 		{
-			name:           "Empty",
-			columns:        []string{},
-			rows:           [][]string{},
-			expectedOutput: "",
-		},
-		{
-			name:           "No rows",
-			columns:        []string{"col1"},
-			rows:           [][]string{},
-			expectedOutput: "| col1                |\n" + tableRowFirstColumnSeparator,
-		},
-		{
-			name:    "Same number of columns",
-			columns: []string{"col1", "col2"},
-			rows: [][]string{
-				{"row1col1", "row1col2"},
-				{"row2col1", "row2col2"},
-				{"row3col1", "row3col2"},
-			},
-			expectedOutput: "| col1                | col2                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + `
-| row1col1 | row1col2 |
-| row2col1 | row2col2 |
-| row3col1 | row3col2 |`,
-		},
-		{
-			name:    "Multi value column",
-			columns: []string{"col1", "col2"},
-			rows: [][]string{
-				{"row1col1", "row1col2"},
-				{"row2col1", "row2col2"},
-				{"row3col1", "row3col2"},
-			},
-			expectedOutput: "| col1                | col2                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + `
-| row1col1 | row1col2 |
-| row2col1 | row2col2 |
-| row3col1 | row3col2 |`,
-		},
-		{
-			name:    "Different number of columns",
-			columns: []string{"col1", "col2", "col3"},
-			rows: [][]string{
-				{"row1col1", "row1col2", ""},
-				{"row2col1", "row2col2"},
-				{},
-				{"row3col1", "", "row3col3", "row3col4"},
-				{"row4col1"},
-				{"row5col1", "row5col2", "row5col3"},
+			name:           "Empty on multi value column",
+			columns:        []MarkdownColumn{{Name: "col1", BuildType: MultiRowColumn}, {Name: "col2"}, {Name: "col3"}},
+			rows:           [][]CellData{
+				{{""}, {"row1col2"}, {"row1col3"}},
 			},
 			expectedOutput: "| col1                | col2                  | col3                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + tableRowColumnSeparator + `
-| row1col1 | row1col2 | - |
-| row2col1 | row2col2 | - |
-| row3col1 | - | row3col3 |
-| row4col1 | - | - |
-| row5col1 | row5col2 | row5col3 |`,
+| - | row1col2 | row1col3 |`,
+		},
+		{
+			name:           "One value on multi value column",
+			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3", BuildType: MultiRowColumn}},
+			rows:           [][]CellData{
+				{{"row1col1"}, {"row1col2"}, {"row1col3"}},
+				{{"row2col1"}, {"row2col2"}, {"row2col3"}},
+			},
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + tableRowColumnSeparator + `
+| row1col1 | row1col2 | row1col3 |
+| row2col1 | row2col2 | row2col3 |`,
+		},
+		{
+			name:           "Multiple values on separator delimited column",
+			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3"}},
+			rows:           [][]CellData{
+				{{"row1col1"}, {""}, {"row1col3"}},
+				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
+				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
+			},
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + tableRowColumnSeparator + `
+| row1col1 | - | row1col3 |
+| row2col1 | row2col2 | row2col3val1, row2col3val2 |
+| row3col1 | row3col2val1, row3col2val2, row3col2val3 | row3col3 |`,
+		},
+		{
+			name:           "Multiple values on multi row column",
+			columns:        []MarkdownColumn{{Name: "col1"}, {Name: "col2", BuildType: MultiRowColumn}, {Name: "col3"}},
+			rows:           [][]CellData{
+				{{"row1col1"}, {""}, {"row1col3"}},
+				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
+				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
+			},
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + tableRowFirstColumnSeparator + tableRowColumnSeparator + tableRowColumnSeparator + `
+| row1col1 | - | row1col3 |
+| row2col1 | row2col2 | row2col3val1, row2col3val2 |
+| row3col1 | row3col2val1 | row3col3 |
+|   | row3col2val2 |   |
+|   | row3col2val3 |   |`,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			table := NewMarkdownTable(tc.columns...)
-			for _, row := range tc.rows {
-				table.AddRow(row...)
+			columns := []string{}
+			for _, column := range tc.columns {
+				columns = append(columns, column.Name)
 			}
-
+			table := NewMarkdownTable(columns...)
+			for _, column := range tc.columns {
+				if column.BuildType == MultiRowColumn {
+					table.GetColumnInfo(column.Name).BuildType = MultiRowColumn
+				}
+			}
+			for _, row := range tc.rows {
+				table.AddRowWithCellData(row...)
+			}
 			assert.Equal(t, tc.expectedOutput, table.Build())
 		})
 	}

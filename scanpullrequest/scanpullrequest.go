@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"golang.org/x/exp/slices"
 	"os"
-	"strings"
 
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -113,7 +112,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Create a pull request message
-	message := createPullRequestComment(issues, repo.OutputWriter)
+	message := outputwriter.GeneratePullRequestSummaryComment(issues.IssuesExists(), issues.Vulnerabilities, issues.Licenses, repo.OutputWriter)
 
 	// Add SCA scan comment
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
@@ -439,19 +438,19 @@ func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow
 	return violatedLicenses
 }
 
-func createPullRequestComment(issues *utils.IssuesCollection, writer outputwriter.OutputWriter) string {
-	if !issues.IssuesExists() {
-		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
-	}
-	comment := strings.Builder{}
-	comment.WriteString(writer.VulnerabilitiesTitle(true))
-	comment.WriteString(writer.VulnerabilitiesContent(issues.Vulnerabilities))
-	comment.WriteString(writer.LicensesContent(issues.Licenses))
-	comment.WriteString(writer.UntitledForJasMsg())
-	comment.WriteString(writer.Footer())
+// func createPullRequestComment(issues *utils.IssuesCollection, writer outputwriter.OutputWriter) string {
+// 	if !issues.IssuesExists() {
+// 		return writer.NoVulnerabilitiesTitle() + outputwriter.UntitledForJasMsg(writer) + writer.Footer()
+// 	}
+// 	comment := strings.Builder{}
+// 	comment.WriteString(writer.VulnerabilitiesTitle(true))
+// 	comment.WriteString(outputwriter.VulnerabilitiesContent(issues.Vulnerabilities, writer))
+// 	comment.WriteString(outputwriter.LicensesContent(issues.Licenses, writer))
+// 	comment.WriteString(outputwriter.UntitledForJasMsg(writer))
+// 	comment.WriteString(writer.Footer())
 
-	return comment.String()
-}
+// 	return comment.String()
+// }
 
 func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
 	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")

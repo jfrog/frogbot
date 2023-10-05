@@ -2,18 +2,15 @@ package outputwriter
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 )
 
 const (
-	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
+	// vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
+	// vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
+	// iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
+	// licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS                                  = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -93,12 +90,14 @@ const (
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
-	// VCS info
+	// Options
 	SetJasOutputFlags(entitled, showCaColumn bool)
+	IsShowingCaColumn() bool
+	IsEntitledForJas() bool
+	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
-
-	// Actual Interface for different type of writers
+	// Interface for different type of writers
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
 	MarkInCenter(content string) string
@@ -106,19 +105,17 @@ type OutputWriter interface {
 	MarkAsTitle(title string, subTitleDepth int) string
 	Image(source ImageSource) string
 
-	// TODO: remove
-	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-
 	// TODO: maybe combine and move to reviewcomment.go
 	IsFrogbotResultComment(comment string) bool
 
 	// Removed
-	NoVulnerabilitiesTitle() string
-	VulnerabilitiesTitle(isComment bool) string
-	Footer() string
-	UntitledForJasMsg() string
-	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	LicensesContent(licenses []formats.LicenseRow) string
+	// NoVulnerabilitiesTitle() string
+	// VulnerabilitiesTitle(isComment bool) string
+	// Footer() string
+	// UntitledForJasMsg() string
+	// VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
+	// VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
+	// LicensesContent(licenses []formats.LicenseRow) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -130,47 +127,29 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	}
 }
 
-func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
-	var descriptionBuilder strings.Builder
-	vulnResearch := vulnerability.JfrogResearchInformation
-	if vulnResearch == nil {
-		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
-	}
+// TODO: remove
+// func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+// 	var tableContent string
+// 	for _, vulnerability := range vulnerabilities {
+// 		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
+// 	}
+// 	return tableContent
+// }
 
-	// Write description if exists:
-	if vulnResearch.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n%s\n", vulnResearch.Details))
-	}
-
-	// Write remediation if exists
-	if vulnResearch.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n%s\n", vulnResearch.Remediation))
-	}
-
-	return descriptionBuilder.String()
-}
-
-func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	var tableContent string
-	for _, vulnerability := range vulnerabilities {
-		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
-	}
-	return tableContent
-}
-
-func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
-	var tableContent strings.Builder
-	for _, license := range licenses {
-		var directDependenciesBuilder strings.Builder
-		for _, component := range license.Components {
-			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
-		}
-		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
-		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
-		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
-	}
-	return tableContent.String()
-}
+// TODO: remove
+// func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
+// 	var tableContent strings.Builder
+// 	for _, license := range licenses {
+// 		var directDependenciesBuilder strings.Builder
+// 		for _, component := range license.Components {
+// 			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
+// 		}
+// 		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
+// 		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
+// 		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
+// 	}
+// 	return tableContent.String()
+// }
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n\n[comment]: <> (%s)\n", text)
@@ -184,6 +163,10 @@ func MarkAsQuote(content string) string {
 	return fmt.Sprintf("`%s`", content)
 }
 
+func MarkAsLink(content, link string) string {
+	return fmt.Sprintf("[%s](%s)", content, link)
+}
+
 func SectionDivider() string {
 	return "\n---\n"
 }
@@ -192,34 +175,39 @@ func MarkAsCodeSnippet(snippet string) string {
 	return fmt.Sprintf("```\n%s\n```", snippet)
 }
 
-func getVulnerabilitiesTableHeader(showCaColumn bool) string {
-	if showCaColumn {
-		return vulnerabilitiesTableHeaderWithContextualAnalysis
-	}
-	return vulnerabilitiesTableHeader
-}
+// TODO: remove
+// func getVulnerabilitiesTableHeader(showCaColumn bool) string {
+// 	if showCaColumn {
+// 		return vulnerabilitiesTableHeaderWithContextualAnalysis
+// 	}
+// 	return vulnerabilitiesTableHeader
+// }
 
+// // TODO: remove
+// func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+// 	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
+// 	if cves == "" {
+// 		cves = " - "
+// 	}
+// 	return cves
+// }
 
-func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
-	if cves == "" {
-		cves = " - "
-	}
-	return cves
-}
+// TODO: remove
+// func convertCveRowsToCveIds(cveRows []formats.CveRow, separator string) string {
+// 	cvesBuilder := strings.Builder{}
+// 	for _, cve := range cveRows {
+// 		if cve.Id != "" {
+// 			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, separator))
+// 		}
+// 	}
+// 	return strings.TrimSuffix(cvesBuilder.String(), separator)
+// }
 
-func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
-	if fixedVersions == "" {
-		fixedVersions = " - "
-	}
-	return strings.TrimSuffix(fixedVersions, writer.Separator())
-}
-
-func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId string) string {
-	identifier := xrayutils.GetIssueIdentifier(cveRows, xrayId)
-	if identifier == "" {
-		return ""
-	}
-	return fmt.Sprintf("[ %s ] ", identifier)
-}
+// TODO: remove
+// func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+// 	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
+// 	if fixedVersions == "" {
+// 		fixedVersions = " - "
+// 	}
+// 	return strings.TrimSuffix(fixedVersions, writer.Separator())
+// }

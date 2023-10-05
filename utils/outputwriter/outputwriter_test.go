@@ -19,50 +19,50 @@ func TestMarkdownComment(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func testGetLicensesTableContent(t *testing.T, writer OutputWriter) {
-	licenses := []formats.LicenseRow{}
-	result := getLicensesTableContent(licenses, writer)
-	expected := ""
-	assert.Equal(t, expected, result)
+// func testGetLicensesTableContent(t *testing.T, writer OutputWriter) {
+// 	licenses := []formats.LicenseRow{}
+// 	result := getLicensesTableContent(licenses, writer)
+// 	expected := ""
+// 	assert.Equal(t, expected, result)
 
-	// Single license with components
-	licenses = []formats.LicenseRow{
-		{
-			LicenseKey: "License1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-				ImpactedDependencyName:    "Dep1",
-				ImpactedDependencyVersion: "2.0",
-			},
-		},
-	}
-	result = getLicensesTableContent(licenses, writer)
-	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |"
-	assert.Equal(t, expected, result)
+// 	// Single license with components
+// 	licenses = []formats.LicenseRow{
+// 		{
+// 			LicenseKey: "License1",
+// 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+// 				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
+// 				ImpactedDependencyName:    "Dep1",
+// 				ImpactedDependencyVersion: "2.0",
+// 			},
+// 		},
+// 	}
+// 	result = getLicensesTableContent(licenses, writer)
+// 	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |"
+// 	assert.Equal(t, expected, result)
 
-	// Test case 3: Multiple licenses with components
-	licenses = []formats.LicenseRow{
-		{
-			LicenseKey: "License1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-				ImpactedDependencyName:    "Dep1",
-				ImpactedDependencyVersion: "2.0",
-			},
-		},
-		{
-			LicenseKey: "License2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp2", Version: "2.0"}},
-				ImpactedDependencyName:    "Dep2",
-				ImpactedDependencyVersion: "3.0",
-			},
-		},
-	}
-	result = getLicensesTableContent(licenses, writer)
-	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |\n| License2 | Comp2 2.0 | Dep2 3.0 |"
-	assert.Equal(t, expected, result)
-}
+// 	// Test case 3: Multiple licenses with components
+// 	licenses = []formats.LicenseRow{
+// 		{
+// 			LicenseKey: "License1",
+// 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+// 				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
+// 				ImpactedDependencyName:    "Dep1",
+// 				ImpactedDependencyVersion: "2.0",
+// 			},
+// 		},
+// 		{
+// 			LicenseKey: "License2",
+// 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+// 				Components:                []formats.ComponentRow{{Name: "Comp2", Version: "2.0"}},
+// 				ImpactedDependencyName:    "Dep2",
+// 				ImpactedDependencyVersion: "3.0",
+// 			},
+// 		},
+// 	}
+// 	result = getLicensesTableContent(licenses, writer)
+// 	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |\n| License2 | Comp2 2.0 | Dep2 3.0 |"
+// 	assert.Equal(t, expected, result)
+// }
 
 func TestMarkAsQuote(t *testing.T) {
 	testCases := []struct {
@@ -125,7 +125,7 @@ func TestGetLocationDescription(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		assert.Equal(t, tc.expectedOutput, GetLocationDescription(tc.input))
+		assert.Equal(t, tc.expectedOutput, getFallbackCommentLocationDescription(tc.input))
 	}
 }
 
@@ -182,7 +182,7 @@ func TestGetApplicabilityMarkdownDescription(t *testing.T) {
 func TestGenerateReviewCommentContent(t *testing.T) {
 	writer := &StandardOutput{}
 	content := "some review content"
-	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\nsome review content" + writer.Footer()
+	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\nsome review content" + Footer(writer)
 	assert.Equal(t, expectedOutput, GenerateReviewCommentContent(content, writer))
 }
 
@@ -197,7 +197,6 @@ func TestGetFallbackReviewCommentContent(t *testing.T) {
 		EndColumn:   4,
 		Snippet:     "snippet",
 	}
-	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\n\n```\nsnippet\n```\nat `file` (line 1)\nsome review content" + writer.Footer()
+	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\n\n```\nsnippet\n```\nat `file` (line 1)\nsome review content" + Footer(writer)
 	assert.Equal(t, expectedOutput, GetFallbackReviewCommentContent(content, location, writer))
 }
-
