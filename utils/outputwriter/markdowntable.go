@@ -126,7 +126,7 @@ func (t *MarkdownTable) Build() string {
 
 func (t *MarkdownTable) getRowContent(row []CellData) string {
 	if columnIndex, multiValueColumn := t.getMultiValueColumn(); multiValueColumn != nil && len(row[columnIndex]) > 1 {
-		return t.getMultiValueRowsContent(row, columnIndex, *multiValueColumn)
+		return t.getMultiValueRowsContent(row, columnIndex)
 	}
 	return t.getSeparatorDelimitedRowContent(row)
 }
@@ -140,7 +140,7 @@ func (t *MarkdownTable) getMultiValueColumn() (int, *MarkdownColumn) {
 	return -1, nil
 }
 
-func (t *MarkdownTable) getMultiValueRowsContent(row []CellData, multiValueColumnIndex int, multiValueColumn MarkdownColumn) string {
+func (t *MarkdownTable) getMultiValueRowsContent(row []CellData, multiValueColumnIndex int) string {
 	var rowBuilder strings.Builder
 	firstRow := true
 	for _, value := range row[multiValueColumnIndex] {
