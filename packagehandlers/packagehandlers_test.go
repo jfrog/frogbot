@@ -682,7 +682,7 @@ func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
 
-func TestGradleFixVulnerabilityIfExists(t *testing.T) {
+func TestFixGradleVulnerabilityIfExists(t *testing.T) {
 	var testcases = []struct {
 		vulnerabilityDetails *utils.VulnerabilityDetails
 	}{
@@ -719,7 +719,7 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 	for _, descriptorFile := range descriptorFiles {
 		for _, testcase := range testcases {
 			var isFileChanged bool
-			isFileChanged, err = fixVulnerabilityIfExists(descriptorFile, testcase.vulnerabilityDetails)
+			isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFile, testcase.vulnerabilityDetails)
 			assert.NoError(t, err)
 			assert.True(t, isFileChanged)
 		}
