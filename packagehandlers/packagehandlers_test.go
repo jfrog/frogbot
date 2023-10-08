@@ -649,9 +649,9 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 		// This testcase checks a fix with a vulnerability that has '.' in the dependency's group and name + more complex version, including letters, to check that the regexp captures them correctly
 		{
 			vulnerabilityDetails: &utils.VulnerabilityDetails{
-				SuggestedFixedVersion:       "1.9.9",
+				SuggestedFixedVersion:       "7.0.11",
 				IsDirectDependency:          true,
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "my.dep.name", ImpactedDependencyVersion: "1.0.0-beta.test"}}},
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Microsoft.Bcl.AsyncInterfaces", ImpactedDependencyVersion: "8.0.0-rc.1.23419.4"}}},
 		},
 	}
 	currDir, err := os.Getwd()
@@ -687,8 +687,8 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.0\" />")
 	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
-	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"my.dep.name\" Version=\"1.0.0-beta.test\" />")
-	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"my.dep.name\" Version=\"1.9.9\" />")
+	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"8.0.0-rc.1.23419.4\" />")
+	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"7.0.11\" />")
 
 }
 
