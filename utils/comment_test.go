@@ -77,6 +77,124 @@ import (
 // 	}
 // }
 
+// func TestBannerSourcesContent(t *testing.T) {
+// 	testCases := []struct {
+// 		name         string
+// 		issuesExists bool
+// 		fixPr        bool
+// 		cases        []OutputTestCase
+// 	}{
+// 		{
+// 			name:         "No issues found in PR",
+// 			issuesExists: false,
+// 			fixPr:        false,
+// 			cases: []OutputTestCase{
+// 				{
+// 					name:           "Github",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitHub),
+// 					expectedOutput: GetBanner(NoVulnerabilityPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketServer",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketServer),
+// 					expectedOutput: GetBanner(NoVulnerabilityPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketCloud",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketCloud),
+// 					expectedOutput: GetBanner(NoVulnerabilityPrBannerSource),
+// 				},
+// 				{
+// 					name:           "AzureRepos",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.AzureRepos),
+// 					expectedOutput: GetBanner(NoVulnerabilityPrBannerSource),
+// 				},
+
+// 				{
+// 					name:           "GitLab",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitLab),
+// 					expectedOutput: GetBanner(NoVulnerabilityMrBannerSource),
+// 				},
+// 			},
+// 		},
+// 		{
+// 			name:         "Found issues in PR",
+// 			issuesExists: true,
+// 			fixPr:        false,
+// 			cases: []OutputTestCase{
+// 				{
+// 					name:           "Github",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitHub),
+// 					expectedOutput: GetBanner(VulnerabilitiesPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketServer",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketServer),
+// 					expectedOutput: GetBanner(VulnerabilitiesPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketCloud",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketCloud),
+// 					expectedOutput: GetBanner(VulnerabilitiesPrBannerSource),
+// 				},
+// 				{
+// 					name:           "AzureRepos",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.AzureRepos),
+// 					expectedOutput: GetBanner(VulnerabilitiesPrBannerSource),
+// 				},
+
+// 				{
+// 					name:           "GitLab",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitLab),
+// 					expectedOutput: GetBanner(VulnerabilitiesMrBannerSource),
+// 				},
+// 			},
+// 		},
+// 		{
+// 			name:         "Fix Issues PR",
+// 			issuesExists: true,
+// 			fixPr:        true,
+// 			cases: []OutputTestCase{
+// 				{
+// 					name:           "Github",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitHub),
+// 					expectedOutput: GetBanner(VulnerabilitiesFixPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketServer",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketServer),
+// 					expectedOutput: GetBanner(VulnerabilitiesFixPrBannerSource),
+// 				},
+// 				{
+// 					name:           "BitbucketCloud",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.BitbucketCloud),
+// 					expectedOutput: GetBanner(VulnerabilitiesFixPrBannerSource),
+// 				},
+// 				{
+// 					name:           "AzureRepos",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.AzureRepos),
+// 					expectedOutput: GetBanner(VulnerabilitiesFixPrBannerSource),
+// 				},
+
+// 				{
+// 					name:           "GitLab",
+// 					writer:         GetCompatibleOutputWriter(vcsutils.GitLab),
+// 					expectedOutput: GetBanner(VulnerabilitiesFixMrBannerSource),
+// 				},
+// 			},
+// 		},
+// 	}
+
+// 	for _, tc := range testCases {
+// 		for _, test := range tc.cases {
+// 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+// 				output := GetSummaryContent(content, tc.issuesExists, test.writer)
+// 				assert.Contains(t, output, GetExpectedTestOutput(t, test))
+// 			})
+// 		}
+// 	}
+// }
+
 func TestGetFrogbotReviewComments(t *testing.T) {
 	testCases := []struct {
 		name             string

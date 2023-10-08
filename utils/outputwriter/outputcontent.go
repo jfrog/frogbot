@@ -26,75 +26,56 @@ var (
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/xray/") + " package, which isn't enabled on your system."
 )
 
-// For review comment Frogbot creates on Scan PR
-func GenerateReviewCommentContent(content string, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + content + Footer(writer)
-}
-
-// When can't create review comment, create a fallback comment by adding the location description to the content as a prefix
-func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + getFallbackCommentLocationDescription(location) + content + Footer(writer)
-}
-
-// For summary comment Frogbot creates on Scan PR
-func GeneratePullRequestSummaryComment(issuesExists bool, vulnerabilities []formats.VulnerabilityOrViolationRow, licenses []formats.LicenseRow, writer OutputWriter) string {
-	if !issuesExists {
-		return writer.Image(NoVulnerabilitiesTitleSrc(writer.VcsProvider())) + UntitledForJasMsg(writer) + Footer(writer)
-	}
+func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
 	comment := strings.Builder{}
-	comment.WriteString(writer.Image(PRSummaryCommentVulnerabilitiesTitleSrc(writer.VcsProvider())))
-	comment.WriteString(VulnerabilitiesContent(vulnerabilities, writer))
-	comment.WriteString(LicensesContent(licenses, writer))
-	comment.WriteString(UntitledForJasMsg(writer))
-	comment.WriteString(Footer(writer))
-
+	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+	if issuesExists {
+		comment.WriteString(content)
+	}
+	comment.WriteString(untitledForJasMsg(writer))
+	comment.WriteString(footer(writer))
 	return comment.String()
 }
 
-// Details for the PR Frogbot creates on Scan repository
-func GeneratePullRequestSummaryDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	return writer.Image(PRDetailsVulnerabilitiesTitleSrc(writer.VcsProvider())) + "\n" + VulnerabilitiesContent(vulnerabilities, writer) + UntitledForJasMsg(writer) + Footer(writer)
+func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvider) ImageSource {
+	if !isComment {
+		return fixCVETitleSrc(provider)
+	}
+	if !issuesExists {
+		return NoIssuesTitleSrc(provider)
+	}
+	return PRSummaryCommentTitleSrc(provider)
 }
 
-func getFallbackCommentLocationDescription(location formats.Location) string {
-	return fmt.Sprintf(`
-%s
-at %s (line %d)
-`,
-		MarkAsCodeSnippet(location.Snippet),
-		MarkAsQuote(location.File),
-		location.StartLine)
-}
-
-func NoVulnerabilitiesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
+func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
 		return NoVulnerabilityMrBannerSource
 	}
 	return NoVulnerabilityPrBannerSource
 }
 
-func PRSummaryCommentVulnerabilitiesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
+func PRSummaryCommentTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
 		return VulnerabilitiesMrBannerSource
 	}
 	return VulnerabilitiesPrBannerSource
 }
 
-func PRDetailsVulnerabilitiesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
+func fixCVETitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
 		return VulnerabilitiesFixMrBannerSource
 	}
 	return VulnerabilitiesFixPrBannerSource
 }
 
-func UntitledForJasMsg(writer OutputWriter) string {
+func untitledForJasMsg(writer OutputWriter) string {
 	if writer.IsEntitledForJas() {
 		return ""
 	}
 	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
 }
 
-func Footer(writer OutputWriter) string {
+func footer(writer OutputWriter) string {
 	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
@@ -107,7 +88,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 	columns = append(columns, "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY", "FIXED VERSIONS", "CVES")
 	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
 	if _, ok := writer.(*SimplifiedOutput); ok {
-		// The value in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
+		// The values in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
 		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
 		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
 		table.GetColumnInfo("DIRECT DEPENDENCIES").BuildType = MultiRowColumn
@@ -233,91 +214,6 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 	return fmt.Sprintf("[ %s ] ", identifier)
 }
 
-// func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
-// 	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
-// 	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
-// 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
-// }
-
-// Replace 'GetApplicabilityMarkdownDescription' with this
-func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string, writer OutputWriter) string {
-	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(writer.FormattedSeverity(severity, "Applicable"), impactedDependency, finding, cve)
-	return table.Build()
-}
-
-func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s\n%s\n%s\n",
-		writer.MarkAsTitle(contextualAnalysisTitle, 2),
-		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
-		writer.MarkAsDetails("Description", 3, fullDetails),
-		writer.MarkAsDetails("CVE details", 3, cveDetails)),
-	)
-	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			writer.MarkAsDetails("Remediation", 3, remediation)),
-		)
-	}
-	return contentBuilder.String()
-}
-
-// func GetJasMarkdownDescription(severity, finding string) string {
-// 	headerRow := "| Severity | Finding |\n"
-// 	separatorRow := "| :--------------: | :---: |\n"
-// 	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
-// }
-
-// Replace 'GetJasMarkdownDescription' with this
-func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
-	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), finding).Build()
-}
-
-func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
-	return fmt.Sprintf("\n%s%s%s\n",
-		writer.MarkAsTitle(iacTitle, 2),
-		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
-		writer.MarkAsDetails("Full description", 3, fullDetails))
-}
-
-func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s%s%s\n",
-		writer.MarkAsTitle(sastTitle, 2),
-		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
-		writer.MarkAsDetails("Full description", 3, fullDetails),
-	))
-
-	if len(codeFlows) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n",
-			writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer)),
-		))
-	}
-	return contentBuilder.String()
-}
-
-func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	for _, flow := range codeFlows {
-		contentBuilder.WriteString(writer.MarkAsDetails("Vulnerable data flow analysis result", 4, sastDataFlowLocationsReviewContent(flow)))
-	}
-	return contentBuilder.String()
-}
-
-func sastDataFlowLocationsReviewContent(flow []formats.Location) string {
-	var contentBuilder strings.Builder
-	for _, location := range flow {
-		contentBuilder.WriteString(fmt.Sprintf(`
-%s %s (at %s line %d)
-`,
-			"↘️",
-			MarkAsQuote(location.Snippet),
-			location.File,
-			location.StartLine,
-		))
-	}
-	return contentBuilder.String()
-}
-
 func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string {
 	if len(licenses) == 0 {
 		return ""
@@ -335,5 +231,98 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 		)
 	}
 	contentBuilder.WriteString(writer.MarkInCenter(table.Build()))
+	return contentBuilder.String()
+}
+
+// For review comment Frogbot creates on Scan PR
+func GenerateReviewCommentContent(content string, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + content + footer(writer)
+}
+
+// When can't create review comment, create a fallback comment by adding the location description to the content as a prefix
+func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + getFallbackCommentLocationDescription(location) + content + footer(writer)
+}
+
+func getFallbackCommentLocationDescription(location formats.Location) string {
+	return fmt.Sprintf(`
+%s
+at %s (line %d)
+`,
+		MarkAsCodeSnippet(location.Snippet),
+		MarkAsQuote(location.File),
+		location.StartLine)
+}
+
+func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string, writer OutputWriter) string {
+	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(writer.FormattedSeverity(severity, "Applicable"), impactedDependency, finding, cve)
+	return table.Build()
+}
+
+func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(contextualAnalysisTitle, 2),
+		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
+	)
+	WriteContent(&contentBuilder, writer.MarkAsDetails("Description", 3, fullDetails))
+	WriteContent(&contentBuilder, writer.MarkAsDetails("CVE details", 3, cveDetails))
+	contentBuilder.WriteString("\n")
+
+	if len(remediation) > 0 {
+		contentBuilder.WriteString(fmt.Sprintf("%s\n", writer.MarkAsDetails("Remediation", 3, remediation)))
+	}
+	return contentBuilder.String()
+}
+
+func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
+	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), finding).Build()
+}
+
+func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(iacTitle, 2),
+		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
+		writer.MarkAsDetails("Full description", 3, fullDetails),
+	)
+	contentBuilder.WriteString("\n")
+	return contentBuilder.String()
+}
+
+func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(sastTitle, 2),
+		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
+		writer.MarkAsDetails("Full description", 3, fullDetails),
+	)
+	contentBuilder.WriteString("\n")
+
+	if len(codeFlows) > 0 {
+		// WriteContent(&contentBuilder, writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer)))
+		contentBuilder.WriteString(fmt.Sprintf("%s\n", writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer))))
+	}
+	return contentBuilder.String()
+}
+
+func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	for _, flow := range codeFlows {
+		contentBuilder.WriteString(writer.MarkAsDetails("Vulnerable data flow analysis result", 4, sastDataFlowLocationsReviewContent(flow)))
+	}
+	return contentBuilder.String()
+}
+
+func sastDataFlowLocationsReviewContent(flow []formats.Location) string {
+	var contentBuilder strings.Builder
+	for _, location := range flow {
+		WriteContent(&contentBuilder, fmt.Sprintf("%s %s (at %s line %d)\n",
+			"↘️",
+			MarkAsQuote(location.Snippet),
+			location.File,
+			location.StartLine,
+		))
+	}
 	return contentBuilder.String()
 }

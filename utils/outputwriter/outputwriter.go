@@ -2,6 +2,7 @@ package outputwriter
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
 )
@@ -171,6 +172,13 @@ func SectionDivider() string {
 
 func MarkAsCodeSnippet(snippet string) string {
 	return fmt.Sprintf("```\n%s\n```", snippet)
+}
+
+func WriteContent(builder *strings.Builder, contents ...string) {
+	builder.WriteString("\n")
+	for _, content := range contents {
+		builder.WriteString(content)
+	}
 }
 
 // TODO: remove

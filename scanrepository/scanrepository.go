@@ -363,7 +363,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
-	prBody = outputwriter.GeneratePullRequestSummaryDetails(vulnerabilitiesRows, cfp.OutputWriter)
+	prBody = utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
 	if cfp.aggregateFixes {
 		var scanHash string
 		if scanHash, err = utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesRows...); err != nil {

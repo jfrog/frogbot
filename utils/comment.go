@@ -31,10 +31,27 @@ const (
 	frogbotCommentNotFound = -1
 )
 
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
+	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+}
+
+func GeneratePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
+	issuesExists := false
+	content := strings.Builder{}
+
+	if issuesCollection.IssuesExists() {
+		issuesExists = true
+
+		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
+		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
+	}
+	return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
+}
+
 func IsFrogbotSummaryComment(writer outputwriter.OutputWriter, comment string) bool {
 	client := writer.VcsProvider()
-	return strings.Contains(comment, writer.Image(outputwriter.NoVulnerabilitiesTitleSrc(client))) ||
-		strings.Contains(comment, writer.Image(outputwriter.PRSummaryCommentVulnerabilitiesTitleSrc(client)))
+	return strings.Contains(comment, writer.Image(outputwriter.NoIssuesTitleSrc(client))) ||
+		strings.Contains(comment, writer.Image(outputwriter.PRSummaryCommentTitleSrc(client)))
 }
 
 func IsFrogbotRescanComment(comment string) bool {

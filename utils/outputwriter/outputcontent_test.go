@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,30 +15,209 @@ var (
 	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
 )
 
-// func TestNoVulnerabilitiesContent(t *testing.T) {
-// 	testCases := []struct {
-// 		cases       []OutputTestCase
-// 	}{
-// 		{
-// 			name:               "Standard output",
-// 			writer:             &StandardOutput{},
-// 			expectedOutputPath: filepath.Join(testSummaryCommentDir, "applicable", "applicable_review_content_standard.md"),
-// 		},
-// 		{
-// 			name:               "Simplified output",
-// 			writer:             &SimplifiedOutput{},
-// 			expectedOutputPath: filepath.Join(testSummaryCommentDir, "applicable", "applicable_review_content_simplified.md"),
-// 		},
-// 	}
-// 	for _, tc := range testCases {
-// 		for _, test := range tc.cases {
-// 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-// 				expectedOutput := GetExpectedTestOutput(t, test)
-// 				assert.Equal(t, expectedOutput, ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, test.writer))
-// 			})
-// 		}
-// 	}
-// }
+func TestGetPRSummaryContent(t *testing.T) {
+	testCases := []struct {
+		name         string
+		cases        []OutputTestCase
+		issuesExists bool
+		isComment    bool
+	}{
+		{
+			name:         "Summary comment, No issues found",
+			issuesExists: false,
+			isComment:    true,
+			cases: []OutputTestCase{
+				{
+					name:               "Pull Request, not entitled (Standard output)",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_no_issues_not_entitled.md"),
+				},
+				{
+					name:               "Pull Request, entitled (Standard output)",
+					writer:             &StandardOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_no_issues_entitled.md"),
+				},
+				{
+					name:               "Merge Request, not entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_not_entitled.md"),
+				},
+				{
+					name:               "Merge Request, entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_entitled.md"),
+				},
+				{
+					name:               "Simplified output, not entitled",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_no_issues_not_entitled.md"),
+				},
+				{
+					name:               "Simplified output, entitled",
+					writer:             &SimplifiedOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_no_issues_entitled.md"),
+				},
+			},
+		},
+		{
+			name:         "Summary comment, Found issues",
+			issuesExists: true,
+			isComment:    true,
+			cases: []OutputTestCase{
+				{
+					name:               "Pull Request, not entitled (Standard output)",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_not_entitled.md"),
+				},
+				{
+					name:               "Pull Request, entitled (Standard output)",
+					writer:             &StandardOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_entitled.md"),
+				},
+				{
+					name:               "Merge Request, not entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_not_entitled.md"),
+				},
+				{
+					name:               "Merge Request, entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_entitled.md"),
+				},
+				{
+					name:               "Simplified output, not entitled",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_not_entitled.md"),
+				},
+				{
+					name:               "Simplified output, entitled",
+					writer:             &SimplifiedOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_entitled.md"),
+				},
+			},
+		},
+		{
+			name:         "Frogbot Fix issues details content",
+			issuesExists: true,
+			isComment:    false,
+			cases: []OutputTestCase{
+				{
+					name:               "Pull Request, not entitled (Standard output)",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md"),
+				},
+				{
+					name:               "Pull Request, entitled (Standard output)",
+					writer:             &StandardOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md"),
+				},
+				{
+					name:               "Merge Request, not entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md"),
+				},
+				{
+					name:               "Merge Request, entitled (Standard output)",
+					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md"),
+				},
+				{
+					name:               "Simplified output, not entitled",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
+				},
+				{
+					name:               "Simplified output, entitled",
+					writer:             &SimplifiedOutput{entitledForJas: true},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md"),
+				},
+			},
+		},
+	}
+
+	content := "\n" + MarkAsCodeSnippet("some content")
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				output := GetPRSummaryContent(content, tc.issuesExists, tc.isComment, test.writer)
+				assert.Equal(t, expectedOutput, output)
+			})
+		}
+	}
+}
+
+func TestVulnerabilitiesContent(t *testing.T) {
+
+}
+
+func TestLicensesContent(t *testing.T) {
+	testCases := []struct {
+		name     string
+		licenses []formats.LicenseRow
+		cases    []OutputTestCase
+	}{
+		{
+			name:     "No license violations",
+			licenses: []formats.LicenseRow{},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: "",
+				},
+				{
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "",
+				},
+			},
+		},
+		{
+			name: "License violations",
+			licenses: []formats.LicenseRow{
+				{
+					LicenseKey: "Apache-2.0",
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						SeverityDetails:           formats.SeverityDetails{Severity: "High", SeverityNumValue: 13},
+						ImpactedDependencyName:    "minimatch",
+						ImpactedDependencyVersion: "1.2.3",
+						Components: []formats.ComponentRow{
+							{
+								Name:    "root",
+								Version: "1.0.0",
+							},
+							{
+								Name:    "minimatch",
+								Version: "1.2.3",
+							},
+						},
+					},
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "license", "license_violation_standard.md"),
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "license", "license_violation_simplified.md"),
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				assert.Equal(t, GetExpectedTestOutput(t, test), LicensesContent(tc.licenses, test.writer))
+			})
+		}
+	}
+}
 
 func TestGenerateReviewComment(t *testing.T) {
 	testCases := []struct {

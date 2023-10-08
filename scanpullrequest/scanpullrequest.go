@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"os"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
@@ -111,7 +111,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Create a pull request message
-	message := outputwriter.GeneratePullRequestSummaryComment(issues.IssuesExists(), issues.Vulnerabilities, issues.Licenses, repo.OutputWriter)
+	message := utils.GeneratePullRequestSummaryComment(issues, repo.OutputWriter)
 
 	// Add SCA scan comment
 	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {

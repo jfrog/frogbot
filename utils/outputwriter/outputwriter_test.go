@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	// "github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,9 +13,13 @@ type OutputTestCase struct {
 	name               string
 	writer             OutputWriter
 	expectedOutputPath string
+	expectedOutput     string
 }
 
 func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
+	if testCase.expectedOutput != "" {
+		return testCase.expectedOutput
+	}
 	content, err := os.ReadFile(testCase.expectedOutputPath)
 	assert.NoError(t, err)
 	return strings.ReplaceAll(string(content), "\r\n", "\n")
@@ -116,32 +120,32 @@ func TestMarkAsCodeSnippet(t *testing.T) {
 	}
 }
 
-func TestGetLocationDescription(t *testing.T) {
-	testCases := []struct {
-		input          formats.Location
-		expectedOutput string
-	}{
-		{
-			input: formats.Location{
-				File:      "file1",
-				StartLine: 1,
-				Snippet:   "snippet",
-			},
-			expectedOutput: "\n```\nsnippet\n```\nat `file1` (line 1)\n",
-		},
-		{
-			input: formats.Location{
-				File:      "dir/other-dir/file1",
-				StartLine: 134,
-				Snippet:   "clientTestUtils.ChangeDirAndAssert(t, prevWd)",
-			},
-			expectedOutput: "\n```\nclientTestUtils.ChangeDirAndAssert(t, prevWd)\n```\nat `dir/other-dir/file1` (line 134)\n",
-		},
-	}
-	for _, tc := range testCases {
-		assert.Equal(t, tc.expectedOutput, getFallbackCommentLocationDescription(tc.input))
-	}
-}
+// func TestGetLocationDescription(t *testing.T) {
+// 	testCases := []struct {
+// 		input          formats.Location
+// 		expectedOutput string
+// 	}{
+// 		{
+// 			input: formats.Location{
+// 				File:      "file1",
+// 				StartLine: 1,
+// 				Snippet:   "snippet",
+// 			},
+// 			expectedOutput: "\n```\nsnippet\n```\nat `file1` (line 1)\n",
+// 		},
+// 		{
+// 			input: formats.Location{
+// 				File:      "dir/other-dir/file1",
+// 				StartLine: 134,
+// 				Snippet:   "clientTestUtils.ChangeDirAndAssert(t, prevWd)",
+// 			},
+// 			expectedOutput: "\n```\nclientTestUtils.ChangeDirAndAssert(t, prevWd)\n```\nat `dir/other-dir/file1` (line 134)\n",
+// 		},
+// 	}
+// 	for _, tc := range testCases {
+// 		assert.Equal(t, tc.expectedOutput, getFallbackCommentLocationDescription(tc.input))
+// 	}
+// }
 
 // func TestGetJasMarkdownDescription(t *testing.T) {
 // 	testCases := []struct {
@@ -193,17 +197,17 @@ func TestGetLocationDescription(t *testing.T) {
 // 	}
 // }
 
-func TestGetFallbackReviewCommentContent(t *testing.T) {
-	writer := &StandardOutput{}
-	content := "some review content"
-	location := formats.Location{
-		File:        "file",
-		StartLine:   1,
-		StartColumn: 2,
-		EndLine:     3,
-		EndColumn:   4,
-		Snippet:     "snippet",
-	}
-	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\n\n```\nsnippet\n```\nat `file` (line 1)\nsome review content" + Footer(writer)
-	assert.Equal(t, expectedOutput, GetFallbackReviewCommentContent(content, location, writer))
-}
+// func TestGetFallbackReviewCommentContent(t *testing.T) {
+// 	writer := &StandardOutput{}
+// 	content := "some review content"
+// 	location := formats.Location{
+// 		File:        "file",
+// 		StartLine:   1,
+// 		StartColumn: 2,
+// 		EndLine:     3,
+// 		EndColumn:   4,
+// 		Snippet:     "snippet",
+// 	}
+// 	expectedOutput := "\n\n[comment]: <> (FrogbotReviewComment)\n\n```\nsnippet\n```\nat `file` (line 1)\nsome review content" + Footer(writer)
+// 	assert.Equal(t, expectedOutput, GetFallbackReviewCommentContent(content, location, writer))
+// }
