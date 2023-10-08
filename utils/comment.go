@@ -48,12 +48,6 @@ func GeneratePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 	return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
 }
 
-func IsFrogbotSummaryComment(writer outputwriter.OutputWriter, comment string) bool {
-	client := writer.VcsProvider()
-	return strings.Contains(comment, writer.Image(outputwriter.NoIssuesTitleSrc(client))) ||
-		strings.Contains(comment, writer.Image(outputwriter.PRSummaryCommentTitleSrc(client)))
-}
-
 func IsFrogbotRescanComment(comment string) bool {
 	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), RescanRequestComment)
 }
@@ -82,7 +76,7 @@ func DeleteExistingPullRequestComment(repository *Repository, client vcsclient.V
 
 	commentID := frogbotCommentNotFound
 	for _, comment := range comments {
-		if IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
+		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
 			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
 			commentID = int(comment.ID)
 			break
@@ -94,10 +88,6 @@ func DeleteExistingPullRequestComment(repository *Repository, client vcsclient.V
 	}
 
 	return err
-}
-
-func IsFrogbotReviewComment(comment string) bool {
-	return strings.Contains(comment, outputwriter.ReviewCommentId)
 }
 
 func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
@@ -165,7 +155,7 @@ func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcscl
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if IsFrogbotReviewComment(comment.Content) {
+		if outputwriter.IsFrogbotReviewComment(comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}

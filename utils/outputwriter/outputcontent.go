@@ -47,6 +47,12 @@ func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvi
 	return PRSummaryCommentTitleSrc(provider)
 }
 
+func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
+	client := writer.VcsProvider()
+	return strings.Contains(content, writer.Image(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, writer.Image(PRSummaryCommentTitleSrc(client)))
+}
+
 func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
 		return NoVulnerabilityMrBannerSource
@@ -248,6 +254,10 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 // When can't create review comment, create a fallback comment by adding the location description to the content as a prefix
 func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
 	return MarkdownComment(ReviewCommentId) + getFallbackCommentLocationDescription(location) + content + footer(writer)
+}
+
+func IsFrogbotReviewComment(content string) bool {
+	return strings.Contains(content, ReviewCommentId)
 }
 
 func getFallbackCommentLocationDescription(location formats.Location) string {
