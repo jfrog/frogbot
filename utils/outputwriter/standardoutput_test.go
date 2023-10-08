@@ -403,3 +403,137 @@ func TestStandardOutput_GetLicensesTableContent(t *testing.T) {
 	writer := &StandardOutput{}
 	testGetLicensesTableContent(t, writer)
 }
+
+func TestStandardOutput_ApplicableCveReviewContent(t *testing.T) {
+	testCases := []struct {
+		name                                                                             string
+		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
+		expectedOutput                                                                   string
+	}{
+		{
+			name:               "Applicable CVE review comment content",
+			severity:           "Critical",
+			finding:            "The vulnerable function flask.Flask.run is called",
+			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+			cve:                "CVE-2022-29361",
+			cveDetails:         "cveDetails",
+			impactedDependency: "werkzeug:1.0.1",
+			remediation:        "some remediation",
+			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n\n\n<div align=\"center\">\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n\n</div>\n\n<details>\n<summary> <b>Description</b> </summary>\n<br>\n\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n\n</details>\n\n<details>\n<summary> <b>CVE details</b> </summary>\n<br>\n\ncveDetails\n\n</details>\n\n\n<details>\n<summary> <b>Remediation</b> </summary>\n<br>\n\nsome remediation\n\n</details>\n\n",
+		},
+		{
+			name:               "No remediation",
+			severity:           "Critical",
+			finding:            "The vulnerable function flask.Flask.run is called",
+			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+			cve:                "CVE-2022-29361",
+			cveDetails:         "cveDetails",
+			impactedDependency: "werkzeug:1.0.1",
+			expectedOutput:     "\n## 📦🔍 Contextual Analysis CVE Vulnerability\n\n\n<div align=\"center\">\n\n| Severity | Impacted Dependency | Finding | CVE |\n| :--------------: | :---: | :---: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |\n\n</div>\n\n<details>\n<summary> <b>Description</b> </summary>\n<br>\n\nThe scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.\n\n</details>\n\n<details>\n<summary> <b>CVE details</b> </summary>\n<br>\n\ncveDetails\n\n</details>\n\n",
+		},
+	}
+
+	so := &StandardOutput{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := so.ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation)
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}
+
+func TestStandardOutput_IacReviewContent(t *testing.T) {
+	testCases := []struct {
+		name                           string
+		severity, finding, fullDetails string
+		expectedOutput                 string
+	}{
+		{
+			name:           "Iac review comment content",
+			severity:       "Medium",
+			finding:        "Missing auto upgrade was detected",
+			fullDetails:    "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
+			expectedOutput: "\n## 🛠️ Infrastructure as Code\n\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Missing auto upgrade was detected |\n\n</div>\n\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\n\nResource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n\n\n</details>\n\n",
+		},
+	}
+
+	so := &StandardOutput{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := so.IacReviewContent(tc.severity, tc.finding, tc.fullDetails)
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}
+
+func TestStandardOutput_SastReviewContent(t *testing.T) {
+	testCases := []struct {
+		name           string
+		severity       string
+		finding        string
+		fullDetails    string
+		expectedOutput string
+		codeFlows      [][]formats.Location
+	}{
+		{
+			name:        "Sast review comment content",
+			severity:    "Low",
+			finding:     "Stack Trace Exposure",
+			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			codeFlows: [][]formats.Location{
+				{
+					{
+						File:        "file2",
+						StartLine:   1,
+						StartColumn: 2,
+						EndLine:     3,
+						EndColumn:   4,
+						Snippet:     "other-snippet",
+					},
+					{
+						File:        "file",
+						StartLine:   0,
+						StartColumn: 0,
+						EndLine:     0,
+						EndColumn:   0,
+						Snippet:     "snippet",
+					},
+				},
+				{
+					{
+						File:        "file",
+						StartLine:   10,
+						StartColumn: 20,
+						EndLine:     10,
+						EndColumn:   30,
+						Snippet:     "a-snippet",
+					},
+					{
+						File:        "file",
+						StartLine:   0,
+						StartColumn: 0,
+						EndLine:     0,
+						EndColumn:   0,
+						Snippet:     "snippet",
+					},
+				},
+			},
+			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability \n\t\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Stack Trace Exposure |\n\n</div>\n\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\n\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n</details>\n\n\n\n<details>\n<summary><b>Code Flows</b> </summary>\n\n\n\n<details>\n<summary><b>Vulnerable data flow analysis result</b> </summary>\n<br>\n\n↘️ `other-snippet` (at file2 line 1)\n\n↘️ `snippet` (at file line 0)\n\n\n</details>\n\n\n\n<details>\n<summary><b>Vulnerable data flow analysis result</b> </summary>\n<br>\n\n↘️ `a-snippet` (at file line 10)\n\n↘️ `snippet` (at file line 0)\n\n\n</details>\n\n\n\n</details>\n\n",
+		},
+		{
+			name:           "No code flows",
+			severity:       "Low",
+			finding:        "Stack Trace Exposure",
+			fullDetails:    "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			expectedOutput: "\n## 🎯 Static Application Security Testing (SAST) Vulnerability \n\t\n<div align=\"center\">\n\n| Severity | Finding |\n| :--------------: | :---: |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Stack Trace Exposure |\n\n</div>\n\n<details>\n<summary> <b>Full description</b> </summary>\n<br>\n\n\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.\n\n</details>\n\n",
+		},
+	}
+
+	so := &StandardOutput{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := so.SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows)
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}
