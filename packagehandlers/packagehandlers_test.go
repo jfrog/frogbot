@@ -689,7 +689,6 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
 	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"8.0.0-rc.1.23419.4\" />")
 	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"7.0.11\" />")
-
 }
 
 func TestGetFixedPackage(t *testing.T) {
