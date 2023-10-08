@@ -17,12 +17,12 @@ type OutputTestCase struct {
 }
 
 func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
-	if testCase.expectedOutput != "" {
-		return testCase.expectedOutput
+	if testCase.expectedOutputPath != "" {
+		content, err := os.ReadFile(testCase.expectedOutputPath)
+		assert.NoError(t, err)
+		return strings.ReplaceAll(string(content), "\r\n", "\n")
 	}
-	content, err := os.ReadFile(testCase.expectedOutputPath)
-	assert.NoError(t, err)
-	return strings.ReplaceAll(string(content), "\r\n", "\n")
+	return testCase.expectedOutput
 }
 
 func TestMarkdownComment(t *testing.T) {

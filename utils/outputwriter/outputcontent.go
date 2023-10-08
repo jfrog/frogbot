@@ -136,19 +136,17 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n%s\n",
-		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
-		writer.MarkAsTitle("✍️ Summary", 3),
-		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer))),
-	)
+	WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesTitle, 2))
+	WriteContent(&contentBuilder, writer.MarkAsTitle("✍️ Summary", 3))
+	WriteContent(&contentBuilder, writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)))
+	contentBuilder.WriteString("\n")
 	// Write for each vulnerability details part
-	detailsContent := getVulnerabilityDetailsContent(vulnerabilities, writer)
-	if strings.TrimSpace(detailsContent) != "" {
+	detailsContent := strings.TrimSpace(getVulnerabilityDetailsContent(vulnerabilities, writer))
+	if detailsContent != "" {
 		if len(vulnerabilities) == 1 {
-			contentBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n",
-				writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3),
-				detailsContent,
-			))
+			WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3))
+			WriteContent(&contentBuilder, detailsContent)
+			contentBuilder.WriteString("\n")
 		} else {
 			contentBuilder.WriteString(fmt.Sprintf("%s\n",
 				writer.MarkAsDetails(vulnerableDependenciesResearchDetailsSubTitle, 3, detailsContent),
@@ -191,16 +189,24 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	vulnResearch := vulnerability.JfrogResearchInformation
 	if vulnResearch == nil {
 		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
+	} else if vulnResearch.Details == "" {
+		vulnResearch.Details = vulnerability.Summary
 	}
 
 	// Write description if exists:
 	if vulnResearch.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", MarkAsBold("Description:"), vulnResearch.Details))
+		WriteContent(&descriptionBuilder, MarkAsBold("Description:"))
+		WriteContent(&descriptionBuilder, vulnResearch.Details)
+		descriptionBuilder.WriteString("\n")
+		// descriptionBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", MarkAsBold("Description:"), vulnResearch.Details))
 	}
 
 	// Write remediation if exists
 	if vulnResearch.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("%s\n%s\n", MarkAsBold("Remediation:"), vulnResearch.Remediation))
+		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"))
+		WriteContent(&descriptionBuilder, vulnResearch.Remediation)
+		descriptionBuilder.WriteString("\n")
+		// descriptionBuilder.WriteString(fmt.Sprintf("%s\n%s\n", MarkAsBold("Remediation:"), vulnResearch.Remediation))
 	}
 
 	return descriptionBuilder.String()
