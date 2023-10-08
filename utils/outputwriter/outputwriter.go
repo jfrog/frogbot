@@ -8,10 +8,6 @@ import (
 )
 
 const (
-	// vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	// vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	// iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	// licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
 	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -105,16 +101,6 @@ type OutputWriter interface {
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
 	Image(source ImageSource) string
-
-	// Removed
-	// IsFrogbotResultComment(comment string) bool
-	// NoVulnerabilitiesTitle() string
-	// VulnerabilitiesTitle(isComment bool) string
-	// Footer() string
-	// UntitledForJasMsg() string
-	// VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	// VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	// LicensesContent(licenses []formats.LicenseRow) string
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
@@ -125,30 +111,6 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 		return &StandardOutput{vcsProvider: provider}
 	}
 }
-
-// TODO: remove
-// func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-// 	var tableContent string
-// 	for _, vulnerability := range vulnerabilities {
-// 		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
-// 	}
-// 	return tableContent
-// }
-
-// TODO: remove
-// func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
-// 	var tableContent strings.Builder
-// 	for _, license := range licenses {
-// 		var directDependenciesBuilder strings.Builder
-// 		for _, component := range license.Components {
-// 			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
-// 		}
-// 		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
-// 		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
-// 		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
-// 	}
-// 	return tableContent.String()
-// }
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n\n[comment]: <> (%s)\n", text)
@@ -180,40 +142,3 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 		builder.WriteString(content)
 	}
 }
-
-// TODO: remove
-// func getVulnerabilitiesTableHeader(showCaColumn bool) string {
-// 	if showCaColumn {
-// 		return vulnerabilitiesTableHeaderWithContextualAnalysis
-// 	}
-// 	return vulnerabilitiesTableHeader
-// }
-
-// // TODO: remove
-// func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-// 	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
-// 	if cves == "" {
-// 		cves = " - "
-// 	}
-// 	return cves
-// }
-
-// TODO: remove
-// func convertCveRowsToCveIds(cveRows []formats.CveRow, separator string) string {
-// 	cvesBuilder := strings.Builder{}
-// 	for _, cve := range cveRows {
-// 		if cve.Id != "" {
-// 			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, separator))
-// 		}
-// 	}
-// 	return strings.TrimSuffix(cvesBuilder.String(), separator)
-// }
-
-// TODO: remove
-// func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-// 	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
-// 	if fixedVersions == "" {
-// 		fixedVersions = " - "
-// 	}
-// 	return strings.TrimSuffix(fixedVersions, writer.Separator())
-// }

@@ -19,154 +19,154 @@ var (
 
 func TestIsFrogbotSummaryComment(t *testing.T) {
 	testCases := []struct {
-		name     string
-		comment  string
-		cases []OutputTestCase
+		name    string
+		comment string
+		cases   []OutputTestCase
 	}{
 		{
-			name:     "Not Summary comment",
+			name:    "Not Summary comment",
 			comment: "This comment is unrelated to Frogbot",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "false",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "false",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "false",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
 		{
-			name:     "No Vulnerability PR",
+			name:    "No Vulnerability PR",
 			comment: "This is a comment with the " + GetBanner(NoVulnerabilityPrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "true",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "true",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "false",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "false",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
 		{
-			name:     "No Vulnerability MR",
+			name:    "No Vulnerability MR",
 			comment: "This is a comment with the " + GetBanner(NoVulnerabilityMrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "false",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "true",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "true",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "false",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
 		{
-			name:     "No Vulnerability simplified",
+			name:    "No Vulnerability simplified",
 			comment: "This is a comment with the " + GetSimplifiedTitle(NoVulnerabilityPrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "false",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "false",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "true",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "true",
 				},
 			},
 		},
 		{
-			name:     "Vulnerability PR",
+			name:    "Vulnerability PR",
 			comment: "This is a comment with the " + GetBanner(VulnerabilitiesPrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "true",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "true",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "false",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "false",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
 		{
-			name:     "Vulnerability MR",
+			name:    "Vulnerability MR",
 			comment: "This is a comment with the " + GetBanner(VulnerabilitiesMrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "false",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "true",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "true",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "false",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
 		{
-			name:     "Vulnerability simplified",
+			name:    "Vulnerability simplified",
 			comment: "This is a comment with the " + GetSimplifiedTitle(VulnerabilitiesPrBannerSource) + " icon",
 			cases: []OutputTestCase{
 				{
-					name:               "Standard output (PR)",
-					writer:             &StandardOutput{},
-					expectedOutput:    "false",
+					name:           "Standard output (PR)",
+					writer:         &StandardOutput{},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Standard output (MR)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
-					expectedOutput:    "false",
+					name:           "Standard output (MR)",
+					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					expectedOutput: "false",
 				},
 				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutput:    "true",
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "true",
 				},
 			},
 		},
@@ -584,18 +584,18 @@ func TestLicensesContent(t *testing.T) {
 
 func TestIsFrogbotReviewComment(t *testing.T) {
 	testCases := []struct {
-		name     string
-		content  string
+		name           string
+		content        string
 		expectedOutput bool
 	}{
 		{
-			name: "Not frogbot comments",
-			content: "This comment is unrelated to Frogbot",
+			name:           "Not frogbot comments",
+			content:        "This comment is unrelated to Frogbot",
 			expectedOutput: false,
 		},
 		{
-			name: "Frogbot review comment",
-			content: MarkdownComment(ReviewCommentId) + "This is a review comment",
+			name:           "Frogbot review comment",
+			content:        MarkdownComment(ReviewCommentId) + "This is a review comment",
 			expectedOutput: true,
 		},
 	}

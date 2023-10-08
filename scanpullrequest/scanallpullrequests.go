@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -68,7 +69,7 @@ func shouldScanPullRequest(repo utils.Repository, client vcsclient.VcsClient, pr
 			return true, nil
 		}
 		// if this is a Frogbot 'scan results' comment and not 're-scan' request comment, do not scan this pull request.
-		if utils.IsFrogbotSummaryComment(repo.OutputWriter, comment.Content) {
+		if outputwriter.IsFrogbotSummaryComment(repo.OutputWriter, comment.Content) {
 			return false, nil
 		}
 	}

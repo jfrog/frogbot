@@ -436,17 +436,3 @@ func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow
 	}
 	return violatedLicenses
 }
-
-// func createPullRequestComment(issues *utils.IssuesCollection, writer outputwriter.OutputWriter) string {
-// 	if !issues.IssuesExists() {
-// 		return writer.NoVulnerabilitiesTitle() + outputwriter.UntitledForJasMsg(writer) + writer.Footer()
-// 	}
-// 	comment := strings.Builder{}
-// 	comment.WriteString(writer.VulnerabilitiesTitle(true))
-// 	comment.WriteString(outputwriter.VulnerabilitiesContent(issues.Vulnerabilities, writer))
-// 	comment.WriteString(outputwriter.LicensesContent(issues.Licenses, writer))
-// 	comment.WriteString(outputwriter.UntitledForJasMsg(writer))
-// 	comment.WriteString(writer.Footer())
-
-// 	return comment.String()
-// }
