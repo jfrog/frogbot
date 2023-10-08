@@ -20,6 +20,9 @@ dependencies {
     runtimeOnly(group = "junit", name = "junit",
             version = "4.13.1")
 
+    runtimeOnly("my.group:my.dot.name:1.9.9")
+    runtimeOnly(group = 'my.group', name = 'my.dot.name', version = '1.9.9')
+
     // This dependencies should not be changed
     runtimeOnly('junit:junit:5.7')
     runtimeOnly('junit2:junit2:4.7')
