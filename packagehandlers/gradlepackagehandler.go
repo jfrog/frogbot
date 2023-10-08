@@ -125,8 +125,13 @@ func fixGradleVulnerabilityIfExists(descriptorFilePath string, vulnDetails *util
 	directStringFixedRow := fmt.Sprintf(directStringWithVersionFormat, depGroup, depName, vulnDetails.SuggestedFixedVersion)
 	fileContent = strings.ReplaceAll(fileContent, directStringVulnerableRow, directStringFixedRow)
 
+	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
+	regexpAdjustedDepGroup := strings.ReplaceAll(depGroup, ".", "\\.")
+	regexpAdjustedDepName := strings.ReplaceAll(depName, ".", "\\.")
+	regexpAdjustedImpactedVersion := strings.ReplaceAll(vulnDetails.ImpactedDependencyVersion, ".", "\\.")
+
 	// Fixing all vulnerable rows given in a map format. For Example: implementation group: "junit", name: "junit", version: "4.7"
-	mapRegexpForVulnerability := fmt.Sprintf(directMapWithVersionRegexp, depGroup, depName, vulnDetails.ImpactedDependencyVersion)
+	mapRegexpForVulnerability := fmt.Sprintf(directMapWithVersionRegexp, regexpAdjustedDepGroup, regexpAdjustedDepName, regexpAdjustedImpactedVersion)
 	regexpCompiler := regexp.MustCompile(mapRegexpForVulnerability)
 	if rowsMatches := regexpCompiler.FindAllString(fileContent, -1); rowsMatches != nil {
 		for _, entry := range rowsMatches {
@@ -152,8 +157,7 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 		err = fmt.Errorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
 		return
 	}
-	// We replace '.' characters to '\\.' since '.' in order to correctly capture '.' character using regexps
-	return strings.ReplaceAll(seperatedImpactedDepName[0], ".", "\\."), strings.ReplaceAll(seperatedImpactedDepName[1], ".", "\\."), err
+	return seperatedImpactedDepName[0], seperatedImpactedDepName[1], err
 }
 
 // Writes the updated content of the descriptor's file into the file

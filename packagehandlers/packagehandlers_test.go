@@ -739,7 +739,26 @@ func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
 
-func TestGradleFixVulnerabilityIfExists(t *testing.T) {
+func TestFixGradleVulnerabilityIfExists(t *testing.T) {
+	var testcases = []struct {
+		vulnerabilityDetails *utils.VulnerabilityDetails
+	}{
+		// Basic check
+		{
+			vulnerabilityDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "4.13.1",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}},
+		},
+		// This testcase checks a fix with a vulnerability that has '.' in the dependency's group and name + more complex version, including letters, to check that the regexp captures them correctly
+		{
+			vulnerabilityDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "1.9.9",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "my.group:my.dot.name", ImpactedDependencyVersion: "1.0.0-beta.test"}}},
+		},
+	}
+
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 
@@ -754,18 +773,16 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 	descriptorFiles, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 
-	vulnerabilityDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion:       "4.13.1",
-		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}}}
-
 	for _, descriptorFile := range descriptorFiles {
-		var isFileChanged bool
-		isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFile, vulnerabilityDetails)
-		assert.NoError(t, err)
-		assert.True(t, isFileChanged)
+		for _, testcase := range testcases {
+			var isFileChanged bool
+			isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFile, testcase.vulnerabilityDetails)
+			assert.NoError(t, err)
+			assert.True(t, isFileChanged)
+		}
 		compareFixedFileToComparisonFile(t, descriptorFile)
 	}
+
 }
 
 func compareFixedFileToComparisonFile(t *testing.T, descriptorFileAbsPath string) {
