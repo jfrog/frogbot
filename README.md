@@ -55,7 +55,7 @@ Set up Frogbot on your preferred CI server:
 
 <img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jenkins-icon.png" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jfrog-pipelines.png" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jfrog-pipelines-icon.png" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
 
 <img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/gitlab-icon.png" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
 
