@@ -25,15 +25,15 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 
 #### It supports the following Git providers:
 
-| <img height="20" width="20"  src="https://cdn.simpleicons.org/GitHub" alt="GitHub" /> GitHub | <img height="20" width="20"  src="https://cdn.simpleicons.org/GitLab" alt="GitLab" />  GitLab | <img height="20" width="20"  src="https://cdn.simpleicons.org/AzureDevops" alt="Azure" />  Azure Repos | <img height="20" width="20"  src="https://cdn.simpleicons.org/Bitbucket" alt="Bitbucket" />  Bitbucket Server |
+| <img height="20" width="20"  src="https://cdn.simpleicons.org/github-icon.png" alt="GitHub" /> GitHub | <img height="20" width="20"  src="https://cdn.simpleicons.org/gitlab-icon.png" alt="GitLab" />  GitLab | <img height="20" width="20"  src="https://cdn.simpleicons.org/azure-devops-icon.png" alt="Azure" />  Azure Repos | <img height="20" width="20"  src="https://cdn.simpleicons.org/bitbucket-icon.png" alt="Bitbucket" />  Bitbucket Server |
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 
 
 #### It supports the following package managers are:
 
-|<img height="20" width="20"  src="https://cdn.simpleicons.org/Go" alt="Go" /> Go|<img height="20" width="20"  src="https://cdn.simpleicons.org/Gradle" alt="Gradle" /> Gradle|<img height="20" width="20"  src="https://cdn.simpleicons.org/ApacheMaven" alt="Maven" /> Maven|<img height="20" width="20"  src="https://cdn.simpleicons.org/npm" alt="npm" /> npm|<img height="20" width="20"  src="https://cdn.simpleicons.org/Yarn" alt="Yarn" /> Yarn|
+|<img height="20" width="20"  src="https://cdn.simpleicons.org/go-icon.png" alt="Go" /> Go|<img height="20" width="20"  src="https://cdn.simpleicons.org/gradle-icon.png" alt="Gradle" /> Gradle|<img height="20" width="20"  src="https://cdn.simpleicons.org/maven-icon.png" alt="Maven" /> Maven|<img height="20" width="20"  src="https://cdn.simpleicons.org/npm-icon.png" alt="npm" /> npm|<img height="20" width="20"  src="https://cdn.simpleicons.org/yarn-icon.png" alt="Yarn" /> Yarn|
 |:----|:----|:----|:----|:----|
-|<img height="20" width="20"  src="https://cdn.simpleicons.org/.NET" alt=".NET" /> .NET|<img height="20" width="20"  src="https://cdn.simpleicons.org/NuGet" alt="NuGet" /> NuGet|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pip" /> Pip|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pipenv" /> Pipenv|<img height="20" width="20"  src="https://cdn.simpleicons.org/Poetry" alt="Poetry" /> Poetry|
+|<img height="20" width="20"  src="https://cdn.simpleicons.org/dotnet-icon.png" alt=".NET" /> .NET|<img height="20" width="20"  src="https://cdn.simpleicons.org/nuget-icon.png" alt="NuGet" /> NuGet|<img height="20" width="20"  src="https://cdn.simpleicons.org/pip-icon.png" alt="Pip" /> Pip|<img height="20" width="20"  src="https://cdn.simpleicons.org/pip-icon.png" alt="Pipenv" /> Pipenv|<img height="20" width="20"  src="https://cdn.simpleicons.org/poetry-icon.png" alt="Poetry" /> Poetry|
 
 
 ### Why use JFrog Frogbot?
