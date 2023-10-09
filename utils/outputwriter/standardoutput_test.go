@@ -127,12 +127,12 @@ func TestStandardMarkInCenter(t *testing.T) {
 		{
 			name:           "empty content",
 			content:        "",
-			expectedOutput: "\n<div align=\"center\">\n\n\n\n</div>",
+			expectedOutput: "\n<div align='center'>\n\n\n\n</div>",
 		},
 		{
 			name:           "non empty content",
 			content:        "content",
-			expectedOutput: "\n<div align=\"center\">\n\ncontent\n\n</div>",
+			expectedOutput: "\n<div align='center'>\n\ncontent\n\n</div>",
 		},
 	}
 	for _, tc := range testCases {
