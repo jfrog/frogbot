@@ -198,18 +198,17 @@ When installing Frogbot using JFrog Pipelines, Jenkins, and Azure DevOps, Frogbo
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
 ### Scan results
-#### Software Composition Analysis (SCA), Vulnerability Contextual Analysis and Infrastructure as Code scans (IaC)
 
 Frogbot adds the scan results to the pull request in the following format:
 
-##### 👍 No issues
+#### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](#-no-issues)
 
-##### 👎 Issues were found
-
+#### 👎 Issues were found
+##### Software Composition Analysis (SCA)
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](#-issues)
@@ -225,21 +224,24 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 <br>
 
-**INFRASTRUCTURE AS CODE**
-|                                                      SEVERITY                                                       | FILE           | LINE:COLUMN   | FINDING                   
-|:-------------------------------------------------------------------------------------------------------------------:| :------------: | :-----------: | :-----------------------------------: 
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | test.js        | 1:20          | kms_key_id='' was detected
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | mock.js        | 4:30          | Deprecated TLS version was detected
+##### Vulnerability Contextual Analysis
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-vuln-contextual-analysis.png)
 
-##### Secrets Detection
-When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
+##### Static Application Security Testing (SAST)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-sast.png)
 
-![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/secrets-email.png)
+##### Infrastructure as Code scans (IaC)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-iac.png)
 
 ##### Validate Dependency Licenses
 When Frogbot scans newly opened pull requests, it checks the licenses of any new direct project dependencies introduced by the pull request. If Frogbot identifies licenses that are not listed in a predefined set of approved licenses, it appends a comment to the pull request providing this information.
 
 ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/violated-licenses.png)
+
+#### Secrets Detection
+When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
+
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/secrets-email.png)
 
 </details>
 
