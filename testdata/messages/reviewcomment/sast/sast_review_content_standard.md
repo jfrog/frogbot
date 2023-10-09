@@ -1,6 +1,6 @@
 
 ## 🎯 Static Application Security Testing (SAST) Vulnerability
-<div align="center">
+<div align='center'>
 
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |

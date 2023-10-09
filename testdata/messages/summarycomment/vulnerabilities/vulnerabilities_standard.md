@@ -2,7 +2,7 @@
 ## 📦 Vulnerable Dependencies
 ### ✍️ Summary
 
-<div align="center">
+<div align='center'>
 
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |

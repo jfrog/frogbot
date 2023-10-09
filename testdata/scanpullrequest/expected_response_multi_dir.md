@@ -8,7 +8,7 @@
 ## 📦 Vulnerable Dependencies
 ### ✍️ Summary
 
-<div align="center">
+<div align='center'>
 
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
@@ -80,7 +80,7 @@ With -
 
 ---
 
-<div align="center">
+<div align='center'>
 
 [🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
 

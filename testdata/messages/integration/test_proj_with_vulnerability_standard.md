@@ -8,7 +8,7 @@
 ## 📦 Vulnerable Dependencies
 ### ✍️ Summary
 
-<div align="center">
+<div align='center'>
 
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
@@ -39,7 +39,7 @@ Add the `Object.freeze(Object.prototype);` directive once at the beginning of yo
 
 ---
 
-<div align="center">
+<div align='center'>
 
 [🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
 

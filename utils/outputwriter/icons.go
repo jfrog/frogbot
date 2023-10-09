@@ -65,22 +65,22 @@ func getApplicableIconTags(iconName IconName) string {
 }
 
 func GetBanner(banner ImageSource) string {
-	formattedBanner := "[" + GetIconTag(banner) + "](https://github.com/jfrog/frogbot#readme)"
+	formattedBanner := MarkAsLink(GetIconTag(banner), "https://github.com/jfrog/frogbot#readme")
 	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n\n", formattedBanner)
 }
 
 func GetIconTag(imageSource ImageSource) string {
-	return fmt.Sprintf("![](%s)", baseResourceUrl+imageSource)
+	return fmt.Sprintf("!%s", MarkAsLink("", fmt.Sprintf("%s%s", baseResourceUrl,imageSource)))
 }
 
 func GetSimplifiedTitle(is ImageSource) string {
 	switch is {
 	case NoVulnerabilityPrBannerSource:
-		return "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.** \n"
+		return MarkAsBold("👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.") + "\n"
 	case VulnerabilitiesPrBannerSource:
-		return "**🚨 Frogbot scanned this pull request and found the below:**\n"
+		return MarkAsBold("🚨 Frogbot scanned this pull request and found the below:") + "\n"
 	case VulnerabilitiesFixPrBannerSource:
-		return "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n"
+		return MarkAsBold("🚨 This automated pull request was created by Frogbot and fixes the below:") + "\n"
 	default:
 		return ""
 	}

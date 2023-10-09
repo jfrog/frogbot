@@ -8,7 +8,7 @@
 
 ---
 
-<div align="center">
+<div align='center'>
 
 [🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
 

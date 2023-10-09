@@ -48,7 +48,7 @@ func (so *StandardOutput) Image(source ImageSource) string {
 
 func (so *StandardOutput) MarkInCenter(content string) string {
 	return fmt.Sprintf(`
-<div align="center">
+<div align='center'>
 
 %s
 

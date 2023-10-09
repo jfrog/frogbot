@@ -1,7 +1,7 @@
 
 ## ⚖️ Violated Licenses
 
-<div align="center">
+<div align='center'>
 
 | LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: |

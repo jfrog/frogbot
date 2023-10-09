@@ -1,6 +1,6 @@
 
 ## 🛠️ Infrastructure as Code Vulnerability
-<div align="center">
+<div align='center'>
 
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |
