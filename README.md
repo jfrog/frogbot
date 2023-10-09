@@ -51,15 +51,15 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 
 Set up Frogbot on your preferred CI server:
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/github-actions-icon.png" alt="GitHubActions" /> [GitHub Actions](docs/install-github.md)
+<img src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/github-actions-icon.png" alt="GitHubActions" /> [GitHub Actions](docs/install-github.md)
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jenkins-icon.png" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
+<img src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jenkins-icon.png" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jfrog-pipelines-icon.png" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+<img src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/jfrog-pipelines-icon.png" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/gitlab-icon.png" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
+<img src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/gitlab-icon.png" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
 
-<img height="20" width="20" src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/azure-pipelines-icon.png" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
+<img src="https://raw.githubusercontent.com/eyalbe4/frogbot/docs-1/images/azure-pipelines-icon.png" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
 
 <details>
   <summary> Optional - set up a FREE JFrog Environment in the Cloud</summary>
