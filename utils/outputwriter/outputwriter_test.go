@@ -1,28 +1,10 @@
 package outputwriter
 
 import (
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-type OutputTestCase struct {
-	name               string
-	writer             OutputWriter
-	expectedOutputPath string
-	expectedOutput     string
-}
-
-func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
-	if testCase.expectedOutputPath != "" {
-		content, err := os.ReadFile(testCase.expectedOutputPath)
-		assert.NoError(t, err)
-		return strings.ReplaceAll(string(content), "\r\n", "\n")
-	}
-	return testCase.expectedOutput
-}
 
 func TestMarkdownComment(t *testing.T) {
 	text := ""

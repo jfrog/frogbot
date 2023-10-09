@@ -31,6 +31,29 @@ const (
 	frogbotCommentNotFound = -1
 )
 
+func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
+	// Delete previous Frogbot pull request message if exists
+	if err = DeleteExistingPullRequestComment(repo, client); err != nil {
+		return
+	}
+
+	// Create a pull request message
+	message := GeneratePullRequestSummaryComment(issues, repo.OutputWriter)
+
+	// Add SCA scan comment
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, pullRequestID); err != nil {
+		err = errors.New("couldn't add pull request comment: " + err.Error())
+		return
+	}
+
+	// Handle review comments at the pull request
+	if err = AddReviewComments(repo, pullRequestID, client, issues); err != nil {
+		err = errors.New("couldn't add review comments: " + err.Error())
+		return
+	}
+	return
+}
+
 func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
 	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
 }

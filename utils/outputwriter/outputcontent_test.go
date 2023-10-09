@@ -11,12 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	testMessagesDir       = filepath.Join("..", "..", "testdata", "messages")
-	testReviewCommentDir  = filepath.Join(testMessagesDir, "reviewcomment")
-	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
-)
-
 func TestIsFrogbotSummaryComment(t *testing.T) {
 	testCases := []struct {
 		name    string

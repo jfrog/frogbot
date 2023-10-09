@@ -105,23 +105,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		}
 	}
 
-	// Delete previous Frogbot pull request message if exists
-	if err = utils.DeleteExistingPullRequestComment(repo, client); err != nil {
-		return
-	}
-
-	// Create a pull request message
-	message := utils.GeneratePullRequestSummaryComment(issues, repo.OutputWriter)
-
-	// Add SCA scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
-		err = errors.New("couldn't add pull request comment: " + err.Error())
-		return
-	}
-
-	// Handle review comments at the pull request
-	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, issues); err != nil {
-		err = errors.New("couldn't add review comments: " + err.Error())
+	// Handle PR comments for scan output
+	if err = utils.HandlePullRequestCommentsAfterScan(issues, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
 
