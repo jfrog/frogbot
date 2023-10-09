@@ -1,6 +1,7 @@
 package outputwriter
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,10 @@ type OutputTestCase struct {
 	expectedOutput     string
 }
 
+type TestBodyResponse struct {
+	Body string `json:"body"`
+}
+
 func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
 	if testCase.expectedOutputPath != "" {
 		return GetOutputFromFile(t, testCase.expectedOutputPath)
@@ -37,6 +42,13 @@ func GetOutputFromFile(t *testing.T, filePath string) string {
 	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
 	return strings.ReplaceAll(string(content), "\r\n", "\n")
+}
+
+func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
+	bodyRes := TestBodyResponse{ Body: GetOutputFromFile(t, filePath)}
+	bytes, err := json.Marshal(bodyRes)
+	assert.NoError(t, err)
+	return bytes
 }
 
 func GetPRSummaryContentNoIssues(t *testing.T, entitled, simplified bool) string {
