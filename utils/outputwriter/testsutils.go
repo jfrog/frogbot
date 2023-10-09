@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	TestMessagesDir       = filepath.Join("..", "testdata", "messages")
+	TestMessagesDir = filepath.Join("..", "testdata", "messages")
 
 	testMessagesDir       = filepath.Join("..", TestMessagesDir)
 	testReviewCommentDir  = filepath.Join(testMessagesDir, "reviewcomment")
@@ -45,10 +45,17 @@ func GetOutputFromFile(t *testing.T, filePath string) string {
 }
 
 func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
-	bodyRes := TestBodyResponse{ Body: GetOutputFromFile(t, filePath)}
+	bodyRes := TestBodyResponse{Body: GetOutputFromFile(t, filePath)}
 	bytes, err := json.Marshal(bodyRes)
 	assert.NoError(t, err)
 	return bytes
+	// Replace single quotes with double quotes
+	// jsonStr := strings.ReplaceAll(string(bytes), "<", "\u003c")
+	// jsonStr = strings.ReplaceAll(string(bytes), ">", "\u003e")
+	// jsonStr = strings.ReplaceAll(string(bytes), "\"", "'")
+	// jsonStr := html.EscapeString(string(bytes))
+	
+	// return []byte(strings.ReplaceAll(string(bytes), "align=\"center\"", "align='center'"))
 }
 
 func GetPRSummaryContentNoIssues(t *testing.T, entitled, simplified bool) string {

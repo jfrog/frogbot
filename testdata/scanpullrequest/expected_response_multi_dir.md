@@ -1,4 +1,4 @@
-<div align="center">
+<div align='center'>
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)
 
@@ -70,7 +70,7 @@ Use a specific algorithm instead of `jwt.algorithms.get_default_algorithms`.
 For example, replace the following call - 
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=jwt.algorithms.get_default_algorithms())`
 With -
-`jwt.decode(encoded_jwt, pub_key_bytes, algorithms=[\"ES256\"])`
+`jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 
 
 </details>
