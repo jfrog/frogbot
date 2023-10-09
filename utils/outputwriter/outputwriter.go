@@ -94,7 +94,7 @@ type OutputWriter interface {
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
-	// Interface for different type of writers
+	// Markdown interface
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
 	MarkInCenter(content string) string

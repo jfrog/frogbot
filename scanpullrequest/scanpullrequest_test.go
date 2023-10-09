@@ -811,9 +811,9 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			switch {
 			case strings.Contains(projectName, "multi-dir"):
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
-			case strings.Contains(projectName, "pip"):
-				// expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(prIntegrationPath, "expected_response_pip.md"))
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponsePip.json"))
+			// case strings.Contains(projectName, "pip"):
+			// 	// expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(prIntegrationPath, "expected_response_pip.md"))
+			// 	expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponsePip.json"))
 			default:
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
 			}

@@ -27,7 +27,7 @@ var (
 			},
 		},
 	}
-	allPrIntegrationPath = filepath.Join(outputwriter.TestMessagesDir, "integration", "allpullrequests")
+	allPrIntegrationPath = filepath.Join(outputwriter.TestMessagesDir, "integration")
 )
 
 type MockParams struct {
