@@ -184,74 +184,74 @@ func TestGetPRSummaryContent(t *testing.T) {
 		isComment    bool
 	}{
 		{
-			name:         "Summary comment, No issues found",
+			name:         "Summary comment No issues found",
 			issuesExists: false,
 			isComment:    true,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request, not entitled (Standard output)",
+					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_no_issues_not_entitled.md"),
 				},
 				{
-					name:               "Pull Request, entitled (Standard output)",
+					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_no_issues_entitled.md"),
 				},
 				{
-					name:               "Merge Request, not entitled (Standard output)",
+					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_not_entitled.md"),
 				},
 				{
-					name:               "Merge Request, entitled (Standard output)",
+					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_entitled.md"),
 				},
 				{
-					name:               "Simplified output, not entitled",
+					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_no_issues_not_entitled.md"),
 				},
 				{
-					name:               "Simplified output, entitled",
+					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_no_issues_entitled.md"),
 				},
 			},
 		},
 		{
-			name:         "Summary comment, Found issues",
+			name:         "Summary comment Found issues",
 			issuesExists: true,
 			isComment:    true,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request, not entitled (Standard output)",
+					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_not_entitled.md"),
 				},
 				{
-					name:               "Pull Request, entitled (Standard output)",
+					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_entitled.md"),
 				},
 				{
-					name:               "Merge Request, not entitled (Standard output)",
+					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_not_entitled.md"),
 				},
 				{
-					name:               "Merge Request, entitled (Standard output)",
+					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_entitled.md"),
 				},
 				{
-					name:               "Simplified output, not entitled",
+					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_not_entitled.md"),
 				},
 				{
-					name:               "Simplified output, entitled",
+					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_entitled.md"),
 				},
@@ -263,32 +263,32 @@ func TestGetPRSummaryContent(t *testing.T) {
 			isComment:    false,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request, not entitled (Standard output)",
+					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md"),
 				},
 				{
-					name:               "Pull Request, entitled (Standard output)",
+					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md"),
 				},
 				{
-					name:               "Merge Request, not entitled (Standard output)",
+					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md"),
 				},
 				{
-					name:               "Merge Request, entitled (Standard output)",
+					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md"),
 				},
 				{
-					name:               "Simplified output, not entitled",
+					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
 				},
 				{
-					name:               "Simplified output, entitled",
+					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{entitledForJas: true},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md"),
 				},

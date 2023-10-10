@@ -30,10 +30,12 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 	comment := strings.Builder{}
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	if issuesExists {
-		comment.WriteString(content)
+		WriteContent(&comment, content)
 	}
-	comment.WriteString(untitledForJasMsg(writer))
-	comment.WriteString(footer(writer))
+	WriteContent(&comment,
+		untitledForJasMsg(writer),
+		footer(writer),
+	)
 	return comment.String()
 }
 
@@ -78,11 +80,11 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.IsEntitledForJas() {
 		return ""
 	}
-	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
+	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
 }
 
 func footer(writer OutputWriter) string {
-	return fmt.Sprintf("\n%s%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
+	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
 func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
@@ -108,7 +110,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 		row = append(row,
 			getDirectDependenciesCellData("%s:%s", vulnerability.Components),
 			NewCellData(fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)),
-			vulnerability.FixedVersions,
+			NewCellData(vulnerability.FixedVersions...),
 			getCveIdsCellData(vulnerability.Cves),
 		)
 		table.AddRowWithCellData(row...)
@@ -142,21 +144,18 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
-	WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesTitle, 2))
-	WriteContent(&contentBuilder, writer.MarkAsTitle("✍️ Summary", 3))
-	WriteContent(&contentBuilder, writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)))
-	contentBuilder.WriteString("\n")
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
+		writer.MarkAsTitle("✍️ Summary", 3),
+		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)),
+	)
 	// Write for each vulnerability details part
 	detailsContent := strings.TrimSpace(getVulnerabilityDetailsContent(vulnerabilities, writer))
 	if detailsContent != "" {
 		if len(vulnerabilities) == 1 {
-			WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3))
-			WriteContent(&contentBuilder, detailsContent)
-			contentBuilder.WriteString("\n")
+			WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3), detailsContent)
 		} else {
-			contentBuilder.WriteString(fmt.Sprintf("%s\n",
-				writer.MarkAsDetails(vulnerableDependenciesResearchDetailsSubTitle, 3, detailsContent),
-			))
+			WriteContent(&contentBuilder, writer.MarkAsDetails(vulnerableDependenciesResearchDetailsSubTitle, 3, detailsContent))
 		}
 	}
 	return contentBuilder.String()
@@ -164,28 +163,25 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 
 func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var descriptionContentBuilder strings.Builder
-	shouldOutputDescriptionSection := false
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
-		if strings.TrimSpace(vulDescriptionContent) == "" {
+		if vulDescriptionContent == "" {
 			// No content
 			continue
 		}
-		shouldOutputDescriptionSection = true
 		if len(vulnerabilities) == 1 {
-			descriptionContentBuilder.WriteString(fmt.Sprintf("%s\n", vulDescriptionContent))
+			WriteContent(&descriptionContentBuilder, vulDescriptionContent)
 			break
 		}
-		descriptionContentBuilder.WriteString(fmt.Sprintf("%s\n",
-			writer.MarkAsDetails(fmt.Sprintf(`%s%s %s`,
-				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
-				vulnerabilities[i].ImpactedDependencyName,
-				vulnerabilities[i].ImpactedDependencyVersion,
-			), 4, vulDescriptionContent)),
+		WriteContent(&descriptionContentBuilder,
+			writer.MarkAsDetails(
+				fmt.Sprintf(`%s %s %s`,
+					getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+					vulnerabilities[i].ImpactedDependencyName,
+					vulnerabilities[i].ImpactedDependencyVersion),
+				4, vulDescriptionContent,
+			),
 		)
-	}
-	if !shouldOutputDescriptionSection {
-		return ""
 	}
 	return descriptionContentBuilder.String()
 }
@@ -200,19 +196,16 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 	}
 
 	// Write description if exists:
-	if vulnResearch.Details != "" {
-		WriteContent(&descriptionBuilder, MarkAsBold("Description:"))
-		WriteContent(&descriptionBuilder, vulnResearch.Details)
-		descriptionBuilder.WriteString("\n")
-		// descriptionBuilder.WriteString(fmt.Sprintf("\n%s\n%s\n", MarkAsBold("Description:"), vulnResearch.Details))
-	}
-
-	// Write remediation if exists
-	if vulnResearch.Remediation != "" {
-		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"))
-		WriteContent(&descriptionBuilder, vulnResearch.Remediation)
-		descriptionBuilder.WriteString("\n")
-		// descriptionBuilder.WriteString(fmt.Sprintf("%s\n%s\n", MarkAsBold("Remediation:"), vulnResearch.Remediation))
+	if vulnResearch.Details != "" && vulnResearch.Remediation != "" {
+		WriteContent(&descriptionBuilder,
+			MarkAsBold("Description:"), vulnResearch.Details,
+			"",
+			MarkAsBold("Remediation:"), vulnResearch.Remediation,
+		)
+	} else if vulnResearch.Details != "" {
+		WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
+	} else if vulnResearch.Remediation != "" {
+		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
 	}
 
 	return descriptionBuilder.String()
@@ -223,7 +216,7 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 	if identifier == "" {
 		return ""
 	}
-	return fmt.Sprintf("[ %s ] ", identifier)
+	return fmt.Sprintf("[ %s ]", identifier)
 }
 
 func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string {
@@ -232,7 +225,7 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 	}
 	// Title
 	var contentBuilder strings.Builder
-	contentBuilder.WriteString(fmt.Sprintf("\n%s\n", writer.MarkAsTitle("⚖️ Violated Licenses", 2)))
+	WriteContent(&contentBuilder, writer.MarkAsTitle("⚖️ Violated Licenses", 2))
 	// Content
 	table := NewMarkdownTable("LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY").SetDelimiter(writer.Separator())
 	for _, license := range licenses {
@@ -242,18 +235,24 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 			NewCellData(fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)),
 		)
 	}
-	contentBuilder.WriteString(writer.MarkInCenter(table.Build()))
+	WriteContent(&contentBuilder, writer.MarkInCenter(table.Build()))
 	return contentBuilder.String()
 }
 
 // For review comment Frogbot creates on Scan PR
 func GenerateReviewCommentContent(content string, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + content + footer(writer)
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
+	WriteContent(&contentBuilder, content, footer(writer))
+	return contentBuilder.String()
 }
 
 // When can't create review comment, create a fallback comment by adding the location description to the content as a prefix
 func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
-	return MarkdownComment(ReviewCommentId) + getFallbackCommentLocationDescription(location) + content + footer(writer)
+	var contentBuilder strings.Builder
+	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
+	WriteContent(&contentBuilder, getFallbackCommentLocationDescription(location), content, footer(writer))
+	return contentBuilder.String()
 }
 
 func IsFrogbotReviewComment(content string) bool {
@@ -261,13 +260,7 @@ func IsFrogbotReviewComment(content string) bool {
 }
 
 func getFallbackCommentLocationDescription(location formats.Location) string {
-	return fmt.Sprintf(`
-%s
-at %s (line %d)
-`,
-		MarkAsCodeSnippet(location.Snippet),
-		MarkAsQuote(location.File),
-		location.StartLine)
+	return fmt.Sprintf("%s\nat %s (line %d)", MarkAsCodeSnippet(location.Snippet), MarkAsQuote(location.File), location.StartLine)
 }
 
 func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string, writer OutputWriter) string {
@@ -280,13 +273,12 @@ func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails,
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(contextualAnalysisTitle, 2),
 		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
+		writer.MarkAsDetails("Description", 3, fullDetails),
+		writer.MarkAsDetails("CVE details", 3, cveDetails),
 	)
-	WriteContent(&contentBuilder, writer.MarkAsDetails("Description", 3, fullDetails))
-	WriteContent(&contentBuilder, writer.MarkAsDetails("CVE details", 3, cveDetails))
-	contentBuilder.WriteString("\n")
 
 	if len(remediation) > 0 {
-		contentBuilder.WriteString(fmt.Sprintf("%s\n", writer.MarkAsDetails("Remediation", 3, remediation)))
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Remediation", 3, remediation))
 	}
 	return contentBuilder.String()
 }
@@ -302,7 +294,6 @@ func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter
 		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
 		writer.MarkAsDetails("Full description", 3, fullDetails),
 	)
-	contentBuilder.WriteString("\n")
 	return contentBuilder.String()
 }
 
@@ -313,11 +304,9 @@ func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]form
 		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
 		writer.MarkAsDetails("Full description", 3, fullDetails),
 	)
-	contentBuilder.WriteString("\n")
 
 	if len(codeFlows) > 0 {
-		// WriteContent(&contentBuilder, writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer)))
-		contentBuilder.WriteString(fmt.Sprintf("%s\n", writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer))))
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(codeFlows, writer)))
 	}
 	return contentBuilder.String()
 }
@@ -325,7 +314,7 @@ func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]form
 func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	for _, flow := range codeFlows {
-		contentBuilder.WriteString(writer.MarkAsDetails("Vulnerable data flow analysis result", 4, sastDataFlowLocationsReviewContent(flow)))
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Vulnerable data flow analysis result", 4, sastDataFlowLocationsReviewContent(flow)))
 	}
 	return contentBuilder.String()
 }
@@ -333,12 +322,7 @@ func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWri
 func sastDataFlowLocationsReviewContent(flow []formats.Location) string {
 	var contentBuilder strings.Builder
 	for _, location := range flow {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %s (at %s line %d)\n",
-			"↘️",
-			MarkAsQuote(location.Snippet),
-			location.File,
-			location.StartLine,
-		))
+		WriteContent(&contentBuilder, fmt.Sprintf("%s %s (at %s line %d)\n", "↘️", MarkAsQuote(location.Snippet), location.File, location.StartLine))
 	}
 	return contentBuilder.String()
 }

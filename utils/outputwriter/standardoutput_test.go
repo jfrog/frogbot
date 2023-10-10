@@ -87,27 +87,27 @@ func TestStandardImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n",
+			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities pr banner",
 			source:         VulnerabilitiesPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n",
+			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "no vulnerability mr banner",
 			source:         NoVulnerabilityMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n",
+			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix pr banner",
 			source:         VulnerabilitiesFixPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n",
+			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix mr banner",
 			source:         VulnerabilitiesFixMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n",
+			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 	}
 	for _, tc := range testCases {
@@ -127,12 +127,12 @@ func TestStandardMarkInCenter(t *testing.T) {
 		{
 			name:           "empty content",
 			content:        "",
-			expectedOutput: "\n<div align='center'>\n\n\n\n</div>",
+			expectedOutput: "<div align='center'>\n\n\n\n</div>\n",
 		},
 		{
 			name:           "non empty content",
 			content:        "content",
-			expectedOutput: "\n<div align='center'>\n\ncontent\n\n</div>",
+			expectedOutput: "<div align='center'>\n\ncontent\n\n</div>\n",
 		},
 	}
 	for _, tc := range testCases {
@@ -156,42 +156,42 @@ func TestStandardMarkAsDetails(t *testing.T) {
 			summary:        "",
 			subTitleDepth:  1,
 			content:        "",
-			expectedOutput: "\n<details>\n<summary> <b></b> </summary>\n<br>\n\n\n</details>",
+			expectedOutput: "<details>\n\n\n\n</details>\n",
 		},
 		{
 			name:           "empty content",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "",
-			expectedOutput: "\n<details>\n<summary> <b>summary</b> </summary>\n<br>\n\n\n</details>",
+			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\n\n\n</details>\n",
 		},
 		{
 			name:           "empty summary",
 			summary:        "",
 			subTitleDepth:  1,
 			content:        "content",
-			expectedOutput: "\n<details>\n<summary> <b></b> </summary>\n<br>\ncontent\n\n</details>",
+			expectedOutput: "<details>\n\ncontent\n\n</details>\n",
 		},
 		{
 			name:           "Main details",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "content",
-			expectedOutput: "\n<details>\n<summary> <b>summary</b> </summary>\n<br>\ncontent\n\n</details>",
+			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
 		},
 		{
 			name:           "Sub details",
 			summary:        "summary",
 			subTitleDepth:  2,
 			content:        "content",
-			expectedOutput: "\n<details>\n<summary> <b>summary</b> </summary>\n<br>\ncontent\n\n</details>",
+			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
 		},
 		{
 			name:           "Sub sub details",
 			summary:        "summary",
 			subTitleDepth:  3,
 			content:        "content",
-			expectedOutput: "\n<details>\n<summary> <b>summary</b> </summary>\n<br>\ncontent\n\n</details>",
+			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
 		},
 	}
 	for _, tc := range testCases {
@@ -212,8 +212,8 @@ func TestStandardMarkAsTitle(t *testing.T) {
 		{
 			name:           "empty",
 			title:          "",
-			subTitleDepth:  1,
-			expectedOutput: "# ",
+			subTitleDepth:  0,
+			expectedOutput: " ",
 		},
 		{
 			name:           "Main title",

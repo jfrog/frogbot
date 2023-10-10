@@ -129,7 +129,7 @@ func MarkAsLink(content, link string) string {
 }
 
 func SectionDivider() string {
-	return "\n---\n"
+	return "\n---"
 }
 
 func MarkAsCodeSnippet(snippet string) string {
@@ -137,8 +137,7 @@ func MarkAsCodeSnippet(snippet string) string {
 }
 
 func WriteContent(builder *strings.Builder, contents ...string) {
-	builder.WriteString("\n")
 	for _, content := range contents {
-		builder.WriteString(content)
+		fmt.Fprintf(builder, "\n%s", content)
 	}
 }

@@ -7,9 +7,11 @@
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Stack Trace Exposure |
 
 </div>
+
 <details>
 <summary> <b>Full description</b> </summary>
 <br>
+
 
 ### Overview
 Stack trace exposure is a type of security vulnerability that occurs when a program reveals

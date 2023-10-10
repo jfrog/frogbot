@@ -2,13 +2,15 @@
 
 ---
 ## 🛠️ Infrastructure as Code Vulnerability
----
 
+---
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |
 | Medium | Missing auto upgrade was detected |
+
 ---
 ### Full description
+
 ---
 Resource `google_container_node_pool` should have `management.auto_upgrade=true`
 
@@ -20,4 +22,3 @@ resource "google_container_node_pool" "vulnerable_example" {
    }
 }
 ```
-

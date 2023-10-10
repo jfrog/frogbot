@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	TestMessagesDir = filepath.Join("..", "testdata", "messages")
-
+	// Used for tests that are outside the outputwriter package.
+	TestMessagesDir       = filepath.Join("..", "testdata", "messages")
+	TestSummaryCommentDir = filepath.Join(TestMessagesDir, "summarycomment")
+	// Used for tests that are inside the outputwriter package.
 	testMessagesDir       = filepath.Join("..", TestMessagesDir)
 	testReviewCommentDir  = filepath.Join(testMessagesDir, "reviewcomment")
 	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
-
-	TestSummaryCommentDir = filepath.Join(TestMessagesDir, "summarycomment")
 )
 
 type OutputTestCase struct {
@@ -51,8 +51,8 @@ func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
 	return bytes
 }
 
-func GetPRSummaryContentNoIssues(t *testing.T, entitled, simplified bool) string {
-	dataPath := filepath.Join(TestSummaryCommentDir, "structure")
+func GetPRSummaryContentNoIssues(t *testing.T, summaryTestDir string, entitled, simplified bool) string {
+	dataPath := filepath.Join(summaryTestDir, "structure")
 	if simplified {
 		if entitled {
 			dataPath = filepath.Join(dataPath, "summary_comment_simplified_no_issues_entitled.md")

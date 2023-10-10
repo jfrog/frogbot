@@ -2,9 +2,8 @@
 
 ---
 ## ⚖️ Violated Licenses
+
 ---
-
-
 | LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: |
 | License1 | Comp1 1.0 | Dep1 2.0 |

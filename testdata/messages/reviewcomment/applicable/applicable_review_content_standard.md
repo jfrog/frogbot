@@ -11,6 +11,7 @@
 <details>
 <summary> <b>Description</b> </summary>
 <br>
+
 The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.
 
 </details>
@@ -18,6 +19,7 @@ The scanner checks whether the vulnerable `Development Server` of the `werkzeug`
 <details>
 <summary> <b>CVE details</b> </summary>
 <br>
+
 cveDetails
 
 </details>
@@ -25,6 +27,7 @@ cveDetails
 <details>
 <summary> <b>Remediation</b> </summary>
 <br>
+
 some remediation
 
 </details>

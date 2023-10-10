@@ -90,7 +90,7 @@ func TestMarkAsLink(t *testing.T) {
 }
 
 func TestSectionDivider(t *testing.T) {
-	assert.Equal(t, "\n---\n", SectionDivider())
+	assert.Equal(t, "\n---", SectionDivider())
 }
 
 func TestMarkAsCodeSnippet(t *testing.T) {
@@ -119,7 +119,7 @@ func TestWriteContent(t *testing.T) {
 	}{
 		{
 			input:          []string{},
-			expectedOutput: "\n",
+			expectedOutput: "",
 		},
 		{
 			input:          []string{"content"},
@@ -127,7 +127,7 @@ func TestWriteContent(t *testing.T) {
 		},
 		{
 			input:          []string{"contentA", "contentB", "contentC"},
-			expectedOutput: "\ncontentAcontentBcontentC",
+			expectedOutput: "\ncontentA\ncontentB\ncontentC",
 		},
 	}
 	for _, tc := range testCases {

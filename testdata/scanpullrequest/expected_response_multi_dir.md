@@ -7,7 +7,6 @@
 
 ## 📦 Vulnerable Dependencies
 ### ✍️ Summary
-
 <div align='center'>
 
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
@@ -20,19 +19,21 @@
 <details>
 <summary> <b>🔬 Research Details</b> </summary>
 <br>
+
 <details>
 <summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
 <br>
 
+
 **Description:**
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.
-
 
 </details>
 
 <details>
 <summary> <b>[ CVE-2022-29217 ] pyjwt 1.7.1</b> </summary>
 <br>
+
 
 **Description:**
 [PyJWT](https://pypi.org/project/PyJWT) is a Python implementation of the RFC 7519 standard (JSON Web Tokens). [JSON Web Tokens](https://jwt.io/) are an open, industry standard method for representing claims securely between two parties. A JWT comes with an inline signature that is meant to be verified by the receiving application. JWT supports multiple standard algorithms, and the algorithm itself is **specified in the JWT token itself**.
@@ -72,14 +73,13 @@ For example, replace the following call -
 With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 
-
 </details>
 
 </details>
+
 
 
 ---
-
 <div align='center'>
 
 [🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)

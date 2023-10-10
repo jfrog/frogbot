@@ -87,17 +87,17 @@ func TestSimpleImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.**\n",
+			expectedOutput: "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.**",
 		},
 		{
 			name:           "vulnerabilities pr banner",
 			source:         VulnerabilitiesPrBannerSource,
-			expectedOutput: "**🚨 Frogbot scanned this pull request and found the below:**\n",
+			expectedOutput: "**🚨 Frogbot scanned this pull request and found the below:**",
 		},
 		{
 			name:           "vulnerabilities fix pr banner",
 			source:         VulnerabilitiesFixPrBannerSource,
-			expectedOutput: "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n",
+			expectedOutput: "**🚨 This automated pull request was created by Frogbot and fixes the below:**",
 		},
 	}
 	for _, tc := range testCases {
@@ -117,12 +117,12 @@ func TestSimpleMarkInCenter(t *testing.T) {
 		{
 			name:           "empty content",
 			content:        "",
-			expectedOutput: "\n",
+			expectedOutput: "",
 		},
 		{
 			name:           "non empty content",
 			content:        "content",
-			expectedOutput: "\ncontent",
+			expectedOutput: "content",
 		},
 	}
 	for _, tc := range testCases {
@@ -144,44 +144,44 @@ func TestSimpleMarkAsDetails(t *testing.T) {
 		{
 			name:           "empty",
 			summary:        "",
-			subTitleDepth:  1,
+			subTitleDepth:  0,
 			content:        "",
-			expectedOutput: "\n---\n# \n---\n",
+			expectedOutput: "\n---\n \n\n---\n",
 		},
 		{
 			name:           "empty content",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "",
-			expectedOutput: "\n---\n# summary\n---\n",
+			expectedOutput: "\n---\n# summary\n\n---\n",
 		},
 		{
 			name:           "empty summary",
 			summary:        "",
 			subTitleDepth:  1,
 			content:        "content",
-			expectedOutput: "\n---\n# \n---\ncontent",
+			expectedOutput: "\n---\n# \n\n---\ncontent",
 		},
 		{
 			name:           "Main details",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "content",
-			expectedOutput: "\n---\n# summary\n---\ncontent",
+			expectedOutput: "\n---\n# summary\n\n---\ncontent",
 		},
 		{
 			name:           "Sub details",
 			summary:        "summary",
 			subTitleDepth:  2,
 			content:        "content",
-			expectedOutput: "\n---\n## summary\n---\ncontent",
+			expectedOutput: "\n---\n## summary\n\n---\ncontent",
 		},
 		{
 			name:           "Sub sub details",
 			summary:        "summary",
 			subTitleDepth:  3,
 			content:        "content",
-			expectedOutput: "\n---\n### summary\n---\ncontent",
+			expectedOutput: "\n---\n### summary\n\n---\ncontent",
 		},
 	}
 	for _, tc := range testCases {
@@ -202,26 +202,26 @@ func TestSimpleMarkAsTitle(t *testing.T) {
 		{
 			name:           "empty",
 			title:          "",
-			subTitleDepth:  1,
-			expectedOutput: "\n---\n# \n---\n",
+			subTitleDepth:  0,
+			expectedOutput: "\n---\n \n\n---",
 		},
 		{
 			name:           "Main title",
 			title:          "title",
 			subTitleDepth:  1,
-			expectedOutput: "\n---\n# title\n---\n",
+			expectedOutput: "\n---\n# title\n\n---",
 		},
 		{
 			name:           "Sub title",
 			title:          "title",
 			subTitleDepth:  2,
-			expectedOutput: "\n---\n## title\n---\n",
+			expectedOutput: "\n---\n## title\n\n---",
 		},
 		{
 			name:           "Sub sub title",
 			title:          "title",
 			subTitleDepth:  3,
-			expectedOutput: "\n---\n### title\n---\n",
+			expectedOutput: "\n---\n### title\n\n---",
 		},
 	}
 	for _, tc := range testCases {

@@ -7,9 +7,11 @@
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Missing auto upgrade was detected |
 
 </div>
+
 <details>
 <summary> <b>Full description</b> </summary>
 <br>
+
 Resource `google_container_node_pool` should have `management.auto_upgrade=true`
 
 Vulnerable example - 

@@ -2,13 +2,15 @@
 
 ---
 ## 🎯 Static Application Security Testing (SAST) Vulnerability
----
 
+---
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |
 | Low | Stack Trace Exposure |
+
 ---
 ### Full description
+
 ---
 
 ### Overview

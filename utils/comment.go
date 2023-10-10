@@ -64,7 +64,6 @@ func GeneratePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 
 	if issuesCollection.IssuesExists() {
 		issuesExists = true
-
 		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
 		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
 	}

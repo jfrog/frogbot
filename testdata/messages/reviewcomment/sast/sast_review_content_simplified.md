@@ -2,13 +2,15 @@
 
 ---
 ## 🎯 Static Application Security Testing (SAST) Vulnerability
----
 
+---
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |
 | Low | Stack Trace Exposure |
+
 ---
 ### Full description
+
 ---
 
 ### Overview
@@ -20,21 +22,26 @@ of the error) is included in the output.
 
 ---
 ### Code Flows
+
 ---
+
 
 ---
 #### Vulnerable data flow analysis result
+
 ---
 
 ↘️ `other-snippet` (at file2 line 1)
 
 ↘️ `snippet` (at file line 0)
 
+
 ---
 #### Vulnerable data flow analysis result
+
 ---
 
 ↘️ `a-snippet` (at file line 10)
 
-↘️ `snippet` (at file line 0)
-
+↘️ `snippet` (at fil
+e line 0)

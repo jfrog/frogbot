@@ -51,14 +51,13 @@ func (smo *SimplifiedOutput) Image(source ImageSource) string {
 }
 
 func (smo *SimplifiedOutput) MarkInCenter(content string) string {
-	return fmt.Sprintf("\n%s", content)
+	return content
 }
 
 func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
-	return fmt.Sprintf("%s%s", smo.MarkAsTitle(summary, subTitleDepth), content)
+	return fmt.Sprintf("%s\n%s", smo.MarkAsTitle(summary, subTitleDepth), content)
 }
 
 func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {
-	// TODO: if subTitleDepth is <=2, dont add section dividers
-	return fmt.Sprintf("%s%s %s%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
+	return fmt.Sprintf("%s\n%s %s\n%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
 }

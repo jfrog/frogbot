@@ -4,6 +4,6 @@
 some content
 ```
 
----
 
+---
 [🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)

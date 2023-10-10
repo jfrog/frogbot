@@ -145,11 +145,11 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))
 		assert.Equal(t, expectedMessage, frogbotMessages[0])
-		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, true, false)
+		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, outputwriter.TestSummaryCommentDir, true, false)
 		assert.Equal(t, expectedMessage, frogbotMessages[1])
 		expectedMessage = outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_pip_with_vulnerability.md"))
 		assert.Equal(t, expectedMessage, frogbotMessages[2])
-		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, true, false)
+		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, outputwriter.TestSummaryCommentDir, true, false)
 		assert.Equal(t, expectedMessage, frogbotMessages[3])
 	}
 }
@@ -187,7 +187,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_simplified.md"))
 	assert.Equal(t, expectedMessage, frogbotMessages[0])
-	expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, true, true)
+	expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, outputwriter.TestSummaryCommentDir, true, true)
 	assert.Equal(t, expectedMessage, frogbotMessages[1])
 }
 
