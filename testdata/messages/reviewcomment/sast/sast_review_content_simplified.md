@@ -43,5 +43,4 @@ of the error) is included in the output.
 
 ↘️ `a-snippet` (at file line 10)
 
-↘️ `snippet` (at fil
-e line 0)
+↘️ `snippet` (at file line 0)

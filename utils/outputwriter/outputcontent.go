@@ -164,7 +164,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var descriptionContentBuilder strings.Builder
 	for i := range vulnerabilities {
-		vulDescriptionContent := createVulnerabilityDescription(&vulnerabilities[i])
+		vulDescriptionContent := createVulnerabilityResearchDescription(&vulnerabilities[i])
 		if vulDescriptionContent == "" {
 			// No content
 			continue
@@ -186,7 +186,7 @@ func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrVio
 	return descriptionContentBuilder.String()
 }
 
-func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
+func createVulnerabilityResearchDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var descriptionBuilder strings.Builder
 	vulnResearch := vulnerability.JfrogResearchInformation
 	if vulnResearch == nil {
@@ -195,19 +195,28 @@ func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolat
 		vulnResearch.Details = vulnerability.Summary
 	}
 
-	// Write description if exists:
-	if vulnResearch.Details != "" && vulnResearch.Remediation != "" {
+	switch {
+	case vulnResearch.Details != "" && vulnResearch.Remediation != "":
 		WriteContent(&descriptionBuilder,
 			MarkAsBold("Description:"), vulnResearch.Details,
 			"",
 			MarkAsBold("Remediation:"), vulnResearch.Remediation,
 		)
-	} else if vulnResearch.Details != "" {
+	case vulnResearch.Details != "":
 		WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
-	} else if vulnResearch.Remediation != "" {
+	case vulnResearch.Remediation != "":
 		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
 	}
 
+	// if vulnResearch.Details != "" {
+	// 	WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
+	// }
+	// if vulnResearch.Remediation != "" {
+	// 	if vulnResearch.Details != "" {
+	// 		WriteContent(&descriptionBuilder, "")
+	// 	}
+	// 	WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
+	// }
 	return descriptionBuilder.String()
 }
 

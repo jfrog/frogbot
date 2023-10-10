@@ -17,7 +17,8 @@
 Stack trace exposure is a type of security vulnerability that occurs when a program reveals
 sensitive information, such as the names and locations of internal files and variables,
 in error messages or other diagnostic output. This can happen when a program crashes or
-encounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.
+encounters an error, and the stack trace (a record of the program's call stack at the time
+of the error) is included in the output.
 
 </details>
 
@@ -27,8 +28,7 @@ encounters an error, and the stack trace (a record of the program's call stack a
 
 
 <details>
-<summary> <b>Vulnerable data flow analysis result
-</b> </summary>
+<summary> <b>Vulnerable data flow analysis result</b> </summary>
 <br>
 
 
