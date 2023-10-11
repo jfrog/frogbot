@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"golang.org/x/exp/slices"
-	"os"
 
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"

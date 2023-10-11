@@ -27,38 +27,69 @@ const (
 	SastComment       ReviewCommentType = "Sast"
 
 	RescanRequestComment = "rescan"
-
-	frogbotCommentNotFound = -1
 )
 
 func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
-	// Delete previous Frogbot pull request message if exists
-	if err = DeleteExistingPullRequestComment(repo, client); err != nil {
-		return
+	if !repo.Params.AvoidPreviousPrCommentsDeletion {
+		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+		// Delete previous PR regular comments, if exists (not related to location of a change)
+		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
+			err = errors.New("couldn't delete pull request comment: " + err.Error())
+			return
+		}
+		// Delete previous PR review comments, if exists (related to location of a change)
+		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
+			err = errors.New("couldn't delete pull request review comment: " + err.Error())
+			return
+		}
 	}
 
-	// Create a pull request message
-	message := GeneratePullRequestSummaryComment(issues, repo.OutputWriter)
-
-	// Add SCA scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, pullRequestID); err != nil {
+	// Add summary (SCA, license) scan comment
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, generatePullRequestSummaryComment(issues, repo.OutputWriter), pullRequestID); err != nil {
 		err = errors.New("couldn't add pull request comment: " + err.Error())
 		return
 	}
-
 	// Handle review comments at the pull request
-	if err = AddReviewComments(repo, pullRequestID, client, issues); err != nil {
+	if err = addReviewComments(repo, pullRequestID, client, issues); err != nil {
 		err = errors.New("couldn't add review comments: " + err.Error())
 		return
 	}
 	return
 }
 
+// Delete existing pull request regular comments (Summary, Fallback review comments)
+func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.VcsClient) error {
+	prDetails := repository.PullRequestDetails
+	comments, err := GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
+	if err != nil {
+		return fmt.Errorf(
+			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
+			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
+	}
+	// Previous Fallback review comments
+	commentsToDelete := getFrogbotReviewComments(comments)
+	// Previous Summary comments
+	for _, comment := range comments {
+		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
+			commentsToDelete = append(commentsToDelete, comment)
+		}
+	}
+	// Delete
+	if len(commentsToDelete) > 0 {
+		for _, commentToDelete := range commentsToDelete {
+			if err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), int(commentToDelete.ID)); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
 func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
 	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
 }
 
-func GeneratePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
+func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
 	issuesExists := false
 	content := strings.Builder{}
 
@@ -86,41 +117,7 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	return pullRequestsComments, nil
 }
 
-func DeleteExistingPullRequestComment(repository *Repository, client vcsclient.VcsClient) error {
-	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	prDetails := repository.PullRequestDetails
-	comments, err := GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
-	if err != nil {
-		return fmt.Errorf(
-			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
-			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
-	}
-
-	commentID := frogbotCommentNotFound
-	for _, comment := range comments {
-		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
-			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
-			commentID = int(comment.ID)
-			break
-		}
-	}
-
-	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
-	}
-
-	return err
-}
-
-func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
-	if err = deleteOldReviewComments(repo, pullRequestID, client); err != nil {
-		err = errors.New("couldn't delete pull request review comment: " + err.Error())
-		return
-	}
-	if err = deleteOldFallbackComments(repo, pullRequestID, client); err != nil {
-		err = errors.New("couldn't delete pull request comment: " + err.Error())
-		return
-	}
+func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
 	commentsToAdd := getNewReviewComments(repo, issues)
 	if len(commentsToAdd) == 0 {
 		return
@@ -139,8 +136,9 @@ func AddReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 	return
 }
 
-func deleteOldReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient) (err error) {
-	// Get all comments in PR
+// Delete existing pull request review comments (Applicable, Sast, Iac)
+func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient) (err error) {
+	// Get all review comments in PR
 	var existingComments []vcsclient.CommentInfo
 	if existingComments, err = client.ListPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID); err != nil {
 		err = errors.New("couldn't list existing review comments: " + err.Error())
