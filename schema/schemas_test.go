@@ -8,10 +8,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	maxRetries             = 3
+	durationBetweenRetries = 2 * time.Second
 )
 
 func TestFrogbotSchema(t *testing.T) {
@@ -63,14 +69,29 @@ func TestGitHubActionsTemplates(t *testing.T) {
 // t      - Testing object
 // schema - The schema file to download
 func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
-	response, err := http.Get("https://json.schemastore.org/" + schema)
+	var response *http.Response
+	var schemaBytes []byte
+	var err error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		response, err = http.Get("https://json.schemastore.org/" + schema)
+		if err == nil && response.StatusCode == http.StatusOK {
+			break // Successful response, exit the retry loop
+		}
+		if attempt < maxRetries {
+			time.Sleep(durationBetweenRetries)
+		} else {
+			assert.Fail(t, "Max retries reached. Failed to download schema.")
+			return nil
+		}
+	}
+	// Check server response and read schema bytes
 	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
 	defer func() {
 		assert.NoError(t, response.Body.Close())
 	}()
-	// Check server response
-	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
-	schemaBytes, err := io.ReadAll(response.Body)
+	schemaBytes, err = io.ReadAll(response.Body)
 	assert.NoError(t, err)
 
 	return gojsonschema.NewBytesLoader(schemaBytes)
