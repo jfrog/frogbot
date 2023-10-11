@@ -3,11 +3,12 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
@@ -320,27 +321,27 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 
 func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                  "",
-		jfrogArtifactoryUrlEnv:       "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                 "admin",
-		JFrogPasswordEnv:             "password",
-		BranchNameTemplateEnv:        "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:     "commit",
-		PullRequestTitleTemplateEnv:  "pr-title",
-		InstallCommandEnv:            "nuget restore",
-		UseWrapperEnv:                "false",
-		RequirementsFileEnv:          "requirements.txt",
-		WorkingDirectoryEnv:          "a/b",
-		jfrogProjectEnv:              "projectKey",
-		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                  "deps-remote",
-		IncludeAllVulnerabilitiesEnv: "true",
-		KeepPreviousCommentsEnv:      "true",
-		FailOnSecurityIssuesEnv:      "false",
-		MinSeverityEnv:               "medium",
-		FixableOnlyEnv:               "true",
-		AllowedLicensesEnv:           "MIT, Apache-2.0",
+		JFrogUrlEnv:                        "",
+		jfrogArtifactoryUrlEnv:             "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:                    "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:                       "admin",
+		JFrogPasswordEnv:                   "password",
+		BranchNameTemplateEnv:              "branch-${BRANCH_NAME_HASH}",
+		CommitMessageTemplateEnv:           "commit",
+		PullRequestTitleTemplateEnv:        "pr-title",
+		InstallCommandEnv:                  "nuget restore",
+		UseWrapperEnv:                      "false",
+		RequirementsFileEnv:                "requirements.txt",
+		WorkingDirectoryEnv:                "a/b",
+		jfrogProjectEnv:                    "projectKey",
+		jfrogWatchesEnv:                    "watch-1, watch-2, watch-3",
+		DepsRepoEnv:                        "deps-remote",
+		IncludeAllVulnerabilitiesEnv:       "true",
+		AvoidPreviousPrCommentsDeletionEnv: "true",
+		FailOnSecurityIssuesEnv:            "false",
+		MinSeverityEnv:                     "medium",
+		FixableOnlyEnv:                     "true",
+		AllowedLicensesEnv:                 "MIT, Apache-2.0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -447,13 +448,13 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	secondRepo := configAggregator[1]
 	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
 	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
-	assert.False(t, secondRepo.KeepPreviousComments)
+	assert.False(t, secondRepo.AvoidPreviousPrCommentsDeletion)
 	thirdRepo := configAggregator[2]
 	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
 	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
 	assert.True(t, *thirdRepo.FailOnSecurityIssues)
 	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
-	assert.True(t, thirdRepo.KeepPreviousComments)
+	assert.True(t, thirdRepo.AvoidPreviousPrCommentsDeletion)
 	thirdRepoProject := thirdRepo.Projects[0]
 	assert.Equal(t, "requirements.txt", thirdRepoProject.PipRequirementsFile)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)

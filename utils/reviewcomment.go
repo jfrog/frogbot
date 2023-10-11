@@ -27,13 +27,15 @@ const (
 )
 
 func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
-	if !repo.Params.KeepPreviousComments {
-		log.Debug("Looking for an existing Frogbot pull request comments. Deleting them if exists...")
+	if !repo.Params.AvoidPreviousPrCommentsDeletion {
+		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+		// Delete previous PR regular comments, if exists (not related to location of a change)
 		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
 			err = errors.New("couldn't delete pull request comment: " + err.Error())
 			return
 		}
-		if err = deleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
+		// Delete previous PR review comments, if exists (related to location of a change)
+		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
 			err = errors.New("couldn't delete pull request review comment: " + err.Error())
 			return
 		}
@@ -52,6 +54,7 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 	return
 }
 
+// Delete existing pull request regular comments (Summary, Fallback review comments)
 func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.VcsClient) error {
 	prDetails := repository.PullRequestDetails
 	comments, err := GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
@@ -112,7 +115,8 @@ func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 	return
 }
 
-func deleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient) (err error) {
+// Delete existing pull request review comments (Applicable, Sast, Iac)
+func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient) (err error) {
 	// Get all review comments in PR
 	var existingComments []vcsclient.CommentInfo
 	if existingComments, err = client.ListPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID); err != nil {

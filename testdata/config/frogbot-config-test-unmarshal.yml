@@ -29,7 +29,7 @@
             - b/c
       failOnSecurityIssues: true
       includeAllVulnerabilities: false
-      keepPreviousComments: true
+      avoidPreviousPrCommentsDeletion: true
     jfrogPlatform:
       watches:
         - watch-1

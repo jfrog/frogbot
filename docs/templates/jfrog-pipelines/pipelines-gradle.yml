@@ -120,8 +120,8 @@ pipelines:
             # JF_INCLUDE_ALL_VULNERABILITIES: "TRUE"
 
             # [Optional, default: "FALSE"]
-            # Keep old comments that were added by previous Frogbot scans on the pull request.
-            # JF_AVOID_OLD_PR_COMMENTS_DELETION: "TRUE"
+            # When adding new comments on pull requests, keep old comments that were added by previous scans.
+            # JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION: "TRUE"
 
             # [Optional]
             # Frogbot will download the project dependencies if they're not cached locally. To download the

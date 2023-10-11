@@ -110,14 +110,14 @@ func (p *Project) setDefaultsIfNeeded() error {
 }
 
 type Scan struct {
-	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
-	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	KeepPreviousComments      bool      `yaml:"keepPreviousComments,omitempty"`
-	MinSeverity               string    `yaml:"minSeverity,omitempty"`
-	AllowedLicenses           []string  `yaml:"allowedLicenses,omitempty"`
-	Projects                  []Project `yaml:"projects,omitempty"`
-	EmailDetails              `yaml:",inline"`
+	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
+	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
+	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
+	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
+	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
+	Projects                        []Project `yaml:"projects,omitempty"`
+	EmailDetails                    `yaml:",inline"`
 }
 
 type EmailDetails struct {
@@ -162,8 +162,8 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-	if !s.KeepPreviousComments {
-		if s.KeepPreviousComments, err = getBoolEnv(KeepPreviousCommentsEnv, false); err != nil {
+	if !s.AvoidPreviousPrCommentsDeletion {
+		if s.AvoidPreviousPrCommentsDeletion, err = getBoolEnv(AvoidPreviousPrCommentsDeletionEnv, false); err != nil {
 			return
 		}
 	}
