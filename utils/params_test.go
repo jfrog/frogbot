@@ -336,6 +336,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
 		DepsRepoEnv:                  "deps-remote",
 		IncludeAllVulnerabilitiesEnv: "true",
+		KeepPreviousCommentsEnv:      "true",
 		FailOnSecurityIssuesEnv:      "false",
 		MinSeverityEnv:               "medium",
 		FixableOnlyEnv:               "true",
@@ -446,11 +447,13 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	secondRepo := configAggregator[1]
 	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
 	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
+	assert.False(t, secondRepo.KeepPreviousComments)
 	thirdRepo := configAggregator[2]
 	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
 	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
 	assert.True(t, *thirdRepo.FailOnSecurityIssues)
 	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
+	assert.True(t, thirdRepo.KeepPreviousComments)
 	thirdRepoProject := thirdRepo.Projects[0]
 	assert.Equal(t, "requirements.txt", thirdRepoProject.PipRequirementsFile)
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)

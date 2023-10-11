@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/utils/outputwriter"
-	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jfrog/frogbot/utils/outputwriter"
+	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -112,6 +113,7 @@ type Scan struct {
 	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
 	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	KeepPreviousComments      bool      `yaml:"keepPreviousComments,omitempty"`
 	MinSeverity               string    `yaml:"minSeverity,omitempty"`
 	AllowedLicenses           []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                  []Project `yaml:"projects,omitempty"`
@@ -157,6 +159,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	e := &ErrMissingEnv{}
 	if !s.IncludeAllVulnerabilities {
 		if s.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.KeepPreviousComments {
+		if s.KeepPreviousComments, err = getBoolEnv(KeepPreviousCommentsEnv, false); err != nil {
 			return
 		}
 	}

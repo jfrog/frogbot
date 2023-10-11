@@ -47,6 +47,7 @@ const (
 	jfrogWatchesEnv              = "JF_WATCHES"
 	jfrogProjectEnv              = "JF_PROJECT"
 	IncludeAllVulnerabilitiesEnv = "JF_INCLUDE_ALL_VULNERABILITIES"
+	KeepPreviousCommentsEnv      = "JF_AVOID_OLD_PR_COMMENTS_DELETION"
 	FailOnSecurityIssuesEnv      = "JF_FAIL"
 	UseWrapperEnv                = "JF_USE_WRAPPER"
 	DepsRepoEnv                  = "JF_DEPS_REPO"
