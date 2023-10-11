@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"golang.org/x/exp/slices"
+	"os"
 
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -97,6 +98,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
+	// Output results
 	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.Secrets)

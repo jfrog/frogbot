@@ -1108,23 +1108,88 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	}
 	client := CreateMockVcsClient(t)
 
-	// Test with comment returned
-	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{
-		{ID: 20, Content: outputwriter.GetBanner(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
-	}, nil)
-	client.EXPECT().DeletePullRequestComment(context.Background(), "owner", "repo", 17, 20).Return(nil).AnyTimes()
-	err := utils.DeleteExistingPullRequestComment(repository, client)
-	assert.NoError(t, err)
+	testCases := []struct {
+		name         string
+		commentsOnPR []vcsclient.CommentInfo
+		err          error
+	}{
+		{
+			name: "Test with comment returned",
+			commentsOnPR: []vcsclient.CommentInfo{
+				{ID: 20, Content: outputwriter.GetBanner(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+			},
+		},
+		{
+			name: "Test with no comment returned",
+		},
+		{
+			name: "Test with error returned",
+			err:  errors.New("error"),
+		},
+	}
 
-	// Test with no comment returned
-	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return([]vcsclient.CommentInfo{}, nil)
-	err = utils.DeleteExistingPullRequestComment(repository, client)
-	assert.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test with comment returned
+			client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return(tc.commentsOnPR, tc.err)
+			client.EXPECT().DeletePullRequestComment(context.Background(), "owner", "repo", 17, 20).Return(nil).AnyTimes()
+			err := utils.DeleteExistingPullRequestComments(repository, client)
+			if tc.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
 
-	// Test with error returned
-	client.EXPECT().ListPullRequestComments(context.Background(), "owner", "repo", 17).Return(nil, errors.New("error"))
-	err = utils.DeleteExistingPullRequestComment(repository, client)
-	assert.Error(t, err)
+func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
+	repository := &utils.Repository{
+		Params: utils.Params{
+			Git: utils.Git{
+				PullRequestDetails: vcsclient.PullRequestInfo{Target: vcsclient.BranchInfo{
+					Repository: "repo",
+					Owner:      "owner",
+				}, ID: 17},
+			},
+		},
+		OutputWriter: &outputwriter.StandardOutput{},
+	}
+	client := CreateMockVcsClient(t)
+
+	testCases := []struct {
+		name         string
+		commentsOnPR []vcsclient.CommentInfo
+		err          error
+	}{
+		{
+			name: "Test with comment returned",
+			commentsOnPR: []vcsclient.CommentInfo{
+				{ID: 20, Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+			},
+		},
+		{
+			name: "Test with no comment returned",
+		},
+		{
+			name: "Test with error returned",
+			err:  errors.New("error"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test with comment returned
+			client.EXPECT().ListPullRequestReviewComments(context.Background(), "", "", 17).Return(tc.commentsOnPR, tc.err)
+			client.EXPECT().DeletePullRequestReviewComments(context.Background(), "", "", 17, tc.commentsOnPR).Return(nil).AnyTimes()
+			err := utils.DeleteExistingPullRequestReviewComments(repository, 17, client)
+			if tc.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+			}
+		})
+	}
 }
 
 // Set new logger with output redirection to a null logger. This is useful for negative tests.
