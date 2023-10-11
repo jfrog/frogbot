@@ -154,25 +154,6 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	return
 }
 
-func deleteOldFallbackComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient) (err error) {
-	// Get all comments in PR
-	existingComments, err := GetSortedPullRequestComments(client, repo.RepoOwner, repo.RepoName, pullRequestID)
-	if err != nil {
-		err = errors.New("couldn't list existing regular comments: " + err.Error())
-		return
-	}
-	// Delete old review comments
-	if len(existingComments) > 0 {
-		for _, commentToDelete := range getFrogbotReviewComments(existingComments) {
-			if err = client.DeletePullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, int(commentToDelete.ID)); err != nil {
-				err = errors.New("couldn't delete pull request regular comment: " + err.Error())
-				return
-			}
-		}
-	}
-	return
-}
-
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
 		if outputwriter.IsFrogbotReviewComment(comment.Content) {
