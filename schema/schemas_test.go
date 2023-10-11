@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	maxRetries             = 5
-	durationBetweenRetries = 10 * time.Second
+	maxRetriesToDownloadSchema           = 5
+	durationBetweenSchemaDownloadRetries = 10 * time.Second
 )
 
 func TestFrogbotSchema(t *testing.T) {
@@ -74,9 +74,8 @@ func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoade
 	var response *http.Response
 	var err error
 	retryExecutor := clientutils.RetryExecutor{
-		Context:                  context.Background(),
-		MaxRetries:               maxRetries,
-		RetriesIntervalMilliSecs: int(durationBetweenRetries.Milliseconds()),
+		MaxRetries:               maxRetriesToDownloadSchema,
+		RetriesIntervalMilliSecs: int(durationBetweenSchemaDownloadRetries.Milliseconds()),
 		ErrorMessage:             "Failed to download schema.",
 		ExecutionHandler: func() (bool, error) {
 			response, err = http.Get("https://json.schemastore.org/" + schema)
