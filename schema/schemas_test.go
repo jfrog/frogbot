@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 	"gopkg.in/yaml.v3"
@@ -70,30 +72,31 @@ func TestGitHubActionsTemplates(t *testing.T) {
 // schema - The schema file to download
 func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
 	var response *http.Response
-	var schemaBytes []byte
 	var err error
-
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		response, err = http.Get("https://json.schemastore.org/" + schema)
-		if err == nil && response.StatusCode == http.StatusOK {
-			break // Successful response, exit the retry loop
-		}
-		if attempt < maxRetries {
-			time.Sleep(durationBetweenRetries)
-		} else {
-			assert.Fail(t, "Max retries reached. Failed to download schema.")
-			return nil
-		}
+	retryExecutor := clientutils.RetryExecutor{
+		Context:                  context.Background(),
+		MaxRetries:               maxRetries,
+		RetriesIntervalMilliSecs: int(durationBetweenRetries.Milliseconds()),
+		ErrorMessage:             "Failed to download schema.",
+		ExecutionHandler: func() (bool, error) {
+			response, err = http.Get("https://json.schemastore.org/" + schema)
+			if err != nil {
+				return false, err
+			}
+			if response.StatusCode != http.StatusOK {
+				return false, fmt.Errorf("failed to download schema. Response status: %s", response.Status)
+			}
+			return true, nil
+		},
 	}
-	// Check server response and read schema bytes
-	assert.NoError(t, err)
+	assert.NoError(t, retryExecutor.Execute())
 	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
+	// Check server response and read schema bytes
 	defer func() {
 		assert.NoError(t, response.Body.Close())
 	}()
-	schemaBytes, err = io.ReadAll(response.Body)
+	schemaBytes, err := io.ReadAll(response.Body)
 	assert.NoError(t, err)
-
 	return gojsonschema.NewBytesLoader(schemaBytes)
 }
 
