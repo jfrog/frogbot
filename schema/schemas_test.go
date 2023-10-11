@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	maxRetries             = 3
-	durationBetweenRetries = 2 * time.Second
+	maxRetries             = 5
+	durationBetweenRetries = 10 * time.Second
 )
 
 func TestFrogbotSchema(t *testing.T) {
