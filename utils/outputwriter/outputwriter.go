@@ -12,12 +12,14 @@ import (
 const (
 	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
 	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
+	ReviewCommentId                                  = "FrogbotReviewComment"
 	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
 	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
 	vulnerableDependenciesTitle                      = "## 📦 Vulnerable Dependencies"
 	summaryTitle                                     = "### ✍️ Summary"
 	researchDetailsTitle                             = "## 🔬 Research Details"
+	sastTitle                                        = "## 🎯 Static Application Security Testing (SAST) Vulnerability"
 	iacTitle                                         = "## 🛠️ Infrastructure as Code"
 	licenseTitle                                     = "## ⚖️ Violated Licenses"
 	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability\n"
@@ -253,4 +255,12 @@ func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId stri
 		return ""
 	}
 	return fmt.Sprintf("[ %s ] ", identifier)
+}
+
+func GenerateReviewCommentContent(content string, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + content + writer.Footer()
+}
+
+func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
+	return MarkdownComment(ReviewCommentId) + GetLocationDescription(location) + content + writer.Footer()
 }
