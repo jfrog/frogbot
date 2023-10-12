@@ -79,12 +79,12 @@ func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoade
 		ExecutionHandler: func() (bool, error) {
 			response, err = http.Get("https://json.schemastore.org/" + schema)
 			if err != nil {
-				return false, err
+				return true, err
 			}
 			if response.StatusCode != http.StatusOK {
-				return false, fmt.Errorf("failed to download schema. Response status: %s", response.Status)
+				return true, fmt.Errorf("failed to download schema. Response status: %s", response.Status)
 			}
-			return true, nil
+			return false, nil
 		},
 	}
 	assert.NoError(t, retryExecutor.Execute())
