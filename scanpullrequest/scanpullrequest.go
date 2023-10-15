@@ -376,10 +376,12 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 	aggregateResults := services.ScanResponse{
 		Violations:      []services.Violation{},
 		Vulnerabilities: []services.Vulnerability{},
+		Licenses:        []services.License{},
 	}
 	for _, scanResult := range scanResults {
 		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
 		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
+		aggregateResults.Licenses = append(aggregateResults.Licenses, scanResult.Licenses...)
 	}
 	return aggregateResults
 }
