@@ -1192,6 +1192,38 @@ func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
 	}
 }
 
+func TestAggregateScanResults(t *testing.T) {
+	scanResult1 := services.ScanResponse{
+		Violations:      []services.Violation{{IssueId: "Violation 1"}},
+		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 1"}},
+		Licenses:        []services.License{{Name: "License 1"}},
+	}
+
+	scanResult2 := services.ScanResponse{
+		Violations:      []services.Violation{{IssueId: "Violation 2"}},
+		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 2"}},
+		Licenses:        []services.License{{Name: "License 2"}},
+	}
+
+	aggregateResult := aggregateScanResults([]services.ScanResponse{scanResult1, scanResult2})
+	expectedResult := services.ScanResponse{
+		Violations: []services.Violation{
+			{IssueId: "Violation 1"},
+			{IssueId: "Violation 2"},
+		},
+		Vulnerabilities: []services.Vulnerability{
+			{IssueId: "Vulnerability 1"},
+			{IssueId: "Vulnerability 2"},
+		},
+		Licenses: []services.License{
+			{Name: "License 1"},
+			{Name: "License 2"},
+		},
+	}
+
+	assert.Equal(t, expectedResult, aggregateResult)
+}
+
 // Set new logger with output redirection to a null logger. This is useful for negative tests.
 // Caller is responsible to set the old log back.
 func redirectLogOutputToNil() (previousLog log.Log) {
