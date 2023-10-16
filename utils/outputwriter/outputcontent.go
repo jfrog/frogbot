@@ -23,7 +23,7 @@ const (
 
 var (
 	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", "https://github.com/jfrog/frogbot#readme")
-	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/xray/") + " package, which isn't enabled on your system."
+	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
@@ -99,7 +99,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 		// The values in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
 		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
 		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
-		table.GetColumnInfo("DIRECT DEPENDENCIES").BuildType = MultiRowColumn
+		table.GetColumnInfo("DIRECT DEPENDENCIES").ColumnType = MultiRowColumn
 	}
 	// Construct rows
 	for _, vulnerability := range vulnerabilities {
@@ -195,28 +195,15 @@ func createVulnerabilityResearchDescription(vulnerability *formats.Vulnerability
 		vulnResearch.Details = vulnerability.Summary
 	}
 
-	switch {
-	case vulnResearch.Details != "" && vulnResearch.Remediation != "":
-		WriteContent(&descriptionBuilder,
-			MarkAsBold("Description:"), vulnResearch.Details,
-			"",
-			MarkAsBold("Remediation:"), vulnResearch.Remediation,
-		)
-	case vulnResearch.Details != "":
+	if vulnResearch.Details != "" {
 		WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
-	case vulnResearch.Remediation != "":
+	}
+	if vulnResearch.Remediation != "" {
+		if vulnResearch.Details != "" {
+			WriteNewLine(&descriptionBuilder)
+		}
 		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
 	}
-
-	// if vulnResearch.Details != "" {
-	// 	WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
-	// }
-	// if vulnResearch.Remediation != "" {
-	// 	if vulnResearch.Details != "" {
-	// 		WriteContent(&descriptionBuilder, "")
-	// 	}
-	// 	WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
-	// }
 	return descriptionBuilder.String()
 }
 

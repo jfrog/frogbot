@@ -808,10 +808,9 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NotEmpty(t, buf.String())
 
 			var expectedResponse []byte
-			switch {
-			case strings.Contains(projectName, "multi-dir"):
+			if strings.Contains(projectName, "multi-dir") {
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
-			default:
+			} else {
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
 			}
 			assert.NoError(t, err)

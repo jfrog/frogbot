@@ -20,7 +20,9 @@ const (
 	MultiRowColumn MarkdownColumnType = "multi"
 )
 
-type MarkdownTable struct {
+// Create a markdown table using the provided columns and rows, and construct a markdown string with the table's content.
+// Each cell in the table can contain no values (represented as column default value), single or multiple values (separated by the table delimiter).
+type MarkdownTableBuilder struct {
 	columns   []*MarkdownColumn
 	delimiter string
 	rows      [][]CellData
@@ -30,33 +32,38 @@ type MarkdownColumnType string
 
 type MarkdownColumn struct {
 	Name         string
-	BuildType    MarkdownColumnType
+	ColumnType   MarkdownColumnType
 	DefaultValue string
 }
 
+// CellData represents the data of a cell in the markdown table. Each cell can contain multiple values.
 type CellData []string
 
 func NewCellData(values ...string) CellData {
 	if len(values) == 0 {
+		// In markdown table, empty cell = cell with no values = cell with one empty value
 		return CellData{""}
 	}
 	return values
 }
 
-func NewMarkdownTable(columns ...string) *MarkdownTable {
+// Create a markdown table builder with the provided columns.
+func NewMarkdownTable(columns ...string) *MarkdownTableBuilder {
 	columnsInfo := []*MarkdownColumn{}
 	for _, column := range columns {
-		columnsInfo = append(columnsInfo, &MarkdownColumn{Name: column, BuildType: SeparatorDelimited, DefaultValue: cellDefaultValue})
+		columnsInfo = append(columnsInfo, &MarkdownColumn{Name: column, ColumnType: SeparatorDelimited, DefaultValue: cellDefaultValue})
 	}
-	return &MarkdownTable{columns: columnsInfo, delimiter: simpleSeparator}
+	return &MarkdownTableBuilder{columns: columnsInfo, delimiter: simpleSeparator}
 }
 
-func (t *MarkdownTable) SetDelimiter(delimiter string) *MarkdownTable {
+// Set the delimiter that will be used to separate multiple values in a cell.
+func (t *MarkdownTableBuilder) SetDelimiter(delimiter string) *MarkdownTableBuilder {
 	t.delimiter = delimiter
 	return t
 }
 
-func (t *MarkdownTable) GetColumnInfo(name string) *MarkdownColumn {
+// Get the column information output controller by the provided name.
+func (t *MarkdownTableBuilder) GetColumnInfo(name string) *MarkdownColumn {
 	for _, column := range t.columns {
 		if column.Name == name {
 			return column
@@ -65,7 +72,9 @@ func (t *MarkdownTable) GetColumnInfo(name string) *MarkdownColumn {
 	return nil
 }
 
-func (t *MarkdownTable) AddRow(values ...string) *MarkdownTable {
+// Add a row to the markdown table, each value will be added to the corresponding column.
+// Use to add row with single value columns only.
+func (t *MarkdownTableBuilder) AddRow(values ...string) *MarkdownTableBuilder {
 	if len(values) == 0 {
 		return t
 	}
@@ -76,7 +85,9 @@ func (t *MarkdownTable) AddRow(values ...string) *MarkdownTable {
 	return t.AddRowWithCellData(cellData...)
 }
 
-func (t *MarkdownTable) AddRowWithCellData(values ...CellData) *MarkdownTable {
+// Add a row to the markdown table, each value will be added to the corresponding column.
+// Use to add row with multiple value columns.
+func (t *MarkdownTableBuilder) AddRowWithCellData(values ...CellData) *MarkdownTableBuilder {
 	if len(values) == 0 {
 		return t
 	}
@@ -95,7 +106,7 @@ func (t *MarkdownTable) AddRowWithCellData(values ...CellData) *MarkdownTable {
 	return t
 }
 
-func (t *MarkdownTable) Build() string {
+func (t *MarkdownTableBuilder) Build() string {
 	if len(t.columns) == 0 {
 		return ""
 	}
@@ -124,23 +135,23 @@ func (t *MarkdownTable) Build() string {
 	return tableBuilder.String()
 }
 
-func (t *MarkdownTable) getRowContent(row []CellData) string {
+func (t *MarkdownTableBuilder) getRowContent(row []CellData) string {
 	if columnIndex, multiValueColumn := t.getMultiValueColumn(); multiValueColumn != nil && len(row[columnIndex]) > 1 {
 		return t.getMultiValueRowsContent(row, columnIndex)
 	}
 	return t.getSeparatorDelimitedRowContent(row)
 }
 
-func (t *MarkdownTable) getMultiValueColumn() (int, *MarkdownColumn) {
+func (t *MarkdownTableBuilder) getMultiValueColumn() (int, *MarkdownColumn) {
 	for i, column := range t.columns {
-		if column.BuildType == MultiRowColumn {
+		if column.ColumnType == MultiRowColumn {
 			return i, column
 		}
 	}
 	return -1, nil
 }
 
-func (t *MarkdownTable) getMultiValueRowsContent(row []CellData, multiValueColumnIndex int) string {
+func (t *MarkdownTableBuilder) getMultiValueRowsContent(row []CellData, multiValueColumnIndex int) string {
 	var rowBuilder strings.Builder
 	firstRow := true
 	for _, value := range row[multiValueColumnIndex] {
@@ -169,7 +180,7 @@ func (t *MarkdownTable) getMultiValueRowsContent(row []CellData, multiValueColum
 	return rowBuilder.String()
 }
 
-func (t *MarkdownTable) getSeparatorDelimitedRowContent(row []CellData) string {
+func (t *MarkdownTableBuilder) getSeparatorDelimitedRowContent(row []CellData) string {
 	content := []string{}
 	for column, columnInfo := range t.columns {
 		content = append(content, t.getCellContent(row[column], columnInfo.DefaultValue))
@@ -193,7 +204,7 @@ func buildRowContent(content ...string) string {
 	return rowBuilder.String()
 }
 
-func (t *MarkdownTable) getCellContent(data CellData, defaultValue string) string {
+func (t *MarkdownTableBuilder) getCellContent(data CellData, defaultValue string) string {
 	if len(data) == 0 {
 		return defaultValue
 	}

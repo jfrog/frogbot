@@ -90,11 +90,9 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 }
 
 func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
-	issuesExists := false
+	issuesExists := issuesCollection.IssuesExists()
 	content := strings.Builder{}
-
-	if issuesCollection.IssuesExists() {
-		issuesExists = true
+	if issuesExists {
 		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
 		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
 	}
@@ -102,7 +100,7 @@ func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 }
 
 func IsFrogbotRescanComment(comment string) bool {
-	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), RescanRequestComment)
+	return strings.Contains(strings.ToLower(comment), RescanRequestComment)
 }
 
 func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {

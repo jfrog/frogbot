@@ -12,26 +12,10 @@ func TestSimpleOutputFlags(t *testing.T) {
 		entitled     bool
 		showCaColumn bool
 	}{
-		{
-			name:         "entitled",
-			entitled:     true,
-			showCaColumn: false,
-		},
-		{
-			name:         "not entitled",
-			entitled:     false,
-			showCaColumn: false,
-		},
-		{
-			name:         "entitled with ca column",
-			entitled:     true,
-			showCaColumn: true,
-		},
-		{
-			name:         "not entitled with ca column",
-			entitled:     false,
-			showCaColumn: true,
-		},
+		{name: "entitled", entitled: true, showCaColumn: false},
+		{name: "not entitled", entitled: false, showCaColumn: false},
+		{name: "entitled with ca column", entitled: true, showCaColumn: true},
+		{name: "not entitled with ca column", entitled: false, showCaColumn: true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

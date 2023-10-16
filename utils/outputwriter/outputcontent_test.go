@@ -18,7 +18,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 		cases   []OutputTestCase
 	}{
 		{
-			name:    "Not Summary comment",
+			name:    "No Summary comment",
 			comment: "This comment is unrelated to Frogbot",
 			cases: []OutputTestCase{
 				{
@@ -28,7 +28,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "false",
 				},
 				{
@@ -49,7 +49,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "false",
 				},
 				{
@@ -70,7 +70,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "true",
 				},
 				{
@@ -91,7 +91,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "false",
 				},
 				{
@@ -112,7 +112,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "false",
 				},
 				{
@@ -133,7 +133,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "true",
 				},
 				{
@@ -154,7 +154,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Standard output (MR)",
-					writer:         &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:         &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutput: "false",
 				},
 				{
@@ -195,17 +195,17 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             &StandardOutput{entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_no_issues_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_no_issues_entitled.md"),
 				},
 				{
@@ -215,7 +215,7 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Simplified output entitled",
-					writer:             &SimplifiedOutput{entitledForJas: true},
+					writer:             &SimplifiedOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_no_issues_entitled.md"),
 				},
 			},
@@ -232,17 +232,17 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             &StandardOutput{entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_entitled.md"),
 				},
 				{
@@ -252,7 +252,7 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Simplified output entitled",
-					writer:             &SimplifiedOutput{entitledForJas: true},
+					writer:             &SimplifiedOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_entitled.md"),
 				},
 			},
@@ -269,17 +269,17 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             &StandardOutput{entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             &StandardOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true},
+					writer:             &StandardOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md"),
 				},
 				{
@@ -289,7 +289,7 @@ func TestGetPRSummaryContent(t *testing.T) {
 				},
 				{
 					name:               "Simplified output entitled",
-					writer:             &SimplifiedOutput{entitledForJas: true},
+					writer:             &SimplifiedOutput{MarkdownOutput{entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md"),
 				},
 			},
@@ -482,12 +482,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{showCaColumn: true},
+					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md"),
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{showCaColumn: true},
+					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md"),
 				},
 			},

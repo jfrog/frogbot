@@ -152,7 +152,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 	}{
 		{
 			name:    "Empty on multi value column",
-			columns: []MarkdownColumn{{Name: "col1", BuildType: MultiRowColumn}, {Name: "col2"}, {Name: "col3"}},
+			columns: []MarkdownColumn{{Name: "col1", ColumnType: MultiRowColumn}, {Name: "col2"}, {Name: "col3"}},
 			rows: [][]CellData{
 				{{""}, {"row1col2"}, {"row1col3"}},
 			},
@@ -161,7 +161,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 		},
 		{
 			name:    "One value on multi value column",
-			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3", BuildType: MultiRowColumn}},
+			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2"}, {Name: "col3", ColumnType: MultiRowColumn}},
 			rows: [][]CellData{
 				{{"row1col1"}, {"row1col2"}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3"}},
@@ -185,7 +185,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 		},
 		{
 			name:    "Multiple values on multi row column",
-			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2", BuildType: MultiRowColumn}, {Name: "col3"}},
+			columns: []MarkdownColumn{{Name: "col1"}, {Name: "col2", ColumnType: MultiRowColumn}, {Name: "col3"}},
 			rows: [][]CellData{
 				{{"row1col1"}, {""}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
@@ -207,8 +207,8 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 			}
 			table := NewMarkdownTable(columns...)
 			for _, column := range tc.columns {
-				if column.BuildType == MultiRowColumn {
-					table.GetColumnInfo(column.Name).BuildType = MultiRowColumn
+				if column.ColumnType == MultiRowColumn {
+					table.GetColumnInfo(column.Name).ColumnType = MultiRowColumn
 				}
 			}
 			for _, row := range tc.rows {

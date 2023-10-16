@@ -103,12 +103,39 @@ type OutputWriter interface {
 	Image(source ImageSource) string
 }
 
+type MarkdownOutput struct {
+	showCaColumn   bool
+	entitledForJas bool
+	vcsProvider    vcsutils.VcsProvider
+}
+
+func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
+	mo.vcsProvider = provider
+}
+
+func (mo *MarkdownOutput) VcsProvider() vcsutils.VcsProvider {
+	return mo.vcsProvider
+}
+
+func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
+	mo.entitledForJas = entitled
+	mo.showCaColumn = showCaColumn
+}
+
+func (mo *MarkdownOutput) IsShowingCaColumn() bool {
+	return mo.showCaColumn
+}
+
+func (mo *MarkdownOutput) IsEntitledForJas() bool {
+	return mo.entitledForJas
+}
+
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{vcsProvider: provider}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider}}
 	default:
-		return &StandardOutput{vcsProvider: provider}
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider}}
 	}
 }
 
@@ -140,4 +167,8 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 	for _, content := range contents {
 		fmt.Fprintf(builder, "\n%s", content)
 	}
+}
+
+func WriteNewLine(builder *strings.Builder) {
+	builder.WriteString("\n")
 }

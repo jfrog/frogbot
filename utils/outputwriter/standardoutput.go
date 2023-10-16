@@ -3,36 +3,36 @@ package outputwriter
 import (
 	"fmt"
 	"strings"
-
-	"github.com/jfrog/froggit-go/vcsutils"
+	// "github.com/jfrog/froggit-go/vcsutils"
 )
 
 type StandardOutput struct {
-	showCaColumn   bool
-	entitledForJas bool
-	vcsProvider    vcsutils.VcsProvider
+	MarkdownOutput
+	// showCaColumn   bool
+	// entitledForJas bool
+	// vcsProvider    vcsutils.VcsProvider
 }
 
-func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
-	so.vcsProvider = provider
-}
+// func (so *StandardOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
+// 	so.vcsProvider = provider
+// }
 
-func (so *StandardOutput) VcsProvider() vcsutils.VcsProvider {
-	return so.vcsProvider
-}
+// func (so *StandardOutput) VcsProvider() vcsutils.VcsProvider {
+// 	return so.vcsProvider
+// }
 
-func (so *StandardOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
-	so.entitledForJas = entitled
-	so.showCaColumn = showCaColumn
-}
+// func (so *StandardOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
+// 	so.entitledForJas = entitled
+// 	so.showCaColumn = showCaColumn
+// }
 
-func (so *StandardOutput) IsShowingCaColumn() bool {
-	return so.showCaColumn
-}
+// func (so *StandardOutput) IsShowingCaColumn() bool {
+// 	return so.showCaColumn
+// }
 
-func (so *StandardOutput) IsEntitledForJas() bool {
-	return so.entitledForJas
-}
+// func (so *StandardOutput) IsEntitledForJas() bool {
+// 	return so.entitledForJas
+// }
 
 func (so *StandardOutput) Separator() string {
 	return "<br>"

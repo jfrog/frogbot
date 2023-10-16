@@ -19,44 +19,24 @@ func TestGetFrogbotReviewComments(t *testing.T) {
 		{
 			name: "No frogbot comments",
 			existingComments: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.FrogbotTitlePrefix,
-				},
-				{
-					Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment"),
-				},
-				{
-					Content: outputwriter.CommentGeneratedByFrogbot,
-				},
+				{Content: outputwriter.FrogbotTitlePrefix},
+				{Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment")},
+				{Content: outputwriter.CommentGeneratedByFrogbot},
 			},
 			expectedOutput: []vcsclient.CommentInfo{},
 		},
 		{
 			name: "With frogbot comments",
 			existingComments: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.FrogbotTitlePrefix,
-				},
-				{
-					Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment",
-				},
-				{
-					Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment"),
-				},
-				{
-					Content: outputwriter.ReviewCommentId,
-				},
-				{
-					Content: outputwriter.CommentGeneratedByFrogbot,
-				},
+				{Content: outputwriter.FrogbotTitlePrefix},
+				{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment"},
+				{Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment")},
+				{Content: outputwriter.ReviewCommentId},
+				{Content: outputwriter.CommentGeneratedByFrogbot},
 			},
 			expectedOutput: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment",
-				},
-				{
-					Content: outputwriter.ReviewCommentId,
-				},
+				{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment"},
+				{Content: outputwriter.ReviewCommentId},
 			},
 		},
 	}
