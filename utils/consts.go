@@ -16,9 +16,6 @@ const (
 	BitbucketServer vcsProvider = "bitbucketServer"
 	AzureRepos      vcsProvider = "azureRepos"
 
-	// Frogbot comments
-	RescanRequestComment = "rescan"
-
 	// JFrog platform environment variables
 	JFrogUserEnv           = "JF_USER"
 	JFrogUrlEnv            = "JF_URL"

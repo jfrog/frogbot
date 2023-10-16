@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
@@ -16,14 +17,16 @@ type ReviewCommentType string
 
 type ReviewComment struct {
 	Location    formats.Location
-	CommentInfo vcsclient.PullRequestComment
 	Type        ReviewCommentType
+	CommentInfo vcsclient.PullRequestComment
 }
 
 const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
+
+	RescanRequestComment = "rescan"
 )
 
 func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
@@ -42,7 +45,7 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 	}
 
 	// Add summary (SCA, license) scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, createPullRequestComment(issues, repo.OutputWriter), pullRequestID); err != nil {
+	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, generatePullRequestSummaryComment(issues, repo.OutputWriter), pullRequestID); err != nil {
 		err = errors.New("couldn't add pull request comment: " + err.Error())
 		return
 	}
@@ -67,7 +70,7 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	commentsToDelete := getFrogbotReviewComments(comments)
 	// Previous Summary comments
 	for _, comment := range comments {
-		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
+		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
 			commentsToDelete = append(commentsToDelete, comment)
 		}
 	}
@@ -82,18 +85,34 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	return err
 }
 
-func createPullRequestComment(issues *IssuesCollection, writer outputwriter.OutputWriter) string {
-	if !issues.IssuesExists() {
-		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
-	}
-	comment := strings.Builder{}
-	comment.WriteString(writer.VulnerabilitiesTitle(true))
-	comment.WriteString(writer.VulnerabilitiesContent(issues.Vulnerabilities))
-	comment.WriteString(writer.LicensesContent(issues.Licenses))
-	comment.WriteString(writer.UntitledForJasMsg())
-	comment.WriteString(writer.Footer())
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
+	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+}
 
-	return comment.String()
+func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
+	issuesExists := issuesCollection.IssuesExists()
+	content := strings.Builder{}
+	if issuesExists {
+		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
+		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
+	}
+	return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
+}
+
+func IsFrogbotRescanComment(comment string) bool {
+	return strings.Contains(strings.ToLower(comment), RescanRequestComment)
+}
+
+func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
+	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repoOwner, repoName, prID)
+	if err != nil {
+		return nil, err
+	}
+	// Sort the comment according to time created, the newest comment should be the first one.
+	sort.Slice(pullRequestsComments, func(i, j int) bool {
+		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
+	})
+	return pullRequestsComments, nil
 }
 
 func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
@@ -106,7 +125,7 @@ func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		log.Debug("creating a review comment for", comment.Type, comment.Location.File, comment.Location.StartLine, comment.Location.StartColumn)
 		if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
 			log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
-			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, getRegularCommentContent(comment), pullRequestID); err != nil {
+			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, outputwriter.GetFallbackReviewCommentContent(comment.CommentInfo.Content, comment.Location, repo.OutputWriter), pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request  comment, fallback to comment: " + err.Error())
 				return
 			}
@@ -135,16 +154,12 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 
 func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if strings.Contains(comment.Content, outputwriter.ReviewCommentId) {
+		if outputwriter.IsFrogbotReviewComment(comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
 	}
 	return
-}
-
-func getRegularCommentContent(comment ReviewComment) string {
-	return outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + outputwriter.GetLocationDescription(comment.Location) + comment.CommentInfo.Content
 }
 
 func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
@@ -162,7 +177,6 @@ func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsT
 	for _, iac := range issues.Iacs {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeReviewContent(IacComment, iac, writer)))
 	}
-
 	for _, sast := range issues.Sast {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
 	}
@@ -188,7 +202,7 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 	if relatedVulnerability.JfrogResearchInformation != nil {
 		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
 	}
-	return outputwriter.GenerateReviewCommentContent(writer.ApplicableCveReviewContent(
+	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(
 		relatedVulnerability.Severity,
 		issue.Reason,
 		relatedCve.Applicability.ScannerDescription,
@@ -196,23 +210,26 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 		relatedVulnerability.Summary,
 		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
 		remediation,
+		writer,
 	), writer)
 }
 
 func generateSourceCodeReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
 	switch commentType {
 	case IacComment:
-		return outputwriter.GenerateReviewCommentContent(writer.IacReviewContent(
+		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(
 			issue.Severity,
 			issue.Finding,
 			issue.ScannerDescription,
+			writer,
 		), writer)
 	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(writer.SastReviewContent(
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(
 			issue.Severity,
 			issue.Finding,
 			issue.ScannerDescription,
 			issue.CodeFlow,
+			writer,
 		), writer)
 	}
 	return

@@ -502,7 +502,6 @@ func TestGetAllIssues(t *testing.T) {
 			EntitledForJas: true,
 		},
 	}
-
 	expectedOutput := &utils.IssuesCollection{
 		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
@@ -809,13 +808,10 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NotEmpty(t, buf.String())
 
 			var expectedResponse []byte
-			switch {
-			case strings.Contains(projectName, "multi-dir"):
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponseMultiDir.json"))
-			case strings.Contains(projectName, "pip"):
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponsePip.json"))
-			default:
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponse.json"))
+			if strings.Contains(projectName, "multi-dir") {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
+			} else {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
 			}
 			assert.NoError(t, err)
 			assert.JSONEq(t, string(expectedResponse), buf.String())

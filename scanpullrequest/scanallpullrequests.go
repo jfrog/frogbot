@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 )
@@ -64,18 +65,14 @@ func shouldScanPullRequest(repo utils.Repository, client vcsclient.VcsClient, pr
 
 	for _, comment := range pullRequestsComments {
 		// If this a 're-scan' request comment
-		if isFrogbotRescanComment(comment.Content) {
+		if utils.IsFrogbotRescanComment(comment.Content) {
 			return true, nil
 		}
 		// if this is a Frogbot 'scan results' comment and not 're-scan' request comment, do not scan this pull request.
-		if repo.OutputWriter.IsFrogbotResultComment(comment.Content) {
+		if outputwriter.IsFrogbotSummaryComment(repo.OutputWriter, comment.Content) {
 			return false, nil
 		}
 	}
 	// This is a new pull request, and it therefore should be scanned.
 	return true, nil
-}
-
-func isFrogbotRescanComment(comment string) bool {
-	return strings.Contains(strings.ToLower(strings.TrimSpace(comment)), utils.RescanRequestComment)
 }
