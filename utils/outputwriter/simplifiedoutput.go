@@ -3,7 +3,6 @@ package outputwriter
 import (
 	"fmt"
 	"strings"
-	// "github.com/jfrog/froggit-go/vcsutils"
 )
 
 const (
@@ -12,31 +11,7 @@ const (
 
 type SimplifiedOutput struct {
 	MarkdownOutput
-	// showCaColumn   bool
-	// entitledForJas bool
-	// vcsProvider    vcsutils.VcsProvider
 }
-
-// func (smo *SimplifiedOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
-// 	smo.vcsProvider = provider
-// }
-
-// func (smo *SimplifiedOutput) VcsProvider() vcsutils.VcsProvider {
-// 	return smo.vcsProvider
-// }
-
-// func (smo *SimplifiedOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
-// 	smo.entitledForJas = entitled
-// 	smo.showCaColumn = showCaColumn
-// }
-
-// func (smo *SimplifiedOutput) IsShowingCaColumn() bool {
-// 	return smo.showCaColumn
-// }
-
-// func (smo *SimplifiedOutput) IsEntitledForJas() bool {
-// 	return smo.entitledForJas
-// }
 
 func (smo *SimplifiedOutput) Separator() string {
 	return simpleSeparator
