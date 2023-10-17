@@ -502,7 +502,6 @@ func TestGetAllIssues(t *testing.T) {
 			EntitledForJas: true,
 		},
 	}
-
 	expectedOutput := &utils.IssuesCollection{
 		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
@@ -809,13 +808,10 @@ func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
 			assert.NotEmpty(t, buf.String())
 
 			var expectedResponse []byte
-			switch {
-			case strings.Contains(projectName, "multi-dir"):
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponseMultiDir.json"))
-			case strings.Contains(projectName, "pip"):
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponsePip.json"))
-			default:
-				expectedResponse, err = os.ReadFile(filepath.Join("..", "expectedResponse.json"))
+			if strings.Contains(projectName, "multi-dir") {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
+			} else {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
 			}
 			assert.NoError(t, err)
 			assert.JSONEq(t, string(expectedResponse), buf.String())
@@ -1193,6 +1189,38 @@ func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAggregateScanResults(t *testing.T) {
+	scanResult1 := services.ScanResponse{
+		Violations:      []services.Violation{{IssueId: "Violation 1"}},
+		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 1"}},
+		Licenses:        []services.License{{Name: "License 1"}},
+	}
+
+	scanResult2 := services.ScanResponse{
+		Violations:      []services.Violation{{IssueId: "Violation 2"}},
+		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 2"}},
+		Licenses:        []services.License{{Name: "License 2"}},
+	}
+
+	aggregateResult := aggregateScanResults([]services.ScanResponse{scanResult1, scanResult2})
+	expectedResult := services.ScanResponse{
+		Violations: []services.Violation{
+			{IssueId: "Violation 1"},
+			{IssueId: "Violation 2"},
+		},
+		Vulnerabilities: []services.Vulnerability{
+			{IssueId: "Vulnerability 1"},
+			{IssueId: "Vulnerability 2"},
+		},
+		Licenses: []services.License{
+			{Name: "License 1"},
+			{Name: "License 2"},
+		},
+	}
+
+	assert.Equal(t, expectedResult, aggregateResult)
 }
 
 // Set new logger with output redirection to a null logger. This is useful for negative tests.

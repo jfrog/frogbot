@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"os"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -104,6 +105,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 			return
 		}
 	}
+
+	// Handle PR comments for scan output
 	if err = utils.HandlePullRequestCommentsAfterScan(issues, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
@@ -376,10 +379,12 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 	aggregateResults := services.ScanResponse{
 		Violations:      []services.Violation{},
 		Vulnerabilities: []services.Vulnerability{},
+		Licenses:        []services.License{},
 	}
 	for _, scanResult := range scanResults {
 		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
 		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
+		aggregateResults.Licenses = append(aggregateResults.Licenses, scanResult.Licenses...)
 	}
 	return aggregateResults
 }
