@@ -310,15 +310,15 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 }
 
 // The impact graph of direct dependencies consists of only two elements.
-func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
-	if len(impactPath) == 0 {
+func IsDirectDependency(impactPathList [][]formats.ComponentRow) (bool, error) {
+	if len(impactPathList) == 0 {
 		return false, fmt.Errorf("invalid impact path provided")
 	}
 
-	for _, path := range impactPath {
+	for _, impactPath := range impactPathList {
 		// Impacted path always starts with the name of the project's directory and ends with the impacted package.
 		// Therefore if the length of the path is less than 2 it means the dependency is a direct one
-		if len(path) < 3 {
+		if len(impactPath) < 3 {
 			return true, nil
 		}
 	}
