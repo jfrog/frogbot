@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"os"
-	"strings"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
@@ -24,7 +23,6 @@ const (
 	securityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	frogbotCommentNotFound  = -1
 )
 
 type ScanPullRequestCmd struct{}
@@ -99,6 +97,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
+	// Output results
 	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.Secrets)
@@ -107,23 +106,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		}
 	}
 
-	// Delete previous Frogbot pull request message if exists
-	if err = deleteExistingPullRequestComment(repo, client); err != nil {
-		return
-	}
-
-	// Create a pull request message
-	message := createPullRequestComment(issues, repo.OutputWriter)
-
-	// Add SCA scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, message, int(pullRequestDetails.ID)); err != nil {
-		err = errors.New("couldn't add pull request comment: " + err.Error())
-		return
-	}
-
-	// Handle review comments at the pull request
-	if err = utils.AddReviewComments(repo, int(pullRequestDetails.ID), client, issues); err != nil {
-		err = errors.New("couldn't add review comments: " + err.Error())
+	// Handle PR comments for scan output
+	if err = utils.HandlePullRequestCommentsAfterScan(issues, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
 
@@ -395,10 +379,12 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 	aggregateResults := services.ScanResponse{
 		Violations:      []services.Violation{},
 		Vulnerabilities: []services.Vulnerability{},
+		Licenses:        []services.License{},
 	}
 	for _, scanResult := range scanResults {
 		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
 		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
+		aggregateResults.Licenses = append(aggregateResults.Licenses, scanResult.Licenses...)
 	}
 	return aggregateResults
 }
@@ -437,44 +423,4 @@ func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow
 		}
 	}
 	return violatedLicenses
-}
-
-func createPullRequestComment(issues *utils.IssuesCollection, writer outputwriter.OutputWriter) string {
-	if !issues.IssuesExists() {
-		return writer.NoVulnerabilitiesTitle() + writer.UntitledForJasMsg() + writer.Footer()
-	}
-	comment := strings.Builder{}
-	comment.WriteString(writer.VulnerabilitiesTitle(true))
-	comment.WriteString(writer.VulnerabilitiesContent(issues.Vulnerabilities))
-	comment.WriteString(writer.LicensesContent(issues.Licenses))
-	comment.WriteString(writer.UntitledForJasMsg())
-	comment.WriteString(writer.Footer())
-
-	return comment.String()
-}
-
-func deleteExistingPullRequestComment(repository *utils.Repository, client vcsclient.VcsClient) error {
-	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-	prDetails := repository.PullRequestDetails
-	comments, err := utils.GetSortedPullRequestComments(client, prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID))
-	if err != nil {
-		return fmt.Errorf(
-			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
-			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
-	}
-
-	commentID := frogbotCommentNotFound
-	for _, comment := range comments {
-		if repository.OutputWriter.IsFrogbotResultComment(comment.Content) {
-			log.Debug("Found previous Frogbot comment with the id:", comment.ID)
-			commentID = int(comment.ID)
-			break
-		}
-	}
-
-	if commentID != frogbotCommentNotFound {
-		err = client.DeletePullRequestComment(context.Background(), prDetails.Target.Owner, prDetails.Target.Repository, int(prDetails.ID), commentID)
-	}
-
-	return err
 }

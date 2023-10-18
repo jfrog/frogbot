@@ -569,85 +569,7 @@ func TestUpdatePackageToFixedVersion(t *testing.T) {
 
 func TestGetRemoteBranchScanHash(t *testing.T) {
 	prBody := `
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
-## 📦 Vulnerable Dependencies 
-
-### ✍️ Summary
-
-<div align="center">
-
-| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       |
-| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.1] |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | $\color{}{\textsf{Undetermined}}$ |github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3:v3.5.1 |  |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | $\color{}{\textsf{Undetermined}}$ |github.com/nats-io/nats-streaming-server:v0.21.0 | github.com/nats-io/nats-streaming-server:v0.21.0 | [0.24.3] |
-
-</div>
-
-## 👇 Details
-
-
-<details>
-<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
-<br>
-
-- **Severity** 🔥 High
-- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
-- **Package Name:** github.com/nats-io/nats-streaming-server
-- **Current Version:** v0.21.0
-- **Fixed Version:** [0.24.1]
-- **CVEs:** CVE-2022-24450
-
-
-</details>
-
-
-<details>
-<summary> <b>github.com/mholt/archiver/v3 v3.5.1</b> </summary>
-<br>
-
-- **Severity** 🔥 High
-- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
-- **Package Name:** github.com/mholt/archiver/v3
-- **Current Version:** v3.5.1
-
-
-</details>
-
-
-<details>
-<summary> <b>github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
-<br>
-
-- **Severity** 🎃 Medium
-- **Contextual Analysis:** $\color{}{\textsf{Undetermined}}$
-- **Package Name:** github.com/nats-io/nats-streaming-server
-- **Current Version:** v0.21.0
-- **Fixed Version:** [0.24.3]
-- **CVEs:** CVE-2022-26652
-
-
-</details>
-
-
-## 🛠️ Infrastructure as Code 
-
-<div align="center">
-
-
-| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |
-| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | 
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | test.js | 1:20 | kms_key_id='' was detected |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | test2.js | 4:30 | Deprecated TLS version was detected |
-
-</div>
-
-
-<div align="center">
-
-[JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
-
-</div>
+a body
 
 [Comment]: <> (Checksum: myhash4321)
 `
@@ -679,7 +601,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 			SuggestedFixedVersion: "1.0.0",
 		},
 	}
-	expectedPrBody := "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies\n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n\n</div>\n\n## 🔬 Research Details\n\n\n**Description:**\nsummary\n\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>"
+	expectedPrBody := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	prTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
@@ -698,13 +620,13 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		SuggestedFixedVersion: "2.0.0",
 	})
 	cfp.aggregateFixes = true
-	expectedPrBody = "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n\n\n## 📦 Vulnerable Dependencies\n\n### ✍️ Summary\n\n<div align=\"center\">\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High |  | package1:1.0.0 | 1.0.0<br>2.0.0 | CVE-2022-1234 |\n| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical |  | package2:2.0.0 | 2.0.0<br>3.0.0 | CVE-2022-4321 |\n\n</div>\n\n## 🔬 Research Details\n\n<details>\n<summary> <b>[ CVE-2022-1234 ] package1 1.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n<details>\n<summary> <b>[ CVE-2022-4321 ] package2 2.0.0</b> </summary>\n<br>\n\n**Description:**\nsummary\n\n\n</details>\n\n\n---\n<div align=\"center\">\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n</div>\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
+	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter) + outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
-	expectedPrBody = "**🚨 This automated pull request was created by Frogbot and fixes the below:**\n\n\n---\n## 📦 Vulnerable Dependencies\n---\n\n### ✍️ Summary\n\n\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: | \n| High |   | package1:1.0.0 | 1.0.0, 2.0.0 | CVE-2022-1234 |\n| Critical |   | package2:2.0.0 | 2.0.0, 3.0.0 | CVE-2022-4321 |\n\n---\n## 🔬 Research Details\n---\n\n\n#### [ CVE-2022-1234 ] package1 1.0.0\n\n\n**Description:**\nsummary\n\n\n#### [ CVE-2022-4321 ] package2 2.0.0\n\n\n**Description:**\nsummary\n\n\n\n---\n**Frogbot** also supports **Contextual Analysis, Secret Detection and IaC Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/xray/) package, which isn't enabled on your system.\n\n[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)\n\n[comment]: <> (Checksum: bec823edaceb5d0478b789798e819bde)\n"
+	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter) + outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)

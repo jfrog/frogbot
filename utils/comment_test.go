@@ -19,44 +19,24 @@ func TestGetFrogbotReviewComments(t *testing.T) {
 		{
 			name: "No frogbot comments",
 			existingComments: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.FrogbotTitlePrefix,
-				},
-				{
-					Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment"),
-				},
-				{
-					Content: outputwriter.CommentGeneratedByFrogbot,
-				},
+				{Content: outputwriter.FrogbotTitlePrefix},
+				{Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment")},
+				{Content: outputwriter.CommentGeneratedByFrogbot},
 			},
 			expectedOutput: []vcsclient.CommentInfo{},
 		},
 		{
 			name: "With frogbot comments",
 			existingComments: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.FrogbotTitlePrefix,
-				},
-				{
-					Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment",
-				},
-				{
-					Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment"),
-				},
-				{
-					Content: outputwriter.ReviewCommentId,
-				},
-				{
-					Content: outputwriter.CommentGeneratedByFrogbot,
-				},
+				{Content: outputwriter.FrogbotTitlePrefix},
+				{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment"},
+				{Content: "some comment text" + outputwriter.MarkdownComment("with hidden comment")},
+				{Content: outputwriter.ReviewCommentId},
+				{Content: outputwriter.CommentGeneratedByFrogbot},
 			},
 			expectedOutput: []vcsclient.CommentInfo{
-				{
-					Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment",
-				},
-				{
-					Content: outputwriter.ReviewCommentId,
-				},
+				{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + "A Frogbot review comment"},
+				{Content: outputwriter.ReviewCommentId},
 			},
 		},
 	}
@@ -175,7 +155,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: ApplicableComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(repo.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", ""), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", "", repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -203,7 +183,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: IacComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(repo.IacReviewContent("High", "Missing auto upgrade was detected", ""), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent("High", "Missing auto upgrade was detected", "", repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -231,7 +211,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: SastComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(repo.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}, repo.OutputWriter), repo.OutputWriter),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
