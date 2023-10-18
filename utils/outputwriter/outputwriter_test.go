@@ -1,9 +1,10 @@
 package outputwriter
 
 import (
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMarkdownComment(t *testing.T) {
@@ -18,47 +19,120 @@ func TestMarkdownComment(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func testGetLicensesTableContent(t *testing.T, writer OutputWriter) {
-	licenses := []formats.LicenseRow{}
-	result := getLicensesTableContent(licenses, writer)
-	expected := ""
-	assert.Equal(t, expected, result)
-
-	// Single license with components
-	licenses = []formats.LicenseRow{
+func TestMarkAsBold(t *testing.T) {
+	testCases := []struct {
+		input          string
+		expectedOutput string
+	}{
 		{
-			LicenseKey: "License1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-				ImpactedDependencyName:    "Dep1",
-				ImpactedDependencyVersion: "2.0",
-			},
+			input:          "",
+			expectedOutput: "****",
+		},
+		{
+			input:          "bold",
+			expectedOutput: "**bold**",
 		},
 	}
-	result = getLicensesTableContent(licenses, writer)
-	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |"
-	assert.Equal(t, expected, result)
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expectedOutput, MarkAsBold(tc.input))
+	}
+}
 
-	// Test case 3: Multiple licenses with components
-	licenses = []formats.LicenseRow{
+func TestMarkAsQuote(t *testing.T) {
+	testCases := []struct {
+		input          string
+		expectedOutput string
+	}{
 		{
-			LicenseKey: "License1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-				ImpactedDependencyName:    "Dep1",
-				ImpactedDependencyVersion: "2.0",
-			},
+			input:          "",
+			expectedOutput: "``",
 		},
 		{
-			LicenseKey: "License2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components:                []formats.ComponentRow{{Name: "Comp2", Version: "2.0"}},
-				ImpactedDependencyName:    "Dep2",
-				ImpactedDependencyVersion: "3.0",
-			},
+			input:          "quote",
+			expectedOutput: "`quote`",
 		},
 	}
-	result = getLicensesTableContent(licenses, writer)
-	expected = "\n| License1 | Comp1 1.0 | Dep1 2.0 |\n| License2 | Comp2 2.0 | Dep2 3.0 |"
-	assert.Equal(t, expected, result)
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expectedOutput, MarkAsQuote(tc.input))
+	}
+}
+
+func TestMarkAsLink(t *testing.T) {
+	testCases := []struct {
+		content        string
+		url            string
+		expectedOutput string
+	}{
+		{
+			content:        "",
+			url:            "",
+			expectedOutput: "[]()",
+		},
+		{
+			content:        "content",
+			url:            "",
+			expectedOutput: "[content]()",
+		},
+		{
+			content:        "",
+			url:            "url",
+			expectedOutput: "[](url)",
+		},
+		{
+			content:        "content",
+			url:            "url",
+			expectedOutput: "[content](url)",
+		},
+	}
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expectedOutput, MarkAsLink(tc.content, tc.url))
+	}
+}
+
+func TestSectionDivider(t *testing.T) {
+	assert.Equal(t, "\n---", SectionDivider())
+}
+
+func TestMarkAsCodeSnippet(t *testing.T) {
+	testCases := []struct {
+		input          string
+		expectedOutput string
+	}{
+		{
+			input:          "",
+			expectedOutput: "```\n\n```",
+		},
+		{
+			input:          "snippet",
+			expectedOutput: "```\nsnippet\n```",
+		},
+	}
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expectedOutput, MarkAsCodeSnippet(tc.input))
+	}
+}
+
+func TestWriteContent(t *testing.T) {
+	testCases := []struct {
+		expectedOutput string
+		input          []string
+	}{
+		{
+			input:          []string{},
+			expectedOutput: "",
+		},
+		{
+			input:          []string{"content"},
+			expectedOutput: "\ncontent",
+		},
+		{
+			input:          []string{"contentA", "contentB", "contentC"},
+			expectedOutput: "\ncontentA\ncontentB\ncontentC",
+		},
+	}
+	for _, tc := range testCases {
+		builder := &strings.Builder{}
+		WriteContent(builder, tc.input...)
+		assert.Equal(t, tc.expectedOutput, builder.String())
+	}
 }

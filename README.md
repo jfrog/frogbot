@@ -25,19 +25,20 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 
 #### It supports the following Git providers:
 
-| <img height="20" width="20"  src="https://cdn.simpleicons.org/GitHub" alt="GitHub" /> GitHub | <img height="20" width="20"  src="https://cdn.simpleicons.org/GitLab" alt="GitLab" />  GitLab | <img height="20" width="20"  src="https://cdn.simpleicons.org/AzureDevops" alt="Azure" />  Azure Repos | <img height="20" width="20"  src="https://cdn.simpleicons.org/Bitbucket" alt="Bitbucket" />  Bitbucket Server |
+| <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-icon.png" alt="GitHub" /> GitHub | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-icon.png" alt="GitLab" />  GitLab | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/azure-devops-icon.png" alt="Azure" />  Azure Repos | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/bitbucket-icon.png" alt="Bitbucket" />  Bitbucket Server |
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 
 
 #### It supports the following package managers are:
 
-|<img height="20" width="20"  src="https://cdn.simpleicons.org/Go" alt="Go" /> Go|<img height="20" width="20"  src="https://cdn.simpleicons.org/Gradle" alt="Gradle" /> Gradle|<img height="20" width="20"  src="https://cdn.simpleicons.org/ApacheMaven" alt="Maven" /> Maven|<img height="20" width="20"  src="https://cdn.simpleicons.org/npm" alt="npm" /> npm|<img height="20" width="20"  src="https://cdn.simpleicons.org/Yarn" alt="Yarn" /> Yarn|
+|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/go-icon.png" alt="Go" /> Go|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/gradle-icon.png" alt="Gradle" /> Gradle|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/maven-icon.png" alt="Maven" /> Maven|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/npm-icon.png" alt="npm" /> npm|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/yarn-icon.png" alt="Yarn" /> Yarn|
 |:----|:----|:----|:----|:----|
-|<img height="20" width="20"  src="https://cdn.simpleicons.org/.NET" alt=".NET" /> .NET|<img height="20" width="20"  src="https://cdn.simpleicons.org/NuGet" alt="NuGet" /> NuGet|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pip" /> Pip|<img height="20" width="20"  src="https://cdn.simpleicons.org/Python" alt="Pipenv" /> Pipenv|<img height="20" width="20"  src="https://cdn.simpleicons.org/Poetry" alt="Poetry" /> Poetry|
+|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/dotnet-icon.png" alt=".NET" /> .NET|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/nuget-icon.png" alt="NuGet" /> NuGet|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/pip-icon.png" alt="Pip" /> Pip|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/pip-icon.png" alt="Pipenv" /> Pipenv|<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/poetry-icon.png" alt="Poetry" /> Poetry|
 
 
 ### Why use JFrog Frogbot?
 - **Software Composition Analysis (SCA)**: Scan your project dependencies for security issues. For selected security issues, get leverage-enhanced CVE data from our JFrog Security Research team. Frogbot uses JFrog's vast vulnerabilities database, to which we continuously add new component vulnerability data. Also included is VulnDB, the industry's most comprehensive security database, to further extend the range of vulnerabilities detected and fixed by Frogbot.
+- **Validate Dependency Licenses**: Ensure that the licenses for the project's dependencies are in compliance with a predefined list of approved licenses.
 - **Static Application Security Testing (SAST)**: Provides fast and accurate security-focused engines that detect zero-day security vulnerabilities on your source code sensitive operations, while minimizing false positives.
 - **CVE Vulnerability Contextual Analysis**: This feature uses the code context to eliminate false positive reports on vulnerable dependencies that are not applicable to the code. For CVE vulnerabilities that are applicable to your code, Frogbot will create pull request comments on the relevant code lines with full descriptions regarding the security issues caused by the CVE. Vulnerability Contextual Analysis is currently supported for Python, JavaScript, and Java code.
 - **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
@@ -50,15 +51,15 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 
 Set up Frogbot on your preferred CI server:
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/GitHubActions" alt="GitHubActions" /> [GitHub Actions](docs/install-github.md)
+<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/github-actions-icon.png" alt="GitHubActions" /> [GitHub Actions](docs/install-github.md)
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/Jenkins" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
+<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/jenkins-icon.png" alt="Jenkins" /> [Jenkins](docs/templates/jenkins/README.md)
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/JfrogPipelines" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
+<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/jfrog-pipelines-icon.png" alt="jfrogpipelines" /> [JFrog Pipelines](docs/templates/jfrog-pipelines/README.md)
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/Gitlab" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
+<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/gitlab-icon.png" alt="Gitlab" /> [GitLab CI](docs/install-gitlab.md)
 
-<img height="20" width="20"  src="https://cdn.simpleicons.org/AzurePipelines" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
+<img src="https://raw.githubusercontent.com/jfrog/frogbot/master/images/azure-pipelines-icon.png" alt="AzurePipelines" /> [Azure Pipelines](docs/install-azure-pipelines.md)
 
 <details>
   <summary> Optional - set up a FREE JFrog Environment in the Cloud</summary>
@@ -197,18 +198,17 @@ When installing Frogbot using JFrog Pipelines, Jenkins, and Azure DevOps, Frogbo
 When installing Frogbot using GitHub Actions and GitLab however, Frogbot will initiate the scan only after it is approved by a maintainer of the project. The goal of this review is to ensure that external code contributors don't introduce malicious code as part of the pull request. Since this review step is enforced by Frogbot when used with GitHub Actions and GitLab, it is safe to be used for open-source projects.
 
 ### Scan results
-#### Software Composition Analysis (SCA), Vulnerability Contextual Analysis and Infrastructure as Code scans (IaC)
 
 Frogbot adds the scan results to the pull request in the following format:
 
-##### 👍 No issues
+#### 👍 No issues
 
 If no new vulnerabilities are found, Frogbot automatically adds the following comment to the pull request:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](#-no-issues)
 
-##### 👎 Issues were found
-
+#### 👎 Issues were found
+##### Software Composition Analysis (SCA)
 If new vulnerabilities are found, Frogbot adds them as a comment on the pull request. For example:
 
 [![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](#-issues)
@@ -224,13 +224,21 @@ If new vulnerabilities are found, Frogbot adds them as a comment on the pull req
 
 <br>
 
-**INFRASTRUCTURE AS CODE**
-|                                                      SEVERITY                                                       | FILE           | LINE:COLUMN   | FINDING                   
-|:-------------------------------------------------------------------------------------------------------------------:| :------------: | :-----------: | :-----------------------------------: 
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical    | test.js        | 1:20          | kms_key_id='' was detected
-|   ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High   | mock.js        | 4:30          | Deprecated TLS version was detected
+##### Vulnerability Contextual Analysis
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-vuln-contextual-analysis.png)
 
-##### Secrets Detection
+##### Static Application Security Testing (SAST)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-sast.png)
+
+##### Infrastructure as Code scans (IaC)
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/pr-iac.png)
+
+##### Validate Dependency Licenses
+When Frogbot scans newly opened pull requests, it checks the licenses of any new direct project dependencies introduced by the pull request. If Frogbot identifies licenses that are not listed in a predefined set of approved licenses, it appends a comment to the pull request providing this information.
+
+![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/violated-licenses.png)
+
+#### Secrets Detection
 When Frogbot detects secrets that have been inadvertently exposed within the code of a pull request, it promptly triggers an email notification to the user who pushed the corresponding commit. The email address utilized for this notification is sourced from the committer's Git profile configuration. Moreover, Frogbot offers the flexibility to direct the email notification to an extra email address if desired. To activate email notifications, it is necessary to configure your SMTP server details as variables within your Frogbot workflows.
 
 ![](https://raw.githubusercontent.com/jfrog/frogbot/master/images/secrets-email.png)

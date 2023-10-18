@@ -9,6 +9,8 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -372,5 +374,49 @@ func TestTechArrayToString(t *testing.T) {
 			output := techArrayToString(tc.techArray, tc.separator)
 			assert.Equal(t, tc.expected, output)
 		})
+	}
+}
+
+func TestPrepareRunsForGithubReport(t *testing.T) {
+	testCases := []struct {
+		run            *sarif.Run
+		expectedOutput *sarif.Run
+	}{
+		{
+			run:            utils.CreateRunWithDummyResults(),
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl),
+		},
+		{
+			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
+				utils.CreateResultWithOneLocation("file://root/dir/file", 0, 0, 0, 0, "snippet", "rule", "level"),
+			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl).WithResults([]*sarif.Result{
+				utils.CreateResultWithOneLocation("file", 0, 0, 0, 0, "snippet", "rule", "level"),
+			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
+		},
+		{
+			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
+				utils.CreateResultWithLocations("findings", "rule", "level",
+					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
+					utils.CreateLocation("file://root/dir/dir2/file2", 1, 1, 1, 1, "snippet2"),
+				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(
+					utils.CreateLocation("file://root/dir/other/file", 2, 2, 2, 2, "other"),
+					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
+				))}),
+			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl).WithResults([]*sarif.Result{
+				utils.CreateResultWithLocations("findings", "rule", "level",
+					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
+					utils.CreateLocation("dir2/file2", 1, 1, 1, 1, "snippet2"),
+				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(
+					utils.CreateLocation("other/file", 2, 2, 2, 2, "other"),
+					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
+				))}),
+			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
+		},
+	}
+	for _, tc := range testCases {
+		prepareRunsForGithubReport([]*sarif.Run{tc.run})
+		assert.Equal(t, tc.expectedOutput, tc.run)
 	}
 }

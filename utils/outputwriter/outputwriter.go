@@ -5,24 +5,10 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 )
 
 const (
-	FrogbotTitlePrefix                               = "[🐸 Frogbot]"
-	CommentGeneratedByFrogbot                        = "[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)"
-	vulnerabilitiesTableHeader                       = "\n| SEVERITY                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	vulnerabilitiesTableHeaderWithContextualAnalysis = "| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | FIXED VERSIONS                       | CVES                       |\n| :---------------------: | :----------------------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: | :---------------------------------: |"
-	iacTableHeader                                   = "\n| SEVERITY                | FILE                  | LINE:COLUMN                   | FINDING                       |\n| :---------------------: | :----------------------------------: | :-----------------------------------: | :---------------------------------: |"
-	vulnerableDependenciesTitle                      = "## 📦 Vulnerable Dependencies"
-	summaryTitle                                     = "### ✍️ Summary"
-	researchDetailsTitle                             = "## 🔬 Research Details"
-	iacTitle                                         = "## 🛠️ Infrastructure as Code"
-	licenseTitle                                     = "## ⚖️ Violated Licenses"
-	contextualAnalysisTitle                          = "## 📦🔍 Contextual Analysis CVE Vulnerability\n"
-	licenseTableHeader                               = "\n| LICENSE                | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                   | \n| :---------------------: | :----------------------------------: | :-----------------------------------: |"
-	SecretsEmailCSS                                  = `body {
+	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
         }
@@ -101,156 +87,88 @@ const (
 // The OutputWriter interface allows Frogbot output to be written in an appropriate way for each git provider.
 // Some git providers support markdown only partially, whereas others support it fully.
 type OutputWriter interface {
-	VulnerabilitiesTableRow(vulnerability formats.VulnerabilityOrViolationRow) string
-	NoVulnerabilitiesTitle() string
-	VulnerabilitiesTitle(isComment bool) string
-	VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow) string
-	LicensesContent(licenses []formats.LicenseRow) string
-	IacTableContent(iacRows []formats.SourceCodeRow) string
-	Footer() string
-	Separator() string
-	FormattedSeverity(severity, applicability string) string
-	IsFrogbotResultComment(comment string) bool
+	// Options
 	SetJasOutputFlags(entitled, showCaColumn bool)
+	IsShowingCaColumn() bool
+	IsEntitledForJas() bool
+	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
-	UntitledForJasMsg() string
+	// Markdown interface
+	FormattedSeverity(severity, applicability string) string
+	Separator() string
+	MarkInCenter(content string) string
+	MarkAsDetails(summary string, subTitleDepth int, content string) string
+	MarkAsTitle(title string, subTitleDepth int) string
+	Image(source ImageSource) string
+}
 
-	ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string) string
-	IacReviewContent(severity, finding, fullDetails string) string
-	SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location) string
+type MarkdownOutput struct {
+	showCaColumn   bool
+	entitledForJas bool
+	vcsProvider    vcsutils.VcsProvider
+}
+
+func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
+	mo.vcsProvider = provider
+}
+
+func (mo *MarkdownOutput) VcsProvider() vcsutils.VcsProvider {
+	return mo.vcsProvider
+}
+
+func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
+	mo.entitledForJas = entitled
+	mo.showCaColumn = showCaColumn
+}
+
+func (mo *MarkdownOutput) IsShowingCaColumn() bool {
+	return mo.showCaColumn
+}
+
+func (mo *MarkdownOutput) IsEntitledForJas() bool {
+	return mo.entitledForJas
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{vcsProvider: provider}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider}}
 	default:
-		return &StandardOutput{vcsProvider: provider}
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider}}
 	}
-}
-
-func createVulnerabilityDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
-	var descriptionBuilder strings.Builder
-	vulnResearch := vulnerability.JfrogResearchInformation
-	if vulnResearch == nil {
-		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
-	}
-
-	// Write description if exists:
-	if vulnResearch.Details != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("\n**Description:**\n%s\n", vulnResearch.Details))
-	}
-
-	// Write remediation if exists
-	if vulnResearch.Remediation != "" {
-		descriptionBuilder.WriteString(fmt.Sprintf("**Remediation:**\n%s\n", vulnResearch.Remediation))
-	}
-
-	return descriptionBuilder.String()
-}
-
-func getVulnerabilitiesTableContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	var tableContent string
-	for _, vulnerability := range vulnerabilities {
-		tableContent += "\n" + writer.VulnerabilitiesTableRow(vulnerability)
-	}
-	return tableContent
-}
-
-func getLicensesTableContent(licenses []formats.LicenseRow, writer OutputWriter) string {
-	var tableContent strings.Builder
-	for _, license := range licenses {
-		var directDependenciesBuilder strings.Builder
-		for _, component := range license.Components {
-			directDependenciesBuilder.WriteString(fmt.Sprintf("%s %s%s", component.Name, component.Version, writer.Separator()))
-		}
-		directDependencies := strings.TrimSuffix(directDependenciesBuilder.String(), writer.Separator())
-		impactedDependency := fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)
-		tableContent.WriteString(fmt.Sprintf("\n| %s | %s | %s |", license.LicenseKey, directDependencies, impactedDependency))
-	}
-	return tableContent.String()
-}
-
-func getIacTableContent(iacRows []formats.SourceCodeRow, writer OutputWriter) string {
-	var tableContent string
-	for _, iac := range iacRows {
-		tableContent += fmt.Sprintf("\n| %s | %s | %s | %s |", writer.FormattedSeverity(iac.Severity, string(xrayutils.Applicable)), iac.File, fmt.Sprintf("%d:%d", iac.StartLine, iac.StartColumn), iac.Snippet)
-	}
-	return tableContent
 }
 
 func MarkdownComment(text string) string {
 	return fmt.Sprintf("\n\n[comment]: <> (%s)\n", text)
 }
 
-func MarkAsQuote(s string) string {
-	return fmt.Sprintf("`%s`", s)
+func MarkAsBold(content string) string {
+	return fmt.Sprintf("**%s**", content)
+}
+
+func MarkAsQuote(content string) string {
+	return fmt.Sprintf("`%s`", content)
+}
+
+func MarkAsLink(content, link string) string {
+	return fmt.Sprintf("[%s](%s)", content, link)
+}
+
+func SectionDivider() string {
+	return "\n---"
 }
 
 func MarkAsCodeSnippet(snippet string) string {
 	return fmt.Sprintf("```\n%s\n```", snippet)
 }
 
-func GetJasMarkdownDescription(severity, finding string) string {
-	headerRow := "| Severity | Finding |\n"
-	separatorRow := "| :--------------: | :---: |\n"
-	return headerRow + separatorRow + fmt.Sprintf("| %s | %s |", severity, finding)
-}
-
-func GetApplicabilityMarkdownDescription(severity, cve, impactedDependency, finding string) string {
-	headerRow := "| Severity | Impacted Dependency | Finding | CVE |\n"
-	separatorRow := "| :--------------: | :---: | :---: | :---: |\n"
-	return headerRow + separatorRow + fmt.Sprintf("| %s | %s | %s | %s |", severity, impactedDependency, finding, cve)
-}
-
-func GetLocationDescription(location formats.Location) string {
-	return fmt.Sprintf(`
-%s
-at %s (line %d)
-`,
-		MarkAsCodeSnippet(location.Snippet),
-		MarkAsQuote(location.File),
-		location.StartLine)
-}
-
-func getVulnerabilitiesTableHeader(showCaColumn bool) string {
-	if showCaColumn {
-		return vulnerabilitiesTableHeaderWithContextualAnalysis
+func WriteContent(builder *strings.Builder, contents ...string) {
+	for _, content := range contents {
+		fmt.Fprintf(builder, "\n%s", content)
 	}
-	return vulnerabilitiesTableHeader
 }
 
-func convertCveRowsToCveIds(cveRows []formats.CveRow, seperator string) string {
-	cvesBuilder := strings.Builder{}
-	for _, cve := range cveRows {
-		if cve.Id != "" {
-			cvesBuilder.WriteString(fmt.Sprintf("%s%s", cve.Id, seperator))
-		}
-	}
-	return strings.TrimSuffix(cvesBuilder.String(), seperator)
-}
-
-func getTableRowCves(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	cves := convertCveRowsToCveIds(row.Cves, writer.Separator())
-	if cves == "" {
-		cves = " - "
-	}
-	return cves
-}
-
-func GetTableRowsFixedVersions(row formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-	fixedVersions := strings.Join(row.FixedVersions, writer.Separator())
-	if fixedVersions == "" {
-		fixedVersions = " - "
-	}
-	return strings.TrimSuffix(fixedVersions, writer.Separator())
-}
-
-func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId string) string {
-	identifier := xrayutils.GetIssueIdentifier(cveRows, xrayId)
-	if identifier == "" {
-		return ""
-	}
-	return fmt.Sprintf("[ %s ] ", identifier)
+func WriteNewLine(builder *strings.Builder) {
+	builder.WriteString("\n")
 }

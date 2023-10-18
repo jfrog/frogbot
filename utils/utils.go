@@ -369,18 +369,6 @@ func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow
 		len(vulnerability.FixedVersions) > 0)
 }
 
-func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
-	pullRequestsComments, err := client.ListPullRequestComments(context.Background(), repoOwner, repoName, prID)
-	if err != nil {
-		return nil, err
-	}
-	// Sort the comment according to time created, the newest comment should be the first one.
-	sort.Slice(pullRequestsComments, func(i, j int) bool {
-		return pullRequestsComments[i].Created.After(pullRequestsComments[j].Created)
-	})
-	return pullRequestsComments, nil
-}
-
 func ConvertSarifPathsToRelative(issues *IssuesCollection, workingDirs ...string) {
 	convertSarifPathsInCveApplicability(issues.Vulnerabilities, workingDirs...)
 	convertSarifPathsInIacs(issues.Iacs, workingDirs...)

@@ -45,6 +45,9 @@ dependencies {
             ['junit:junit:4.7']
     )
 
+    implementation "my.group:my.dot.name:1.0.0-beta.test"
+    implementation group: 'my.group', name: 'my.dot.name', version: '1.0.0-beta.test'
+
     // This dependency is required in order to check we fix only vulnerable rows
     implementation "junit:junit:5.7"
     implementation "junit2:junit2:4.7"
