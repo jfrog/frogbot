@@ -654,7 +654,7 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Microsoft.Bcl.AsyncInterfaces", ImpactedDependencyVersion: "8.0.0-rc.1.23419.4"}}},
 		},
 	}
-	currDir, err := os.Getwd()
+	testRootDir, err := os.Getwd()
 	assert.NoError(t, err)
 
 	tmpDir, err := os.MkdirTemp("", "")
@@ -662,7 +662,7 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "dotnet"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
 	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
+		assert.NoError(t, os.Chdir(testRootDir))
 	}()
 
 	assetFiles, err := getAssetsFilesPaths()
@@ -675,7 +675,11 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
 
 		var isFileChanged bool
-		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, currDir)
+		wd1, _ := os.Getwd()
+		fmt.Println(wd1)
+		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
+		wd2, _ := os.Getwd()
+		fmt.Println(wd2)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 	}
