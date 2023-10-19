@@ -61,7 +61,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	isAnyDescriptorFileChanged := false
 	for _, descriptorFilePath := range descriptorFilesPaths {
 		var isFileChanged bool
-		isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFilePath, vulnDetails)
+		isFileChanged, err = gph.fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
 		if err != nil {
 			return
 		}
@@ -106,7 +106,7 @@ func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
 }
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
-func fixGradleVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+func (gph *GradlePackageHandler) fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
