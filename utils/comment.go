@@ -27,7 +27,7 @@ const (
 	SastComment       ReviewCommentType = "Sast"
 
 	RescanRequestComment   = "rescan"
-	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments"
+	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
 func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
