@@ -682,7 +682,7 @@ func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
 
-func TestFixGradleVulnerabilityIfExists(t *testing.T) {
+func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 	var testcases = []struct {
 		vulnerabilityDetails *utils.VulnerabilityDetails
 	}{
@@ -716,10 +716,12 @@ func TestFixGradleVulnerabilityIfExists(t *testing.T) {
 	descriptorFiles, err := getDescriptorFilesPaths()
 	assert.NoError(t, err)
 
+	gph := GradlePackageHandler{}
+
 	for _, descriptorFile := range descriptorFiles {
 		for _, testcase := range testcases {
 			var isFileChanged bool
-			isFileChanged, err = fixGradleVulnerabilityIfExists(descriptorFile, testcase.vulnerabilityDetails)
+			isFileChanged, err = gph.fixVulnerabilityIfExists(descriptorFile, testcase.vulnerabilityDetails)
 			assert.NoError(t, err)
 			assert.True(t, isFileChanged)
 		}
