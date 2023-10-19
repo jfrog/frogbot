@@ -157,6 +157,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	// Audit source branch
 	var sourceResults *audit.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
+	log.Info("Scanning source branch...")
 	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 	if err != nil {
 		return
@@ -199,6 +200,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	// Set target branch scan details
 	var targetResults *audit.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
+	log.Info("Scanning target branch...")
 	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
 	if err != nil {
 		return
