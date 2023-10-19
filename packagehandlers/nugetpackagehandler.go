@@ -44,6 +44,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 
 	wd, err := os.Getwd()
 	if err != nil {
+		err = fmt.Errorf("failed to get current working directory: %s", err.Error())
 		return
 	}
 
@@ -71,7 +72,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
-			return fmt.Errorf("error has occurrd when trying to access or traverse the files system: %s", innerErr.Error())
+			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %s", innerErr.Error())
 		}
 
 		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
@@ -93,6 +94,7 @@ func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.
 	var fileData []byte
 	fileData, err = os.ReadFile(assetFilePath)
 	if err != nil {
+		err = fmt.Errorf("failed to read file '%s': %s", assetFilePath, err.Error())
 		return
 	}
 	fileContent := strings.ToLower(string(fileData))
@@ -100,6 +102,7 @@ func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.
 	if matchingRow := vulnRegexpCompiler.FindString(fileContent); matchingRow != "" {
 		err = os.Chdir(modulePath)
 		if err != nil {
+			err = fmt.Errorf("failed to change directory to '%s': %s", modulePath, err.Error())
 			return
 		}
 		defer func() {

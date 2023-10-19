@@ -673,13 +673,8 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 
 	for _, testcase := range testcases {
 		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
-
 		var isFileChanged bool
-		wd1, _ := os.Getwd()
-		fmt.Println(wd1)
 		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
-		wd2, _ := os.Getwd()
-		fmt.Println(wd2)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 	}
