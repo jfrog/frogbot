@@ -671,7 +671,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	var scanPullRequest ScanPullRequestCmd
 	err = scanPullRequest.Run(configAggregator, client)
 	if failOnSecurityIssues {
-		assert.EqualErrorf(t, err, securityIssueFoundErr, "Error should be: %v, got: %v", securityIssueFoundErr, err)
+		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {
 		assert.NoError(t, err)
 	}

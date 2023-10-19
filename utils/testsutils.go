@@ -36,6 +36,21 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 	assert.NoError(t, os.Setenv(key, value))
 }
 
+func unsetEnvAndAssert(t *testing.T, key string) {
+	assert.NoError(t, os.Unsetenv(key))
+}
+
+func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
+	for key, val := range envs {
+		setEnvAndAssert(t, key, val)
+	}
+	return func() {
+		for key := range envs {
+			unsetEnvAndAssert(t, key)
+		}
+	}
+}
+
 // Prepare test environment for the integration tests
 // projectName - the directory name under testDir
 // Return a cleanup function and the temp dir path
