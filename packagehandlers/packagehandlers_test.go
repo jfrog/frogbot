@@ -674,7 +674,7 @@ func TestFixNugetVulnerabilityIfExists(t *testing.T) {
 	for _, testcase := range testcases {
 		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
 		var isFileChanged bool
-		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 	}

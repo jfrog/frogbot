@@ -53,7 +53,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 
 	for _, assetFilePath := range assetsFilePaths {
 		var isFileChanged bool
-		isFileChanged, err = fixNugetVulnerabilityIfExists(nph, vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
 		if err != nil {
 			err = fmt.Errorf("failed to update asset file '%s': %s", assetFilePath, err.Error())
 			return
@@ -88,7 +88,7 @@ func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
 	return
 }
 
-func fixNugetVulnerabilityIfExists(nph *NugetPackageHandler, vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
+func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
 	modulePath := path.Dir(assetFilePath)
 
 	var fileData []byte
