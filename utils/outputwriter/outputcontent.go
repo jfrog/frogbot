@@ -80,7 +80,7 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return MarkAsCollapsable("Note", fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
+	return writer.MarkAsCollapsible("Note", fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {

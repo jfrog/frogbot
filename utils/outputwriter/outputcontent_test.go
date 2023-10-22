@@ -853,3 +853,10 @@ func TestSastReviewContent(t *testing.T) {
 		}
 	}
 }
+
+func TestMarkAsCollapsible(t *testing.T) {
+	so := &StandardOutput{}
+	assert.Equal(t, "<details>\n<summary>title</summary>\ndescription\n</details>", so.MarkAsCollapsible("title", "description"))
+	smo := &SimplifiedOutput{}
+	assert.Equal(t, "\ntitle:\ndescription", smo.MarkAsCollapsible("title", "description"))
+}

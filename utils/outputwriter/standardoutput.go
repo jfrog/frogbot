@@ -36,6 +36,10 @@ func (so *StandardOutput) MarkAsTitle(title string, subTitleDepth int) string {
 	return fmt.Sprintf("%s %s", strings.Repeat("#", subTitleDepth), title)
 }
 
+func (so *StandardOutput) MarkAsCollapsible(title, content string) string {
+	return fmt.Sprintf("<details>\n<summary>%s</summary>\n%s\n</details>", title, content)
+}
+
 func GetMarkdownCenterTag(content string) string {
 	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n", content)
 }

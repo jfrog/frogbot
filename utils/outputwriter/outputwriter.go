@@ -99,6 +99,7 @@ type OutputWriter interface {
 	// Markdown interface
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
+	MarkAsCollapsible(title, content string) string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
@@ -178,10 +179,6 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 	for _, content := range contents {
 		fmt.Fprintf(builder, "\n%s", content)
 	}
-}
-
-func MarkAsCollapsable(title, content string) string {
-	return fmt.Sprintf("<details>\n<summary>%s</summary>\n%s\n</details>", title, content)
 }
 
 func WriteNewLine(builder *strings.Builder) {
