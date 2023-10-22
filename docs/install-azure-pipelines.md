@@ -94,7 +94,11 @@ jobs:
              #       Uncheck the 'Store Artifacts Locally' option
              # 3. Set the value of the 'JF_RELEASES_REPO' variable with the Repository Key you created.
              # JF_RELEASES_REPO: ""
-
+             
+             # [Optional]
+             # Avoid adding extra info to pull request comments. that isn't related to the scan findings.
+             # JF_AVOID_EXTRA_MESSAGES: "TRUE"
+             
              ###########################################################################
              ##   If your project uses a 'frogbot-config.yml' file, you should define ##
              ##   the following variables inside the file, instead of here.           ##
@@ -267,6 +271,10 @@ jobs:
             # [Mandatory if JF_SMTP_SERVER is set]
             # The password associated with the username required for authentication with the SMTP server.
             # JF_SMTP_PASSWORD: ""
+            
+            # [Optional]
+            # Avoid adding extra info to pull request comments. that isn't related to the scan findings.
+            # JF_AVOID_EXTRA_MESSAGES: "TRUE"
   
             ###########################################################################
             ##   If your project uses a 'frogbot-config.yml' file, you should define ##
