@@ -176,7 +176,7 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 	log.Debug("Creating branch", branchName, "...")
 	err := gm.createBranchAndCheckout(branchName, true)
 	if err != nil {
-		// Don't fail on dryRuns as we operate on local repositories,branch could be existing.
+		// Don't fail on dryRuns as we operate on local repositories, branch could be existing.
 		if gm.dryRun {
 			return nil
 		}

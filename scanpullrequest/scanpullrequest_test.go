@@ -655,7 +655,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	defer server.Close()
 
 	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
-	testDir, cleanUp := utils.PrepareTestEnvironment(t, "scanpullrequest")
+	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
 	defer cleanUp()
 
 	// Renames test git folder to .git

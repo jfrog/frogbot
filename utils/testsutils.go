@@ -17,6 +17,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type IntegrationTestDetails struct {
+	RepoName      string
+	RepoOwner     string
+	GitToken      string
+	GitCloneURL   string
+	GitProvider   string
+	PullRequestID string
+}
+
 // Receive an environment variables key-values map, set and assert the environment variables.
 // Return a callback that sets the previous values.
 func SetEnvAndAssert(t *testing.T, env map[string]string) {
@@ -51,10 +60,8 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 	}
 }
 
-// Prepare test environment for the integration tests
-// projectName - the directory name under testDir
-// Return a cleanup function and the temp dir path
-func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
+// Create a temporary directory and copy the content of "testdata/testDir" into it
+func CopyTestdataProjectsToTemp(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -64,6 +71,14 @@ func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restor
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 	return
+}
+
+func ChangeToTempDirWithCallback(t *testing.T) (string, func() error) {
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	callback, err := Chdir(tmpDir)
+	assert.NoError(t, err)
+	return tmpDir, callback
 }
 
 // Check connection details with JFrog instance.
