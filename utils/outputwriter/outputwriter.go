@@ -91,6 +91,8 @@ type OutputWriter interface {
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	IsShowingCaColumn() bool
 	IsEntitledForJas() bool
+	SetAvoidExtraMessages(avoidExtraMessages bool)
+	AvoidExtraMessages() bool
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -104,9 +106,10 @@ type OutputWriter interface {
 }
 
 type MarkdownOutput struct {
-	showCaColumn   bool
-	entitledForJas bool
-	vcsProvider    vcsutils.VcsProvider
+	avoidExtraMessages bool
+	showCaColumn       bool
+	entitledForJas     bool
+	vcsProvider        vcsutils.VcsProvider
 }
 
 func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
@@ -115,6 +118,14 @@ func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 
 func (mo *MarkdownOutput) VcsProvider() vcsutils.VcsProvider {
 	return mo.vcsProvider
+}
+
+func (mo *MarkdownOutput) SetAvoidExtraMessages(avoidExtraMessages bool) {
+	mo.avoidExtraMessages = avoidExtraMessages
+}
+
+func (mo *MarkdownOutput) AvoidExtraMessages() bool {
+	return mo.avoidExtraMessages
 }
 
 func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
@@ -167,6 +178,10 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 	for _, content := range contents {
 		fmt.Fprintf(builder, "\n%s", content)
 	}
+}
+
+func MarkAsCollapsable(title, content string) string {
+	return fmt.Sprintf("<details>\n<summary>%s</summary>\n%s\n</details>", title, content)
 }
 
 func WriteNewLine(builder *strings.Builder) {

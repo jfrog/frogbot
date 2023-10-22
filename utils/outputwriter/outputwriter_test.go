@@ -93,6 +93,10 @@ func TestSectionDivider(t *testing.T) {
 	assert.Equal(t, "\n---", SectionDivider())
 }
 
+func TestMarkAsCollapsable(t *testing.T) {
+	assert.Equal(t, "<details>\n<summary>tile</summary>\ndescription\n</details>", MarkAsCollapsable("title", "description"))
+}
+
 func TestMarkAsCodeSnippet(t *testing.T) {
 	testCases := []struct {
 		input          string
