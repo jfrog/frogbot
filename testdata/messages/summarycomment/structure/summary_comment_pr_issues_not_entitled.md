@@ -8,7 +8,6 @@
 ```
 some content
 ```
-
 <details>
 <summary>Note</summary>
 
