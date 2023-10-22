@@ -82,6 +82,11 @@ frogbot-scan:
     # The password associated with the username required for authentication with the SMTP server.
     # JF_SMTP_PASSWORD: ""
     
+    # [Optional]
+    # Avoid printing additional output in pull request comments
+    # For example, a JFrog Advanced Security message in pull request comments.
+    # JF_AVOID_EXTRA_MESSAGES: "true"
+    
     ###########################################################################
     ##   If your project uses a 'frogbot-config.yml' file, you should define ##
     ##   the following variables inside the file, instead of here.           ##

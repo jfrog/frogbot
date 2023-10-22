@@ -122,3 +122,8 @@ jobs:
           # [Optional, Default: eco-system+frogbot@jfrog.com]
           # Set the email of the commit author
           # JF_GIT_EMAIL_AUTHOR: ""
+
+          # [Optional]
+          # Avoid printing additional output in pull request comments
+          # For example, a JFrog Advanced Security message in pull request comments.
+          # JF_AVOID_EXTRA_MESSAGES: "true"

@@ -50,6 +50,11 @@ pipeline {
         // The 'frogbot' executable and other tools it needs will be downloaded through this repository.
         // JF_RELEASES_REPO= ""
 
+        // [Optional]
+        // Avoid printing additional output in pull request comments
+        // For example, a JFrog Advanced Security message in pull request comments.
+        // JF_AVOID_EXTRA_MESSAGES= "true"
+
         ///////////////////////////////////////////////////////////////////////////
         //   If your project uses a 'frogbot-config.yml' file, you should define //
         //   the following variables inside the file, instead of here.           //

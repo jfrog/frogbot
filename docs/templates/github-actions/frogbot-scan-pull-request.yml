@@ -134,3 +134,8 @@ jobs:
           # The full list of licenses can be found in:
           # https://github.com/jfrog/frogbot/blob/master/docs/licenses.md
           # JF_ALLOWED_LICENSES: "MIT, Apache-2.0"
+
+          # [Optional]
+          # Avoid printing additional output in pull request comments
+          # For example, a JFrog Advanced Security message in pull request comments.
+          # JF_AVOID_EXTRA_MESSAGES: "true"
