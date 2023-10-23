@@ -260,7 +260,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	}
 	// Check that PR ID was provided when scanning specific pull request.
 	if commandName == ScanPullRequest && gitParamsFromEnv.PullRequestDetails.ID == 0 {
-		return fmt.Errorf("no pull request ID was provided. Please configure it using the 'JF_GIT_PULL_REQUEST_ID' environment variable")
+		return errors.New("no pull request ID was provided. Please configure it using the `JF_GIT_PULL_REQUEST_ID` environment variable")
 	}
 	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
@@ -276,7 +276,7 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
 	if noBranchesProvidedViaConfig {
 		if noBranchesProvidedViaEnv {
-			return fmt.Errorf("no branches were provided. Please set your branches via the `JF_GIT_BASE_BRANCH` environment variable or through the frogbot-config.yml file")
+			return errors.New("no branches were provided. Please set your branches using the `JF_GIT_BASE_BRANCH` environment variable or by configuring them in the frogbot-config.yml file")
 		}
 		g.Branches = gitParamsFromEnv.Branches
 	}
@@ -377,9 +377,14 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
 		return
 	}
+	avoidExtraMessages, err := getBoolEnv(AvoidExtraMessages, false)
+	if err != nil {
+		return
+	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
 		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
+		repository.OutputWriter.SetAvoidExtraMessages(avoidExtraMessages)
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}

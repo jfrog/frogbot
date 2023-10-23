@@ -4,6 +4,8 @@
 
 </div>
 
+<details>
+<summary>Note</summary>
 
 ---
 <div align='center'>
@@ -12,6 +14,7 @@
 
 </div>
 
+</details>
 
 ---
 <div align='center'>

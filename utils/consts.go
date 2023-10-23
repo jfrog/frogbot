@@ -79,6 +79,9 @@ const (
 	FixVersionPlaceHolder = "{FIX_VERSION}"
 	BranchHashPlaceHolder = "{BRANCH_NAME_HASH}"
 
+	// General flags
+	AvoidExtraMessages = "JF_AVOID_EXTRA_MESSAGES"
+
 	// Default naming templates
 	BranchNameTemplate                       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
 	AggregatedBranchNameTemplate             = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
