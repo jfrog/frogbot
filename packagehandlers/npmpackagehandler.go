@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 )
 
+const npmInstallPrefixFlag = "--prefix"
+
 type NpmPackageHandler struct {
 	CommonPackageHandler
 }
@@ -50,7 +52,7 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 		err = fmt.Errorf("couldn't move package.json to a temporary dir in order to execute the fix for '%s' dependency: %s", vulnDetails.ImpactedDependencyName, err.Error())
 		return
 	}
-	err = npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), "--prefix", tmpDir)
+	err = npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallPrefixFlag, tmpDir)
 	if err != nil {
 		err = fmt.Errorf("failed during executing fix command for '%s' dependency: %s", vulnDetails.ImpactedDependencyName, err.Error())
 		return
