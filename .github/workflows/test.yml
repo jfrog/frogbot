@@ -115,7 +115,7 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
 
   integration-tests:
-    #    needs: tests
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
