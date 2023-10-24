@@ -1,5 +1,4 @@
-//go:build testexclude
-// +build testexclude
+//go:build !skip_me
 
 package main
 
