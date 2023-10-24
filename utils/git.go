@@ -153,12 +153,12 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gm.remoteGitUrl, gm.remoteName, getFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gm.remoteGitUrl, gm.remoteName, GetFullBranchName(branchName)))
 	cloneOptions := &git.CloneOptions{
 		URL:           gm.remoteGitUrl,
 		Auth:          gm.auth,
 		RemoteName:    gm.remoteName,
-		ReferenceName: getFullBranchName(branchName),
+		ReferenceName: GetFullBranchName(branchName),
 		SingleBranch:  true,
 		Depth:         1,
 		Tags:          git.NoTags,
@@ -188,7 +188,7 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
 	checkoutConfig := &git.CheckoutOptions{
 		Create: create,
-		Branch: getFullBranchName(branchName),
+		Branch: GetFullBranchName(branchName),
 		Force:  true,
 	}
 	worktree, err := gm.localGitRepository.Worktree()
@@ -285,6 +285,17 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (gm *GitManager) RemoveRemoteBranch(branchName string) error {
+	remote, err := gm.localGitRepository.Remote(gm.remoteName)
+	if err != nil {
+		return err
+	}
+	return remote.Push(&git.PushOptions{
+		Auth:     gm.auth,
+		RefSpecs: []config.RefSpec{config.RefSpec(":refs/heads/" + branchName)},
+	})
 }
 
 func (gm *GitManager) Push(force bool, branchName string) error {
@@ -437,9 +448,9 @@ func toBasicAuth(username, token string) *githttp.BasicAuth {
 	}
 }
 
-// getFullBranchName returns the full branch name (for example: refs/heads/master)
+// GetFullBranchName returns the full branch name (for example: refs/heads/master)
 // The input branchName can be a short name (master) or a full name (refs/heads/master)
-func getFullBranchName(branchName string) plumbing.ReferenceName {
+func GetFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 

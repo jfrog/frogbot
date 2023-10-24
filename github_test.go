@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jfrog/frogbot/scanpullrequest"
+	"github.com/jfrog/frogbot/scanrepository"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -13,16 +14,10 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"time"
 )
 
 const (
-	gitProviderTokenEnv = "FROGBOT_INTEGRATION_GITHUB_TOKEN"
-	repoOwner           = "jfrog"
-	repoName            = "frogbot-integration-tests"
-	issuesBranch        = "issues-branch"
-	mainBranch          = "main"
-	gitProvider         = "github"
+	githubTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
 )
 
 func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
@@ -31,71 +26,21 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 	return githubClient
 }
 
-func buildGitHubIntegrationTestDetails() *utils.IntegrationTestDetails {
-	return &utils.IntegrationTestDetails{
+func buildGitHubIntegrationTestDetails() *IntegrationTestDetails {
+	return &IntegrationTestDetails{
 		RepoOwner:   repoOwner,
 		RepoName:    repoName,
-		GitProvider: gitProvider,
-		GitToken:    os.Getenv(gitProviderTokenEnv),
+		GitProvider: string(utils.GitHub),
+		GitToken:    os.Getenv(githubTokenEnv),
 		GitCloneURL: fmt.Sprintf("https://github.com/%s/%s.git", repoOwner, repoName),
 	}
 }
 
-func buildGitManager(t *testing.T, testDetails *utils.IntegrationTestDetails) *utils.GitManager {
-	gitManager, err := utils.NewGitManager().SetAuth("", testDetails.GitToken).SetRemoteGitUrl(testDetails.GitCloneURL)
-	assert.NoError(t, err)
-	return gitManager
-}
-
-func getIssuesBranchName() string {
-	return fmt.Sprintf("%s-%s", issuesBranch, strconv.FormatInt(time.Now().Unix(), 10))
-}
-
-func setIntegrationTestEnvs(t *testing.T, testDetails *utils.IntegrationTestDetails) func() {
-	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv: "requirements.txt",
-		utils.GitPullRequestIDEnv: testDetails.PullRequestID,
-		utils.GitProvider:         testDetails.GitProvider,
-		utils.GitTokenEnv:         testDetails.GitToken,
-		utils.GitRepoEnv:          testDetails.RepoName,
-		utils.GitRepoOwnerEnv:     testDetails.RepoOwner,
-	})
-	return unsetEnvs
-}
-
-func createAndCheckoutIssueBranch(t *testing.T, testDetails *utils.IntegrationTestDetails, tmpDir, currentIssuesBranch string) {
-	gitManager := buildGitManager(t, testDetails)
-	// buildGitManager in an empty directory automatically creates a default .git folder, which prevents cloning.
-	// So we remove the default .git and clone the repository with its .git content
-	err := vcsutils.RemoveTempDir(".git")
-	require.NoError(t, err)
-	err = gitManager.Clone(tmpDir, issuesBranch)
-	require.NoError(t, err)
-	err = gitManager.CreateBranchAndCheckout(currentIssuesBranch)
-	require.NoError(t, err)
-	err = gitManager.Push(false, currentIssuesBranch)
-	require.NoError(t, err)
-}
-
-func findRelevantPrID(t *testing.T, client vcsclient.VcsClient, testDetails *utils.IntegrationTestDetails, currentIssuesBranch string) (prId int) {
-	ctx := context.Background()
-	pullRequests, err := client.ListOpenPullRequests(ctx, testDetails.RepoOwner, testDetails.RepoName)
-	require.NoError(t, err)
-	for _, pr := range pullRequests {
-		if pr.Source.Name == currentIssuesBranch && pr.Target.Name == mainBranch {
-			prId = int(pr.ID)
-			testDetails.PullRequestID = strconv.Itoa(prId)
-			return
-		}
-	}
-	return
-}
-
 func TestScanPullRequestIntegration(t *testing.T) {
 	// Change working dir to temp dir for cloning and branch checkout
-	tmpDir, callback := utils.ChangeToTempDirWithCallback(t)
+	tmpDir, restoreFunc := utils.ChangeToTempDirWithCallback(t)
 	defer func() {
-		assert.NoError(t, callback())
+		assert.NoError(t, restoreFunc())
 	}()
 
 	// Create objects for the test details and the git manager for creating the new source branch and pushing it to the repository
@@ -103,7 +48,8 @@ func TestScanPullRequestIntegration(t *testing.T) {
 
 	// Get a timestamp based issues-branch name
 	currentIssuesBranch := getIssuesBranchName()
-	createAndCheckoutIssueBranch(t, testDetails, tmpDir, currentIssuesBranch)
+	removeBranchFunc := createAndCheckoutIssueBranch(t, testDetails, tmpDir, currentIssuesBranch)
+	defer removeBranchFunc()
 
 	// Create a client for REST API request
 	githubClient := buildGitHubClient(t, testDetails.GitToken)
@@ -114,7 +60,9 @@ func TestScanPullRequestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find the relevant pull request id
-	prId := findRelevantPrID(t, githubClient, testDetails, currentIssuesBranch)
+	pullRequests := getOpenPullRequests(t, githubClient, testDetails)
+	prId := findRelevantPrID(pullRequests, currentIssuesBranch)
+	testDetails.PullRequestID = strconv.Itoa(prId)
 	require.NotZero(t, prId)
 	defer func() {
 		err = githubClient.UpdatePullRequest(ctx, repoOwner, repoName, "test finished", "", mainBranch, prId, vcsutils.Closed)
@@ -141,4 +89,37 @@ func TestScanPullRequestIntegration(t *testing.T) {
 	reviewComments, err := githubClient.ListPullRequestReviewComments(ctx, repoOwner, repoName, prId)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, len(reviewComments), 13)
+}
+
+func TestScanRepositoryIntegration(t *testing.T) {
+	_, restoreFunc := utils.ChangeToTempDirWithCallback(t)
+	defer func() {
+		assert.NoError(t, restoreFunc())
+	}()
+
+	testDetails := buildGitHubIntegrationTestDetails()
+	timestamp := getTimestamp()
+	// Add a timestamp to the fixing pull requests, to identify them later
+	testDetails.CustomBranchName = "frogbot-{IMPACTED_PACKAGE}-{BRANCH_NAME_HASH}-" + timestamp
+	// Set the required environment variables for the scan-repository command
+	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
+	defer unsetEnvs()
+
+	err := Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
+	assert.NoError(t, err)
+
+	githubClient := buildGitHubClient(t, testDetails.GitToken)
+	gitManager := buildGitManager(t, testDetails)
+
+	pullRequests := getOpenPullRequests(t, githubClient, testDetails)
+
+	expectedBranchName := "frogbot-pyjwt-45ebb5a61916a91ae7c1e3ff7ffb6112-" + timestamp
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	prId := findRelevantPrID(pullRequests, expectedBranchName)
+	assert.NotZero(t, prId)
+
+	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
+	prId = findRelevantPrID(pullRequests, expectedBranchName)
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	assert.NotZero(t, prId)
 }
