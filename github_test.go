@@ -1,3 +1,6 @@
+//go:build testexclude
+// +build testexclude
+
 package main
 
 import (
