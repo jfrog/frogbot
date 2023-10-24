@@ -8,7 +8,9 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -45,6 +47,9 @@ func getTimestamp() string {
 }
 
 func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) func() {
+	// Frogbot sanitizes all the environment variables that start with 'JF',
+	// so we restore them at the end of the test to avoid collisions with other tests
+	envRestoreFunc := getJfrogEnvRestoreFunc(t)
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
 		utils.RequirementsFileEnv:   "requirements.txt",
 		utils.GitPullRequestIDEnv:   testDetails.PullRequestID,
@@ -55,7 +60,10 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		utils.BranchNameTemplateEnv: testDetails.CustomBranchName,
 		utils.GitBaseBranchEnv:      mainBranch,
 	})
-	return unsetEnvs
+	return func() {
+		envRestoreFunc()
+		unsetEnvs()
+	}
 }
 
 func createAndCheckoutIssueBranch(t *testing.T, testDetails *IntegrationTestDetails, tmpDir, currentIssuesBranch string) func() {
@@ -92,4 +100,22 @@ func getOpenPullRequests(t *testing.T, client vcsclient.VcsClient, testDetails *
 	pullRequests, err := client.ListOpenPullRequests(ctx, testDetails.RepoOwner, testDetails.RepoName)
 	require.NoError(t, err)
 	return pullRequests
+}
+
+func getJfrogEnvRestoreFunc(t *testing.T) func() {
+	jfrogEnvs := make(map[string]string)
+	for _, env := range os.Environ() {
+		envSplit := strings.Split(env, "=")
+		key := envSplit[0]
+		val := envSplit[1]
+		if strings.HasPrefix(key, "JF_") {
+			jfrogEnvs[key] = val
+		}
+	}
+
+	return func() {
+		for key, val := range jfrogEnvs {
+			assert.NoError(t, os.Setenv(key, val))
+		}
+	}
 }

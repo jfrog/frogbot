@@ -101,6 +101,7 @@ func TestScanRepositoryIntegration(t *testing.T) {
 	timestamp := getTimestamp()
 	// Add a timestamp to the fixing pull requests, to identify them later
 	testDetails.CustomBranchName = "frogbot-{IMPACTED_PACKAGE}-{BRANCH_NAME_HASH}-" + timestamp
+
 	// Set the required environment variables for the scan-repository command
 	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
 	defer unsetEnvs()
