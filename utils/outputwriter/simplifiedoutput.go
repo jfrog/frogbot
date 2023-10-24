@@ -29,6 +29,10 @@ func (smo *SimplifiedOutput) MarkInCenter(content string) string {
 	return content
 }
 
+func (smo *SimplifiedOutput) MarkAsCollapsible(title, content string) string {
+	return fmt.Sprintf("\n%s:\n%s", title, content)
+}
+
 func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
 	return fmt.Sprintf("%s\n%s", smo.MarkAsTitle(summary, subTitleDepth), content)
 }

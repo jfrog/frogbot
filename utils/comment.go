@@ -26,20 +26,26 @@ const (
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
 
-	RescanRequestComment = "rescan"
+	RescanRequestComment   = "rescan"
+	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
 func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
+		// The removal of comments may fail for various reasons,
+		// such as concurrent scanning of pull requests and attempts
+		// to delete comments that have already been removed in a different process.
+		// Since this task is not mandatory for a Frogbot run,
+		// we will not cause a Frogbot run to fail but will instead log the error.
 		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
 		// Delete previous PR regular comments, if exists (not related to location of a change)
 		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
-			err = errors.New("couldn't delete pull request comment: " + err.Error())
+			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
 			return
 		}
 		// Delete previous PR review comments, if exists (related to location of a change)
 		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
-			err = errors.New("couldn't delete pull request review comment: " + err.Error())
+			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
 			return
 		}
 	}
@@ -49,9 +55,10 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		err = errors.New("couldn't add pull request comment: " + err.Error())
 		return
 	}
+
 	// Handle review comments at the pull request
 	if err = addReviewComments(repo, pullRequestID, client, issues); err != nil {
-		err = errors.New("couldn't add review comments: " + err.Error())
+		err = errors.New("couldn't add pull request review comments: " + err.Error())
 		return
 	}
 	return

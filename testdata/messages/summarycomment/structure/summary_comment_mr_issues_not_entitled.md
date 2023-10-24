@@ -8,6 +8,8 @@
 ```
 some content
 ```
+<details>
+<summary>Note</summary>
 
 ---
 <div align='center'>
@@ -16,6 +18,7 @@ some content
 
 </div>
 
+</details>
 
 ---
 <div align='center'>

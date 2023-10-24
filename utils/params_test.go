@@ -163,6 +163,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		MinSeverityEnv:       "high",
 		FixableOnlyEnv:       "true",
 		AllowedLicensesEnv:   "MIT, Apache-2.0, ISC",
+		AvoidExtraMessages:   "true",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -192,6 +193,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.True(t, repo.FixableOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
+		assert.True(t, repo.OutputWriter.AvoidExtraMessages())
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		assert.ElementsMatch(t, []string{"MIT", "ISC", "Apache-2.0"}, repo.AllowedLicenses)
 		for _, project := range repo.Projects {

@@ -77,10 +77,10 @@ func fixCVETitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 }
 
 func untitledForJasMsg(writer OutputWriter) string {
-	if writer.IsEntitledForJas() {
+	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled))
+	return writer.MarkAsCollapsible("Note", fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {

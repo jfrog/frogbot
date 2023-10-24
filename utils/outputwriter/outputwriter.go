@@ -91,12 +91,15 @@ type OutputWriter interface {
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	IsShowingCaColumn() bool
 	IsEntitledForJas() bool
+	SetAvoidExtraMessages(avoidExtraMessages bool)
+	AvoidExtraMessages() bool
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	// Markdown interface
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
+	MarkAsCollapsible(title, content string) string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
@@ -104,9 +107,10 @@ type OutputWriter interface {
 }
 
 type MarkdownOutput struct {
-	showCaColumn   bool
-	entitledForJas bool
-	vcsProvider    vcsutils.VcsProvider
+	avoidExtraMessages bool
+	showCaColumn       bool
+	entitledForJas     bool
+	vcsProvider        vcsutils.VcsProvider
 }
 
 func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
@@ -115,6 +119,14 @@ func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 
 func (mo *MarkdownOutput) VcsProvider() vcsutils.VcsProvider {
 	return mo.vcsProvider
+}
+
+func (mo *MarkdownOutput) SetAvoidExtraMessages(avoidExtraMessages bool) {
+	mo.avoidExtraMessages = avoidExtraMessages
+}
+
+func (mo *MarkdownOutput) AvoidExtraMessages() bool {
+	return mo.avoidExtraMessages
 }
 
 func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
