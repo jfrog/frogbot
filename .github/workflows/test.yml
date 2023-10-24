@@ -115,8 +115,15 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
 
   integration-tests:
+    #    needs: tests
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Build Frogbot
+        run: buildscripts/build.sh
       - name: Run GitHub Integration Tests
         run: go test -v github_test.go integrationutils.go main.go commands.go -race -timeout 30m -cover
         env:
