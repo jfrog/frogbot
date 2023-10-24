@@ -22,7 +22,9 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v2/sarif"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -213,6 +215,9 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	// if err := prepareLicensesForGithubReport(scanResults, repo); err != nil {
+	// 	return err
+	// }
 	report, err := GenerateFrogbotSarifReport(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
 	if err != nil {
 		return err
@@ -222,6 +227,42 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Rep
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
+	return nil
+}
+
+func prepareLicensesForGithubReport(scanResults *audit.Results, repo *Repository) error {
+	if len(repo.Watches) > 0 || len(repo.AllowedLicenses) == 0 {
+		// Watches are configured, license information already ready at the scanResults
+		// Or no license information is required
+		return nil
+	}
+	// Calculate license violations from allowed licenses
+	_, violatedLicenses, err := GetScanVulnerabilitiesRows(scanResults, repo.AllowedLicenses)
+	if err != nil {
+		return err
+	}
+	if len(violatedLicenses) == 0 {
+		return nil
+	}
+	// Convert to license Scan response
+	licenseResult := services.ScanResponse{}
+	for _, violation := range violatedLicenses {
+		id := violation.ImpactedDependencyType + "://" + violation.ImpactedDependencyName + ":" + violation.ImpactedDependencyVersion  // package-type://package-name:version
+		converted := services.Violation{
+			LicenseKey: violation.LicenseKey,
+			Severity:   violation.Severity,
+			ViolationType: "license",
+
+			Components: make(map[string]services.Component),	
+		}
+		// for _, component := range violation.Components {
+			
+		// }
+		converted.Components[id] = services.Component{
+		}
+		licenseResult.Violations = append(licenseResult.Violations, converted)
+	}
+	scanResults.ExtendedScanResults.XrayResults = append(scanResults.ExtendedScanResults.XrayResults, licenseResult)
 	return nil
 }
 
@@ -272,6 +313,42 @@ func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, 
 	}
 	prepareRunsForGithubReport(sarifReport.Runs)
 	return xrayutils.ConvertSarifReportToString(sarifReport)
+}
+
+// Create vulnerability rows. The rows should contain all the issues that were found in this module scan.
+func GetScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, violatedLicenses []formats.LicenseRow, err error) {
+	violations, vulnerabilities, licenses := xrayutils.SplitScanResults(auditResults.ExtendedScanResults.XrayResults)
+   if len(violations) > 0 {
+	   var licenseViolationsRows []formats.LicenseRow
+	   if vulnerabilitiesRows, licenseViolationsRows, _, err = xrayutils.PrepareViolations(violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
+		   return nil, nil, err
+	   }
+	   return vulnerabilitiesRows, licenseViolationsRows, err
+   }
+   if len(vulnerabilities) > 0 {
+	   if vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
+		   return
+	   }
+   }
+   var licenseRows []formats.LicenseRow
+   if licenseRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
+	   return
+   }
+   violatedLicenses = GetViolatedLicenses(allowedLicenses, licenseRows)
+   return
+}
+
+func GetViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow) []formats.LicenseRow {
+	if len(allowedLicenses) == 0 {
+		return nil
+	}
+	var violatedLicenses []formats.LicenseRow
+	for _, license := range licenses {
+		if !slices.Contains(allowedLicenses, license.LicenseKey) {
+			violatedLicenses = append(violatedLicenses, license)
+		}
+	}
+	return violatedLicenses
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {

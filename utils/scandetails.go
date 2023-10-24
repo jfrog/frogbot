@@ -26,6 +26,7 @@ type ScanDetails struct {
 	*services.XrayGraphScanParams
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
+	allowedLicenses		  []string
 	failOnInstallationErrors bool
 	fixableOnly              bool
 	minSeverityFilter        string
@@ -48,6 +49,11 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 
 func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, includeLicenses bool) *ScanDetails {
 	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, includeLicenses)
+	return sc
+}
+
+func (sc *ScanDetails) SetAllowedLicenses(allowedLicenses []string) *ScanDetails {
+	sc.allowedLicenses = allowedLicenses
 	return sc
 }
 

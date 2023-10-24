@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -126,7 +124,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, true).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
@@ -212,7 +210,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 func getAllIssues(results *audit.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	scanResults := results.ExtendedScanResults
-	allVulnerabilitiesRows, violatedLicenses, err := getScanVulnerabilitiesRows(results, allowedLicenses)
+	allVulnerabilitiesRows, violatedLicenses, err := utils.GetScanVulnerabilitiesRows(results, allowedLicenses)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +295,7 @@ func createNewVulnerabilitiesRows(targetResults, sourceResults *audit.Results, a
 	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
 		return
 	}
-	licenseRows = getViolatedLicenses(allowedLicenses, newLicenses)
+	licenseRows = utils.GetViolatedLicenses(allowedLicenses, newLicenses)
 	return
 }
 
@@ -389,38 +387,4 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 	return aggregateResults
 }
 
-// Create vulnerability rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(auditResults *audit.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, violatedLicenses []formats.LicenseRow, err error) {
-	violations, vulnerabilities, licenses := xrayutils.SplitScanResults(auditResults.ExtendedScanResults.XrayResults)
-	if len(violations) > 0 {
-		var licenseViolationsRows []formats.LicenseRow
-		if vulnerabilitiesRows, licenseViolationsRows, _, err = xrayutils.PrepareViolations(violations, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
-			return nil, nil, err
-		}
-		return vulnerabilitiesRows, licenseViolationsRows, err
-	}
-	if len(vulnerabilities) > 0 {
-		if vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults.ExtendedScanResults, auditResults.IsMultipleRootProject, true); err != nil {
-			return
-		}
-	}
-	var licenseRows []formats.LicenseRow
-	if licenseRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
-		return
-	}
-	violatedLicenses = getViolatedLicenses(allowedLicenses, licenseRows)
-	return
-}
 
-func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow) []formats.LicenseRow {
-	if len(allowedLicenses) == 0 {
-		return nil
-	}
-	var violatedLicenses []formats.LicenseRow
-	for _, license := range licenses {
-		if !slices.Contains(allowedLicenses, license.LicenseKey) {
-			violatedLicenses = append(violatedLicenses, license)
-		}
-	}
-	return violatedLicenses
-}
