@@ -2,7 +2,7 @@ package packagehandlers
 
 import (
 	"fmt"
-	testdatautils "github.com/jfrog/build-info-go/build/testdata"
+	testdatautils "github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"

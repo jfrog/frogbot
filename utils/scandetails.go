@@ -113,7 +113,7 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err
