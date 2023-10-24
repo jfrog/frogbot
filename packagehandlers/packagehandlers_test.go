@@ -2,7 +2,7 @@ package packagehandlers
 
 import (
 	"fmt"
-	testdatautils "github.com/jfrog/build-info-go/tests"
+	"github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -583,7 +583,7 @@ func getTestDataDir(t *testing.T, directDependency bool) string {
 func createTempDirAndChdir(t *testing.T, testdataDir string, tech string) func() {
 	// Create temp technology project
 	projectPath := filepath.Join(testdataDir, tech)
-	tmpProjectPath, cleanup := testdatautils.CreateTestProject(t, projectPath)
+	tmpProjectPath, cleanup := tests.CreateTestProject(t, projectPath)
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	assert.NoError(t, os.Chdir(tmpProjectPath))
