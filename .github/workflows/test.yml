@@ -114,6 +114,16 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
 
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run GitHub Integration Tests
+        run: go test -v github_test.go integrationutils.go main.go commands.go -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+
   # Build and run frogbot current changes for visual sanity check.
   sanity-pull-request:
     needs: tests

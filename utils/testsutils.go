@@ -17,15 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type IntegrationTestDetails struct {
-	RepoName      string
-	RepoOwner     string
-	GitToken      string
-	GitCloneURL   string
-	GitProvider   string
-	PullRequestID string
-}
-
 // Receive an environment variables key-values map, set and assert the environment variables.
 // Return a callback that sets the previous values.
 func SetEnvAndAssert(t *testing.T, env map[string]string) {
