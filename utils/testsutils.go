@@ -36,10 +36,23 @@ func setEnvAndAssert(t *testing.T, key, value string) {
 	assert.NoError(t, os.Setenv(key, value))
 }
 
-// Prepare test environment for the integration tests
-// projectName - the directory name under testDir
-// Return a cleanup function and the temp dir path
-func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
+func unsetEnvAndAssert(t *testing.T, key string) {
+	assert.NoError(t, os.Unsetenv(key))
+}
+
+func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
+	for key, val := range envs {
+		setEnvAndAssert(t, key, val)
+	}
+	return func() {
+		for key := range envs {
+			unsetEnvAndAssert(t, key)
+		}
+	}
+}
+
+// Create a temporary directory and copy the content of "testdata/testDir" into it
+func CopyTestdataProjectsToTemp(t *testing.T, testDir string) (tmpDir string, restoreFunc func()) {
 	// Copy project to a temporary directory
 	tmpDir, err := fileutils.CreateTempDir()
 	assert.NoError(t, err)
@@ -49,6 +62,14 @@ func PrepareTestEnvironment(t *testing.T, testDir string) (tmpDir string, restor
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 	return
+}
+
+func ChangeToTempDirWithCallback(t *testing.T) (string, func() error) {
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	callback, err := Chdir(tmpDir)
+	assert.NoError(t, err)
+	return tmpDir, callback
 }
 
 // Check connection details with JFrog instance.
