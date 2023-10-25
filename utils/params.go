@@ -357,14 +357,16 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		Username(gitParamsFromEnv.Username).
 		Build()
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	configAggregator, err := getConfigAggregator(client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}, err
+
+	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	return
 }
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
