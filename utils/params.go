@@ -57,7 +57,6 @@ func (r *Repository) setOutputWriterDetails() {
 	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
 	r.OutputWriter.SetAvoidExtraMessages(r.Params.AvoidExtraMessages)
 	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
-	return
 }
 
 type Params struct {
