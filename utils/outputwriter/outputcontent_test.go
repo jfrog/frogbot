@@ -178,10 +178,11 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 
 func TestGetPRSummaryContent(t *testing.T) {
 	testCases := []struct {
-		name         string
-		cases        []OutputTestCase
-		issuesExists bool
-		isComment    bool
+		name                       string
+		cases                      []OutputTestCase
+		issuesExists               bool
+		isComment                  bool
+		addPullRequestCommentTitle bool
 	}{
 		{
 			name:         "Summary comment No issues found",
@@ -258,6 +259,29 @@ func TestGetPRSummaryContent(t *testing.T) {
 			},
 		},
 		{
+			name:                       "Summary comments with issues with pull request title",
+			issuesExists:               true,
+			isComment:                  true,
+			addPullRequestCommentTitle: true,
+			cases: []OutputTestCase{
+				{
+					name:               "Merge Request entitled (Standard output)",
+					writer:             &StandardOutput{MarkdownOutput{entitledForJas: true, vcsProvider: vcsutils.GitLab}},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_mr_issues_entitled_with_title.md"),
+				},
+				{
+					name:               "Pull Request not entitled (Standard output)",
+					writer:             &StandardOutput{},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_pr_issues_not_entitled_with_title.md"),
+				},
+				{
+					name:               "Pull request entitled (Simplified output)",
+					writer:             &SimplifiedOutput{MarkdownOutput{entitledForJas: true}},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_simplified_issues_entitled_with_title.md"),
+				},
+			},
+		},
+		{
 			name:         "Frogbot Fix issues details content",
 			issuesExists: true,
 			isComment:    false,
@@ -301,8 +325,8 @@ func TestGetPRSummaryContent(t *testing.T) {
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				if tc.isComment {
-					test.writer.SetPullRequestCommentTitle("build 1232")
+				if tc.addPullRequestCommentTitle {
+					test.writer.SetPullRequestCommentTitle("Test Build")
 				}
 				expectedOutput := GetExpectedTestOutput(t, test)
 				output := GetPRSummaryContent(content, tc.issuesExists, tc.isComment, test.writer)

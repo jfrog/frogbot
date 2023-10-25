@@ -4,7 +4,6 @@
 
 </div>
 
-## build 1232
 
 ```
 some content
