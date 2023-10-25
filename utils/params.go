@@ -53,11 +53,11 @@ type Repository struct {
 	Server       coreconfig.ServerDetails
 }
 
-func (r *Repository) setOutputWriterDetails() error {
+func (r *Repository) setOutputWriterDetails() {
 	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
 	r.OutputWriter.SetAvoidExtraMessages(r.Params.AvoidExtraMessages)
 	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
-	return nil
+	return
 }
 
 type Params struct {
@@ -404,9 +404,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}
-		if err = repository.setOutputWriterDetails(); err != nil {
-			return
-		}
+		repository.setOutputWriterDetails()
 		resultAggregator = append(resultAggregator, repository)
 	}
 
