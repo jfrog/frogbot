@@ -301,6 +301,9 @@ func TestGetPRSummaryContent(t *testing.T) {
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				if tc.isComment {
+					test.writer.SetPullRequestCommentTitle("build 1232")
+				}
 				expectedOutput := GetExpectedTestOutput(t, test)
 				output := GetPRSummaryContent(content, tc.issuesExists, tc.isComment, test.writer)
 				assert.Equal(t, expectedOutput, output)

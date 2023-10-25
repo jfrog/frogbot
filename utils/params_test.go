@@ -193,7 +193,6 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.True(t, repo.FixableOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
-		assert.True(t, repo.OutputWriter.AvoidExtraMessages())
 		assert.ElementsMatch(t, []string{"watch-2", "watch-1"}, repo.Watches)
 		assert.ElementsMatch(t, []string{"MIT", "ISC", "Apache-2.0"}, repo.AllowedLicenses)
 		for _, project := range repo.Projects {
@@ -344,6 +343,8 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		MinSeverityEnv:                     "medium",
 		FixableOnlyEnv:                     "true",
 		AllowedLicensesEnv:                 "MIT, Apache-2.0",
+		AvoidExtraMessages:                 "true",
+		PullRequestCommentTitleEnv:         "build 1323",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -355,9 +356,10 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 			APIEndpoint: "https://github.com",
 			Token:       "123456789",
 		},
-		RepoName:  "repoName",
-		Branches:  []string{"master"},
-		RepoOwner: "jfrog",
+		RepoName:           "repoName",
+		Branches:           []string{"master"},
+		RepoOwner:          "jfrog",
+		PullRequestDetails: vcsclient.PullRequestInfo{ID: 17},
 	}
 	server := config.ServerDetails{
 		ArtifactoryUrl: "http://127.0.0.1:8081/artifactory",
@@ -368,6 +370,15 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
+	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
+
+	repoAggregator, err = BuildRepoAggregator(nil, &gitParams, &server, ScanPullRequest)
+	assert.NoError(t, err)
+	repo = repoAggregator[0]
+	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
+}
+
+func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
@@ -377,16 +388,25 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
-	assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
-	assert.Equal(t, repo.PullRequestDetails.ID, repo.PullRequestDetails.ID)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
-	assert.Equal(t, repo.BranchNameTemplate, repo.BranchNameTemplate)
-	assert.Equal(t, repo.CommitMessageTemplate, repo.CommitMessageTemplate)
-	assert.Equal(t, repo.PullRequestTitleTemplate, repo.PullRequestTitleTemplate)
+
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
 	assert.Equal(t, server.User, repo.Server.User)
 	assert.Equal(t, server.Password, repo.Server.Password)
+
+	if commandName == ScanRepository {
+		assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
+		assert.NotEmpty(t, repo.BranchNameTemplate)
+		assert.NotEmpty(t, repo.CommitMessageTemplate)
+		assert.NotEmpty(t, repo.PullRequestTitleTemplate)
+	}
+
+	if commandName == ScanPullRequest {
+		assert.NotZero(t, repo.PullRequestDetails.ID)
+		assert.True(t, repo.AvoidExtraMessages)
+		assert.NotEmpty(t, repo.PullRequestCommentTitle)
+	}
 
 	project := repo.Projects[0]
 	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
