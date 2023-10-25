@@ -1,5 +1,3 @@
-//go:build !skip_me
-
 package main
 
 import (
@@ -19,7 +17,7 @@ import (
 )
 
 const (
-	githubTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
+	githubIntegrationTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
 )
 
 func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
@@ -28,25 +26,29 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 	return githubClient
 }
 
-func buildGitHubIntegrationTestDetails() *IntegrationTestDetails {
+func buildGitHubIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
+	integrationRepoToken := os.Getenv(githubIntegrationTokenEnv)
+	if integrationRepoToken == "" {
+		t.Skip(fmt.Sprintf("%s is not set, skipping integration test", githubIntegrationTokenEnv))
+	}
 	return &IntegrationTestDetails{
 		RepoOwner:   repoOwner,
 		RepoName:    repoName,
 		GitProvider: string(utils.GitHub),
-		GitToken:    os.Getenv(githubTokenEnv),
+		GitToken:    integrationRepoToken,
 		GitCloneURL: fmt.Sprintf("https://github.com/%s/%s.git", repoOwner, repoName),
 	}
 }
 
 func TestScanPullRequestIntegration(t *testing.T) {
+	// Create objects for the test details and the git manager for creating the new source branch and pushing it to the repository
+	testDetails := buildGitHubIntegrationTestDetails(t)
+
 	// Change working dir to temp dir for cloning and branch checkout
 	tmpDir, restoreFunc := utils.ChangeToTempDirWithCallback(t)
 	defer func() {
 		assert.NoError(t, restoreFunc())
 	}()
-
-	// Create objects for the test details and the git manager for creating the new source branch and pushing it to the repository
-	testDetails := buildGitHubIntegrationTestDetails()
 
 	// Get a timestamp based issues-branch name
 	currentIssuesBranch := getIssuesBranchName()
@@ -94,12 +96,13 @@ func TestScanPullRequestIntegration(t *testing.T) {
 }
 
 func TestScanRepositoryIntegration(t *testing.T) {
+	testDetails := buildGitHubIntegrationTestDetails(t)
+
 	_, restoreFunc := utils.ChangeToTempDirWithCallback(t)
 	defer func() {
 		assert.NoError(t, restoreFunc())
 	}()
 
-	testDetails := buildGitHubIntegrationTestDetails()
 	timestamp := getTimestamp()
 	// Add a timestamp to the fixing pull requests, to identify them later
 	testDetails.CustomBranchName = "frogbot-{IMPACTED_PACKAGE}-{BRANCH_NAME_HASH}-" + timestamp
