@@ -93,6 +93,8 @@ type OutputWriter interface {
 	IsEntitledForJas() bool
 	SetAvoidExtraMessages(avoidExtraMessages bool)
 	AvoidExtraMessages() bool
+	SetPullRequestCommentTitle(pullRequestCommentTitle string)
+	PullRequestCommentTitle() string
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -107,10 +109,11 @@ type OutputWriter interface {
 }
 
 type MarkdownOutput struct {
-	avoidExtraMessages bool
-	showCaColumn       bool
-	entitledForJas     bool
-	vcsProvider        vcsutils.VcsProvider
+	pullRequestCommentTitle string
+	avoidExtraMessages      bool
+	showCaColumn            bool
+	entitledForJas          bool
+	vcsProvider             vcsutils.VcsProvider
 }
 
 func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
