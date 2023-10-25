@@ -41,7 +41,7 @@ func buildGitHubIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 }
 
 func TestScanPullRequestIntegration(t *testing.T) {
-	// Create objects for the test details and the git manager for creating the new source branch and pushing it to the repository
+	// Create objects for the test details and the git manager for creating the new source branch and push it to the repository
 	testDetails := buildGitHubIntegrationTestDetails(t)
 
 	// Change working dir to temp dir for cloning and branch checkout
