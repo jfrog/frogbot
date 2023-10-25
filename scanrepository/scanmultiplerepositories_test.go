@@ -48,7 +48,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	configData, err := utils.ReadConfigFromFileSystem(testScanMultipleRepositoriesConfigPath)
 	assert.NoError(t, err)
 
-	testDir, cleanup := utils.PrepareTestEnvironment(t, "scanmultiplerepositories")
+	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, "scanmultiplerepositories")
 	defer func() {
 		assert.NoError(t, os.Chdir(baseWd))
 		cleanup()
