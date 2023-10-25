@@ -29,6 +29,10 @@ var (
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
 	comment := strings.Builder{}
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+	customCommentTitle := writer.PullRequestCommentTitle()
+	if customCommentTitle != "" {
+		comment.WriteString(fmt.Sprintf("%s\n", writer.MarkAsTitle(customCommentTitle, 2)))
+	}
 	if issuesExists {
 		WriteContent(&comment, content)
 	}
@@ -239,6 +243,10 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
+	customCommentTitle := writer.PullRequestCommentTitle()
+	if customCommentTitle != "" {
+		WriteContent(&contentBuilder, writer.MarkAsTitle(customCommentTitle, 2))
+	}
 	WriteContent(&contentBuilder, content, footer(writer))
 	return contentBuilder.String()
 }

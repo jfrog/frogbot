@@ -43,3 +43,10 @@ func (so *StandardOutput) MarkAsCollapsible(title, content string) string {
 func GetMarkdownCenterTag(content string) string {
 	return fmt.Sprintf("<div align='center'>\n\n%s\n\n</div>\n", content)
 }
+
+func (so *StandardOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
+	so.pullRequestCommentTitle = pullRequestCommentTitle
+	if so.pullRequestCommentTitle != "" {
+		so.pullRequestCommentTitle = so.MarkAsTitle(so.pullRequestCommentTitle, 2)
+	}
+}
