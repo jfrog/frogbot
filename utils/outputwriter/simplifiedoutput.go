@@ -43,11 +43,11 @@ func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string
 
 func (smo *SimplifiedOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
 	smo.pullRequestCommentTitle = pullRequestCommentTitle
+	if smo.pullRequestCommentTitle != "" {
+		smo.pullRequestCommentTitle = "\n\n" + MarkAsBold(pullRequestCommentTitle)
+	}
 }
 
 func (smo *SimplifiedOutput) PullRequestCommentTitle() string {
-	if smo.pullRequestCommentTitle == "" {
-		return ""
-	}
-	return smo.MarkAsTitle(smo.pullRequestCommentTitle, 2)
+	return smo.pullRequestCommentTitle
 }

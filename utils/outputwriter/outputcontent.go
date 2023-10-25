@@ -31,7 +31,7 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		comment.WriteString(fmt.Sprintf("%s\n", writer.MarkAsTitle(customCommentTitle, 2)))
+		comment.WriteString(customCommentTitle)
 	}
 	if issuesExists {
 		WriteContent(&comment, content)
@@ -245,7 +245,7 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		WriteContent(&contentBuilder, writer.MarkAsTitle(customCommentTitle, 2))
+		contentBuilder.WriteString(customCommentTitle)
 	}
 	WriteContent(&contentBuilder, content, footer(writer))
 	return contentBuilder.String()
