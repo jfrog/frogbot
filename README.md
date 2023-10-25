@@ -1,3 +1,4 @@
+<div id="top"></div>
 <div align="center">
   
 # JFrog Frogbot
@@ -294,3 +295,4 @@ Please help us improve Frogbot by [reporting issues](https://github.com/jfrog/fr
 ## 💻 Contributions
 
 We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
+<p align="right">(<a href="#top">🔼 Back to top</a>)</p>
