@@ -29,7 +29,7 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 func buildGitHubIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := os.Getenv(githubIntegrationTokenEnv)
 	if integrationRepoToken == "" {
-		t.Skip(fmt.Sprintf("%s is not set, skipping integration test", githubIntegrationTokenEnv))
+		t.Skipf("%s is not set, skipping integration test", githubIntegrationTokenEnv)
 	}
 	return &IntegrationTestDetails{
 		RepoOwner:   repoOwner,
