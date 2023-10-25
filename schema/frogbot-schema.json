@@ -72,7 +72,7 @@
         ]
       },
       "avoidExtraMessages": {
-        "type": "bool",
+        "type": "boolean",
         "default": "false",
         "description": "Avoid adding extra info to pull request comments. that isn't related to the scan findings."
       },
