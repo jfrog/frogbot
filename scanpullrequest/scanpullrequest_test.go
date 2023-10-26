@@ -86,11 +86,11 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
 	securityViolationsRows, licenseViolations, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)
@@ -166,8 +166,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		[]string{},
 	)
 	assert.NoError(t, err)
@@ -211,8 +211,8 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no violations in the results
 	securityViolations, licenseViolations, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		[]string{"MIT"},
 	)
 	assert.NoError(t, err)
@@ -414,8 +414,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)
@@ -450,8 +450,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)

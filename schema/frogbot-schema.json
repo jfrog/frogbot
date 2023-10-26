@@ -192,6 +192,17 @@
                 "default": "."
               }
             },
+            "exclusions": {
+              "type": "array",
+              "title": "Exclusions Patterns",
+              "description": "A list of exclusion patterns (using wildcards) to exclude files when detecting projects and technologies for scanning SCA.",
+              "default": ["*node_modules*", "*target*", "*venv*", "*test*"],
+              "items": {
+                "type": "string",
+                "title": "Exclusion Pattern",
+                "examples": ["*node_modules*", "*target*", "*venv*", "*test*"]
+              }
+            },
             "pipRequirementsFile": {
               "type": "string",
               "title": "Pip Requirements File",

@@ -93,6 +93,11 @@
       #   workingDirs:
       #     - "."
 
+      # [Default: ["*node_modules*", "*target*", "*venv*", "*test*"]]
+      # List of of exclusion patterns (using wildcards) to exclude files when detecting projects and technologies for scanning SCA.
+      #   exclusions:
+      #     - "*node_modules*"
+
       # [Mandatory for pip only if using requirements file, Default: pip install .]
       # The requirements file name that is used to install dependencies in case of pip package manager
       #   pipRequirementsFile: ""

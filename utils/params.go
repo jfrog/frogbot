@@ -31,6 +31,9 @@ var (
 	errFrogbotConfigNotFound = fmt.Errorf("%s wasn't found in the Frogbot directory and its subdirectories. Assuming all the configuration is stored as environment variables", FrogbotConfigFile)
 	// Possible Config file path's to Frogbot Management repository
 	osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
+
+	// Default values
+	DefaultExclusions = []string{"*node_modules*", "*target*", "*venv*", "*test*"}
 )
 
 type FrogbotDetails struct {
@@ -79,6 +82,7 @@ type Project struct {
 	InstallCommand      string   `yaml:"installCommand,omitempty"`
 	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
+	Exclusions          []string `yaml:"exclusions,omitempty"`
 	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
 	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
@@ -92,6 +96,11 @@ func (p *Project) setDefaultsIfNeeded() error {
 			workingDir = RootDir
 		}
 		p.WorkingDirs = append(p.WorkingDirs, workingDir)
+	}
+	if len(p.Exclusions) == 0 {
+		if p.Exclusions, _ = readArrayParamFromEnv(ExclusionsEnv, ";"); len(p.Exclusions) == 0 {
+			p.Exclusions = DefaultExclusions
+		}
 	}
 	if p.UseWrapper == nil {
 		useWrapper, err := getBoolEnv(UseWrapperEnv, true)
