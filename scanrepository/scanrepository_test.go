@@ -131,7 +131,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	}
 	baseDir, err := os.Getwd()
 	assert.NoError(t, err)
-	testDir, cleanup := utils.PrepareTestEnvironment(t, filepath.Join(rootTestDir, "cmd"))
+	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, filepath.Join(rootTestDir, "cmd"))
 	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -263,7 +263,7 @@ pr body
 	assert.NoError(t, err)
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	testDir, cleanup := utils.PrepareTestEnvironment(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
+	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
 	defer cleanup()
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
