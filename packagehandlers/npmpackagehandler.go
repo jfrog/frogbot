@@ -2,9 +2,14 @@ package packagehandlers
 
 import (
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"path/filepath"
 )
 
-const npmInstallPackageLockOnlyFlag = "--package-lock-only"
+const (
+	npmInstallPackageLockOnlyFlag = "--package-lock-only"
+	npmInstallIgnoreScriptsFlag   = "--ignore-scripts"
+)
 
 type NpmPackageHandler struct {
 	CommonPackageHandler
@@ -23,5 +28,10 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallPackageLockOnlyFlag)
+	isNodeModulesExists, err := fileutils.IsDirExists(filepath.Join(".", "node_modules"), false)
+	if !isNodeModulesExists {
+		// In case node_modules don't exist in current dir the fix will update only package.json and package-lock.json
+		return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallPackageLockOnlyFlag, npmInstallIgnoreScriptsFlag)
+	}
+	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallIgnoreScriptsFlag)
 }
