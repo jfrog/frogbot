@@ -40,3 +40,14 @@ func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, co
 func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {
 	return fmt.Sprintf("%s\n%s %s\n%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
 }
+
+func (smo *SimplifiedOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
+	smo.pullRequestCommentTitle = pullRequestCommentTitle
+	if smo.pullRequestCommentTitle != "" {
+		smo.pullRequestCommentTitle = "\n\n" + MarkAsBold(pullRequestCommentTitle)
+	}
+}
+
+func (smo *SimplifiedOutput) PullRequestCommentTitle() string {
+	return smo.pullRequestCommentTitle
+}

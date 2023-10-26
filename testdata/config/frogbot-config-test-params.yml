@@ -7,6 +7,7 @@
       commitMessageTemplate: "custom commit title"
       pullRequestTitleTemplate: "myPullRequests"
       aggregateFixes: true
+      pullRequestCommentTitle: "build 1323"
     scan:
       includeAllVulnerabilities: true
       failOnSecurityIssues: true

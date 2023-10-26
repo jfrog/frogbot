@@ -48,9 +48,15 @@ func newRepoAggregator() RepoAggregator {
 }
 
 type Repository struct {
-	Params `yaml:"params,omitempty"`
-	outputwriter.OutputWriter
-	Server coreconfig.ServerDetails
+	Params       `yaml:"params,omitempty"`
+	OutputWriter outputwriter.OutputWriter
+	Server       coreconfig.ServerDetails
+}
+
+func (r *Repository) setOutputWriterDetails() {
+	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
+	r.OutputWriter.SetAvoidExtraMessages(r.Params.AvoidExtraMessages)
+	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
 }
 
 type Params struct {
@@ -236,6 +242,8 @@ type Git struct {
 	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle  string   `yaml:"pullRequestCommentTitle,omitempty"`
+	AvoidExtraMessages       bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails       vcsclient.PullRequestInfo
@@ -258,15 +266,28 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
-	// Check that PR ID was provided when scanning specific pull request.
-	if commandName == ScanPullRequest && gitParamsFromEnv.PullRequestDetails.ID == 0 {
-		return errors.New("no pull request ID was provided. Please configure it using the `JF_GIT_PULL_REQUEST_ID` environment variable")
+	if commandName == ScanPullRequest {
+		if err = g.extractScanPullRequestEnvParams(gitParamsFromEnv); err != nil {
+			return
+		}
 	}
 	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
 			return
 		}
 	}
+	return
+}
+
+func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error) {
+	// The Pull Request ID is a mandatory requirement for Frogbot to properly identify and scan the relevant pull request
+	if gitParamsFromEnv.PullRequestDetails.ID == 0 {
+		return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
+	}
+	if g.PullRequestCommentTitle == "" {
+		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
 }
 
@@ -379,17 +400,12 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
 		return
 	}
-	avoidExtraMessages, err := getBoolEnv(AvoidExtraMessages, false)
-	if err != nil {
-		return
-	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
-		repository.OutputWriter = outputwriter.GetCompatibleOutputWriter(gitParamsFromEnv.GitProvider)
-		repository.OutputWriter.SetAvoidExtraMessages(avoidExtraMessages)
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}
+		repository.setOutputWriterDetails()
 		resultAggregator = append(resultAggregator, repository)
 	}
 
