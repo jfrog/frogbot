@@ -29,7 +29,7 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	isNodeModulesExists, err := fileutils.IsDirExists(filepath.Join(".", "node_modules"), false)
+	isNodeModulesExists, err := fileutils.IsDirExists("node_modules", false)
 	if err != nil {
 		err = fmt.Errorf("failed while serching for node_modules in project: %s", err.Error())
 		return
