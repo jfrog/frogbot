@@ -33,9 +33,11 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 		err = fmt.Errorf("failed while serching for node_modules in project: %s", err.Error())
 		return
 	}
+
+	commandFlags := []string{npmInstallIgnoreScriptsFlag}
 	if !isNodeModulesExists {
 		// In case node_modules don't exist in current dir the fix will update only package.json and package-lock.json
-		return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallPackageLockOnlyFlag, npmInstallIgnoreScriptsFlag)
+		commandFlags = append(commandFlags, npmInstallPackageLockOnlyFlag)
 	}
-	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), npmInstallIgnoreScriptsFlag)
+	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), commandFlags...)
 }
