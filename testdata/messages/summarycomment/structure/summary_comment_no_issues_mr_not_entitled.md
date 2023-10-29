@@ -5,7 +5,8 @@
 </div>
 
 <details>
-<summary>Note</summary>
+<summary> <b>Note:</b> </summary>
+
 
 ---
 <div align='center'>
@@ -14,7 +15,9 @@
 
 </div>
 
+
 </details>
+
 
 ---
 <div align='center'>

@@ -101,7 +101,6 @@ type OutputWriter interface {
 	// Markdown interface
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
-	MarkAsCollapsible(title, content string) string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
@@ -137,12 +136,20 @@ func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
 	mo.showCaColumn = showCaColumn
 }
 
+func (mo *MarkdownOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
+	mo.pullRequestCommentTitle = pullRequestCommentTitle
+}
+
 func (mo *MarkdownOutput) IsShowingCaColumn() bool {
 	return mo.showCaColumn
 }
 
 func (mo *MarkdownOutput) IsEntitledForJas() bool {
 	return mo.entitledForJas
+}
+
+func (mo *MarkdownOutput) PullRequestCommentTitle() string {
+	return mo.pullRequestCommentTitle
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {

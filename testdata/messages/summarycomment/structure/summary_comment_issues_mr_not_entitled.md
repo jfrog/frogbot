@@ -9,7 +9,8 @@
 some content
 ```
 <details>
-<summary>Note</summary>
+<summary> <b>Note:</b> </summary>
+
 
 ---
 <div align='center'>
@@ -18,7 +19,9 @@ some content
 
 </div>
 
+
 </details>
+
 
 ---
 <div align='center'>

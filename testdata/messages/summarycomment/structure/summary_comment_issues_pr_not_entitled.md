@@ -1,6 +1,6 @@
 <div align='center'>
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)
+[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)
 
 </div>
 
