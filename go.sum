@@ -703,6 +703,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
+github.com/eranturgeman/build-info-go v0.0.0-20231026150746-66c0ccd91569 h1:omtmEOYadgrcOe1plcsy/xL7sjejmAQzpQ61EurAzQY=
+github.com/eranturgeman/build-info-go v0.0.0-20231026150746-66c0ccd91569/go.mod h1:ujJ8XQZMdT2tMkLSMJNyDd1pCY+duwHdjV+9or9FLIg=
 github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231029123738-b6dd0b0b79f2 h1:+SCEJ0wh5nlc2ONYE2+SXq32SbQwMWHsRP9/AvJwOzQ=
 github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231029123738-b6dd0b0b79f2/go.mod h1:eKzmgYirU1D/F9amXkzqHheBeQCuK2akXiskjaaIoPc=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
@@ -880,8 +882,6 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOl
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jedib0t/go-pretty/v6 v6.4.8 h1:HiNzyMSEpsBaduKhmK+CwcpulEeBrTmxutz4oX/oWkg=
 github.com/jedib0t/go-pretty/v6 v6.4.8/go.mod h1:Ndk3ase2CkQbXLLNf5QDHoYb6J9WtVfmHZu9n8rk2xs=
-github.com/jfrog/build-info-go v1.9.14 h1:xVezJ16Vpm/boRBn3lI1THCQmkylm+6R4zYWxOQ0NSM=
-github.com/jfrog/build-info-go v1.9.14/go.mod h1:ujJ8XQZMdT2tMkLSMJNyDd1pCY+duwHdjV+9or9FLIg=
 github.com/jfrog/froggit-go v1.14.2 h1:55x1anQtaiARlSBMVT59aFU6Mmx90tpcvvAuuPsZm9c=
 github.com/jfrog/froggit-go v1.14.2/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/jfrog/gofrog v1.3.1 h1:QqAwQXCVReT724uga1AYqG/ZyrNQ6f+iTxmzkb+YFQk=
