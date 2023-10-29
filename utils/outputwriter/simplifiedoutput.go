@@ -22,7 +22,7 @@ func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 }
 
 func (smo *SimplifiedOutput) Image(source ImageSource) string {
-	return GetSimplifiedTitle(source)
+	return MarkAsBold(GetSimplifiedTitle(source))
 }
 
 func (smo *SimplifiedOutput) MarkInCenter(content string) string {

@@ -82,7 +82,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 		},
 		{
 			name:    "No Vulnerability simplified",
-			comment: "This is a comment with the " + GetSimplifiedTitle(NoVulnerabilityPrBannerSource) + " icon",
+			comment: "This is a comment with the " + MarkAsBold(GetSimplifiedTitle(NoVulnerabilityPrBannerSource)) + " icon",
 			cases: []OutputTestCase{
 				{
 					name:           "Standard output (PR)",
@@ -145,7 +145,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 		},
 		{
 			name:    "Vulnerability simplified",
-			comment: "This is a comment with the " + GetSimplifiedTitle(VulnerabilitiesPrBannerSource) + " icon",
+			comment: "This is a comment with the " + MarkAsBold(GetSimplifiedTitle(VulnerabilitiesPrBannerSource)) + " icon",
 			cases: []OutputTestCase{
 				{
 					name:           "Standard output (PR)",
@@ -178,10 +178,10 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 
 func TestGetPRSummaryContent(t *testing.T) {
 	testCases := []struct {
-		name                       string
-		cases                      []OutputTestCase
-		issuesExists               bool
-		isComment                  bool
+		name         string
+		cases        []OutputTestCase
+		issuesExists bool
+		isComment    bool
 	}{
 		{
 			name:         "Summary comment No issues found",
@@ -222,6 +222,11 @@ func TestGetPRSummaryContent(t *testing.T) {
 					name:               "Pull request not entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled_with_title.md"),
+				},
+				{
+					name:               "Pull Request not entitled custom title avoid extra messages (Standard output)",
+					writer:             &StandardOutput{MarkdownOutput{pullRequestCommentTitle: "Custom title", avoidExtraMessages: true}},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md"),
 				},
 				{
 					name:               "Pull request not entitled custom title (Simplified output)",
