@@ -703,10 +703,10 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/build-info-go v0.0.0-20231026150746-66c0ccd91569 h1:omtmEOYadgrcOe1plcsy/xL7sjejmAQzpQ61EurAzQY=
-github.com/eranturgeman/build-info-go v0.0.0-20231026150746-66c0ccd91569/go.mod h1:ujJ8XQZMdT2tMkLSMJNyDd1pCY+duwHdjV+9or9FLIg=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231031110817-7e9270ad9354 h1:PYtG0w3V1eGik79yV29rYodyyMNR12DuL5r0OCeW7HI=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231031110817-7e9270ad9354/go.mod h1:eKzmgYirU1D/F9amXkzqHheBeQCuK2akXiskjaaIoPc=
+github.com/eranturgeman/build-info-go v0.0.0-20231031133929-fe2b56c06f87 h1:TpKRehaI4PoWzegRD6AzpFmLcxoA3SljlUVDgdxzS1A=
+github.com/eranturgeman/build-info-go v0.0.0-20231031133929-fe2b56c06f87/go.mod h1:ujJ8XQZMdT2tMkLSMJNyDd1pCY+duwHdjV+9or9FLIg=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231031135702-7096b2a93305 h1:Ou0WS5Maqq3Cn6oHcoUckbU4HZ7v0GMYUZZD745BlJ4=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231031135702-7096b2a93305/go.mod h1:EF9Rl8DNvHcr2GZt5uUhpepH63fAv43G3B9aCZWSk9s=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
