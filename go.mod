@@ -123,6 +123,6 @@ require (
 
 //replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231029123738-b6dd0b0b79f2
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231029123738-b6dd0b0b79f2
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231031110817-7e9270ad9354
 
 replace github.com/jfrog/build-info-go => github.com/eranturgeman/build-info-go v0.0.0-20231026150746-66c0ccd91569
