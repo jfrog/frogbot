@@ -142,7 +142,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 }
 
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
-	// Temporary block until all 'install' logic moves out from frogbot and this code will be deprecated
+	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
 	if sc.InstallCommandName == "npm" {
 		return nil
 	}
