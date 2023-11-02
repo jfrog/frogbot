@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
@@ -130,7 +131,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
-		SetExclusions(sc.Exclusions).
+		SetExclusions(sc.PathExclusions).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams)

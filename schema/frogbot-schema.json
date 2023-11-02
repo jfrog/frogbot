@@ -192,14 +192,14 @@
                 "default": "."
               }
             },
-            "exclusions": {
+            "pathExclusions": {
               "type": "array",
-              "title": "Exclusions Patterns",
-              "description": "A list of exclusion patterns (using wildcards) to exclude files when detecting projects and technologies for scanning SCA.",
+              "title": "Path Exclusions Patterns",
+              "description": "List of exclusion patterns (utilizing wildcards) for excluding paths in the source code of the Git repository during SCA scans.",
               "default": ["*node_modules*", "*target*", "*venv*", "*test*"],
               "items": {
                 "type": "string",
-                "title": "Exclusion Pattern",
+                "title": "Path Exclusion Pattern",
                 "examples": ["*node_modules*", "*target*", "*venv*", "*test*"]
               }
             },

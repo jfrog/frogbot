@@ -126,8 +126,8 @@ pipelines:
             # JF_WORKING_DIR: path/to/project/dir
 
             # [Default: "*node_modules*;*target*;*venv*;*test*"]
-            # List of of exclusion patterns (using wildcards) to exclude files when detecting projects and technologies for scanning SCA.
-            # JF_EXCLUSIONS: <exclusion-1>;<exclusion-2>...;<exclusion-n>
+            # List of exclusion patterns (utilizing wildcards) for excluding paths in the source code of the Git repository during SCA scans.
+            # JF_PATH_EXCLUSIONS: "*node_modules*;*target*;*venv*;*test*"
 
             # [Optional]
             # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
