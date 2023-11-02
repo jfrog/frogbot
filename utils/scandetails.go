@@ -11,7 +11,6 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -126,7 +125,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetUseWrapper(*sc.UseWrapper).
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(sc.ServerDetails)
+		SetServerDetails(sc.ServerDetails).
+		SetInstallCommandArgs(sc.InstallCommandArgs)
 
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
@@ -144,6 +144,11 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 }
 
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
+	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
+	if sc.InstallCommandName == "npm" {
+		return nil
+	}
+
 	if sc.InstallCommandName == "" {
 		return nil
 	}
