@@ -32,9 +32,6 @@ var (
 	errFrogbotConfigNotFound = fmt.Errorf("%s wasn't found in the Frogbot directory and its subdirectories. Assuming all the configuration is stored as environment variables", FrogbotConfigFile)
 	// Possible Config file path's to Frogbot Management repository
 	osFrogbotConfigPath = filepath.Join(frogbotConfigDir, FrogbotConfigFile)
-
-	// Default values
-	DefaultExclusions = []string{"*node_modules*", "*target*", "*venv*", "*test*"}
 )
 
 type FrogbotDetails struct {
