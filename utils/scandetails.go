@@ -145,6 +145,7 @@ func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
 	if sc.InstallCommandName == "npm" || sc.InstallCommandName == "yarn" {
 		return nil
+
 	}
 
 	if sc.InstallCommandName == "" {
