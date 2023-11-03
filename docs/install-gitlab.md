@@ -4,7 +4,7 @@ To install Frogbot on GitLab repositories using GitLab CI:
 
 1. Make sure you have the connection details of your JFrog environment.
 2. Go to your GitLab repository settings page and save the JFrog connection details as repository secrets with the following names - **JF_URL**, **JF_USER**, and **JF_PASSWORD** 
-> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**
+> **_NOTE:_** You can also use **JF_XRAY_URL** and **JF_ARTIFACTORY_URL** instead of **JF_URL**, and **JF_ACCESS_TOKEN** instead of **JF_USER** and **JF_PASSWORD**, also please be aware that if you set these tokens as **protected** in Gitlab, the pipeline will not be able to use them, unless its running on a protected branch.
 3. Add a job named **frogbot-scan** to your **.gitlab-ci.yml** file in your GitLab repository using the code block below.
 
 **Important**
@@ -41,6 +41,7 @@ frogbot-scan:
 
     # [Mandatory]
     # GitLab access token with the following permissions scopes: api, read_api, read_user, read_repository
+    # If you are using Gitlab SAAS, you should use the following scopes: api, read_api, read_repository
     JF_GIT_TOKEN: $USER_TOKEN
 
     # Predefined GitLab variables. There's no need to set them.
