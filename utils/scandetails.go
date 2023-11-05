@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
@@ -112,7 +113,7 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err
@@ -130,6 +131,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
+		SetExclusions(sc.PathExclusions).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams)

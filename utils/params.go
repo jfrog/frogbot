@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 
 	"github.com/jfrog/build-info-go/utils"
@@ -79,6 +80,7 @@ type Project struct {
 	InstallCommand      string   `yaml:"installCommand,omitempty"`
 	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
+	PathExclusions      []string `yaml:"pathExclusions,omitempty"`
 	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
 	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
@@ -92,6 +94,11 @@ func (p *Project) setDefaultsIfNeeded() error {
 			workingDir = RootDir
 		}
 		p.WorkingDirs = append(p.WorkingDirs, workingDir)
+	}
+	if len(p.PathExclusions) == 0 {
+		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
+			p.PathExclusions = audit.DefaultExcludePatterns
+		}
 	}
 	if p.UseWrapper == nil {
 		useWrapper, err := getBoolEnv(UseWrapperEnv, true)
