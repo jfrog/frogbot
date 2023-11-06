@@ -42,6 +42,7 @@ const (
 	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
 	RequirementsFileEnv                = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv                = "JF_WORKING_DIR"
+	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
 	jfrogWatchesEnv                    = "JF_WATCHES"
 	jfrogProjectEnv                    = "JF_PROJECT"
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"

@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -113,7 +113,7 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *audit.Results, err error) {
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err
@@ -125,11 +125,13 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 		SetUseWrapper(*sc.UseWrapper).
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
-		SetServerDetails(sc.ServerDetails)
+		SetServerDetails(sc.ServerDetails).
+		SetInstallCommandArgs(sc.InstallCommandArgs)
 
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
+		SetExclusions(sc.PathExclusions).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams)
@@ -142,6 +144,11 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *aud
 }
 
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
+	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
+	if sc.InstallCommandName == "npm" {
+		return nil
+	}
+
 	if sc.InstallCommandName == "" {
 		return nil
 	}
