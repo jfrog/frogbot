@@ -54,7 +54,7 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 }
 
 func MockHasConnection() *UrlAccessChecker {
-	return &UrlAccessChecker{Url: "url", Connected: clientutils.Pointer(true)}
+	return &UrlAccessChecker{url: "url", connected: clientutils.Pointer(true)}
 }
 
 // Create a temporary directory and copy the content of "testdata/testDir" into it

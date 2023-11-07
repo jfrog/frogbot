@@ -439,19 +439,19 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 }
 
 type UrlAccessChecker struct {
-	Connected *bool
+	connected *bool
 	waitGroup *errgroup.Group
-	Url       string
+	url       string
 }
 
 // CheckConnection checks if the url is accessible in a separate goroutine not to block the main thread
 func CheckConnection(Url string) *UrlAccessChecker {
 	checker := &UrlAccessChecker{
-		Url:       Url,
+		url:       Url,
 		waitGroup: new(errgroup.Group),
 	}
 	checker.waitGroup.Go(func() (err error) {
-		checker.Connected = clientutils.Pointer(IsUrlAccessible(Url))
+		checker.connected = clientutils.Pointer(IsUrlAccessible(Url))
 		return
 	})
 	return checker
@@ -459,14 +459,14 @@ func CheckConnection(Url string) *UrlAccessChecker {
 
 // Checks if the url is accessible, can block until the connection check goroutine is done
 func (ic *UrlAccessChecker) IsConnected() bool {
-	if ic.Connected != nil {
-		return *ic.Connected
+	if ic.connected != nil {
+		return *ic.connected
 	}
 	// wait for connection routine to finish
 	if err := ic.waitGroup.Wait(); err != nil {
 		return false
 	}
-	return *ic.Connected
+	return *ic.connected
 }
 
 // Checks if the url is accessible
