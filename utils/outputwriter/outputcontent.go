@@ -255,7 +255,7 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		contentBuilder.WriteString(customCommentTitle)
+		WriteContent(&contentBuilder, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
 	}
 	WriteContent(&contentBuilder, content, footer(writer))
 	return contentBuilder.String()
