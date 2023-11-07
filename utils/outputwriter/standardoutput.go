@@ -27,28 +27,19 @@ func (so *StandardOutput) MarkInCenter(content string) string {
 
 func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
 	if summary != "" {
-		summary = fmt.Sprintf("<summary> <b>%s</b> </summary>\n<br>\n", summary)
+		summary = fmt.Sprintf("<summary> <b>%s</b> </summary>\n", summary)
+	}
+	if subTitleDepth > 0 {
+		summary += "<br>\n"
 	}
 	return fmt.Sprintf("<details>\n%s\n%s\n\n</details>\n", summary, content)
 }
 
 func (so *StandardOutput) MarkAsTitle(title string, subTitleDepth int) string {
-	return fmt.Sprintf("%s %s", strings.Repeat("#", subTitleDepth), title)
-}
-
-func (so *StandardOutput) MarkAsCollapsible(title, content string) string {
-	return fmt.Sprintf("<details>\n<summary>%s</summary>\n%s\n</details>", title, content)
-}
-
-func (so *StandardOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
-	so.pullRequestCommentTitle = pullRequestCommentTitle
-	if so.pullRequestCommentTitle != "" {
-		so.pullRequestCommentTitle = "\n" + so.MarkAsTitle(so.pullRequestCommentTitle, 2)
+	if subTitleDepth == 0 {
+		return title
 	}
-}
-
-func (so *StandardOutput) PullRequestCommentTitle() string {
-	return so.pullRequestCommentTitle
+	return fmt.Sprintf("%s %s", strings.Repeat("#", subTitleDepth), title)
 }
 
 func GetMarkdownCenterTag(content string) string {

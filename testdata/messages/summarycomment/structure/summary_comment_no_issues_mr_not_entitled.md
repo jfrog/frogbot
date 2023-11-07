@@ -1,16 +1,12 @@
 <div align='center'>
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)
+[![👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)
 
 </div>
 
-## Test Build
-
-```
-some content
-```
 <details>
-<summary>Note</summary>
+<summary> <b>Note:</b> </summary>
+
 
 ---
 <div align='center'>
@@ -19,7 +15,9 @@ some content
 
 </div>
 
+
 </details>
+
 
 ---
 <div align='center'>

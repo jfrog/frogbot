@@ -1,8 +1,9 @@
-**🚨 This automated pull request was created by Frogbot and fixes the below:**
+**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.**
 
-```
-some content
-```
+---
+## **Custom title**
+
+---
 
 ---
 Note:

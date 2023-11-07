@@ -69,17 +69,23 @@ func GetBanner(banner ImageSource) string {
 }
 
 func GetIconTag(imageSource ImageSource) string {
-	return fmt.Sprintf("!%s", MarkAsLink("", fmt.Sprintf("%s%s", baseResourceUrl, imageSource)))
+	return fmt.Sprintf("!%s", MarkAsLink(GetSimplifiedTitle(imageSource), fmt.Sprintf("%s%s", baseResourceUrl, imageSource)))
 }
 
 func GetSimplifiedTitle(is ImageSource) string {
 	switch is {
 	case NoVulnerabilityPrBannerSource:
-		return MarkAsBold("👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.")
+		return "👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies."
 	case VulnerabilitiesPrBannerSource:
-		return MarkAsBold("🚨 Frogbot scanned this pull request and found the below:")
+		return "🚨 Frogbot scanned this pull request and found the below:"
 	case VulnerabilitiesFixPrBannerSource:
-		return MarkAsBold("🚨 This automated pull request was created by Frogbot and fixes the below:")
+		return "🚨 This automated pull request was created by Frogbot and fixes the below:"
+	case NoVulnerabilityMrBannerSource:
+		return "👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies."
+	case VulnerabilitiesMrBannerSource:
+		return "🚨 Frogbot scanned this merge request and found the below:"
+	case VulnerabilitiesFixMrBannerSource:
+		return "🚨 This automated merge request was created by Frogbot and fixes the below:"
 	default:
 		return ""
 	}

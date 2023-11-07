@@ -130,7 +130,7 @@ func TestSimpleMarkAsDetails(t *testing.T) {
 			summary:        "",
 			subTitleDepth:  0,
 			content:        "",
-			expectedOutput: "\n---\n \n\n---\n",
+			expectedOutput: "\n---\n\n\n---\n",
 		},
 		{
 			name:           "empty content",
@@ -187,7 +187,7 @@ func TestSimpleMarkAsTitle(t *testing.T) {
 			name:           "empty",
 			title:          "",
 			subTitleDepth:  0,
-			expectedOutput: "\n---\n \n\n---",
+			expectedOutput: "\n---\n\n\n---",
 		},
 		{
 			name:           "Main title",

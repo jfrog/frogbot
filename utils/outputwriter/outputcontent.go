@@ -31,7 +31,7 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		comment.WriteString(customCommentTitle)
+		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
 	}
 	if issuesExists {
 		WriteContent(&comment, content)
@@ -84,7 +84,7 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return writer.MarkAsCollapsible("Note", fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
+	return writer.MarkAsDetails("Note:", 0, fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {
