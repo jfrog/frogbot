@@ -669,7 +669,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err = scanPullRequest.Run(configAggregator, client)
+	err = scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {

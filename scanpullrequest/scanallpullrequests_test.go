@@ -140,7 +140,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(configAggregator, client)
+	err := scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
 	if assert.NoError(t, err) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))
@@ -182,7 +182,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
+	err := scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_simplified.md"))

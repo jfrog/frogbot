@@ -44,11 +44,12 @@ type ScanRepositoryCmd struct {
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
-func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	if err = utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
 		return err
 	}
 	repository := repoAggregator[0]
+	repository.OutputWriter.SetConnectedToFrogbotRepo(frogbotRepoConnection.IsConnected())
 	return cfp.scanAndFixRepository(&repository, client)
 }
 

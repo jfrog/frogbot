@@ -2,17 +2,19 @@ package utils
 
 import (
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	goGitConfig "github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-git/go-git/v5"
+	goGitConfig "github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	biutils "github.com/jfrog/build-info-go/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -49,6 +51,10 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 			unsetEnvAndAssert(t, key)
 		}
 	}
+}
+
+func MockHasConnection() *UrlAccessChecker {
+	return &UrlAccessChecker{Url: "url", Connected: clientutils.Pointer(true)}
 }
 
 // Create a temporary directory and copy the content of "testdata/testDir" into it

@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	FrogbotTitlePrefix = "[🐸 Frogbot]"
-	ReviewCommentId    = "FrogbotReviewComment"
+	FrogbotTitlePrefix   = "[🐸 Frogbot]"
+	FrogbotRepoUrl       = "https://github.com/jfrog/frogbot"
+	FrogbotRepoUrlReadme = FrogbotRepoUrl + "#readme"
+	ReviewCommentId      = "FrogbotReviewComment"
 
 	vulnerableDependenciesTitle                   = "📦 Vulnerable Dependencies"
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
@@ -22,13 +24,13 @@ const (
 )
 
 var (
-	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", "https://github.com/jfrog/frogbot#readme")
+	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotRepoUrlReadme)
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
 	comment := strings.Builder{}
-	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+	comment.WriteString(getBanner(issuesExists, isComment, writer))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
 		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
@@ -41,6 +43,14 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 		footer(writer),
 	)
 	return comment.String()
+}
+
+func getBanner(issuesExists, isComment bool, writer OutputWriter) string {
+	source := getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())
+	if writer.ConnectedToFrogbotRepo() {
+		return writer.Image(source)
+	}
+	return MarkAsBold(GetSimplifiedTitle(source))
 }
 
 func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvider) ImageSource {

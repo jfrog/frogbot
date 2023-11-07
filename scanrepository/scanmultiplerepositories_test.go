@@ -59,7 +59,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	assert.NoError(t, err)
 
 	var cmd = ScanMultipleRepositories{dryRun: true, dryRunRepoPath: testDir}
-	assert.NoError(t, cmd.Run(configAggregator, client))
+	assert.NoError(t, cmd.Run(configAggregator, client, utils.MockHasConnection()))
 }
 
 func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{}, projectNames ...string) http.HandlerFunc {

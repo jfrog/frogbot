@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
@@ -384,13 +385,13 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 	}{
 		{
 			run:            utils.CreateRunWithDummyResults(),
-			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl),
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl),
 		},
 		{
 			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
 				utils.CreateResultWithOneLocation("file://root/dir/file", 0, 0, 0, 0, "snippet", "rule", "level"),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
-			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl).WithResults([]*sarif.Result{
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl).WithResults([]*sarif.Result{
 				utils.CreateResultWithOneLocation("file", 0, 0, 0, 0, "snippet", "rule", "level"),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 		},
@@ -404,7 +405,7 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
 				))}),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
-			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, sarifToolUrl).WithResults([]*sarif.Result{
+			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl).WithResults([]*sarif.Result{
 				utils.CreateResultWithLocations("findings", "rule", "level",
 					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
 					utils.CreateLocation("dir2/file2", 1, 1, 1, 1, "snippet2"),

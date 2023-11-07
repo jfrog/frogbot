@@ -95,6 +95,8 @@ type OutputWriter interface {
 	AvoidExtraMessages() bool
 	SetPullRequestCommentTitle(pullRequestCommentTitle string)
 	PullRequestCommentTitle() string
+	SetConnectedToFrogbotRepo(connected bool)
+	ConnectedToFrogbotRepo() bool
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -112,6 +114,7 @@ type MarkdownOutput struct {
 	avoidExtraMessages      bool
 	showCaColumn            bool
 	entitledForJas          bool
+	connectedToFrogbotRepo  bool
 	vcsProvider             vcsutils.VcsProvider
 }
 
@@ -129,6 +132,14 @@ func (mo *MarkdownOutput) SetAvoidExtraMessages(avoidExtraMessages bool) {
 
 func (mo *MarkdownOutput) AvoidExtraMessages() bool {
 	return mo.avoidExtraMessages
+}
+
+func (mo *MarkdownOutput) SetConnectedToFrogbotRepo(connected bool) {
+	mo.connectedToFrogbotRepo = connected
+}
+
+func (mo *MarkdownOutput) ConnectedToFrogbotRepo() bool {
+	return mo.connectedToFrogbotRepo
 }
 
 func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
@@ -155,9 +166,9 @@ func (mo *MarkdownOutput) PullRequestCommentTitle() string {
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider}}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, connectedToFrogbotRepo: true}}
 	default:
-		return &StandardOutput{MarkdownOutput{vcsProvider: provider}}
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider, connectedToFrogbotRepo: true}}
 	}
 }
 
