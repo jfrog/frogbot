@@ -78,7 +78,7 @@ const (
 	WriterSimplified
 )
 
-func GetTestWriter(testType WriterOutTestType, entitled, avoidExtraMessages bool, customTitle string) OutputWriter {
+func GetTestWriter(testType WriterOutTestType, entitled, showCaColumn, avoidExtraMessages bool, customTitle string) OutputWriter {
 	provider := vcsutils.GitHub
 	switch testType {
 	case WriterMR:
@@ -90,6 +90,7 @@ func GetTestWriter(testType WriterOutTestType, entitled, avoidExtraMessages bool
 	markdownOut := MarkdownOutput{
 		vcsProvider:             provider,
 		entitledForJas:          entitled,
+		showCaColumn:            showCaColumn,
 		avoidExtraMessages:      avoidExtraMessages,
 		pullRequestCommentTitle: customTitle,
 		connectedToFrogbotRepo:  true,
