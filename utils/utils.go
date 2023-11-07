@@ -445,13 +445,13 @@ type UrlAccessChecker struct {
 }
 
 // CheckConnection checks if the url is accessible in a separate goroutine not to block the main thread
-func CheckConnection(Url string) *UrlAccessChecker {
+func CheckConnection(url string) *UrlAccessChecker {
 	checker := &UrlAccessChecker{
-		url:       Url,
+		url:       url,
 		waitGroup: new(errgroup.Group),
 	}
 	checker.waitGroup.Go(func() (err error) {
-		checker.connected = clientutils.Pointer(IsUrlAccessible(Url))
+		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
 		return
 	})
 	return checker
