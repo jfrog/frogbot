@@ -117,7 +117,7 @@ func TestStandardImage(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			smo := &StandardOutput{}
+			smo := &StandardOutput{MarkdownOutput{hasInternetConnection: true}}
 			assert.Equal(t, tc.expectedOutput, smo.Image(tc.source))
 		})
 	}

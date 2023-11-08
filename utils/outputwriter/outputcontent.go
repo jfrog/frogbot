@@ -30,7 +30,7 @@ var (
 
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
 	comment := strings.Builder{}
-	comment.WriteString(getBanner(issuesExists, isComment, writer))
+	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
 		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
@@ -45,14 +45,6 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 	return comment.String()
 }
 
-func getBanner(issuesExists, isComment bool, writer OutputWriter) string {
-	source := getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())
-	if writer.HasInternetConnection() {
-		return writer.Image(source)
-	}
-	return MarkAsBold(GetSimplifiedTitle(source))
-}
-
 func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvider) ImageSource {
 	if !isComment {
 		return fixCVETitleSrc(provider)
@@ -65,8 +57,10 @@ func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvi
 
 func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
 	client := writer.VcsProvider()
-	return strings.Contains(content, writer.Image(NoIssuesTitleSrc(client))) ||
-		strings.Contains(content, writer.Image(PRSummaryCommentTitleSrc(client)))
+	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
 }
 
 func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {

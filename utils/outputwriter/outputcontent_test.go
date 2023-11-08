@@ -55,7 +55,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: "false",
+					expectedOutput: "true",
 				},
 			},
 		},
@@ -87,7 +87,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				{
 					name:           "Standard output (PR)",
 					writer:         &StandardOutput{},
-					expectedOutput: "false",
+					expectedOutput: "true",
 				},
 				{
 					name:           "Standard output (MR)",
@@ -118,7 +118,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: "false",
+					expectedOutput: "true",
 				},
 			},
 		},
@@ -138,8 +138,8 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Simplified output",
-					writer:         &SimplifiedOutput{},
-					expectedOutput: "false",
+					writer:         &SimplifiedOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
+					expectedOutput: "true",
 				},
 			},
 		},
@@ -150,7 +150,7 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				{
 					name:           "Standard output (PR)",
 					writer:         &StandardOutput{},
-					expectedOutput: "false",
+					expectedOutput: "true",
 				},
 				{
 					name:           "Standard output (MR)",
