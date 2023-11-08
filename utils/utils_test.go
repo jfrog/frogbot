@@ -421,3 +421,28 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 		assert.Equal(t, tc.expectedOutput, tc.run)
 	}
 }
+
+func TestIsUrlAccessible(t *testing.T) {
+	testCases := []struct {
+		name           string
+		url            string
+		expectedOutput bool
+	}{
+		{
+			name:           "Accessible URL",
+			url:            outputwriter.FrogbotRepoUrl,
+			expectedOutput: true,
+		},
+		{
+			name:           "Inaccessible URL",
+			url:            "https://www.google.com/this-is-not-a-real-url",
+			expectedOutput: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := IsUrlAccessible(tc.url)
+			assert.Equal(t, tc.expectedOutput, output)
+		})
+	}
+}
