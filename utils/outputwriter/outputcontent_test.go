@@ -138,8 +138,8 @@ func TestIsFrogbotSummaryComment(t *testing.T) {
 				},
 				{
 					name:           "Simplified output",
-					writer:         &SimplifiedOutput{MarkdownOutput{vcsProvider: vcsutils.GitLab}},
-					expectedOutput: "true",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: "false",
 				},
 			},
 		},
