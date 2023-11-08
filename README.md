@@ -31,7 +31,7 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 - **Secrets Detection**: Detect any secrets left exposed inside the code. to stop any accidental leak of internal tokens or credentials.
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
-## 🏁 Getting stated
+## 🏁 Getting started
 Read the [Frogbot Documentation](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot) to get started.  
 
 ## 📛 Adding the Frogbot badge
