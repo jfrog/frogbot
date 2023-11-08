@@ -65,7 +65,7 @@ func getApplicableIconTags(iconName IconName) string {
 }
 
 func GetBanner(banner ImageSource) string {
-	return GetMarkdownCenterTag(MarkAsLink(GetIconTag(banner), "https://github.com/jfrog/frogbot#readme"))
+	return GetMarkdownCenterTag(MarkAsLink(GetIconTag(banner), FrogbotRepoUrlReadme))
 }
 
 func GetIconTag(imageSource ImageSource) string {

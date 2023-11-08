@@ -18,7 +18,10 @@ func (so *StandardOutput) FormattedSeverity(severity, applicability string) stri
 }
 
 func (so *StandardOutput) Image(source ImageSource) string {
-	return GetBanner(source)
+	if so.hasInternetConnection {
+		return GetBanner(source)
+	}
+	return MarkAsBold(GetSimplifiedTitle(source))
 }
 
 func (so *StandardOutput) MarkInCenter(content string) string {

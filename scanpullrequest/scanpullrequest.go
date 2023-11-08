@@ -28,7 +28,7 @@ type ScanPullRequestCmd struct{}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
-func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	if err = utils.ValidateSingleRepoConfiguration(&configAggregator); err != nil {
 		return
 	}
@@ -38,11 +38,10 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return
 		}
 	}
-
+	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}
-
 	return scanPullRequest(repoConfig, client)
 }
 

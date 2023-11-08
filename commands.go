@@ -3,20 +3,22 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/jfrog/frogbot/scanpullrequest"
 	"github.com/jfrog/frogbot/scanrepository"
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	clitool "github.com/urfave/cli/v2"
-	"os"
 )
 
 type FrogbotCommand interface {
 	// Run the command
-	Run(config utils.RepoAggregator, client vcsclient.VcsClient) error
+	Run(config utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
 }
 
 func GetCommands() []*clitool.Command {
@@ -67,6 +69,8 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	if err != nil {
 		return err
 	}
+	// Check if the user has access to the frogbot repository (to access the resources needed)
+	frogbotRepoConnection := utils.CheckConnection(outputwriter.FrogbotRepoUrl)
 
 	// Build the server configuration file
 	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotDetails.ServerDetails)
@@ -93,7 +97,7 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
-	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient)
+	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient, frogbotRepoConnection)
 
 	// Wait for usage reporting to finish.
 	waitForUsageResponse()

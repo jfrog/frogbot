@@ -13,9 +13,10 @@ type ScanMultipleRepositories struct {
 	dryRunRepoPath string
 }
 
-func (saf *ScanMultipleRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+func (saf *ScanMultipleRepositories) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	scanRepositoryCmd := &ScanRepositoryCmd{dryRun: saf.dryRun, dryRunRepoPath: saf.dryRunRepoPath, baseWd: saf.dryRunRepoPath}
 	for repoNum := range repoAggregator {
+		repoAggregator[repoNum].OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 		if e := scanRepositoryCmd.scanAndFixRepository(&repoAggregator[repoNum], client); e != nil {
 			err = errors.Join(err, e)
 		}

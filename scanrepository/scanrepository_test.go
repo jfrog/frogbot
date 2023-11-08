@@ -176,7 +176,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client)
+			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -296,7 +296,7 @@ pr body
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client)
+			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
