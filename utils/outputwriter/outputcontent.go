@@ -47,7 +47,7 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 
 func getBanner(issuesExists, isComment bool, writer OutputWriter) string {
 	source := getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())
-	if writer.ConnectedToFrogbotRepo() {
+	if writer.HasInternetConnection() {
 		return writer.Image(source)
 	}
 	return MarkAsBold(GetSimplifiedTitle(source))

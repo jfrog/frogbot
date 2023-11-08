@@ -190,52 +190,52 @@ func TestGetPRSummaryContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Pull Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled.md"),
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md"),
 				},
 				{
 					name:               "Simplified output not entitled",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled.md"),
 				},
 				{
 					name:               "Simplified output entitled",
-					writer:             GetTestWriter(WriterSimplified, true, false, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_entitled.md"),
 				},
 				{
 					name:               "Pull request not entitled custom title (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, false, "Custom title"),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled_with_title.md"),
 				},
 				{
 					name:               "Pull Request not entitled custom title avoid extra messages (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, true, "Custom title"),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title", avoidExtraMessages: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md"),
 				},
 				{
 					name:               "Pull request not entitled custom title (Simplified output)",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, "Custom title"),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled_with_title.md"),
 				},
 				{
 					name:               "Merge Request not entitled avoid extra messages (Standard output)",
-					writer:             GetTestWriter(WriterMR, false, false, true, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, avoidExtraMessages: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md"),
 				},
 			},
@@ -247,57 +247,57 @@ func TestGetPRSummaryContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Pull Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled.md"),
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled.md"),
 				},
 				{
 					name:               "Simplified output not entitled",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_not_entitled.md"),
 				},
 				{
 					name:               "Pull Request not entitled avoid extra messages (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, true, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md"),
 				},
 				{
 					name:               "Simplified output not entitled avoid extra messages",
-					writer:             GetTestWriter(WriterSimplified, false, false, true, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md"),
 				},
 				{
 					name:               "Simplified output entitled",
-					writer:             GetTestWriter(WriterSimplified, true, false, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled custom title (Standard output)",
-					writer:             GetTestWriter(WriterMR, true, false, false, "Custom title"),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled_with_title.md"),
 				},
 				{
 					name:               "Pull Request not entitled custom title (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, false, "Custom title"),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled_with_title.md"),
 				},
 				{
 					name:               "Pull request entitled custom title (Simplified output)",
-					writer:             GetTestWriter(WriterSimplified, true, false, false, "Custom title"),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled_with_title.md"),
 				},
 			},
@@ -309,32 +309,37 @@ func TestGetPRSummaryContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Pull Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md"),
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterPR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md"),
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, false, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md"),
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
-					writer:             GetTestWriter(WriterMR, true, false, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md"),
 				},
 				{
 					name:               "Simplified output not entitled",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
 				},
 				{
-					name:               "Simplified output entitled",
-					writer:             GetTestWriter(WriterSimplified, true, false, false, ""),
+					name:               "Simplified output not entitled ",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
+				},
+				{
+					name:               "Simplified output entitled avoid extra messages",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md"),
 				},
 			},
@@ -366,12 +371,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:           "Standard output",
-					writer:         GetTestWriter(WriterPR, false, false, false, ""),
+					writer:         &StandardOutput{},
 					expectedOutput: "",
 				},
 				{
 					name:           "Simplified output",
-					writer:         GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:         &SimplifiedOutput{},
 					expectedOutput: "",
 				},
 			},
@@ -404,12 +409,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             GetTestWriter(WriterPR, false, false, false, ""),
+					writer:             &StandardOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_standard.md"),
 				},
 				{
 					name:               "Simplified output",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:             &SimplifiedOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_simplified.md"),
 				},
 			},
@@ -437,12 +442,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             GetTestWriter(WriterPR, false, false, false, ""),
+					writer:             &StandardOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_standard.md"),
 				},
 				{
 					name:               "Simplified output",
-					writer:             GetTestWriter(WriterSimplified, false, false, false, ""),
+					writer:             &SimplifiedOutput{},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_simplified.md"),
 				},
 			},
@@ -527,12 +532,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             GetTestWriter(WriterPR, false, true, false, ""),
+					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md"),
 				},
 				{
 					name:               "Simplified output",
-					writer:             GetTestWriter(WriterSimplified, false, true, false, ""),
+					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true}},
 					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md"),
 				},
 			},

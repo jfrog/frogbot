@@ -38,7 +38,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return
 		}
 	}
-	repoConfig.OutputWriter.SetConnectedToFrogbotRepo(frogbotRepoConnection.IsConnected())
+	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}

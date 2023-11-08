@@ -49,7 +49,7 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 		return err
 	}
 	repository := repoAggregator[0]
-	repository.OutputWriter.SetConnectedToFrogbotRepo(frogbotRepoConnection.IsConnected())
+	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	return cfp.scanAndFixRepository(&repository, client)
 }
 

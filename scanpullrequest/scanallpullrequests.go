@@ -21,7 +21,7 @@ func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, cli
 	for _, config := range configAggregator {
 		log.Info("Scanning all open pull requests for repository:", config.RepoName)
 		log.Info("-----------------------------------------------------------")
-		config.OutputWriter.SetConnectedToFrogbotRepo(frogbotRepoConnection.IsConnected())
+		config.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 		err := scanAllPullRequests(config, client)
 		if err != nil {
 			return err

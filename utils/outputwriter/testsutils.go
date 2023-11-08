@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,36 +67,4 @@ func GetPRSummaryContentNoIssues(t *testing.T, summaryTestDir string, entitled, 
 		}
 	}
 	return GetOutputFromFile(t, dataPath)
-}
-
-type WriterOutTestType int
-
-const (
-	WriterPR WriterOutTestType = iota
-	WriterMR
-	WriterSimplified
-)
-
-func GetTestWriter(testType WriterOutTestType, entitled, showCaColumn, avoidExtraMessages bool, customTitle string) OutputWriter {
-	provider := vcsutils.GitHub
-	switch testType {
-	case WriterMR:
-		provider = vcsutils.GitLab
-	case WriterSimplified:
-		provider = vcsutils.BitbucketServer
-	}
-
-	markdownOut := MarkdownOutput{
-		vcsProvider:             provider,
-		entitledForJas:          entitled,
-		showCaColumn:            showCaColumn,
-		avoidExtraMessages:      avoidExtraMessages,
-		pullRequestCommentTitle: customTitle,
-		connectedToFrogbotRepo:  true,
-	}
-
-	if testType == WriterSimplified {
-		return &SimplifiedOutput{markdownOut}
-	}
-	return &StandardOutput{markdownOut}
 }

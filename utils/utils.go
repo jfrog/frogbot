@@ -440,7 +440,7 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 
 type UrlAccessChecker struct {
 	connected *bool
-	waitGroup *errgroup.Group
+	waitGroup errgroup.Group
 	url       string
 }
 
@@ -448,7 +448,7 @@ type UrlAccessChecker struct {
 func CheckConnection(url string) *UrlAccessChecker {
 	checker := &UrlAccessChecker{
 		url:       url,
-		waitGroup: new(errgroup.Group),
+		waitGroup: errgroup.Group{},
 	}
 	checker.waitGroup.Go(func() (err error) {
 		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
@@ -474,19 +474,19 @@ func IsUrlAccessible(url string) bool {
 	// Build client
 	client, err := httpclient.ClientBuilder().Build()
 	if err != nil {
-		log.Debug(fmt.Sprintf("can't check access to '%s', build client:\n%s", url, err.Error()))
+		log.Debug(fmt.Sprintf("Can't check access to '%s', build client:\n%s", url, err.Error()))
 		return false
 	}
 	// Send HEAD request to check if the url is accessible
 	req, err := http.NewRequest(http.MethodHead, url, nil)
 	if errorutils.CheckError(err) != nil {
-		log.Debug(fmt.Sprintf("can't check access to '%s', error while building request:\n%s", url, err.Error()))
+		log.Debug(fmt.Sprintf("Can't check access to '%s', error while building request:\n%s", url, err.Error()))
 		return false
 	}
-	log.Debug(fmt.Sprintf("Sending HTTP %s request to: %s", req.Method, req.URL))
+	log.Debug(fmt.Sprintf("Sending HTTP %s request to: '%s'", req.Method, req.URL))
 	resp, err := client.GetClient().Do(req)
 	if errorutils.CheckError(err) != nil {
-		log.Debug(fmt.Sprintf("can't check access to '%s', error while sending request:\n%s", url, err.Error()))
+		log.Debug(fmt.Sprintf("Can't check access to '%s', error while sending request:\n%s", url, err.Error()))
 		return false
 	}
 	return resp != nil && resp.StatusCode == http.StatusOK
