@@ -125,6 +125,10 @@ pipelines:
             # Relative path to the project in the git repository
             # JF_WORKING_DIR: path/to/project/dir
 
+            # [Default: "*.git*;*node_modules*;*target*;*venv*;*test*"]
+            # List of exclusion patterns (utilizing wildcards) for excluding paths in the source code of the Git repository during SCA scans.
+            # JF_PATH_EXCLUSIONS: "*.git*;*node_modules*;*target*;*venv*;*test*"
+
             # [Optional]
             # Xray Watches. Learn more about them here: https://www.jfrog.com/confluence/display/JFROG/Configuring+Xray+Watches
             # JF_WATCHES: <watch-1>,<watch-2>...<watch-n>

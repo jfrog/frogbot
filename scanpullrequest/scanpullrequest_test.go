@@ -20,7 +20,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -90,8 +89,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
 	securityViolationsRows, licenseViolations, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)
@@ -167,8 +166,8 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		[]string{},
 	)
 	assert.NoError(t, err)
@@ -212,8 +211,8 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no violations in the results
 	securityViolations, licenseViolations, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		[]string{"MIT"},
 	)
 	assert.NoError(t, err)
@@ -274,9 +273,8 @@ func TestGetAllVulnerabilities(t *testing.T) {
 			},
 		},
 	}
-
 	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	vulnerabilities, licenses, err := getScanVulnerabilitiesRows(&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}}, nil)
+	vulnerabilities, licenses, err := getScanVulnerabilitiesRows(&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}}, nil)
 	assert.NoError(t, err)
 	assert.Len(t, vulnerabilities, 4)
 	assert.Len(t, licenses, 0)
@@ -345,16 +343,16 @@ func TestGetNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&audit.Results{
+		&xrayutils.Results{
+			ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}},
 			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				XrayResults:              []services.ScanResponse{previousScan},
 				EntitledForJas:           true,
 				ApplicabilityScanResults: []*sarif.Run{xrayutils.CreateRunWithDummyResults(xrayutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
 			},
 		},
-		&audit.Results{
+		&xrayutils.Results{
+			ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}},
 			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				XrayResults:              []services.ScanResponse{currentScan},
 				EntitledForJas:           true,
 				ApplicabilityScanResults: []*sarif.Run{xrayutils.CreateRunWithDummyResults(xrayutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
 			},
@@ -416,8 +414,8 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)
@@ -452,8 +450,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
 	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{previousScan}}},
-		&audit.Results{ExtendedScanResults: &xrayutils.ExtendedScanResults{XrayResults: []services.ScanResponse{currentScan}}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
+		&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
 		nil,
 	)
 	assert.NoError(t, err)
@@ -463,8 +461,8 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestGetAllIssues(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
-	auditResults := &audit.Results{
-		ExtendedScanResults: &xrayutils.ExtendedScanResults{
+	auditResults := &xrayutils.Results{
+		ScaResults: []xrayutils.ScaScanResult{{
 			XrayResults: []services.ScanResponse{{
 				Vulnerabilities: []services.Vulnerability{
 					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
@@ -472,6 +470,8 @@ func TestGetAllIssues(t *testing.T) {
 				},
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
 			}},
+		}},
+		ExtendedScanResults: &xrayutils.ExtendedScanResults{
 			ApplicabilityScanResults: []*sarif.Run{
 				xrayutils.CreateRunWithDummyResults(
 					xrayutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
@@ -669,7 +669,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err = scanPullRequest.Run(configAggregator, client)
+	err = scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {

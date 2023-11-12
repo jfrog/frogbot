@@ -95,13 +95,14 @@ type OutputWriter interface {
 	AvoidExtraMessages() bool
 	SetPullRequestCommentTitle(pullRequestCommentTitle string)
 	PullRequestCommentTitle() string
+	SetHasInternetConnection(connected bool)
+	HasInternetConnection() bool
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	// Markdown interface
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
-	MarkAsCollapsible(title, content string) string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
 	MarkAsTitle(title string, subTitleDepth int) string
@@ -113,6 +114,7 @@ type MarkdownOutput struct {
 	avoidExtraMessages      bool
 	showCaColumn            bool
 	entitledForJas          bool
+	hasInternetConnection   bool
 	vcsProvider             vcsutils.VcsProvider
 }
 
@@ -132,9 +134,21 @@ func (mo *MarkdownOutput) AvoidExtraMessages() bool {
 	return mo.avoidExtraMessages
 }
 
+func (mo *MarkdownOutput) SetHasInternetConnection(connected bool) {
+	mo.hasInternetConnection = connected
+}
+
+func (mo *MarkdownOutput) HasInternetConnection() bool {
+	return mo.hasInternetConnection
+}
+
 func (mo *MarkdownOutput) SetJasOutputFlags(entitled, showCaColumn bool) {
 	mo.entitledForJas = entitled
 	mo.showCaColumn = showCaColumn
+}
+
+func (mo *MarkdownOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
+	mo.pullRequestCommentTitle = pullRequestCommentTitle
 }
 
 func (mo *MarkdownOutput) IsShowingCaColumn() bool {
@@ -145,12 +159,16 @@ func (mo *MarkdownOutput) IsEntitledForJas() bool {
 	return mo.entitledForJas
 }
 
+func (mo *MarkdownOutput) PullRequestCommentTitle() string {
+	return mo.pullRequestCommentTitle
+}
+
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider}}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 	default:
-		return &StandardOutput{MarkdownOutput{vcsProvider: provider}}
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 	}
 }
 

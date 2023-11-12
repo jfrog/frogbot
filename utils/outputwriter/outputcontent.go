@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	FrogbotTitlePrefix = "[🐸 Frogbot]"
-	ReviewCommentId    = "FrogbotReviewComment"
+	FrogbotTitlePrefix   = "[🐸 Frogbot]"
+	FrogbotRepoUrl       = "https://github.com/jfrog/frogbot"
+	FrogbotRepoUrlReadme = FrogbotRepoUrl + "#readme"
+	ReviewCommentId      = "FrogbotReviewComment"
 
 	vulnerableDependenciesTitle                   = "📦 Vulnerable Dependencies"
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
@@ -22,7 +24,7 @@ const (
 )
 
 var (
-	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", "https://github.com/jfrog/frogbot#readme")
+	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotRepoUrlReadme)
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
@@ -31,7 +33,7 @@ func GetPRSummaryContent(content string, issuesExists, isComment bool, writer Ou
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		comment.WriteString(customCommentTitle)
+		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
 	}
 	if issuesExists {
 		WriteContent(&comment, content)
@@ -55,8 +57,10 @@ func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvi
 
 func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
 	client := writer.VcsProvider()
-	return strings.Contains(content, writer.Image(NoIssuesTitleSrc(client))) ||
-		strings.Contains(content, writer.Image(PRSummaryCommentTitleSrc(client)))
+	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
 }
 
 func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
@@ -84,7 +88,7 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return writer.MarkAsCollapsible("Note", fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
+	return writer.MarkAsDetails("Note:", 0, fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {
@@ -245,7 +249,7 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
-		contentBuilder.WriteString(customCommentTitle)
+		WriteContent(&contentBuilder, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
 	}
 	WriteContent(&contentBuilder, content, footer(writer))
 	return contentBuilder.String()

@@ -6,23 +6,28 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-client-go/http/httpclient"
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/owenrumney/go-sarif/v2/sarif"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -45,7 +50,6 @@ const (
 
 	// Sarif run output tool annotator
 	sarifToolName = "JFrog Frogbot"
-	sarifToolUrl  = "https://github.com/jfrog/frogbot"
 )
 
 var (
@@ -212,8 +216,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
+func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject())
 	if err != nil {
 		return err
 	}
@@ -228,7 +232,7 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *audit.Results, repo *Rep
 func prepareRunsForGithubReport(runs []*sarif.Run) {
 	for _, run := range runs {
 		run.Tool.Driver.Name = sarifToolName
-		run.Tool.Driver.WithInformationURI(sarifToolUrl)
+		run.Tool.Driver.WithInformationURI(outputwriter.FrogbotRepoUrl)
 		for _, rule := range run.Tool.Driver.Rules {
 			// Github security tab can display markdown content on Help attribute and not description
 			if rule.Help == nil && rule.FullDescription != nil {
@@ -265,7 +269,7 @@ func convertToRelativePath(runs []*sarif.Run) {
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool) (string, error) {
 	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
 	if err != nil {
 		return "", err
@@ -432,4 +436,58 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 		techString = append(techString, tech.ToFormal())
 	}
 	return strings.Join(techString, separator)
+}
+
+type UrlAccessChecker struct {
+	connected *bool
+	waitGroup errgroup.Group
+	url       string
+}
+
+// CheckConnection checks if the url is accessible in a separate goroutine not to block the main thread
+func CheckConnection(url string) *UrlAccessChecker {
+	checker := &UrlAccessChecker{
+		url:       url,
+		waitGroup: errgroup.Group{},
+	}
+	checker.waitGroup.Go(func() (err error) {
+		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
+		return
+	})
+	return checker
+}
+
+// Checks if the url is accessible, can block until the connection check goroutine is done
+func (ic *UrlAccessChecker) IsConnected() bool {
+	if ic.connected != nil {
+		return *ic.connected
+	}
+	// wait for connection routine to finish
+	if err := ic.waitGroup.Wait(); err != nil {
+		return false
+	}
+	return *ic.connected
+}
+
+// Checks if the url is accessible
+func IsUrlAccessible(url string) bool {
+	// Build client
+	client, err := httpclient.ClientBuilder().Build()
+	if err != nil {
+		log.Debug(fmt.Sprintf("Can't check access to '%s', build client:\n%s", url, err.Error()))
+		return false
+	}
+	// Send HEAD request to check if the url is accessible
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if errorutils.CheckError(err) != nil {
+		log.Debug(fmt.Sprintf("Can't check access to '%s', error while building request:\n%s", url, err.Error()))
+		return false
+	}
+	log.Debug(fmt.Sprintf("Sending HTTP %s request to: '%s'", req.Method, req.URL))
+	resp, err := client.GetClient().Do(req)
+	if errorutils.CheckError(err) != nil {
+		log.Debug(fmt.Sprintf("Can't check access to '%s', error while sending request:\n%s", url, err.Error()))
+		return false
+	}
+	return resp != nil && resp.StatusCode == http.StatusOK
 }

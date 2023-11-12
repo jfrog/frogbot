@@ -67,9 +67,9 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
-		{Content: outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource) + "text \n table\n text text text", Created: time.Unix(1, 0)},
+		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
-		{Content: outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
-		{Content: outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
@@ -140,7 +140,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(configAggregator, client)
+	err := scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
 	if assert.NoError(t, err) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))
@@ -182,7 +182,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(paramsAggregator, client)
+	err := scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_simplified.md"))

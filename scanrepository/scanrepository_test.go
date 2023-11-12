@@ -176,7 +176,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client)
+			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -296,7 +296,7 @@ pr body
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client)
+			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -397,7 +397,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
 			assert.NoError(t, err)
-			verifyTechnologyNaming(t, scanResponse.ExtendedScanResults.XrayResults, pkg.packageType)
+			verifyTechnologyNaming(t, scanResponse.GetScaScansXrayResults(), pkg.packageType)
 		})
 	}
 }
@@ -427,52 +427,56 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	testCases := []struct {
 		name            string
-		scanResults     *xrayutils.ExtendedScanResults
+		scanResults     *xrayutils.Results
 		isMultipleRoots bool
 		expectedMap     map[string]*utils.VulnerabilityDetails
 	}{
 		{
 			name: "Scan results with no violations and vulnerabilities",
-			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{},
+			scanResults: &xrayutils.Results{
+				ScaResults:          []xrayutils.ScaScanResult{},
+				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
-			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{
-					{
-						Vulnerabilities: []services.Vulnerability{
-							{
-								Cves: []services.Cve{
-									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-								},
-								Severity: "Critical",
-								Components: map[string]services.Component{
-									"vuln1": {
-										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+			scanResults: &xrayutils.Results{
+				ScaResults: []xrayutils.ScaScanResult{{
+					XrayResults: []services.ScanResponse{
+						{
+							Vulnerabilities: []services.Vulnerability{
+								{
+									Cves: []services.Cve{
+										{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+										{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+									},
+									Severity: "Critical",
+									Components: map[string]services.Component{
+										"vuln1": {
+											FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+										},
 									},
 								},
-							},
-							{
-								Cves: []services.Cve{
-									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-								},
-								Severity: "High",
-								Components: map[string]services.Component{
-									"vuln2": {
-										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+								{
+									Cves: []services.Cve{
+										{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+										{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+									},
+									Severity: "High",
+									Components: map[string]services.Component{
+										"vuln2": {
+											FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+										},
 									},
 								},
 							},
 						},
 					},
-				},
+				}},
+				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
@@ -488,41 +492,44 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		},
 		{
 			name: "Scan results with violations and no vulnerabilities",
-			scanResults: &xrayutils.ExtendedScanResults{
-				XrayResults: []services.ScanResponse{
-					{
-						Violations: []services.Violation{
-							{
-								ViolationType: "security",
-								Cves: []services.Cve{
-									{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-									{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-								},
-								Severity: "Critical",
-								Components: map[string]services.Component{
-									"viol1": {
-										FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+			scanResults: &xrayutils.Results{
+				ScaResults: []xrayutils.ScaScanResult{{
+					XrayResults: []services.ScanResponse{
+						{
+							Violations: []services.Violation{
+								{
+									ViolationType: "security",
+									Cves: []services.Cve{
+										{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+										{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+									},
+									Severity: "Critical",
+									Components: map[string]services.Component{
+										"viol1": {
+											FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+										},
 									},
 								},
-							},
-							{
-								ViolationType: "security",
-								Cves: []services.Cve{
-									{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-									{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-								},
-								Severity: "High",
-								Components: map[string]services.Component{
-									"viol2": {
-										FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-										ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+								{
+									ViolationType: "security",
+									Cves: []services.Cve{
+										{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+										{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+									},
+									Severity: "High",
+									Components: map[string]services.Component{
+										"viol2": {
+											FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+										},
 									},
 								},
 							},
 						},
 					},
-				},
+				}},
+				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {

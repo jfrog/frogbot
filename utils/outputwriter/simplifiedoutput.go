@@ -22,15 +22,11 @@ func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 }
 
 func (smo *SimplifiedOutput) Image(source ImageSource) string {
-	return GetSimplifiedTitle(source)
+	return MarkAsBold(GetSimplifiedTitle(source))
 }
 
 func (smo *SimplifiedOutput) MarkInCenter(content string) string {
 	return content
-}
-
-func (smo *SimplifiedOutput) MarkAsCollapsible(title, content string) string {
-	return fmt.Sprintf("\n%s:\n%s", title, content)
 }
 
 func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
@@ -38,16 +34,8 @@ func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, co
 }
 
 func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {
-	return fmt.Sprintf("%s\n%s %s\n%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
-}
-
-func (smo *SimplifiedOutput) SetPullRequestCommentTitle(pullRequestCommentTitle string) {
-	smo.pullRequestCommentTitle = pullRequestCommentTitle
-	if smo.pullRequestCommentTitle != "" {
-		smo.pullRequestCommentTitle = "\n\n" + MarkAsBold(pullRequestCommentTitle)
+	if subTitleDepth == 0 {
+		return fmt.Sprintf("%s\n%s\n%s", SectionDivider(), title, SectionDivider())
 	}
-}
-
-func (smo *SimplifiedOutput) PullRequestCommentTitle() string {
-	return smo.pullRequestCommentTitle
+	return fmt.Sprintf("%s\n%s %s\n%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
 }

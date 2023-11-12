@@ -87,32 +87,37 @@ func TestStandardImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities pr banner",
 			source:         VulnerabilitiesPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "no vulnerability mr banner",
 			source:         NoVulnerabilityMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+		},
+		{
+			name:           "vulnerabilities mr banner",
+			source:         VulnerabilitiesMrBannerSource,
+			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix pr banner",
 			source:         VulnerabilitiesFixPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 This automated pull request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix mr banner",
 			source:         VulnerabilitiesFixMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 This automated merge request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://github.com/jfrog/frogbot#readme)\n\n</div>\n",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			smo := &StandardOutput{}
+			smo := &StandardOutput{MarkdownOutput{hasInternetConnection: true}}
 			assert.Equal(t, tc.expectedOutput, smo.Image(tc.source))
 		})
 	}
@@ -154,7 +159,7 @@ func TestStandardMarkAsDetails(t *testing.T) {
 		{
 			name:           "empty",
 			summary:        "",
-			subTitleDepth:  1,
+			subTitleDepth:  0,
 			content:        "",
 			expectedOutput: "<details>\n\n\n\n</details>\n",
 		},
@@ -168,7 +173,7 @@ func TestStandardMarkAsDetails(t *testing.T) {
 		{
 			name:           "empty summary",
 			summary:        "",
-			subTitleDepth:  1,
+			subTitleDepth:  0,
 			content:        "content",
 			expectedOutput: "<details>\n\ncontent\n\n</details>\n",
 		},
@@ -213,7 +218,7 @@ func TestStandardMarkAsTitle(t *testing.T) {
 			name:           "empty",
 			title:          "",
 			subTitleDepth:  0,
-			expectedOutput: " ",
+			expectedOutput: "",
 		},
 		{
 			name:           "Main title",

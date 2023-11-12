@@ -1,11 +1,16 @@
 <div align='center'>
 
-[![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://github.com/jfrog/frogbot#readme)
+[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
 
 </div>
 
+
+```
+some content
+```
 <details>
-<summary>Note</summary>
+<summary> <b>Note:</b> </summary>
+
 
 ---
 <div align='center'>
@@ -14,7 +19,9 @@
 
 </div>
 
+
 </details>
+
 
 ---
 <div align='center'>

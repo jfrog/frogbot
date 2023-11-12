@@ -192,6 +192,17 @@
                 "default": "."
               }
             },
+            "pathExclusions": {
+              "type": "array",
+              "title": "Path Exclusions Patterns",
+              "description": "List of exclusion patterns (utilizing wildcards) for excluding paths in the source code of the Git repository during SCA scans.",
+              "default": ["*.git*", "*node_modules*", "*target*", "*venv*", "*test*"],
+              "items": {
+                "type": "string",
+                "title": "Path Exclusion Pattern",
+                "examples": ["*.git*", "*node_modules*", "*target*", "*venv*", "*test*"]
+              }
+            },
             "pipRequirementsFile": {
               "type": "string",
               "title": "Pip Requirements File",

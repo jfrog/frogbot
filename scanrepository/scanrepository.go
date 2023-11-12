@@ -15,7 +15,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -45,11 +44,12 @@ type ScanRepositoryCmd struct {
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
 }
 
-func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient) (err error) {
+func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	if err = utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
 		return err
 	}
 	repository := repoAggregator[0]
+	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	return cfp.scanAndFixRepository(&repository, client)
 }
 
@@ -137,7 +137,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		}
 
 		// Prepare the vulnerabilities map for each working dir path
-		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults.ExtendedScanResults, scanResults.IsMultipleRootProject)
+		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults, scanResults.IsMultipleProject())
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, error) {
+func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*xrayutils.Results, error) {
 	// Audit commit code
 	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
@@ -163,11 +163,11 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*audit.Results, er
 	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
 	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
 	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
-	cfp.projectTech = auditResults.ExtendedScanResults.ScannedTechnologies
+	cfp.projectTech = auditResults.GetScaScannedTechnologies()
 	return auditResults, nil
 }
 
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, isMultipleRoots)
 	if err != nil {
 		return nil, err
@@ -399,9 +399,9 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.ExtendedScanResults, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	for _, scanResult := range scanResults.XrayResults {
+	for _, scanResult := range scanResults.GetScaScansXrayResults() {
 		if len(scanResult.Vulnerabilities) > 0 {
 			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, scanResults, isMultipleRoots, true)
 			if err != nil {

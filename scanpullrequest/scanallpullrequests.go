@@ -17,10 +17,11 @@ var errPullRequestScan = "pull request #%d scan in the '%s' repository returned 
 type ScanAllPullRequestsCmd struct {
 }
 
-func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient) error {
+func (cmd ScanAllPullRequestsCmd) Run(configAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error {
 	for _, config := range configAggregator {
 		log.Info("Scanning all open pull requests for repository:", config.RepoName)
 		log.Info("-----------------------------------------------------------")
+		config.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 		err := scanAllPullRequests(config, client)
 		if err != nil {
 			return err
