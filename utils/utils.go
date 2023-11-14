@@ -231,8 +231,6 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 
 func prepareRunsForGithubReport(runs []*sarif.Run) []*sarif.Run {
 	for _, run := range runs {
-		// run.Tool.Driver.Name = sarifToolName
-		// run.Tool.Driver.WithInformationURI(outputwriter.FrogbotRepoUrl)
 		for _, rule := range run.Tool.Driver.Rules {
 			// Github security tab can display markdown content on Help attribute and not description
 			if rule.Help == nil && rule.FullDescription != nil {
