@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	// "golang.org/x/exp/slices"
-
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
