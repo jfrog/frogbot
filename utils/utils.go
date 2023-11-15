@@ -217,7 +217,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject())
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -272,8 +272,8 @@ func convertToRelativePath(runs []*sarif.Run) {
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool) (string, error) {
-	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
 	if err != nil {
 		return "", err
 	}
