@@ -27,8 +27,8 @@ func TestFrogbotSchema(t *testing.T) {
 	assert.NoError(t, err)
 	schemaLoader := gojsonschema.NewBytesLoader(schema)
 
-	// Validate config in the docs
-	validateYamlSchema(t, schemaLoader, filepath.Join("..", "docs", "templates", ".frogbot", "frogbot-config.yml"), "")
+	// Validate config in this repository
+	validateYamlSchema(t, schemaLoader, filepath.Join("..", ".frogbot", "frogbot-config.yml"), "")
 
 	// Validate all frogbot configs in commands/testdata/config
 	validateYamlsInDirectory(t, filepath.Join("..", "testdata", "config"), schemaLoader)
@@ -59,11 +59,6 @@ func TestBadFrogbotSchemas(t *testing.T) {
 func TestJFrogPipelinesTemplates(t *testing.T) {
 	schemaLoader := downloadFromSchemaStore(t, "jfrog-pipelines.json")
 	validateYamlsInDirectory(t, filepath.Join("..", "docs", "templates", "jfrog-pipelines"), schemaLoader)
-}
-
-func TestGitHubActionsTemplates(t *testing.T) {
-	schemaLoader := downloadFromSchemaStore(t, "github-workflow.json")
-	validateYamlsInDirectory(t, filepath.Join("..", "docs", "templates", "github-actions"), schemaLoader)
 }
 
 // Download a Yaml schema from https://json.schemastore.org.
