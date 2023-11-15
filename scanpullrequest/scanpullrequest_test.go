@@ -143,6 +143,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	expectedVulns := []formats.VulnerabilityOrViolationRow{
 		{
 			IssueId: "XRAY-1",
+			Summary: "summary-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
 				ImpactedDependencyName: "component-A",
@@ -150,6 +151,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 		},
 		{
 			IssueId: "XRAY-2",
+			Summary: "summary-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
 				ImpactedDependencyName: "component-C",
