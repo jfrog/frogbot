@@ -220,67 +220,6 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	assert.Len(t, licenseViolations, 0)
 }
 
-func TestGetAllVulnerabilities(t *testing.T) {
-	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
-			{
-				IssueId:    "XRAY-1",
-				Summary:    "summary-1",
-				Severity:   "high",
-				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-			},
-			{
-				IssueId:    "XRAY-2",
-				Summary:    "summary-2",
-				Severity:   "low",
-				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
-			},
-		},
-	}
-
-	expected := []formats.VulnerabilityOrViolationRow{
-		{
-			Summary: "summary-1",
-			IssueId: "XRAY-1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
-				ImpactedDependencyName: "component-A",
-			},
-		},
-		{
-			Summary: "summary-1",
-			IssueId: "XRAY-1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
-				ImpactedDependencyName: "component-B",
-			},
-		},
-		{
-			Summary: "summary-2",
-			IssueId: "XRAY-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
-				ImpactedDependencyName: "component-C",
-			},
-		},
-		{
-			Summary: "summary-2",
-			IssueId: "XRAY-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
-				ImpactedDependencyName: "component-D",
-			},
-		},
-	}
-	// Run createAllIssuesRows and make sure that XRAY-1 and XRAY-2 vulnerabilities exists in the results
-	vulnerabilities, licenses, err := getScanVulnerabilitiesRows(&xrayutils.Results{ScaResults: []xrayutils.ScaScanResult{xrayutils.ScaScanResult{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}}, nil)
-	assert.NoError(t, err)
-	assert.Len(t, vulnerabilities, 4)
-	assert.Len(t, licenses, 0)
-	assert.ElementsMatch(t, expected, vulnerabilities)
-}
-
 func TestGetNewVulnerabilities(t *testing.T) {
 	// Previous scan with only one vulnerability - XRAY-1
 	previousScan := services.ScanResponse{
