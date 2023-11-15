@@ -124,7 +124,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, true).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
