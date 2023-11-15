@@ -515,9 +515,32 @@ func (cfp *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string
 func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
+
+	workTreeIsClean, err := cfp.gitManager.IsClean()
+	var tempDirPath string
+	if !workTreeIsClean {
+		tempDirPath, err = utils.CopyCurrentDirFilesToTempDir()
+		if err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, fileutils.RemoveTempDir(tempDirPath))
+		}()
+	}
+
 	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
 		return
 	}
+
+	if !workTreeIsClean {
+		// We copy to the new branch all files the working directory contained before changing branch
+		// We perform this so we will not have to 'install' the project again if it was already done before
+		err = utils.CopyMissingFilesToCurrentWorkingDir(tempDirPath)
+		if err != nil {
+			return
+		}
+	}
+
 	// Fix all packages in the same branch if expected error accrued, log and continue.
 	var fixedVulnerabilities []*utils.VulnerabilityDetails
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
