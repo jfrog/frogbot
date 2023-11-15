@@ -558,7 +558,7 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	mvnHandler := &MavenPackageHandler{}
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	assert.NoError(t, mvnHandler.updateProperties(&pomDependencyDetails{properties: []string{"buildinfo.version"}}, "2.39.9"))
 	modifiedPom, err := os.ReadFile("pom.xml")
 	assert.NoError(t, err)
