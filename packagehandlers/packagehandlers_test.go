@@ -536,7 +536,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 		{impactedPackage: "com.fasterxml.jackson.core:jackson-core", fixedVersion: "2.15.0", foundInDependencyManagement: true},
 		{impactedPackage: "org.apache.httpcomponents:httpcore", fixedVersion: "4.4.16", foundInDependencyManagement: true},
 	}
-	mvnHandler := &MavenPackageHandler{}
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	for _, test := range testCases {
 		assert.NoError(t, mvnHandler.updatePackageVersion(test.impactedPackage, test.fixedVersion, test.foundInDependencyManagement))
 	}
