@@ -361,7 +361,8 @@ func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
 	newFile, err := os.Create("new-file.txt")
 	assert.NoError(t, err)
 
-	err, removeDirCallback := gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff("new-branch")
+	var removeDirCallback func() error
+	err, removeDirCallback = gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff("new-branch")
 	defer func() {
 		assert.NoError(t, newFile.Close())
 		assert.NoError(t, removeDirCallback())
@@ -369,6 +370,7 @@ func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
 	}()
 
 	// Verify we have the new files in the new branch as well
-	fileExists, err := fileutils.IsFileExists(filepath.Join(tempDirPath, newFile.Name()), false)
+	var fileExists bool
+	fileExists, err = fileutils.IsFileExists(filepath.Join(tempDirPath, newFile.Name()), false)
 	assert.True(t, fileExists)
 }
