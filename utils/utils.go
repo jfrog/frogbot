@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -27,7 +28,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/owenrumney/go-sarif/v2/sarif"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -440,36 +440,30 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 
 type UrlAccessChecker struct {
 	connected *bool
-	waitGroup errgroup.Group
+	waitGroup sync.WaitGroup
 	url       string
 }
 
 // CheckConnection checks if the url is accessible in a separate goroutine not to block the main thread
 func CheckConnection(url string) *UrlAccessChecker {
-	checker := &UrlAccessChecker{
-		url:       url,
-		waitGroup: errgroup.Group{},
-	}
-	checker.waitGroup.Go(func() (err error) {
+	checker := &UrlAccessChecker{url: url}
+
+	checker.waitGroup.Add(1)
+	go func() {
+		defer checker.waitGroup.Done()
 		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
-		return
-	})
+	}()
+
 	return checker
 }
 
-// Checks if the url is accessible, can block until the connection check goroutine is done
+// IsConnected checks if the URL is accessible, waits for the connection check goroutine to finish
 func (ic *UrlAccessChecker) IsConnected() bool {
-	if ic.connected != nil {
-		return *ic.connected
-	}
-	// wait for connection routine to finish
-	if err := ic.waitGroup.Wait(); err != nil {
-		return false
-	}
+	ic.waitGroup.Wait()
 	return *ic.connected
 }
 
-// Checks if the url is accessible
+// IsUrlAccessible Checks if the url is accessible
 func IsUrlAccessible(url string) bool {
 	// Build client
 	client, err := httpclient.ClientBuilder().Build()
