@@ -379,24 +379,33 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
 func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
 	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, commandName)
-	// Don't return error in case of a missing frogbot-config.yml file
-	// If an error occurs due to a missing file, attempt to generate an environment variable-based configuration aggregator as an alternative.
-	var errMissingConfig *ErrMissingConfig
-	if !errors.As(err, &errMissingConfig) && len(configFileContent) == 0 {
+	if err != nil {
 		return nil, err
 	}
 	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
-// The getConfigFileContent function retrieves the frogbot-config.yml file content.
-// If the JF_GIT_REPO and JF_GIT_OWNER environment variables are set, this function will attempt to retrieve the frogbot-config.yml file from the target repository based on these variables.
-// If these variables aren't set, this function will attempt to retrieve the frogbot-config.yml file from the current working directory.
-func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) (configFileContent []byte, err error) {
+// getConfigFileContent retrieves the content of the frogbot-config.yml file
+func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) ([]byte, error) {
+	var errMissingConfig *ErrMissingConfig
+
 	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
-		configFileContent, err = ReadConfigFromFileSystem(osFrogbotConfigPath)
-		return
+		configFileContent, err := ReadConfigFromFileSystem(osFrogbotConfigPath)
+		if err != nil && !errors.As(err, &errMissingConfig) {
+			return nil, err
+		}
+		if configFileContent != nil {
+			return configFileContent, nil
+		}
 	}
-	return readConfigFromTarget(gitClient, gitParamsFromEnv)
+
+	configFileContent, err := readConfigFromTarget(gitClient, gitParamsFromEnv)
+	if errors.As(err, &errMissingConfig) {
+		// Avoid returning an error if the frogbot-config.yml file is missing.
+		// If an error occurs because the file is missing, we will create an environment variable-based configuration aggregator instead.
+		return nil, nil
+	}
+	return configFileContent, err
 }
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
@@ -643,32 +652,42 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 
 // readConfigFromTarget reads the .frogbot/frogbot-config.yml from the target repository
 func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (configContent []byte, err error) {
+	// Extract repository details from Git parameters
 	repoName := gitParamsFromEnv.RepoName
 	repoOwner := gitParamsFromEnv.RepoOwner
 	branches := gitParamsFromEnv.Branches
-	if repoName != "" && repoOwner != "" {
-		log.Debug("Downloading", FrogbotConfigFile, "from target", repoOwner, "/", repoName)
-		var branch string
-		if len(branches) == 0 {
-			log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
-		} else {
-			// We encounter this scenario when the JF_GIT_BASE_BRANCH is defined. In this situation, we have only one branch.
-			branch = branches[0]
-			log.Debug("The", FrogbotConfigFile, "will be downloaded from", branch, "branch")
-		}
 
-		gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
-		var statusCode int
-		configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), repoOwner, repoName, branch, gitFrogbotConfigPath)
-		if statusCode == http.StatusNotFound {
-			log.Debug(fmt.Sprintf("The %s file wasn't recognized in the %s repository owned by %s", gitFrogbotConfigPath, repoName, repoOwner))
-			// If .frogbot/frogbot-config.yml isn't found, we'll try to run Frogbot using environment variables
-			return nil, &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
-		}
-		if statusCode == http.StatusUnauthorized {
-			log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
-		}
+	if repoName == "" && repoOwner == "" {
+		return
 	}
 
-	return configContent, err
+	log.Debug("Attempting to download", FrogbotConfigFile, "from", repoOwner+"/"+repoName)
+
+	var branch string
+	if len(branches) == 0 {
+		log.Debug(GitBaseBranchEnv, "is missing. Assuming that the", FrogbotConfigFile, "file exists on default branch")
+	} else {
+		// We encounter this scenario when the JF_GIT_BASE_BRANCH is defined. In this situation, we have only one branch.
+		branch = branches[0]
+		log.Debug("The", FrogbotConfigFile, "will be downloaded from", branch, "branch")
+	}
+
+	// Construct the path to the frogbot-config.yml file in the repository
+	gitFrogbotConfigPath := fmt.Sprintf("%s/%s", frogbotConfigDir, FrogbotConfigFile)
+
+	// Download the frogbot-config.yml file from the repository
+	var statusCode int
+	configContent, statusCode, err = client.DownloadFileFromRepo(context.Background(), repoOwner, repoName, branch, gitFrogbotConfigPath)
+
+	// Handle different HTTP status codes
+	switch statusCode {
+	case http.StatusNotFound:
+		log.Debug(fmt.Sprintf("The %s file wasn't recognized in <%s/%s>", gitFrogbotConfigPath, repoOwner, repoName))
+		// If .frogbot/frogbot-config.yml isn't found, return an ErrMissingConfig
+		configContent = nil
+		err = &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
+	case http.StatusUnauthorized:
+		log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
+	}
+	return
 }
