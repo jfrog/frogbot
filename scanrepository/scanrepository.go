@@ -309,6 +309,7 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
 			return
 		}
+
 	} else {
 		if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
 			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
