@@ -417,7 +417,7 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		
+
 		assert.Equal(t, tc.expectedOutput, prepareRunsForGithubReport([]*sarif.Run{tc.run})[0])
 	}
 }
