@@ -23,7 +23,6 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -439,7 +438,7 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 }
 
 type UrlAccessChecker struct {
-	connected *bool
+	connected bool
 	waitGroup sync.WaitGroup
 	url       string
 }
@@ -451,7 +450,7 @@ func CheckConnection(url string) *UrlAccessChecker {
 	checker.waitGroup.Add(1)
 	go func() {
 		defer checker.waitGroup.Done()
-		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
+		checker.connected = isUrlAccessible(url)
 	}()
 
 	return checker
@@ -460,11 +459,11 @@ func CheckConnection(url string) *UrlAccessChecker {
 // IsConnected checks if the URL is accessible, waits for the connection check goroutine to finish
 func (ic *UrlAccessChecker) IsConnected() bool {
 	ic.waitGroup.Wait()
-	return *ic.connected
+	return ic.connected
 }
 
-// IsUrlAccessible Checks if the url is accessible
-func IsUrlAccessible(url string) bool {
+// isUrlAccessible Checks if the url is accessible
+func isUrlAccessible(url string) bool {
 	// Build client
 	client, err := httpclient.ClientBuilder().Build()
 	if err != nil {
