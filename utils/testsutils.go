@@ -13,7 +13,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +53,7 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 }
 
 func MockHasConnection() *UrlAccessChecker {
-	return &UrlAccessChecker{url: "url", connected: clientutils.Pointer(true)}
+	return &UrlAccessChecker{url: "url", connected: true}
 }
 
 // Create a temporary directory and copy the content of "testdata/testDir" into it
