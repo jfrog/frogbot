@@ -297,9 +297,25 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 		log.Info(fmt.Sprintf("A pull request updating the dependency '%s' to version '%s' already exists. Skipping...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 		return
 	}
-	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
-		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
+
+	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if !workTreeIsClean {
+		var removeTempDirCallback func() error
+		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(fixBranchName)
+		defer func() {
+			err = errors.Join(err, removeTempDirCallback())
+		}()
+		if err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
+			return
+		}
+	} else {
+		if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
+			return
+		}
 	}
+
 	if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
@@ -517,26 +533,19 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	log.Info("Starting aggregated dependencies fix")
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
-	var tempDirPath string
 	if !workTreeIsClean {
-		tempDirPath, err = utils.CopyCurrentDirFilesToTempDir()
+		var removeTempDirCallback func() error
+		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(aggregatedFixBranchName)
+		defer func() {
+			err = errors.Join(err, removeTempDirCallback())
+		}()
 		if err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
 			return
 		}
-		defer func() {
-			err = errors.Join(err, fileutils.RemoveTempDir(tempDirPath))
-		}()
-	}
-
-	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
-		return
-	}
-
-	if !workTreeIsClean {
-		// We copy to the new branch all files the working directory contained before changing branch
-		// We perform this so we will not have to 'install' the project again if it was already done before
-		err = utils.CopyMissingFilesToCurrentWorkingDir(tempDirPath)
-		if err != nil {
+	} else {
+		if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
 			return
 		}
 	}

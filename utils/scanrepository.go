@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	utils2 "github.com/jfrog/build-info-go/utils"
+	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"path/filepath"
@@ -22,7 +22,7 @@ func CopyCurrentDirFilesToTempDir() (tempDirPath string, err error) {
 		return
 	}
 	// If changes have been made in the current working dir since we cloned it we keep a copy of its files before we create a new branch from the original cloned dir
-	err = utils2.CopyDir(wd, tempDirPath, false, nil)
+	err = biutils.CopyDir(wd, tempDirPath, false, nil)
 	return
 }
 
@@ -45,6 +45,6 @@ func CopyMissingFilesToCurrentWorkingDir(sourceDirPath string) (err error) {
 		alreadyExistingFiles[idx] = filepath.Base(fileFullPath)
 	}
 
-	err = utils2.CopyDir(sourceDirPath, wd, false, alreadyExistingFiles)
+	err = biutils.CopyDir(sourceDirPath, wd, false, alreadyExistingFiles)
 	return
 }
