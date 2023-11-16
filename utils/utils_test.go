@@ -417,8 +417,8 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		prepareRunsForGithubReport([]*sarif.Run{tc.run})
-		assert.Equal(t, tc.expectedOutput, tc.run)
+
+		assert.Equal(t, tc.expectedOutput, prepareRunsForGithubReport([]*sarif.Run{tc.run})[0])
 	}
 }
 
@@ -441,7 +441,7 @@ func TestIsUrlAccessible(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := IsUrlAccessible(tc.url)
+			output := isUrlAccessible(tc.url)
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}

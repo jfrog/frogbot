@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -22,12 +23,10 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/owenrumney/go-sarif/v2/sarif"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -217,7 +216,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject())
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -229,10 +228,8 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 	return nil
 }
 
-func prepareRunsForGithubReport(runs []*sarif.Run) {
+func prepareRunsForGithubReport(runs []*sarif.Run) []*sarif.Run {
 	for _, run := range runs {
-		run.Tool.Driver.Name = sarifToolName
-		run.Tool.Driver.WithInformationURI(outputwriter.FrogbotRepoUrl)
 		for _, rule := range run.Tool.Driver.Rules {
 			// Github security tab can display markdown content on Help attribute and not description
 			if rule.Help == nil && rule.FullDescription != nil {
@@ -250,6 +247,11 @@ func prepareRunsForGithubReport(runs []*sarif.Run) {
 		run.Results = results
 	}
 	convertToRelativePath(runs)
+	// If we upload to Github security tab multiple runs, it will only display the last run as active issues.
+	// Combine all runs into one run with multiple invocations, so the Github security tab will display all the results as not resolved.
+	combined := sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl)
+	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
+	return []*sarif.Run{combined}
 }
 
 func convertToRelativePath(runs []*sarif.Run) {
@@ -269,12 +271,12 @@ func convertToRelativePath(runs []*sarif.Run) {
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool) (string, error) {
-	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
 	if err != nil {
 		return "", err
 	}
-	prepareRunsForGithubReport(sarifReport.Runs)
+	sarifReport.Runs = prepareRunsForGithubReport(sarifReport.Runs)
 	return xrayutils.ConvertSarifReportToString(sarifReport)
 }
 
@@ -439,38 +441,32 @@ func techArrayToString(techsArray []coreutils.Technology, separator string) (res
 }
 
 type UrlAccessChecker struct {
-	connected *bool
-	waitGroup errgroup.Group
+	connected bool
+	waitGroup sync.WaitGroup
 	url       string
 }
 
 // CheckConnection checks if the url is accessible in a separate goroutine not to block the main thread
 func CheckConnection(url string) *UrlAccessChecker {
-	checker := &UrlAccessChecker{
-		url:       url,
-		waitGroup: errgroup.Group{},
-	}
-	checker.waitGroup.Go(func() (err error) {
-		checker.connected = clientutils.Pointer(IsUrlAccessible(url))
-		return
-	})
+	checker := &UrlAccessChecker{url: url}
+
+	checker.waitGroup.Add(1)
+	go func() {
+		defer checker.waitGroup.Done()
+		checker.connected = isUrlAccessible(url)
+	}()
+
 	return checker
 }
 
-// Checks if the url is accessible, can block until the connection check goroutine is done
+// IsConnected checks if the URL is accessible, waits for the connection check goroutine to finish
 func (ic *UrlAccessChecker) IsConnected() bool {
-	if ic.connected != nil {
-		return *ic.connected
-	}
-	// wait for connection routine to finish
-	if err := ic.waitGroup.Wait(); err != nil {
-		return false
-	}
-	return *ic.connected
+	ic.waitGroup.Wait()
+	return ic.connected
 }
 
-// Checks if the url is accessible
-func IsUrlAccessible(url string) bool {
+// isUrlAccessible Checks if the url is accessible
+func isUrlAccessible(url string) bool {
 	// Build client
 	client, err := httpclient.ClientBuilder().Build()
 	if err != nil {

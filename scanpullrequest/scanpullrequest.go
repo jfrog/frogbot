@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -124,7 +122,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, true).
+		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
@@ -212,16 +210,16 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 func getAllIssues(results *xrayutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	scanResults := results.ExtendedScanResults
-	allVulnerabilitiesRows, violatedLicenses, err := getScanVulnerabilitiesRows(results, allowedLicenses)
+	xraySimpleJson, err := xrayutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
 	if err != nil {
 		return nil, err
 	}
 	return &utils.IssuesCollection{
-		Vulnerabilities: allVulnerabilitiesRows,
+		Vulnerabilities: append(xraySimpleJson.Vulnerabilities, xraySimpleJson.SecurityViolations...),
 		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
 		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
 		Sast:            xrayutils.PrepareSast(scanResults.SastScanResults),
-		Licenses:        violatedLicenses,
+		Licenses:        xraySimpleJson.LicensesViolations,
 	}, nil
 }
 
@@ -297,7 +295,7 @@ func createNewVulnerabilitiesRows(targetResults, sourceResults *xrayutils.Result
 	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
 		return
 	}
-	licenseRows = getViolatedLicenses(allowedLicenses, newLicenses)
+	licenseRows = xrayutils.GetViolatedLicenses(allowedLicenses, newLicenses)
 	return
 }
 
@@ -387,40 +385,4 @@ func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResp
 		aggregateResults.Licenses = append(aggregateResults.Licenses, scanResult.Licenses...)
 	}
 	return aggregateResults
-}
-
-// Create vulnerability rows. The rows should contain all the issues that were found in this module scan.
-func getScanVulnerabilitiesRows(auditResults *xrayutils.Results, allowedLicenses []string) (vulnerabilitiesRows []formats.VulnerabilityOrViolationRow, violatedLicenses []formats.LicenseRow, err error) {
-	violations, vulnerabilities, licenses := xrayutils.SplitScanResults(auditResults.ScaResults)
-	if len(violations) > 0 {
-		var licenseViolationsRows []formats.LicenseRow
-		if vulnerabilitiesRows, licenseViolationsRows, _, err = xrayutils.PrepareViolations(violations, auditResults, auditResults.IsMultipleProject(), true); err != nil {
-			return nil, nil, err
-		}
-		return vulnerabilitiesRows, licenseViolationsRows, err
-	}
-	if len(vulnerabilities) > 0 {
-		if vulnerabilitiesRows, err = xrayutils.PrepareVulnerabilities(vulnerabilities, auditResults, auditResults.IsMultipleProject(), true); err != nil {
-			return
-		}
-	}
-	var licenseRows []formats.LicenseRow
-	if licenseRows, err = xrayutils.PrepareLicenses(licenses); err != nil {
-		return
-	}
-	violatedLicenses = getViolatedLicenses(allowedLicenses, licenseRows)
-	return
-}
-
-func getViolatedLicenses(allowedLicenses []string, licenses []formats.LicenseRow) []formats.LicenseRow {
-	if len(allowedLicenses) == 0 {
-		return nil
-	}
-	var violatedLicenses []formats.LicenseRow
-	for _, license := range licenses {
-		if !slices.Contains(allowedLicenses, license.LicenseKey) {
-			violatedLicenses = append(violatedLicenses, license)
-		}
-	}
-	return violatedLicenses
 }
