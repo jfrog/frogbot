@@ -125,7 +125,7 @@ jobs:
       - name: Build Frogbot
         run: buildscripts/build.sh
       - name: Run GitHub Integration Tests
-        run: go test -v github_test.go integrationutils.go main.go commands.go -race -timeout 30m -cover
+        run: go test -v -p 1 github_test.go integrationutils.go main.go commands.go -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
