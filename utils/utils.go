@@ -216,7 +216,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject())
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -228,10 +228,8 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 	return nil
 }
 
-func prepareRunsForGithubReport(runs []*sarif.Run) {
+func prepareRunsForGithubReport(runs []*sarif.Run) []*sarif.Run {
 	for _, run := range runs {
-		run.Tool.Driver.Name = sarifToolName
-		run.Tool.Driver.WithInformationURI(outputwriter.FrogbotRepoUrl)
 		for _, rule := range run.Tool.Driver.Rules {
 			// Github security tab can display markdown content on Help attribute and not description
 			if rule.Help == nil && rule.FullDescription != nil {
@@ -249,6 +247,11 @@ func prepareRunsForGithubReport(runs []*sarif.Run) {
 		run.Results = results
 	}
 	convertToRelativePath(runs)
+	// If we upload to Github security tab multiple runs, it will only display the last run as active issues.
+	// Combine all runs into one run with multiple invocations, so the Github security tab will display all the results as not resolved.
+	combined := sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl)
+	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
+	return []*sarif.Run{combined}
 }
 
 func convertToRelativePath(runs []*sarif.Run) {
@@ -268,12 +271,12 @@ func convertToRelativePath(runs []*sarif.Run) {
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool) (string, error) {
-	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false)
+func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
 	if err != nil {
 		return "", err
 	}
-	prepareRunsForGithubReport(sarifReport.Runs)
+	sarifReport.Runs = prepareRunsForGithubReport(sarifReport.Runs)
 	return xrayutils.ConvertSarifReportToString(sarifReport)
 }
 
