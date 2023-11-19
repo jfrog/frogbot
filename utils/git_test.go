@@ -352,9 +352,13 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 }
 
 func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
-	tempDirPath, createTempDirCallback := bitests.CreateTempDirWithCallbackAndAssert(t)
-	err := os.Chdir(tempDirPath)
+	curWd, err := os.Getwd()
 	assert.NoError(t, err)
+	tempDirPath, createTempDirCallback := bitests.CreateTempDirWithCallbackAndAssert(t)
+	assert.NoError(t, os.Chdir(tempDirPath))
+	defer func() {
+		assert.NoError(t, os.Chdir(curWd))
+	}()
 
 	gitManager := createFakeDotGit(t, tempDirPath)
 	// Creating a new file which will make the working tree un-clean
