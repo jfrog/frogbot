@@ -6,6 +6,7 @@ import (
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/sca/java"
 	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
@@ -479,8 +480,8 @@ func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 	}
 }
 
-func TestMavenGavReader(t *testing.T) {
-	mvnHandler := &MavenPackageHandler{}
+func TestGetProjectPoms(t *testing.T) {
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: java.NewMavenDepTreeManager(&java.DepTreeParams{}, java.Projects, false)}
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -490,10 +491,6 @@ func TestMavenGavReader(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	// Test installMavenGavReader
-	assert.NoError(t, mvnHandler.installMavenGavReader())
-	assert.True(t, mvnHandler.isMavenGavReaderInstalled)
-	// Test getProjectPoms using the maven-gav-reader plugin
 	assert.NoError(t, mvnHandler.getProjectPoms())
 	assert.Len(t, mvnHandler.pomPaths, 2)
 }
@@ -539,7 +536,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 		{impactedPackage: "com.fasterxml.jackson.core:jackson-core", fixedVersion: "2.15.0", foundInDependencyManagement: true},
 		{impactedPackage: "org.apache.httpcomponents:httpcore", fixedVersion: "4.4.16", foundInDependencyManagement: true},
 	}
-	mvnHandler := &MavenPackageHandler{}
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	for _, test := range testCases {
 		assert.NoError(t, mvnHandler.updatePackageVersion(test.impactedPackage, test.fixedVersion, test.foundInDependencyManagement))
 	}
@@ -561,7 +558,7 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	mvnHandler := &MavenPackageHandler{}
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	assert.NoError(t, mvnHandler.updateProperties(&pomDependencyDetails{properties: []string{"buildinfo.version"}}, "2.39.9"))
 	modifiedPom, err := os.ReadFile("pom.xml")
 	assert.NoError(t, err)
