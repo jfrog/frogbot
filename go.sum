@@ -699,8 +699,10 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119111712-859fb87b344d h1:tBxC1RrUNT70qRTqV+Mgbi2RE70EIhxpLeEdp/1rK+k=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119111712-859fb87b344d/go.mod h1:Le0qPGC9aQ09O+foL+vOG6lJP+fy1C/5yfxL7XzjYpg=
+github.com/eranturgeman/build-info-go v0.0.0-20231115091829-c06560332906 h1:pwUCEybjq3z07qGqUZJrwR/SRm5I1jRxwNCCHhdJPPQ=
+github.com/eranturgeman/build-info-go v0.0.0-20231115091829-c06560332906/go.mod h1:XVFk2rCYhIdc7+hIGE8TC3le5PPM+xYHU22udoE2b7Q=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119130137-84df74a66d58 h1:ZaDqn3Pbl951xbF9pBPDLHslUQtCQ5h5rsm7u0Fpch8=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119130137-84df74a66d58/go.mod h1:1BVxKY2Hv2RC+RSmwPq7Jj+orV0qSLYRbJBkp+w1Mr8=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
@@ -876,8 +878,6 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOl
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jedib0t/go-pretty/v6 v6.4.8 h1:HiNzyMSEpsBaduKhmK+CwcpulEeBrTmxutz4oX/oWkg=
 github.com/jedib0t/go-pretty/v6 v6.4.8/go.mod h1:Ndk3ase2CkQbXLLNf5QDHoYb6J9WtVfmHZu9n8rk2xs=
-github.com/jfrog/build-info-go v1.9.15 h1:DN7DKZq6H5FlHfL3Lu8fo4t2INgczRgT09dJiZjJ1oo=
-github.com/jfrog/build-info-go v1.9.15/go.mod h1:XVFk2rCYhIdc7+hIGE8TC3le5PPM+xYHU22udoE2b7Q=
 github.com/jfrog/froggit-go v1.14.2 h1:55x1anQtaiARlSBMVT59aFU6Mmx90tpcvvAuuPsZm9c=
 github.com/jfrog/froggit-go v1.14.2/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/jfrog/gofrog v1.3.1 h1:QqAwQXCVReT724uga1AYqG/ZyrNQ6f+iTxmzkb+YFQk=
