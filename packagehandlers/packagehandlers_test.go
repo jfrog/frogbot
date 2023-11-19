@@ -481,7 +481,7 @@ func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 }
 
 func TestGetProjectPoms(t *testing.T) {
-	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: java.NewMavenDepTreeManager(&java.DepTreeParams{}, java.ProjectsCmd, false)}
+	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: java.NewMavenDepTreeManager(&java.DepTreeParams{}, java.Projects, false)}
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")

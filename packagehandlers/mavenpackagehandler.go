@@ -135,7 +135,7 @@ func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler
 	}
 	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,
 	// Therefore, we set the `isDepTreeInstalled` flag to true
-	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.ProjectsCmd, true)
+	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.Projects, true)
 	return &MavenPackageHandler{MavenDepTreeManager: mavenDepTreeManager}
 }
 
