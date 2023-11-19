@@ -699,8 +699,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231116150916-767f7192681b h1:bna8FdiCME6CWQOaILQ4gvkVZ1/KoeJhYJgjCG1BB8s=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231116150916-767f7192681b/go.mod h1:S+KpcxVw9O3jY1KtzvbFtnejinc4GgbykQNhLLtfR8I=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119111712-859fb87b344d h1:tBxC1RrUNT70qRTqV+Mgbi2RE70EIhxpLeEdp/1rK+k=
+github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231119111712-859fb87b344d/go.mod h1:Le0qPGC9aQ09O+foL+vOG6lJP+fy1C/5yfxL7XzjYpg=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
@@ -961,8 +961,6 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231119103345-2409fe7982be h1:990HYOLME3D5NvUM0r3ig4nGxHW/nxE4x5hNzplgfxc=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231119103345-2409fe7982be/go.mod h1:Le0qPGC9aQ09O+foL+vOG6lJP+fy1C/5yfxL7XzjYpg=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.3.0 h1:wP5yEpI53zr0v5cBmagXzLbHZp9Oylyo3AJDpfLBITs=
