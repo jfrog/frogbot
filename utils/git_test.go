@@ -5,12 +5,14 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	bitests "github.com/jfrog/build-info-go/tests"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -347,4 +349,34 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 			assert.Equal(t, test.expected, title)
 		})
 	}
+}
+
+func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
+	curWd, err := os.Getwd()
+	assert.NoError(t, err)
+	tempDirPath, createTempDirCallback := bitests.CreateTempDirWithCallbackAndAssert(t)
+	assert.NoError(t, os.Chdir(tempDirPath))
+	defer func() {
+		assert.NoError(t, os.Chdir(curWd))
+	}()
+
+	gitManager := createFakeDotGit(t, tempDirPath)
+	// Generating a new file that will result in an unclean working tree.
+	newFile, err := os.Create("new-file.txt")
+	assert.NoError(t, err)
+
+	var removeDirCallback func() error
+	err, removeDirCallback = gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff("new-branch")
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, newFile.Close())
+		assert.NoError(t, removeDirCallback())
+		createTempDirCallback()
+	}()
+
+	// Confirm that the new files exist in the new branch
+	var fileExists bool
+	fileExists, err = fileutils.IsFileExists(filepath.Join(tempDirPath, newFile.Name()), false)
+	assert.NoError(t, err)
+	assert.True(t, fileExists)
 }
