@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-// Creates a temp dir and copy curreent workding dir files into it. Returns a full path for the temp dir
+// Generates a temporary directory and duplicates the current working directory files into it. Provides the complete path for the temporary directory.
 func CopyCurrentDirFilesToTempDir() (tempDirPath string, err error) {
 	var wd string
 	tempDirPath, err = fileutils.CreateTempDir()
@@ -21,12 +21,12 @@ func CopyCurrentDirFilesToTempDir() (tempDirPath string, err error) {
 	if err != nil {
 		return
 	}
-	// If changes have been made in the current working dir since we cloned it we keep a copy of its files before we create a new branch from the original cloned dir
+	// If modifications have been made in the current working directory since it was cloned, we retain a duplicate of its files before initiating a new branch from the initially cloned directory.
 	err = biutils.CopyDir(wd, tempDirPath, false, nil)
 	return
 }
 
-// Copies all files from sourceDirPath to the current working dir, while avoiding copying files that already exist
+// Duplicates all files from sourceDirPath into the present working directory, omitting any files that already exist.
 func CopyMissingFilesToCurrentWorkingDir(sourceDirPath string) (err error) {
 	var wd string
 	wd, err = os.Getwd()
@@ -40,7 +40,7 @@ func CopyMissingFilesToCurrentWorkingDir(sourceDirPath string) (err error) {
 		err = fmt.Errorf("couldn't get a list of files in current working directory '%s': %s", wd, err.Error())
 		return
 	}
-	// We must have only the name of the file and not its full path in order to exclude it from the copy
+	// We need only the filename, not its complete path, to omit it from the duplication process
 	for idx, fileFullPath := range alreadyExistingFiles {
 		alreadyExistingFiles[idx] = filepath.Base(fileFullPath)
 	}

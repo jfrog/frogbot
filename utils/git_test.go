@@ -361,7 +361,7 @@ func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
 	}()
 
 	gitManager := createFakeDotGit(t, tempDirPath)
-	// Creating a new file which will make the working tree un-clean
+	// Generating a new file that will result in an unclean working tree.
 	newFile, err := os.Create("new-file.txt")
 	assert.NoError(t, err)
 
@@ -374,7 +374,7 @@ func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
 		createTempDirCallback()
 	}()
 
-	// Verify we have the new files in the new branch as well
+	// Confirm that the new files exist in the new branch
 	var fileExists bool
 	fileExists, err = fileutils.IsFileExists(filepath.Join(tempDirPath, newFile.Name()), false)
 	assert.NoError(t, err)

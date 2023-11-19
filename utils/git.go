@@ -216,8 +216,8 @@ func (gm *GitManager) CreateBranchAndCheckoutWithCopyingFilesDiff(branchName str
 		return err, removeDirCallback
 	}
 
-	// We copy to the new branch all files the working directory contained before changing branch
-	// We perform this so we will not have to 'install' the project again if it was already done before
+	// Copying all the files from the existing working directory to the new branch
+	// avoids the need for reinstalling the project in case it was previously installed.
 	err = CopyMissingFilesToCurrentWorkingDir(tempDirPath)
 	return err, removeDirCallback
 }
