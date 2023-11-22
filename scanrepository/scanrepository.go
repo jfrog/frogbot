@@ -297,9 +297,25 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 		log.Info(fmt.Sprintf("A pull request updating the dependency '%s' to version '%s' already exists. Skipping...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 		return
 	}
-	if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
-		return fmt.Errorf("failed while creating new branch: \n%s", err.Error())
+
+	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if !workTreeIsClean {
+		var removeTempDirCallback func() error
+		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(fixBranchName)
+		defer func() {
+			err = errors.Join(err, removeTempDirCallback())
+		}()
+		if err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
+			return
+		}
+	} else {
+		if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
+			return
+		}
 	}
+
 	if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
@@ -515,9 +531,25 @@ func (cfp *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string
 func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
-	if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
-		return
+
+	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if !workTreeIsClean {
+		var removeTempDirCallback func() error
+		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(aggregatedFixBranchName)
+		defer func() {
+			err = errors.Join(err, removeTempDirCallback())
+		}()
+		if err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
+			return
+		}
+	} else {
+		if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
+			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
+			return
+		}
 	}
+
 	// Fix all packages in the same branch if expected error accrued, log and continue.
 	var fixedVulnerabilities []*utils.VulnerabilityDetails
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {

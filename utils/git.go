@@ -198,6 +198,30 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 	return worktree.Checkout(checkoutConfig)
 }
 
+// Initiates a new branch and switches to it.
+// To carry over modifications from the current branch to the new one, we copy all FILES from the current working directory to a temporary directory.
+// Before switching to the new branch, we transfer the missing files from the temporary directory to the working directory associated with the new branch.
+// Note: Only FILES are copied, avoiding directory and configurations overrides (such as .git configurations).
+func (gm *GitManager) CreateBranchAndCheckoutWithCopyingFilesDiff(branchName string) (error, func() error) {
+	tempDirPath, err := CopyCurrentDirFilesToTempDir()
+	if err != nil {
+		return err, func() error { return nil }
+	}
+
+	removeDirCallback := func() error {
+		return fileutils.RemoveTempDir(tempDirPath)
+	}
+
+	if err = gm.CreateBranchAndCheckout(branchName); err != nil {
+		return err, removeDirCallback
+	}
+
+	// Copying all the files from the existing working directory to the new branch
+	// avoids the need for reinstalling the project in case it was previously installed.
+	err = CopyMissingFilesToCurrentWorkingDir(tempDirPath)
+	return err, removeDirCallback
+}
+
 func getCurrentBranch(repository *git.Repository) (string, error) {
 	head, err := repository.Head()
 	if err != nil {
