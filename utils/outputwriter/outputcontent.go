@@ -25,7 +25,7 @@ const (
 
 var (
 	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotRepoUrlReadme)
-	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
+	JasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
@@ -88,7 +88,7 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return writer.MarkAsDetails("Note:", 0, fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
+	return writer.MarkAsDetails("Note:", 0, fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(JasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {

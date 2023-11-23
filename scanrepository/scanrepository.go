@@ -19,6 +19,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -125,6 +126,24 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
+			return err
+		}
+
+		// Show scan results
+		var messages []string
+		if !scanResults.ExtendedScanResults.EntitledForJas {
+			messages = []string{outputwriter.JasFeaturesMsgWhenNotEnabled}
+		}
+		if err = xrayutils.NewResultsWriter(scanResults).
+			SetIsMultipleRootProject(scanResults.IsMultipleProject()).
+			SetIncludeVulnerabilities(true).
+			SetIncludeSecrets(false).
+			SetWriteFullScanResults(false).
+			SetOutputFormat(xrayutils.Table).
+			SetPrintExtendedTable(true).
+			SetExtraMessages(messages).
+			SetScanType(services.Dependency).
+			PrintScanResults(); err != nil {
 			return err
 		}
 
