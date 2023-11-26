@@ -123,9 +123,9 @@ func transferResultsToTarget(source, target *xrayutils.Results) {
 	target.ExtendedScanResults.EntitledForJas = source.ExtendedScanResults.EntitledForJas
 	// Transfer JAS scan results
 	target.ExtendedScanResults.ApplicabilityScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.ApplicabilityScanResults...)
-	target.ExtendedScanResults.SecretsScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.SecretsScanResults...)
-	target.ExtendedScanResults.IacScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.IacScanResults...)
-	target.ExtendedScanResults.SastScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.SastScanResults...)
+	target.ExtendedScanResults.SecretsScanResults = append(target.ExtendedScanResults.SecretsScanResults, source.ExtendedScanResults.SecretsScanResults...)
+	target.ExtendedScanResults.IacScanResults = append(target.ExtendedScanResults.IacScanResults, source.ExtendedScanResults.IacScanResults...)
+	target.ExtendedScanResults.SastScanResults = append(target.ExtendedScanResults.SastScanResults, source.ExtendedScanResults.SastScanResults...)
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
