@@ -116,6 +116,18 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	return
 }
 
+func transferResultsToTarget(source, target *xrayutils.Results) {
+	// Transfer SCA scan results
+	target.ScaResults = append(target.ScaResults, source.ScaResults...)
+	// Transfer entitlements
+	target.ExtendedScanResults.EntitledForJas = source.ExtendedScanResults.EntitledForJas
+	// Transfer JAS scan results
+	target.ExtendedScanResults.ApplicabilityScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.ApplicabilityScanResults...)
+	target.ExtendedScanResults.SecretsScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.SecretsScanResults...)
+	target.ExtendedScanResults.IacScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.IacScanResults...)
+	target.ExtendedScanResults.SastScanResults = append(target.ExtendedScanResults.ApplicabilityScanResults, source.ExtendedScanResults.SastScanResults...)
+}
+
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
 	var fixNeeded bool
 	// A map that contains the full project paths as a keys
@@ -123,29 +135,15 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
+
+	allResults := xrayutils.NewAuditResults()
+
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
 			return err
 		}
-
-		// Show scan results
-		var messages []string
-		if !scanResults.ExtendedScanResults.EntitledForJas {
-			messages = []string{outputwriter.JasFeaturesMsgWhenNotEnabled}
-		}
-		if err = xrayutils.NewResultsWriter(scanResults).
-			SetIsMultipleRootProject(scanResults.IsMultipleProject()).
-			SetIncludeVulnerabilities(true).
-			SetIncludeSecrets(false).
-			SetWriteFullScanResults(false).
-			SetOutputFormat(xrayutils.Table).
-			SetPrintExtendedTable(true).
-			SetExtraMessages(messages).
-			SetScanType(services.Dependency).
-			PrintScanResults(); err != nil {
-			return err
-		}
+		transferResultsToTarget(scanResults, allResults)
 
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
@@ -166,7 +164,27 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
 	if fixNeeded {
-		return cfp.fixVulnerablePackages(vulnerabilitiesByPathMap)
+		if err := cfp.fixVulnerablePackages(vulnerabilitiesByPathMap); err != nil {
+			return err
+		}
+	}
+
+	// Show scan results
+	var messages []string
+	if !allResults.ExtendedScanResults.EntitledForJas {
+		messages = []string{outputwriter.JasFeaturesMsgWhenNotEnabled}
+	}
+	if err := xrayutils.NewResultsWriter(allResults).
+		SetIsMultipleRootProject(allResults.IsMultipleProject()).
+		SetIncludeVulnerabilities(true).
+		SetIncludeSecrets(false).
+		SetWriteFullScanResults(false).
+		SetOutputFormat(xrayutils.Table).
+		SetPrintExtendedTable(true).
+		SetExtraMessages(messages).
+		SetScanType(services.Dependency).
+		PrintScanResults(); err != nil {
+		return err
 	}
 	return nil
 }
