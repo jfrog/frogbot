@@ -174,7 +174,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	if !allResults.ExtendedScanResults.EntitledForJas {
 		messages = []string{outputwriter.JasFeaturesMsgWhenNotEnabled}
 	}
-	if err := xrayutils.NewResultsWriter(allResults).
+	return xrayutils.NewResultsWriter(allResults).
 		SetIsMultipleRootProject(allResults.IsMultipleProject()).
 		SetIncludeVulnerabilities(true).
 		SetIncludeSecrets(false).
@@ -183,10 +183,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		SetPrintExtendedTable(true).
 		SetExtraMessages(messages).
 		SetScanType(services.Dependency).
-		PrintScanResults(); err != nil {
-		return err
-	}
-	return nil
+		PrintScanResults()
 }
 
 // Audit the dependencies of the current commit.
