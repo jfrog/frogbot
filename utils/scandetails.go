@@ -114,6 +114,7 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 }
 
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
+	// TODO delete this loop
 	for _, wd := range workDirs {
 		if err = sc.runInstallIfNeeded(wd); err != nil {
 			return nil, err
@@ -126,6 +127,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
+		SetInstallCommandName(sc.InstallCommandName).
 		SetInstallCommandArgs(sc.InstallCommandArgs)
 
 	auditParams := audit.NewAuditParams().
@@ -143,9 +145,10 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 	return
 }
 
+// TODO Delete this function
 func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
-	if sc.InstallCommandName == "npm" || sc.InstallCommandName == "yarn" {
+	if sc.InstallCommandName == "npm" || sc.InstallCommandName == "yarn" || sc.InstallCommandName == "dotnet" || sc.InstallCommandName == "nuget" {
 		return nil
 	}
 
@@ -169,6 +172,7 @@ func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
 	return
 }
 
+// TODO Delete this function
 func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
 	if sc.DepsRepo == "" {
 		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.

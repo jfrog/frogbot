@@ -31,6 +31,7 @@ func TestCreateXrayScanParams(t *testing.T) {
 	assert.True(t, scanDetails.IncludeLicenses)
 }
 
+// TODO delete this test
 func TestRunInstallIfNeeded(t *testing.T) {
 	scanSetup := ScanDetails{
 		Project: &Project{},

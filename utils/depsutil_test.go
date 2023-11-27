@@ -83,6 +83,7 @@ func createJfrogHttpClient(artDetails *auth.ServiceDetails) (*jfroghttpclient.Jf
 		Build()
 }
 
+// TODO delete this test. MAYBE move this test to cli-core and apply it to ALL package managers
 func TestResolveDependencies(t *testing.T) {
 	params, restoreEnv := VerifyEnv(t)
 	defer restoreEnv()

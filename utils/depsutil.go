@@ -16,8 +16,10 @@ import (
 	"path/filepath"
 )
 
+// TODO delete this declaration
 type resolveDependenciesFunc func(scanSetup *ScanDetails) ([]byte, error)
 
+// TODO delete this map
 var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 	coreutils.Npm.String():    resolveNpmDependencies,
 	coreutils.Yarn.String():   resolveYarnDependencies,
@@ -27,6 +29,7 @@ var MapTechToResolvingFunc = map[string]resolveDependenciesFunc{
 
 const yarnV2Version = "2.0.0"
 
+// TODO delete this function
 func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	npmCmd := npm.NewNpmCommand(scanSetup.InstallCommandArgs[0], false).SetServerDetails(scanSetup.ServerDetails)
 	if err = npmCmd.PreparePrerequisites(scanSetup.DepsRepo); err != nil {
@@ -43,6 +46,7 @@ func resolveNpmDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	return
 }
 
+// TODO delete this function
 func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	currWd, err := coreutils.GetWorkingDirectory()
 	if err != nil {
@@ -90,6 +94,7 @@ func resolveYarnDependencies(scanSetup *ScanDetails) (output []byte, err error) 
 	return
 }
 
+// TODO delete this function
 func resolveDotnetDependencies(scanSetup *ScanDetails) (output []byte, err error) {
 	wd, err := fileutils.CreateTempDir()
 	if err != nil {
