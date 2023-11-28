@@ -196,11 +196,11 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, prId int) {
+	comments, err := client.ListPullRequestComments(ctx, repoOwner, repoName, prId)
+	assert.NoError(t, err)
+
 	switch client.(type) {
 	case *vcsclient.GitHubClient:
-		comments, err := client.ListPullRequestComments(ctx, repoOwner, repoName, prId)
-		assert.NoError(t, err)
-
 		// Validate that the relevant vulnerabilities comment has been created
 		assert.Len(t, comments, 1)
 		comment := comments[0]
@@ -211,9 +211,11 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, len(reviewComments), 13)
 	case *vcsclient.AzureReposClient:
-		comments, err := client.ListPullRequestComments(ctx, repoOwner, repoName, prId)
-		assert.NoError(t, err)
+		// In azure repos, there is no separation between comments and review comments
 		assert.GreaterOrEqual(t, len(comments), 14)
+		bannerExists, bannerOccurreneces := isCommentsContainsBanner(comments, outputwriter.VulnerabilitiesPrBannerSource)
+		assert.True(t, bannerExists)
+		assert.Len(t, bannerOccurreneces, 1)
 	}
 }
 
@@ -235,10 +237,25 @@ func getJfrogEnvRestoreFunc(t *testing.T) func() {
 	}
 }
 
+// This function retrieves the relevant VCS provider access token based on the corresponding environment variable.
+// If the environment variable is empty, the test is skipped.
 func getIntegrationToken(t *testing.T, tokenEnv string) string {
 	integrationRepoToken := os.Getenv(tokenEnv)
 	if integrationRepoToken == "" {
 		t.Skipf("%s is not set, skipping integration test", tokenEnv)
 	}
 	return integrationRepoToken
+}
+
+func isCommentsContainsBanner(comments []vcsclient.CommentInfo, banner outputwriter.ImageSource) (bool, int) {
+	var isContains bool
+	var occurrences int
+	for _, c := range comments {
+		if strings.Contains(c.Content, string(banner)) {
+			isContains = true
+			occurrences++
+		}
+	}
+
+	return isContains, occurrences
 }
