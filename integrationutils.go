@@ -227,7 +227,7 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 		assert.GreaterOrEqual(t, len(comments), 14)
 		bannerExists, bannerOccurreneces := isCommentsContainsBanner(comments, outputwriter.VulnerabilitiesPrBannerSource)
 		assert.True(t, bannerExists)
-		assert.Len(t, bannerOccurreneces, 1)
+		assert.Equal(t, 1, bannerOccurreneces)
 	}
 }
 
