@@ -112,6 +112,7 @@ func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
 func getMavenDependencies(pomXmlContent []byte) (result []gavCoordinate, err error) {
 	var dependencies mavenDependency
 	if err = xml.Unmarshal(pomXmlContent, &dependencies); err != nil {
+		err = fmt.Errorf("failed to unmarshal the current pom.xml:\n%s, error received:\n%w"+string(pomXmlContent), err)
 		return
 	}
 	result = append(result, dependencies.collectMavenDependencies(false)...)
@@ -199,6 +200,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
+			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", string(depTreeOutput), escapedContent, err)
 			return
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
