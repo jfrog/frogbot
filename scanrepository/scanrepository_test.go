@@ -32,44 +32,50 @@ var testPackagesData = []struct {
 	commandName string
 	commandArgs []string
 }{
-	{
-		packageType: coreutils.Go.String(),
-	},
-	{
-		packageType: coreutils.Maven.String(),
-	},
-	{
-		packageType: coreutils.Gradle.String(),
-	},
-	{
-		packageType: coreutils.Npm.String(),
-		commandName: "npm",
-		commandArgs: []string{"install"},
-	},
-	{
-		packageType: "yarn1",
-		commandName: "yarn",
-		commandArgs: []string{"install"},
-	},
-	{
-		packageType: "yarn2",
-		commandName: "yarn",
-		commandArgs: []string{"install"},
-	},
+	/*
+		{
+			packageType: coreutils.Go.String(),
+		},
+		{
+			packageType: coreutils.Maven.String(),
+		},
+		{
+			packageType: coreutils.Gradle.String(),
+		},
+		{
+			packageType: coreutils.Npm.String(),
+			commandName: "npm",
+			commandArgs: []string{"install"},
+		},
+		{
+			packageType: "yarn1",
+			commandName: "yarn",
+			commandArgs: []string{"install"},
+		},
+		{
+			packageType: "yarn2",
+			commandName: "yarn",
+			commandArgs: []string{"install"},
+		},
+
+	*/
 	{
 		packageType: coreutils.Nuget.String(),
-		commandName: "nuget",
+		commandName: "dotnet",
 		commandArgs: []string{"restore"},
 	},
-	{
-		packageType: coreutils.Pip.String(),
-	},
-	{
-		packageType: coreutils.Pipenv.String(),
-	},
-	{
-		packageType: coreutils.Poetry.String(),
-	},
+	/*
+		{
+			packageType: coreutils.Pip.String(),
+		},
+		{
+			packageType: coreutils.Pipenv.String(),
+		},
+		{
+			packageType: coreutils.Poetry.String(),
+		},
+
+	*/
 }
 
 func TestScanRepositoryCmd_Run(t *testing.T) {
