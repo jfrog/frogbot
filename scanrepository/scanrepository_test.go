@@ -62,6 +62,11 @@ var testPackagesData = []struct {
 		commandArgs: []string{"restore"},
 	},
 	{
+		packageType: coreutils.Nuget.String(),
+		commandName: "nuget",
+		commandArgs: []string{"restore"},
+	},
+	{
 		packageType: coreutils.Pip.String(),
 	},
 	{
