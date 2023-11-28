@@ -3,8 +3,7 @@ name: "Azure Integration Tests"
 on:
   workflow_run:
     workflows: [ Go Tests ]
-    types:
-      - success
+    types: [ completed ]
 
 # Ensures that only the latest commit is running for each PR at a time.
 # Ignores this rule for push events.
@@ -13,15 +12,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Pretest:
+  tests:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Unlabel 'safe to test'
-        uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{ github.event_name != 'push' }}
-        with:
-          labels: "safe to test"
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -38,21 +32,6 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
-
-      # Generate mocks
-      - name: Generate mocks
-        run: go generate ./...
-
-      - name: Lint
-        run: go vet -v ./...
-
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Build Frogbot
         run: buildscripts/build.sh
       - name: Run Azure Integration Tests
