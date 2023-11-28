@@ -636,6 +636,7 @@ func parseVersionChangeString(fixVersion string) string {
 // Skip build tools dependencies (for example, pip)
 // that are not defined in the descriptor file and cannot be fixed by a PR.
 func isBuildToolsDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	//nolint:typecheck // Ignoring typecheck error: linter cannot infer the type returned by utils.BuildToolsDependenciesMap as []string although utils.BuildToolsDependenciesMap is declared as map[coreutils.Technology][]string in utils/utils.go
 	if slices.Contains(utils.BuildToolsDependenciesMap[vulnDetails.Technology], vulnDetails.ImpactedDependencyName) {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
