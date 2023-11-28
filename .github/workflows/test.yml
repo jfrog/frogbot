@@ -59,20 +59,20 @@ jobs:
           - name: 'Unit'
 
           - name: 'Scan Repository'
-            package: 'github.com/jfrog/frogbot/scanrepository'
+            packages: 'github.com/jfrog/frogbot/scanrepository'
 
           - name: 'Scan Pull Request'
-            package: 'github.com/jfrog/frogbot/scanpullrequest'
+            packages: 'github.com/jfrog/frogbot/scanpullrequest'
 
           - name: 'Package Handlers'
-            package: 'github.com/jfrog/frogbot/packagehandlers'
+            packages: 'github.com/jfrog/frogbot/packagehandlers'
 
           - name: 'Azure Repos Integration'
-            package: 'azure_test.go integrationutils.go commands.go'
+            packages: 'azure_test.go integrationutils.go commands.go'
             token: FROGBOT_TESTS_AZURE_TOKEN
 
           - name: 'GitHub Integration'
-            package: 'github_test.go integrationutils.go commands.go'
+            packages: 'github_test.go integrationutils.go commands.go'
             token: FROGBOT_TESTS_GITHUB_TOKEN
 
         os: [ ubuntu, windows, macos ]
@@ -118,7 +118,7 @@ jobs:
         if: ${{ matrix.suite.name != 'Unit' }}
 
       - name: Run Tests
-        run: go test ${{ matrix.suite.package }} -v -race -timeout 30m -cover
+        run: go test ${{ matrix.suite.packages }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
