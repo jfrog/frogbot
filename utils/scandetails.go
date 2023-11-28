@@ -11,13 +11,7 @@ import (
 	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"os/exec"
 	"path/filepath"
-	"strings"
-)
-
-const (
-	installationCmdFailedErr = "Couldn't run the installation command on the base branch. Assuming new project in the source branch: "
 )
 
 type ScanDetails struct {
@@ -114,13 +108,6 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 }
 
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
-	// TODO delete this loop
-	for _, wd := range workDirs {
-		if err = sc.runInstallIfNeeded(wd); err != nil {
-			return nil, err
-		}
-	}
-
 	auditBasicParams := (&xrayutils.AuditBasicParams{}).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
@@ -143,47 +130,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		err = errors.Join(err, auditResults.ScaError, auditResults.JasError)
 	}
 	return
-}
-
-// TODO Delete this function
-func (sc *ScanDetails) runInstallIfNeeded(workDir string) (err error) {
-	// A temporary barrier until all the 'install' logic is relocated from frogbot, at which point this code will become obsolete
-	if sc.InstallCommandName == "npm" || sc.InstallCommandName == "yarn" || sc.InstallCommandName == "dotnet" || sc.InstallCommandName == "nuget" {
-		return nil
-	}
-
-	if sc.InstallCommandName == "" {
-		return nil
-	}
-	restoreDir, err := Chdir(workDir)
-	defer func() {
-		err = errors.Join(err, restoreDir())
-	}()
-	log.Info(fmt.Sprintf("Executing '%s %s' at %s", sc.InstallCommandName, strings.Join(sc.InstallCommandArgs, " "), workDir))
-	output, err := sc.runInstallCommand()
-	if err != nil && !sc.FailOnInstallationErrors() {
-		log.Info(installationCmdFailedErr, err.Error())
-		if len(output) > 0 {
-			log.Info(string(output))
-		}
-		// failOnInstallationErrors set to 'false'
-		err = nil
-	}
-	return
-}
-
-// TODO Delete this function
-func (sc *ScanDetails) runInstallCommand() ([]byte, error) {
-	if sc.DepsRepo == "" {
-		//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
-		return exec.Command(sc.InstallCommandName, sc.InstallCommandArgs...).CombinedOutput()
-	}
-	resolveDepsFunc := MapTechToResolvingFunc[sc.InstallCommandName]
-	if resolveDepsFunc == nil {
-		return nil, fmt.Errorf(sc.InstallCommandName, "isn't recognized as an install command")
-	}
-	log.Info("Resolving dependencies from", sc.ServerDetails.Url, "from repo", sc.DepsRepo)
-	return resolveDepsFunc(sc)
 }
 
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
