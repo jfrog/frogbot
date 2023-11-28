@@ -49,7 +49,10 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl string) *Integrat
 }
 
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
-	gitManager, err := utils.NewGitManager().SetAuth("", testDetails.GitToken).SetRemoteGitUrl(testDetails.GitCloneURL)
+	gitManager, err := utils.NewGitManager().
+		SetAuth("", testDetails.GitToken).
+		SetEmailAuthor("frogbot-test@jfrog.com").
+		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
 	return gitManager
 }
@@ -136,8 +139,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 		assert.NoError(t, restoreFunc())
 	}()
 
-	// Get a timestamp based issues-branch and main branches
-
+	// Get a timestamp based issues-branch
 	currentIssuesBranch := getIssuesBranchName()
 	removeBranchFunc := createAndCheckoutIssueBranch(t, testDetails, tmpDir, currentIssuesBranch)
 	defer removeBranchFunc()

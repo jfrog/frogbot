@@ -11,7 +11,7 @@ import (
 const (
 	azureIntegrationTokenEnv = "FROGBOT_TESTS_AZURE_TOKEN"
 	azureApiEndpoint         = "https://dev.azure.com/frogbot-test"
-	azureGitCloneUrl         = "https://frogbot-test@dev.azure.com/repoOwner/repoName/_git/repoName"
+	azureGitCloneUrl         = "https://frogbot-test@dev.azure.com/frogbot-test/integration/_git/integration"
 )
 
 func buildAzureReposClient(t *testing.T, azureToken string) vcsclient.VcsClient {

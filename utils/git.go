@@ -130,6 +130,14 @@ func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
 	return gm, nil
 }
 
+func (gm *GitManager) SetEmailAuthor(emailAuthor string) *GitManager {
+	if gm.git == nil {
+		gm.git = &Git{}
+	}
+	gm.git.EmailAuthor = emailAuthor
+	return gm
+}
+
 func (gm *GitManager) SetDryRun(dryRun bool, dryRunRepoPath string) *GitManager {
 	gm.dryRun = dryRun
 	gm.dryRunRepoPath = dryRunRepoPath
