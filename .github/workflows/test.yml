@@ -67,10 +67,10 @@ jobs:
           - name: 'Package Handlers'
             package: 'github.com/jfrog/frogbot/packagehandlers'
 
-          - name: 'Azure Repos Integration Tests'
+          - name: 'Azure Repos Integration'
             package: 'azure_test.go integrationutils.go commands.go'
 
-          - name: 'GitHub Integration Tests'
+          - name: 'GitHub Integration'
             package: 'github_test.go integrationutils.go commands.go'
 
         os: [ ubuntu, windows, macos ]
