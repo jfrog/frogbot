@@ -90,10 +90,19 @@ func createAndCheckoutIssueBranch(t *testing.T, testDetails *IntegrationTestDeta
 	// So we remove the default .git and clone the repository with its .git content
 	err := vcsutils.RemoveTempDir(".git")
 	require.NoError(t, err)
+
 	err = gitManager.Clone(tmpDir, issuesBranch)
 	require.NoError(t, err)
+
 	err = gitManager.CreateBranchAndCheckout(currentIssuesBranch)
 	require.NoError(t, err)
+
+	// This step is necessary because GitHub limits the number of pull requests from the same commit of the source branch
+	_, err = os.Create("emptyfile.txt")
+	assert.NoError(t, err)
+	err = gitManager.AddAllAndCommit("emptyfile added")
+	assert.NoError(t, err)
+
 	err = gitManager.Push(false, currentIssuesBranch)
 	require.NoError(t, err)
 	return func() {
@@ -127,7 +136,8 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 		assert.NoError(t, restoreFunc())
 	}()
 
-	// Get a timestamp based issues-branch name
+	// Get a timestamp based issues-branch and main branches
+
 	currentIssuesBranch := getIssuesBranchName()
 	removeBranchFunc := createAndCheckoutIssueBranch(t, testDetails, tmpDir, currentIssuesBranch)
 	defer removeBranchFunc()
