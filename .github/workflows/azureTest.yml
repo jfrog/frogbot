@@ -6,6 +6,12 @@ on:
     types:
       - success
 
+# Ensures that only the latest commit is running for each PR at a time.
+# Ignores this rule for push events.
+concurrency:
+  group: ${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   Pretest:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test')
