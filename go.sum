@@ -699,10 +699,6 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/build-info-go v0.0.0-20231128121201-44500f22a2fa h1:xBHFUJRsjsqrgBV2z2vmfgfrmOkXVQPbWXUKQNRRFRc=
-github.com/eranturgeman/build-info-go v0.0.0-20231128121201-44500f22a2fa/go.mod h1:XVFk2rCYhIdc7+hIGE8TC3le5PPM+xYHU22udoE2b7Q=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231128122405-ac2128db06e1 h1:TK86rHxJAkuwIHx7eYyizM3r8Jo0FmMl+EusfJYyWCg=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20231128122405-ac2128db06e1/go.mod h1:FYuvPOAOfk+au8wmiyjGSTDnx/QB6KZDlN0n5GenqHc=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
@@ -878,12 +874,16 @@ github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOl
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jedib0t/go-pretty/v6 v6.4.8 h1:HiNzyMSEpsBaduKhmK+CwcpulEeBrTmxutz4oX/oWkg=
 github.com/jedib0t/go-pretty/v6 v6.4.8/go.mod h1:Ndk3ase2CkQbXLLNf5QDHoYb6J9WtVfmHZu9n8rk2xs=
+github.com/jfrog/build-info-go v1.8.9-0.20231128152703-7461a0ee42a6 h1:mn2csOrg1FTMnoGOyaX/jcy+l3QyRf5+klsgxQN4/Gs=
+github.com/jfrog/build-info-go v1.8.9-0.20231128152703-7461a0ee42a6/go.mod h1:XVFk2rCYhIdc7+hIGE8TC3le5PPM+xYHU22udoE2b7Q=
 github.com/jfrog/froggit-go v1.14.2 h1:55x1anQtaiARlSBMVT59aFU6Mmx90tpcvvAuuPsZm9c=
 github.com/jfrog/froggit-go v1.14.2/go.mod h1:0jRAaZZusaFFnITosmx6CA60SKryuoaCasJyUrP/c1s=
 github.com/jfrog/gofrog v1.3.1 h1:QqAwQXCVReT724uga1AYqG/ZyrNQ6f+iTxmzkb+YFQk=
 github.com/jfrog/gofrog v1.3.1/go.mod h1:IFMc+V/yf7rA5WZ74CSbXe+Lgf0iApEQLxRZVzKRUR0=
 github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231128171037-696dc07d352e h1:hwdFPZcR1xEAEmKQ4TfJ7G+BCKlSz82BtFf4EJDzZfU=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231128171037-696dc07d352e/go.mod h1:myt9iJS8NDFtQPFlPoK88byl2+FN+trk05aPjBkj664=
 github.com/jfrog/jfrog-client-go v1.28.1-0.20231126134442-14887b84b87a h1:hZFfT7i+vwhDhJ7xf211XbS9uxjR83vC618di1Eo0wo=
 github.com/jfrog/jfrog-client-go v1.28.1-0.20231126134442-14887b84b87a/go.mod h1:0PVhP6xGvBBaUzOU9LKf5OYkke/gY2IFILHA++iabFM=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
