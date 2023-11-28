@@ -24,6 +24,7 @@ type dependencyFixTest struct {
 	fixSupported          bool
 	specificTechVersion   string
 	uniqueChecksExtraArgs []string
+	testDirName           string
 }
 
 const (
@@ -207,17 +208,19 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Dotnet, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
 				},
 				fixSupported: false,
+				testDirName:  "dotnet",
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Dotnet, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
 				},
 				fixSupported: true,
+				testDirName:  "dotnet",
 			},
 		},
 
@@ -272,7 +275,11 @@ func TestUpdateDependency(t *testing.T) {
 			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
-					cleanup := createTempDirAndChdir(t, testDataDir, test.vulnDetails.Technology.String()+test.specificTechVersion)
+					testDirName := test.vulnDetails.Technology.String()
+					if test.testDirName != "" {
+						testDirName = test.testDirName
+					}
+					cleanup := createTempDirAndChdir(t, testDataDir, testDirName+test.specificTechVersion)
 					defer cleanup()
 					err := packageHandler.UpdateDependency(test.vulnDetails)
 					if test.fixSupported {
