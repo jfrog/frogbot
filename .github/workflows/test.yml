@@ -69,11 +69,13 @@ jobs:
 
           - name: 'Azure Repos Integration'
             package: 'azure_test.go integrationutils.go commands.go'
-            env: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+            env:
+              FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
 
           - name: 'GitHub Integration'
             package: 'github_test.go integrationutils.go commands.go'
-            token: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+            env:
+              FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
 
         os: [ ubuntu, windows, macos ]
     steps:
@@ -122,5 +124,5 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_AZURE_TOKEN: ${{ matrix.suite.token }}
-          FROGBOT_TESTS_GITHUB_TOKEN: ${{ matrix.suite.token }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ matrix.suite.env.FROGBOT_TESTS_AZURE_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ matrix.suite.env.FROGBOT_TESTS_GITHUB_TOKEN }}
