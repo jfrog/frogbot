@@ -59,21 +59,13 @@ jobs:
           - name: 'Unit'
 
           - name: 'Scan Repository'
-            packages: 'github.com/jfrog/frogbot/scanrepository'
+            package: 'scanrepository'
 
           - name: 'Scan Pull Request'
-            packages: 'github.com/jfrog/frogbot/scanpullrequest'
+            package: 'scanpullrequest'
 
           - name: 'Package Handlers'
-            packages: 'github.com/jfrog/frogbot/packagehandlers'
-
-          - name: 'Azure Repos Integration'
-            packages: 'azure_test.go integrationutils.go commands.go'
-            token: FROGBOT_TESTS_AZURE_TOKEN
-
-          - name: 'GitHub Integration'
-            packages: 'github_test.go integrationutils.go commands.go'
-            token: FROGBOT_TESTS_GITHUB_TOKEN
+            package: 'packagehandlers'
 
         os: [ ubuntu, windows, macos ]
     steps:
@@ -119,9 +111,58 @@ jobs:
 
       - name: Run Tests
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
-        run: go test ${{ matrix.suite.packages }} -v -race -timeout 30m -cover
+        run: go test github.com/jfrog/frogbot/${{ matrix.suite.package }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets[matrix.suite.token] }}
-          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets[matrix.suite.token] }}
+
+  github-integration:
+    name: GitHub integration tests
+    runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
+
+      - name: Go Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run Tests
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+
+  azure-integration:
+    name: Azure integration tests
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu, windows, macos ]
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Build Frogbot
+        run: buildscripts/build.sh
+
+      - name: Run Tests
+        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
