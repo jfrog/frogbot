@@ -878,6 +878,8 @@ github.com/jedib0t/go-pretty/v6 v6.4.8 h1:HiNzyMSEpsBaduKhmK+CwcpulEeBrTmxutz4oX
 github.com/jedib0t/go-pretty/v6 v6.4.8/go.mod h1:Ndk3ase2CkQbXLLNf5QDHoYb6J9WtVfmHZu9n8rk2xs=
 github.com/jfrog/build-info-go v1.8.9-0.20231128152703-7461a0ee42a6 h1:mn2csOrg1FTMnoGOyaX/jcy+l3QyRf5+klsgxQN4/Gs=
 github.com/jfrog/build-info-go v1.8.9-0.20231128152703-7461a0ee42a6/go.mod h1:XVFk2rCYhIdc7+hIGE8TC3le5PPM+xYHU22udoE2b7Q=
+github.com/jfrog/froggit-go v1.14.3 h1:39KOyASD70E8hWPqYDmBNp0N3Cqzs+PZ11d2IkHXDUk=
+github.com/jfrog/froggit-go v1.14.3/go.mod h1:mMWME+cHmBlPiyp8N3ElL+wH4gXbRoopZ7k/htUp1jI=
 github.com/jfrog/gofrog v1.3.1 h1:QqAwQXCVReT724uga1AYqG/ZyrNQ6f+iTxmzkb+YFQk=
 github.com/jfrog/gofrog v1.3.1/go.mod h1:IFMc+V/yf7rA5WZ74CSbXe+Lgf0iApEQLxRZVzKRUR0=
 github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
@@ -961,8 +963,6 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/froggit-go v1.2.1-0.20231129080728-c65a785cb1d1 h1:ZphgYuzv1poPzUrQP5qhp3gjlPefNH2OCdJ53tBHz6E=
-github.com/omerzi/froggit-go v1.2.1-0.20231129080728-c65a785cb1d1/go.mod h1:mMWME+cHmBlPiyp8N3ElL+wH4gXbRoopZ7k/htUp1jI=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.3.0 h1:wP5yEpI53zr0v5cBmagXzLbHZp9Oylyo3AJDpfLBITs=
