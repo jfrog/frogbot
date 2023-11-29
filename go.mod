@@ -39,7 +39,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/forPelevin/gomoji v1.1.8 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gfleury/go-bitbucket-v1 v0.0.0-20230626192437-8d7be5866751 // indirect
+	github.com/gfleury/go-bitbucket-v1 v0.0.0-20230825095122-9bc1711434ab // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20230616125104-99d496ca653d // indirect
@@ -47,6 +47,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-github/v56 v56.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect
@@ -69,7 +70,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/mholt/archiver/v3 v3.5.1 // indirect
-	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5 // indirect
+	github.com/microsoft/azure-devops-go-api/azuredevops/v7 v7.1.0 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
@@ -93,7 +94,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/urfave/cli v1.22.14 // indirect
-	github.com/xanzy/go-gitlab v0.88.0 // indirect
+	github.com/xanzy/go-gitlab v0.94.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
@@ -124,4 +125,4 @@ replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
 
-replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.20231122071548-dd7256355b2a
+replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.20231129073128-5d5a127d0bda
