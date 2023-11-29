@@ -78,6 +78,10 @@ jobs:
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
+      - name: Evaluate Test Skip Condition
+        if: matrix.suite.name == 'GitHub Integration' && matrix.os != 'ubuntu'
+        run: echo "Skipping GitHub Integration on ${{ matrix.os }}"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
