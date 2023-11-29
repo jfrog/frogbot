@@ -47,6 +47,7 @@ jobs:
         run: go vet -v ./...
 
   tests:
+    if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
     needs: Pretest
     name: ${{ matrix.suite.name }} Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}-latest
@@ -78,12 +79,6 @@ jobs:
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
-      - name: Evaluate Test Skip Condition
-        if: matrix.suite.name == 'GitHub Integration' && matrix.os != 'ubuntu'
-        run: |
-          echo "Skipping GitHub Integration on ${{ matrix.os }}"
-          exit 0
-
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
