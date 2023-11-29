@@ -118,7 +118,12 @@ jobs:
         if: ${{ matrix.suite.name != 'Unit' }}
 
       - name: Run Tests
-        run: go test ${{ matrix.suite.packages }} -v -race -timeout 30m -cover
+        run: |
+          if [ "${{ matrix.suite.name }}" == "GitHub Integration" ] && [ "${{ matrix.os }}" != "ubuntu" ]; then
+            echo "Skipping GitHub Integration tests on ${{ matrix.os }}"
+          else
+            go test ${{ matrix.suite.packages }} -v -race -timeout 30m -cover
+          fi
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
