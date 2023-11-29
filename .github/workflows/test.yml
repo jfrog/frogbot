@@ -47,7 +47,6 @@ jobs:
         run: go vet -v ./...
 
   tests:
-    if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
     needs: Pretest
     name: ${{ matrix.suite.name }} Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}-latest
@@ -77,6 +76,7 @@ jobs:
             token: FROGBOT_TESTS_GITHUB_TOKEN
 
         os: [ ubuntu, windows, macos ]
+    if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
     steps:
       # Configure prerequisites
       - uses: actions/checkout@v4
