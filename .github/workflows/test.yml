@@ -118,23 +118,18 @@ jobs:
 
   github-integration:
     name: GitHub integration tests
+    needs: Pretest
     runs-on: ubuntu-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
       FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
         with:
-          go-version: 1.20.x
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Go Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+      - name: Build Frogbot
+        run: buildscripts/build.sh
 
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -145,6 +140,7 @@ jobs:
 
   azure-integration:
     name: Azure integration tests
+    needs: Pretest
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
