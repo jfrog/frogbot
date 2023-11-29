@@ -76,7 +76,6 @@ jobs:
             token: FROGBOT_TESTS_GITHUB_TOKEN
 
         os: [ ubuntu, windows, macos ]
-    if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
     steps:
       # Configure prerequisites
       - uses: actions/checkout@v4
@@ -119,6 +118,7 @@ jobs:
         if: ${{ matrix.suite.name != 'Unit' }}
 
       - name: Run Tests
+        if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
         run: go test ${{ matrix.suite.packages }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
