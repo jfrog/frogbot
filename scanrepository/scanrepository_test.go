@@ -57,6 +57,11 @@ var testPackagesData = []struct {
 		commandArgs: []string{"install"},
 	},
 	{
+		packageType: coreutils.Dotnet.String(),
+		commandName: "dotnet",
+		commandArgs: []string{"restore"},
+	},
+	{
 		packageType: coreutils.Nuget.String(),
 		commandName: "nuget",
 		commandArgs: []string{"restore"},
