@@ -117,7 +117,7 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
 
   github-integration:
-    name: GitHub integration tests
+    name: GitHub Integration Tests
     needs: Pretest
     runs-on: ubuntu-latest
     env:
@@ -139,7 +139,7 @@ jobs:
           FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
-    name: Azure integration tests
+    name: Azure Integration Tests
     needs: Pretest
     runs-on: ${{ matrix.os }}-latest
     strategy:
