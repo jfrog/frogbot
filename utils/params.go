@@ -405,6 +405,9 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 		// If an error occurs because the file is missing, we will create an environment variable-based configuration aggregator instead.
 		return nil, nil
 	}
+	if len(configFileContent) > 0 && err == nil {
+		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
+	}
 	return configFileContent, err
 }
 
