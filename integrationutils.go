@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	repoOwner    = "frogbot-test"
 	repoName     = "integration"
 	issuesBranch = "issues-branch"
 	mainBranch   = "main"
@@ -37,7 +36,7 @@ type IntegrationTestDetails struct {
 	CustomBranchName string
 }
 
-func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl string) *IntegrationTestDetails {
+func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string) *IntegrationTestDetails {
 	return &IntegrationTestDetails{
 		GitProject:  repoName,
 		RepoOwner:   repoOwner,
@@ -146,7 +145,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 
 	ctx := context.Background()
 	// Create a pull request from the timestamp based issue branch against the main branch
-	err := client.CreatePullRequest(ctx, repoOwner, repoName, currentIssuesBranch, mainBranch, "scan pull request integration test", "")
+	err := client.CreatePullRequest(ctx, testDetails.RepoOwner, testDetails.RepoName, currentIssuesBranch, mainBranch, "scan pull request integration test", "")
 	require.NoError(t, err)
 
 	// Find the relevant pull request id
@@ -155,8 +154,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 	testDetails.PullRequestID = strconv.Itoa(prId)
 	require.NotZero(t, prId)
 	defer func() {
-		err = client.UpdatePullRequest(ctx, repoOwner, repoName, "scan pr test finished", "", "", prId, vcsutils.Closed)
-		assert.NoError(t, err)
+		closePullRequest(t, client, testDetails, prId)
 	}()
 
 	// Set the required environment variables for the scan-pull-request command
@@ -167,7 +165,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 	// Validate that issues were found and the relevant error returned
 	require.Errorf(t, err, scanpullrequest.SecurityIssueFoundErr)
 
-	validateResults(t, ctx, client, prId)
+	validateResults(t, ctx, client, testDetails, prId)
 }
 
 func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails) {
@@ -185,7 +183,7 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	defer unsetEnvs()
 
 	err := Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gitManager := buildGitManager(t, testDetails)
 
@@ -195,40 +193,47 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	prId := findRelevantPrID(pullRequests, expectedBranchName)
 	assert.NotZero(t, prId)
-	ctx := context.Background()
-	err = client.UpdatePullRequest(ctx, repoOwner, repoName, "scan repository test finished", "", "", prId, vcsutils.Closed)
-	assert.NoError(t, err)
+	closePullRequest(t, client, testDetails, prId)
 
 	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
 	prId = findRelevantPrID(pullRequests, expectedBranchName)
 	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	assert.NotZero(t, prId)
-	err = client.UpdatePullRequest(ctx, repoOwner, repoName, "scan repository test finished", "", "", prId, vcsutils.Closed)
-	assert.NoError(t, err)
+	closePullRequest(t, client, testDetails, prId)
 }
 
-func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, prId int) {
-	comments, err := client.ListPullRequestComments(ctx, repoOwner, repoName, prId)
-	assert.NoError(t, err)
+func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
+	comments, err := client.ListPullRequestComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
+	require.NoError(t, err)
 
-	switch client.(type) {
+	switch c := client.(type) {
 	case *vcsclient.GitHubClient:
-		// Validate that the relevant vulnerabilities comment has been created
-		assert.Len(t, comments, 1)
-		comment := comments[0]
-		assert.Contains(t, comment.Content, outputwriter.VulnerabilitiesPrBannerSource)
-
-		// Validate that the relevant review comments have been created
-		reviewComments, err := client.ListPullRequestReviewComments(ctx, repoOwner, repoName, prId)
-		assert.NoError(t, err)
-		assert.GreaterOrEqual(t, len(reviewComments), 13)
+		validateGitHubComments(t, ctx, c, testDetails, prID, comments)
 	case *vcsclient.AzureReposClient:
-		// In azure repos, there is no separation between comments and review comments
-		assert.GreaterOrEqual(t, len(comments), 14)
-		bannerExists, bannerOccurreneces := isCommentsContainsBanner(comments, outputwriter.VulnerabilitiesPrBannerSource)
-		assert.True(t, bannerExists)
-		assert.Equal(t, 1, bannerOccurreneces)
+		validateAzureComments(t, comments)
+	case *vcsclient.GitLabClient:
+		validateGitLabComments(t, comments)
 	}
+}
+
+func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient.GitHubClient, testDetails *IntegrationTestDetails, prID int, comments []vcsclient.CommentInfo) {
+	assert.Len(t, comments, 1)
+	comment := comments[0]
+	assert.Contains(t, comment.Content, outputwriter.VulnerabilitiesPrBannerSource)
+
+	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, len(reviewComments), 13)
+}
+
+func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
+	assert.GreaterOrEqual(t, len(comments), 14)
+	assertBannerExists(t, comments, outputwriter.VulnerabilitiesPrBannerSource)
+}
+
+func validateGitLabComments(t *testing.T, comments []vcsclient.CommentInfo) {
+	assert.GreaterOrEqual(t, len(comments), 14)
+	assertBannerExists(t, comments, outputwriter.VulnerabilitiesMrBannerSource)
 }
 
 func getJfrogEnvRestoreFunc(t *testing.T) func() {
@@ -259,7 +264,7 @@ func getIntegrationToken(t *testing.T, tokenEnv string) string {
 	return integrationRepoToken
 }
 
-func isCommentsContainsBanner(comments []vcsclient.CommentInfo, banner outputwriter.ImageSource) (bool, int) {
+func assertBannerExists(t *testing.T, comments []vcsclient.CommentInfo, banner outputwriter.ImageSource) {
 	var isContains bool
 	var occurrences int
 	for _, c := range comments {
@@ -269,5 +274,16 @@ func isCommentsContainsBanner(comments []vcsclient.CommentInfo, banner outputwri
 		}
 	}
 
-	return isContains, occurrences
+	assert.True(t, isContains)
+	assert.Equal(t, 1, occurrences)
+}
+
+func closePullRequest(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
+	targetBranch := mainBranch
+	if _, isAzureClient := client.(*vcsclient.AzureReposClient); isAzureClient {
+		// The Azure API requires not adding parameters that won't be updated, so we omit the targetBranch in that case
+		targetBranch = ""
+	}
+	err := client.UpdatePullRequest(context.Background(), testDetails.RepoOwner, testDetails.RepoName, "scan pr test finished", "", targetBranch, prID, vcsutils.Closed)
+	assert.NoError(t, err)
 }
