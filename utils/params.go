@@ -681,6 +681,8 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 
 	// Handle different HTTP status codes
 	switch statusCode {
+	case http.StatusOK:
+		log.Info(fmt.Sprintf("Successfully downloaded %s file from <%s/%s/%s>", FrogbotConfigFile, repoOwner, repoName, branch))
 	case http.StatusNotFound:
 		log.Debug(fmt.Sprintf("The %s file wasn't recognized in <%s/%s>", gitFrogbotConfigPath, repoOwner, repoName))
 		// If .frogbot/frogbot-config.yml isn't found, return an ErrMissingConfig
