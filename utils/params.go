@@ -382,6 +382,9 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if err != nil {
 		return nil, err
 	}
+	if configFileContent != nil {
+		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
+	}
 	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
