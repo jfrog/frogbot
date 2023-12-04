@@ -162,3 +162,28 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
           FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+
+  gitlab-integration:
+    name: GitLab Integration Tests
+    needs: Pretest
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu, windows, macos ]
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Build Frogbot
+        run: buildscripts/build.sh
+
+      - name: Run Tests
+        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}

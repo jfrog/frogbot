@@ -7,7 +7,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.9.16
-	github.com/jfrog/froggit-go v1.14.3
+	github.com/jfrog/froggit-go v1.14.4
 	github.com/jfrog/gofrog v1.3.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.47.2
 	github.com/jfrog/jfrog-client-go v1.35.0
@@ -46,6 +46,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-github/v56 v56.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect
@@ -68,7 +69,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/mholt/archiver/v3 v3.5.1 // indirect
-	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5 // indirect
+	github.com/microsoft/azure-devops-go-api/azuredevops/v7 v7.1.0 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
@@ -122,5 +123,3 @@ require (
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20231119150101-5cfbe8fca39e
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
-
-replace github.com/jfrog/froggit-go => github.com/omerzi/froggit-go v1.2.1-0.20231204065144-c0e794c0f891
