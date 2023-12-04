@@ -382,6 +382,9 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if err != nil {
 		return nil, err
 	}
+	if configFileContent != nil {
+		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
+	}
 	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
@@ -681,6 +684,8 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 
 	// Handle different HTTP status codes
 	switch statusCode {
+	case http.StatusOK:
+		log.Info(fmt.Sprintf("Successfully downloaded %s file from <%s/%s/%s>", FrogbotConfigFile, repoOwner, repoName, branch))
 	case http.StatusNotFound:
 		log.Debug(fmt.Sprintf("The %s file wasn't recognized in <%s/%s>", gitFrogbotConfigPath, repoOwner, repoName))
 		// If .frogbot/frogbot-config.yml isn't found, return an ErrMissingConfig
