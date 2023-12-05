@@ -40,7 +40,7 @@ type IntegrationTestDetails struct {
 func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl string) *IntegrationTestDetails {
 	return &IntegrationTestDetails{
 		GitProject:  repoName,
-		RepoOwner:   repoOwner,
+		RepoOwner:   "frog",
 		RepoName:    repoName,
 		GitToken:    token,
 		GitProvider: gitProvider,
@@ -50,7 +50,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl string) *Integrat
 
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
 	gitManager, err := utils.NewGitManager().
-		SetAuth("", testDetails.GitToken).
+		SetAuth("frogbot", testDetails.GitToken).
 		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
@@ -146,7 +146,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 
 	ctx := context.Background()
 	// Create a pull request from the timestamp based issue branch against the main branch
-	err := client.CreatePullRequest(ctx, repoOwner, repoName, currentIssuesBranch, mainBranch, "scan pull request integration test", "")
+	err := client.CreatePullRequest(ctx, "frog", repoName, currentIssuesBranch, mainBranch, "scan pull request integration test", "")
 	require.NoError(t, err)
 
 	// Find the relevant pull request id
@@ -203,12 +203,12 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	prId = findRelevantPrID(pullRequests, expectedBranchName)
 	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	assert.NotZero(t, prId)
-	err = client.UpdatePullRequest(ctx, repoOwner, repoName, "scan repository test finished", "", "", prId, vcsutils.Closed)
+	err = client.UpdatePullRequest(ctx, "frog", repoName, "scan repository test finished", "", "", prId, vcsutils.Closed)
 	assert.NoError(t, err)
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, prId int) {
-	comments, err := client.ListPullRequestComments(ctx, repoOwner, repoName, prId)
+	comments, err := client.ListPullRequestComments(ctx, "frog", repoName, prId)
 	assert.NoError(t, err)
 
 	switch client.(type) {
