@@ -26,10 +26,24 @@ jobs:
         run: docker pull atlassian/bitbucket-server
 
       - name: Unzip Bitbucket Server
-        run: unzip ../${{ github.workspace }}/testdata/resources/bitbucket_server.zip
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
 
       - name: Run Bitbucket Server container
-        run: docker run -v ../${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+        run: docker run -v ${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+
+      - name: Wait for Bitbucket Server container to be running
+        id: wait-for-container
+        run: |
+          status="starting"
+          while [ "$status" != "running" ]; do
+            sleep 5
+            status=$(docker inspect --format='{{.State.Status}}' bitbucket 2>/dev/null || echo 'not-found')
+            if [ "$status" = "exited" ] || [ "$status" = "not-found" ]; then
+              echo "Bitbucket Server container failed to start or was stopped."
+              exit 1
+            fi
+          done
+          echo "Bitbucket Server container is running."
 
       - name: Execute Go code inside the container
         run: |
