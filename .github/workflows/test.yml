@@ -26,10 +26,18 @@ jobs:
         run: docker pull atlassian/bitbucket-server
 
       - name: Unzip Bitbucket Server
-        run: unzip ../${{ github.workspace }}/testdata/resources/bitbucket_server.zip
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
 
       - name: Run Bitbucket Server container
-        run: docker run -v ../${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+        run: docker run -v ${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+
+      - name: Wait for Bitbucket Server container to be running
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: "http://localhost:7990"
+          responseCode: 200
+          timeout: 600000
+          interval: 500
 
       - name: Execute Go code inside the container
         run: |
