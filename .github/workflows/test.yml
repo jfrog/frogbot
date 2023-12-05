@@ -25,8 +25,8 @@ jobs:
       - name: Pull Bitbucket Server Docker image
         run: docker pull atlassian/bitbucket-server
 
+      - name: Unzip Bitbucket Server
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
+
       - name: Run Bitbucket Server container
-        run: |
-          ls -l ${{ github.workspace }}
-          unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
-          docker run -v ${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+        run: docker run -v ${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
