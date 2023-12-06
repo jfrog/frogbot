@@ -42,7 +42,8 @@ jobs:
           interval: 500
 
       - name: Install Go on the container
-        run: docker exec $(docker ps -qf "name=bitbucket") sh -c "curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
+        run: |
+          docker exec $(docker ps -qf "name=bitbucket") sh -c "curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
           export GOROOT=/usr/local/go && \
           export GOPATH=$HOME/go && \
           export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
