@@ -50,7 +50,7 @@ jobs:
           export GOROOT=/usr/local/go && \
           export GOPATH=$HOME/go && \
           export PATH=$GOPATH/bin:$GOROOT/bin:$PATH && \
-          go test -v /home/frogbot/bitbucket_server_test.go /home/frogbot/commands.go /home/frogbot/main.go"
+          /usr/local/go test -v /home/frogbot/bitbucket_server_test.go /home/frogbot/commands.go /home/frogbot/main.go"
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
