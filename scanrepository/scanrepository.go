@@ -457,7 +457,8 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 	if vulnFixVersion == "" {
 		return nil
 	}
-	if vulnDetails, exists := vulnerabilitiesMap[vulnerability.ImpactedDependencyName]; exists {
+	vulnerabilityKey := vulnerability.ImpactedDependencyName + ":" + vulnFixVersion
+	if vulnDetails, exists := vulnerabilitiesMap[vulnerabilityKey]; exists {
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above-impacted package, we select the maximum fix version.
 		vulnDetails.UpdateFixVersionIfMax(vulnFixVersion)
@@ -472,7 +473,7 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 		vulnerabilitiesMap[vulnerability.ImpactedDependencyName] = newVulnDetails
 	}
 	// Set the fixed version array to the relevant fixed version so that only that specific fixed version will be displayed
-	vulnerability.FixedVersions = []string{vulnerabilitiesMap[vulnerability.ImpactedDependencyName].SuggestedFixedVersion}
+	vulnerability.FixedVersions = []string{vulnerabilitiesMap[vulnerabilityKey].SuggestedFixedVersion}
 	return nil
 }
 

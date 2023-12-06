@@ -192,13 +192,14 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
 		return
 	}
-	for _, jsonContent := range strings.Split(string(depTreeOutput), "\n") {
+
+	for _, jsonContent := range utils.GetAllJsonsInString(string(depTreeOutput)) {
 		if jsonContent == "" {
 			continue
 		}
-		var pp pomPath
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
+		var pp pomPath
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
 			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", string(depTreeOutput), escapedContent, err)
 			return
