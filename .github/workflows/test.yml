@@ -49,7 +49,7 @@ jobs:
           export GOROOT=/usr/local/go && \
           export GOPATH=$HOME/go && \
           export PATH=$GOPATH/bin:$GOROOT/bin:$PATH && \
-          go version
+          /usr/local/go/bin/go version
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
