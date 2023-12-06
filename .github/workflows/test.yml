@@ -15,7 +15,6 @@ jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
     runs-on: ubuntu-latest
-    container: atlassian/bitbucket-server:latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -28,17 +27,18 @@ jobs:
         with:
           go-version: 1.20.x
 
+      - name: Pull Bitbucket Server Docker image
+        run: docker pull atlassian/bitbucket-server
+
       - name: Unzip Bitbucket Server
-        uses: montudor/action-zip@v1
-        with:
-          args: unzip testdata/resources/bitbucket_server.zip
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
 
       - name: Run Bitbucket Server container
         run: |
           chmod +x bitbucketServer
-          docker run -v bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+          docker run -v bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
       - name: Execute Go code inside the container
         run: |
-          ./buildscripts/build.sh
-          go test -v bitbucket_server_test.go commands.go main.go
+          docker cp ./ $(docker ps -q --filter "name=bitbucket"):/frogbot
+          docker exec $(docker ps -q --filter "name=bitbucket") go test -v bitbucket_server_test.go commands.go main.go
