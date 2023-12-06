@@ -487,3 +487,27 @@ func isUrlAccessible(url string) bool {
 	}
 	return resp != nil && resp.StatusCode == http.StatusOK
 }
+
+// GetAllJsonsInString searches for a pattern of json objects in the input parameter
+// Returns a slice of these objects
+func GetAllJsonsInString(input string) []string {
+	result := []string{}
+	var depth int
+	var startIndex int
+
+	for i, char := range input {
+		if char == '{' {
+			if depth == 0 {
+				startIndex = i
+			}
+			depth++
+		} else if char == '}' {
+			depth--
+			if depth == 0 {
+				result = append(result, input[startIndex:i+1])
+			}
+		}
+	}
+
+	return result
+}
