@@ -15,6 +15,7 @@ jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
     runs-on: ubuntu-latest
+    container: atlassian/bitbucket-server:latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -26,9 +27,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.20.x
-
-      - name: Pull Bitbucket Server Docker image
-        run: docker pull atlassian/bitbucket-server
 
       - name: Unzip Bitbucket Server
         run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
