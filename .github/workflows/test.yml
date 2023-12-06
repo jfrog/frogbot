@@ -49,7 +49,7 @@ jobs:
           export GOROOT=/usr/local/go && \
           export GOPATH=$HOME/go && \
           export PATH=$GOPATH/bin:$GOROOT/bin:$PATH && \
-          go test -v bitbucket_server_test.go commands.go integrationutils.go"
+          go version
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
