@@ -30,7 +30,7 @@ jobs:
 
       - name: Unzip Bitbucket Server
         run: |
-          sudo apt-get install zip unzip
+          apt-get install zip unzip
           unzip testdata/resources/bitbucket_server.zip
 
       - name: Run Bitbucket Server container
