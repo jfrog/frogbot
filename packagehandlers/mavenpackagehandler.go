@@ -193,7 +193,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		return
 	}
 
-	for _, jsonContent := range strings.Split(string(depTreeOutput), "\n") {
+	for _, jsonContent := range strings.Split(depTreeOutput, "\n") {
 		if jsonContent == "" {
 			continue
 		}
@@ -201,7 +201,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
 		var pp pomPath
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", string(depTreeOutput), escapedContent, err)
+			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", depTreeOutput, escapedContent, err)
 			return
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
