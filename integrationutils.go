@@ -206,9 +206,9 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 	comments, err := client.ListPullRequestComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	require.NoError(t, err)
 
-	switch c := client.(type) {
+	switch actualClient := client.(type) {
 	case *vcsclient.GitHubClient:
-		validateGitHubComments(t, ctx, c, testDetails, prID, comments)
+		validateGitHubComments(t, ctx, actualClient, testDetails, prID, comments)
 	case *vcsclient.AzureReposClient:
 		validateAzureComments(t, comments)
 	case *vcsclient.GitLabClient:

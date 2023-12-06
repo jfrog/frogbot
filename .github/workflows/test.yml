@@ -122,14 +122,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
-      FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Build Frogbot
-        run: buildscripts/build.sh
 
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -153,9 +149,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Build Frogbot
-        run: buildscripts/build.sh
-
       - name: Run Tests
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
@@ -177,9 +170,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Build Frogbot
-        run: buildscripts/build.sh
 
       - name: Run Tests
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
