@@ -41,15 +41,21 @@ jobs:
           timeout: 600000
           interval: 500
 
-      - name: Execute Go code inside the container
+      - name: Install Go on the container
+        run: docker exec \
+          $(docker ps -qf "name=bitbucket") sh -c "curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
+          export GOROOT=/usr/local/go && \
+          export GOPATH=$HOME/go && \
+          export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
+
+      - name: Copy Frogbot code to the container
+        run: docker cp ./ $(docker ps -q --filter "name=bitbucket"):/home/frogbot
+
+      - name: Run Tests
         run: |
-          docker cp ./ $(docker ps -q --filter "name=bitbucket"):/home/frogbot
-          docker exec  -e JF_URL=${{ secrets.PLATFORM_URL }} \
+          docker exec \
+          -e JF_URL=${{ secrets.PLATFORM_URL }} \
           -e JF_ACCESS_TOKEN=${{ secrets.PLATFORM_ADMIN_TOKEN }} \
           -e FROGBOT_TESTS_BB_SERVER_TOKEN=${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }} \
           $(docker ps -qf "name=bitbucket") sh -c "cd /home/frogbot && \
-          curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
-          export GOROOT=/usr/local/go && \
-          export GOPATH=$HOME/go && \
-          export PATH=$GOPATH/bin:$GOROOT/bin:$PATH && \
           /usr/local/go/bin/go test -v bitbucket_server_test.go integrationutils.go commands.go"
