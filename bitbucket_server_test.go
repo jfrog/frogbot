@@ -33,7 +33,7 @@ func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
-func TestABitbucketServer_ScanRepositoryIntegration(t *testing.T) {
+func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
 	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	runScanRepositoryCmd(t, bbClient, testDetails)
