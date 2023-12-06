@@ -22,11 +22,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.20.x
-
       - name: Pull Bitbucket Server Docker image
         run: docker pull atlassian/bitbucket-server
 
@@ -49,4 +44,5 @@ jobs:
       - name: Execute Go code inside the container
         run: |
           docker cp ./ $(docker ps -q --filter "name=bitbucket"):/frogbot
+          docker exec $(docker ps -q --filter "name=bitbucket") apt-get update && apt-get install -y golang-go
           docker exec $(docker ps -q --filter "name=bitbucket") go test -v bitbucket_server_test.go commands.go main.go
