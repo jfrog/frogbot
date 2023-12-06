@@ -43,13 +43,13 @@ jobs:
 
       - name: Execute Go code inside the container
         run: |
-          ls -lsa
           docker cp ./ $(docker ps -q --filter "name=bitbucket"):/home/frogbot
           docker exec $(docker ps -qf "name=bitbucket") sh -c "cd /home/frogbot && \
           curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
           export GOROOT=/usr/local/go && \
           export GOPATH=$HOME/go && \
           export PATH=$GOPATH/bin:$GOROOT/bin:$PATH && \
+          chmod -R a+rX /usr/local/go && \
           /usr/local/go test -v /home/frogbot/bitbucket_server_test.go /home/frogbot/commands.go /home/frogbot/main.go"
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
