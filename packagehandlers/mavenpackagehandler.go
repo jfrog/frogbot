@@ -187,13 +187,13 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	if len(mph.pomPaths) > 0 {
 		return
 	}
-	var depTreeOutput []byte
+	var depTreeOutput string
 	if depTreeOutput, err = mph.RunMavenDepTree(); err != nil {
 		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
 		return
 	}
 
-	for _, jsonContent := range utils.GetAllJsonsInString(string(depTreeOutput)) {
+	for _, jsonContent := range strings.Split(string(depTreeOutput), "\n") {
 		if jsonContent == "" {
 			continue
 		}

@@ -487,28 +487,3 @@ func isUrlAccessible(url string) bool {
 	}
 	return resp != nil && resp.StatusCode == http.StatusOK
 }
-
-// GetAllJsonsInString function extracts valid JSON objects from a provided string input.
-// It identifies JSON structures within the input string and returns them as a slice of strings.
-// For example, for the input "aaa { 'key': 'value' } bbb" the return value is a slice containing "{ 'key': 'value' }"
-func GetAllJsonsInString(input string) []string {
-	result := []string{}
-	var depth int
-	var startIndex int
-
-	for i, char := range input {
-		if char == '{' {
-			if depth == 0 {
-				startIndex = i
-			}
-			depth++
-		} else if char == '}' {
-			depth--
-			if depth == 0 {
-				result = append(result, input[startIndex:i+1])
-			}
-		}
-	}
-
-	return result
-}
