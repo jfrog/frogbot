@@ -31,7 +31,7 @@ jobs:
       - name: Run Bitbucket Server container
         run: |
           chmod +x bitbucketServer
-          docker run -v ${{ github.workspace }}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+          docker run -v bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
       - name: Execute Go code inside the container
         run: |
