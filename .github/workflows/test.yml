@@ -44,5 +44,5 @@ jobs:
       - name: Execute Go code inside the container
         run: |
           docker cp ./ $(docker ps -q --filter "name=bitbucket"):/frogbot
-          docker exec $(docker ps -q --filter "name=bitbucket") apt-get update && apt-get install -y golang-go
+          docker exec $(docker ps -q --filter "name=bitbucket") sudo apt-get update && sudo apt-get install -y golang-go
           docker exec $(docker ps -q --filter "name=bitbucket") go test -v bitbucket_server_test.go commands.go main.go
