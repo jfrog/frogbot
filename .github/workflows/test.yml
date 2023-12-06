@@ -43,6 +43,12 @@ jobs:
 
       - name: Execute Go code inside the container
         run: |
-          docker cp ./ $(docker ps -q --filter "name=bitbucket"):/frogbot
-          docker exec $(docker ps -q --filter "name=bitbucket") sudo apt-get update && sudo apt-get install -y golang-go
-          docker exec $(docker ps -q --filter "name=bitbucket") go test -v bitbucket_server_test.go commands.go main.go
+          ls -lsa
+          docker cp ./ $(docker ps -q --filter "name=bitbucket"):/home/frogbot
+          docker exec -it $(docker ps -qf "name=bitbucket") /bin/bash
+          car /home/frogbot
+          curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local
+          export GOROOT=/usr/local/go
+          export GOPATH=$HOME/go
+          export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+          go test -v bitbucket_server_test.go commands.go main.go
