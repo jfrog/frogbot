@@ -43,23 +43,11 @@ jobs:
           timeout: 600000
           interval: 500
 
-      - name: Install Go on the container
-        run: |
-          docker exec $(docker ps -qf "name=bitbucket") sh -c "curl -fL https://golang.org/dl/go1.20.10.linux-amd64.tar.gz | tar -zxC /usr/local && \
-          export GOROOT=/usr/local/go && \
-          export GOPATH=$HOME/go && \
-          export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
-
-      - name: Copy Frogbot code to the container
-        run: docker cp ./ $(docker ps -q --filter "name=bitbucket"):/home/frogbot
-
       - name: Run Tests
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
         run: |
-          docker exec \
-          -e JF_URL=${{ secrets.PLATFORM_URL }} \
-          -e JF_ACCESS_TOKEN=${{ secrets.PLATFORM_ADMIN_TOKEN }} \
-          -e FROGBOT_TESTS_BB_SERVER_TOKEN=${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }} \
-          -e JFROG_CLI_LOG_LEVEL="DEBUG" \
-           $(docker ps -qf "name=bitbucket") sh -c 'curl -u frogbot:$FROGBOT_TESTS_BB_SERVER_TOKEN -X POST -H "Content-Type: application/json" "http://localhost:7990/rest/api/1.0/admin/users?name=frogbotty&password=frogbot1&displayName=froggy&emailAddress=frogbot@jfrog.com&addToDefualtGroup=true&notify=false"'
-#          $(docker ps -qf "name=bitbucket") sh -c "cd /home/frogbot && \
-#          /usr/local/go/bin/go test -v bitbucket_server_test.go integrationutils.go commands.go"
+          curl -u frogbot:frogbotpass -X POST -H "Content-Type: application/json" "http://localhost:7990/rest/api/1.0/admin/users?name=frogbotty&password=frogbot1&displayName=froggy&emailAddress=frogbot@jfrog.com&addToDefualtGroup=true&notify=false"
