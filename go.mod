@@ -7,7 +7,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.9.16
-	github.com/jfrog/froggit-go v1.14.3
+	github.com/jfrog/froggit-go v1.14.4
 	github.com/jfrog/gofrog v1.3.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.47.2
 	github.com/jfrog/jfrog-client-go v1.35.0
