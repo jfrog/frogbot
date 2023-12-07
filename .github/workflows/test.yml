@@ -14,7 +14,7 @@ concurrency:
 jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
-    runs-on: mac-latest
+    runs-on: mac-os
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
