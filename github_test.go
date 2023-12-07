@@ -21,7 +21,7 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 
 func buildGitHubIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, githubIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl)
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl, "frogbot-test")
 }
 
 func TestGitHub_ScanPullRequestIntegration(t *testing.T) {
