@@ -23,7 +23,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Unzip Bitbucket Server
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip $HOME
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d $HOME
 
       - name: Run Bitbucket Server container
         run: |
