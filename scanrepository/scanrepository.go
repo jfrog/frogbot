@@ -54,10 +54,11 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	if err = cfp.setCommandPrerequisites(repository, client); err != nil {
+		return
+	}
 	for _, branch := range repository.Branches {
-		if err = cfp.setCommandPrerequisites(repository, branch, client); err != nil {
-			return
-		}
+		cfp.scanDetails.SetBaseBranch(branch)
 		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
 		if err = cfp.scanAndFixBranch(repository); err != nil {
 			return
@@ -73,7 +74,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	}
 	cfp.baseWd = clonedRepoDir
 	defer func() {
-		// On dry run don't delete the folder as we want to validate results.
+		// On dry run don't delete the folder as we want to validate results
 		if cfp.dryRun {
 			return
 		}
@@ -89,21 +90,23 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	return
 }
 
-func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, branch string, client vcsclient.VcsClient) (err error) {
+func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
-		SetBaseBranch(branch).
 		SetFixableOnly(repository.FixableOnly).
 		SetMinSeverity(repository.MinSeverity)
-
-	cfp.aggregateFixes = repository.Git.AggregateFixes
-	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
 	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
 	if err != nil {
 		return
 	}
 	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
+	cfp.aggregateFixes = repository.Git.AggregateFixes
+	// Set the outputwriter interface for the relevant vcs git provider
+	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
+	// Set the git client to perform git operations
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
@@ -284,7 +287,7 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 // In case a branch already exists on remote, we skip it.
 func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
-	log.Debug("Attempting to fix", vulnDetails.ImpactedDependencyName, "with", fixVersion)
+	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
 	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
 	if err != nil {
 		return
