@@ -135,7 +135,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
 	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client)
 	if err != nil {
-		log.Debug("failed trying to create GitInfoContext for Xsc with the following error: ", err.Error())
+		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
 		return sc
 	}
 	sc.XscGitInfoContext = XscGitInfoContext
