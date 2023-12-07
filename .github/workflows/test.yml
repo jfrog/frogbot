@@ -58,6 +58,6 @@ jobs:
           -e JF_ACCESS_TOKEN=${{ secrets.PLATFORM_ADMIN_TOKEN }} \
           -e FROGBOT_TESTS_BB_SERVER_TOKEN=${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }} \
           -e JFROG_CLI_LOG_LEVEL="DEBUG" \
-           $(docker ps -qf "name=bitbucket") sh -c "git clone https://github.com/jfrog/jfrog-cli.git"
+           $(docker ps -qf "name=bitbucket") sh -c 'curl -u frogbot:$FROGBOT_TESTS_BB_SERVER_TOKEN -X POST -H "Content-Type: application/json" "http://localhost:7990/rest/api/1.0/admin/users?name=frogbotty&password=frogbot1&displayName=froggy&emailAddress=frogbot@jfrog.com&addToDefualtGroup=true&notify=false"'
 #          $(docker ps -qf "name=bitbucket") sh -c "cd /home/frogbot && \
 #          /usr/local/go/bin/go test -v bitbucket_server_test.go integrationutils.go commands.go"
