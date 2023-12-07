@@ -56,7 +56,7 @@ func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.G
 		log.Info("Git token exists")
 	}
 	gitManager, err := utils.NewGitManager().
-		SetAuth("frogbot", testDetails.GitToken).
+		SetAuth("Admin", testDetails.GitToken).
 		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
