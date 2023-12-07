@@ -9,6 +9,7 @@ import (
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -49,6 +50,11 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl string) *Integrat
 }
 
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
+	if testDetails.GitToken == "" {
+		log.Error("Git token not exists")
+	} else {
+		log.Info("Git token exists")
+	}
 	gitManager, err := utils.NewGitManager().
 		SetAuth("frogbot", testDetails.GitToken).
 		SetEmailAuthor("frogbot-test@jfrog.com").
