@@ -23,12 +23,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Unzip Bitbucket Server
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d $HOME
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d /home/runner
 
       - name: Run Bitbucket Server container
         run: |
-          chmod 777 $HOME/bitbucketServer
-          docker run -v $HOME/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+          chmod 777 home/runner/bitbucketServer
+          docker run -v /home/runner/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
       - name: Wait for Bitbucket Server to finish loading
         uses: nev7n/wait_for_response@v1
