@@ -189,7 +189,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	}
 	var depTreeOutput string
 	if depTreeOutput, err = mph.RunMavenDepTree(); err != nil {
-		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
+		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
 		return
 	}
 
