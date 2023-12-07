@@ -58,6 +58,6 @@ jobs:
           -e JF_ACCESS_TOKEN=${{ secrets.PLATFORM_ADMIN_TOKEN }} \
           -e FROGBOT_TESTS_BB_SERVER_TOKEN=${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }} \
           -e JFROG_CLI_LOG_LEVEL="DEBUG" \
-           $(docker ps -qf "name=bitbucket") sh -c "git clone http://Admin:$FROGBOT_TESTS_BB_SERVER_TOKEN@localhost:7990/scm/frog/integration.git"
+           $(docker ps -qf "name=bitbucket") sh -c "git clone https://github.com/jfrog/jfrog-cli.git"
 #          $(docker ps -qf "name=bitbucket") sh -c "cd /home/frogbot && \
 #          /usr/local/go/bin/go test -v bitbucket_server_test.go integrationutils.go commands.go"
