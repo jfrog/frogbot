@@ -26,7 +26,7 @@ jobs:
         run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip
 
       - name: Run Bitbucket Server container
-        run:
+        run: |
           ls -l $PWD/bitbucketServer
           docker run -v $PWD/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
