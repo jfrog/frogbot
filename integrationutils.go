@@ -193,16 +193,16 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
 	expectedBranchName := "frogbot-pyjwt-45ebb5a61916a91ae7c1e3ff7ffb6112-" + timestamp
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	prId := findRelevantPrID(pullRequests, expectedBranchName)
 	assert.NotZero(t, prId)
 	closePullRequest(t, client, testDetails, prId)
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 
 	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
 	prId = findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	assert.NotZero(t, prId)
 	closePullRequest(t, client, testDetails, prId)
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
@@ -294,6 +294,6 @@ func closePullRequest(t *testing.T, client vcsclient.VcsClient, testDetails *Int
 		// The Azure API requires not adding parameters that won't be updated, so we omit the targetBranch in that case
 		targetBranch = ""
 	}
-	err := client.UpdatePullRequest(context.Background(), testDetails.RepoOwner, testDetails.RepoName, "scan pr test finished", "", targetBranch, prID, vcsutils.Closed)
+	err := client.UpdatePullRequest(context.Background(), testDetails.RepoOwner, testDetails.RepoName, "integration test finished", "", targetBranch, prID, vcsutils.Closed)
 	assert.NoError(t, err)
 }

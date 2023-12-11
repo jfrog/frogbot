@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -33,23 +34,22 @@ func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDe
 }
 
 func waitForConnection(t *testing.T) {
-	retryExectuor := vcsutils.RetryExecutor{
+	retryExecutor := vcsutils.RetryExecutor{
 		MaxRetries:               10,
 		RetriesIntervalMilliSecs: 60000,
 		Logger:                   log.Logger,
 	}
-	retryExectuor.ExecutionHandler = func() (bool, error) {
+	retryExecutor.ExecutionHandler = func() (bool, error) {
 		res, err := http.Get("http://localhost:7990/status")
-		log.Info(res.StatusCode)
 		if err != nil || res.StatusCode != http.StatusOK {
 			body, e := io.ReadAll(res.Body)
-			log.Info(string(body))
 			err = errors.Join(err, e)
+			log.Info(fmt.Sprintf("Status code: %d, Server current state: %s", res.StatusCode, body))
 			return true, err
 		}
 		return false, nil
 	}
-	require.NoError(t, retryExectuor.Execute())
+	require.NoError(t, retryExecutor.Execute())
 }
 
 func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
