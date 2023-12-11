@@ -39,13 +39,26 @@ jobs:
       #          chmod 777 ${PWD}/bitbucketServer
       #          docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
-      - name: Wait for Bitbucket Server to finish loading
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: "http://localhost:7990/status"
-          responseCode: 200
-          timeout: 1200000
-          interval: 500
+      #      - name: Wait for Bitbucket Server to finish loading
+      #        uses: nev7n/wait_for_response@v1
+      #        with:
+      #          url: "http://localhost:7990/status"
+      #          responseCode: 200
+      #          timeout: 1200000
+      #          interval: 500
+
+      - name: wait
+        run: |
+          while true; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7990/status)
+            if [ "$response" = "200" ]; then
+            echo "Success! Status code 200 received."
+            break
+            else
+            echo "Status code $response received. Retrying in 5 seconds..."
+            sleep 20
+            fi
+          done
 
       - name: Run Tests
         env:
