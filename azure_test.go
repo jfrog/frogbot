@@ -27,18 +27,18 @@ func buildAzureReposIntegrationTestDetails(t *testing.T) *IntegrationTestDetails
 	return testDetails
 }
 
-func AzureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
 	testDetails := buildAzureReposIntegrationTestDetails(t)
 	azureClient := buildAzureReposClient(t, testDetails.GitToken)
 	return azureClient, testDetails
 }
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	azureClient, testDetails := AzureReposTestsInit(t)
+	azureClient, testDetails := azureReposTestsInit(t)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
-	azureClient, testDetails := AzureReposTestsInit(t)
+	azureClient, testDetails := azureReposTestsInit(t)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }

@@ -52,7 +52,7 @@ func waitForConnection(t *testing.T) {
 	require.NoError(t, retryExectuor.Execute())
 }
 
-func BitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
 	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	waitForConnection(t)
@@ -60,11 +60,11 @@ func BitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTe
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	bbClient, testDetails := BitbucketServerTestsInit(t)
+	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
-	bbClient, testDetails := BitbucketServerTestsInit(t)
+	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }
