@@ -182,8 +182,6 @@ jobs:
     name: Bitbucket Server Integration Tests
     needs: Pretest
     runs-on: macos-latest
-    env:
-      JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
       - uses: actions/checkout@v4
         with:
