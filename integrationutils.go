@@ -80,6 +80,7 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		utils.BranchNameTemplateEnv: testDetails.CustomBranchName,
 		utils.GitApiEndpointEnv:     testDetails.ApiEndpoint,
 		utils.GitProjectEnv:         testDetails.GitProject,
+		utils.GitUsernameEnv:        testDetails.GitUsername,
 		utils.GitBaseBranchEnv:      mainBranch,
 	})
 	return func() {
