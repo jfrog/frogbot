@@ -25,7 +25,7 @@ jobs:
       - name: Unzip Preconfigured Bitbucket Server
         run: |
           unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
-          export $BITBUCKET_HOME=${PWD}/bitbucketServer
+          export BITBUCKET_HOME=${PWD}/bitbucketServer
 
       - name: Download Bitbucket Server
         run: |
