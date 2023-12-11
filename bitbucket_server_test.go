@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"testing"
@@ -48,6 +49,7 @@ func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
 		}
 		return false, nil
 	}
+	require.NoError(t, retryExectuor.Execute())
 	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	runScanPullRequestCmd(t, bbClient, testDetails)
