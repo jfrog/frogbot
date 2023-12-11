@@ -20,7 +20,7 @@ const (
 )
 
 func buildBitbucketServerClient(t *testing.T, bitbucketServerToken string) vcsclient.VcsClient {
-	bbClient, err := vcsclient.NewClientBuilder(vcsutils.BitbucketServer).ApiEndpoint(bitbucketServerApiEndpoint).Token(bitbucketServerToken).Build()
+	bbClient, err := vcsclient.NewClientBuilder(vcsutils.BitbucketServer).Username("frogbot").ApiEndpoint(bitbucketServerApiEndpoint).Token(bitbucketServerToken).Build()
 	assert.NoError(t, err)
 	return bbClient
 }
