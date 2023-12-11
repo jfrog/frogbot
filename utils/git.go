@@ -171,7 +171,6 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 		Depth:         1,
 		Tags:          git.NoTags,
 	}
-	log.Error(fmt.Sprintf("%v", gm.auth))
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
 		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, gm.remoteGitUrl, err.Error())
