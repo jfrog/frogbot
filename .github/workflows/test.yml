@@ -22,13 +22,23 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Unzip Bitbucket Server
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
-
-      - name: Run Bitbucket Server container
+      - name: Unzip Preconfigured Bitbucket Server
         run: |
-          chmod 777 ${PWD}/bitbucketServer
-          docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+          unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
+          export $BITBUCKET_HOME=${PWD}/bitbucketServer
+
+      - name: Download Bitbucket Server
+        run: |
+          curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-8.14.2.tar.gz -O
+          tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
+          cd atlassian-bitbucket-8.14.2
+          ./bin/set-bitbucket-home.sh 
+          ./bin/start-bitbucket.sh 
+
+      #      - name: Run Bitbucket Server container
+      #        run: |
+      #          chmod 777 ${PWD}/bitbucketServer
+      #          docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
       - name: Wait for Bitbucket Server to finish loading
         uses: nev7n/wait_for_response@v1
