@@ -51,7 +51,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
 	gitManager, err := utils.NewGitManager().
-		SetAuth("frogbot", testDetails.GitToken).
+		SetAuth(testDetails.GitUsername, testDetails.GitToken).
 		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
