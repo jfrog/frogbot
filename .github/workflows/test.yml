@@ -192,12 +192,9 @@ jobs:
 
       - name: Download Bitbucket Server and Run
         run: |
-          export BITBUCKET_HOME=${PWD}/bitbucketServer
-          curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-8.14.2.tar.gz -O
-          tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
-          cd atlassian-bitbucket-8.14.2
-          ./bin/set-bitbucket-home.sh
-          ./bin/start-bitbucket.sh --no-search
+          bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
+          chmod +x "bb_script_path"
+          "$bb_script_path"
 
       - name: Run Tests
         env:
