@@ -49,19 +49,8 @@ jobs:
 
       - name: wait
         run: |
-          retries=3
-          until [ $retries -le 0 ]; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7990/status)
-            if [ "$response" = "200" ]; then
-              echo "Success! Status code 200 received."
-              break
-            else
-              echo "Status code $response received. Retrying in 5 seconds..."
-              sleep 50
-              retries=$((retries - 1))
-            fi
-          done
-
+          chmod 777 ${{ github.workspace }}/testdata/resources/retryscript.sh
+          ./retryscript.sh
       - name: Run Tests
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
