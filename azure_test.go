@@ -22,7 +22,7 @@ func buildAzureReposClient(t *testing.T, azureToken string) vcsclient.VcsClient 
 
 func buildAzureReposIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, azureIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl)
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl, "frogbot-test")
 	testDetails.ApiEndpoint = azureApiEndpoint
 	return testDetails
 }
