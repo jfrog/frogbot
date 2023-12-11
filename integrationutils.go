@@ -211,6 +211,8 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 		validateGitHubComments(t, ctx, actualClient, testDetails, prID, comments)
 	case *vcsclient.AzureReposClient:
 		validateAzureComments(t, comments)
+	case *vcsclient.BitbucketServerClient:
+		validateBitbucketServerComments(t, comments)
 	case *vcsclient.GitLabClient:
 		validateGitLabComments(t, comments)
 	}
@@ -228,12 +230,17 @@ func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient
 
 func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
 	assert.GreaterOrEqual(t, len(comments), 14)
-	assertBannerExists(t, comments, outputwriter.VulnerabilitiesPrBannerSource)
+	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesPrBannerSource))
+}
+
+func validateBitbucketServerComments(t *testing.T, comments []vcsclient.CommentInfo) {
+	assert.GreaterOrEqual(t, len(comments), 14)
+	assertBannerExists(t, comments, outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource))
 }
 
 func validateGitLabComments(t *testing.T, comments []vcsclient.CommentInfo) {
 	assert.GreaterOrEqual(t, len(comments), 14)
-	assertBannerExists(t, comments, outputwriter.VulnerabilitiesMrBannerSource)
+	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesMrBannerSource))
 }
 
 func getJfrogEnvRestoreFunc(t *testing.T) func() {
@@ -264,11 +271,11 @@ func getIntegrationToken(t *testing.T, tokenEnv string) string {
 	return integrationRepoToken
 }
 
-func assertBannerExists(t *testing.T, comments []vcsclient.CommentInfo, banner outputwriter.ImageSource) {
+func assertBannerExists(t *testing.T, comments []vcsclient.CommentInfo, banner string) {
 	var isContains bool
 	var occurrences int
 	for _, c := range comments {
-		if strings.Contains(c.Content, string(banner)) {
+		if strings.Contains(c.Content, banner) {
 			isContains = true
 			occurrences++
 		}

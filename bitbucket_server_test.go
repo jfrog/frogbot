@@ -27,7 +27,7 @@ func buildBitbucketServerClient(t *testing.T, bitbucketServerToken string) vcscl
 
 func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, bitbucketServerIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl)
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl, "FROG")
 	testDetails.ApiEndpoint = bitbucketServerApiEndpoint
 	return testDetails
 }
