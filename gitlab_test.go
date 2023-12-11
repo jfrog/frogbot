@@ -24,14 +24,18 @@ func buildGitLabIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2")
 }
 
-func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
+func GitLabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
 	testDetails := buildGitLabIntegrationTestDetails(t)
 	gitlabClient := buildGitLabClient(t, testDetails.GitToken)
+	return gitlabClient, testDetails
+}
+
+func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
+	gitlabClient, testDetails := GitLabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryIntegration(t *testing.T) {
-	testDetails := buildGitLabIntegrationTestDetails(t)
-	gitlabClient := buildGitLabClient(t, testDetails.GitToken)
+	gitlabClient, testDetails := GitLabTestsInit(t)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }

@@ -32,7 +32,7 @@ func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDe
 	return testDetails
 }
 
-func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
+func waitForConnection(t *testing.T) {
 	retryExectuor := vcsutils.RetryExecutor{
 		MaxRetries:               10,
 		RetriesIntervalMilliSecs: 60000,
@@ -50,14 +50,21 @@ func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
 		return false, nil
 	}
 	require.NoError(t, retryExectuor.Execute())
+}
+
+func BitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
 	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
+	waitForConnection(t)
+	return bbClient, testDetails
+}
+
+func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
+	bbClient, testDetails := BitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
-//
-//func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
-//	testDetails := buildBitbucketServerIntegrationTestDetails(t)
-//	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
-//	runScanRepositoryCmd(t, bbClient, testDetails)
-//}
+func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
+	bbClient, testDetails := BitbucketServerTestsInit(t)
+	runScanRepositoryCmd(t, bbClient, testDetails)
+}

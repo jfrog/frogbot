@@ -31,6 +31,7 @@ type IntegrationTestDetails struct {
 	GitCloneURL      string
 	GitProvider      string
 	GitProject       string
+	GitUsername      string
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
@@ -42,6 +43,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 		RepoOwner:   repoOwner,
 		RepoName:    repoName,
 		GitToken:    token,
+		GitUsername: "frogbot",
 		GitProvider: gitProvider,
 		GitCloneURL: gitCloneUrl,
 	}
