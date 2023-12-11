@@ -1,11 +1,16 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/jfrog/frogbot/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"os"
 	"testing"
+	"time"
 )
 
 const (
@@ -28,6 +33,28 @@ func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDe
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
+	var responseCode = flag.Int("code", 200, "Response code to wait for")
+	var timeout = flag.Int("timeout", 2000, "Timeout before giving up in ms")
+	var interval = 500
+	flag.Parse()
+
+	fmt.Printf("Polling URL `%s` for response code %d for up to %d ms at %d ms intervals\n", "http://localhost:7990/status", *responseCode, *timeout, interval)
+	startTime := time.Now()
+	timeoutDuration := time.Duration(2000) * time.Millisecond
+	for {
+		res, err := http.Head("http://localhost:7990/status")
+		fmt.Printf("Response header: %v", res)
+		if err == nil && res.StatusCode == http.StatusOK {
+			break
+		}
+		time.Sleep(8000)
+		elapsed := time.Now().Sub(startTime)
+		if elapsed > timeoutDuration {
+			fmt.Printf("Timed out\n")
+			os.Exit(1)
+		}
+	}
+
 	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	runScanPullRequestCmd(t, bbClient, testDetails)
