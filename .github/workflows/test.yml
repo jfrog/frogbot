@@ -27,6 +27,7 @@ jobs:
 
       - name: Run Bitbucket Server container
         run: |
+          ls -l ${PWD}
           docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
 
       - name: Wait for Bitbucket Server to finish loading
