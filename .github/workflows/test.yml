@@ -50,7 +50,7 @@ jobs:
       - name: wait
         run: |
           chmod 777 ${{ github.workspace }}/testdata/resources/retryscript.sh
-          ./retryscript.sh
+          ./${{ github.workspace }}/testdata/resources/retryscript.sh
       - name: Run Tests
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
