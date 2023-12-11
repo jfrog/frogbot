@@ -27,6 +27,7 @@ jobs:
           unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
       - name: Download Bitbucket Server
         run: |
+          ls ${PWD}/bitbucketServer
           export BITBUCKET_HOME=${PWD}/bitbucketServer
           curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-8.14.2.tar.gz -O
           tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
