@@ -14,7 +14,7 @@ concurrency:
 jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -25,33 +25,35 @@ jobs:
       - name: Unzip Preconfigured Bitbucket Server
         run: |
           unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
-      #      - name: Download Bitbucket Server
-      #        run: |
-      #          ls ${PWD}/bitbucketServer
-      #          export BITBUCKET_HOME=${PWD}/bitbucketServer
-      #          curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-8.14.2.tar.gz -O
-      #          tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
-      #          cd atlassian-bitbucket-8.14.2
-      #          ./bin/set-bitbucket-home.sh
-      #          ./bin/start-bitbucket.sh
 
-      - name: Run Bitbucket Server container
+      - name: Download Bitbucket Server
         run: |
-          chmod 777 ${PWD}/bitbucketServer
-          docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+          ls ${PWD}/bitbucketServer
+          export BITBUCKET_HOME=${PWD}/bitbucketServer
+          curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-8.14.2.tar.gz -O
+          tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
+          cd atlassian-bitbucket-8.14.2
+          ./bin/set-bitbucket-home.sh
+          ./bin/start-bitbucket.sh
 
-      - name: Wait for Bitbucket Server to finish loading
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: "http://localhost:7990/status"
-          responseCode: 200
-          timeout: 1200000
-          interval: 500
-      #
-      #      - name: wait
+      #      - name: Run Bitbucket Server container
       #        run: |
-      #          chmod 777 ${{ github.workspace }}/testdata/resources/retryscript.sh
-      #          .${{ github.workspace }}/testdata/resources/retryscript.sh
+      #          chmod 777 ${PWD}/bitbucketServer
+      #          docker run -v ${PWD}/bitbucketServer:/var/atlassian/application-data/bitbucket --name="bitbucket"  -p 7990:7990 -p 7999:7999 atlassian/bitbucket-server
+      #
+      #      - name: Wait for Bitbucket Server to finish loading
+      #        uses: nev7n/wait_for_response@v1
+      #        with:
+      #          url: "http://localhost:7990/status"
+      #          responseCode: 200
+      #          timeout: 1200000
+      #          interval: 500
+
+      - name: wait
+        run: |
+          chmod 777 ${{ github.workspace }}/testdata/resources/retryscript.sh
+          ls -l ${PWD}/testdata/resources/
+          sh ${PWD}/testdata/resources/retryscript.sh
       - name: Run Tests
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
