@@ -190,7 +190,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Unzip Preconfigured Bitbucket Home
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server.zip -d ${PWD}
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucketServer.zip -d ${PWD}
 
       - name: Download Bitbucket Server and Run
         run: |
@@ -199,7 +199,7 @@ jobs:
           tar -xvzf atlassian-bitbucket-8.14.2.tar.gz
           cd atlassian-bitbucket-8.14.2
           ./bin/set-bitbucket-home.sh
-          ./bin/start-bitbucket.sh
+          ./bin/start-bitbucket.sh --no-search
 
       - name: Run Tests
         env:
