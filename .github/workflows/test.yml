@@ -193,8 +193,8 @@ jobs:
       - name: Download Bitbucket Server and Run
         run: |
           bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
-          chmod +x "bb_script_path"
-          "$bb_script_path"
+          chmod +x $bb_script_path
+          sh $bb_script_path
 
       - name: Run Tests
         env:
