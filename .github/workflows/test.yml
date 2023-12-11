@@ -180,6 +180,7 @@ jobs:
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
+    needs: Pretest
     runs-on: macos-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
