@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/build-info-go v1.9.16
 	github.com/jfrog/froggit-go v1.14.4
 	github.com/jfrog/gofrog v1.3.2
-	github.com/jfrog/jfrog-cli-core/v2 v2.47.2
+	github.com/jfrog/jfrog-cli-core/v2 v2.47.3
 	github.com/jfrog/jfrog-client-go v1.35.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.0
@@ -118,7 +118,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231213093403-abe74b2a3195
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231213130114-e9111d71cd72
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20231119150101-5cfbe8fca39e
 
