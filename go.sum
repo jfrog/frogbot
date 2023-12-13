@@ -882,6 +882,8 @@ github.com/jfrog/gofrog v1.3.2 h1:TktKP+PdZdxjkYZxWWIq4DkTGSYtr9Slsy+egZpEhUY=
 github.com/jfrog/gofrog v1.3.2/go.mod h1:AQo5Fq0G9nDEF6icH7MYQK0iohR4HuEAXl8jaxRuT6Q=
 github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231213143627-95b17f1ef8a9 h1:bSWGXhOqQ+xQ7hcNwc4mmNRFPs32yDfsoLMMuaTUTrw=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20231213143627-95b17f1ef8a9/go.mod h1:RFQwrZ1qXAQ+X0xfuzxBBDIYuRnDsPy12xlyjuOpUog=
 github.com/jfrog/jfrog-client-go v1.35.0 h1:VTyrR/jFlWInRdGYswa2fwFc1Thsh6eGMnHuqhDVh7s=
 github.com/jfrog/jfrog-client-go v1.35.0/go.mod h1:cG0vdKXbyfupKgSYmwA5FZPco6zSfyJi3eEYOxuqm/k=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
@@ -957,8 +959,6 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/nwaples/rardecode v1.1.0 h1:vSxaY8vQhOcVr4mm5e8XllHWTiM4JF507A0Katqw7MQ=
 github.com/nwaples/rardecode v1.1.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231213130114-e9111d71cd72 h1:xUU3kFmLXVvA82igx9Mxg3FouHgYO9zqGdYv5X8isUA=
-github.com/omerzi/jfrog-cli-core/v2 v2.15.3-0.20231213130114-e9111d71cd72/go.mod h1:RFQwrZ1qXAQ+X0xfuzxBBDIYuRnDsPy12xlyjuOpUog=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.3.0 h1:wP5yEpI53zr0v5cBmagXzLbHZp9Oylyo3AJDpfLBITs=
