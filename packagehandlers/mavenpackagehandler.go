@@ -221,7 +221,11 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	_, err := mph.RunMvnCmd(updateVersionArgs)
+	output, err := mph.RunMvnCmd(updateVersionArgs)
+	if err != nil && strings.Contains(string(output), fmt.Sprintf("Version %s is not available for artifact", fixedVersion)) {
+		// Replace Maven's 'version not available' error with more readable error message
+		err = fmt.Errorf("couldn't update '%s' to suggested fixed version: Version '%s' is not availible", impactedPackage, fixedVersion)
+	}
 	return err
 }
 
