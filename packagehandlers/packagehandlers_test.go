@@ -193,15 +193,15 @@ func TestUpdateDependency(t *testing.T) {
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.3.20",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
-					IsDirectDependency:          false},
+					SuggestedFixedVersion:       "2.700.300",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
+					IsDirectDependency:          true},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
-				fixSupported: false,
+				fixSupported: true,
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.300.300",
+					SuggestedFixedVersion:       "4.3.20",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
 					IsDirectDependency:          false},
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
