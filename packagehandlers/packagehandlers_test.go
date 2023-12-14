@@ -199,6 +199,14 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
 				fixSupported: false,
 			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "4.300.300",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
+					IsDirectDependency:          false},
+				scanDetails:  &utils.ScanDetails{Project: &utils.Project{DepsRepo: ""}, ServerDetails: nil},
+				fixSupported: false,
+			},
 		},
 
 		// NuGet test cases
