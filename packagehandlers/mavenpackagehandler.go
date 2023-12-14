@@ -224,7 +224,7 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 	output, err := mph.RunMvnCmd(updateVersionArgs)
 	if err != nil && strings.Contains(string(output), fmt.Sprintf("Version %s is not available for artifact", fixedVersion)) {
 		// Replace Maven's 'version not available' error with more readable error message
-		err = fmt.Errorf("couldn't update '%s' to suggested fixed version: Version '%s' is not availible", impactedPackage, fixedVersion)
+		err = fmt.Errorf("couldn't update '%s' to suggested fix version: Version '%s' is not available", impactedPackage, fixedVersion)
 	}
 	return err
 }
