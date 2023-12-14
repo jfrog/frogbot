@@ -187,20 +187,21 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	if len(mph.pomPaths) > 0 {
 		return
 	}
-	var depTreeOutput []byte
+	var depTreeOutput string
 	if depTreeOutput, err = mph.RunMavenDepTree(); err != nil {
-		err = fmt.Errorf("failed to get project poms while running maven-gav-reader: %s", err.Error())
+		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
 		return
 	}
-	for _, jsonContent := range strings.Split(string(depTreeOutput), "\n") {
+
+	for _, jsonContent := range strings.Split(depTreeOutput, "\n") {
 		if jsonContent == "" {
 			continue
 		}
-		var pp pomPath
 		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
 		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
+		var pp pomPath
 		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", string(depTreeOutput), escapedContent, err)
+			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", depTreeOutput, escapedContent, err)
 			return
 		}
 		mph.pomPaths = append(mph.pomPaths, pp)
