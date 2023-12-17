@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	FrogbotTitlePrefix   = "[🐸 Frogbot]"
-	FrogbotRepoUrl       = "https://github.com/jfrog/frogbot"
-	FrogbotRepoUrlReadme = FrogbotRepoUrl + "#readme"
-	ReviewCommentId      = "FrogbotReviewComment"
+	FrogbotTitlePrefix      = "[🐸 Frogbot]"
+	FrogbotRepoUrl          = "https://github.com/jfrog/frogbot"
+	FrogbotDocumentationUrl = "https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot"
+	ReviewCommentId         = "FrogbotReviewComment"
 
 	vulnerableDependenciesTitle                   = "📦 Vulnerable Dependencies"
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotRepoUrlReadme)
+	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotDocumentationUrl)
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
