@@ -34,6 +34,7 @@ func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDe
 }
 
 func waitForConnection(t *testing.T) {
+	log.Info("Waiting for Bitbucket Server to be up and running...")
 	retryExecutor := vcsutils.RetryExecutor{
 		MaxRetries:               10,
 		RetriesIntervalMilliSecs: 60000,

@@ -189,7 +189,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Unzip Preconfigured Bitbucket Home
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucketServer.zip -d ${PWD}
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
 
       - name: Download Bitbucket Server and Run
         run: |

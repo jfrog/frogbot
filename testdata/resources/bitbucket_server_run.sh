@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export BITBUCKET_VERSION=8.16.1
-export BITBUCKET_HOME=${PWD}/bitbucketServer
+export BITBUCKET_HOME=${PWD}/bitbucketHome
 
 # Download Bitbucket Server
 curl -fLg https://www.atlassian.com/software/stash/downloads/binary/atlassian-bitbucket-$BITBUCKET_VERSION.tar.gz -O
