@@ -73,6 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -177,3 +178,29 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
           FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+
+  bitbucket-server-integration:
+    name: Bitbucket Server Integration Tests
+    needs: Pretest
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Unzip Preconfigured Bitbucket Home
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+
+      - name: Download Bitbucket Server and Run
+        run: |
+          bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
+          chmod +x $bb_script_path
+          sh $bb_script_path
+
+      - name: Run Tests
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
+        run: go test -v bitbucket_server_test.go commands.go integrationutils.go

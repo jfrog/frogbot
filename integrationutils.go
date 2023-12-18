@@ -32,6 +32,7 @@ type IntegrationTestDetails struct {
 	GitCloneURL      string
 	GitProvider      string
 	GitProject       string
+	GitUsername      string
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
@@ -43,6 +44,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 		RepoOwner:   repoOwner,
 		RepoName:    repoName,
 		GitToken:    token,
+		GitUsername: "frogbot",
 		GitProvider: gitProvider,
 		GitCloneURL: gitCloneUrl,
 	}
@@ -50,7 +52,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
 	gitManager, err := utils.NewGitManager().
-		SetAuth("", testDetails.GitToken).
+		SetAuth(testDetails.GitUsername, testDetails.GitToken).
 		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
@@ -79,6 +81,7 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		utils.BranchNameTemplateEnv: testDetails.CustomBranchName,
 		utils.GitApiEndpointEnv:     testDetails.ApiEndpoint,
 		utils.GitProjectEnv:         testDetails.GitProject,
+		utils.GitUsernameEnv:        testDetails.GitUsername,
 		utils.GitBaseBranchEnv:      mainBranch,
 	})
 	return func() {
@@ -191,16 +194,16 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
 	expectedBranchName := "frogbot-pyjwt-45ebb5a61916a91ae7c1e3ff7ffb6112-" + timestamp
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	prId := findRelevantPrID(pullRequests, expectedBranchName)
 	assert.NotZero(t, prId)
 	closePullRequest(t, client, testDetails, prId)
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 
 	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
 	prId = findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 	assert.NotZero(t, prId)
 	closePullRequest(t, client, testDetails, prId)
+	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
@@ -212,6 +215,8 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 		validateGitHubComments(t, ctx, actualClient, testDetails, prID, comments)
 	case *vcsclient.AzureReposClient:
 		validateAzureComments(t, comments)
+	case *vcsclient.BitbucketServerClient:
+		validateBitbucketServerComments(t, comments)
 	case *vcsclient.GitLabClient:
 		validateGitLabComments(t, comments)
 	}
@@ -220,7 +225,7 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient.GitHubClient, testDetails *IntegrationTestDetails, prID int, comments []vcsclient.CommentInfo) {
 	assert.Len(t, comments, 1)
 	comment := comments[0]
-	assert.Contains(t, comment.Content, outputwriter.VulnerabilitiesPrBannerSource)
+	assert.Contains(t, comment.Content, string(outputwriter.VulnerabilitiesPrBannerSource))
 
 	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	assert.NoError(t, err)
@@ -229,12 +234,17 @@ func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient
 
 func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
 	assert.GreaterOrEqual(t, len(comments), expectedNumberOfIssues)
-	assertBannerExists(t, comments, outputwriter.VulnerabilitiesPrBannerSource)
+	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesPrBannerSource))
+}
+
+func validateBitbucketServerComments(t *testing.T, comments []vcsclient.CommentInfo) {
+	assert.GreaterOrEqual(t, len(comments), expectedNumberOfIssues)
+	assertBannerExists(t, comments, outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource))
 }
 
 func validateGitLabComments(t *testing.T, comments []vcsclient.CommentInfo) {
 	assert.GreaterOrEqual(t, len(comments), expectedNumberOfIssues)
-	assertBannerExists(t, comments, outputwriter.VulnerabilitiesMrBannerSource)
+	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesMrBannerSource))
 }
 
 func getJfrogEnvRestoreFunc(t *testing.T) func() {
@@ -265,11 +275,11 @@ func getIntegrationToken(t *testing.T, tokenEnv string) string {
 	return integrationRepoToken
 }
 
-func assertBannerExists(t *testing.T, comments []vcsclient.CommentInfo, banner outputwriter.ImageSource) {
+func assertBannerExists(t *testing.T, comments []vcsclient.CommentInfo, banner string) {
 	var isContains bool
 	var occurrences int
 	for _, c := range comments {
-		if strings.Contains(c.Content, string(banner)) {
+		if strings.Contains(c.Content, banner) {
 			isContains = true
 			occurrences++
 		}
@@ -285,6 +295,6 @@ func closePullRequest(t *testing.T, client vcsclient.VcsClient, testDetails *Int
 		// The Azure API requires not adding parameters that won't be updated, so we omit the targetBranch in that case
 		targetBranch = ""
 	}
-	err := client.UpdatePullRequest(context.Background(), testDetails.RepoOwner, testDetails.RepoName, "scan pr test finished", "", targetBranch, prID, vcsutils.Closed)
+	err := client.UpdatePullRequest(context.Background(), testDetails.RepoOwner, testDetails.RepoName, "integration test finished", "", targetBranch, prID, vcsutils.Closed)
 	assert.NoError(t, err)
 }
