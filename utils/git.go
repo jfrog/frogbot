@@ -161,7 +161,7 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s>...", gm.remoteGitUrl, gm.remoteName, GetFullBranchName(branchName)))
+	log.Debug(fmt.Sprintf("Running git clone %s (%s branch)...", gm.remoteGitUrl, branchName))
 	cloneOptions := &git.CloneOptions{
 		URL:           gm.remoteGitUrl,
 		Auth:          gm.auth,
