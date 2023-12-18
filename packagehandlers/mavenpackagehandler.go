@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+const MavenVersionNotAvailableErrorFormat = "Version %s is not available for artifact"
+
 type gavCoordinate struct {
 	GroupId                     string `xml:"groupId"`
 	ArtifactId                  string `xml:"artifactId"`
@@ -221,7 +223,14 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	_, err := mph.RunMvnCmd(updateVersionArgs)
+	output, err := mph.RunMvnCmd(updateVersionArgs)
+	if err != nil {
+		versionNotAvailableString := fmt.Sprintf(MavenVersionNotAvailableErrorFormat, fixedVersion)
+		// Replace Maven's 'version not available' error with more readable error message
+		if strings.Contains(string(output), versionNotAvailableString) {
+			err = fmt.Errorf("couldn't update %q to suggested fix version: %s", impactedPackage, versionNotAvailableString)
+		}
+	}
 	return err
 }
 

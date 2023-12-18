@@ -552,6 +552,11 @@ func TestUpdatePackageVersion(t *testing.T) {
 	for _, test := range testCases {
 		assert.Contains(t, fmt.Sprintf("<version>%s</version>", string(modifiedPom)), test.fixedVersion)
 	}
+
+	// Test non-existing version error
+	assert.ErrorContains(t,
+		mvnHandler.updatePackageVersion("org.apache.httpcomponents:httpcore", "non.existing.version", true),
+		fmt.Sprintf(MavenVersionNotAvailableErrorFormat, "non.existing.version"))
 }
 
 func TestUpdatePropertiesVersion(t *testing.T) {
