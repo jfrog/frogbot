@@ -556,7 +556,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 	// Test non-existing version error
 	assert.ErrorContains(t,
 		mvnHandler.updatePackageVersion("org.apache.httpcomponents:httpcore", "non.existing.version", true),
-		"is not available")
+		fmt.Sprintf(MavenVersionNotAvailableErrorFormat, "non.existing.version"))
 }
 
 func TestUpdatePropertiesVersion(t *testing.T) {
