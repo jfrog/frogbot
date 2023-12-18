@@ -1,6 +1,6 @@
 <div align='center'>
 
-[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://github.com/jfrog/frogbot#readme)
+[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
 
 </div>
 
@@ -13,6 +13,6 @@ some content
 ---
 <div align='center'>
 
-[🐸 JFrog Frogbot](https://github.com/jfrog/frogbot#readme)
+[🐸 JFrog Frogbot](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
 
 </div>
