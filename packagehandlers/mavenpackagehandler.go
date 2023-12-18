@@ -224,9 +224,12 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
 	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
 	output, err := mph.RunMvnCmd(updateVersionArgs)
-	if err != nil && strings.Contains(string(output), fmt.Sprintf(MavenVersionNotAvailableErrorFormat, fixedVersion)) {
+	if err != nil {
+		versionNotAvailableString := fmt.Sprintf(MavenVersionNotAvailableErrorFormat, fixedVersion)
 		// Replace Maven's 'version not available' error with more readable error message
-		err = fmt.Errorf("couldn't update '%s' to suggested fix version: Version '%s' is not available", impactedPackage, fixedVersion)
+		if strings.Contains(string(output), versionNotAvailableString) {
+			err = fmt.Errorf("couldn't update %q to suggested fix version: %s", impactedPackage, versionNotAvailableString)
+		}
 	}
 	return err
 }
