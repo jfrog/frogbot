@@ -146,8 +146,14 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	if err != nil {
 		return
 	}
+	// 'CD' into the temp working directory
+	restoreDir, err := utils.Chdir(sourceBranchWd)
+	if err != nil {
+		return
+	}
+
 	defer func() {
-		err = errors.Join(err, cleanupSource())
+		err = errors.Join(err, restoreDir(), cleanupSource())
 	}()
 
 	// Audit source branch
@@ -183,14 +189,21 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *xrayutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
+	restoreDir := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
 		targetBranchInfo := repoConfig.PullRequestDetails.Target
 		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
 			return
 		}
+
+		// 'CD' into the temp working directory
+		restoreDir, err = utils.Chdir(targetBranchWd)
+		if err != nil {
+			return
+		}
 	}
 	defer func() {
-		err = errors.Join(err, cleanupTarget())
+		err = errors.Join(err, restoreDir(), cleanupTarget())
 	}()
 
 	// Set target branch scan details
