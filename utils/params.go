@@ -85,13 +85,16 @@ type Project struct {
 	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
+	ApplyRecursiveScan  bool
 }
 
 func (p *Project) setDefaultsIfNeeded() error {
+	// TODO ERAN : this is where we suppose to fix it for frogbot (michael)
 	if len(p.WorkingDirs) == 0 {
 		workingDir := getTrimmedEnv(WorkingDirectoryEnv)
 		if workingDir == "" {
 			workingDir = RootDir
+			p.ApplyRecursiveScan = true
 		}
 		p.WorkingDirs = append(p.WorkingDirs, workingDir)
 	}

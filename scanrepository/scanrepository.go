@@ -158,7 +158,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 // Audit the dependencies of the current commit.
 func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*xrayutils.Results, error) {
 	// Audit commit code
-	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
+	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir) // TODO ERAN entry point 1
 	if err != nil {
 		return nil, err
 	}

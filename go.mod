@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
+	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -55,7 +55,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/jedib0t/go-pretty/v6 v6.4.0 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.5.0 // indirect
 	github.com/jfrog/archiver/v3 v3.5.3 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
@@ -76,7 +76,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
@@ -107,8 +107,8 @@ require (
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
@@ -118,7 +118,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.15.3-0.20240107114345-333de0c77d95
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20240111095257-687fabc3ce4e
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20231119150101-5cfbe8fca39e
 

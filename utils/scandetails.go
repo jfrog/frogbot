@@ -123,7 +123,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetExclusions(sc.PathExclusions).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
-		SetGraphBasicParams(auditBasicParams)
+		SetGraphBasicParams(auditBasicParams).
+		SetApplyRecursiveScan(sc.ApplyRecursiveScan) // TODO ERAN : set applyRecursiveScan here
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {

@@ -154,7 +154,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	var sourceResults *xrayutils.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
 	log.Info("Scanning source branch...")
-	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
+	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...) //TODO ERAN entry point 3
 	if err != nil {
 		return
 	}
@@ -197,7 +197,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	var targetResults *xrayutils.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 	log.Info("Scanning target branch...")
-	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
+	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...) //TODO ERAN entry point 2
 	if err != nil {
 		return
 	}
