@@ -89,7 +89,6 @@ type Project struct {
 }
 
 func (p *Project) setDefaultsIfNeeded() error {
-	// TODO ERAN : this is where we suppose to fix it for frogbot (michael)
 	if len(p.WorkingDirs) == 0 {
 		workingDir := getTrimmedEnv(WorkingDirectoryEnv)
 		if workingDir == "" {
