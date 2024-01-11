@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit"
-	xrutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	xrutils "github.com/jfrog/jfrog-cli-security/utils"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"

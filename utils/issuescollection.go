@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+import "github.com/jfrog/jfrog-cli-security/formats"
 
 type IssuesCollection struct {
 	Vulnerabilities []formats.VulnerabilityOrViolationRow

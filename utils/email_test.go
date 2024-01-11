@@ -4,7 +4,7 @@ import (
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/jfrog/jfrog-cli-security/formats"
 	"github.com/jordan-wright/email"
 	"github.com/stretchr/testify/assert"
 	"net/textproto"

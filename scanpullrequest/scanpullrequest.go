@@ -10,8 +10,8 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-cli-security/formats"
+	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
