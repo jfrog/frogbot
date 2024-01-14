@@ -124,7 +124,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
-		SetApplyRecursiveScan(sc.ApplyRecursiveScan)
+		SetApplyRecursiveScan(sc.IsRecursiveScan)
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
