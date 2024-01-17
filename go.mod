@@ -18,6 +18,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.1
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
+	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	gopkg.in/yaml.v3 v3.0.1
 )
 
