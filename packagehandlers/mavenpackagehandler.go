@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/commands/audit/sca/java"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/java"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
 	"os"

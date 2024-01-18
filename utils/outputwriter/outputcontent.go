@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-core/v2/xray/utils"
+	"github.com/jfrog/jfrog-cli-security/formats"
+	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 )
 
 const (

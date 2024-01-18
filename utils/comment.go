@@ -9,7 +9,7 @@ import (
 
 	"github.com/jfrog/frogbot/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-cli-core/v2/xray/formats"
+	"github.com/jfrog/jfrog-cli-security/formats"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
