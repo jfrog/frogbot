@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os/exec"
@@ -15,6 +16,11 @@ type PackageHandler interface {
 }
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+	commonPackageHandler := CommonPackageHandler{
+		serverDetails: details.ServerDetails,
+		depsRepo:      details.DepsRepo,
+	}
+
 	switch vulnDetails.Technology {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
@@ -23,7 +29,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case coreutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case coreutils.Npm:
-		handler = &NpmPackageHandler{}
+		handler = &NpmPackageHandler{commonPackageHandler}
 	case coreutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case coreutils.Pip:
@@ -40,7 +46,10 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-type CommonPackageHandler struct{}
+type CommonPackageHandler struct {
+	serverDetails *config.ServerDetails
+	depsRepo      string
+}
 
 // UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
