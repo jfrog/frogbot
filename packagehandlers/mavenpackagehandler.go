@@ -153,15 +153,29 @@ type MavenPackageHandler struct {
 }
 
 func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	if err := mph.getProjectPoms(); err != nil {
+	depTreeOutput, clearMavenDepTreeRun, err := mph.runMavenDepTreeIfNeeded()
+	if err != nil {
 		return err
 	}
+
+	err = mph.getProjectPoms(depTreeOutput)
+	if err != nil {
+		return err
+	}
+
+	// If we got to this defer 'clearMavenDepTreeRun' contains a non-nil value
+	defer func() {
+		if clearMavenDepTreeRun != nil {
+			err = errors.Join(err, clearMavenDepTreeRun())
+		}
+	}()
+
 	// Get direct dependencies for each pom.xml file
 	if mph.pomDependencies == nil {
 		mph.pomDependencies = make(map[string]pomDependencyDetails)
 	}
 	for _, pp := range mph.pomPaths {
-		if err := mph.fillDependenciesMap(pp.PomPath); err != nil {
+		if err = mph.fillDependenciesMap(pp.PomPath); err != nil {
 			return err
 		}
 	}
@@ -184,14 +198,10 @@ func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	return mph.updatePackageVersion(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, depDetails.foundInDependencyManagement)
 }
 
-func (mph *MavenPackageHandler) getProjectPoms() (err error) {
+// Returns project's Pom paths. This function requires an execution of maven-dep-tree 'project' command prior to its execution
+func (mph *MavenPackageHandler) getProjectPoms(depTreeOutput string) (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
-		return
-	}
-	var depTreeOutput string
-	if depTreeOutput, err = mph.RunMavenDepTree(); err != nil {
-		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
 		return
 	}
 
@@ -249,4 +259,13 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 		}
 	}
 	return nil
+}
+
+func (mph *MavenPackageHandler) runMavenDepTreeIfNeeded() (depTreeOutput string, clearMavenDepTreeRun func() error, err error) {
+	// If Artifactory resolution repo is set we must run maven-dep-tree in order to create settings.xml file
+	// If pomPaths is empty we must run maven-dep-tree to be able to get the pom paths
+	if mph.GetDepsRepo() != "" || len(mph.pomPaths) == 0 {
+		depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree()
+	}
+	return
 }
