@@ -13,14 +13,10 @@ import (
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
+	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
-	commonPackageHandler := CommonPackageHandler{
-		serverDetails: details.ServerDetails,
-		depsRepo:      details.DepsRepo,
-	}
-
 	switch vulnDetails.Technology {
 	case coreutils.Go:
 		handler = &GoPackageHandler{}
@@ -29,7 +25,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case coreutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case coreutils.Npm:
-		handler = &NpmPackageHandler{commonPackageHandler}
+		handler = &NpmPackageHandler{}
 	case coreutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case coreutils.Pip:
@@ -43,6 +39,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
+	handler.SetCommonParams(details.ServerDetails, details.DepsRepo)
 	return
 }
 
@@ -61,6 +58,11 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
 	commandArgs = append(commandArgs, fixedPackageArgs...)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
+}
+
+func (cph *CommonPackageHandler) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
+	cph.serverDetails = serverDetails
+	cph.depsRepo = depsRepo
 }
 
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {
