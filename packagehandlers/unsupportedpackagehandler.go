@@ -14,5 +14,4 @@ func (uph *UnsupportedPackageHandler) UpdateDependency(vulnDetails *utils.Vulner
 }
 
 func (uph *UnsupportedPackageHandler) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
-	return
 }
