@@ -50,7 +50,6 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 			return
 		}
 		defer func() {
-			// If we got to this defer clearResolutionServerFunc contains a non-nil function pointer
 			err = errors.Join(err, clearResolutionServerFunc())
 		}()
 	}
