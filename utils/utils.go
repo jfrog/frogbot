@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
