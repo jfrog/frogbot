@@ -155,6 +155,12 @@ type MavenPackageHandler struct {
 func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// If we need to resolve from an Artifactory server, a settings.xml file will be created and its path will be set in mph
 	_, clearMavenDepTreeRun, err := mph.MavenDepTreeManager.CreateTempDirWithSettingsXmlIfNeeded()
+	if err != nil {
+		if clearMavenDepTreeRun != nil {
+			err = errors.Join(err, clearMavenDepTreeRun())
+		}
+		return
+	}
 
 	err = mph.getProjectPoms()
 	if err != nil {
