@@ -1,8 +1,10 @@
 package packagehandlers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
+	npmCommand "github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/npm"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )
 
@@ -38,6 +40,18 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 	if !isNodeModulesExists {
 		// In case node_modules don't exist in current dir the fix will update only package.json and package-lock.json
 		commandFlags = append(commandFlags, npmInstallPackageLockOnlyFlag)
+	}
+
+	// Configure resolution from an Artifactory server if needed
+	if npm.depsRepo != "" {
+		var clearResolutionServerFunc func() error
+		clearResolutionServerFunc, err = npmCommand.SetArtifactoryAsResolutionServer(npm.serverDetails, npm.depsRepo)
+		if err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, clearResolutionServerFunc())
+		}()
 	}
 	return npm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), commandFlags...)
 }
