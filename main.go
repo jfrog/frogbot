@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	"os"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"

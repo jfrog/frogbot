@@ -1,7 +1,7 @@
 package packagehandlers
 
 import (
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 type GoPackageHandler struct {

@@ -2,7 +2,7 @@ package scanrepository
 
 import (
 	"errors"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 )
 

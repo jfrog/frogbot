@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	biUtils "github.com/jfrog/build-info-go/build/utils"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
