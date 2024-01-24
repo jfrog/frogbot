@@ -2,7 +2,7 @@ package packagehandlers
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )
 

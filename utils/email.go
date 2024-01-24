@@ -3,7 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/formats"

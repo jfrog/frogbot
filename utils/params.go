@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	xrutils "github.com/jfrog/jfrog-cli-security/utils"
 

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
 	"github.com/jfrog/froggit-go/vcsclient"

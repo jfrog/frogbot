@@ -2,7 +2,7 @@ package packagehandlers
 
 import (
 	"errors"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 type UnsupportedPackageHandler struct {

@@ -3,7 +3,7 @@ package packagehandlers
 import (
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	"io/fs"
 	"os"
 	"path"
