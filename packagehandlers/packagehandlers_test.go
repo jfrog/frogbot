@@ -498,13 +498,8 @@ func TestGetProjectPoms(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	depTreeOutput, clearMavenDepTreeRun, err := mvnHandler.RunMavenDepTree()
+	err = mvnHandler.getProjectPoms()
 	assert.NoError(t, err)
-	err = mvnHandler.getProjectPoms(depTreeOutput)
-	assert.NoError(t, err)
-	if assert.NotNil(t, clearMavenDepTreeRun) {
-		defer assert.NoError(t, clearMavenDepTreeRun())
-	}
 	assert.Len(t, mvnHandler.pomPaths, 2)
 }
 

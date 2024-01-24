@@ -152,18 +152,15 @@ type MavenPackageHandler struct {
 	*java.MavenDepTreeManager
 }
 
-func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	depTreeOutput, clearMavenDepTreeRun, err := mph.runMavenDepTreeIfNeeded()
+func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	// If we need to resolve from an Artifactory server, a settings.xml file will be created and its path will be set in mph
+	_, clearMavenDepTreeRun, err := mph.MavenDepTreeManager.CreateTempDirWithSettingsXmlIfNeeded()
+
+	err = mph.getProjectPoms()
 	if err != nil {
 		return err
 	}
 
-	err = mph.getProjectPoms(depTreeOutput)
-	if err != nil {
-		return err
-	}
-
-	// If we got to this defer 'clearMavenDepTreeRun' contains a non-nil value
 	defer func() {
 		if clearMavenDepTreeRun != nil {
 			err = errors.Join(err, clearMavenDepTreeRun())
@@ -199,11 +196,26 @@ func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 // Returns project's Pom paths. This function requires an execution of maven-dep-tree 'project' command prior to its execution
-func (mph *MavenPackageHandler) getProjectPoms(depTreeOutput string) (err error) {
+func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
 		return
 	}
+
+	oldSettingsXmlPath := mph.GetSettingsXmlPath()
+
+	var depTreeOutput string
+	var clearMavenDepTreeRun func() error
+	if depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree(); err != nil {
+		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
+		return
+	}
+	defer func() {
+		if clearMavenDepTreeRun != nil {
+			err = clearMavenDepTreeRun()
+		}
+		mph.SetSettingsXmlPath(oldSettingsXmlPath)
+	}()
 
 	for _, jsonContent := range strings.Split(depTreeOutput, "\n") {
 		if jsonContent == "" {
@@ -259,13 +271,4 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 		}
 	}
 	return nil
-}
-
-func (mph *MavenPackageHandler) runMavenDepTreeIfNeeded() (depTreeOutput string, clearMavenDepTreeRun func() error, err error) {
-	// If Artifactory resolution repo is set we must run maven-dep-tree in order to create settings.xml file
-	// If pomPaths is empty we must run maven-dep-tree to be able to get the pom paths
-	if mph.GetDepsRepo() != "" || len(mph.pomPaths) == 0 {
-		depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree()
-	}
-	return
 }
