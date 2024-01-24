@@ -498,8 +498,8 @@ func TestGetProjectPoms(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	err = mvnHandler.getProjectPoms()
-	assert.NoError(t, err)
+
+	assert.NoError(t, mvnHandler.getProjectPoms())
 	assert.Len(t, mvnHandler.pomPaths, 2)
 }
 
