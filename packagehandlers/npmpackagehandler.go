@@ -3,7 +3,7 @@ package packagehandlers
 import (
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/utils"
+	"github.com/jfrog/frogbot/v2/utils"
 	npmCommand "github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/npm"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 )

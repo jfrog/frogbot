@@ -1,4 +1,4 @@
-module github.com/jfrog/frogbot
+module github.com/jfrog/frogbot/v2
 
 go 1.20
 

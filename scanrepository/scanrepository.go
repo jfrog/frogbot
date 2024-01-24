@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/packagehandlers"
-	"github.com/jfrog/frogbot/utils"
-	"github.com/jfrog/frogbot/utils/outputwriter"
+	"github.com/jfrog/frogbot/v2/packagehandlers"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
