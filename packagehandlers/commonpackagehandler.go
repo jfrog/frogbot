@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os/exec"
@@ -12,6 +13,7 @@ import (
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
+	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
@@ -37,10 +39,14 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
+	handler.SetCommonParams(details.ServerDetails, details.DepsRepo)
 	return
 }
 
-type CommonPackageHandler struct{}
+type CommonPackageHandler struct {
+	serverDetails *config.ServerDetails
+	depsRepo      string
+}
 
 // UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
@@ -52,6 +58,11 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
 	commandArgs = append(commandArgs, fixedPackageArgs...)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
+}
+
+func (cph *CommonPackageHandler) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
+	cph.serverDetails = serverDetails
+	cph.depsRepo = depsRepo
 }
 
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {
