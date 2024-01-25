@@ -152,16 +152,30 @@ type MavenPackageHandler struct {
 	*java.MavenDepTreeManager
 }
 
-func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	if err := mph.getProjectPoms(); err != nil {
+func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	// When resolution from an Artifactory server is necessary, a settings.xml file will be generated, and its path will be set in mph.
+	if mph.GetDepsRepo() != "" {
+		var clearMavenDepTreeRun func() error
+		_, clearMavenDepTreeRun, err = mph.CreateTempDirWithSettingsXmlIfNeeded()
+		if err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, clearMavenDepTreeRun())
+		}()
+	}
+
+	err = mph.getProjectPoms()
+	if err != nil {
 		return err
 	}
+
 	// Get direct dependencies for each pom.xml file
 	if mph.pomDependencies == nil {
 		mph.pomDependencies = make(map[string]pomDependencyDetails)
 	}
 	for _, pp := range mph.pomPaths {
-		if err := mph.fillDependenciesMap(pp.PomPath); err != nil {
+		if err = mph.fillDependenciesMap(pp.PomPath); err != nil {
 			return err
 		}
 	}
@@ -184,16 +198,28 @@ func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	return mph.updatePackageVersion(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, depDetails.foundInDependencyManagement)
 }
 
+// Returns project's Pom paths. This function requires an execution of maven-dep-tree 'project' command prior to its execution
 func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
 		return
 	}
+
+	oldSettingsXmlPath := mph.GetSettingsXmlPath()
+
 	var depTreeOutput string
-	if depTreeOutput, err = mph.RunMavenDepTree(); err != nil {
+	var clearMavenDepTreeRun func() error
+	if depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree(); err != nil {
 		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
+		if clearMavenDepTreeRun != nil {
+			err = errors.Join(err, clearMavenDepTreeRun())
+		}
 		return
 	}
+	defer func() {
+		err = clearMavenDepTreeRun()
+		mph.SetSettingsXmlPath(oldSettingsXmlPath)
+	}()
 
 	for _, jsonContent := range strings.Split(depTreeOutput, "\n") {
 		if jsonContent == "" {
