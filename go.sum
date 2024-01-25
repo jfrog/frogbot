@@ -700,8 +700,6 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20240124135700-88983664dc27 h1:Cv0x8dEBtfcBCodtOzK8v3zLP26GYfkLKybM2fKzYvs=
-github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20240124135700-88983664dc27/go.mod h1:RVn4pIkR5fPUnr8gFXt61ou3pCNrrDdRQUpcolP4lhw=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
@@ -888,6 +886,8 @@ github.com/jfrog/gofrog v1.5.1 h1:2AXL8hHu1jJFMIoCqTp2OyRUfEqEp4nC7J8fwn6KtwE=
 github.com/jfrog/gofrog v1.5.1/go.mod h1:SZ1EPJUruxrVGndOzHd+LTiwWYKMlHqhKD+eu+v5Hqg=
 github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240125073734-aac01c13fb1d h1:0azaWg2M6TwGomv79YJqdD2vb/SnV7GCcafbxgPiP2A=
+github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240125073734-aac01c13fb1d/go.mod h1:RVn4pIkR5fPUnr8gFXt61ou3pCNrrDdRQUpcolP4lhw=
 github.com/jfrog/jfrog-cli-security v0.0.0-20240122124933-edf9cb4ca3ac h1:tNn3TQXaIJZ9Fu5jiVB9lWpJAKkEGWNjz/6WzHhHePI=
 github.com/jfrog/jfrog-cli-security v0.0.0-20240122124933-edf9cb4ca3ac/go.mod h1:X4rz1639L8vWKJgpLxpO3ddkIW7KaCaQjbwani7FPf4=
 github.com/jfrog/jfrog-client-go v1.36.0 h1:iODLDjYSlK7rLH8/lEmAFHwYsboeBfaqxXybz6waraE=

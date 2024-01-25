@@ -153,25 +153,27 @@ type MavenPackageHandler struct {
 }
 
 func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// If we need to resolve from an Artifactory server, a settings.xml file will be created and its path will be set in mph
-	_, clearMavenDepTreeRun, err := mph.MavenDepTreeManager.CreateTempDirWithSettingsXmlIfNeeded()
-	if err != nil {
-		if clearMavenDepTreeRun != nil {
-			err = errors.Join(err, clearMavenDepTreeRun())
+	// When resolution from an Artifactory server is necessary, a settings.xml file will be generated, and its path will be set in mph.
+	if mph.GetDepsRepo() != "" {
+		var clearMavenDepTreeRun func() error
+		_, clearMavenDepTreeRun, err = mph.MavenDepTreeManager.CreateTempDirWithSettingsXmlIfNeeded()
+		if err != nil {
+			if clearMavenDepTreeRun != nil {
+				err = errors.Join(err, clearMavenDepTreeRun())
+			}
+			return
 		}
-		return
+		defer func() {
+			if clearMavenDepTreeRun != nil {
+				err = errors.Join(err, clearMavenDepTreeRun())
+			}
+		}()
 	}
 
 	err = mph.getProjectPoms()
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if clearMavenDepTreeRun != nil {
-			err = errors.Join(err, clearMavenDepTreeRun())
-		}
-	}()
 
 	// Get direct dependencies for each pom.xml file
 	if mph.pomDependencies == nil {
