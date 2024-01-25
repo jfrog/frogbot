@@ -156,17 +156,12 @@ func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	// When resolution from an Artifactory server is necessary, a settings.xml file will be generated, and its path will be set in mph.
 	if mph.GetDepsRepo() != "" {
 		var clearMavenDepTreeRun func() error
-		_, clearMavenDepTreeRun, err = mph.MavenDepTreeManager.CreateTempDirWithSettingsXmlIfNeeded()
+		_, clearMavenDepTreeRun, err = mph.CreateTempDirWithSettingsXmlIfNeeded()
 		if err != nil {
-			if clearMavenDepTreeRun != nil {
-				err = errors.Join(err, clearMavenDepTreeRun())
-			}
 			return
 		}
 		defer func() {
-			if clearMavenDepTreeRun != nil {
-				err = errors.Join(err, clearMavenDepTreeRun())
-			}
+			err = errors.Join(err, clearMavenDepTreeRun())
 		}()
 	}
 
@@ -216,12 +211,13 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 	var clearMavenDepTreeRun func() error
 	if depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree(); err != nil {
 		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
+		if clearMavenDepTreeRun != nil {
+			err = errors.Join(err, clearMavenDepTreeRun())
+		}
 		return
 	}
 	defer func() {
-		if clearMavenDepTreeRun != nil {
-			err = clearMavenDepTreeRun()
-		}
+		err = clearMavenDepTreeRun()
 		mph.SetSettingsXmlPath(oldSettingsXmlPath)
 	}()
 
