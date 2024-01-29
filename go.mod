@@ -10,8 +10,8 @@ require (
 	github.com/jfrog/froggit-go v1.14.6
 	github.com/jfrog/gofrog v1.5.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.47.12
-	github.com/jfrog/jfrog-cli-security v1.0.0
-	github.com/jfrog/jfrog-client-go v1.36.0
+	github.com/jfrog/jfrog-cli-security v1.0.1
+	github.com/jfrog/jfrog-client-go v1.36.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.0
 	github.com/stretchr/testify v1.8.4
