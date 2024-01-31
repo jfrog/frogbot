@@ -194,7 +194,7 @@ func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("`the following errors occured while fixing vulnerabilities in` %s:\n%s", fullPath, e)) //TODO ERAN step 3 - separate fixes
 		}
 	}
 	return err
@@ -248,7 +248,7 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 	}
 	for _, vulnDetails := range vulnerabilities {
 		if e := cfp.updatePackageToFixedVersion(vulnDetails); e != nil {
-			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
+			err = errors.Join(err, cfp.handleUpdatePackageErrors(e)) //TODO EARN this is a possible fix point for the error
 			continue
 		}
 		fixedVulnerabilities = append(fixedVulnerabilities, vulnDetails)
@@ -275,12 +275,30 @@ func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]ma
 // When the expected custom error occurs, log to debug.
 // else, return the error
 func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
+	//TODO ERAN take care of the error here. define a spacial error for "nothing to commit" and make the error = nil
 	var errUnsupportedFix *utils.ErrUnsupportedFix
-	if errors.As(err, &errUnsupportedFix) {
+	var errNoChangesToCommit *utils.ErrNoChangesToCommit
+
+	switch {
+	case errors.As(err, &errUnsupportedFix):
 		log.Debug(strings.TrimSpace(err.Error()))
 		return nil
+	case errors.As(err, &errNoChangesToCommit):
+		log.Debug(err.Error())
+		return nil
+	default:
+		return err
 	}
-	return err
+	/*
+		if errors.As(err, &errUnsupportedFix) {
+			log.Debug(strings.TrimSpace(err.Error()))
+			return nil
+		}
+
+
+		return err
+
+	*/
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
@@ -323,8 +341,13 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 		return
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, vulnDetails); err != nil {
-		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
-			vulnDetails.ImpactedDependencyName, fixVersion, err.Error())
+		wrapErr := fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion)
+		return errors.Join(wrapErr, err)
+		/*
+			return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
+				vulnDetails.ImpactedDependencyName, fixVersion, err.Error()) //TODO ERAN step 2
+
+		*/
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 	return
@@ -336,8 +359,11 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 	if err != nil {
 		return
 	}
+	//TODO ERAN put this to check bug: isClean = true
 	if isClean {
-		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", vulnDetails.ImpactedDependencyName)
+		// In some cases there is a fix to perform which Frogbot doesn't support. In this case the worktree will be clean and there is nothing to push
+		return &utils.ErrNoChangesToCommit{PackageName: vulnDetails.ImpactedDependencyName}
+		//return fmt.Errorf("there were no changes to commit after fixing the package '%s'", vulnDetails.ImpactedDependencyName) //TODO ERAN step 1
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
@@ -558,7 +584,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		currentFixes, e := cfp.fixMultiplePackages(fullPath, vulnerabilities)
 		if e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e)) //TODO ERAN step 3 aggregated fix
 			continue
 		}
 		fixedVulnerabilities = append(fixedVulnerabilities, currentFixes...)
