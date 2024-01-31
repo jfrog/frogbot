@@ -194,7 +194,7 @@ func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("`the following errors occured while fixing vulnerabilities in` %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%s", fullPath, e))
 		}
 	}
 	return err
