@@ -343,7 +343,7 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 		return
 	}
 	if isClean {
-		// In some cases there is a fix to perform which Frogbot doesn't support. In this case the worktree will be clean and there is nothing to push
+		// In instances where a fix is required that Frogbot does not support, the worktree will remain clean, and there will be nothing to push
 		return &utils.ErrNoChangesToCommit{PackageName: vulnDetails.ImpactedDependencyName}
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
