@@ -68,7 +68,7 @@ type ErrUnsupportedFix struct {
 	ErrorType    UnsupportedErrorType
 }
 
-type ErrNoChangesToCommit struct {
+type ErrNothingToCommit struct {
 	PackageName string
 }
 
@@ -81,7 +81,7 @@ func (err *ErrUnsupportedFix) Error() string {
 	return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
 }
 
-func (err *ErrNoChangesToCommit) Error() string {
+func (err *ErrNothingToCommit) Error() string {
 	return fmt.Sprintf("there were no changes to commit after fixing the package '%s'.\n"+
 		"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes", err.PackageName)
 }

@@ -276,18 +276,17 @@ func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]ma
 // else, return the error
 func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	var errUnsupportedFix *utils.ErrUnsupportedFix
-	var errNoChangesToCommit *utils.ErrNoChangesToCommit
+	var errNoChangesToCommit *utils.ErrNothingToCommit
 
 	switch {
 	case errors.As(err, &errUnsupportedFix):
 		log.Debug(strings.TrimSpace(err.Error()))
-		return nil
 	case errors.As(err, &errNoChangesToCommit):
 		log.Info(err.Error())
-		return nil
 	default:
 		return err
 	}
+	return nil
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
@@ -344,7 +343,7 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 	}
 	if isClean {
 		// In instances where a fix is required that Frogbot does not support, the worktree will remain clean, and there will be nothing to push
-		return &utils.ErrNoChangesToCommit{PackageName: vulnDetails.ImpactedDependencyName}
+		return &utils.ErrNothingToCommit{PackageName: vulnDetails.ImpactedDependencyName}
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
