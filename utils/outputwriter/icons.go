@@ -81,7 +81,7 @@ func GetSimplifiedTitle(is ImageSource) string {
 	case VulnerabilitiesFixPrBannerSource:
 		return "🚨 This automated pull request was created by Frogbot and fixes the below:"
 	case NoVulnerabilityMrBannerSource:
-		return "👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies."
+		return "👍 Frogbot scanned this merge request and found that it did not add any security vulnerabilities."
 	case VulnerabilitiesMrBannerSource:
 		return "🚨 Frogbot scanned this merge request and found the below:"
 	case VulnerabilitiesFixMrBannerSource:
