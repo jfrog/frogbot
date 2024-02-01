@@ -194,7 +194,7 @@ func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%s", fullPath, e))
 		}
 	}
 	return err
@@ -276,11 +276,17 @@ func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]ma
 // else, return the error
 func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	var errUnsupportedFix *utils.ErrUnsupportedFix
-	if errors.As(err, &errUnsupportedFix) {
+	var errNoChangesToCommit *utils.ErrNothingToCommit
+
+	switch {
+	case errors.As(err, &errUnsupportedFix):
 		log.Debug(strings.TrimSpace(err.Error()))
-		return nil
+	case errors.As(err, &errNoChangesToCommit):
+		log.Info(err.Error())
+	default:
+		return err
 	}
-	return err
+	return nil
 }
 
 // Creates a branch for the fixed package and open pull request against the target branch.
@@ -323,8 +329,7 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 		return
 	}
 	if err = cfp.openFixingPullRequest(fixBranchName, vulnDetails); err != nil {
-		return fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: \n%s",
-			vulnDetails.ImpactedDependencyName, fixVersion, err.Error())
+		return errors.Join(fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion), err)
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 	return
@@ -337,7 +342,8 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 		return
 	}
 	if isClean {
-		return fmt.Errorf("there were no changes to commit after fixing the package '%s'", vulnDetails.ImpactedDependencyName)
+		// In instances where a fix is required that Frogbot does not support, the worktree will remain clean, and there will be nothing to push
+		return &utils.ErrNothingToCommit{PackageName: vulnDetails.ImpactedDependencyName}
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
@@ -582,9 +588,21 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	return
 }
 
-// Performs a comparison of the Xray scan results hashes between an existing pull request's remote source branch
-// and the current source branch to identify any differences.
+// Determines whether an update is necessary:
+// First, checks if the working tree is clean. If so, no update is required.
+// Second, checks if there is an already open pull request for the fix. If so, no update is needed.
+// Lastly, performs a comparison of Xray scan result hashes between an existing pull request's remote source branch and the current source branch to identify any differences.
 func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.VulnerabilityDetails, prInfo *vcsclient.PullRequestInfo) (updateRequired bool, err error) {
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
+	if isClean {
+		log.Info("There were no changes to commit after fixing vulnerabilities.\nNote: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes")
+		updateRequired = false
+		return
+	}
+
 	if prInfo == nil {
 		updateRequired = true
 		return

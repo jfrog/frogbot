@@ -68,6 +68,10 @@ type ErrUnsupportedFix struct {
 	ErrorType    UnsupportedErrorType
 }
 
+type ErrNothingToCommit struct {
+	PackageName string
+}
+
 // Custom error for unsupported fixes
 // Currently we hold two unsupported reasons, indirect and build tools dependencies.
 func (err *ErrUnsupportedFix) Error() string {
@@ -75,6 +79,11 @@ func (err *ErrUnsupportedFix) Error() string {
 		return fmt.Sprintf(skipIndirectVulnerabilitiesMsg, err.PackageName, err.FixedVersion)
 	}
 	return fmt.Sprintf(skipBuildToolDependencyMsg, err.PackageName, err.PackageName, err.FixedVersion)
+}
+
+func (err *ErrNothingToCommit) Error() string {
+	return fmt.Sprintf("there were no changes to commit after fixing the package '%s'.\n"+
+		"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes", err.PackageName)
 }
 
 // VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
