@@ -87,7 +87,7 @@ func TestStandardImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities pr banner",

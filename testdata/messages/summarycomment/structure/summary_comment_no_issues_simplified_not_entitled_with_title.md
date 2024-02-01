@@ -1,4 +1,4 @@
-**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.**
+**👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities.**
 
 ---
 ## **Custom title**

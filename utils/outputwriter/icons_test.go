@@ -23,7 +23,7 @@ func TestGetSeverityTagNotApplicable(t *testing.T) {
 }
 
 func TestGetVulnerabilitiesBanners(t *testing.T) {
-	assert.Equal(t, "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n", GetBanner(NoVulnerabilityPrBannerSource))
+	assert.Equal(t, "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n", GetBanner(NoVulnerabilityPrBannerSource))
 	assert.Equal(t, "<div align='center'>\n\n[![👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n", GetBanner(NoVulnerabilityMrBannerSource))
 	assert.Equal(t, "<div align='center'>\n\n[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n", GetBanner(VulnerabilitiesPrBannerSource))
 	assert.Equal(t, "<div align='center'>\n\n[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n", GetBanner(VulnerabilitiesMrBannerSource))
@@ -32,7 +32,7 @@ func TestGetVulnerabilitiesBanners(t *testing.T) {
 }
 
 func TestGetSimplifiedTitle(t *testing.T) {
-	assert.Equal(t, "👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.", GetSimplifiedTitle(NoVulnerabilityPrBannerSource))
+	assert.Equal(t, "👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities.", GetSimplifiedTitle(NoVulnerabilityPrBannerSource))
 	assert.Equal(t, "🚨 Frogbot scanned this pull request and found the below:", GetSimplifiedTitle(VulnerabilitiesPrBannerSource))
 	assert.Equal(t, "🚨 This automated pull request was created by Frogbot and fixes the below:", GetSimplifiedTitle(VulnerabilitiesFixPrBannerSource))
 	assert.Equal(t, "", GetSimplifiedTitle("none"))

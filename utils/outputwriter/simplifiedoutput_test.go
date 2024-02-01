@@ -71,7 +71,7 @@ func TestSimpleImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "**👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies.**",
+			expectedOutput: "**👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities.**",
 		},
 		{
 			name:           "vulnerabilities pr banner",

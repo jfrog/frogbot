@@ -75,7 +75,7 @@ func GetIconTag(imageSource ImageSource) string {
 func GetSimplifiedTitle(is ImageSource) string {
 	switch is {
 	case NoVulnerabilityPrBannerSource:
-		return "👍 Frogbot scanned this pull request and found that it did not add vulnerable dependencies."
+		return "👍 Frogbot scanned this pull request and found that it did not add any security vulnerabilities."
 	case VulnerabilitiesPrBannerSource:
 		return "🚨 Frogbot scanned this pull request and found the below:"
 	case VulnerabilitiesFixPrBannerSource:
