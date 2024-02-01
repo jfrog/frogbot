@@ -283,7 +283,7 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 		log.Debug(strings.TrimSpace(err.Error()))
 		return nil
 	case errors.As(err, &errNoChangesToCommit):
-		log.Debug(err.Error())
+		log.Info(err.Error())
 		return nil
 	default:
 		return err
@@ -589,9 +589,21 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	return
 }
 
-// Performs a comparison of the Xray scan results hashes between an existing pull request's remote source branch
-// and the current source branch to identify any differences.
+// Determines whether an update is necessary:
+// First, checks if the working tree is clean. If so, no update is required.
+// Second, checks if there is an already open pull request for the fix. If so, no update is needed.
+// Lastly, performs a comparison of Xray scan result hashes between an existing pull request's remote source branch and the current source branch to identify any differences.
 func (cfp *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.VulnerabilityDetails, prInfo *vcsclient.PullRequestInfo) (updateRequired bool, err error) {
+	isClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
+	if isClean {
+		log.Info("There were no changes to commit after fixing vulnerabilities.\nNote: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes")
+		updateRequired = false
+		return
+	}
+
 	if prInfo == nil {
 		updateRequired = true
 		return
