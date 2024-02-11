@@ -543,6 +543,8 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
 	if !workTreeIsClean {
+		// This step ensures that all new files created in the cloned directory up to this point will be copied to the newly created branch where we intend to implement the fix.
+		// This is necessary in scenarios where an 'install' command was executed and the newly created files need to exist in the new 'fix' branch derived from the source cloned project.
 		var removeTempDirCallback func() error
 		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(aggregatedFixBranchName)
 		defer func() {
