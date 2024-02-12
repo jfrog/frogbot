@@ -308,6 +308,9 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 	}
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
 	if !workTreeIsClean {
 		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
 		err = cfp.gitManager.CreateBranchAndCheckoutWithLocalChanges(fixBranchName)
@@ -536,6 +539,9 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	log.Info("Starting aggregated dependencies fix")
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
 	if !workTreeIsClean {
 		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
 		err = cfp.gitManager.CreateBranchAndCheckoutWithLocalChanges(aggregatedFixBranchName)
@@ -563,9 +569,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		return
 	}
 	if !updateRequired {
-		//TODO is there a reason why we are not returning to base branch in this scenario?
-		err = errors.Join(err, cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch())) //TODO think if this is mandatory after fixing the real issue..
-
+		err = errors.Join(err, cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()))
 		log.Info("The existing pull request is in sync with the latest scan, and no further updates are required.")
 		return
 	}
