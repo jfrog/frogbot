@@ -188,6 +188,9 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 		if gm.dryRun {
 			return nil
 		}
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return err
+		}
 		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
 	return err
@@ -206,28 +209,33 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) er
 	return worktree.Checkout(checkoutConfig)
 }
 
-// Initiates a new branch and switches to it.
-// To carry over modifications from the current branch to the new one, we copy all FILES from the current working directory to a temporary directory.
-// Before switching to the new branch, we transfer the missing files from the temporary directory to the working directory associated with the new branch.
-// Note: Only FILES are copied, avoiding directory and configurations overrides (such as .git configurations).
-func (gm *GitManager) CreateBranchAndCheckoutWithCopyingFilesDiff(branchName string) (error, func() error) {
-	tempDirPath, err := CopyCurrentDirFilesToTempDir()
+func (gm *GitManager) CreateBranchAndCheckoutWithLocalChanges(branchName string) error {
+	log.Debug("Creating branch", branchName, " with local changes...")
+	err := gm.createBranchAndCheckoutWithLocalChanges(branchName, true)
 	if err != nil {
-		return err, func() error { return nil }
+		// Don't fail on dryRuns as we operate on local repositories, branch could be existing.
+		if gm.dryRun {
+			return nil
+		}
+		if errors.Is(err, plumbing.ErrReferenceNotFound) {
+			return err
+		}
+		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
 	}
+	return err
+}
 
-	removeDirCallback := func() error {
-		return fileutils.RemoveTempDir(tempDirPath)
+func (gm *GitManager) createBranchAndCheckoutWithLocalChanges(branchName string, create bool) error {
+	checkoutConfig := &git.CheckoutOptions{
+		Create: create,
+		Branch: GetFullBranchName(branchName),
+		Keep:   true,
 	}
-
-	if err = gm.CreateBranchAndCheckout(branchName); err != nil {
-		return err, removeDirCallback
+	worktree, err := gm.localGitRepository.Worktree()
+	if err != nil {
+		return err
 	}
-
-	// Copying all the files from the existing working directory to the new branch
-	// avoids the need for reinstalling the project in case it was previously installed.
-	err = CopyMissingFilesToCurrentWorkingDir(tempDirPath)
-	return err, removeDirCallback
+	return worktree.Checkout(checkoutConfig)
 }
 
 func getCurrentBranch(repository *git.Repository) (string, error) {
