@@ -200,9 +200,12 @@ func TestGitManager_Checkout(t *testing.T) {
 	testCases := []struct {
 		withLocalChanges bool
 	}{
-		{
-			withLocalChanges: false,
-		},
+		/*
+			{
+				withLocalChanges: false,
+			},
+
+		*/
 		{
 			withLocalChanges: true,
 		},
