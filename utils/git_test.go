@@ -242,6 +242,9 @@ func TestGitManager_Checkout(t *testing.T) {
 				fileExists, err = fileutils.IsFileExists(tempFilePath, false)
 				assert.NoError(t, err)
 				assert.True(t, fileExists)
+
+				// We delete the file here and not in a defer so the file is erased before the temp dir is removed
+				assert.NoError(t, os.Remove(tempFilePath))
 			} else {
 				// Create 'dev' branch and checkout
 				err = gitManager.CreateBranchAndCheckout("dev")
