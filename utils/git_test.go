@@ -233,8 +233,13 @@ func TestGitManager_Checkout(t *testing.T) {
 			if test.withLocalChanges {
 				// Create new file in master branch
 				tempFilePath := filepath.Join(tmpDir, tempFileName)
-				_, err = os.Create(tempFilePath)
+				var file *os.File
+				file, err = os.Create(tempFilePath)
 				assert.NoError(t, err)
+				assert.NoError(t, file.Close())
+				defer func() {
+					assert.NoError(t, os.Remove(tempFilePath))
+				}()
 
 				// Create 'dev' branch and checkout
 				err = gitManager.CreateBranchAndCheckoutWithLocalChanges("dev")
@@ -247,7 +252,7 @@ func TestGitManager_Checkout(t *testing.T) {
 				assert.True(t, fileExists)
 
 				// We delete the file here and not in a defer so the file is erased before the temp dir is removed
-				assert.NoError(t, os.Remove(tempFilePath))
+				//assert.NoError(t, os.Remove(tempFilePath))
 			} else {
 				// Create 'dev' branch and checkout
 				err = gitManager.CreateBranchAndCheckout("dev")
