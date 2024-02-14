@@ -16,8 +16,6 @@ import (
 	"testing"
 )
 
-const tempFileName = "myFile.txt"
-
 func TestGitManager_GenerateCommitMessage(t *testing.T) {
 	testCases := []struct {
 		gitManager      GitManager
@@ -229,14 +227,14 @@ func TestGitManager_Checkout(t *testing.T) {
 
 			if test.withLocalChanges {
 				// Create new file in master branch
-				tempFilePath := filepath.Join(tmpDir, tempFileName)
+				tempFilePath := filepath.Join(tmpDir, "myFile.txt")
 				var file *os.File
 				file, err = os.Create(tempFilePath)
 				assert.NoError(t, err)
 				assert.NoError(t, file.Close())
 
 				// Create 'dev' branch and checkout
-				err = gitManager.CreateBranchAndCheckoutWithLocalChanges("dev")
+				err = gitManager.CreateBranchAndCheckout("dev", true)
 				assert.NoError(t, err)
 
 				// Verify that temp file exist in new branch
@@ -246,7 +244,7 @@ func TestGitManager_Checkout(t *testing.T) {
 				assert.True(t, fileExists)
 			} else {
 				// Create 'dev' branch and checkout
-				err = gitManager.CreateBranchAndCheckout("dev")
+				err = gitManager.CreateBranchAndCheckout("dev", false)
 				assert.NoError(t, err)
 			}
 

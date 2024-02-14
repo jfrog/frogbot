@@ -146,7 +146,7 @@ func (gm *GitManager) SetDryRun(dryRun bool, dryRunRepoPath string) *GitManager 
 
 func (gm *GitManager) Checkout(branchName string) error {
 	log.Debug("Running git checkout to branch:", branchName)
-	if err := gm.createBranchAndCheckout(branchName, false); err != nil {
+	if err := gm.createBranchAndCheckout(branchName, false, false); err != nil {
 		return fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
 	}
 	return nil
@@ -180,9 +180,11 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	return nil
 }
 
-func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
+// Creates a new branch and switches to it.
+// If keepLocalChanges is set to true, all changes made on the current branch before switching to the new one will be transferred to the new branch.
+func (gm *GitManager) CreateBranchAndCheckout(branchName string, keepLocalChanges bool) error {
 	log.Debug("Creating branch", branchName, "...")
-	err := gm.createBranchAndCheckout(branchName, true)
+	err := gm.createBranchAndCheckout(branchName, true, keepLocalChanges)
 	if err != nil {
 		// Don't fail on dryRuns as we operate on local repositories, branch could be existing.
 		if gm.dryRun {
@@ -191,45 +193,25 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string) error {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
 			return err
 		}
-		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
+		err = fmt.Errorf("failed upon creating/checkout branch '%s' with error: %s", branchName, err.Error())
 	}
 	return err
 }
 
-func (gm *GitManager) createBranchAndCheckout(branchName string, create bool) error {
-	checkoutConfig := &git.CheckoutOptions{
-		Create: create,
-		Branch: GetFullBranchName(branchName),
-		Force:  true,
-	}
-	worktree, err := gm.localGitRepository.Worktree()
-	if err != nil {
-		return err
-	}
-	return worktree.Checkout(checkoutConfig)
-}
-
-func (gm *GitManager) CreateBranchAndCheckoutWithLocalChanges(branchName string) error {
-	log.Debug("Creating branch", branchName, " with local changes...")
-	err := gm.createBranchAndCheckoutWithLocalChanges(branchName, true)
-	if err != nil {
-		// Don't fail on dryRuns as we operate on local repositories, branch could be existing.
-		if gm.dryRun {
-			return nil
+func (gm *GitManager) createBranchAndCheckout(branchName string, create bool, keepLocalChanges bool) error {
+	var checkoutConfig *git.CheckoutOptions
+	if keepLocalChanges {
+		checkoutConfig = &git.CheckoutOptions{
+			Create: create,
+			Branch: GetFullBranchName(branchName),
+			Keep:   true,
 		}
-		if errors.Is(err, plumbing.ErrReferenceNotFound) {
-			return err
+	} else {
+		checkoutConfig = &git.CheckoutOptions{
+			Create: create,
+			Branch: GetFullBranchName(branchName),
+			Force:  true,
 		}
-		err = fmt.Errorf("git create and checkout failed with error: %s", err.Error())
-	}
-	return err
-}
-
-func (gm *GitManager) createBranchAndCheckoutWithLocalChanges(branchName string, create bool) error {
-	checkoutConfig := &git.CheckoutOptions{
-		Create: create,
-		Branch: GetFullBranchName(branchName),
-		Keep:   true,
 	}
 	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {

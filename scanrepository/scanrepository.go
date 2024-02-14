@@ -313,12 +313,11 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 	}
 	if !workTreeIsClean {
 		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
-		err = cfp.gitManager.CreateBranchAndCheckoutWithLocalChanges(fixBranchName)
+		err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName, true)
 	} else {
-		err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName)
+		err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName, false)
 	}
 	if err != nil {
-		err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
 		return
 	}
 
@@ -544,12 +543,11 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	}
 	if !workTreeIsClean {
 		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
-		err = cfp.gitManager.CreateBranchAndCheckoutWithLocalChanges(aggregatedFixBranchName)
+		err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName, true)
 	} else {
-		err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName)
+		err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName, false)
 	}
 	if err != nil {
-		err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
 		return
 	}
 
