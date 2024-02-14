@@ -200,12 +200,9 @@ func TestGitManager_Checkout(t *testing.T) {
 	testCases := []struct {
 		withLocalChanges bool
 	}{
-		/*
-			{
-				withLocalChanges: false,
-			},
-
-		*/
+		{
+			withLocalChanges: false,
+		},
 		{
 			withLocalChanges: true,
 		},
@@ -237,9 +234,6 @@ func TestGitManager_Checkout(t *testing.T) {
 				file, err = os.Create(tempFilePath)
 				assert.NoError(t, err)
 				assert.NoError(t, file.Close())
-				defer func() {
-					assert.NoError(t, os.Remove(tempFilePath))
-				}()
 
 				// Create 'dev' branch and checkout
 				err = gitManager.CreateBranchAndCheckoutWithLocalChanges("dev")
