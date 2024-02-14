@@ -52,6 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
     strategy:
       fail-fast: false
       matrix:
