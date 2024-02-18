@@ -2,10 +2,10 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	bitests "github.com/jfrog/build-info-go/tests"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -195,34 +195,71 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 }
 
 func TestGitManager_Checkout(t *testing.T) {
-	tmpDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	var restoreWd func() error
-	restoreWd, err = Chdir(tmpDir)
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, restoreWd())
-	}()
-	gitManager := createFakeDotGit(t, tmpDir)
-	// Get the current branch that is set as HEAD
-	headRef, err := gitManager.localGitRepository.Head()
-	assert.NoError(t, err)
-	assert.Equal(t, headRef.Name().Short(), "master")
-	// Create 'dev' branch and checkout
-	err = gitManager.CreateBranchAndCheckout("dev")
-	assert.NoError(t, err)
-	var currBranch string
-	currBranch, err = getCurrentBranch(gitManager.localGitRepository)
-	assert.NoError(t, err)
-	assert.Equal(t, "dev", currBranch)
-	// Checkout back to 'master'
-	assert.NoError(t, gitManager.Checkout("master"))
-	currBranch, err = getCurrentBranch(gitManager.localGitRepository)
-	assert.NoError(t, err)
-	assert.Equal(t, "master", currBranch)
+	testCases := []struct {
+		withLocalChanges bool
+	}{
+		{
+			withLocalChanges: false,
+		},
+		{
+			withLocalChanges: true,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(fmt.Sprintf("test branch checkout: local changes:%t", test.withLocalChanges), func(t *testing.T) {
+			tmpDir, err := fileutils.CreateTempDir()
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+			}()
+			var restoreWd func() error
+			restoreWd, err = Chdir(tmpDir)
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, restoreWd())
+			}()
+			gitManager := createFakeDotGit(t, tmpDir)
+			// Get the current branch that is set as HEAD
+			headRef, err := gitManager.localGitRepository.Head()
+			assert.NoError(t, err)
+			assert.Equal(t, headRef.Name().Short(), "master")
+
+			if test.withLocalChanges {
+				// Create new file in master branch
+				tempFilePath := filepath.Join(tmpDir, "myFile.txt")
+				var file *os.File
+				file, err = os.Create(tempFilePath)
+				assert.NoError(t, err)
+				assert.NoError(t, file.Close())
+
+				// Create 'dev' branch and checkout
+				err = gitManager.CreateBranchAndCheckout("dev", true)
+				assert.NoError(t, err)
+
+				// Verify that temp file exist in new branch
+				var fileExists bool
+				fileExists, err = fileutils.IsFileExists(tempFilePath, false)
+				assert.NoError(t, err)
+				assert.True(t, fileExists)
+			} else {
+				// Create 'dev' branch and checkout
+				err = gitManager.CreateBranchAndCheckout("dev", false)
+				assert.NoError(t, err)
+			}
+
+			var currBranch string
+			currBranch, err = getCurrentBranch(gitManager.localGitRepository)
+			assert.NoError(t, err)
+			assert.Equal(t, "dev", currBranch)
+
+			// Checkout back to 'master'
+			assert.NoError(t, gitManager.Checkout("master"))
+			currBranch, err = getCurrentBranch(gitManager.localGitRepository)
+			assert.NoError(t, err)
+			assert.Equal(t, "master", currBranch)
+		})
+	}
 }
 
 func createFakeDotGit(t *testing.T, testPath string) *GitManager {
@@ -349,34 +386,4 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 			assert.Equal(t, test.expected, title)
 		})
 	}
-}
-
-func TestCreateBranchAndCheckoutWithCopyingFilesDiff(t *testing.T) {
-	curWd, err := os.Getwd()
-	assert.NoError(t, err)
-	tempDirPath, createTempDirCallback := bitests.CreateTempDirWithCallbackAndAssert(t)
-	assert.NoError(t, os.Chdir(tempDirPath))
-	defer func() {
-		assert.NoError(t, os.Chdir(curWd))
-	}()
-
-	gitManager := createFakeDotGit(t, tempDirPath)
-	// Generating a new file that will result in an unclean working tree.
-	newFile, err := os.Create("new-file.txt")
-	assert.NoError(t, err)
-
-	var removeDirCallback func() error
-	err, removeDirCallback = gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff("new-branch")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, newFile.Close())
-		assert.NoError(t, removeDirCallback())
-		createTempDirCallback()
-	}()
-
-	// Confirm that the new files exist in the new branch
-	var fileExists bool
-	fileExists, err = fileutils.IsFileExists(filepath.Join(tempDirPath, newFile.Name()), false)
-	assert.NoError(t, err)
-	assert.True(t, fileExists)
 }

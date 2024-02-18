@@ -80,6 +80,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
 	}()
+	if err = cfp.scanDetails.CreateMultiScanIdForScans(); err != nil {
+		return err
+	}
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []coreutils.Technology{}
@@ -308,21 +311,17 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 	}
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
 	if !workTreeIsClean {
-		var removeTempDirCallback func() error
-		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(fixBranchName)
-		defer func() {
-			err = errors.Join(err, removeTempDirCallback())
-		}()
-		if err != nil {
-			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
-			return
-		}
+		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
+		err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName, true)
 	} else {
-		if err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName); err != nil {
-			err = fmt.Errorf("failed while creating branch %s: %s", fixBranchName, err.Error())
-			return
-		}
+		err = cfp.gitManager.CreateBranchAndCheckout(fixBranchName, false)
+	}
+	if err != nil {
+		return
 	}
 
 	if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
@@ -542,21 +541,17 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	log.Info("Starting aggregated dependencies fix")
 
 	workTreeIsClean, err := cfp.gitManager.IsClean()
+	if err != nil {
+		return
+	}
 	if !workTreeIsClean {
-		var removeTempDirCallback func() error
-		err, removeTempDirCallback = cfp.gitManager.CreateBranchAndCheckoutWithCopyingFilesDiff(aggregatedFixBranchName)
-		defer func() {
-			err = errors.Join(err, removeTempDirCallback())
-		}()
-		if err != nil {
-			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
-			return
-		}
+		// If there are local changes, such as files generated after running an 'install' command, we aim to preserve them in the new branch
+		err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName, true)
 	} else {
-		if err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName); err != nil {
-			err = fmt.Errorf("failed while creating branch %s: %s", aggregatedFixBranchName, err.Error())
-			return
-		}
+		err = cfp.gitManager.CreateBranchAndCheckout(aggregatedFixBranchName, false)
+	}
+	if err != nil {
+		return
 	}
 
 	// Fix all packages in the same branch if expected error accrued, log and continue.
@@ -575,6 +570,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		return
 	}
 	if !updateRequired {
+		err = errors.Join(err, cfp.gitManager.Checkout(cfp.scanDetails.BaseBranch()))
 		log.Info("The existing pull request is in sync with the latest scan, and no further updates are required.")
 		return
 	}

@@ -100,7 +100,7 @@ func createAndCheckoutIssueBranch(t *testing.T, testDetails *IntegrationTestDeta
 	err = gitManager.Clone(tmpDir, issuesBranch)
 	require.NoError(t, err)
 
-	err = gitManager.CreateBranchAndCheckout(currentIssuesBranch)
+	err = gitManager.CreateBranchAndCheckout(currentIssuesBranch, false)
 	require.NoError(t, err)
 
 	// This step is necessary because GitHub limits the number of pull requests from the same commit of the source branch
