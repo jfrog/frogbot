@@ -351,7 +351,7 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle, prBody, err := cfp.preparePullRequestDetails(vulnDetails)
+	pullRequestTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnDetails)
 	if err != nil {
 		return
 	}
@@ -369,7 +369,7 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pu
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
+	pullRequestTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
 	if err != nil {
 		return
 	}
@@ -381,12 +381,14 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pu
 	return cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open)
 }
 
-func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle string, prBody string, err error) {
+func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
-		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", nil
+		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", []string{}, nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
+	content := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
+	
 	prBody = utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
 	if cfp.aggregateFixes {
 		var scanHash string
@@ -576,7 +578,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 	}
 	if len(fixedVulnerabilities) > 0 {
 		if e = cfp.openAggregatedPullRequest(aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", e.Error()))
+			err = errors.Join(err, fmt.Errorf("failed while creating aggregated pull request. Error: \n%s", e.Error()))
 		}
 	}
 	log.Info("-----------------------------------------------------------------")

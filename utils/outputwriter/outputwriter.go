@@ -8,6 +8,12 @@ import (
 )
 
 const (
+	// Pull request comment value must be less than 32768 characters
+	MaxCharsInBitBucketComment = 32768
+	// Description for a pull request must not be longer than 4000 characters.
+	MaxCharsInAzureComment = 4000
+	MaxCharsInComment = 4 * MaxCharsInBitBucketComment
+
 	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -97,6 +103,7 @@ type OutputWriter interface {
 	PullRequestCommentTitle() string
 	SetHasInternetConnection(connected bool)
 	HasInternetConnection() bool
+	SizeLimit() int
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -115,6 +122,7 @@ type MarkdownOutput struct {
 	showCaColumn            bool
 	entitledForJas          bool
 	hasInternetConnection   bool
+	sizeLimit               int
 	vcsProvider             vcsutils.VcsProvider
 }
 
@@ -163,12 +171,20 @@ func (mo *MarkdownOutput) PullRequestCommentTitle() string {
 	return mo.pullRequestCommentTitle
 }
 
+func (mo *MarkdownOutput) SizeLimit() int {
+	return mo.sizeLimit
+}
+
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true, sizeLimit: MaxCharsInBitBucketComment}}
 	default:
-		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
+		output := &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true, sizeLimit: MaxCharsInComment}}
+		if provider == vcsutils.AzureRepos {
+			output.sizeLimit = MaxCharsInAzureComment
+		}
+		return output
 	}
 }
 

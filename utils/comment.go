@@ -51,9 +51,11 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 	}
 
 	// Add summary (SCA, license) scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, generatePullRequestSummaryComment(issues, repo.OutputWriter), pullRequestID); err != nil {
-		err = errors.New("couldn't add pull request comment: " + err.Error())
-		return
+	for _, comment := range generatePullRequestSummaryComment(issues, repo.OutputWriter) {
+		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
+			err = errors.New("couldn't add pull request comment: " + err.Error())
+			return
+		}
 	}
 
 	// Handle review comments at the pull request
@@ -74,7 +76,7 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
 	// Previous Summary, Fallback review comments
-	commentsToDelete := getFrogbotReviewComments(comments)
+	commentsToDelete := getFrogbotComments(repository.OutputWriter, comments)
 	// Delete
 	if len(commentsToDelete) > 0 {
 		for _, commentToDelete := range commentsToDelete {
@@ -86,13 +88,14 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	return err
 }
 
-func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) []string {
 	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
 }
 
-func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
+func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
 	issuesExists := issuesCollection.IssuesExists()
 	content := strings.Builder{}
+	contentSizeLimit := writer.SizeLimit()
 	if issuesExists {
 		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
 		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
@@ -145,7 +148,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	}
 	// Delete old review comments
 	if len(existingComments) > 0 {
-		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotReviewComments(existingComments)...); err != nil {
+		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotComments(repo.OutputWriter, existingComments)...); err != nil {
 			err = errors.New("couldn't delete pull request review comment: " + err.Error())
 			return
 		}
@@ -153,9 +156,9 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	return
 }
 
-func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
+func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if outputwriter.IsFrogbotReviewComment(comment.Content) {
+		if outputwriter.IsFrogbotReviewComment(comment.Content) || outputwriter.IsFrogbotSummaryComment(writer, comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}

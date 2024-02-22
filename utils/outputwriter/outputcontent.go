@@ -56,13 +56,14 @@ func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvi
 	return PRSummaryCommentTitleSrc(provider)
 }
 
-// func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
-// 	client := writer.VcsProvider()
-// 	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
-// 		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
-// 		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
-// 		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
-// }
+// TODO: remove this at the next release, it's not used anymore and replaced by adding ReviewCommentId comment to the content
+func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
+	client := writer.VcsProvider()
+	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
+		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
+		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
+}
 
 func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {
@@ -147,9 +148,9 @@ func getCveIdsCellData(cveRows []formats.CveRow) (ids CellData) {
 	return
 }
 
-func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) []string {
 	if len(vulnerabilities) == 0 {
-		return ""
+		return []string{}
 	}
 	var contentBuilder strings.Builder
 	// Write summary table part
@@ -170,8 +171,9 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	return contentBuilder.String()
 }
 
-func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) []string {
 	var descriptionContentBuilder strings.Builder
+	sizeLimit := writer.SizeLimit()
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityResearchDescription(&vulnerabilities[i])
 		if vulDescriptionContent == "" {
