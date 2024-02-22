@@ -30,6 +30,7 @@ var (
 
 func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
 	comment := strings.Builder{}
+	comment.WriteString(MarkdownComment(ReviewCommentId))
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 	customCommentTitle := writer.PullRequestCommentTitle()
 	if customCommentTitle != "" {
@@ -55,13 +56,13 @@ func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvi
 	return PRSummaryCommentTitleSrc(provider)
 }
 
-func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
-	client := writer.VcsProvider()
-	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
-		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
-		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
-		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
-}
+// func IsFrogbotSummaryComment(writer OutputWriter, content string) bool {
+// 	client := writer.VcsProvider()
+// 	return strings.Contains(content, GetBanner(NoIssuesTitleSrc(client))) ||
+// 		strings.Contains(content, GetSimplifiedTitle(NoIssuesTitleSrc(client))) ||
+// 		strings.Contains(content, GetBanner(PRSummaryCommentTitleSrc(client))) ||
+// 		strings.Contains(content, GetSimplifiedTitle(PRSummaryCommentTitleSrc(client)))
+// }
 
 func NoIssuesTitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 	if vcsProvider == vcsutils.GitLab {

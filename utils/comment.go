@@ -73,14 +73,8 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
 			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
-	// Previous Fallback review comments
+	// Previous Summary, Fallback review comments
 	commentsToDelete := getFrogbotReviewComments(comments)
-	// Previous Summary comments
-	for _, comment := range comments {
-		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
-			commentsToDelete = append(commentsToDelete, comment)
-		}
-	}
 	// Delete
 	if len(commentsToDelete) > 0 {
 		for _, commentToDelete := range commentsToDelete {
