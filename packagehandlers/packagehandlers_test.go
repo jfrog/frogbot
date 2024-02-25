@@ -668,9 +668,13 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 	}
 }
 
+// TODO ERAN fix comments
 func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 	var testcases = []struct {
-		vulnerabilityDetails *utils.VulnerabilityDetails
+		vulnerabilityDetails   *utils.VulnerabilityDetails
+		setDepsRepo            bool
+		oldDepLine             string
+		expectedUpdatedDepLine string
 	}{
 		// Basic check
 		{
@@ -678,6 +682,8 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 				SuggestedFixedVersion:       "1.1.1",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}}},
+			oldDepLine:             "<PackageReference Include=\"snappier\" Version=\"1.1.0\" />",
+			expectedUpdatedDepLine: "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />",
 		},
 		// This testcase checks a fix with a vulnerability that has '.' in the dependency's group and name + more complex version, including letters, to check that the regexp captures them correctly
 		{
@@ -685,42 +691,72 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 				SuggestedFixedVersion:       "7.0.11",
 				IsDirectDependency:          true,
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Microsoft.Bcl.AsyncInterfaces", ImpactedDependencyVersion: "8.0.0-rc.1.23419.4"}}},
+			oldDepLine:             "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"8.0.0-rc.1.23419.4\" />",
+			expectedUpdatedDepLine: "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"7.0.11\" />",
+		},
+		// This test case checks fix execution with 'restore' (in case we have depsRepo set, we must execute 'restore' in order to push new resolved versions to Artifactory) and verifies 'obj' directory is removed if wasn't existed
+		{
+			vulnerabilityDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion:       "13.0.3",
+				IsDirectDependency:          true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Newtonsoft.Json", ImpactedDependencyVersion: "13.0.2"}}},
+			setDepsRepo:            true,
+			oldDepLine:             "<PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0.2\" />",
+			expectedUpdatedDepLine: "<PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0.3\" />",
 		},
 	}
-	testRootDir, err := os.Getwd()
-	assert.NoError(t, err)
 
-	tmpDir, err := os.MkdirTemp("", "")
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "dotnet"), tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(testRootDir))
-	}()
-
-	assetFiles, err := getAssetsFilesPaths()
-	assert.NoError(t, err)
-	testedAssetFile := assetFiles[0]
-
-	nph := &NugetPackageHandler{}
+	testRootDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
 
 	for _, testcase := range testcases {
-		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
-		var isFileChanged bool
-		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
-		assert.NoError(t, err)
-		assert.True(t, isFileChanged)
+		t.Run(fmt.Sprintf("fix %s, depsRepo: %t", testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.setDepsRepo),
+			func(t *testing.T) {
+				tmpDir, err := os.MkdirTemp("", "")
+				assert.NoError(t, err)
+				defer func() {
+					assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+				}()
+				assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "dotnet"), tmpDir, true, nil))
+				assert.NoError(t, os.Chdir(tmpDir))
+				defer func() {
+					assert.NoError(t, os.Chdir(testRootDir))
+				}()
+
+				assetFiles, err := getAssetsFilesPaths()
+				assert.NoError(t, err)
+				testedAssetFile := assetFiles[0]
+
+				var nph *NugetPackageHandler
+				if testcase.setDepsRepo {
+					nph = &NugetPackageHandler{CommonPackageHandler{
+						depsRepo: "myRepo",
+					}}
+				} else {
+					nph = &NugetPackageHandler{}
+				}
+
+				vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
+				var isFileChanged bool
+				isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir, []string{})
+				assert.NoError(t, err)
+				assert.True(t, isFileChanged)
+
+				var fixedFileContent []byte
+				fixedFileContent, err = os.ReadFile(testedAssetFile)
+				fixedFileContentString := string(fixedFileContent)
+				assert.NoError(t, err)
+				assert.NotContains(t, fixedFileContentString, testcase.oldDepLine)
+				assert.Contains(t, fixedFileContentString, testcase.expectedUpdatedDepLine)
+
+				if testcase.setDepsRepo {
+					var objExists bool
+					objExists, err = fileutils.IsDirExists(filepath.Join(tmpDir, "obj"), false)
+					assert.NoError(t, err)
+					assert.False(t, objExists)
+				}
+			})
 	}
-
-	var fixedFileContent []byte
-	fixedFileContent, err = os.ReadFile(testedAssetFile)
-	fixedFileContentString := string(fixedFileContent)
-
-	assert.NoError(t, err)
-	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.0\" />")
-	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"snappier\" Version=\"1.1.1\" />")
-	assert.NotContains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"8.0.0-rc.1.23419.4\" />")
-	assert.Contains(t, fixedFileContentString, "<PackageReference Include=\"Microsoft.Bcl.AsyncInterfaces\" Version=\"7.0.11\" />")
 }
 
 func TestGetFixedPackage(t *testing.T) {

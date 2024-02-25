@@ -3,7 +3,11 @@ package packagehandlers
 import (
 	"errors"
 	"fmt"
+	bidotnet "github.com/jfrog/build-info-go/build/utils/dotnet"
+	bifileutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/dotnet"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"io/fs"
 	"os"
 	"path"
@@ -35,6 +39,7 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
+// TODO ERAN fix comments
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var assetsFilePaths []string
 	assetsFilePaths, err = getAssetsFilesPaths()
@@ -48,12 +53,25 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
+	var installCommandArgs []string
+	if nph.depsRepo != "" {
+		// The toolType specified here is consistently 'dotnet' since Frogbot exclusively executes fixes using .NET CLI.
+		dotnetToolType := bidotnet.ConvertNameToToolType("dotnet")
+		var clearResolutionServerFunc func() error
+		if installCommandArgs, clearResolutionServerFunc, err = dotnet.SetArtifactoryAsResolutionServer(nph.serverDetails, nph.depsRepo, wd, dotnetToolType, false); err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, clearResolutionServerFunc())
+		}()
+	}
+
 	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 	var isAnyFileChanged bool
 
 	for _, assetFilePath := range assetsFilePaths {
 		var isFileChanged bool
-		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, assetFilePath, vulnRegexpCompiler, wd, installCommandArgs)
 		if err != nil {
 			err = fmt.Errorf("failed to update asset file '%s': %s", assetFilePath, err.Error())
 			return
@@ -88,7 +106,7 @@ func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
 	return
 }
 
-func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
+func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string, installCommandArgs []string) (isFileChanged bool, err error) {
 	modulePath := path.Dir(assetFilePath)
 
 	var fileData []byte
@@ -109,7 +127,27 @@ func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 			err = errors.Join(err, os.Chdir(originalWd))
 		}()
 
-		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetUpdateCmdPackageExtraArg, dotnetNoRestoreFlag)
+		if nph.depsRepo == "" {
+			// If integration with Artifactory is not defined we want to update dependencies without running 'restore'
+			installCommandArgs = append([]string{dotnetUpdateCmdPackageExtraArg, dotnetNoRestoreFlag}, installCommandArgs...)
+		} else {
+			installCommandArgs = append([]string{dotnetUpdateCmdPackageExtraArg}, installCommandArgs...)
+
+			// In integration with Artifactory is defined we must restore in order to push the newly resolved version to Artifactory
+			objDirPath := filepath.Join(modulePath, "obj")
+			var exists bool
+			if exists, err = fileutils.IsDirExists(objDirPath, false); err != nil {
+				return
+			}
+			if !exists {
+				// If we don't have an 'obj' directory we want to remove it after executing update command with 'restore'
+				defer func() {
+					err = bifileutils.RemoveTempDir(objDirPath)
+				}()
+			}
+		}
+
+		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), installCommandArgs...)
 		if err != nil {
 			return
 		}
