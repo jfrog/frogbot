@@ -83,10 +83,21 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	if err = cfp.scanDetails.CreateMultiScanIdForScans(); err != nil {
 		return err
 	}
+
+	// If we have several provided projects, we want to differentiate between them in order to avoid possible conflict in the 'fix' branch's name
+	// When fixing the same vulnerable dependency in two different projects
+	setUniqueProjectHash := len(repository.Projects) > 1
+
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
+		if setUniqueProjectHash {
+			err = cfp.scanDetails.Project.SetUniqueProjectHash()
+			if err != nil {
+				return
+			}
+		}
 		cfp.projectTech = []coreutils.Technology{}
-		if err = cfp.scanAndFixProject(repository); err != nil {
+		if err = cfp.scanAndFixProject(repository); err != nil { //TODO ERAN here we split into projects
 			return
 		}
 	}
@@ -153,7 +164,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
 	if fixNeeded {
-		return cfp.fixVulnerablePackages(vulnerabilitiesByPathMap)
+		return cfp.fixVulnerablePackages(vulnerabilitiesByPathMap) //TODO ERAN EP-A-B 1
 	}
 	return nil
 }
@@ -188,15 +199,15 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Resul
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.aggregateFixes {
-		return cfp.fixIssuesSinglePR(vulnerabilitiesByWdMap)
+		return cfp.fixIssuesSinglePR(vulnerabilitiesByWdMap) //TODO ERAN EP-A 2
 	}
-	return cfp.fixIssuesSeparatePRs(vulnerabilitiesByWdMap)
+	return cfp.fixIssuesSeparatePRs(vulnerabilitiesByWdMap) //TODO ERAN EP-B 2
 }
 
 func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
-		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
+		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil { //TODO ERAN EP-B 3
 			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%s", fullPath, e))
 		}
 	}
@@ -220,7 +231,7 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, 
 
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
-		if e := cfp.fixSinglePackageAndCreatePR(vulnerability); e != nil {
+		if e := cfp.fixSinglePackageAndCreatePR(vulnerability); e != nil { //TODO ERAN EP-B 4
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 
@@ -260,18 +271,18 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 	return
 }
 
-// fixIssuesSinglePR fixes all the vulnerabilities in a single aggregated pull request.
+// Fixes all the vulnerabilities in a single aggregated pull request.
 // If an existing aggregated fix is present, it checks for different scan results.
 // If the scan results are the same, no action is taken.
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
 func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
-	aggregatedFixBranchName := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech)
+	aggregatedFixBranchName := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech) //TODO ERAN try apply fix to aggregated too
 	existingPullRequestDetails, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 	if err != nil {
 		return
 	}
-	return cfp.aggregateFixAndOpenPullRequest(vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
+	return cfp.aggregateFixAndOpenPullRequest(vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails) //TODO ERAN EP-A 3
 }
 
 // Handles possible error of update package operation
@@ -297,10 +308,12 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion, cfp.scanDetails.Project.UniqueProjectHash)
 	if err != nil {
 		return
 	}
+	//TODO ERAN this is where we have some kind of block in duplicated fixes/ it we actually pushed the first fix so the branch already exist in the remote
+	// and therefore no new branch will be created at all
 	existsInRemote, err := cfp.gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return
@@ -327,7 +340,7 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 	if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
-	if err = cfp.openFixingPullRequest(fixBranchName, vulnDetails); err != nil {
+	if err = cfp.openFixingPullRequest(fixBranchName, vulnDetails); err != nil { //TODO ERAN EP-B 5
 		return errors.Join(fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion), err)
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
@@ -336,7 +349,7 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 
 func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	log.Debug("Checking if there are changes to commit")
-	isClean, err := cfp.gitManager.IsClean()
+	isClean, err := cfp.gitManager.IsClean() //TODO ERAN EP-B FAIL HERE
 	if err != nil {
 		return
 	}
@@ -362,7 +375,7 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 // openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
 func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
-	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech)
+	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech) // TODO ERAN EP-A FAIL HERE
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -494,11 +507,18 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
 	}
 
-	handler := cfp.handlers[vulnDetails.Technology]
-	if handler == nil {
-		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.scanDetails)
-		cfp.handlers[vulnDetails.Technology] = handler
-	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+	/*
+		handler := cfp.handlers[vulnDetails.Technology]
+		if handler == nil {
+			handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.scanDetails)
+			cfp.handlers[vulnDetails.Technology] = handler
+		} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+			return
+		}
+	*/
+	handler := packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.scanDetails)
+	cfp.handlers[vulnDetails.Technology] = handler
+	if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
 		return
 	}
 

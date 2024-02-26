@@ -220,6 +220,7 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool, ke
 	return worktree.Checkout(checkoutConfig)
 }
 
+// TODO ERAN check if this func still in use...
 func getCurrentBranch(repository *git.Repository) (string, error) {
 	head, err := repository.Head()
 	if err != nil {
@@ -394,8 +395,9 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash, baseBr
 	return str
 }
 
-func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
-	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
+// TODO ERAN fix test
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string, uniqueProjectHash string) (string, error) {
+	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion, uniqueProjectHash)
 	if err != nil {
 		return "", err
 	}
