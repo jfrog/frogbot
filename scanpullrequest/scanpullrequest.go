@@ -113,11 +113,6 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	return
 }
 
-func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bool {
-	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
-	return failFlagSet && issues.IssuesExists()
-}
-
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
