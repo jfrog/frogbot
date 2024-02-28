@@ -479,7 +479,7 @@ func TestIsFrogbotReviewComment(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expectedOutput, IsFrogbotReviewComment(tc.content))
+			assert.Equal(t, tc.expectedOutput, IsFrogbotComment(tc.content))
 		})
 	}
 }

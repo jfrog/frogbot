@@ -28,7 +28,7 @@ var (
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
-func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
+func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) []string {
 	comment := strings.Builder{}
 	comment.WriteString(MarkdownComment(ReviewCommentId))
 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
@@ -266,7 +266,7 @@ func GetFallbackReviewCommentContent(content string, location formats.Location, 
 	return contentBuilder.String()
 }
 
-func IsFrogbotReviewComment(content string) bool {
+func IsFrogbotComment(content string) bool {
 	return strings.Contains(content, ReviewCommentId)
 }
 

@@ -38,13 +38,7 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		// Since this task is not mandatory for a Frogbot run,
 		// we will not cause a Frogbot run to fail but will instead log the error.
 		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-		// Delete previous PR regular comments, if exists (not related to location of a change)
-		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
-			return
-		}
-		// Delete previous PR review comments, if exists (related to location of a change)
-		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
+		if err = DeletePullRequestComments(repo, client, pullRequestID); err != nil {
 			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
 			return
 		}
@@ -64,6 +58,15 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		return
 	}
 	return
+}
+
+func DeletePullRequestComments(repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
+	// Delete previous PR regular comments, if exists (not related to location of a change)
+	if err = DeleteExistingPullRequestComments(repo, client); err != nil {
+		return
+	}
+	// Delete previous PR review comments, if exists (related to location of a change)
+	return DeleteExistingPullRequestReviewComments(repo, pullRequestID, client)
 }
 
 // Delete existing pull request regular comments (Summary, Fallback review comments)
@@ -88,8 +91,17 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	return err
 }
 
-func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) []string {
-	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (description string, extraComments []string) {
+	content := outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+	if len(content) == 1 {
+		// Only vulne
+		description = content[0]
+		return
+	} else if len(content) > 1 {
+		description = content[0]
+		extraComments = content[1:]
+	}
+	return 
 }
 
 func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
@@ -158,7 +170,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 
 func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if outputwriter.IsFrogbotReviewComment(comment.Content) || outputwriter.IsFrogbotSummaryComment(writer, comment.Content) {
+		if outputwriter.IsFrogbotComment(comment.Content) || outputwriter.IsFrogbotSummaryComment(writer, comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
