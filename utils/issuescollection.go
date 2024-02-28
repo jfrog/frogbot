@@ -1,6 +1,9 @@
 package utils
 
-import "github.com/jfrog/jfrog-cli-security/formats"
+import (
+	"github.com/jfrog/jfrog-cli-security/formats"
+	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+)
 
 type IssuesCollection struct {
 	Vulnerabilities []formats.VulnerabilityOrViolationRow
@@ -53,4 +56,19 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	if len(issues.Licenses) > 0 {
 		ic.Licenses = append(ic.Licenses, issues.Licenses...)
 	}
+}
+
+func ConvertResultsToCollection(results *xrayutils.Results, allowedLicenses []string) (*IssuesCollection, error) {
+	scanResults := results.ExtendedScanResults
+	xraySimpleJson, err := xrayutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
+	if err != nil {
+		return nil, err
+	}
+	return &IssuesCollection{
+		Vulnerabilities: append(xraySimpleJson.Vulnerabilities, xraySimpleJson.SecurityViolations...),
+		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
+		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
+		Sast:            xrayutils.PrepareSast(scanResults.SastScanResults),
+		Licenses:        xraySimpleJson.LicensesViolations,
+	}, nil
 }

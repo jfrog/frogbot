@@ -128,6 +128,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
+	issuesCollection := &utils.IssuesCollection{}
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
@@ -151,9 +152,19 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			fixNeeded = true
 		}
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
+		projectIssues, err := utils.ConvertResultsToCollection(scanResults, repository.AllowedLicenses)
+		if err != nil {
+			return err
+		}
+		issuesCollection.Append(projectIssues)
 	}
 	if fixNeeded {
-		return cfp.fixVulnerablePackages(vulnerabilitiesByPathMap)
+		if err := cfp.fixVulnerablePackages(vulnerabilitiesByPathMap); err != nil {
+			return err
+		}
+	}
+	if utils.ToFailTaskStatus(repository, issuesCollection) {
+		return errors.New(utils.SecurityIssueFoundErr)
 	}
 	return nil
 }

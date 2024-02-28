@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	SecurityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 )
@@ -108,8 +107,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if toFailTaskStatus(repo, issues) {
-		err = errors.New(SecurityIssueFoundErr)
+	if utils.ToFailTaskStatus(repo, issues) {
+		err = errors.New(utils.SecurityIssueFoundErr)
 	}
 	return
 }
@@ -165,7 +164,8 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 
 	// Get all issues that exist in the source branch
 	if repoConfig.IncludeAllVulnerabilities {
-		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses); err != nil {
+		log.Info("Frogbot is configured to show all vulnerabilities")
+		if auditIssues, err = utils.ConvertResultsToCollection(sourceResults, repoConfig.AllowedLicenses); err != nil {
 			return
 		}
 		utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd)
@@ -205,22 +205,6 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	// Get newly added issues
 	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses)
 	return
-}
-
-func getAllIssues(results *xrayutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
-	log.Info("Frogbot is configured to show all vulnerabilities")
-	scanResults := results.ExtendedScanResults
-	xraySimpleJson, err := xrayutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
-	if err != nil {
-		return nil, err
-	}
-	return &utils.IssuesCollection{
-		Vulnerabilities: append(xraySimpleJson.Vulnerabilities, xraySimpleJson.SecurityViolations...),
-		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
-		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
-		Sast:            xrayutils.PrepareSast(scanResults.SastScanResults),
-		Licenses:        xraySimpleJson.LicensesViolations,
-	}, nil
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.

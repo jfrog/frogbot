@@ -167,7 +167,7 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 
 	err = Exec(&scanpullrequest.ScanPullRequestCmd{}, utils.ScanPullRequest)
 	// Validate that issues were found and the relevant error returned
-	require.Errorf(t, err, scanpullrequest.SecurityIssueFoundErr)
+	require.Errorf(t, err, utils.SecurityIssueFoundErr)
 
 	validateResults(t, ctx, client, testDetails, prId)
 }

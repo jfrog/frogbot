@@ -9,6 +9,7 @@ type vcsProvider string
 const (
 	// Errors
 	errUnsupportedMultiRepo = "multi repository configuration isn't supported. Only one repository configuration is allowed"
+	SecurityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + FrogbotConfigFile + " file"
 
 	// VCS providers params
 	GitHub          vcsProvider = "github"

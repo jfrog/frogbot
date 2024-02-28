@@ -496,3 +496,8 @@ func isUrlAccessible(url string) bool {
 	}
 	return resp != nil && resp.StatusCode == http.StatusOK
 }
+
+func ToFailTaskStatus(repo *Repository, issues *IssuesCollection) bool {
+	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
+	return failFlagSet && issues.IssuesExists()
+}
