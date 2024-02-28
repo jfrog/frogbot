@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -120,11 +120,11 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 	auditParams := audit.NewAuditParams().
 		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
-		SetExclusions(sc.PathExclusions).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
-		SetGraphBasicParams(auditBasicParams).
-		SetIsRecursiveScan(sc.IsRecursiveScan)
+		SetGraphBasicParams(auditBasicParams)
+
+	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
@@ -185,4 +185,15 @@ func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 		fullPathWds = append(fullPathWds, baseWd)
 	}
 	return fullPathWds
+}
+
+func (sc *ScanDetails) CreateMultiScanIdForScans() error {
+	xrayManager, err := xrayutils.CreateXrayServiceManager(sc.ServerDetails)
+	if err != nil {
+		return err
+	}
+	if err = utils.SendXscGitInfoRequestIfEnabled(sc.XrayGraphScanParams, xrayManager); err != nil {
+		return err
+	}
+	return nil
 }

@@ -133,12 +133,13 @@ type pomDependencyDetails struct {
 
 func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler {
 	depTreeParams := &java.DepTreeParams{
-		Server:   scanDetails.ServerDetails,
-		DepsRepo: scanDetails.DepsRepo,
+		Server:                  scanDetails.ServerDetails,
+		DepsRepo:                scanDetails.DepsRepo,
+		IsMavenDepTreeInstalled: true,
 	}
 	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,
 	// Therefore, we set the `isDepTreeInstalled` flag to true
-	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.Projects, true)
+	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.Projects)
 	return &MavenPackageHandler{MavenDepTreeManager: mavenDepTreeManager}
 }
 

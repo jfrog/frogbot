@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/commands/audit/jas"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	xrutils "github.com/jfrog/jfrog-cli-security/utils"
 
 	"github.com/jfrog/build-info-go/utils"
@@ -102,7 +102,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = audit.DefaultExcludePatterns
+			p.PathExclusions = jas.DefaultExcludePatterns
 		}
 	}
 	if p.UseWrapper == nil {
