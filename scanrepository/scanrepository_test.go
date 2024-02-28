@@ -353,7 +353,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 	gitManager := utils.GitManager{}
 	for _, test := range tests {
 		t.Run(test.expectedName, func(t *testing.T) {
-			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion)
+			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion, "")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
@@ -596,7 +596,11 @@ random body
 }
 
 func TestPreparePullRequestDetails(t *testing.T) {
-	cfp := ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}, gitManager: &utils.GitManager{}}
+	cfp := ScanRepositoryCmd{
+		OutputWriter: &outputwriter.StandardOutput{},
+		gitManager:   &utils.GitManager{}, scanDetails: &utils.ScanDetails{
+			Project: &utils.Project{UniqueProjectHash: ""},
+		}}
 	cfp.OutputWriter.SetJasOutputFlags(true, false)
 	vulnerabilities := []*utils.VulnerabilityDetails{
 		{
@@ -618,6 +622,14 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+
+	cfp.scanDetails.UniqueProjectHash = "my-unique-identifier"
+	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	assert.NoError(t, err)
+	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0 (my-unique-identifier)", prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+
 	vulnerabilities = append(vulnerabilities, &utils.VulnerabilityDetails{
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 			Summary: "summary",
@@ -637,6 +649,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
 	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter) + outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)

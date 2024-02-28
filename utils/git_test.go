@@ -66,11 +66,12 @@ func TestGitManager_GenerateCommitMessage(t *testing.T) {
 
 func TestGitManager_GenerateFixBranchName(t *testing.T) {
 	testCases := []struct {
-		gitManager      GitManager
-		impactedPackage string
-		fixVersion      VulnerabilityDetails
-		expected        string
-		description     string
+		gitManager              GitManager
+		impactedPackage         string
+		fixVersion              VulnerabilityDetails
+		expected                string
+		description             string
+		uniqueProjectIdentifier string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[Feature]-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}"}},
@@ -85,17 +86,26 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "frogbot-mquery-41b1f45136b25e3624b15999bd57a476",
 			description:     "No template",
-		}, {
+		},
+		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
 			impactedPackage: "mquery",
 			fixVersion:      VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
 			expected:        "just-a-branch-41b1f45136b25e3624b15999bd57a476",
 			description:     "Custom template without inputs",
 		},
+		{
+			gitManager:              GitManager{customTemplates: CustomTemplates{branchNameTemplate: "just-a-branch-${BRANCH_NAME_HASH}"}},
+			impactedPackage:         "mquery",
+			fixVersion:              VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
+			expected:                "just-a-branch-576bdc1ddb2ad676551efd7a47f48ece",
+			description:             "Custom template without inputs",
+			uniqueProjectIdentifier: "my-identifier",
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion, test.uniqueProjectIdentifier)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, commitMessage)
 		})
@@ -104,11 +114,12 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 
 func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 	testCases := []struct {
-		gitManager      GitManager
-		impactedPackage string
-		fixVersion      VulnerabilityDetails
-		expected        string
-		description     string
+		gitManager              GitManager
+		impactedPackage         string
+		fixVersion              VulnerabilityDetails
+		expected                string
+		description             string
+		uniqueProjectIdentifier string
 	}{
 		{
 			gitManager:      GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: "[CustomPR] update ${IMPACTED_PACKAGE} to ${FIX_VERSION}"}},
@@ -131,10 +142,18 @@ func TestGitManager_GeneratePullRequestTitle(t *testing.T) {
 			expected:        "[🐸 Frogbot] Update version of mquery to 3.4.5",
 			description:     "No prefix",
 		},
+		{
+			gitManager:              GitManager{customTemplates: CustomTemplates{pullRequestTitleTemplate: ""}},
+			impactedPackage:         "mquery",
+			fixVersion:              VulnerabilityDetails{SuggestedFixedVersion: "3.4.5"},
+			expected:                "[🐸 Frogbot] Update version of mquery to 3.4.5 (my-identifier)",
+			description:             "No prefix",
+			uniqueProjectIdentifier: "my-identifier",
+		},
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
-			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
+			titleOutput := test.gitManager.GeneratePullRequestTitle(test.impactedPackage, test.fixVersion.SuggestedFixedVersion, test.uniqueProjectIdentifier)
 			assert.Equal(t, test.expected, titleOutput)
 		})
 	}

@@ -220,7 +220,6 @@ func (gm *GitManager) createBranchAndCheckout(branchName string, create bool, ke
 	return worktree.Checkout(checkoutConfig)
 }
 
-// TODO ERAN check if this func still in use...
 func getCurrentBranch(repository *git.Repository) (string, error) {
 	head, err := repository.Head()
 	if err != nil {
@@ -392,10 +391,10 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash, baseBr
 	if baseBranch != "" {
 		str += "-" + baseBranch
 	}
+
 	return str
 }
 
-// TODO ERAN fix test
 func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string, uniqueProjectHash string) (string, error) {
 	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion, uniqueProjectHash)
 	if err != nil {
@@ -410,8 +409,11 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, "", false), nil
 }
 
-func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string) string {
+func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string, uniqueProjectHash string) string {
 	template := PullRequestTitleTemplate
+	if uniqueProjectHash != "" {
+		template += " (" + uniqueProjectHash + ")"
+	}
 	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
 	if pullRequestFormat != "" {
 		template = pullRequestFormat

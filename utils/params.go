@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/commands/audit/jas"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	xrutils "github.com/jfrog/jfrog-cli-security/utils"
 
 	"github.com/jfrog/build-info-go/utils"
@@ -86,7 +86,7 @@ type Project struct {
 	InstallCommandName  string
 	InstallCommandArgs  []string
 	IsRecursiveScan     bool
-	UniqueProjectHash   string
+	UniqueProjectHash   string `yaml:"uniqueIdentifier,omitempty"`
 }
 
 func (p *Project) setDefaultsIfNeeded() error {
@@ -103,7 +103,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = audit.DefaultExcludePatterns
+			p.PathExclusions = jas.DefaultExcludePatterns
 		}
 	}
 	if p.UseWrapper == nil {
@@ -126,29 +126,6 @@ func (p *Project) setDefaultsIfNeeded() error {
 		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
 	}
 	return nil
-}
-
-// Creates a unique hash code for a Project struct based on its fields.
-// The creates hash is consistent as long as the Project's values doesn't change
-func (p *Project) SetUniqueProjectHash() error {
-	// TODO Hash the entire object (the JSON that we unmarshall to the object)
-	// TODO verify the order is meaningless while creating the Hash
-	// TODO verify all lists comes in the same order in every execution
-	var collectedValues []string
-	collectedValues = append(collectedValues, p.InstallCommand)
-	collectedValues = append(collectedValues, p.PipRequirementsFile)
-	collectedValues = append(collectedValues, p.WorkingDirs...)
-	collectedValues = append(collectedValues, p.PathExclusions...)
-	collectedValues = append(collectedValues, p.DepsRepo)
-	//TODO ERAN what should we do if tomorrow we add another field to Project?
-	//TODO ERAN if one field has changed we break the HASH
-
-	var err error
-	p.UniqueProjectHash, err = Md5Hash(collectedValues...)
-	if err != nil {
-		err = fmt.Errorf("failed to create a unique hash for one of the provided projects: %s", err.Error())
-	}
-	return err
 }
 
 type Scan struct {
