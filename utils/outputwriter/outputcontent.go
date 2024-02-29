@@ -166,6 +166,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
+	content = append(content, writer.MarkAsTitle(vulnerableDependenciesTitle, 2))
 	content = append(content, vulnerabilitiesSummaryContent(vulnerabilities, writer))
 	content = append(content, vulnerabilityDetailsContent(vulnerabilities, writer)...)
 	return
@@ -173,9 +174,7 @@ func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRo
 
 func vulnerabilitiesSummaryContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	var contentBuilder strings.Builder
-	// Write summary table part
 	WriteContent(&contentBuilder,
-		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
 		writer.MarkAsTitle("✍️ Summary", 3),
 		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)),
 	)

@@ -367,7 +367,7 @@ func (cfp *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repo
 		return
 	}
 	// Update PR description
-	if err = cfp.createOrUpdatePullRequest(repository, pullRequestInfo, fixBranchName, pullRequestTitle, prBody); err != nil {
+	if pullRequestInfo, err = cfp.createOrUpdatePullRequest(repository, pullRequestInfo, fixBranchName, pullRequestTitle, prBody); err != nil {
 		return
 	}
 	// Update PR extra comments
@@ -381,17 +381,20 @@ func (cfp *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repo
 	return
 }
 
-func (cfp *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Repository, pullRequestInfo *vcsclient.PullRequestInfo, fixBranchName, pullRequestTitle, prBody string) (err error) {
+func (cfp *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Repository, pullRequestInfo *vcsclient.PullRequestInfo, fixBranchName, pullRequestTitle, prBody string) (prInfo *vcsclient.PullRequestInfo, err error) {
 	if pullRequestInfo == nil {
 		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
-		return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
+		if err = cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody); err != nil {
+			return
+		}
+		return cfp.getOpenPullRequestBySourceBranch(fixBranchName)
 	}
 	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
 	if err = cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open); err != nil {
 		return
 	}
 	// Delete old extra comments
-	return utils.DeletePullRequestComments(repository, cfp.scanDetails.Client(), int(pullRequestInfo.ID))
+	return pullRequestInfo, utils.DeletePullRequestComments(repository, cfp.scanDetails.Client(), int(pullRequestInfo.ID))
 }
 
 // openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
