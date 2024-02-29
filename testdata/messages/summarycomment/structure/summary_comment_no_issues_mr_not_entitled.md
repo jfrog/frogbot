@@ -1,6 +1,7 @@
 
 
 [comment]: <> (FrogbotReviewComment)
+
 <div align='center'>
 
 [![👍 Frogbot scanned this merge request and found that it did not add vulnerable dependencies.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)

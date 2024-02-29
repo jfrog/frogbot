@@ -1,4 +1,5 @@
 
+
 ## 📦 Vulnerable Dependencies
 ### ✍️ Summary
 <div align='center'>
@@ -12,10 +13,8 @@
 
 </div>
 
-<details>
-<summary> <b>🔬 Research Details</b> </summary>
-<br>
 
+### 🔬 Research Details
 <details>
 <summary> <b>[ XRAY-122345 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
 <br>
@@ -46,7 +45,5 @@ some remediation
 
 **Description:**
 Summary
-
-</details>
 
 </details>

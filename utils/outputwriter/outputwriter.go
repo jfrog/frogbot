@@ -12,7 +12,7 @@ const (
 	MaxCharsInBitBucketComment = 32768
 	// Description for a pull request must not be longer than 4000 characters.
 	MaxCharsInAzureComment = 4000
-	MaxCharsInComment = 4 * MaxCharsInBitBucketComment
+	MaxCharsInComment      = 4 * MaxCharsInBitBucketComment
 
 	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
@@ -126,6 +126,8 @@ type MarkdownOutput struct {
 	vcsProvider             vcsutils.VcsProvider
 }
 
+type CommentDecorator func(int, string) string
+
 func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 	mo.vcsProvider = provider
 }
@@ -220,4 +222,47 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 
 func WriteNewLine(builder *strings.Builder) {
 	builder.WriteString("\n")
+}
+
+func ConvertContentToComments(content []string, writer OutputWriter, commentDecorators ...CommentDecorator) (comments []string) {
+	commentBuilder := strings.Builder{}
+	for _, commentContent := range content {
+		if newContent, limitReached := getContentAndResetBuilderIfLimitReached(len(comments), commentContent, &commentBuilder, writer, commentDecorators...); limitReached {
+			comments = append(comments, newContent)
+		}
+		WriteContent(&commentBuilder, commentContent)
+	}
+	if commentBuilder.Len() > 0 || len(content) == 0 {
+		comments = append(comments, decorate(len(comments), commentBuilder.String(), commentDecorators...))
+	}
+	return
+}
+
+func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string, builder *strings.Builder, writer OutputWriter, commentDecorators ...CommentDecorator) (content string, reached bool) {
+	limit := writer.SizeLimit()
+	if limit == 0 {
+		//  No limit
+		return
+	}
+	if builder.Len()+decoratorsSize(commentCount, commentDecorators...)+len(newContent) < limit {
+		return
+	}
+	// Limit reached - Add the current content as a comment to the list and reset the builder
+	content = builder.String()
+	builder.Reset()
+	return decorate(commentCount, content, commentDecorators...), true
+}
+
+func decorate(commentCount int, content string, commentDecorators ...CommentDecorator) string {
+	for _, decorator := range commentDecorators {
+		content = decorator(commentCount, content)
+	}
+	return content
+}
+
+func decoratorsSize(commentCount int, decorators ...CommentDecorator) (size int) {
+	for _, decorator := range decorators {
+		size += len(decorator(commentCount, ""))
+	}
+	return
 }

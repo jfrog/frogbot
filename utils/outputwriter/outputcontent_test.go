@@ -180,17 +180,20 @@ func TestGetPRSummaryContent(t *testing.T) {
 		},
 	}
 
-	content := "\n" + MarkAsCodeSnippet("some content")
-
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				output := GetPRSummaryContent(content, tc.issuesExists, tc.isComment, test.writer)
-				assert.Equal(t, expectedOutput, output)
+				output := GetPRSummaryContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, test.writer)
+				assert.Len(t, output, 1)
+				assert.Equal(t, expectedOutput, output[0])
 			})
 		}
 	}
+}
+
+func TestGetPRSummaryContentSplitContent(t *testing.T) {
+
 }
 
 func TestVulnerabilitiesContent(t *testing.T) {
@@ -380,7 +383,10 @@ func TestVulnerabilitiesContent(t *testing.T) {
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				assert.Equal(t, GetExpectedTestOutput(t, test), VulnerabilitiesContent(tc.vulnerabilities, test.writer))
+				expectedOutput := GetExpectedTestOutput(t, test)
+				output := ConvertContentToComments(VulnerabilitiesContent(tc.vulnerabilities, test.writer), test.writer)
+				assert.Len(t, output, 1)
+				assert.Equal(t, expectedOutput, output[0])
 			})
 		}
 	}

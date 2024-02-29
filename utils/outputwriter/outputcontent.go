@@ -28,23 +28,88 @@ var (
 	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". This features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
 )
 
-func GetPRSummaryContent(content string, issuesExists, isComment bool, writer OutputWriter) []string {
-	comment := strings.Builder{}
-	comment.WriteString(MarkdownComment(ReviewCommentId))
-	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
-	customCommentTitle := writer.PullRequestCommentTitle()
-	if customCommentTitle != "" {
-		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
+// Adding markdown prefix to identify Frogbot comment and a footer with the link to the documentation
+func GetFrogbotCommentBaseDecorator(writer OutputWriter) CommentDecorator {
+	return func(_ int, content string) string {
+		comment := strings.Builder{}
+		comment.WriteString(MarkdownComment(ReviewCommentId))
+		WriteContent(&comment, content, footer(writer))
+		return comment.String()
 	}
-	if issuesExists {
-		WriteContent(&comment, content)
-	}
-	WriteContent(&comment,
-		untitledForJasMsg(writer),
-		footer(writer),
-	)
-	return comment.String()
 }
+
+// Adding a banner, custom title and untitled Jas message to the content
+func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer OutputWriter) CommentDecorator {
+	return func(_ int, content string) string {
+		comment := strings.Builder{}
+		comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+		customCommentTitle := writer.PullRequestCommentTitle()
+		if customCommentTitle != "" {
+			WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
+		}
+		if issuesExists {
+			WriteContent(&comment, content)
+		}
+		WriteContent(&comment, untitledForJasMsg(writer))
+		return comment.String()
+	}
+}
+
+func GetPRSummaryContent(contentForComments []string, issuesExists, isComment bool, writer OutputWriter) (comments []string) {
+	return ConvertContentToComments(contentForComments, writer, func(commentCount int, content string) string {
+		if commentCount == 0 {
+			content = GetPRSummaryMainCommentDecorator(issuesExists, isComment, writer)(commentCount, content)
+		}
+		return GetFrogbotCommentBaseDecorator(writer)(commentCount, content)
+	})
+}
+
+// func GetPRSummaryContent(contentForComments []string, issuesExists, isComment bool, writer OutputWriter) (comments []string) {
+// 	for i, content := range contentForComments {
+// 		if i == 0 {
+// 			// First summary comment
+// 			comments = append(comments, getPRSummaryCommentContent(content, issuesExists, isComment, writer))
+// 			continue
+// 		}
+// 		// Issue exists and limit is reached, create the extra comments
+// 		comments = append(comments, GetExtraCommentContent(content, writer))
+// 	}
+// 	return
+
+// 	// comment := strings.Builder{}
+// 	// comment.WriteString(MarkdownComment(ReviewCommentId))
+// 	// comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+// 	// customCommentTitle := writer.PullRequestCommentTitle()
+// 	// if customCommentTitle != "" {
+// 	// 	WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
+// 	// }
+// 	// if issuesExists {
+// 	// 	WriteContent(&comment, content)
+// 	// }
+// 	// WriteContent(&comment,
+// 	// 	untitledForJasMsg(writer),
+// 	// 	footer(writer),
+// 	// )
+// 	// return comment.String()
+// }
+
+// func getPRSummaryCommentContent(content string, issuesExists, isComment bool, writer OutputWriter) string {
+// 	comment := strings.Builder{}
+// 	comment.WriteString(MarkdownComment(ReviewCommentId))
+// 	comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
+// 	customCommentTitle := writer.PullRequestCommentTitle()
+// 	if customCommentTitle != "" {
+// 		WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
+// 	}
+// 	if issuesExists {
+// 		WriteContent(&comment, content)
+// 	}
+// 	WriteContent(&comment,
+// 		untitledForJasMsg(writer),
+// 		footer(writer),
+// 	)
+// 	return comment.String()
+// }
 
 func getPRSummaryBanner(issuesExists, isComment bool, provider vcsutils.VcsProvider) ImageSource {
 	if !isComment {
@@ -95,6 +160,26 @@ func untitledForJasMsg(writer OutputWriter) string {
 
 func footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
+}
+
+func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
+	if len(vulnerabilities) == 0 {
+		return []string{}
+	}
+	content = append(content, vulnerabilitiesSummaryContent(vulnerabilities, writer))
+	content = append(content, vulnerabilityDetailsContent(vulnerabilities, writer)...)
+	return
+}
+
+func vulnerabilitiesSummaryContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	// Write summary table part
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
+		writer.MarkAsTitle("✍️ Summary", 3),
+		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)),
+	)
+	return contentBuilder.String()
 }
 
 func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
@@ -148,54 +233,83 @@ func getCveIdsCellData(cveRows []formats.CveRow) (ids CellData) {
 	return
 }
 
-func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) []string {
-	if len(vulnerabilities) == 0 {
-		return []string{}
-	}
-	var contentBuilder strings.Builder
-	// Write summary table part
-	WriteContent(&contentBuilder,
-		writer.MarkAsTitle(vulnerableDependenciesTitle, 2),
-		writer.MarkAsTitle("✍️ Summary", 3),
-		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)),
-	)
-	// Write for each vulnerability details part
-	detailsContent := strings.TrimSpace(getVulnerabilityDetailsContent(vulnerabilities, writer))
-	if detailsContent != "" {
-		if len(vulnerabilities) == 1 {
-			WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3), detailsContent)
-		} else {
-			WriteContent(&contentBuilder, writer.MarkAsDetails(vulnerableDependenciesResearchDetailsSubTitle, 3, detailsContent))
-		}
-	}
-	return contentBuilder.String()
+type vulnerabilityOrViolationDetails struct {
+	details           string
+	title             string
+	dependencyName    string
+	dependencyVersion string
 }
 
-func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) []string {
-	var descriptionContentBuilder strings.Builder
-	sizeLimit := writer.SizeLimit()
+func vulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
+	vulnerabilitiesWithDetails := getVulnerabilityWithDetails(vulnerabilities)
+	if len(vulnerabilitiesWithDetails) == 0 {
+		return
+	}
+	contentBuilder := strings.Builder{}
+	WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3))
+	for i := range vulnerabilitiesWithDetails {
+		if len(vulnerabilitiesWithDetails) == 1 {
+			WriteContent(&contentBuilder, vulnerabilitiesWithDetails[i].details)
+		} else {
+			WriteContent(&contentBuilder, writer.MarkAsDetails(
+				fmt.Sprintf(`%s %s %s`, vulnerabilitiesWithDetails[i].title,
+					vulnerabilitiesWithDetails[i].dependencyName,
+					vulnerabilitiesWithDetails[i].dependencyVersion),
+				4, vulnerabilitiesWithDetails[i].details,
+			))
+		}
+	}
+	content = append(content, contentBuilder.String())
+	return
+}
+
+func getVulnerabilityWithDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (vulnerabilitiesWithDetails []vulnerabilityOrViolationDetails) {
 	for i := range vulnerabilities {
 		vulDescriptionContent := createVulnerabilityResearchDescription(&vulnerabilities[i])
 		if vulDescriptionContent == "" {
 			// No content
 			continue
 		}
-		if len(vulnerabilities) == 1 {
-			WriteContent(&descriptionContentBuilder, vulDescriptionContent)
-			break
-		}
-		WriteContent(&descriptionContentBuilder,
-			writer.MarkAsDetails(
-				fmt.Sprintf(`%s %s %s`,
-					getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
-					vulnerabilities[i].ImpactedDependencyName,
-					vulnerabilities[i].ImpactedDependencyVersion),
-				4, vulDescriptionContent,
-			),
-		)
+		vulnerabilitiesWithDetails = append(vulnerabilitiesWithDetails, vulnerabilityOrViolationDetails{
+			details:           vulDescriptionContent,
+			title:             getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+			dependencyName:    vulnerabilities[i].ImpactedDependencyName,
+			dependencyVersion: vulnerabilities[i].ImpactedDependencyVersion,
+		})
 	}
-	return descriptionContentBuilder.String()
+	return
 }
+
+// func getVulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
+// 	var descriptionContentBuilder strings.Builder
+// 	for i := range vulnerabilities {
+// 		vulDescriptionContent := createVulnerabilityResearchDescription(&vulnerabilities[i])
+// 		if vulDescriptionContent == "" {
+// 			// No content
+// 			continue
+// 		}
+// 		if len(vulnerabilities) == 1 {
+// 			WriteContent(&descriptionContentBuilder, vulDescriptionContent)
+// 			return []string{descriptionContentBuilder.String()}
+// 		}
+// 		// Reaching the size limit is possible only when there are multiple vulnerabilities
+// 		vulDescriptionContent = writer.MarkAsDetails(
+// 			fmt.Sprintf(`%s %s %s`,
+// 				getVulnerabilityDescriptionIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
+// 				vulnerabilities[i].ImpactedDependencyName,
+// 				vulnerabilities[i].ImpactedDependencyVersion),
+// 			4, vulDescriptionContent,
+// 		)
+// 		if newContent, limitReached := getContentAndResetBuilderIfLimitReached(vulDescriptionContent, &descriptionContentBuilder, writer); limitReached {
+// 			content = append(content, newContent)
+// 		}
+// 		WriteContent(&descriptionContentBuilder, vulDescriptionContent)
+// 	}
+// 	if descriptionContentBuilder.Len() > 0 {
+// 		content = append(content, descriptionContentBuilder.String())
+// 	}
+// 	return
+// }
 
 func createVulnerabilityResearchDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
 	var descriptionBuilder strings.Builder

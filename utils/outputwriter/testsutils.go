@@ -20,6 +20,23 @@ var (
 	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
 )
 
+type TestCase struct {
+	name   string
+	writer OutputWriter
+}
+
+type MultiOutputTestCase struct {
+	TestCase
+
+	expectedOutputPaths []string
+	expectedOutputs     []string
+}
+
+type TestCaseOutput struct {
+	expectedOutputPath string
+	expectedOutput     string
+}
+
 type OutputTestCase struct {
 	name               string
 	writer             OutputWriter

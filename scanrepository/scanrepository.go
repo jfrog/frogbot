@@ -424,7 +424,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", []string{}, nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
-	
+
 	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
 	// prBody = utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
 

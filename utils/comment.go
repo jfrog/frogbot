@@ -94,25 +94,45 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (description string, extraComments []string) {
 	content := outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
 	if len(content) == 1 {
-		// Only vulne
+		// Limit is not reached, use the entire content as the description
 		description = content[0]
 		return
-	} else if len(content) > 1 {
-		description = content[0]
-		extraComments = content[1:]
 	}
-	return 
+	// Limit is reached (at least 2 content), use the first as the description and the rest as extra comments
+	for i, comment := range content {
+		if i == 0 {
+			description = comment
+		} else {
+			extraComments = append(extraComments, comment)
+		}
+	}
+	return
 }
 
 func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
-	issuesExists := issuesCollection.IssuesExists()
-	content := strings.Builder{}
-	contentSizeLimit := writer.SizeLimit()
-	if issuesExists {
-		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
-		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
+	if !issuesCollection.IssuesExists() {
+		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
 	}
-	return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
+
+	content := []string{}
+	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
+		content = append(content, vulnerabilitiesContent...)
+	}
+	if licensesContent := outputwriter.LicensesContent(issuesCollection.Licenses, writer); len(licensesContent) > 0 {
+		content = append(content, licensesContent)
+	}
+	return outputwriter.GetPRSummaryContent(content, true, true, writer)
+
+	// issuesExists := issuesCollection.IssuesExists()
+
+	// content := strings.Builder{}
+	// content := []string{}
+	// if issuesExists {
+	// 	content = []string{outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer), }
+	// 	content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
+	// 	content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
+	// }
+	// return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
 }
 
 func IsFrogbotRescanComment(comment string) bool {
