@@ -12,7 +12,6 @@ const (
 	MaxCharsInBitBucketComment = 32768
 	// Description for a pull request must not be longer than 4000 characters.
 	MaxCharsInAzureComment = 4000
-	MaxCharsInComment      = 4 * MaxCharsInBitBucketComment
 
 	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
@@ -182,7 +181,7 @@ func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	case vcsutils.BitbucketServer:
 		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true, sizeLimit: MaxCharsInBitBucketComment}}
 	default:
-		output := &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true, sizeLimit: MaxCharsInComment}}
+		output := &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 		if provider == vcsutils.AzureRepos {
 			output.sizeLimit = MaxCharsInAzureComment
 		}

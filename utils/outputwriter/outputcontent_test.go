@@ -192,10 +192,6 @@ func TestGetPRSummaryContent(t *testing.T) {
 	}
 }
 
-func TestGetPRSummaryContentSplitContent(t *testing.T) {
-
-}
-
 func TestVulnerabilitiesContent(t *testing.T) {
 	testCases := []struct {
 		name            string

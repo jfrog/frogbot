@@ -20,7 +20,9 @@
 
 </div>
 
+
 ### 🔬 Research Details
+
 **Description:**
 [Minimist](https://github.com/substack/minimist) is a simple and very popular argument parser. It is used by more than 14 million by Mar 2022. This package developers stopped developing it since April 2020 and its community released a [newer version](https://github.com/meszaros-lajos-gyorgy/minimist-lite) supported by the community.
 

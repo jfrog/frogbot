@@ -10,6 +10,7 @@
 
 
 ## 📦 Vulnerable Dependencies
+
 ### ✍️ Summary
 <div align='center'>
 
@@ -22,8 +23,6 @@
 
 
 ### 🔬 Research Details
-
-
 <details>
 <summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
 <br>
@@ -78,6 +77,7 @@ With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 
 </details>
+
 
 
 ---

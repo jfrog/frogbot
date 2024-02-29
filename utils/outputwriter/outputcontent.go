@@ -244,22 +244,34 @@ func vulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolat
 	if len(vulnerabilitiesWithDetails) == 0 {
 		return
 	}
-	contentBuilder := strings.Builder{}
-	WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3))
+	// contentBuilder := strings.Builder{}
 	for i := range vulnerabilitiesWithDetails {
 		if len(vulnerabilitiesWithDetails) == 1 {
-			WriteContent(&contentBuilder, vulnerabilitiesWithDetails[i].details)
+			content = append(content, vulnerabilitiesWithDetails[i].details)
+			// WriteContent(&contentBuilder, vulnerabilitiesWithDetails[i].details)
 		} else {
-			WriteContent(&contentBuilder, writer.MarkAsDetails(
+			content = append(content, writer.MarkAsDetails(
 				fmt.Sprintf(`%s %s %s`, vulnerabilitiesWithDetails[i].title,
 					vulnerabilitiesWithDetails[i].dependencyName,
 					vulnerabilitiesWithDetails[i].dependencyVersion),
 				4, vulnerabilitiesWithDetails[i].details,
 			))
+			// WriteContent(&contentBuilder, writer.MarkAsDetails(
+			// 	fmt.Sprintf(`%s %s %s`, vulnerabilitiesWithDetails[i].title,
+			// 		vulnerabilitiesWithDetails[i].dependencyName,
+			// 		vulnerabilitiesWithDetails[i].dependencyVersion),
+			// 	4, vulnerabilitiesWithDetails[i].details,
+			// ))
 		}
 	}
-	content = append(content, contentBuilder.String())
-	return
+	// content = append(content, contentBuilder.String())
+
+	return ConvertContentToComments(content, writer, func(commentCount int, detailsContent string) string {
+		contentBuilder := strings.Builder{}
+		WriteContent(&contentBuilder, writer.MarkAsTitle(vulnerableDependenciesResearchDetailsSubTitle, 3))
+		WriteContent(&contentBuilder, detailsContent)
+		return contentBuilder.String()
+	})
 }
 
 func getVulnerabilityWithDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (vulnerabilitiesWithDetails []vulnerabilityOrViolationDetails) {
