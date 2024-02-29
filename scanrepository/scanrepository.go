@@ -298,7 +298,7 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion, cfp.scanDetails.Project.UniqueProjectHash)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion, cfp.scanDetails.Project.UniqueProjectIdentifier)
 	if err != nil {
 		return
 	}
@@ -398,7 +398,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 	}
 	// In separate pull requests there is only one vulnerability
 	vulnDetails := vulnerabilitiesDetails[0]
-	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, cfp.scanDetails.UniqueProjectHash)
+	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, cfp.scanDetails.UniqueProjectIdentifier)
 	return pullRequestTitle, prBody, nil
 }
 

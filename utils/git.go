@@ -395,8 +395,8 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash, baseBr
 	return str
 }
 
-func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string, uniqueProjectHash string) (string, error) {
-	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion, uniqueProjectHash)
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string, uniqueProjectIdentifier string) (string, error) {
+	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion, uniqueProjectIdentifier)
 	if err != nil {
 		return "", err
 	}
@@ -409,10 +409,10 @@ func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage strin
 	return formatStringWithPlaceHolders(branchFormat, fixedPackageName, fixVersion, hash, "", false), nil
 }
 
-func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string, uniqueProjectHash string) string {
+func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version string, uniqueProjectIdentifier string) string {
 	template := PullRequestTitleTemplate
-	if uniqueProjectHash != "" {
-		template += " (" + uniqueProjectHash + ")"
+	if uniqueProjectIdentifier != "" {
+		template += " (" + uniqueProjectIdentifier + ")"
 	}
 	pullRequestFormat := gm.customTemplates.pullRequestTitleTemplate
 	if pullRequestFormat != "" {

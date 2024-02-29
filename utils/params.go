@@ -77,16 +77,16 @@ func (p *Params) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) 
 }
 
 type Project struct {
-	InstallCommand      string   `yaml:"installCommand,omitempty"`
-	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
-	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
-	PathExclusions      []string `yaml:"pathExclusions,omitempty"`
-	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
-	DepsRepo            string   `yaml:"repository,omitempty"`
-	InstallCommandName  string
-	InstallCommandArgs  []string
-	IsRecursiveScan     bool
-	UniqueProjectHash   string `yaml:"uniqueIdentifier,omitempty"`
+	InstallCommand          string   `yaml:"installCommand,omitempty"`
+	PipRequirementsFile     string   `yaml:"pipRequirementsFile,omitempty"`
+	WorkingDirs             []string `yaml:"workingDirs,omitempty"`
+	PathExclusions          []string `yaml:"pathExclusions,omitempty"`
+	UseWrapper              *bool    `yaml:"useWrapper,omitempty"`
+	DepsRepo                string   `yaml:"repository,omitempty"`
+	InstallCommandName      string
+	InstallCommandArgs      []string
+	IsRecursiveScan         bool
+	UniqueProjectIdentifier string `yaml:"uniqueIdentifier,omitempty"`
 }
 
 func (p *Project) setDefaultsIfNeeded() error {
