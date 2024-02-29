@@ -1,3 +1,7 @@
+
+
+[comment]: <> (FrogbotReviewComment)
+
 <div align='center'>
 
 [![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
@@ -16,9 +20,9 @@
 
 </div>
 
-<details>
-<summary> <b>🔬 Research Details</b> </summary>
-<br>
+
+### 🔬 Research Details
+
 
 <details>
 <summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
@@ -74,9 +78,6 @@ With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 
 </details>
-
-</details>
-
 
 
 ---
