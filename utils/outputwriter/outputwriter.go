@@ -224,6 +224,8 @@ func WriteNewLine(builder *strings.Builder) {
 }
 
 // ConvertContentToComments converts the given content to comments, and returns the comments as a list of strings.
+// The content is split into comments based on the size limit of the output writer.
+// The commentDecorators are applied to each comment.
 func ConvertContentToComments(content []string, writer OutputWriter, commentDecorators ...CommentDecorator) (comments []string) {
 	commentBuilder := strings.Builder{}
 	for _, commentContent := range content {

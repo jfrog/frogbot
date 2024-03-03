@@ -25,52 +25,52 @@ func TestGetPRSummaryContent(t *testing.T) {
 				{
 					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled.md")},
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled.md")},
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled.md")},
 				},
 				{
 					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_entitled.md")},
 				},
 				{
 					name:               "Pull request not entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled_with_title.md")},
 				},
 				{
 					name:               "Pull Request not entitled custom title avoid extra messages (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title", avoidExtraMessages: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md")},
 				},
 				{
 					name:               "Pull request not entitled custom title (Simplified output)",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled_with_title.md")},
 				},
 				{
 					name:               "Merge Request not entitled avoid extra messages (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, avoidExtraMessages: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md")},
 				},
 			},
 		},
@@ -82,57 +82,57 @@ func TestGetPRSummaryContent(t *testing.T) {
 				{
 					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled.md")},
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md")},
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_not_entitled.md")},
 				},
 				{
 					name:               "Pull Request not entitled avoid extra messages (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled avoid extra messages",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md")},
 				},
 				{
 					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled_with_title.md")},
 				},
 				{
 					name:               "Pull Request not entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled_with_title.md")},
 				},
 				{
 					name:               "Pull request entitled custom title (Simplified output)",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled_with_title.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled_with_title.md")},
 				},
 			},
 		},
@@ -144,37 +144,37 @@ func TestGetPRSummaryContent(t *testing.T) {
 				{
 					name:               "Pull Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md")},
 				},
 				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md")},
 				},
 				{
 					name:               "Merge Request not entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled ",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md")},
 				},
 				{
 					name:               "Simplified output entitled avoid extra messages",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md")},
 				},
 			},
 		},
@@ -205,12 +205,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					name:           "Standard output",
 					writer:         &StandardOutput{},
-					expectedOutput: "",
+					expectedOutput: []string{""},
 				},
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: "",
+					expectedOutput: []string{""},
 				},
 			},
 		},
@@ -243,12 +243,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_simplified.md")},
 				},
 			},
 		},
@@ -276,12 +276,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "one_vulnerability_no_details_simplified.md")},
 				},
 			},
 		},
@@ -366,23 +366,42 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true}},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md")},
+				},
+				{
+					name:   "Split Standard output",
+					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, sizeLimit: 1720}},
+					expectedOutputPath: []string{
+						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split1.md"),
+						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split2.md"),
+					},
+				},
+				{
+					name:   "Split Simplified output",
+					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, sizeLimit: 1000}},
+					expectedOutputPath: []string{
+						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split1.md"),
+						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split2.md"),
+					},
 				},
 			},
+		},
+		{
+			name: "Split vulnerabilities content",
 		},
 	}
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				expectedOutput := GetExpectedTestOutput(t, test)
+				expectedOutput := GetExpectedTestCaseOutput(t, test)
 				output := ConvertContentToComments(VulnerabilitiesContent(tc.vulnerabilities, test.writer), test.writer)
-				assert.Len(t, output, 1)
-				assert.Equal(t, expectedOutput, output[0])
+				assert.Len(t, output, len(expectedOutput))
+				assert.ElementsMatch(t, expectedOutput, output)
 			})
 		}
 	}
@@ -401,12 +420,12 @@ func TestLicensesContent(t *testing.T) {
 				{
 					name:           "Standard output",
 					writer:         &StandardOutput{},
-					expectedOutput: "",
+					expectedOutput: []string{""},
 				},
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: "",
+					expectedOutput: []string{""},
 				},
 			},
 		},
@@ -443,12 +462,12 @@ func TestLicensesContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "license", "license_violation_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "license", "license_violation_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testSummaryCommentDir, "license", "license_violation_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "license", "license_violation_simplified.md")},
 				},
 			},
 		},
@@ -498,12 +517,12 @@ func TestGenerateReviewComment(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "review_comment_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "review_comment_simplified.md")},
 				},
 			},
 		},
@@ -521,12 +540,12 @@ func TestGenerateReviewComment(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_fallback_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "review_comment_fallback_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "review_comment_fallback_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "review_comment_fallback_simplified.md")},
 				},
 			},
 		},
@@ -567,12 +586,12 @@ func TestApplicableReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_simplified.md")},
 				},
 			},
 		},
@@ -588,12 +607,12 @@ func TestApplicableReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_no_remediation_simplified.md")},
 				},
 			},
 		},
@@ -624,12 +643,12 @@ func TestIacReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "iac", "iac_review_content_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "iac", "iac_review_content_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_review_content_simplified.md")},
 				},
 			},
 		},
@@ -701,12 +720,12 @@ func TestSastReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_simplified.md")},
 				},
 			},
 		},
@@ -719,12 +738,12 @@ func TestSastReviewContent(t *testing.T) {
 				{
 					name:               "Standard output",
 					writer:             &StandardOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_standard.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_standard.md")},
 				},
 				{
 					name:               "Simplified output",
 					writer:             &SimplifiedOutput{},
-					expectedOutputPath: filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_simplified.md"),
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_no_code_flow_simplified.md")},
 				},
 			},
 		},
