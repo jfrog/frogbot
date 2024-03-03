@@ -23,6 +23,7 @@
 
 
 ### 🔬 Research Details
+
 <details>
 <summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
 <br>
