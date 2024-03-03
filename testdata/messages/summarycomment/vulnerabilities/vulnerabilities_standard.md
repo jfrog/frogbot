@@ -15,6 +15,7 @@
 
 
 ### 🔬 Research Details
+
 <details>
 <summary> <b>[ XRAY-122345 ] github.com/nats-io/nats-streaming-server v0.21.0</b> </summary>
 <br>

@@ -223,6 +223,7 @@ func WriteNewLine(builder *strings.Builder) {
 	builder.WriteString("\n")
 }
 
+// ConvertContentToComments converts the given content to comments, and returns the comments as a list of strings.
 func ConvertContentToComments(content []string, writer OutputWriter, commentDecorators ...CommentDecorator) (comments []string) {
 	commentBuilder := strings.Builder{}
 	for _, commentContent := range content {

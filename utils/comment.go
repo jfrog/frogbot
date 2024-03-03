@@ -122,17 +122,6 @@ func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 		content = append(content, licensesContent)
 	}
 	return outputwriter.GetPRSummaryContent(content, true, true, writer)
-
-	// issuesExists := issuesCollection.IssuesExists()
-
-	// content := strings.Builder{}
-	// content := []string{}
-	// if issuesExists {
-	// 	content = []string{outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer), }
-	// 	content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
-	// 	content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
-	// }
-	// return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
 }
 
 func IsFrogbotRescanComment(comment string) bool {
