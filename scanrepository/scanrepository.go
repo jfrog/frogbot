@@ -352,13 +352,6 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 		return
 	}
 	return cfp.handleFixPullRequestContent(repository, fixBranchName, nil, vulnDetails)
-
-	// pullRequestTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnDetails)
-	// if err != nil {
-	// 	return
-	// }
-	// log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.scanDetails.BaseBranch())
-	// return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
 }
 
 func (cfp *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
@@ -408,17 +401,6 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposi
 		return
 	}
 	return cfp.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
-
-	// pullRequestTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
-	// if err != nil {
-	// 	return
-	// }
-	// if pullRequestInfo == nil {
-	// 	log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
-	// 	return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
-	// }
-	// log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
-	// return cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open)
 }
 
 func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
