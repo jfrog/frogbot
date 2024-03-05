@@ -13,10 +13,9 @@ pipelines:
       runtime:
         type: image
         image:
-          auto:
-            language: go
-            versions:
-              - "1.17"
+          custom:
+            name: releases-docker.jfrog.io/jfrog-ecosystem-integration-env
+            tag: latest
       environmentVariables:
         readOnly:
           NEXT_VERSION: 0.0.0
@@ -30,7 +29,7 @@ pipelines:
               trigger: false
           integrations:
             - name: il_automation
-            - name: entplus_deployer
+            - name: ecosys_entplus_deployer
         execution:
           onExecute:
             - cd $res_frogbotGit_resourcePath
@@ -54,7 +53,7 @@ pipelines:
             # Download JFrog CLI
             - curl -fL https://install-cli.jfrog.io | sh
             - jf c rm --quiet
-            - jf c add internal --url=$int_entplus_deployer_url --user=$int_entplus_deployer_user --password=$int_entplus_deployer_apikey
+            - jf c add internal --url=$int_ecosys_entplus_deployer_url --user=$int_ecosys_entplus_deployer_user --password=$int_ecosys_entplus_deployer_apikey
             - jf goc --repo-resolve ecosys-go-virtual
 
             # Generate mocks
@@ -74,13 +73,17 @@ pipelines:
             - jf rt bp
 
             # Distribute release bundle
-            - jf ds rbc "frogbot" $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
-            - jf ds rbd "frogbot" $NEXT_VERSION --site="releases.jfrog.io" --sync
+            - jf ds rbc ecosystem-frogbot $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
+            - jf ds rbd ecosystem-frogbot $NEXT_VERSION --site="releases.jfrog.io" --sync
 
             # Push to master
             - git clean -fd
             - git push
             - git push --tags
 
+            # Merge changes to dev
+            - git checkout dev
+            - git merge origin/master
+            - git push
           onComplete:
             - jf c rm --quiet

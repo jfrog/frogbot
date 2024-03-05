@@ -3,3 +3,7 @@ frogbot
 frogbot.exe
 *mock*
 coverage
+.idea
+.vscode
+*.iml
+.DS_Store

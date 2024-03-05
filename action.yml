@@ -1,5 +1,5 @@
 name: "Frogbot by JFrog"
-description: "Scan your pull requests with JFrog Xray for security vulnerabilities."
+description: "JFrog Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities."
 author: "JFrog"
 inputs:
   version:

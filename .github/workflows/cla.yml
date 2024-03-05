@@ -19,11 +19,11 @@ jobs:
       - name: "CLA Assistant"
         if: ${{ steps.sign-or-recheck.outputs.match != '' || github.event_name == 'pull_request_target' }}
         # Alpha Release
-        uses: cla-assistant/github-action@v2.1.1-beta
+        uses: cla-assistant/github-action@v2.3.0
         env:
-          # Generated and maintained by github
+          # Generated and maintained by GitHub
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # JFrog organization secret
+          # JFrog's organization secret
           PERSONAL_ACCESS_TOKEN: ${{ secrets.CLA_SIGN_TOKEN }}
         with:
           path-to-signatures: "signed_clas.json"

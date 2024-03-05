@@ -35,18 +35,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Utils = void 0;
 const core = __importStar(require("@actions/core"));
 const exec_1 = require("@actions/exec");
-const github = __importStar(require("@actions/github"));
-const toolCache = __importStar(require("@actions/tool-cache"));
-const fs = __importStar(require("fs"));
-const os = __importStar(require("os"));
-const path = __importStar(require("path"));
+const github_1 = require("@actions/github");
+const tool_cache_1 = require("@actions/tool-cache");
+const fs_1 = require("fs");
+const os_1 = require("os");
+const path_1 = require("path");
+const simple_git_1 = require("simple-git");
 class Utils {
     static addToPath() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let fileName = Utils.getExecutableName();
             let version = core.getInput(Utils.VERSION_ARG);
+            let major = version.split('.')[0];
             if (version === this.LATEST_CLI_VERSION_ARG) {
                 version = Utils.LATEST_RELEASE_VERSION;
+                major = '2';
             }
             else {
                 if (this.loadFromCache(version)) {
@@ -55,29 +59,74 @@ class Utils {
                 }
             }
             // Download Frogbot
-            let url = Utils.getCliUrl(version, fileName);
+            const releasesRepo = (_a = process.env.JF_RELEASES_REPO) !== null && _a !== void 0 ? _a : '';
+            let url = Utils.getCliUrl(major, version, fileName, releasesRepo);
             core.debug('Downloading Frogbot from ' + url);
-            let downloadDir = yield toolCache.downloadTool(url);
+            let auth = this.generateAuthString(releasesRepo);
+            let downloadDir = yield (0, tool_cache_1.downloadTool)(url, '', auth);
             // Cache 'frogbot' executable
             yield this.cacheAndAddPath(downloadDir, version, fileName);
         });
     }
-    static setFrogbotEnv() {
-        core.exportVariable('JF_GIT_PROVIDER', 'github');
-        core.exportVariable('JF_GIT_OWNER', github.context.repo.owner);
-        let owner = github.context.repo.repo;
-        if (owner) {
-            core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
+    static generateAuthString(releasesRepo) {
+        var _a, _b, _c;
+        if (!releasesRepo) {
+            return '';
         }
-        core.exportVariable('JF_GIT_BASE_BRANCH', github.context.ref);
-        core.exportVariable('JF_GIT_PULL_REQUEST_ID', github.context.issue.number);
+        let accessToken = (_a = process.env.JF_ACCESS_TOKEN) !== null && _a !== void 0 ? _a : '';
+        let username = (_b = process.env.JF_USER) !== null && _b !== void 0 ? _b : '';
+        let password = (_c = process.env.JF_PASSWORD) !== null && _c !== void 0 ? _c : '';
+        if (accessToken) {
+            return 'Bearer ' + Buffer.from(accessToken).toString();
+        }
+        else if (username && password) {
+            return 'Basic ' + Buffer.from(username + ':' + password).toString('base64');
+        }
+        return '';
+    }
+    static setFrogbotEnv() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.exportVariable('JF_GIT_PROVIDER', 'github');
+            core.exportVariable('JF_GIT_OWNER', github_1.context.repo.owner);
+            let owner = github_1.context.repo.repo;
+            if (owner) {
+                core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
+            }
+            core.exportVariable('JF_GIT_PULL_REQUEST_ID', github_1.context.issue.number);
+            return github_1.context.eventName;
+        });
     }
     /**
      * Execute frogbot scan-pull-request command.
      */
     static execScanPullRequest() {
         return __awaiter(this, void 0, void 0, function* () {
-            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request', '--use-labels']);
+            if (!process.env.JF_GIT_BASE_BRANCH) {
+                core.exportVariable('JF_GIT_BASE_BRANCH', github_1.context.ref);
+            }
+            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-pull-request']);
+            if (res !== core.ExitCode.Success) {
+                throw new Error('Frogbot exited with exit code ' + res);
+            }
+        });
+    }
+    /**
+     * Execute frogbot scan-repository command.
+     */
+    static execCreateFixPullRequests() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!process.env.JF_GIT_BASE_BRANCH) {
+                // Get the current branch we are checked on
+                const git = (0, simple_git_1.simpleGit)();
+                try {
+                    const currentBranch = yield git.branch();
+                    core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+                }
+                catch (error) {
+                    throw new Error('Error getting current branch from the .git folder: ' + error);
+                }
+            }
+            let res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['scan-repository']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
             }
@@ -90,7 +139,7 @@ class Utils {
      * @returns true if the CLI executable was loaded from cache and added to path
      */
     static loadFromCache(version) {
-        let execPath = toolCache.find(Utils.TOOL_NAME, version);
+        let execPath = (0, tool_cache_1.find)(Utils.TOOL_NAME, version);
         if (execPath) {
             core.addPath(execPath);
             return true;
@@ -105,40 +154,51 @@ class Utils {
      */
     static cacheAndAddPath(downloadDir, version, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
-            let cliDir = yield toolCache.cacheFile(downloadDir, fileName, Utils.TOOL_NAME, version);
+            let cliDir = yield (0, tool_cache_1.cacheFile)(downloadDir, fileName, Utils.TOOL_NAME, version);
             if (!Utils.isWindows()) {
-                fs.chmodSync(path.join(cliDir, fileName), 0o555);
+                let filePath = (0, path_1.normalize)((0, path_1.join)(cliDir, fileName));
+                (0, fs_1.chmodSync)(filePath, 0o555);
             }
             core.addPath(cliDir);
         });
     }
-    static getCliUrl(version, fileName) {
+    static getCliUrl(major, version, fileName, releasesRepo) {
+        var _a;
         let architecture = 'frogbot-' + Utils.getArchitecture();
-        return 'https://releases.jfrog.io/artifactory/frogbot/v1/' + version + '/' + architecture + '/' + fileName;
+        if (releasesRepo) {
+            let platformUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
+            if (!platformUrl) {
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            // Remove trailing slash if exists
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+        }
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
     }
     static getArchitecture() {
         if (Utils.isWindows()) {
             return 'windows-amd64';
         }
-        if (os.platform().includes('darwin')) {
+        if ((0, os_1.platform)().includes('darwin')) {
             return 'mac-386';
         }
-        if (os.arch().includes('arm')) {
-            return os.arch().includes('64') ? 'linux-arm64' : 'linux-arm';
+        if ((0, os_1.arch)().includes('arm')) {
+            return (0, os_1.arch)().includes('64') ? 'linux-arm64' : 'linux-arm';
         }
-        if (os.arch().includes('ppc64le')) {
+        if ((0, os_1.arch)().includes('ppc64le')) {
             return 'linux-ppc64le';
         }
-        if (os.arch().includes('ppc64')) {
+        if ((0, os_1.arch)().includes('ppc64')) {
             return 'linux-ppc64';
         }
-        return os.arch().includes('64') ? 'linux-amd64' : 'linux-386';
+        return (0, os_1.arch)().includes('64') ? 'linux-amd64' : 'linux-386';
     }
     static getExecutableName() {
         return Utils.isWindows() ? 'frogbot.exe' : 'frogbot';
     }
     static isWindows() {
-        return os.platform().startsWith('win');
+        return (0, os_1.platform)().startsWith('win');
     }
 }
 exports.Utils = Utils;
