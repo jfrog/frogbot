@@ -220,10 +220,10 @@
               "title": "Virtual Artifactory Repository",
               "description": "Name of a Virtual Repository in Artifactory to resolve (download) the project dependencies from"
             },
-            "uniqueIdentifier": {
+            "projectName": {
               "type": "string",
-              "title": "Unique Hash Identifier",
-              "description": "Unique hash identifier for each project that is used to create separation between projects"
+              "title": "Unique Project Name",
+              "description": "A unique name assigned to the project to establish separation between projects."
             }
           }
         }

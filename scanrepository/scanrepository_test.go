@@ -601,7 +601,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	cfp := ScanRepositoryCmd{
 		OutputWriter: &outputwriter.StandardOutput{},
 		gitManager:   &utils.GitManager{}, scanDetails: &utils.ScanDetails{
-			Project: &utils.Project{UniqueProjectIdentifier: ""},
+			Project: &utils.Project{ProjectName: ""},
 		}}
 	cfp.OutputWriter.SetJasOutputFlags(true, false)
 	vulnerabilities := []*utils.VulnerabilityDetails{
@@ -625,7 +625,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 
-	cfp.scanDetails.UniqueProjectIdentifier = "my-unique-identifier"
+	cfp.scanDetails.ProjectName = "my-unique-identifier"
 	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
