@@ -40,8 +40,8 @@ type ScanRepositoryCmd struct {
 	aggregateFixes bool
 	// The current project technology
 	projectTech []coreutils.Technology
-	// Stores all package manager handlers for detected issues
-	handlers map[coreutils.Technology]packagehandlers.PackageHandler
+	// Stores all package manager handler for detected issues
+	handler packagehandlers.PackageHandler
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
@@ -491,15 +491,15 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 		return
 	}
 
-	if cfp.handlers == nil {
-		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
-	}
-
 	/*
-		handler := cfp.handlers[vulnDetails.Technology]
+		if cfp.handler == nil {
+			cfp.handler = make(map[coreutils.Technology]packagehandlers.PackageHandler)
+		}
+
+		handler := cfp.handler[vulnDetails.Technology]
 		if handler == nil {
 			handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, cfp.scanDetails)
-			cfp.handlers[vulnDetails.Technology] = handler
+			cfp.handler[vulnDetails.Technology] = handler
 		} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
 			return
 		}
@@ -508,9 +508,9 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 	if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
 		return
 	}
-	cfp.handlers[vulnDetails.Technology] = handler
+	cfp.handler = handler
 
-	return cfp.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
+	return cfp.handler.UpdateDependency(vulnDetails)
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.
