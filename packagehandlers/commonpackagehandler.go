@@ -6,7 +6,10 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"io/fs"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -16,6 +19,7 @@ type PackageHandler interface {
 	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
+// TODO ERAN check if any test needs to be updated following this change
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
 	switch vulnDetails.Technology {
 	case coreutils.Go:
@@ -36,6 +40,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 		handler = &NugetPackageHandler{}
 	case coreutils.Gradle:
 		handler = &GradlePackageHandler{}
+	case coreutils.Pnpm:
+		handler = &PnpmPackageHandler{}
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
@@ -82,5 +88,42 @@ func runPackageMangerCommand(commandName string, techName string, commandArgs []
 func getFixedPackage(impactedPackage string, versionOperator string, suggestedFixedVersion string) (fixedPackageArgs []string) {
 	fixedPackageString := strings.TrimSpace(impactedPackage) + versionOperator + strings.TrimSpace(suggestedFixedVersion)
 	fixedPackageArgs = strings.Split(fixedPackageString, " ")
+	return
+}
+
+// TODO ERAN write test for this func
+// TODO ERAN apply this func in Gradle package handler & NuGet package handler instead the existing funcs
+func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(assetFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+	var regexpPatternsCompilers []*regexp.Regexp
+	for _, patternToExclude := range patternsToExclude {
+		regexpPatternsCompilers = append(regexpPatternsCompilers, regexp.MustCompile(patternToExclude))
+	}
+
+	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
+		if innerErr != nil {
+			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %s", innerErr.Error())
+		}
+
+		for _, regexpCompiler := range regexpPatternsCompilers {
+			if match := regexpCompiler.FindString(path); match != "" {
+				return filepath.SkipDir
+			}
+		}
+
+		for _, assetFileSuffix := range assetFilesSuffixes {
+			if strings.HasSuffix(path, assetFileSuffix) {
+				var absFilePath string
+				absFilePath, innerErr = filepath.Abs(path)
+				if innerErr != nil {
+					return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
+				}
+				descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		err = fmt.Errorf("failed to get descriptor files absolute paths: %s", err.Error())
+	}
 	return
 }
