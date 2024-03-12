@@ -106,8 +106,8 @@ jobs:
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
         run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 30m -cover
         env:
-          JF_URL: ${{ secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          JF_URL: ${{ secrets.DEV_MASTER_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN }}
 
   github-integration:
     name: GitHub Integration Tests
