@@ -1,4 +1,4 @@
-name: "Go Tests"
+name: "Go Tests Pre Release Env"
 
 on:
   # Triggers the workflow on-demand from the 'Actions' tab.
