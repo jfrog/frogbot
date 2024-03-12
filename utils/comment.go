@@ -41,10 +41,12 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		// Delete previous PR regular comments, if exists (not related to location of a change)
 		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
 			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
+			err = nil
 		}
 		// Delete previous PR review comments, if exists (related to location of a change)
 		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
 			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
+			err = nil
 		}
 	}
 
