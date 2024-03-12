@@ -1,7 +1,6 @@
 name: "Go Tests"
 
 on:
-  push:
   # Triggers the workflow on-demand from the 'Actions' tab.
   workflow_dispatch:
 
