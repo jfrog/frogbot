@@ -1,3 +1,4 @@
+# NOTE: If any modifications are made to this workflow file, please remember to review the test-before-release.yml file and make corresponding updates.
 name: "Go Tests"
 
 on:

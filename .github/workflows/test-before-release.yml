@@ -1,4 +1,6 @@
-name: "Go Tests Pre Release Env"
+# This workflow resembles test.yml but can be manually triggered.
+# Operating against the dev-master server, which incorporates the latest Xray code changes, and allowing us to test compatibility and ensure that our code remains unaffected by recent Xray updates before their official release.
+name: "Go Tests: Dev-Master env"
 
 on:
   # Triggers the workflow on-demand from the 'Actions' tab.
