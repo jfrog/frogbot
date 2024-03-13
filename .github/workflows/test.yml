@@ -25,6 +25,14 @@ jobs:
         with:
           labels: "safe to test"
 
+      - name: Declare running environment
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "Working in Production environment."
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Working in the dev-master environment."
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -49,25 +57,25 @@ jobs:
       - name: Lint
         run: go vet -v ./...
 
-  resolve-credentials:
-    needs: Pretest
-    runs-on: ubuntu-latest
-    outputs:
-      resolved-jf-url: ${{ steps.resolve.outputs.resolved-jf-url }}
-      resolved-jf-access-token: ${{ steps.resolve.outputs.resolved-jf-access-token }}
-    steps:
-      - name: Resolve Credentials
-        id: resolve
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "Working in Production environment."
-            echo "::set-output name=resolved-jf-url::${{ secrets.PLATFORM_URL }}"
-            echo "::set-output name=resolved-jf-access-token::${{ secrets.PLATFORM_ADMIN_TOKEN }}"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Working in the dev-master environment."
-            echo "::set-output name=resolved-jf-url::${{ secrets.DEV_MASTER_PLATFORM_URL }}"
-            echo "::set-output name=resolved-jf-access-token::${{ secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN }}"
-          fi
+  #resolve-credentials:
+  #  needs: Pretest
+  #  runs-on: ubuntu-latest
+  #  outputs:
+  #    resolved-jf-url: ${{ steps.resolve.outputs.resolved-jf-url }}
+  #    resolved-jf-access-token: ${{ steps.resolve.outputs.resolved-jf-access-token }}
+  #  steps:
+  #    - name: Resolve Credentials
+  #      id: resolve
+  #      run: |
+  #        if [ "${{ github.event_name }}" = "push" ]; then
+  #          echo "Working in Production environment."
+  #          echo "::set-output name=resolved-jf-url::${{ secrets.PLATFORM_URL }}"
+  #          echo "::set-output name=resolved-jf-access-token::${{ secrets.PLATFORM_ADMIN_TOKEN }}"
+  #        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+  #          echo "Working in the dev-master environment."
+  #          echo "::set-output name=resolved-jf-url::${{ secrets.DEV_MASTER_PLATFORM_URL }}"
+  #          echo "::set-output name=resolved-jf-access-token::${{ secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN }}"
+  #        fi
 
   tests:
     needs: [Pretest, resolve-credentials]
@@ -138,8 +146,8 @@ jobs:
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
         run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 30m -cover
         env:
-          JF_URL: ${{ needs.resolve-credentials.outputs.resolved-jf-url }}
-          JF_ACCESS_TOKEN: ${{ needs.resolve-credentials.outputs.resolved-jf-access-token }}
+          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
 
   github-integration:
     name: GitHub Integration Tests
