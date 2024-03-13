@@ -78,7 +78,7 @@ jobs:
   #        fi
 
   tests:
-    needs: [Pretest, resolve-credentials]
+    needs: Pretest
     name: ${{ matrix.suite.name }} Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}-latest
     env:
@@ -151,7 +151,7 @@ jobs:
 
   github-integration:
     name: GitHub Integration Tests
-    needs: [Pretest, resolve-credentials]
+    needs: Pretest
     runs-on: ubuntu-latest
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
@@ -163,13 +163,13 @@ jobs:
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
-          JF_URL: ${{ needs.resolve-credentials.outputs.resolved-jf-url }}
-          JF_ACCESS_TOKEN: ${{ needs.resolve-credentials.outputs.resolved-jf-access-token }}
+          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
           FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
     name: Azure Integration Tests
-    needs: [Pretest, resolve-credentials]
+    needs: Pretest
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
@@ -185,13 +185,13 @@ jobs:
       - name: Run Tests
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
-          JF_URL: ${{ needs.resolve-credentials.outputs.resolved-jf-url }}
-          JF_ACCESS_TOKEN: ${{ needs.resolve-credentials.outputs.resolved-jf-access-token }}
+          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
           FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
 
   gitlab-integration:
     name: GitLab Integration Tests
-    needs: [Pretest, resolve-credentials]
+    needs: Pretest
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
@@ -207,13 +207,13 @@ jobs:
       - name: Run Tests
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
-          JF_URL: ${{ needs.resolve-credentials.outputs.resolved-jf-url }}
-          JF_ACCESS_TOKEN: ${{ needs.resolve-credentials.outputs.resolved-jf-access-token }}
+          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
           FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
-    needs: [Pretest, resolve-credentials]
+    needs: Pretest
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -231,8 +231,8 @@ jobs:
 
       - name: Run Tests
         env:
-          JF_URL: ${{ needs.resolve-credentials.outputs.resolved-jf-url }}
-          JF_ACCESS_TOKEN: ${{ needs.resolve-credentials.outputs.resolved-jf-access-token }}
+          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
           FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         run: go test -v bitbucket_server_test.go commands.go integrationutils.go
