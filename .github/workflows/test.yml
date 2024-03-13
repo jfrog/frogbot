@@ -1,4 +1,3 @@
-# NOTE: If any modifications are made to this workflow file, please remember to review the test-before-release.yml file and make corresponding updates.
 name: "Go Tests"
 
 on:
@@ -56,26 +55,6 @@ jobs:
 
       - name: Lint
         run: go vet -v ./...
-
-  #resolve-credentials:
-  #  needs: Pretest
-  #  runs-on: ubuntu-latest
-  #  outputs:
-  #    resolved-jf-url: ${{ steps.resolve.outputs.resolved-jf-url }}
-  #    resolved-jf-access-token: ${{ steps.resolve.outputs.resolved-jf-access-token }}
-  #  steps:
-  #    - name: Resolve Credentials
-  #      id: resolve
-  #      run: |
-  #        if [ "${{ github.event_name }}" = "push" ]; then
-  #          echo "Working in Production environment."
-  #          echo "::set-output name=resolved-jf-url::${{ secrets.PLATFORM_URL }}"
-  #          echo "::set-output name=resolved-jf-access-token::${{ secrets.PLATFORM_ADMIN_TOKEN }}"
-  #        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-  #          echo "Working in the dev-master environment."
-  #          echo "::set-output name=resolved-jf-url::${{ secrets.DEV_MASTER_PLATFORM_URL }}"
-  #          echo "::set-output name=resolved-jf-access-token::${{ secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN }}"
-  #        fi
 
   tests:
     needs: Pretest
@@ -147,7 +126,7 @@ jobs:
         run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
 
   github-integration:
     name: GitHub Integration Tests
@@ -163,8 +142,10 @@ jobs:
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
+          # If the action is triggered by 'workflow_dispatch' the credentials are: DEV_MASTER_PLATFORM_URL & DEV_MASTER_PLATFORM_ADMIN_TOKEN
+          # If the action is triggered by a 'push' event the credentials are: PLATFORM_URL & PLATFORM_ADMIN_TOKEN
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
           FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
@@ -186,7 +167,7 @@ jobs:
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
           FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
 
   gitlab-integration:
@@ -208,7 +189,7 @@ jobs:
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
           FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
 
   bitbucket-server-integration:
@@ -232,7 +213,7 @@ jobs:
       - name: Run Tests
         env:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL  }}
+          JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
           FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         run: go test -v bitbucket_server_test.go commands.go integrationutils.go
