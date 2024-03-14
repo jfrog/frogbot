@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/commands/audit/jas"
+	"github.com/jfrog/jfrog-cli-security/jas"
 	"net/http"
 	"net/url"
 	"os"
