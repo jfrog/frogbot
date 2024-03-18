@@ -36,8 +36,8 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	var assetsFilePaths []string
-	assetsFilePaths, err = getAssetsFilesPaths()
+	var descriptorFilesFullPaths []string
+	descriptorFilesFullPaths, err = nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	if err != nil {
 		return
 	}
@@ -51,7 +51,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 	var isAnyFileChanged bool
 
-	for _, assetFilePath := range assetsFilePaths {
+	for _, assetFilePath := range descriptorFilesFullPaths {
 		var isFileChanged bool
 		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
 		if err != nil {

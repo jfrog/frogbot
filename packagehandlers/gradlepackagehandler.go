@@ -53,13 +53,14 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
-	descriptorFilesPaths, err := getDescriptorFilesPaths()
+	var descriptorFilesFullPaths []string
+	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
 	if err != nil {
 		return
 	}
 
 	isAnyDescriptorFileChanged := false
-	for _, descriptorFilePath := range descriptorFilesPaths {
+	for _, descriptorFilePath := range descriptorFilesFullPaths {
 		var isFileChanged bool
 		isFileChanged, err = gph.fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
 		if err != nil {
