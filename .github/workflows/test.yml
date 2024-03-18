@@ -143,7 +143,7 @@ jobs:
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           # If the action is triggered by 'workflow_dispatch' the credentials are: DEV_MASTER_PLATFORM_URL & DEV_MASTER_PLATFORM_ADMIN_TOKEN
-          # If the action is triggered by a 'push' event the credentials are: PLATFORM_URL & PLATFORM_ADMIN_TOKEN
+          # If the action is triggered by a 'pull request' event the credentials are: PLATFORM_URL & PLATFORM_ADMIN_TOKEN
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN  }}
           FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
