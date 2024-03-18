@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
-	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -66,25 +64,6 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	if !isAnyFileChanged {
 		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
 	}
-	return
-}
-
-func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
-		if innerErr != nil {
-			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %s", innerErr.Error())
-		}
-
-		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
-			var absFilePath string
-			absFilePath, innerErr = filepath.Abs(path)
-			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
-			}
-			assetsFilePaths = append(assetsFilePaths, absFilePath)
-		}
-		return nil
-	})
 	return
 }
 

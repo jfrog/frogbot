@@ -3,9 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -84,26 +82,6 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 		return false
 	}
 	return true
-}
-
-// Collects all descriptor files absolute paths
-func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
-		if innerErr != nil {
-			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
-		}
-
-		if strings.HasSuffix(path, groovyDescriptorFileSuffix) || strings.HasSuffix(path, kotlinDescriptorFileSuffix) {
-			var absFilePath string
-			absFilePath, innerErr = filepath.Abs(path)
-			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
-			}
-			descriptorFilesPaths = append(descriptorFilesPaths, absFilePath)
-		}
-		return nil
-	})
-	return
 }
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
