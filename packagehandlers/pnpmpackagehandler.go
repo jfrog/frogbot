@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -31,8 +33,6 @@ func (pnpm *PnpmPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// TODO similar to NPM take care of node_module exist or not
-
 	descriptorFilesFullPaths, err := pnpm.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{"package.json"}, ".*node_modules.*")
 	if err != nil {
 		return
@@ -65,10 +65,7 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 		return
 	}
 
-	regexpAdjustedPackageName := strings.ReplaceAll(vulnDetails.ImpactedDependencyName, ".", "\\.")
-	regexpAdjustedVersion := strings.ReplaceAll(vulnDetails.ImpactedDependencyVersion, ".", "\\.")
-	patternToLookFor := strings.ToLower(fmt.Sprintf(pnpmDependencyPattern, regexpAdjustedPackageName, regexpAdjustedVersion))
-	vulnDepRegexp := regexp.MustCompile(patternToLookFor)
+	vulnDepRegexp := getRegexpCompilerForVulnerability(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 
 	// If the vulnerability dependency was found in the current descriptor we want to fix it
 	if match := vulnDepRegexp.FindString(strings.ToLower(string(fileData))); match != "" {
@@ -82,13 +79,25 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 			err = errors.Join(err, os.Chdir(originalWd))
 		}()
 
-		// TODO ERAN make sure that the update command updates in the correct scope (dep, dev dep, optional dep..) - check with vulnerabilities in different scopes
+		var nodeModulesDirExist bool
+		// If node_modules doesn't exist before the fix we delete it after fixing, so it will not be pushed into the PR
+		nodeModulesDirExist, err = fileutils.IsDirExists(filepath.Join(modulePath, "node_modules"), false)
+
 		err = pnpm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 		if err != nil {
 			err = fmt.Errorf("failed to update dependency '%s' from version '%s' to '%s': %s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, err.Error())
 		}
-		// TODO ERAN check if its possible that a descriptor file cannot be fixed, and there will be no change to commit, so a PR should not be opened. since we use a built-in command this is not likely, but still check
+
+		if !nodeModulesDirExist {
+			err = fileutils.RemoveTempDir(filepath.Join(modulePath, "node_modules"))
+		}
 	}
-	// TODO ERAN check usecase: can we have the same package in 2 deps scopes in teh same file and we need to fix only in one scope?
 	return
+}
+
+func getRegexpCompilerForVulnerability(vulnPackageName, vulnPackageVersion string) *regexp.Regexp {
+	regexpAdjustedPackageName := strings.ReplaceAll(vulnPackageName, ".", "\\.")
+	regexpAdjustedVersion := strings.ReplaceAll(vulnPackageVersion, ".", "\\.")
+	patternToLookFor := strings.ToLower(fmt.Sprintf(pnpmDependencyPattern, regexpAdjustedPackageName, regexpAdjustedVersion))
+	return regexp.MustCompile(patternToLookFor)
 }
