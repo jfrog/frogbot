@@ -39,14 +39,12 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		// we will not cause a Frogbot run to fail but will instead log the error.
 		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
 		// Delete previous PR regular comments, if exists (not related to location of a change)
-		if err = DeleteExistingPullRequestComments(repo, client); err != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
-			return
+		if e := DeleteExistingPullRequestComments(repo, client); e != nil {
+			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 		}
 		// Delete previous PR review comments, if exists (related to location of a change)
-		if err = DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); err != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
-			return
+		if e := DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); e != nil {
+			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 		}
 	}
 

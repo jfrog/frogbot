@@ -47,7 +47,7 @@ func scanAllPullRequests(repo utils.Repository, client vcsclient.VcsClient) (err
 		}
 		if !shouldScan {
 			log.Info("Pull Request", pr.ID, "has already been scanned before. If you wish to scan it again, please comment \"rescan\".")
-			return
+			continue
 		}
 		repo.PullRequestDetails = pr
 		if e = scanPullRequest(&repo, client); e != nil {
