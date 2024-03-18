@@ -24,12 +24,12 @@ jobs:
         with:
           labels: "safe to test"
 
-      - name: Declare running environment
+      - name: Declare environment
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            echo "Working in Production environment."
+            echo "Working in production environment."
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Working in the dev-master environment."
+            echo "Working in dev-master environment."
           fi
 
       - name: Checkout code
