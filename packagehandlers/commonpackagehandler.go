@@ -90,6 +90,9 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 	return
 }
 
+// Recursively scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
+// The patternsToExclude must be provided as regexp patterns. For instance, if the pattern ".*node_modules.*" is provided, any paths containing "node_modules" will be excluded from the result.
+// Returns a slice of all discovered descriptor files, represented as absolute paths.
 func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(assetFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	var regexpPatternsCompilers []*regexp.Regexp
 	for _, patternToExclude := range patternsToExclude {

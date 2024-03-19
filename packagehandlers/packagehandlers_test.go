@@ -894,27 +894,33 @@ func TestGradleIsVersionSupportedForFix(t *testing.T) {
 func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 	var testcases = []struct {
 		testProjectRepo        string
+		suffixesToSearch       []string
 		expectedResultSuffixes []string
 		patternsToExclude      []string
 	}{
 		{
 			testProjectRepo:        "dotnet",
+			suffixesToSearch:       []string{dotnetAssetsFilesSuffix},
 			expectedResultSuffixes: []string{"dotnet.csproj"},
 		},
 		{
 			testProjectRepo:        "gradle",
+			suffixesToSearch:       []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix},
 			expectedResultSuffixes: []string{filepath.Join("innerProjectForTest", "build.gradle.kts"), "build.gradle"},
 		},
+		// This test case verifies that paths containing excluded patterns are omitted from the output
 		{
 			testProjectRepo:        "gradle",
+			suffixesToSearch:       []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix},
 			expectedResultSuffixes: []string{"build.gradle"},
-			patternsToExclude:      []string{".*InnerProjectForTest.*"},
+			patternsToExclude:      []string{".*innerProjectForTest.*"},
 		},
 	}
 
+	currDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
+
 	for _, testcase := range testcases {
-		currDir, err := os.Getwd()
-		assert.NoError(t, err)
 		tmpDir, err := os.MkdirTemp("", "")
 		assert.NoError(t, err)
 		assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", testcase.testProjectRepo), tmpDir, true, nil))
@@ -929,10 +935,11 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 		}
 
 		var cph CommonPackageHandler
-		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.expectedResultSuffixes, testcase.patternsToExclude...)
+		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.suffixesToSearch, testcase.patternsToExclude...)
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
 
 		assert.NoError(t, os.Chdir(currDir))
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
 }

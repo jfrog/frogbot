@@ -71,7 +71,7 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 
 	vulnDepRegexp := getRegexpCompilerForVulnerability(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
 
-	// If the vulnerability dependency was found in the current descriptor we want to fix it
+	// Only if the vulnerable dependency is detected in the current descriptor, we initiate a fix
 	if match := vulnDepRegexp.FindString(strings.ToLower(string(fileData))); match != "" {
 		modulePath := path.Dir(descriptorFilePath)
 		err = os.Chdir(modulePath)
@@ -84,7 +84,6 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 		}()
 
 		var nodeModulesDirExist bool
-		// If node_modules doesn't exist before the fix we delete it after fixing, so it will not be pushed into the PR
 		nodeModulesDirExist, err = fileutils.IsDirExists(filepath.Join(modulePath, "node_modules"), false)
 
 		err = pnpm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
@@ -93,6 +92,7 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 		}
 
 		if !nodeModulesDirExist {
+			// If the node_modules directory doesn't exist prior to the fix, we remove it to prevent it from being included in the pull request.
 			err = fileutils.RemoveTempDir(filepath.Join(modulePath, "node_modules"))
 		}
 		isFileChanged = true
