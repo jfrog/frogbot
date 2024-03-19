@@ -19,7 +19,6 @@ type PackageHandler interface {
 	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
-// TODO ERAN check if any test needs to be updated following this change
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
 	switch vulnDetails.Technology {
 	case coreutils.Go:
@@ -91,8 +90,6 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 	return
 }
 
-// TODO ERAN write test for this func
-// TODO ERAN apply this func in Gradle package handler & NuGet package handler instead the existing funcs
 func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(assetFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	var regexpPatternsCompilers []*regexp.Regexp
 	for _, patternToExclude := range patternsToExclude {
