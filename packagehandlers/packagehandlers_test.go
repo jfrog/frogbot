@@ -290,6 +290,30 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: true,
 			},
 		},
+
+		// Pnpm test cases
+		{
+			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "0.8.4",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: false,
+				testDirName:  "npm",
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.2.6",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: true,
+				testDirName:  "npm",
+			},
+		},
 	}
 
 	for _, testBatch := range testCases {
@@ -658,11 +682,25 @@ func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
 		packageDescriptor := extraArgs[0]
 		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
 	case coreutils.Gradle:
-		descriptorFilesPaths, err := getDescriptorFilesPaths()
+		var gph GradlePackageHandler
+		descriptorFilesPaths, err := gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
 		assert.NoError(t, err)
 		assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
 		for _, packageDescriptor := range descriptorFilesPaths {
 			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+		}
+	case coreutils.Pnpm:
+		var pnpm PnpmPackageHandler
+		descriptorFilesPaths, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
+		assert.NoError(t, err)
+		assert.Equal(t, len(descriptorFilesPaths), 1, "incorrect number of descriptor files found")
+		for _, packageDescriptor := range descriptorFilesPaths {
+			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+			dirPath := filepath.Dir(packageDescriptor)
+			var nodeModulesExist bool
+			nodeModulesExist, err = fileutils.IsDirExists(filepath.Join(dirPath, "node_modules"), false)
+			assert.NoError(t, err)
+			assert.False(t, nodeModulesExist)
 		}
 	default:
 	}
@@ -698,11 +736,11 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(testRootDir))
 	}()
 
-	assetFiles, err := getAssetsFilesPaths()
+	nph := &NugetPackageHandler{}
+
+	assetFiles, err := nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	assert.NoError(t, err)
 	testedAssetFile := assetFiles[0]
-
-	nph := &NugetPackageHandler{}
 
 	for _, testcase := range testcases {
 		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
@@ -750,26 +788,6 @@ func TestGetFixedPackage(t *testing.T) {
 	}
 }
 
-func TestGradleGetDescriptorFilesPaths(t *testing.T) {
-	currDir, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "")
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-	finalPath, err := os.Getwd()
-	assert.NoError(t, err)
-
-	expectedResults := []string{filepath.Join(finalPath, groovyDescriptorFileSuffix), filepath.Join(finalPath, "innerProjectForTest", kotlinDescriptorFileSuffix)}
-
-	buildFilesPaths, err := getDescriptorFilesPaths()
-	assert.NoError(t, err)
-	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
-}
-
 func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 	var testcases = []struct {
 		vulnerabilityDetails *utils.VulnerabilityDetails
@@ -801,10 +819,10 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	descriptorFiles, err := getDescriptorFilesPaths()
-	assert.NoError(t, err)
-
 	gph := GradlePackageHandler{}
+
+	descriptorFiles, err := gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
+	assert.NoError(t, err)
 
 	for _, descriptorFile := range descriptorFiles {
 		for _, testcase := range testcases {
@@ -870,5 +888,51 @@ func TestGradleIsVersionSupportedForFix(t *testing.T) {
 
 	for _, testcase := range testcases {
 		assert.Equal(t, testcase.expectedResult, isVersionSupportedForFix(testcase.impactedVersion))
+	}
+}
+
+func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
+	var testcases = []struct {
+		testProjectRepo        string
+		expectedResultSuffixes []string
+		patternsToExclude      []string
+	}{
+		{
+			testProjectRepo:        "dotnet",
+			expectedResultSuffixes: []string{"dotnet.csproj"},
+		},
+		{
+			testProjectRepo:        "gradle",
+			expectedResultSuffixes: []string{filepath.Join("innerProjectForTest", "build.gradle.kts"), "build.gradle"},
+		},
+		{
+			testProjectRepo:        "gradle",
+			expectedResultSuffixes: []string{"build.gradle"},
+			patternsToExclude:      []string{".*InnerProjectForTest.*"},
+		},
+	}
+
+	for _, testcase := range testcases {
+		currDir, err := os.Getwd()
+		assert.NoError(t, err)
+		tmpDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", testcase.testProjectRepo), tmpDir, true, nil))
+		assert.NoError(t, os.Chdir(tmpDir))
+
+		finalDirPath, err := os.Getwd()
+		assert.NoError(t, err)
+
+		var expectedResults []string
+		for _, suffix := range testcase.expectedResultSuffixes {
+			expectedResults = append(expectedResults, filepath.Join(finalDirPath, suffix))
+		}
+
+		var cph CommonPackageHandler
+		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.expectedResultSuffixes, testcase.patternsToExclude...)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
+
+		assert.NoError(t, os.Chdir(currDir))
 	}
 }
