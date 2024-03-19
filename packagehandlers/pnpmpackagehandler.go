@@ -13,7 +13,9 @@ import (
 )
 
 const (
-	pnpmDependencyPattern = "\\s*\"%s\"\\s*:\\s*\"[~|^]?%s\""
+	pnpmDependencyPattern    = "\\s*\"%s\"\\s*:\\s*\"[~|^]?%s\""
+	pnpmDescriptorFileSuffix = "package.json"
+	nodeModulesPathPattern   = ".*node_modules.*"
 )
 
 type PnpmPackageHandler struct {
@@ -33,7 +35,7 @@ func (pnpm *PnpmPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	descriptorFilesFullPaths, err := pnpm.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{"package.json"}, ".*node_modules.*")
+	descriptorFilesFullPaths, err := pnpm.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix}, nodeModulesPathPattern)
 	if err != nil {
 		return
 	}
@@ -44,20 +46,22 @@ func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
-	// TODO ERAN check about this: var anyDescriptorFileChanged bool
-
+	var anyDescriptorChanged bool
 	for _, descriptorFile := range descriptorFilesFullPaths {
-		err = pnpm.fixVulnerabilityIfExists(vulnDetails, descriptorFile, wd)
+		var isFileChanged bool
+		isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnDetails, descriptorFile, wd)
 		if err != nil {
 			return
 		}
+		anyDescriptorChanged = anyDescriptorChanged || isFileChanged
 	}
-
-	return nil
+	if !anyDescriptorChanged {
+		err = fmt.Errorf("impacted package '%s' was not found in any descriptor files", vulnDetails.ImpactedDependencyName)
+	}
+	return
 }
 
-func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string) (err error) {
-	// TODO ERAN consult if it is best to check for the vulnerability in the descriptor before fixing it (overhead)
+func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string) (isFileChanged bool, err error) {
 	var fileData []byte
 	fileData, err = os.ReadFile(descriptorFilePath)
 	if err != nil {
@@ -91,6 +95,7 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 		if !nodeModulesDirExist {
 			err = fileutils.RemoveTempDir(filepath.Join(modulePath, "node_modules"))
 		}
+		isFileChanged = true
 	}
 	return
 }
