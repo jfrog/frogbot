@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.9.23
 	github.com/jfrog/froggit-go v1.14.6
-	github.com/jfrog/gofrog v1.6.0
+	github.com/jfrog/gofrog v1.6.3
 	github.com/jfrog/jfrog-cli-core/v2 v2.48.1
 	github.com/jfrog/jfrog-cli-security v1.0.3
 	github.com/jfrog/jfrog-client-go v1.37.1
@@ -119,9 +119,9 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20240318124310-e797a9b1675b
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240317145720-25057b12b385
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
