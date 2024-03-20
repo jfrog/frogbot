@@ -918,6 +918,7 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 	}
 
 	currDir, outerErr := os.Getwd()
+
 	assert.NoError(t, outerErr)
 
 	for _, testcase := range testcases {
