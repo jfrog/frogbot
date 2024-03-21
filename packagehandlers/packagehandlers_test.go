@@ -23,8 +23,9 @@ type dependencyFixTest struct {
 	scanDetails           *utils.ScanDetails
 	fixSupported          bool
 	specificTechVersion   string
-	uniqueChecksExtraArgs []string
+	uniqueChecksExtraArgs []string //todo eran delete this var
 	testDirName           string
+	descriptorsToCheck    []string
 }
 
 const (
@@ -58,6 +59,7 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:           scanDetails,
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
+				descriptorsToCheck:    []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -68,6 +70,7 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:           scanDetails,
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
+				descriptorsToCheck:    []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -78,6 +81,7 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:           scanDetails,
 				fixSupported:          true,
 				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
+				descriptorsToCheck:    []string{GoPackageDescriptor},
 			},
 		},
 
@@ -86,6 +90,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
+					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
@@ -94,6 +99,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
+					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "pyproejct.toml"}},
@@ -102,6 +108,7 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.25.9",
+					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
@@ -113,40 +120,56 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true,
 				},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
-				fixSupported: true,
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Pyjwt"}},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
-				fixSupported: true,
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "setup.py"}},
-				fixSupported: true,
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "setup.py"}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{"setup.py"},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
-				fixSupported: true,
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{"pyproject.toml"},
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "2.4.0",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
+				},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{"Pipfile"},
 			},
 		},
 
 		// Npm test cases
 		{
 			{
+				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "0.8.4",
+					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
 				},
 				scanDetails:  scanDetails,
@@ -154,19 +177,20 @@ func TestUpdateDependency(t *testing.T) {
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.0.2",
+					SuggestedFixedVersion:       "1.2.6",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimatch"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
 				},
-				scanDetails:  scanDetails,
-				fixSupported: true,
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				descriptorsToCheck: []string{"package.json"},
 			},
 		},
 
 		// Yarn test cases
 		{
 			{
-				// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.2.6",
 					IsDirectDependency:          false,
@@ -184,6 +208,7 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "1",
+				descriptorsToCheck:  []string{"package.json"},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -194,6 +219,7 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "2",
+				descriptorsToCheck:  []string{"package.json"},
 			},
 		},
 
@@ -201,26 +227,29 @@ func TestUpdateDependency(t *testing.T) {
 		{
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.7",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
-					IsDirectDependency:          true},
+					SuggestedFixedVersion:       "4.3.20",
+					IsDirectDependency:          false,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
+				},
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{DepsRepo: ""}},
-				fixSupported: true,
+				fixSupported: false,
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.3.20",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
-					IsDirectDependency:          false},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{DepsRepo: ""}},
-				fixSupported: false,
+					SuggestedFixedVersion:       "2.7",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
+				},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{DepsRepo: ""}},
+				fixSupported:       true,
+				descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
 			},
 		},
 
 		// NuGet test cases
 		{
 			{
-				// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "1.1.1",
 					IsDirectDependency:          false,
@@ -236,15 +265,18 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
 				},
-				scanDetails:  scanDetails,
-				fixSupported: true,
-				testDirName:  "dotnet",
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				testDirName:        "dotnet",
+				descriptorsToCheck: []string{"dotnet.csproj"},
 			},
 		},
 
 		// Gradle test cases
+		// TODO ERAN - all Gradle test cases are verified. remove the current unique check that also checks descriptors search and pass the descriptors we want to check. put it in the default check
 		{
 			{
+				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "4.13.1",
 					IsDirectDependency:          false,
@@ -286,8 +318,9 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
 				},
-				scanDetails:  scanDetails,
-				fixSupported: true,
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
 			},
 		},
 	}
@@ -307,7 +340,8 @@ func TestUpdateDependency(t *testing.T) {
 					err := packageHandler.UpdateDependency(test.vulnDetails)
 					if test.fixSupported {
 						assert.NoError(t, err)
-						uniquePackageManagerChecks(t, test)
+						uniquePackageManagerChecks(t, test) // TODO delete this call
+						verifyDependencyUpdate(t, test)
 					} else {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -315,7 +349,6 @@ func TestUpdateDependency(t *testing.T) {
 				})
 		}
 	}
-
 }
 
 func TestPipPackageRegex(t *testing.T) {
@@ -639,33 +672,62 @@ func removeTxtSuffix(txtFileName string) error {
 	return fileutils.MoveFile(txtFileName, strings.TrimSuffix(txtFileName, ".txt"))
 }
 
-func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptor string) {
-	file, err := os.ReadFile(packageDescriptor)
-	assert.NoError(t, err)
+func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, packageDescriptors []string) {
+	for _, packageDescriptorToCheck := range packageDescriptors {
+		file, err := os.ReadFile(packageDescriptorToCheck)
+		assert.NoError(t, err)
 
-	assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
-	// Verify that case-sensitive packages in python are lowered
-	assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
-
+		assert.Contains(t, string(file), test.vulnDetails.SuggestedFixedVersion)
+		// Verify that case-sensitive packages in python are lowered
+		assert.Contains(t, string(file), strings.ToLower(test.vulnDetails.ImpactedDependencyName))
+	}
 }
 
+// TODO ERAN delete this func
 // This function is intended to add unique checks for specific package managers
 func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
-	technology := test.vulnDetails.Technology
-	extraArgs := test.uniqueChecksExtraArgs
-	switch technology {
-	case coreutils.Go:
-		packageDescriptor := extraArgs[0]
-		assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
-	case coreutils.Gradle:
-		descriptorFilesPaths, err := getDescriptorFilesPaths()
-		assert.NoError(t, err)
-		assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
-		for _, packageDescriptor := range descriptorFilesPaths {
+	/*
+		technology := test.vulnDetails.Technology
+		extraArgs := test.uniqueChecksExtraArgs
+		switch technology {
+		case coreutils.Go:
+			packageDescriptor := extraArgs[0]
 			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+		case coreutils.Gradle:
+			descriptorFilesPaths, err := getDescriptorFilesPaths()
+			assert.NoError(t, err)
+			assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
+			for _, packageDescriptor := range descriptorFilesPaths {
+				assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
+			}
+		default:
 		}
-	default:
+	*/
+}
+
+// Verifies the expected dependency update happened and extra check that are unique to selected package managers
+func verifyDependencyUpdate(t *testing.T, test dependencyFixTest) {
+	if len(test.descriptorsToCheck) == 0 {
+		assert.Fail(t, fmt.Sprintf("Please provide descriptor files to be inspected in the 'descriptorsToCheck' for %s test cases where a fix is supported.", test.vulnDetails.Technology))
 	}
+
+	currDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	var descriptorsFullPaths []string
+	for _, descriptorToCheck := range test.descriptorsToCheck {
+		descriptorsFullPaths = append(descriptorsFullPaths, filepath.Join(currDir, descriptorToCheck))
+	}
+
+	if test.vulnDetails.Technology == coreutils.Maven {
+		// In Maven descriptors the dependency's artifact name and group name are split into 2 different lines, therefore we change the ImpactedDependencyName to be the dependency's artifact name only
+		depArtifactAndGroup := strings.Split(test.vulnDetails.ImpactedDependencyName, ":")
+		assert.Equal(t, len(depArtifactAndGroup), 2)
+		test.vulnDetails.ImpactedDependencyName = depArtifactAndGroup[1]
+		// TODO maybe need to do the same for gradle?
+	}
+	assertFixVersionInPackageDescriptor(t, test, descriptorsFullPaths)
+
 }
 
 func TestNugetFixVulnerabilityIfExists(t *testing.T) {
