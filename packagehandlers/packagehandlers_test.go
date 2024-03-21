@@ -548,6 +548,9 @@ func TestGetProjectPoms(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "maven"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
@@ -585,6 +588,9 @@ func TestUpdatePackageVersion(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
@@ -621,6 +627,9 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
@@ -753,6 +762,9 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "dotnet"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
@@ -816,6 +828,9 @@ func TestGradleGetDescriptorFilesPaths(t *testing.T) {
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
@@ -856,6 +871,9 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
 	assert.NoError(t, err)
 	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
 	assert.NoError(t, os.Chdir(tmpDir))
