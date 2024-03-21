@@ -20,6 +20,8 @@ const (
 // Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
 var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
 
+var gradleDescriptorsSuffixes = []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix}
+
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
@@ -52,7 +54,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
 	var descriptorFilesFullPaths []string
-	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
+	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths(gradleDescriptorsSuffixes)
 	if err != nil {
 		return
 	}

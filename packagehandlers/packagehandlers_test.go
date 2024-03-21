@@ -738,20 +738,20 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 
 	nph := &NugetPackageHandler{}
 
-	assetFiles, err := nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
+	descriptorFiles, err := nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	assert.NoError(t, err)
-	testedAssetFile := assetFiles[0]
+	testedDescriptorFile := descriptorFiles[0]
 
 	for _, testcase := range testcases {
-		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
+		vulnRegexpCompiler := GetVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 		var isFileChanged bool
-		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedDescriptorFile, tmpDir, vulnRegexpCompiler)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 	}
 
 	var fixedFileContent []byte
-	fixedFileContent, err = os.ReadFile(testedAssetFile)
+	fixedFileContent, err = os.ReadFile(testedDescriptorFile)
 	fixedFileContentString := string(fixedFileContent)
 
 	assert.NoError(t, err)
@@ -942,4 +942,49 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}
+}
+
+func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
+	testRootDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "npm"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(testRootDir))
+	}()
+
+	vulnerabilityDetails := &utils.VulnerabilityDetails{
+		SuggestedFixedVersion:       "1.2.6",
+		IsDirectDependency:          true,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+	}
+	pnpm := &PnpmPackageHandler{}
+
+	descriptorFiles, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
+	assert.NoError(t, err)
+	descriptorFileToTest := descriptorFiles[0]
+
+	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
+	var isFileChanged bool
+	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
+	assert.NoError(t, err)
+	assert.True(t, isFileChanged)
+
+	var fixedFileContent []byte
+	fixedFileContent, err = os.ReadFile(descriptorFileToTest)
+	fixedFileContentString := string(fixedFileContent)
+
+	assert.NoError(t, err)
+	assert.NotContains(t, fixedFileContentString, "\"minimist\": \"1.2.5\"")
+	assert.Contains(t, fixedFileContentString, "\"minimist\": \"1.2.6\"")
+
+	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
+	assert.NoError(t, err)
+	assert.False(t, nodeModulesExist)
 }
