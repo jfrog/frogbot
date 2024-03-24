@@ -1,3 +1,7 @@
+
+
+[comment]: <> (FrogbotReviewComment)
+
 <div align='center'>
 
 [![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
@@ -6,6 +10,7 @@
 
 
 ## 📦 Vulnerable Dependencies
+
 ### ✍️ Summary
 <div align='center'>
 
@@ -15,7 +20,10 @@
 
 </div>
 
+
 ### 🔬 Research Details
+
+
 **Description:**
 [Minimist](https://github.com/substack/minimist) is a simple and very popular argument parser. It is used by more than 14 million by Mar 2022. This package developers stopped developing it since April 2020 and its community released a [newer version](https://github.com/meszaros-lajos-gyorgy/minimist-lite) supported by the community.
 

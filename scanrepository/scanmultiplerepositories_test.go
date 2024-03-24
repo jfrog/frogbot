@@ -55,7 +55,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	}()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)
-	configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
+	configAggregator, err := utils.BuildRepoAggregator(client, configData, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
 	assert.NoError(t, err)
 
 	var cmd = ScanMultipleRepositories{dryRun: true, dryRunRepoPath: testDir}

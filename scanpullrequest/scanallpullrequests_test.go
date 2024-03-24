@@ -67,9 +67,9 @@ func TestShouldNotScanPullRequestReScan(t *testing.T) {
 	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
-		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(1, 0)},
+		{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(1, 0)},
 		{Content: utils.RescanRequestComment, Created: time.Unix(1, 1)},
-		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+		{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestShouldNotScanPullRequest(t *testing.T) {
 	client := CreateMockVcsClient(t)
 	prID := 0
 	client.EXPECT().ListPullRequestComments(context.Background(), gitParams.RepoOwner, gitParams.RepoName, prID).Return([]vcsclient.CommentInfo{
-		{Content: outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
+		{Content: outputwriter.MarkdownComment(outputwriter.ReviewCommentId) + outputwriter.MarkAsBold(outputwriter.GetSimplifiedTitle(outputwriter.NoVulnerabilityPrBannerSource)) + "text \n table\n text text text", Created: time.Unix(3, 0)},
 	}, nil)
 	shouldScan, err := shouldScanPullRequest(*gitParams, client, prID)
 	assert.NoError(t, err)
