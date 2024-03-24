@@ -109,6 +109,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	// Set the outputwriter interface for the relevant vcs git provider
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
+	cfp.OutputWriter.SetSizeLimit(client)
 	// Set the git client to perform git operations
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
@@ -411,7 +412,6 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
 
 	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
-	// prBody = utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
 
 	if cfp.aggregateFixes {
 		var scanHash string

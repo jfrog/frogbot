@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
-	// Pull request comment value must be less than 32768 characters
-	MaxCharsInBitBucketComment = 32768
-	// Description for a pull request must not be longer than 4000 characters.
-	MaxCharsInAzureComment = 4000
-
 	SecretsEmailCSS = `body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -102,7 +99,8 @@ type OutputWriter interface {
 	PullRequestCommentTitle() string
 	SetHasInternetConnection(connected bool)
 	HasInternetConnection() bool
-	SizeLimit() int
+	SizeLimit(comment bool) int
+	SetSizeLimit(client vcsclient.VcsClient)
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -121,7 +119,8 @@ type MarkdownOutput struct {
 	showCaColumn            bool
 	entitledForJas          bool
 	hasInternetConnection   bool
-	sizeLimit               int
+	descriptionSizeLimit    int
+	commentSizeLimit        int
 	vcsProvider             vcsutils.VcsProvider
 }
 
@@ -172,20 +171,32 @@ func (mo *MarkdownOutput) PullRequestCommentTitle() string {
 	return mo.pullRequestCommentTitle
 }
 
-func (mo *MarkdownOutput) SizeLimit() int {
-	return mo.sizeLimit
+func (mo *MarkdownOutput) SizeLimit(comment bool) int {
+	if comment {
+		return mo.commentSizeLimit
+	}
+	return mo.descriptionSizeLimit
+}
+
+func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
+	mo.commentSizeLimit = client.GetPullRequestCommentSizeLimit()
+	mo.descriptionSizeLimit = client.GetPullRequestDetailsSizeLimit()
+}
+
+func GetMarkdownSizeLimit(client vcsclient.VcsClient) int {
+	limit := client.GetPullRequestCommentSizeLimit()
+	if client.GetPullRequestDetailsSizeLimit() < limit {
+		limit = client.GetPullRequestDetailsSizeLimit()
+	}
+	return limit
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true, sizeLimit: MaxCharsInBitBucketComment}}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 	default:
-		output := &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
-		if provider == vcsutils.AzureRepos {
-			output.sizeLimit = MaxCharsInAzureComment
-		}
-		return output
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 	}
 }
 
@@ -241,7 +252,7 @@ func ConvertContentToComments(content []string, writer OutputWriter, commentDeco
 }
 
 func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string, builder *strings.Builder, writer OutputWriter, commentDecorators ...CommentDecorator) (content string, reached bool) {
-	limit := writer.SizeLimit()
+	limit := writer.SizeLimit(commentCount != 0)
 	if limit == 0 {
 		//  No limit
 		return
@@ -250,6 +261,7 @@ func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string
 		return
 	}
 	// Limit reached - Add the current content as a comment to the list and reset the builder
+	log.Debug(fmt.Sprintf("Content size limit reached (%d), splitting. (total comments for content: %d)", limit, commentCount+1))
 	content = builder.String()
 	builder.Reset()
 	return decorate(commentCount, content, commentDecorators...), true

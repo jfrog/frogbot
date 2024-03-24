@@ -375,7 +375,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 				{
 					name:   "Split Standard output",
-					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, sizeLimit: 1720}},
+					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1720, commentSizeLimit: 1720}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split2.md"),
@@ -383,7 +383,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 				{
 					name:   "Split Simplified output",
-					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, sizeLimit: 1000}},
+					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1000, commentSizeLimit: 1000}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split2.md"),
