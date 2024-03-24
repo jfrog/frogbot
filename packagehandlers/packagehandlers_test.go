@@ -6,7 +6,7 @@ import (
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/java"
+	"github.com/jfrog/jfrog-cli-security/commands/audit/sca/java"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
