@@ -19,13 +19,12 @@ import (
 )
 
 type dependencyFixTest struct {
-	vulnDetails           *utils.VulnerabilityDetails
-	scanDetails           *utils.ScanDetails
-	fixSupported          bool
-	specificTechVersion   string
-	uniqueChecksExtraArgs []string //todo eran delete this var
-	testDirName           string
-	descriptorsToCheck    []string
+	vulnDetails         *utils.VulnerabilityDetails
+	scanDetails         *utils.ScanDetails
+	fixSupported        bool
+	specificTechVersion string
+	testDirName         string
+	descriptorsToCheck  []string
 }
 
 const (
@@ -56,10 +55,9 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "golang.org/x/crypto"}},
 				},
-				scanDetails:           scanDetails,
-				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
-				descriptorsToCheck:    []string{GoPackageDescriptor},
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -67,10 +65,9 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/gin-gonic/gin"}},
 				},
-				scanDetails:           scanDetails,
-				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
-				descriptorsToCheck:    []string{GoPackageDescriptor},
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
@@ -78,10 +75,9 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/google/uuid"}},
 				},
-				scanDetails:           scanDetails,
-				fixSupported:          true,
-				uniqueChecksExtraArgs: []string{GoPackageDescriptor},
-				descriptorsToCheck:    []string{GoPackageDescriptor},
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 		},
 
@@ -273,7 +269,6 @@ func TestUpdateDependency(t *testing.T) {
 		},
 
 		// Gradle test cases
-		// TODO ERAN - all Gradle test cases are verified. remove the current unique check that also checks descriptors search and pass the descriptors we want to check. put it in the default check
 		{
 			{
 				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
@@ -342,9 +337,10 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
 				},
-				scanDetails:  scanDetails,
-				fixSupported: true,
-				testDirName:  "npm",
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				testDirName:        "npm",
+				descriptorsToCheck: []string{"package.json"},
 			},
 		},
 	}
@@ -364,7 +360,6 @@ func TestUpdateDependency(t *testing.T) {
 					err := packageHandler.UpdateDependency(test.vulnDetails)
 					if test.fixSupported {
 						assert.NoError(t, err)
-						uniquePackageManagerChecks(t, test) // TODO delete this call
 						verifyDependencyUpdate(t, test)
 					} else {
 						assert.Error(t, err)
@@ -716,28 +711,6 @@ func assertFixVersionInPackageDescriptor(t *testing.T, test dependencyFixTest, p
 	}
 }
 
-// TODO ERAN delete this func
-// This function is intended to add unique checks for specific package managers
-func uniquePackageManagerChecks(t *testing.T, test dependencyFixTest) {
-	/*
-		technology := test.vulnDetails.Technology
-		extraArgs := test.uniqueChecksExtraArgs
-		switch technology {
-		case coreutils.Go:
-			packageDescriptor := extraArgs[0]
-			assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
-		case coreutils.Gradle:
-			descriptorFilesPaths, err := getDescriptorFilesPaths()
-			assert.NoError(t, err)
-			assert.Equal(t, len(descriptorFilesPaths), 2, "incorrect number of descriptor files found")
-			for _, packageDescriptor := range descriptorFilesPaths {
-				assertFixVersionInPackageDescriptor(t, test, packageDescriptor)
-			}
-		default:
-		}
-	*/
-}
-
 // Verifies the expected dependency update happened and extra check that are unique to selected package managers
 func verifyDependencyUpdate(t *testing.T, test dependencyFixTest) {
 	if len(test.descriptorsToCheck) == 0 {
@@ -757,7 +730,6 @@ func verifyDependencyUpdate(t *testing.T, test dependencyFixTest) {
 		depArtifactAndGroup := strings.Split(test.vulnDetails.ImpactedDependencyName, ":")
 		assert.Equal(t, len(depArtifactAndGroup), 2)
 		test.vulnDetails.ImpactedDependencyName = depArtifactAndGroup[1]
-		// TODO maybe need to do the same for gradle?
 	}
 	assertFixVersionInPackageDescriptor(t, test, descriptorsFullPaths)
 
@@ -846,29 +818,6 @@ func TestGetFixedPackage(t *testing.T) {
 		fixedPackageArgs := getFixedPackage(test.impactedPackage, test.versionOperator, test.suggestedFixedVersion)
 		assert.Equal(t, test.expectedOutput, fixedPackageArgs)
 	}
-}
-
-func TestGradleGetDescriptorFilesPaths(t *testing.T) {
-	currDir, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "")
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "gradle"), tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-	finalPath, err := os.Getwd()
-	assert.NoError(t, err)
-
-	expectedResults := []string{filepath.Join(finalPath, groovyDescriptorFileSuffix), filepath.Join(finalPath, "innerProjectForTest", kotlinDescriptorFileSuffix)}
-
-	buildFilesPaths, err := getDescriptorFilesPaths()
-	assert.NoError(t, err)
-	assert.ElementsMatch(t, expectedResults, buildFilesPaths)
 }
 
 func TestGradleFixVulnerabilityIfExists(t *testing.T) {
