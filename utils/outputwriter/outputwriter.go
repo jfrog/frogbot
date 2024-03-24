@@ -179,6 +179,9 @@ func (mo *MarkdownOutput) SizeLimit(comment bool) int {
 }
 
 func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
+	if client == nil {
+		return
+	}
 	mo.commentSizeLimit = client.GetPullRequestCommentSizeLimit()
 	mo.descriptionSizeLimit = client.GetPullRequestDetailsSizeLimit()
 }
