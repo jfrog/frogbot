@@ -38,9 +38,8 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		// Since this task is not mandatory for a Frogbot run,
 		// we will not cause a Frogbot run to fail but will instead log the error.
 		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-		if err = DeletePullRequestComments(repo, client, pullRequestID); err != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, err))
-			return
+		if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
+			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 		}
 	}
 
@@ -62,11 +61,9 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 
 func DeletePullRequestComments(repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	// Delete previous PR regular comments, if exists (not related to location of a change)
-	if err = DeleteExistingPullRequestComments(repo, client); err != nil {
-		return
-	}
+	err = DeleteExistingPullRequestComments(repo, client)
 	// Delete previous PR review comments, if exists (related to location of a change)
-	return DeleteExistingPullRequestReviewComments(repo, pullRequestID, client)
+	return errors.Join(err, DeleteExistingPullRequestReviewComments(repo, pullRequestID, client))
 }
 
 // Delete existing pull request regular comments (Summary, Fallback review comments)
