@@ -109,6 +109,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	// Set the outputwriter interface for the relevant vcs git provider
 	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
+	cfp.OutputWriter.SetSizeLimit(client)
 	// Set the git client to perform git operations
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
@@ -153,7 +154,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
 	if fixNeeded {
-		return cfp.fixVulnerablePackages(vulnerabilitiesByPathMap)
+		return cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 	}
 	return nil
 }
@@ -186,24 +187,24 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Resul
 	return vulnerabilitiesMap, nil
 }
 
-func (cfp *ScanRepositoryCmd) fixVulnerablePackages(vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.aggregateFixes {
-		return cfp.fixIssuesSinglePR(vulnerabilitiesByWdMap)
+		return cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
 	}
-	return cfp.fixIssuesSeparatePRs(vulnerabilitiesByWdMap)
+	return cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
 }
 
-func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
+func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
 	var err error
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
-		if e := cfp.fixProjectVulnerabilities(fullPath, vulnerabilities); e != nil {
+		if e := cfp.fixProjectVulnerabilities(repository, fullPath, vulnerabilities); e != nil {
 			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%s", fullPath, e))
 		}
 	}
 	return err
 }
 
-func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, fullProjectPath string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
 	// Update the working directory to the project's current working directory
 	projectWorkingDir := utils.GetRelativeWd(fullProjectPath, cfp.baseWd)
 
@@ -220,7 +221,7 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(fullProjectPath string, 
 
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
-		if e := cfp.fixSinglePackageAndCreatePR(vulnerability); e != nil {
+		if e := cfp.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 
@@ -265,13 +266,13 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 // If the scan results are the same, no action is taken.
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
-func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	aggregatedFixBranchName := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech)
 	existingPullRequestDetails, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 	if err != nil {
 		return
 	}
-	return cfp.aggregateFixAndOpenPullRequest(vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
+	return cfp.aggregateFixAndOpenPullRequest(repository, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
 }
 
 // Handles possible error of update package operation
@@ -294,7 +295,7 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
 	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
@@ -327,14 +328,14 @@ func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(vulnDetails *utils.Vul
 	if err = cfp.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
-	if err = cfp.openFixingPullRequest(fixBranchName, vulnDetails); err != nil {
+	if err = cfp.openFixingPullRequest(repository, fixBranchName, vulnDetails); err != nil {
 		return errors.Join(fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion), err)
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 	return
 }
 
-func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository, fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	log.Debug("Checking if there are changes to commit")
 	isClean, err := cfp.gitManager.IsClean()
 	if err != nil {
@@ -351,17 +352,48 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(fixBranchName string, vulnDe
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle, prBody, err := cfp.preparePullRequestDetails(vulnDetails)
+	return cfp.handleFixPullRequestContent(repository, fixBranchName, nil, vulnDetails)
+}
+
+func (cfp *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
+	pullRequestTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
 	if err != nil {
 		return
 	}
-	log.Debug("Creating Pull Request form:", fixBranchName, " to:", cfp.scanDetails.BaseBranch())
-	return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
+	// Update PR description
+	if pullRequestInfo, err = cfp.createOrUpdatePullRequest(repository, pullRequestInfo, fixBranchName, pullRequestTitle, prBody); err != nil {
+		return
+	}
+	// Update PR extra comments
+	client := cfp.scanDetails.Client()
+	for _, comment := range extraComments {
+		if err = client.AddPullRequestComment(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, comment, int(pullRequestInfo.ID)); err != nil {
+			err = errors.New("couldn't add pull request comment: " + err.Error())
+			return
+		}
+	}
+	return
+}
+
+func (cfp *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Repository, pullRequestInfo *vcsclient.PullRequestInfo, fixBranchName, pullRequestTitle, prBody string) (prInfo *vcsclient.PullRequestInfo, err error) {
+	if pullRequestInfo == nil {
+		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
+		if err = cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody); err != nil {
+			return
+		}
+		return cfp.getOpenPullRequestBySourceBranch(fixBranchName)
+	}
+	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
+	if err = cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open); err != nil {
+		return
+	}
+	// Delete old extra comments
+	return pullRequestInfo, utils.DeletePullRequestComments(repository, cfp.scanDetails.Client(), int(pullRequestInfo.ID))
 }
 
 // openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
-func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech)
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
@@ -369,36 +401,29 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(fixBranchName string, pu
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	pullRequestTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
-	if err != nil {
-		return
-	}
-	if pullRequestInfo == nil {
-		log.Info("Creating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
-		return cfp.scanDetails.Client().CreatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, fixBranchName, cfp.scanDetails.BaseBranch(), pullRequestTitle, prBody)
-	}
-	log.Info("Updating Pull Request from:", fixBranchName, "to:", cfp.scanDetails.BaseBranch())
-	return cfp.scanDetails.Client().UpdatePullRequest(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName, pullRequestTitle, prBody, pullRequestInfo.Target.Name, int(pullRequestInfo.ID), vcsutils.Open)
+	return cfp.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
 }
 
-func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle string, prBody string, err error) {
+func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
 	if cfp.dryRun && cfp.aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
-		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", nil
+		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), "", []string{}, nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
-	prBody = utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
+
+	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, cfp.OutputWriter)
+
 	if cfp.aggregateFixes {
 		var scanHash string
 		if scanHash, err = utils.VulnerabilityDetailsToMD5Hash(vulnerabilitiesRows...); err != nil {
 			return
 		}
-		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash)), nil
+		return cfp.gitManager.GenerateAggregatedPullRequestTitle(cfp.projectTech), prBody + outputwriter.MarkdownComment(fmt.Sprintf("Checksum: %s", scanHash)), extraComments, nil
 	}
 	// In separate pull requests there is only one vulnerability
 	vulnDetails := vulnerabilitiesDetails[0]
 	pullRequestTitle := cfp.gitManager.GeneratePullRequestTitle(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
-	return pullRequestTitle, prBody, nil
+	return pullRequestTitle, prBody, extraComments, nil
 }
 
 func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
@@ -536,7 +561,7 @@ func (cfp *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string
 	return
 }
 
-func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
+func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 
@@ -575,8 +600,8 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(vulnerabilitiesMap 
 		return
 	}
 	if len(fixedVulnerabilities) > 0 {
-		if e = cfp.openAggregatedPullRequest(aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
-			err = errors.Join(err, fmt.Errorf("failed while creating aggreagted pull request. Error: \n%s", e.Error()))
+		if e = cfp.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
+			err = errors.Join(err, fmt.Errorf("failed while creating aggregated pull request. Error: \n%s", e.Error()))
 		}
 	}
 	log.Info("-----------------------------------------------------------------")

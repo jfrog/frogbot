@@ -177,7 +177,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(configData, &gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -297,7 +297,7 @@ pr body
 			// Load default configurations
 			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(client, configData, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -613,11 +613,12 @@ func TestPreparePullRequestDetails(t *testing.T) {
 			SuggestedFixedVersion: "1.0.0",
 		},
 	}
-	expectedPrBody := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, err := cfp.preparePullRequestDetails(vulnerabilities...)
+	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 	vulnerabilities = append(vulnerabilities, &utils.VulnerabilityDetails{
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 			Summary: "summary",
@@ -632,17 +633,21 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		SuggestedFixedVersion: "2.0.0",
 	})
 	cfp.aggregateFixes = true
-	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter) + outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
-	expectedPrBody = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter) + outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType string) {

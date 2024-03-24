@@ -175,7 +175,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -220,7 +220,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -254,7 +254,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(commandName)
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator(nil, gitParams, server, commandName)
+	configFile, err := BuildRepoAggregator(nil, nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -368,12 +368,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, &gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator(nil, nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
 
-	repoAggregator, err = BuildRepoAggregator(nil, &gitParams, &server, ScanPullRequest)
+	repoAggregator, err = BuildRepoAggregator(nil, nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	repo = repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
@@ -541,7 +541,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(fileContent, gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator(nil, fileContent, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]

@@ -6,7 +6,7 @@ import (
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/java"
+	"github.com/jfrog/jfrog-cli-security/commands/audit/sca/java"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
@@ -321,6 +321,30 @@ func TestUpdateDependency(t *testing.T) {
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
+			},
+		},
+
+		// Pnpm test cases
+		{
+			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "0.8.4",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: false,
+				testDirName:  "npm",
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "1.2.6",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: true,
+				testDirName:  "npm",
 			},
 		},
 	}
@@ -772,22 +796,22 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(testRootDir))
 	}()
 
-	assetFiles, err := getAssetsFilesPaths()
-	assert.NoError(t, err)
-	testedAssetFile := assetFiles[0]
-
 	nph := &NugetPackageHandler{}
 
+	descriptorFiles, err := nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
+	assert.NoError(t, err)
+	testedDescriptorFile := descriptorFiles[0]
+
 	for _, testcase := range testcases {
-		vulnRegexpCompiler := getVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion)
+		vulnRegexpCompiler := GetVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 		var isFileChanged bool
-		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedAssetFile, vulnRegexpCompiler, tmpDir)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedDescriptorFile, tmpDir, vulnRegexpCompiler)
 		assert.NoError(t, err)
 		assert.True(t, isFileChanged)
 	}
 
 	var fixedFileContent []byte
-	fixedFileContent, err = os.ReadFile(testedAssetFile)
+	fixedFileContent, err = os.ReadFile(testedDescriptorFile)
 	fixedFileContentString := string(fixedFileContent)
 
 	assert.NoError(t, err)
@@ -881,10 +905,10 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	descriptorFiles, err := getDescriptorFilesPaths()
-	assert.NoError(t, err)
-
 	gph := GradlePackageHandler{}
+
+	descriptorFiles, err := gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
+	assert.NoError(t, err)
 
 	for _, descriptorFile := range descriptorFiles {
 		for _, testcase := range testcases {
@@ -951,4 +975,102 @@ func TestGradleIsVersionSupportedForFix(t *testing.T) {
 	for _, testcase := range testcases {
 		assert.Equal(t, testcase.expectedResult, isVersionSupportedForFix(testcase.impactedVersion))
 	}
+}
+
+func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
+	var testcases = []struct {
+		testProjectRepo        string
+		suffixesToSearch       []string
+		expectedResultSuffixes []string
+		patternsToExclude      []string
+	}{
+		{
+			testProjectRepo:        "dotnet",
+			suffixesToSearch:       []string{dotnetAssetsFilesSuffix},
+			expectedResultSuffixes: []string{"dotnet.csproj"},
+		},
+		{
+			testProjectRepo:        "gradle",
+			suffixesToSearch:       []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix},
+			expectedResultSuffixes: []string{filepath.Join("innerProjectForTest", "build.gradle.kts"), "build.gradle"},
+		},
+		// This test case verifies that paths containing excluded patterns are omitted from the output
+		{
+			testProjectRepo:        "gradle",
+			suffixesToSearch:       []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix},
+			expectedResultSuffixes: []string{"build.gradle"},
+			patternsToExclude:      []string{".*innerProjectForTest.*"},
+		},
+	}
+
+	currDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
+
+	for _, testcase := range testcases {
+		tmpDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", testcase.testProjectRepo), tmpDir, true, nil))
+		assert.NoError(t, os.Chdir(tmpDir))
+
+		finalDirPath, err := os.Getwd()
+		assert.NoError(t, err)
+
+		var expectedResults []string
+		for _, suffix := range testcase.expectedResultSuffixes {
+			expectedResults = append(expectedResults, filepath.Join(finalDirPath, suffix))
+		}
+
+		var cph CommonPackageHandler
+		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.suffixesToSearch, testcase.patternsToExclude...)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
+
+		assert.NoError(t, os.Chdir(currDir))
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}
+}
+
+func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
+	testRootDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir, err := os.MkdirTemp("", "")
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+	assert.NoError(t, err)
+	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "npm"), tmpDir, true, nil))
+	assert.NoError(t, os.Chdir(tmpDir))
+	defer func() {
+		assert.NoError(t, os.Chdir(testRootDir))
+	}()
+
+	vulnerabilityDetails := &utils.VulnerabilityDetails{
+		SuggestedFixedVersion:       "1.2.6",
+		IsDirectDependency:          true,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: coreutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+	}
+	pnpm := &PnpmPackageHandler{}
+
+	descriptorFiles, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
+	assert.NoError(t, err)
+	descriptorFileToTest := descriptorFiles[0]
+
+	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
+	var isFileChanged bool
+	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
+	assert.NoError(t, err)
+	assert.True(t, isFileChanged)
+
+	var fixedFileContent []byte
+	fixedFileContent, err = os.ReadFile(descriptorFileToTest)
+	fixedFileContentString := string(fixedFileContent)
+
+	assert.NoError(t, err)
+	assert.NotContains(t, fixedFileContentString, "\"minimist\": \"1.2.5\"")
+	assert.Contains(t, fixedFileContentString, "\"minimist\": \"1.2.6\"")
+
+	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
+	assert.NoError(t, err)
+	assert.False(t, nodeModulesExist)
 }

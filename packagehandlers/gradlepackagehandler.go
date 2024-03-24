@@ -3,9 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -21,6 +19,8 @@ const (
 // Regexp pattern for "map" format dependencies
 // Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
 var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
+
+var gradleDescriptorsSuffixes = []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix}
 
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
@@ -53,13 +53,14 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
-	descriptorFilesPaths, err := getDescriptorFilesPaths()
+	var descriptorFilesFullPaths []string
+	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths(gradleDescriptorsSuffixes)
 	if err != nil {
 		return
 	}
 
 	isAnyDescriptorFileChanged := false
-	for _, descriptorFilePath := range descriptorFilesPaths {
+	for _, descriptorFilePath := range descriptorFilesFullPaths {
 		var isFileChanged bool
 		isFileChanged, err = gph.fixVulnerabilityIfExists(descriptorFilePath, vulnDetails)
 		if err != nil {
@@ -83,26 +84,6 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 		return false
 	}
 	return true
-}
-
-// Collects all descriptor files absolute paths
-func getDescriptorFilesPaths() (descriptorFilesPaths []string, err error) {
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
-		if innerErr != nil {
-			return fmt.Errorf("error has occured when trying to access or traverse the files system: %s", err.Error())
-		}
-
-		if strings.HasSuffix(path, groovyDescriptorFileSuffix) || strings.HasSuffix(path, kotlinDescriptorFileSuffix) {
-			var absFilePath string
-			absFilePath, innerErr = filepath.Abs(path)
-			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s':%s", path, innerErr.Error())
-			}
-			descriptorFilesPaths = append(descriptorFilesPaths, absFilePath)
-		}
-		return nil
-	})
-	return
 }
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
