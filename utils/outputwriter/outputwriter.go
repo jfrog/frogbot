@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 const (
@@ -97,6 +99,8 @@ type OutputWriter interface {
 	PullRequestCommentTitle() string
 	SetHasInternetConnection(connected bool)
 	HasInternetConnection() bool
+	SizeLimit(comment bool) int
+	SetSizeLimit(client vcsclient.VcsClient)
 	// VCS info
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
@@ -115,8 +119,12 @@ type MarkdownOutput struct {
 	showCaColumn            bool
 	entitledForJas          bool
 	hasInternetConnection   bool
+	descriptionSizeLimit    int
+	commentSizeLimit        int
 	vcsProvider             vcsutils.VcsProvider
 }
+
+type CommentDecorator func(int, string) string
 
 func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 	mo.vcsProvider = provider
@@ -163,6 +171,29 @@ func (mo *MarkdownOutput) PullRequestCommentTitle() string {
 	return mo.pullRequestCommentTitle
 }
 
+func (mo *MarkdownOutput) SizeLimit(comment bool) int {
+	if comment {
+		return mo.commentSizeLimit
+	}
+	return mo.descriptionSizeLimit
+}
+
+func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
+	if client == nil {
+		return
+	}
+	mo.commentSizeLimit = client.GetPullRequestCommentSizeLimit()
+	mo.descriptionSizeLimit = client.GetPullRequestDetailsSizeLimit()
+}
+
+func GetMarkdownSizeLimit(client vcsclient.VcsClient) int {
+	limit := client.GetPullRequestCommentSizeLimit()
+	if client.GetPullRequestDetailsSizeLimit() < limit {
+		limit = client.GetPullRequestDetailsSizeLimit()
+	}
+	return limit
+}
+
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
@@ -204,4 +235,51 @@ func WriteContent(builder *strings.Builder, contents ...string) {
 
 func WriteNewLine(builder *strings.Builder) {
 	builder.WriteString("\n")
+}
+
+// ConvertContentToComments converts the given content to comments, and returns the comments as a list of strings.
+// The content is split into comments based on the size limit of the output writer.
+// The commentDecorators are applied to each comment.
+func ConvertContentToComments(content []string, writer OutputWriter, commentDecorators ...CommentDecorator) (comments []string) {
+	commentBuilder := strings.Builder{}
+	for _, commentContent := range content {
+		if newContent, limitReached := getContentAndResetBuilderIfLimitReached(len(comments), commentContent, &commentBuilder, writer, commentDecorators...); limitReached {
+			comments = append(comments, newContent)
+		}
+		WriteContent(&commentBuilder, commentContent)
+	}
+	if commentBuilder.Len() > 0 || len(content) == 0 {
+		comments = append(comments, decorate(len(comments), commentBuilder.String(), commentDecorators...))
+	}
+	return
+}
+
+func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string, builder *strings.Builder, writer OutputWriter, commentDecorators ...CommentDecorator) (content string, reached bool) {
+	limit := writer.SizeLimit(commentCount != 0)
+	if limit == 0 {
+		//  No limit
+		return
+	}
+	if builder.Len()+decoratorsSize(commentCount, commentDecorators...)+len(newContent) < limit {
+		return
+	}
+	// Limit reached - Add the current content as a comment to the list and reset the builder
+	log.Debug(fmt.Sprintf("Content size limit reached (%d), splitting. (total comments for content: %d)", limit, commentCount+1))
+	content = builder.String()
+	builder.Reset()
+	return decorate(commentCount, content, commentDecorators...), true
+}
+
+func decorate(commentCount int, content string, commentDecorators ...CommentDecorator) string {
+	for _, decorator := range commentDecorators {
+		content = decorator(commentCount, content)
+	}
+	return content
+}
+
+func decoratorsSize(commentCount int, decorators ...CommentDecorator) (size int) {
+	for _, decorator := range decorators {
+		size += len(decorator(commentCount, ""))
+	}
+	return
 }

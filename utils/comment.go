@@ -38,20 +38,17 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		// Since this task is not mandatory for a Frogbot run,
 		// we will not cause a Frogbot run to fail but will instead log the error.
 		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-		// Delete previous PR regular comments, if exists (not related to location of a change)
-		if e := DeleteExistingPullRequestComments(repo, client); e != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
-		}
-		// Delete previous PR review comments, if exists (related to location of a change)
-		if e := DeleteExistingPullRequestReviewComments(repo, pullRequestID, client); e != nil {
+		if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
 			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 		}
 	}
 
 	// Add summary (SCA, license) scan comment
-	if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, generatePullRequestSummaryComment(issues, repo.OutputWriter), pullRequestID); err != nil {
-		err = errors.New("couldn't add pull request comment: " + err.Error())
-		return
+	for _, comment := range generatePullRequestSummaryComment(issues, repo.OutputWriter) {
+		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
+			err = errors.New("couldn't add pull request comment: " + err.Error())
+			return
+		}
 	}
 
 	// Handle review comments at the pull request
@@ -60,6 +57,13 @@ func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Reposito
 		return
 	}
 	return
+}
+
+func DeletePullRequestComments(repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
+	// Delete previous PR regular comments, if exists (not related to location of a change)
+	err = DeleteExistingPullRequestComments(repo, client)
+	// Delete previous PR review comments, if exists (related to location of a change)
+	return errors.Join(err, DeleteExistingPullRequestReviewComments(repo, pullRequestID, client))
 }
 
 // Delete existing pull request regular comments (Summary, Fallback review comments)
@@ -71,14 +75,7 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
 			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
-	// Previous Fallback review comments
-	commentsToDelete := getFrogbotReviewComments(comments)
-	// Previous Summary comments
-	for _, comment := range comments {
-		if outputwriter.IsFrogbotSummaryComment(repository.OutputWriter, comment.Content) {
-			commentsToDelete = append(commentsToDelete, comment)
-		}
-	}
+	commentsToDelete := getFrogbotComments(repository.OutputWriter, comments)
 	// Delete
 	if len(commentsToDelete) > 0 {
 		for _, commentToDelete := range commentsToDelete {
@@ -90,18 +87,37 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	return err
 }
 
-func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
-	return outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (description string, extraComments []string) {
+	content := outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+	if len(content) == 1 {
+		// Limit is not reached, use the entire content as the description
+		description = content[0]
+		return
+	}
+	// Limit is reached (at least 2 content), use the first as the description and the rest as extra comments
+	for i, comment := range content {
+		if i == 0 {
+			description = comment
+		} else {
+			extraComments = append(extraComments, comment)
+		}
+	}
+	return
 }
 
-func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) string {
-	issuesExists := issuesCollection.IssuesExists()
-	content := strings.Builder{}
-	if issuesExists {
-		content.WriteString(outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer))
-		content.WriteString(outputwriter.LicensesContent(issuesCollection.Licenses, writer))
+func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
+	if !issuesCollection.IssuesExists() {
+		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
 	}
-	return outputwriter.GetPRSummaryContent(content.String(), issuesExists, true, writer)
+
+	content := []string{}
+	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
+		content = append(content, vulnerabilitiesContent...)
+	}
+	if licensesContent := outputwriter.LicensesContent(issuesCollection.Licenses, writer); len(licensesContent) > 0 {
+		content = append(content, licensesContent)
+	}
+	return outputwriter.GetPRSummaryContent(content, true, true, writer)
 }
 
 func IsFrogbotRescanComment(comment string) bool {
@@ -149,7 +165,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	}
 	// Delete old review comments
 	if len(existingComments) > 0 {
-		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotReviewComments(existingComments)...); err != nil {
+		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotComments(repo.OutputWriter, existingComments)...); err != nil {
 			err = errors.New("couldn't delete pull request review comment: " + err.Error())
 			return
 		}
@@ -157,9 +173,9 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	return
 }
 
-func getFrogbotReviewComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
+func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if outputwriter.IsFrogbotReviewComment(comment.Content) {
+		if outputwriter.IsFrogbotComment(comment.Content) || outputwriter.IsFrogbotSummaryComment(writer, comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
