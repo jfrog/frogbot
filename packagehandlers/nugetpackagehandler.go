@@ -4,19 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
-	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
 
 const (
-	dotnetUpdateCmdPackageExtraArg        = "package"
-	dotnetNoRestoreFlag                   = "--no-restore"
-	dotnetAssetsFilesSuffix               = "csproj"
-	dotnetDependencyRegexpLowerCaseFormat = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
+	dotnetUpdateCmdPackageExtraArg = "package"
+	dotnetNoRestoreFlag            = "--no-restore"
+	dotnetAssetsFilesSuffix        = "csproj"
+	dotnetDependencyRegexpPattern  = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
 )
 
 type NugetPackageHandler struct {
@@ -36,8 +34,8 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	var assetsFilePaths []string
-	assetsFilePaths, err = getAssetsFilesPaths()
+	var descriptorFilesFullPaths []string
+	descriptorFilesFullPaths, err = nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	if err != nil {
 		return
 	}
@@ -48,14 +46,14 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
-	vulnRegexpCompiler := getVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion)
+	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 	var isAnyFileChanged bool
 
-	for _, assetFilePath := range assetsFilePaths {
+	for _, descriptorFilePath := range descriptorFilesFullPaths {
 		var isFileChanged bool
-		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, assetFilePath, vulnRegexpCompiler, wd)
+		isFileChanged, err = nph.fixVulnerabilityIfExists(vulnDetails, descriptorFilePath, wd, vulnRegexpCompiler)
 		if err != nil {
-			err = fmt.Errorf("failed to update asset file '%s': %s", assetFilePath, err.Error())
+			err = fmt.Errorf("failed to update asset file '%s': %s", descriptorFilePath, err.Error())
 			return
 		}
 
@@ -69,37 +67,17 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	return
 }
 
-func getAssetsFilesPaths() (assetsFilePaths []string, err error) {
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
-		if innerErr != nil {
-			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %s", innerErr.Error())
-		}
-
-		if strings.HasSuffix(path, dotnetAssetsFilesSuffix) {
-			var absFilePath string
-			absFilePath, innerErr = filepath.Abs(path)
-			if innerErr != nil {
-				return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %s", path, innerErr.Error())
-			}
-			assetsFilePaths = append(assetsFilePaths, absFilePath)
-		}
-		return nil
-	})
-	return
-}
-
-func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, assetFilePath string, vulnRegexpCompiler *regexp.Regexp, originalWd string) (isFileChanged bool, err error) {
-	modulePath := path.Dir(assetFilePath)
+func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
+	modulePath := path.Dir(descriptorFilePath)
 
 	var fileData []byte
-	fileData, err = os.ReadFile(assetFilePath)
+	fileData, err = os.ReadFile(descriptorFilePath)
 	if err != nil {
-		err = fmt.Errorf("failed to read file '%s': %s", assetFilePath, err.Error())
+		err = fmt.Errorf("failed to read file '%s': %s", descriptorFilePath, err.Error())
 		return
 	}
-	fileContent := strings.ToLower(string(fileData))
 
-	if matchingRow := vulnRegexpCompiler.FindString(fileContent); matchingRow != "" {
+	if matchingRow := vulnRegexpCompiler.FindString(strings.ToLower(string(fileData))); matchingRow != "" {
 		err = os.Chdir(modulePath)
 		if err != nil {
 			err = fmt.Errorf("failed to change directory to '%s': %s", modulePath, err.Error())
@@ -116,13 +94,4 @@ func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 		isFileChanged = true
 	}
 	return
-}
-
-func getVulnerabilityRegexCompiler(impactedName string, impactedVersion string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
-	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
-	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
-	regexpFitImpactedVersion := strings.ToLower(strings.ReplaceAll(impactedVersion, ".", "\\."))
-	regexpCompleteFormat := fmt.Sprintf(dotnetDependencyRegexpLowerCaseFormat, regexpFitImpactedName, regexpFitImpactedVersion)
-	return regexp.MustCompile(regexpCompleteFormat)
 }
