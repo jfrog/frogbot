@@ -130,7 +130,10 @@ jobs:
 
       - name: Print ENV
         run: |
-          echo "The value is: $JF_URL"
+          echo "PLATFORM_URL value is: ${{ github.event_name }}
+          echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}
+          echo "final JF_URL value is: $JF_URL"
+          echo "event name is: ${{ github.event_name }}
 
   github-integration:
     name: GitHub Integration Tests
