@@ -131,7 +131,7 @@ jobs:
       - name: Print ENV
         run: |
           echo "event name is: ${{ github.event_name }}"
-          echo "PLATFORM_URL value is: ${{ github.PLATFORM_URL }}
+          echo "PLATFORM_URL value is: ${{ secrets.PLATFORM_URL }}
           echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}
           echo "final JF_URL value is: $JF_URL"
           echo "a change for push"
