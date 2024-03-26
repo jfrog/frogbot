@@ -134,6 +134,7 @@ jobs:
           echo "PLATFORM_URL value is: ${{ github.PLATFORM_URL }}
           echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}
           echo "final JF_URL value is: $JF_URL"
+          echo "a change for push"
 
   github-integration:
     name: GitHub Integration Tests
