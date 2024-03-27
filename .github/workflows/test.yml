@@ -135,8 +135,9 @@ jobs:
           echo "event name is: ${{ github.event_name }}"
           echo "PLATFORM_URL value is: ${{ secrets.PLATFORM_URL }}"
           echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}"
-          echo "EXPOSED_URL=$JF_URL" >> $GITHUB_ENV
+          echo "EXPOSED_URL=$(echo ${{ secrets.DEV_MASTER_PLATFORM_URL }})"  # Access secret directly
           echo "final JF_URL value is: $EXPOSED_URL"
+          echo "::set-output name=jf_url::$EXPOSED_URL"
 
   github-integration:
     name: GitHub Integration Tests
