@@ -128,21 +128,6 @@ jobs:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_ADMIN_TOKEN || secrets.PLATFORM_ADMIN_TOKEN }}
 
-      - name: Print ENV
-        env:
-          JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
-        run: |
-          echo "event name is: ${{ github.event_name }}"
-          echo "PLATFORM_URL value is: ${{ secrets.PLATFORM_URL }}"
-          echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}"
-          echo "EXPOSED_URL=$(echo ${{ secrets.DEV_MASTER_PLATFORM_URL }})"  # Access secret directly
-          echo "final JF_URL value is: $EXPOSED_URL"
-          echo "::set-output name=jf_url::$EXPOSED_URL"
-
-      - name: Print Output Context (Optional)
-        run: |
-          echo "Output JF_URL value: ${{ steps.print-secret.outputs.jf_url }}"  # Access output from previous step
-
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
