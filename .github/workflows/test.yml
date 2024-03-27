@@ -133,9 +133,10 @@ jobs:
           JF_URL: ${{ github.event_name == 'workflow_dispatch' && secrets.DEV_MASTER_PLATFORM_URL || secrets.PLATFORM_URL }}
         run: |
           echo "event name is: ${{ github.event_name }}"
-          echo "PLATFORM_URL value is: ::add-mask::${{ secrets.PLATFORM_URL }}"
+          echo "PLATFORM_URL value is: ${{ secrets.PLATFORM_URL }}"
           echo "DEV_MASTER_PLATFORM_URL value is: ${{ secrets.DEV_MASTER_PLATFORM_URL }}"
-          echo "final JF_URL value is: $JF_URL"
+          echo "EXPOSED_URL=$JF_URL" >> $GITHUB_ENV
+          echo "final JF_URL value is: $EXPOSED_URL"
 
   github-integration:
     name: GitHub Integration Tests
