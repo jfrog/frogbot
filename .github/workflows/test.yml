@@ -139,6 +139,10 @@ jobs:
           echo "final JF_URL value is: $EXPOSED_URL"
           echo "::set-output name=jf_url::$EXPOSED_URL"
 
+      - name: Print Output Context (Optional)
+        run: |
+          echo "Output JF_URL value: ${{ steps.print-secret.outputs.jf_url }}"  # Access output from previous step
+
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
