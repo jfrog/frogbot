@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/commands/audit/jas"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/commands/audit/jas"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	xrutils "github.com/jfrog/jfrog-cli-security/utils"
@@ -209,7 +210,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		s.Projects = append(s.Projects, Project{})
 	}
 	if len(s.AllowedLicenses) == 0 {
-		if s.AllowedLicenses, err = readArrayParamFromEnv(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
+		if s.AllowedLicenses, err = readArrayParamFromEnvTrimmingWhitespace(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 	}
@@ -552,6 +553,24 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 		return errors.New("the given API endpoint is invalid. Please note that the API endpoint format should be provided with the 'HTTPS' protocol as a prefix")
 	}
 	return nil
+}
+
+func readArrayParamFromEnvTrimmingWhitespace(envKey, delimiter string) ([]string, error) {
+	var envValue string
+	var err error
+	e := &ErrMissingEnv{}
+	if err = readParamFromEnv(envKey, &envValue); err != nil && !e.IsMissingEnvErr(err) {
+		return nil, err
+	}
+	if envValue == "" {
+		return nil, &ErrMissingEnv{VariableName: envKey}
+	}
+	list := strings.Split(envValue, delimiter)
+	// Trim spaces at beginning and end of each element if exists
+	for i, item := range list {
+		list[i] = strings.TrimSpace(item)
+	}
+	return list, nil
 }
 
 func readArrayParamFromEnv(envKey, delimiter string) ([]string, error) {
