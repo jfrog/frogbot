@@ -68,6 +68,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
+	//return errors.New("MY PERSONAL ERROR")
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -80,9 +81,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
 	}()
+	/* TODO ERAN delete after Gai merges analytics
 	if err = cfp.scanDetails.CreateMultiScanIdForScans(); err != nil {
 		return err
 	}
+
+	*/
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []coreutils.Technology{}
