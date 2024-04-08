@@ -185,17 +185,3 @@ func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
 	}
 	return fullPathWds
 }
-
-/* TODO ERAN del after gai merges analytics
-func (sc *ScanDetails) CreateMultiScanIdForScans() error {
-	xrayManager, err := xrayutils.CreateXrayServiceManager(sc.ServerDetails)
-	if err != nil {
-		return err
-	}
-	if err = utils.SendXscGitInfoRequestIfEnabled(sc.XrayGraphScanParams, xrayManager); err != nil {
-		return err
-	}
-	return nil
-}
-
-*/
