@@ -24,7 +24,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const analyticsScanRepositoryScanType = "monitor" // TODO ERAN add a same const for PR
+const analyticsScanRepositoryScanType = "monitor"
 
 type ScanRepositoryCmd struct {
 	// The interface that Frogbot utilizes to format and style the displayed messages on the Git providers
@@ -149,7 +149,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			findingsFound := cfp.analyticsService.CountScanResultsFindings(scanResults)
+			findingsFound := scanResults.CountScanResultsFindings()
 			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsFound)
 		}
 

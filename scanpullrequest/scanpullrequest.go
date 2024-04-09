@@ -14,6 +14,7 @@ import (
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
 const (
@@ -89,6 +90,12 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
+	defer func() {
+		if err != nil {
+			analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
+			analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
+		}
+	}()
 
 	// Audit PR code
 	issues, err := auditPullRequest(repo, client, analyticsService)
@@ -113,7 +120,12 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if toFailTaskStatus(repo, issues) {
 		err = errors.New(SecurityIssueFoundErr)
+		return
 	}
+
+	analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
+	analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
+	analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
 	return
 }
 
@@ -143,6 +155,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		}
 		issuesCollection.Append(projectIssues)
 	}
+	findingsAmount := issuesCollection.CountIssuesCollectionFindingsForAnalytics()
+	analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsAmount)
 	return
 }
 
@@ -171,7 +185,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
 
 	// Get all issues that exist in the source branch
-	if repoConfig.IncludeAllVulnerabilities { // TODO ERAN take care of this usecase
+	if repoConfig.IncludeAllVulnerabilities {
 		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses); err != nil {
 			return
 		}

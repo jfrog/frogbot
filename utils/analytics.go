@@ -15,7 +15,6 @@ const (
 	jenkinsCi        = "jenkins"
 	gitlabCi         = "gitlab"
 	azurePipelinesCi = "azure-pipelines"
-	jfrogPipelinesCi = "jfrog-pipelines"
 )
 
 func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, serverDetails *config.ServerDetails, scanType string) *utils.AnalyticsMetricsService {
@@ -39,19 +38,11 @@ func createAnalyticsGeneralEvent(analyticsService *utils.AnalyticsMetricsService
 	generalEvent.ProductVersion = FrogbotVersion
 	generalEvent.FrogbotScanType = scanType
 	generalEvent.FrogbotCiProvider = resolveCi()
-	generalEvent.GitInfo = gitInfo
-	// In case we have git info to send, we consider the flow an GitInfoFlow and set this parameter to 'true'
-	// TODO ERAN re-apply this field after the issue with is_gitinfo_flow is resolved
-	// generalEvent.IsGitInfoFlow = true
-
+	if gitInfo != nil {
+		generalEvent.GitInfo = gitInfo
+		generalEvent.IsGitInfoFlow = true
+	}
 	return generalEvent
-
-	/* TODO ERAN
-	at the finalizing event add the following:
-	TotalFindings: in scan-pr subtract the results to present only new ones
-	TotalIgnoredFindings
-	TotalScanDuration
-	*/
 }
 
 func resolveCi() string {
@@ -64,8 +55,7 @@ func resolveCi() string {
 		return jenkinsCi
 	case strings.ToLower(os.Getenv("TF_BUILD")) == "true":
 		return azurePipelinesCi
-	case strings.ToLower(os.Getenv("JFROG_PIPELINES_CI")) == "true": // TODO ERAN fix the correct env var for jfrog-pipelines
-		return jfrogPipelinesCi
+	// Currently, there isn't an environment variable specifically designed to identify JFrog Pipelines.
 	default:
 		return ""
 	}

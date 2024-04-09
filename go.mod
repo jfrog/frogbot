@@ -121,10 +121,10 @@ require (
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240408074156-13680c04f22e
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240408154613-fdc7dd5601d1
+
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20240408071430-62ee0279ac58
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
-
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev

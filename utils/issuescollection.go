@@ -1,6 +1,9 @@
 package utils
 
-import "github.com/jfrog/jfrog-cli-security/formats"
+import (
+	"github.com/jfrog/gofrog/datastructures"
+	"github.com/jfrog/jfrog-cli-security/formats"
+)
 
 type IssuesCollection struct {
 	Vulnerabilities []formats.VulnerabilityOrViolationRow
@@ -53,4 +56,21 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	if len(issues.Licenses) > 0 {
 		ic.Licenses = append(ic.Licenses, issues.Licenses...)
 	}
+}
+
+func (ic *IssuesCollection) CountIssuesCollectionFindingsForAnalytics() int {
+	uniqueFindings := datastructures.MakeSet[string]()
+
+	var totalFindings int
+	for _, vulnerability := range ic.Vulnerabilities {
+		for _, component := range vulnerability.Components {
+			uniqueFindings.Add(vulnerability.IssueId + "|" + component.Name + "|" + component.Version)
+		}
+	}
+	totalFindings += uniqueFindings.Size()
+
+	totalFindings += len(ic.Iacs)
+	totalFindings += len(ic.Sast)
+	totalFindings += len(ic.Secrets)
+	return totalFindings
 }
