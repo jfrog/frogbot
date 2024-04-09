@@ -273,9 +273,10 @@ func LicensesContent(licenses []formats.LicenseRow, writer OutputWriter) string 
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder, writer.MarkAsTitle("⚖️ Violated Licenses", 2))
 	// Content
-	table := NewMarkdownTable("LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY").SetDelimiter(writer.Separator())
+	table := NewMarkdownTable("SEVERITY", "LICENSE", "DIRECT DEPENDENCIES", "IMPACTED DEPENDENCY").SetDelimiter(writer.Separator())
 	for _, license := range licenses {
 		table.AddRowWithCellData(
+			NewCellData(license.Severity),
 			NewCellData(license.LicenseKey),
 			getDirectDependenciesCellData("%s %s", license.Components),
 			NewCellData(fmt.Sprintf("%s %s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)),

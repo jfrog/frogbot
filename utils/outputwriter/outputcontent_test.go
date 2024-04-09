@@ -435,9 +435,13 @@ func TestLicensesContent(t *testing.T) {
 				{
 					LicenseKey: "License1",
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+
 						Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
 						ImpactedDependencyName:    "Dep1",
 						ImpactedDependencyVersion: "2.0",
+						SeverityDetails: formats.SeverityDetails{
+							Severity: "High",
+						},
 					},
 				},
 				{
@@ -455,6 +459,9 @@ func TestLicensesContent(t *testing.T) {
 						},
 						ImpactedDependencyName:    "Dep2",
 						ImpactedDependencyVersion: "3.0",
+						SeverityDetails: formats.SeverityDetails{
+							Severity: "High",
+						},
 					},
 				},
 			},
