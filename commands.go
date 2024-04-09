@@ -105,8 +105,8 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	waitForUsageResponse()
 
 	if err != nil && usage.ShouldReportUsage() {
-		if coralogixReportError := securityutils.ReportToCoralogix(frogbotDetails.ServerDetails, err, "frogbot"); coralogixReportError != nil {
-			log.Error(coralogixReportError)
+		if reportError := securityutils.ReportError(frogbotDetails.ServerDetails, err, "frogbot"); reportError != nil {
+			log.Debug(reportError)
 		}
 	} else {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
