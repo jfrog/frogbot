@@ -91,7 +91,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 
 	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
 	defer func() {
-		if err != nil {
+		if err != nil && analyticsService.ShouldReportEvents() {
 			analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
 			analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
 		}
@@ -123,9 +123,11 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
-	analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
-	analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
+	if analyticsService.ShouldReportEvents() {
+		analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
+		analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
+		analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
+	}
 	return
 }
 
@@ -142,7 +144,9 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
 
+	// If MSI exists we always need to report events
 	if analyticsService.GetMsi() != "" {
+		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
 		scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
 	}
 
@@ -155,8 +159,10 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		}
 		issuesCollection.Append(projectIssues)
 	}
-	findingsAmount := issuesCollection.CountIssuesCollectionFindingsForAnalytics()
-	analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsAmount)
+	if analyticsService.ShouldReportEvents() {
+		findingsAmount := issuesCollection.CountIssuesCollectionFindingsForAnalytics()
+		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsAmount)
+	}
 	return
 }
 

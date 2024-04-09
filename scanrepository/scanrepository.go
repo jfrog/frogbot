@@ -87,6 +87,14 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	}()
 
 	cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
+	defer func() {
+		if err != nil && cfp.analyticsService.ShouldReportEvents() {
+			cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
+			cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
+		}
+	}()
+
+	// If MSI exists we always need to report events
 	if cfp.analyticsService.GetMsi() != "" {
 		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
 		cfp.scanDetails.XrayGraphScanParams.MultiScanId = cfp.analyticsService.GetMsi()
@@ -96,14 +104,15 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []coreutils.Technology{}
 		if err = cfp.scanAndFixProject(repository); err != nil {
-			cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
-			cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
 			return
 		}
 	}
-	cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
-	cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
-	cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
+
+	if cfp.analyticsService.ShouldReportEvents() {
+		cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
+		cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
+		cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
+	}
 	return
 }
 
