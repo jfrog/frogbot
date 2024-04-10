@@ -80,9 +80,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
 	}()
-	if err = cfp.scanDetails.CreateMultiScanIdForScans(); err != nil {
-		return err
-	}
+
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []coreutils.Technology{}
