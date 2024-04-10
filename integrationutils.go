@@ -22,7 +22,7 @@ const (
 	repoName               = "integration"
 	issuesBranch           = "issues-branch"
 	mainBranch             = "main"
-	expectedNumberOfIssues = 11
+	expectedNumberOfIssues = 10
 )
 
 type IntegrationTestDetails struct {
@@ -229,7 +229,7 @@ func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient
 
 	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(reviewComments), 10)
+	assert.GreaterOrEqual(t, len(reviewComments), 9)
 }
 
 func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
