@@ -900,8 +900,8 @@ github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYL
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
 github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240408074156-13680c04f22e h1:PjCzGWHyJqK4j1MP3osPDDAW6KBXMJlBypOxKtp/ZKo=
 github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240408074156-13680c04f22e/go.mod h1:qXAP68g+DlyX2wk5znNbQdK2CcEHfOLOfYXPzdlnkxI=
-github.com/jfrog/jfrog-cli-security v1.0.6-0.20240410071835-35f62009cd4e h1:yCLVnw5XW1o293wOu4RJlawSkf5HrsiT1DTLO3W/ceg=
-github.com/jfrog/jfrog-cli-security v1.0.6-0.20240410071835-35f62009cd4e/go.mod h1:6eJBg54tzN7bBRe+vbM9QWxBAdZACvcWVgt1aQRpewo=
+github.com/jfrog/jfrog-cli-security v1.0.6-0.20240410125927-aed7f83026cb h1:oB8m42t9WEFttiL6OyVYLAMX08vfzAKllyL0PF6Nqo4=
+github.com/jfrog/jfrog-cli-security v1.0.6-0.20240410125927-aed7f83026cb/go.mod h1:6eJBg54tzN7bBRe+vbM9QWxBAdZACvcWVgt1aQRpewo=
 github.com/jfrog/jfrog-client-go v1.28.1-0.20240409191434-4e96d77edd64 h1:q0GV0IdhYdTqEkNykRwNZP0qNEE8j9dWfY9uKovDPzM=
 github.com/jfrog/jfrog-client-go v1.28.1-0.20240409191434-4e96d77edd64/go.mod h1:tUyEmxznphh0nwAGo6xz9Sps7RRW/TBMxIJZteo+j2k=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=

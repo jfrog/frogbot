@@ -16,12 +16,14 @@ import (
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
+
+const analyticsScanRepositoryScanType = "monitor"
 
 type ScanRepositoryCmd struct {
 	// The interface that Frogbot utilizes to format and style the displayed messages on the Git providers
@@ -42,6 +44,8 @@ type ScanRepositoryCmd struct {
 	projectTech []coreutils.Technology
 	// Stores all package manager handlers for detected issues
 	handlers map[coreutils.Technology]packagehandlers.PackageHandler
+	// The AnalyticsMetricsService used for analytics event report
+	analyticsService *securityutils.AnalyticsMetricsService
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
@@ -68,6 +72,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
+	cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
+	defer func() {
+		cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
+	}()
+
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -80,6 +89,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
 	}()
+
+	// If MSI exists we always need to report events
+	if cfp.analyticsService.GetMsi() != "" {
+		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
+		cfp.scanDetails.XrayGraphScanParams.MultiScanId = cfp.analyticsService.GetMsi()
+	}
 
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
@@ -132,6 +147,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		if err != nil {
 			return err
 		}
+		if cfp.analyticsService.ShouldReportEvents() {
+			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings())
+		}
 
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
@@ -158,7 +176,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*xrayutils.Results, error) {
+func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*securityutils.Results, error) {
 	// Audit commit code
 	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
@@ -172,7 +190,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*xrayutils.Results
 	return auditResults, nil
 }
 
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *xrayutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, isMultipleRoots)
 	if err != nil {
 		return nil, err
@@ -446,11 +464,11 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
 	for _, scanResult := range scanResults.GetScaScansXrayResults() {
 		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := xrayutils.PrepareVulnerabilities(scanResult.Vulnerabilities, scanResults, isMultipleRoots, true)
+			vulnerabilities, err := securityutils.PrepareVulnerabilities(scanResult.Vulnerabilities, scanResults, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}
@@ -460,7 +478,7 @@ func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *xrayutils.Re
 				}
 			}
 		} else if len(scanResult.Violations) > 0 {
-			violations, _, _, err := xrayutils.PrepareViolations(scanResult.Violations, scanResults, isMultipleRoots, true)
+			violations, _, _, err := securityutils.PrepareViolations(scanResult.Violations, scanResults, isMultipleRoots, true)
 			if err != nil {
 				return nil, err
 			}

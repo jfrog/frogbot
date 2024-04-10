@@ -5,6 +5,7 @@ import (
 )
 
 type vcsProvider string
+type ciProvider string
 
 const (
 	// Errors
@@ -15,6 +16,12 @@ const (
 	GitLab          vcsProvider = "gitlab"
 	BitbucketServer vcsProvider = "bitbucketServer"
 	AzureRepos      vcsProvider = "azureRepos"
+
+	// CI providers params
+	githubActions  ciProvider = "github-actions"
+	jenkins        ciProvider = "jenkins"
+	gitlab         ciProvider = "gitlab"
+	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
 	JFrogUserEnv           = "JF_USER"
