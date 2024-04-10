@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestCountIssuesCollectionFindingsForAnalytics(t *testing.T) {
+func TestCountIssuesCollectionFindings(t *testing.T) {
 	issuesCollection := IssuesCollection{
 		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
@@ -61,6 +61,6 @@ func TestCountIssuesCollectionFindingsForAnalytics(t *testing.T) {
 		},
 	}
 
-	findingsAmount := issuesCollection.CountIssuesCollectionFindingsForAnalytics()
+	findingsAmount := issuesCollection.CountIssuesCollectionFindings()
 	assert.Equal(t, 8, findingsAmount)
 }

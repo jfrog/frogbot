@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -73,6 +72,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
+	cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
+	defer func() {
+		cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
+	}()
+
 	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -84,14 +88,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 			return
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
-	}()
-
-	cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
-	defer func() {
-		if err != nil && cfp.analyticsService.ShouldReportEvents() {
-			cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
-			cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
-		}
 	}()
 
 	// If MSI exists we always need to report events
@@ -106,12 +102,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
 		}
-	}
-
-	if cfp.analyticsService.ShouldReportEvents() {
-		cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
-		cfp.analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
-		cfp.analyticsService.UpdateGeneralEvent(cfp.analyticsService.FinalizeEvent())
 	}
 	return
 }
@@ -158,8 +148,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			findingsFound := scanResults.CountScanResultsFindings()
-			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsFound)
+			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings())
 		}
 
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {

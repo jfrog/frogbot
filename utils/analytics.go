@@ -10,21 +10,13 @@ import (
 	"strings"
 )
 
-const (
-	githubActionsCi  = "github-actions"
-	jenkinsCi        = "jenkins"
-	gitlabCi         = "gitlab"
-	azurePipelinesCi = "azure-pipelines"
-)
-
 func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, serverDetails *config.ServerDetails, scanType string) *utils.AnalyticsMetricsService {
 	log.Debug("Initiating General Event report to Analytics service")
 	analyticsService := utils.NewAnalyticsMetricsService(serverDetails)
 	if !analyticsService.ShouldReportEvents() {
 		return analyticsService
 	}
-	analyticsGeneralEvent := createAnalyticsGeneralEvent(analyticsService, gitInfoContext, scanType)
-	analyticsService.AddGeneralEvent(analyticsGeneralEvent)
+	analyticsService.AddGeneralEvent(createAnalyticsGeneralEvent(analyticsService, gitInfoContext, scanType))
 	if analyticsService.GetMsi() != "" {
 		analyticsService.SetFinalizeEvent(&xscservices.XscAnalyticsGeneralEventFinalize{MultiScanId: analyticsService.GetMsi()})
 	} else {
@@ -45,16 +37,17 @@ func createAnalyticsGeneralEvent(analyticsService *utils.AnalyticsMetricsService
 	return generalEvent
 }
 
+// Returns the CI system that is currently running the command.
 func resolveCi() string {
 	switch {
 	case strings.ToLower(os.Getenv("GITHUB_ACTIONS")) == "true":
-		return githubActionsCi
+		return string(githubActions)
 	case strings.ToLower(os.Getenv("GITLAB_CI")) == "true":
-		return gitlabCi
+		return string(gitlab)
 	case os.Getenv("JENKINS_URL") != "":
-		return jenkinsCi
+		return string(jenkins)
 	case strings.ToLower(os.Getenv("TF_BUILD")) == "true":
-		return azurePipelinesCi
+		return string(azurePipelines)
 	// Currently, there isn't an environment variable specifically designed to identify JFrog Pipelines.
 	default:
 		return ""

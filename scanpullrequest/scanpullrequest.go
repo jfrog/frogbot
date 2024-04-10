@@ -14,7 +14,6 @@ import (
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
 const (
@@ -91,10 +90,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 
 	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
 	defer func() {
-		if err != nil && analyticsService.ShouldReportEvents() {
-			analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Failed)
-			analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
-		}
+		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
 	}()
 
 	// Audit PR code
@@ -121,12 +117,6 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	if toFailTaskStatus(repo, issues) {
 		err = errors.New(SecurityIssueFoundErr)
 		return
-	}
-
-	if analyticsService.ShouldReportEvents() {
-		analyticsService.UpdateXscAnalyticsGeneralEventFinalizeWithTotalScanDuration()
-		analyticsService.UpdateXscAnalyticsGeneralEventFinalizeStatus(xscservices.Completed)
-		analyticsService.UpdateGeneralEvent(analyticsService.FinalizeEvent())
 	}
 	return
 }
@@ -160,8 +150,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		issuesCollection.Append(projectIssues)
 	}
 	if analyticsService.ShouldReportEvents() {
-		findingsAmount := issuesCollection.CountIssuesCollectionFindingsForAnalytics()
-		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(findingsAmount)
+		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issuesCollection.CountIssuesCollectionFindings())
 	}
 	return
 }

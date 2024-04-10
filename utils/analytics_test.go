@@ -40,4 +40,10 @@ func TestCreateAnalyticsGeneralEvent(t *testing.T) {
 	assert.Equal(t, xscservices.FrogbotProduct, analyticsGeneralEvent.Product)
 	assert.Equal(t, "user", analyticsGeneralEvent.JfrogUser)
 	assert.Equal(t, "monitor", analyticsGeneralEvent.FrogbotScanType)
+	assert.Equal(t, gitInfoContext, analyticsGeneralEvent.GitInfo)
+	assert.True(t, analyticsGeneralEvent.IsGitInfoFlow)
+	assert.NotEmpty(t, analyticsGeneralEvent.ProductVersion)
+	assert.NotEmpty(t, analyticsGeneralEvent.OsPlatform)
+	assert.NotEmpty(t, analyticsGeneralEvent.OsArchitecture)
+	assert.NotEmpty(t, analyticsGeneralEvent.AnalyzerManagerVersion)
 }

@@ -58,7 +58,7 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	}
 }
 
-func (ic *IssuesCollection) CountIssuesCollectionFindingsForAnalytics() int {
+func (ic *IssuesCollection) CountIssuesCollectionFindings() int {
 	uniqueFindings := datastructures.MakeSet[string]()
 
 	var totalFindings int
