@@ -224,6 +224,7 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 
 func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient.GitHubClient, testDetails *IntegrationTestDetails, prID int, comments []vcsclient.CommentInfo) {
 	assert.Len(t, comments, 1)
+	require.NotNil(t, comments)
 	comment := comments[0]
 	assert.Contains(t, comment.Content, string(outputwriter.VulnerabilitiesPrBannerSource))
 
