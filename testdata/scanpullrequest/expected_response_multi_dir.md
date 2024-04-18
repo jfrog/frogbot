@@ -17,7 +17,7 @@
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] | CVE-2022-3517 |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] | CVE-2022-29217 |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] | CVE-2022-29217 |
 
 </div>
 
