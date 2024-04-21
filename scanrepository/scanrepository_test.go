@@ -401,7 +401,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.GetScaScansXrayResults(), pkg.packageType)
 		})
 	}
