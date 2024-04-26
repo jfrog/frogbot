@@ -94,6 +94,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	if cfp.analyticsService.GetMsi() != "" {
 		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
 		cfp.scanDetails.XrayGraphScanParams.MultiScanId = cfp.analyticsService.GetMsi()
+		cfp.scanDetails.XrayGraphScanParams.XscVersion, err = cfp.analyticsService.XscManager().GetVersion()
+		if err != nil {
+			return
+		}
 	}
 
 	for i := range repository.Projects {
