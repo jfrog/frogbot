@@ -659,7 +659,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
+func verifyDependencyFileDifff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
