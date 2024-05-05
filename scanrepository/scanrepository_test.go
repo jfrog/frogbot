@@ -439,7 +439,6 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with no violations and vulnerabilities",
 			scanResults: &xrayutils.Results{
-				ScaResults:          []xrayutils.ScaScanResult{},
 				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
@@ -447,7 +446,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with vulnerabilities and no violations",
 			scanResults: &xrayutils.Results{
-				ScaResults: []xrayutils.ScaScanResult{{
+				ScaResults: []*xrayutils.ScaScanResult{{
 					XrayResults: []services.ScanResponse{
 						{
 							Vulnerabilities: []services.Vulnerability{
@@ -498,7 +497,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &xrayutils.Results{
-				ScaResults: []xrayutils.ScaScanResult{{
+				ScaResults: []*xrayutils.ScaScanResult{{
 					XrayResults: []services.ScanResponse{
 						{
 							Violations: []services.Violation{

@@ -117,7 +117,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetInstallCommandArgs(sc.InstallCommandArgs)
 
 	auditParams := audit.NewAuditParams().
-		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
@@ -127,7 +126,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 
 	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
-		err = errors.Join(err, auditResults.ScaError, auditResults.JasError)
+		err = errors.Join(err, auditResults.ScansErr)
 	}
 	return
 }
