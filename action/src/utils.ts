@@ -6,12 +6,18 @@ import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
 import { normalize, join } from 'path';
 import { BranchSummary, SimpleGit, simpleGit } from 'simple-git';
+import { HttpClient, HttpClientResponse } from '@actions/http-client';
+import { OutgoingHttpHeaders } from 'http';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
+    // OpenID Connect audience input
+    private static readonly OIDC_AUDIENCE_ARG: string = 'oidc-audience';
+    // OpenID Connect provider_name input
+    private static readonly OIDC_INTEGRATION_PROVIDER_NAME: string = 'oidc-provider-name';
 
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
@@ -36,6 +42,7 @@ export class Utils {
         // Cache 'frogbot' executable
         await this.cacheAndAddPath(downloadDir, version, fileName);
     }
+
 
     public static generateAuthString(releasesRepo: string): string {
         if (!releasesRepo) {
@@ -167,4 +174,82 @@ export class Utils {
     public static isWindows() {
         return platform().startsWith('win');
     }
+    public static async getJfrogOIDCCredentials(): Promise<void> {
+        let oidcProviderName: string = process.env.OIDC_PROVIDER_NAME ?? '';
+
+        core.debug('carmit in getJfrogOIDCCredentials');
+        if (!oidcProviderName) {
+            // no token is set in in phase if no oidc provided was configures
+            core.debug('carmit oidcProviderName not found, retirning');
+            return ;
+        }
+        core.debug('carmit oidcProviderName='+oidcProviderName);
+
+        let jfrogUrl: string = process.env.JF_URL?? '';
+        core.debug('carmit jfrogUrl='+jfrogUrl);
+        if (!jfrogUrl) {
+            throw new Error(`JF_URL must be provided when oidc-provider-name is specified`);
+        }
+        core.info('Obtaining an access token through OpenID Connect...');
+        const audience: string = process.env.OIDC_AUDIENCE_ARG?? '';
+        let jsonWebToken: string | undefined;
+        try {
+            core.debug('Fetching JSON web token');
+            jsonWebToken = await core.getIDToken(audience);
+        } catch (error: any) {
+            throw new Error(`Getting openID Connect JSON web token failed: ${error.message}`);
+        }
+
+        try {
+            return await this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
+        } catch (error: any) {
+            throw new Error(`Exchanging JSON web token with an access token failed: ${error.message}`);
+        }
+    }
+
+
+    private static async initJfrogAccessTokenThroughOidcProtocol(
+        jfrogUrl: string,
+        jsonWebToken: string,
+        oidcProviderName: string,
+    ): Promise<void>     {
+        // assuming in this method that add parameters were provided
+
+        // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
+        const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
+        core.debug('carmit, exchangeUrl='+exchangeUrl);
+
+        core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
+
+        const httpClient: HttpClient = new HttpClient();
+        const data: string = `{
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+            "subject_token": "${jsonWebToken}",
+            "provider_name": "${oidcProviderName}"
+        }`;
+
+        const additionalHeaders: OutgoingHttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        const response: HttpClientResponse = await httpClient.post(exchangeUrl, data, additionalHeaders);
+        const responseString: string = await response.readBody();
+        const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
+        process.env.JF_ACCESS_TOKEN = responseJson.access_token;
+        core.debug('carmit, setting responseJson.access_token='+responseJson.access_token);
+        if (responseJson.access_token) {
+            core.setSecret(responseJson.access_token);
+        }
+        if (responseJson.errors) {
+            throw new Error(`${JSON.stringify(responseJson.errors)}`);
+        }
+        core.debug('carmit, completed initJfrogAccessTokenThroughOidcProtocol');
+        return ;
+    }
+
+}
+export interface TokenExchangeResponseData {
+    access_token: string;
+    errors: string;
 }

@@ -38,6 +38,8 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Frogbot');
+            yield utils_1.Utils.getJfrogOIDCCredentials();
+            core.debug('Carmit after method getJfrogOIDCCredentials');
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();
             switch (eventName) {

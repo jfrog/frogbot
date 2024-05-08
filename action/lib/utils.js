@@ -41,6 +41,7 @@ const fs_1 = require("fs");
 const os_1 = require("os");
 const path_1 = require("path");
 const simple_git_1 = require("simple-git");
+const http_client_1 = require("@actions/http-client");
 class Utils {
     static addToPath() {
         var _a;
@@ -200,9 +201,79 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
+    static getJfrogOIDCCredentials() {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            let oidcProviderName = (_a = process.env.OIDC_PROVIDER_NAME) !== null && _a !== void 0 ? _a : '';
+            core.debug('carmit in getJfrogOIDCCredentials');
+            if (!oidcProviderName) {
+                // no token is set in in phase if no oidc provided was configures
+                core.debug('carmit oidcProviderName not found, retirning');
+                return;
+            }
+            core.debug('carmit oidcProviderName=' + oidcProviderName);
+            let jfrogUrl = (_b = process.env.JF_URL) !== null && _b !== void 0 ? _b : '';
+            core.debug('carmit jfrogUrl=' + jfrogUrl);
+            if (!jfrogUrl) {
+                throw new Error(`JF_URL must be provided when oidc-provider-name is specified`);
+            }
+            core.info('Obtaining an access token through OpenID Connect...');
+            const audience = (_c = process.env.OIDC_AUDIENCE_ARG) !== null && _c !== void 0 ? _c : '';
+            let jsonWebToken;
+            try {
+                core.debug('Fetching JSON web token');
+                jsonWebToken = yield core.getIDToken(audience);
+            }
+            catch (error) {
+                throw new Error(`Getting openID Connect JSON web token failed: ${error.message}`);
+            }
+            try {
+                return yield this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
+            }
+            catch (error) {
+                throw new Error(`Exchanging JSON web token with an access token failed: ${error.message}`);
+            }
+        });
+    }
+    static initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // assuming in this method that add parameters were provided
+            // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
+            const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
+            core.debug('carmit, exchangeUrl=' + exchangeUrl);
+            core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
+            const httpClient = new http_client_1.HttpClient();
+            const data = `{
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+            "subject_token": "${jsonWebToken}",
+            "provider_name": "${oidcProviderName}"
+        }`;
+            const additionalHeaders = {
+                'Content-Type': 'application/json',
+            };
+            const response = yield httpClient.post(exchangeUrl, data, additionalHeaders);
+            const responseString = yield response.readBody();
+            const responseJson = JSON.parse(responseString);
+            process.env.JF_ACCESS_TOKEN = responseJson.access_token;
+            core.debug('carmit, setting responseJson.access_token=' + responseJson.access_token);
+            if (responseJson.access_token) {
+                core.setSecret(responseJson.access_token);
+            }
+            if (responseJson.errors) {
+                throw new Error(`${JSON.stringify(responseJson.errors)}`);
+            }
+            core.debug('carmit, completed initJfrogAccessTokenThroughOidcProtocol');
+            return;
+        });
+    }
 }
 exports.Utils = Utils;
 Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
 Utils.TOOL_NAME = 'frogbot';
+// OpenID Connect audience input
+Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
+// OpenID Connect provider_name input
+Utils.OIDC_INTEGRATION_PROVIDER_NAME = 'oidc-provider-name';
