@@ -213,7 +213,7 @@ class Utils {
             }
             core.debug('carmit oidcProviderName=' + oidcProviderName);
             let jfrogUrl = (_b = process.env.JF_URL) !== null && _b !== void 0 ? _b : '';
-            core.debug('carmit jfrogUrl=' + jfrogUrl);
+            core.info('carmit jfrogUrl=' + jfrogUrl);
             if (!jfrogUrl) {
                 throw new Error(`JF_URL must be provided when oidc-provider-name is specified`);
             }
@@ -221,7 +221,7 @@ class Utils {
             const audience = (_c = process.env.OIDC_AUDIENCE_ARG) !== null && _c !== void 0 ? _c : '';
             let jsonWebToken;
             try {
-                core.debug('Fetching JSON web token');
+                core.info('Fetching JSON web token');
                 jsonWebToken = yield core.getIDToken(audience);
             }
             catch (error) {
@@ -240,8 +240,8 @@ class Utils {
             // assuming in this method that add parameters were provided
             // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
             const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
-            core.debug('carmit, exchangeUrl=' + exchangeUrl);
-            core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
+            core.info('carmit, exchangeUrl=' + exchangeUrl);
+            core.info('Exchanging GitHub JSON web token with a JFrog access token...');
             const httpClient = new http_client_1.HttpClient();
             const data = `{
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
@@ -256,14 +256,14 @@ class Utils {
             const responseString = yield response.readBody();
             const responseJson = JSON.parse(responseString);
             process.env.JF_ACCESS_TOKEN = responseJson.access_token;
-            core.debug('carmit, setting responseJson.access_token=' + responseJson.access_token);
+            core.info('carmit, setting responseJson.access_token=' + responseJson.access_token);
             if (responseJson.access_token) {
                 core.setSecret(responseJson.access_token);
             }
             if (responseJson.errors) {
                 throw new Error(`${JSON.stringify(responseJson.errors)}`);
             }
-            core.debug('carmit, completed initJfrogAccessTokenThroughOidcProtocol');
+            core.info('carmit, completed initJfrogAccessTokenThroughOidcProtocol');
             return;
         });
     }
