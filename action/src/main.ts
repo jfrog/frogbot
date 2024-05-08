@@ -1,9 +1,12 @@
 import * as core from '@actions/core';
 import { Utils } from './utils';
 
+
 async function main() {
     try {
         core.startGroup('Frogbot');
+        await Utils.getJfrogOIDCCredentials();
+        core.debug('Carmit after method getJfrogOIDCCredentials')
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
         switch (eventName) {
