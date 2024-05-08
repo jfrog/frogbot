@@ -205,13 +205,13 @@ class Utils {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             let oidcProviderName = (_a = process.env.OIDC_PROVIDER_NAME) !== null && _a !== void 0 ? _a : '';
-            core.debug('carmit in getJfrogOIDCCredentials');
+            core.info('carmit in getJfrogOIDCCredentials');
             if (!oidcProviderName) {
                 // no token is set in in phase if no oidc provided was configures
-                core.debug('carmit oidcProviderName not found, retirning');
+                core.info('carmit oidcProviderName not found, retirning');
                 return;
             }
-            core.debug('carmit oidcProviderName=' + oidcProviderName);
+            core.info('carmit oidcProviderName=' + oidcProviderName);
             let jfrogUrl = (_b = process.env.JF_URL) !== null && _b !== void 0 ? _b : '';
             core.info('carmit jfrogUrl=' + jfrogUrl);
             if (!jfrogUrl) {
@@ -256,7 +256,6 @@ class Utils {
             const responseString = yield response.readBody();
             const responseJson = JSON.parse(responseString);
             process.env.JF_ACCESS_TOKEN = responseJson.access_token;
-            core.info('carmit, setting responseJson.access_token=' + responseJson.access_token);
             if (responseJson.access_token) {
                 core.setSecret(responseJson.access_token);
             }
@@ -273,7 +272,3 @@ Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
 Utils.TOOL_NAME = 'frogbot';
-// OpenID Connect audience input
-Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
-// OpenID Connect provider_name input
-Utils.OIDC_INTEGRATION_PROVIDER_NAME = 'oidc-provider-name';

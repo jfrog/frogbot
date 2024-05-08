@@ -14,10 +14,7 @@ export class Utils {
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
-    // OpenID Connect audience input
-    private static readonly OIDC_AUDIENCE_ARG: string = 'oidc-audience';
-    // OpenID Connect provider_name input
-    private static readonly OIDC_INTEGRATION_PROVIDER_NAME: string = 'oidc-provider-name';
+
 
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
@@ -177,13 +174,13 @@ export class Utils {
     public static async getJfrogOIDCCredentials(): Promise<void> {
         let oidcProviderName: string = process.env.OIDC_PROVIDER_NAME ?? '';
 
-        core.debug('carmit in getJfrogOIDCCredentials');
+        core.info('carmit in getJfrogOIDCCredentials');
         if (!oidcProviderName) {
             // no token is set in in phase if no oidc provided was configures
-            core.debug('carmit oidcProviderName not found, retirning');
+            core.info('carmit oidcProviderName not found, retirning');
             return ;
         }
-        core.debug('carmit oidcProviderName='+oidcProviderName);
+        core.info('carmit oidcProviderName='+oidcProviderName);
 
         let jfrogUrl: string = process.env.JF_URL?? '';
         core.info('carmit jfrogUrl='+jfrogUrl);
@@ -237,7 +234,6 @@ export class Utils {
         const responseString: string = await response.readBody();
         const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
         process.env.JF_ACCESS_TOKEN = responseJson.access_token;
-        core.info('carmit, setting responseJson.access_token='+responseJson.access_token);
         if (responseJson.access_token) {
             core.setSecret(responseJson.access_token);
         }
