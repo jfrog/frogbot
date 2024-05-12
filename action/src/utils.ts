@@ -176,20 +176,22 @@ export class Utils {
         //verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
         const httpClient: HttpClient = new HttpClient();
+        let response: HttpClientResponse
         try {
-            const response: HttpClientResponse = await httpClient.get(pingUrl);
-            if (response.message.statusMessage == 'OK') {
-                const body: string = await response.readBody();
-                //core.info('carmit body='+body);
-                if (body == 'OK') {
-                    return ;
-                }else
-                    throw new Error(jfrogUrlFailure);
-            } else {
-               throw new Error(jfrogUrlFailure);
-                }
+             response = await httpClient.get(pingUrl);
         }catch (error: any) {
-            throw new Error(jfrogUrlFailure);        }
+            throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
+        }
+        if (response.message.statusMessage == 'OK') {
+            const body: string = await response.readBody();
+            //core.info('carmit body='+body);
+            if (body == 'OK') {
+                return ;
+            }else
+                throw new Error(jfrogUrlFailure);
+        } else {
+           throw new Error(jfrogUrlFailure);
+        }
     }
 
     public static async getJfrogOIDCCredentials(jfrogUrl: string): Promise<void> {

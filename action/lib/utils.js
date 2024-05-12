@@ -207,22 +207,23 @@ class Utils {
             //verify that the provided JFrog URL is valid and responsive
             const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
             const httpClient = new http_client_1.HttpClient();
+            let response;
             try {
-                const response = yield httpClient.get(pingUrl);
-                if (response.message.statusMessage == 'OK') {
-                    const body = yield response.readBody();
-                    //core.info('carmit body='+body);
-                    if (body == 'OK') {
-                        return;
-                    }
-                    else
-                        throw new Error(jfrogUrlFailure);
-                }
-                else {
-                    throw new Error(jfrogUrlFailure);
-                }
+                response = yield httpClient.get(pingUrl);
             }
             catch (error) {
+                throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
+            }
+            if (response.message.statusMessage == 'OK') {
+                const body = yield response.readBody();
+                //core.info('carmit body='+body);
+                if (body == 'OK') {
+                    return;
+                }
+                else
+                    throw new Error(jfrogUrlFailure);
+            }
+            else {
                 throw new Error(jfrogUrlFailure);
             }
         });
