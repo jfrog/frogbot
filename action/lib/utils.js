@@ -216,7 +216,7 @@ class Utils {
                 throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
             }
             core.info('carmit response.message.statusMessage=' + response.message.statusMessage);
-            if (response.message.statusMessage == 'OK') {
+            if (response.message.statusCode == 200) {
                 const body = yield response.readBody();
                 core.info('carmit checking body=' + body);
                 if (body == 'OK') {
