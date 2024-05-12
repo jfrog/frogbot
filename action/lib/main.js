@@ -43,7 +43,7 @@ function main() {
             let jfrogUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
             core.info('carmit jfrogUrl=' + jfrogUrl);
             if (!jfrogUrl) {
-                throw new Error(`JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/`);
+                throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
             }
             utils_1.Utils.validatePlatfornUrl(jfrogUrl);
             yield utils_1.Utils.getJfrogOIDCCredentials(jfrogUrl);
