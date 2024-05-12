@@ -175,6 +175,7 @@ export class Utils {
         const jfrogUrlFailure: string = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.'
         //verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
+        core.info('carmit pingUrl='+pingUrl);
         const httpClient: HttpClient = new HttpClient();
         let response: HttpClientResponse
         try {
@@ -182,9 +183,10 @@ export class Utils {
         }catch (error: any) {
             throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
         }
+        core.info('carmit response.message.statusMessage='+response.message.statusMessage);
         if (response.message.statusMessage == 'OK') {
             const body: string = await response.readBody();
-            //core.info('carmit body='+body);
+            core.info('carmit checking body='+body);
             if (body == 'OK') {
                 return ;
             }else
