@@ -9,7 +9,7 @@ async function main() {
         let jfrogUrl: string = process.env.JF_URL?? '';
         core.info('carmit jfrogUrl='+jfrogUrl);
         if (!jfrogUrl) {
-            throw new Error(`JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/`);
+            throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
         }
 
         Utils.validatePlatfornUrl(jfrogUrl);
