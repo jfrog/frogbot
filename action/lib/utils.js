@@ -213,11 +213,11 @@ class Utils {
                     return;
                 }
                 else {
-                    throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+                    throw new Error(`JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/`);
                 }
             }
             catch (error) {
-                throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+                throw new Error(`JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/`);
             }
         });
     }

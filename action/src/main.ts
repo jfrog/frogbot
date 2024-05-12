@@ -5,7 +5,15 @@ import { Utils } from './utils';
 async function main() {
     try {
         core.startGroup('Frogbot');
-        await Utils.getJfrogOIDCCredentials();
+        //validate JF_URL
+        let jfrogUrl: string = process.env.JF_URL?? '';
+        core.info('carmit jfrogUrl='+jfrogUrl);
+        if (!jfrogUrl) {
+            throw new Error(`JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/`);
+        }
+
+        Utils.validatePlatfornUrl(jfrogUrl);
+        await Utils.getJfrogOIDCCredentials(jfrogUrl);
         core.debug('Carmit after method getJfrogOIDCCredentials')
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
