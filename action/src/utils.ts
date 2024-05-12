@@ -189,6 +189,7 @@ export class Utils {
                 return ;
             }else
                 throw new Error(jfrogUrlFailure);
+
         } else {
            throw new Error(jfrogUrlFailure);
         }
