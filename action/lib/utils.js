@@ -201,24 +201,39 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
-    static getJfrogOIDCCredentials() {
-        var _a, _b, _c;
+    static validatePlatfornUrl(jfrogUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            //verify that the provided JFrog URL is valid and responsive
+            const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
+            core.info('carmit, pingUrl=' + pingUrl);
+            const httpClient = new http_client_1.HttpClient();
+            try {
+                const response = yield httpClient.head(pingUrl);
+                if (response.message.statusCode == 200 && response.message.statusMessage == 'OK') {
+                    return;
+                }
+                else {
+                    throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+                }
+            }
+            catch (error) {
+                throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+            }
+        });
+    }
+    static getJfrogOIDCCredentials(jfrogUrl) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             let oidcProviderName = (_a = process.env.OIDC_PROVIDER_NAME) !== null && _a !== void 0 ? _a : '';
             core.info('carmit in getJfrogOIDCCredentials');
             if (!oidcProviderName) {
                 // no token is set in in phase if no oidc provided was configures
-                core.info('carmit oidcProviderName not found, retirning');
+                core.info('carmit oidcProviderName not found, returning');
                 return;
             }
             core.info('carmit oidcProviderName=' + oidcProviderName);
-            let jfrogUrl = (_b = process.env.JF_URL) !== null && _b !== void 0 ? _b : '';
-            core.info('carmit jfrogUrl=' + jfrogUrl);
-            if (!jfrogUrl) {
-                throw new Error(`JF_URL must be provided when oidc-provider-name is specified`);
-            }
             core.info('Obtaining an access token through OpenID Connect...');
-            const audience = (_c = process.env.OIDC_AUDIENCE_ARG) !== null && _c !== void 0 ? _c : '';
+            const audience = (_b = process.env.OIDC_AUDIENCE_ARG) !== null && _b !== void 0 ? _b : '';
             let jsonWebToken;
             try {
                 core.info('Fetching JSON web token');
@@ -231,7 +246,7 @@ class Utils {
                 return yield this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
             }
             catch (error) {
-                throw new Error(`Exchanging JSON web token with an access token failed: ${error.message}`);
+                throw new Error(`OIDC authentication against JFrog platform failed, please check OIDC settings and mappings on the JFrog platform: ${error.message}`);
             }
         });
     }

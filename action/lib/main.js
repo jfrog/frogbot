@@ -35,10 +35,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const utils_1 = require("./utils");
 function main() {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Frogbot');
-            yield utils_1.Utils.getJfrogOIDCCredentials();
+            //validate JF_URL
+            let jfrogUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
+            core.info('carmit jfrogUrl=' + jfrogUrl);
+            if (!jfrogUrl) {
+                throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+            }
+            utils_1.Utils.validatePlatfornUrl(jfrogUrl);
+            yield utils_1.Utils.getJfrogOIDCCredentials(jfrogUrl);
             core.debug('Carmit after method getJfrogOIDCCredentials');
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();

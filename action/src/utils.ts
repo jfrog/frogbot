@@ -171,22 +171,33 @@ export class Utils {
     public static isWindows() {
         return platform().startsWith('win');
     }
-    public static async getJfrogOIDCCredentials(): Promise<void> {
+    public static async validatePlatfornUrl(jfrogUrl: string): Promise<void> {
+        //verify that the provided JFrog URL is valid and responsive
+        const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
+        core.info('carmit, pingUrl='+pingUrl);
+        const httpClient: HttpClient = new HttpClient();
+        try {
+            const response: HttpClientResponse = await httpClient.head(pingUrl);
+            if (response.message.statusCode == 200 && response.message.statusMessage == 'OK') {
+                return ;
+            } else {
+               throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);
+                }
+        }catch (error: any) {
+            throw new Error(`JF_URL must be provided and point on your full platform URL, fro example: https://mycompany.jfrog.io/`);        }
+    }
+
+    public static async getJfrogOIDCCredentials(jfrogUrl: string): Promise<void> {
         let oidcProviderName: string = process.env.OIDC_PROVIDER_NAME ?? '';
 
         core.info('carmit in getJfrogOIDCCredentials');
         if (!oidcProviderName) {
             // no token is set in in phase if no oidc provided was configures
-            core.info('carmit oidcProviderName not found, retirning');
+            core.info('carmit oidcProviderName not found, returning');
             return ;
         }
         core.info('carmit oidcProviderName='+oidcProviderName);
 
-        let jfrogUrl: string = process.env.JF_URL?? '';
-        core.info('carmit jfrogUrl='+jfrogUrl);
-        if (!jfrogUrl) {
-            throw new Error(`JF_URL must be provided when oidc-provider-name is specified`);
-        }
         core.info('Obtaining an access token through OpenID Connect...');
         const audience: string = process.env.OIDC_AUDIENCE_ARG?? '';
         let jsonWebToken: string | undefined;
@@ -200,7 +211,7 @@ export class Utils {
         try {
             return await this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
         } catch (error: any) {
-            throw new Error(`Exchanging JSON web token with an access token failed: ${error.message}`);
+            throw new Error(`OIDC authentication against JFrog platform failed, please check OIDC settings and mappings on the JFrog platform: ${error.message}`);
         }
     }
 
