@@ -14,7 +14,7 @@ export class Utils {
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
-
+    private static readonly OIDC_INTEGRATION_PROVIDER_NAME: string = 'oidc-provider-name';
 
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
@@ -194,8 +194,8 @@ export class Utils {
     }
 
     public static async getJfrogOIDCCredentials(jfrogUrl: string): Promise<void> {
-        let oidcProviderName: string = process.env.OIDC_PROVIDER_NAME ?? '';
 
+        const oidcProviderName: string = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME);
         if (!oidcProviderName) {
             // no token is set if no oidc provider was configured
             return ;
