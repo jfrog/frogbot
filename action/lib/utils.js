@@ -206,7 +206,6 @@ class Utils {
             const jfrogUrlFailure = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
             //verify that the provided JFrog URL is valid and responsive
             const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
-            core.info('carmit pingUrl=' + pingUrl);
             const httpClient = new http_client_1.HttpClient();
             let response;
             try {
@@ -215,10 +214,8 @@ class Utils {
             catch (error) {
                 throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
             }
-            core.info('carmit response.message.statusMessage=' + response.message.statusMessage);
             if (response.message.statusCode == 200) {
                 const body = yield response.readBody();
-                core.info('carmit checking body=' + body);
                 if (body == 'OK') {
                     return;
                 }
@@ -234,13 +231,10 @@ class Utils {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             let oidcProviderName = (_a = process.env.OIDC_PROVIDER_NAME) !== null && _a !== void 0 ? _a : '';
-            core.info('carmit in getJfrogOIDCCredentials');
             if (!oidcProviderName) {
                 // no token is set in in phase if no oidc provided was configures
-                core.info('carmit oidcProviderName not found, returning');
                 return;
             }
-            core.info('carmit oidcProviderName=' + oidcProviderName);
             core.info('Obtaining an access token through OpenID Connect...');
             const audience = (_b = process.env.OIDC_AUDIENCE_ARG) !== null && _b !== void 0 ? _b : '';
             let jsonWebToken;
@@ -264,7 +258,6 @@ class Utils {
             // assuming in this method that add parameters were provided
             // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
             const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
-            core.info('carmit, exchangeUrl=' + exchangeUrl);
             core.info('Exchanging GitHub JSON web token with a JFrog access token...');
             const httpClient = new http_client_1.HttpClient();
             const data = `{
@@ -286,7 +279,6 @@ class Utils {
             if (responseJson.errors) {
                 throw new Error(`${JSON.stringify(responseJson.errors)}`);
             }
-            core.info('carmit, completed initJfrogAccessTokenThroughOidcProtocol');
             return;
         });
     }
