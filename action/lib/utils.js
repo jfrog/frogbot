@@ -211,7 +211,7 @@ class Utils {
                 const response = yield httpClient.get(pingUrl);
                 if (response.message.statusMessage == 'OK') {
                     const body = yield response.readBody();
-                    core.info('carmit body=' + body);
+                    //core.info('carmit body='+body);
                     if (body == 'OK') {
                         return;
                     }

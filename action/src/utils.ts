@@ -172,18 +172,24 @@ export class Utils {
         return platform().startsWith('win');
     }
     public static async validatePlatfornUrl(jfrogUrl: string): Promise<void> {
+        const jfrogUrlFailure: string = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.'
         //verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
         const httpClient: HttpClient = new HttpClient();
         try {
             const response: HttpClientResponse = await httpClient.get(pingUrl);
-            if (response.message.statusCode == 200 && response.message.statusMessage == 'OK') {
-                return ;
+            if (response.message.statusMessage == 'OK') {
+                const body: string = await response.readBody();
+                //core.info('carmit body='+body);
+                if (body == 'OK') {
+                    return ;
+                }else
+                    throw new Error(jfrogUrlFailure);
             } else {
-               throw new Error('JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.');
+               throw new Error(jfrogUrlFailure);
                 }
         }catch (error: any) {
-            throw new Error('JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.');        }
+            throw new Error(jfrogUrlFailure);        }
     }
 
     public static async getJfrogOIDCCredentials(jfrogUrl: string): Promise<void> {
