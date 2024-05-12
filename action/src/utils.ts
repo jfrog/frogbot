@@ -203,11 +203,11 @@ export class Utils {
             // no token is set if no oidc provider was configured
             return ;
         }
-        core.info('Obtaining an access token through OpenID Connect...');
+        core.debug('Obtaining an access token through OpenID Connect...');
         const audience: string = core.getInput(Utils.OIDC_AUDIENCE_ARG);
         let jsonWebToken: string | undefined;
         try {
-            core.info('Fetching JSON web token');
+            core.debug('Fetching JSON web token');
             jsonWebToken = await core.getIDToken(audience);
         } catch (error: any) {
             throw new Error(`Getting openID Connect JSON web token failed: ${error.message}`);
@@ -231,7 +231,7 @@ export class Utils {
         // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
         const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
 
-        core.info('Exchanging GitHub JSON web token with a JFrog access token...');
+        core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
 
         const httpClient: HttpClient = new HttpClient();
         const data: string = `{
