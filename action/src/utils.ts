@@ -14,6 +14,9 @@ export class Utils {
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
+    // OpenID Connect audience input
+    private static readonly OIDC_AUDIENCE_ARG: string = 'oidc-audience';
+    // OpenID Connect provider_name input
     private static readonly OIDC_INTEGRATION_PROVIDER_NAME: string = 'oidc-provider-name';
 
     public static async addToPath() {
@@ -201,7 +204,7 @@ export class Utils {
             return ;
         }
         core.info('Obtaining an access token through OpenID Connect...');
-        const audience: string = process.env.OIDC_AUDIENCE_ARG?? '';
+        const audience: string = core.getInput(Utils.OIDC_AUDIENCE_ARG);
         let jsonWebToken: string | undefined;
         try {
             core.info('Fetching JSON web token');

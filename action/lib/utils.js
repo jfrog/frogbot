@@ -228,7 +228,6 @@ class Utils {
         });
     }
     static getJfrogOIDCCredentials(jfrogUrl) {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const oidcProviderName = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME);
             if (!oidcProviderName) {
@@ -236,7 +235,7 @@ class Utils {
                 return;
             }
             core.info('Obtaining an access token through OpenID Connect...');
-            const audience = (_a = process.env.OIDC_AUDIENCE_ARG) !== null && _a !== void 0 ? _a : '';
+            const audience = core.getInput(Utils.OIDC_AUDIENCE_ARG);
             let jsonWebToken;
             try {
                 core.info('Fetching JSON web token');
@@ -288,4 +287,7 @@ Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
 Utils.TOOL_NAME = 'frogbot';
+// OpenID Connect audience input
+Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
+// OpenID Connect provider_name input
 Utils.OIDC_INTEGRATION_PROVIDER_NAME = 'oidc-provider-name';
