@@ -197,7 +197,7 @@ export class Utils {
         let oidcProviderName: string = process.env.OIDC_PROVIDER_NAME ?? '';
 
         if (!oidcProviderName) {
-            // no token is set in in phase if no oidc provided was configures
+            // no token is set if no oidc provider was configured
             return ;
         }
         core.info('Obtaining an access token through OpenID Connect...');

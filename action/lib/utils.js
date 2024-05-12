@@ -232,7 +232,7 @@ class Utils {
         return __awaiter(this, void 0, void 0, function* () {
             let oidcProviderName = (_a = process.env.OIDC_PROVIDER_NAME) !== null && _a !== void 0 ? _a : '';
             if (!oidcProviderName) {
-                // no token is set in in phase if no oidc provided was configures
+                // no token is set if no oidc provider was configured
                 return;
             }
             core.info('Obtaining an access token through OpenID Connect...');
