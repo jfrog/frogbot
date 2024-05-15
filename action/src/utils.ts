@@ -256,6 +256,10 @@ export class Utils {
             throw new Error(`${JSON.stringify(responseJson.errors)}`);
         }
         core.info('responseJson.access_token='+responseJson.access_token);
+        core.info('responseJson='+responseJson);
+        let name: string = responseJson.access_token;
+        var newarr  =  name.split('.')
+        core.info('newarr='+newarr);
         return ;
     }
 
