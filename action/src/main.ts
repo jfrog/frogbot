@@ -11,7 +11,7 @@ async function main() {
             throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
         }
 
-        await Utils.validatePlatfornUrl(jfrogUrl);
+        await Utils.validatePlatformUrl(jfrogUrl);
         await Utils.getJfrogOIDCCredentials(jfrogUrl);
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();

@@ -13,8 +13,7 @@ permissions:
   security-events: write
   id-token: write
 jobs:
-
-  OIDC-Test:
+  Frogbot-Test:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     name: OIDC-Access integration test (${{ matrix.os }})
     defaults:
@@ -73,15 +72,8 @@ jobs:
                   "expires_in": 30
                 }
           }'
-      - name: check file system
-        shell: bash
-        run: |          
-          ls -ltr
-          ls -ltr node_modules/
-          #npm ls -prod json 
-          #npm ls
-          
 
+      # Running frogbot with the OIDC integration
       - name: Run Frogbot
         uses: ./
         env:
