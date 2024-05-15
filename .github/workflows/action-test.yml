@@ -68,8 +68,9 @@ jobs:
                   "repository": "${{ github.repository_owner }}/frogbot"
                 },
                 "token_spec": {
-                  "scope": "applied-permissions/admin",
-                  "expires_in": 30
+                  "username": "admin",
+                   "scope": "applied-permissions/user",
+                   "expires_in": 30                    
                 }
           }'
 
