@@ -15,7 +15,7 @@ permissions:
 jobs:
   Frogbot-Test:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    name: OIDC-Access integration test (${{ matrix.os }})
+    name: OIDC-Access integration test
     defaults:
       run:
         working-directory: action
