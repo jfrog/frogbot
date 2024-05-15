@@ -89,6 +89,7 @@ jobs:
           JF_URL: ${{ secrets.JFROG_PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
+          JF_FAIL: "FALSE"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
