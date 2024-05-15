@@ -278,9 +278,6 @@ class Utils {
             if (responseJson.errors) {
                 throw new Error(`${JSON.stringify(responseJson.errors)}`);
             }
-            let name = responseJson.access_token;
-            let new_array = name.split('.');
-            core.info('new_array=' + new_array);
             return;
         });
     }

@@ -255,9 +255,6 @@ export class Utils {
         if (responseJson.errors) {
             throw new Error(`${JSON.stringify(responseJson.errors)}`);
         }
-        let name: string = responseJson.access_token;
-        let new_array: string[]  =  name.split('.');
-        core.info('new_array='+new_array);
         return ;
     }
 
