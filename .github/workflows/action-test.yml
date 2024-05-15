@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: |          
           ls -ltr
-          ls -ltr lib/
+          ls -ltr node_modules/
           #npm ls -prod json 
           #npm ls
           
