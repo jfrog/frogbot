@@ -9,6 +9,7 @@ on:
   pull_request:
 permissions:
   contents: write
+  pull-requests: write
   security-events: write
   id-token: write
 jobs:
