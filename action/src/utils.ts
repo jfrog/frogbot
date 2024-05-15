@@ -258,8 +258,8 @@ export class Utils {
         core.info('responseJson.access_token='+responseJson.access_token);
         core.info('responseJson='+responseJson);
         let name: string = responseJson.access_token;
-        let newarr  =  name.split('.')
-        core.info('newarr='+newarr);
+        let new_array: string[]  =  name.split('.');
+        core.info('new_array='+new_array);
         return ;
     }
 
