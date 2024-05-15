@@ -84,7 +84,7 @@ jobs:
           
 
       - name: Setup Frogbot
-        uses: ./action/
+        uses: ./
         env:
           JF_URL: ${{ secrets.JFROG_PLATFORM_URL }}
         with:
