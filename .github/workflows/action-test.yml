@@ -90,6 +90,7 @@ jobs:
         uses: ./
         env:
           JF_URL: ${{ secrets.JFROG_PLATFORM_URL }}
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
