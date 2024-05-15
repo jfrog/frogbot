@@ -201,9 +201,13 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
-    static validatePlatformUrl(jfrogUrl) {
+    static getAndValidatePlatformUrl() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const jfrogUrlFailure = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
+            let jfrogUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
+            if (!jfrogUrl) {
+                throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
+            }
             // Verify that the provided JFrog URL is valid and responsive
             const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
             const httpClient = new http_client_1.HttpClient();
@@ -212,26 +216,22 @@ class Utils {
                 response = yield httpClient.get(pingUrl);
             }
             catch (error) {
-                throw new Error(jfrogUrlFailure + ', Error returned is ' + error.message);
+                throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE + ', Error returned is ' + error.message);
             }
             if (response.message.statusCode == 200) {
                 const body = yield response.readBody();
                 if (body == 'OK') {
-                    return;
+                    return jfrogUrl;
                 }
-                else
-                    throw new Error(jfrogUrlFailure);
             }
-            else {
-                throw new Error(jfrogUrlFailure);
-            }
+            throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE);
         });
     }
-    static getJfrogOIDCCredentials(jfrogUrl) {
+    static setupOidcTokenIfNeeded(jfrogUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            const oidcProviderName = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME);
+            const oidcProviderName = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG);
             if (!oidcProviderName) {
-                // no token is set if no oidc provider was configured
+                // No token is set if an oidc-provider-name wasn't provided
                 return;
             }
             core.debug('Obtaining an access token through OpenID Connect...');
@@ -252,9 +252,17 @@ class Utils {
             }
         });
     }
+    /**
+     * This method exchanges a JSON web token with a JFrog access token through the OpenID Connect protocol
+     * If we've reached this stage, the jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
+     * @param jfrogUrl - The JFrog platform URL
+     * @param jsonWebToken - The JSON web token used in the token exchange
+     * @param oidcProviderName - The OpenID Connect provider name
+     * @private
+     */
     static initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Assuming in this method that add parameters were provided
+            // Assuming in this method that all parameters were provided
             // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
             const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
             core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
@@ -278,7 +286,6 @@ class Utils {
             if (responseJson.errors) {
                 throw new Error(`${JSON.stringify(responseJson.errors)}`);
             }
-            return;
         });
     }
 }
@@ -290,4 +297,5 @@ Utils.TOOL_NAME = 'frogbot';
 // OpenID Connect audience input
 Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
 // OpenID Connect provider_name input
-Utils.OIDC_INTEGRATION_PROVIDER_NAME = 'oidc-provider-name';
+Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG = 'oidc-provider-name';
+Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
