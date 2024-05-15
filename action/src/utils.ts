@@ -255,6 +255,7 @@ export class Utils {
         if (responseJson.errors) {
             throw new Error(`${JSON.stringify(responseJson.errors)}`);
         }
+        core.debug('responseJson.access_token='+responseJson.access_token);
         return ;
     }
 

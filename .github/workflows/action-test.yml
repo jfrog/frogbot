@@ -86,7 +86,6 @@ jobs:
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
-
       # Removing the OIDC integration will remove the Identity Mapping as well
       - name: Delete OIDC integration
         shell: bash
