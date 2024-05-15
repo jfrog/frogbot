@@ -68,7 +68,7 @@ jobs:
                   "repository": "${{ github.repository_owner }}/frogbot"
                 },
                 "token_spec": {
-                  "scope": "applied-permissions/groups:readers",
+                  "scope": "applied-permissions/admin",
                   "expires_in": 30
                 }
           }'
@@ -82,6 +82,7 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
           JF_FAIL: "FALSE"
+          JFROG_CLI_ANALYZER_MANAGER_VERSION: "1.6.4"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
