@@ -71,7 +71,7 @@ jobs:
                    "username": "admin",
                    "scope": "applied-permissions/admin",
                    "audience": "*@*",
-                   "expires_in": 60                  
+                   "expires_in": 300                
                 }
           }'
 
