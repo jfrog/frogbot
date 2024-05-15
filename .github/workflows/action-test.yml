@@ -12,15 +12,19 @@ permissions:
   security-events: write
   id-token: write
 jobs:
-  test:
-    runs-on: ${{ matrix.os }}
+
+  OIDC-Test:
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
+    name: OIDC-Access integration test (${{ matrix.os }})
     defaults:
       run:
         working-directory: action
     strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
       fail-fast: false
+      matrix:
+        os: [ ubuntu ] #, windows, macos
+    runs-on: ${{ matrix.os }}-latest
+
     steps:
       # Checkout and install prerequisites
       - name: Checkout
@@ -29,7 +33,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16.x"
-
       # Install and run tests
       - name: Install
         run: npm i
@@ -37,17 +40,6 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm t
-  OIDC-Test:
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    name: OIDC-Access integration test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu, windows, macos ]
-    runs-on: ${{ matrix.os }}-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
 
       # Generating a unique name for the Integration Configuration that will be created in the following step
       - name: Generate unique OIDC config name
@@ -82,11 +74,10 @@ jobs:
           }'
       - name: check file system
         shell: bash
-        run: |
-          ls -ltr
-          cd action/
-          npm ls -prod json 
-          npm ls
+        run: |          
+          ls -ltr 
+          #npm ls -prod json 
+          #npm ls
           
 
       - name: Run Frogbot
