@@ -203,7 +203,7 @@ export class Utils {
             // no token is set if no oidc provider was configured
             return ;
         }
-        core.debug('Obtaining an access token through OpenID Connect...');
+        core.info('Obtaining an access token through OpenID Connect...');
         const audience: string = core.getInput(Utils.OIDC_AUDIENCE_ARG);
         let jsonWebToken: string | undefined;
         try {
