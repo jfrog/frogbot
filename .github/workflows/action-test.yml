@@ -1,4 +1,5 @@
 name: "GitHub Action Test"
+run-name: ${{ github.actor }} is testing OIDC-Access integration
 on:
   push:
     branches:
