@@ -76,6 +76,12 @@ jobs:
                   "expires_in": 30
                 }
           }'
+      - name: check file system
+        shell: bash
+        run: |
+          ls -ltr
+          ls -ltr action/
+          
 
       - name: Setup Frogbot
         uses: ./action/
