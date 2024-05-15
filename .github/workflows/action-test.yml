@@ -75,7 +75,8 @@ jobs:
       - name: check file system
         shell: bash
         run: |          
-          ls -ltr 
+          ls -ltr
+          ls -ltr lib/
           #npm ls -prod json 
           #npm ls
           
