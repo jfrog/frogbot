@@ -14,7 +14,7 @@ inputs:
     required: false
 runs:
   using: "node16"
-  main: "lib/main.js"
+  main: "action/lib/main.js"
 branding:
   icon: "terminal"
   color: "green"
