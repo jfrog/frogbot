@@ -174,7 +174,7 @@ export class Utils {
     public static isWindows() {
         return platform().startsWith('win');
     }
-    public static async validatePlatfornUrl(jfrogUrl: string): Promise<void> {
+    public static async validatePlatformUrl(jfrogUrl: string): Promise<void> {
         const jfrogUrlFailure: string = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.'
         //verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
@@ -203,7 +203,7 @@ export class Utils {
             // no token is set if no oidc provider was configured
             return ;
         }
-        core.info('Obtaining an access token through OpenID Connect...');
+        core.debug('Obtaining an access token through OpenID Connect...');
         const audience: string = core.getInput(Utils.OIDC_AUDIENCE_ARG);
         let jsonWebToken: string | undefined;
         try {

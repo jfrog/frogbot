@@ -44,7 +44,7 @@ function main() {
             if (!jfrogUrl) {
                 throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
             }
-            yield utils_1.Utils.validatePlatfornUrl(jfrogUrl);
+            yield utils_1.Utils.validatePlatformUrl(jfrogUrl);
             yield utils_1.Utils.getJfrogOIDCCredentials(jfrogUrl);
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();

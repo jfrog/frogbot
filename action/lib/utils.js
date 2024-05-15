@@ -201,7 +201,7 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
-    static validatePlatfornUrl(jfrogUrl) {
+    static validatePlatformUrl(jfrogUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             const jfrogUrlFailure = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
             //verify that the provided JFrog URL is valid and responsive
@@ -234,7 +234,7 @@ class Utils {
                 // no token is set if no oidc provider was configured
                 return;
             }
-            core.info('Obtaining an access token through OpenID Connect...');
+            core.debug('Obtaining an access token through OpenID Connect...');
             const audience = core.getInput(Utils.OIDC_AUDIENCE_ARG);
             let jsonWebToken;
             try {
