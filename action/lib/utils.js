@@ -204,7 +204,7 @@ class Utils {
     static validatePlatformUrl(jfrogUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             const jfrogUrlFailure = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
-            //verify that the provided JFrog URL is valid and responsive
+            // Verify that the provided JFrog URL is valid and responsive
             const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
             const httpClient = new http_client_1.HttpClient();
             let response;
@@ -254,7 +254,7 @@ class Utils {
     }
     static initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName) {
         return __awaiter(this, void 0, void 0, function* () {
-            // assuming in this method that add parameters were provided
+            // Assuming in this method that add parameters were provided
             // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
             const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
             core.debug('Exchanging GitHub JSON web token with a JFrog access token...');

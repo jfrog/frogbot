@@ -6,3 +6,4 @@ coverage
 .vscode
 *.iml
 .DS_Store
+/testdata/projects/gradle/.gradle/

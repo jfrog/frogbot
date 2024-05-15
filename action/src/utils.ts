@@ -176,7 +176,7 @@ export class Utils {
     }
     public static async validatePlatformUrl(jfrogUrl: string): Promise<void> {
         const jfrogUrlFailure: string = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.'
-        //verify that the provided JFrog URL is valid and responsive
+        // Verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
         const httpClient: HttpClient = new HttpClient();
         let response: HttpClientResponse
@@ -226,7 +226,7 @@ export class Utils {
         jsonWebToken: string,
         oidcProviderName: string,
     ): Promise<void>     {
-        // assuming in this method that add parameters were provided
+        // Assuming in this method that add parameters were provided
 
         // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
         const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
