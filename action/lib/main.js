@@ -38,7 +38,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Frogbot');
-            let jfrogUrl = yield utils_1.Utils.getAndValidatePlatformUrl();
+            let jfrogUrl = yield utils_1.Utils.getJfrogPlatformUrl();
             yield utils_1.Utils.setupOidcTokenIfNeeded(jfrogUrl);
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();

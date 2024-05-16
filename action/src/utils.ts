@@ -173,26 +173,13 @@ export class Utils {
     public static isWindows() {
         return platform().startsWith('win');
     }
-    public static async getAndValidatePlatformUrl(): Promise<string> {
+    public static async getJfrogPlatformUrl(): Promise<string> {
         // First Verify JF_URL is provided through environment variable
         let jfrogUrl: string = process.env.JF_URL ?? '';
         if (!jfrogUrl) {
             throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
         }
-        // Verify that the provided JFrog URL is valid and responsive
-        const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
-        const httpClient: HttpClient = new HttpClient();
-        let response: HttpClientResponse;
-        try {
-            response = await httpClient.get(pingUrl);
-        } catch (error: any) {
-
-            throw new Error('Ping to Xray failed.\nMake sure JF_URL points on your full platform URL, for example: https://mycompany.jfrog.io/.\nMake sure the platform is up and running and accessible.' + '\nError returned is ' + error.message);
-        }
-        if (response?.message?.statusCode == 200){
-            return jfrogUrl;
-        }
-        throw new Error("Ping to Xray returned failing status code " + response.message.statusCode + "\nMake sure the platform is up and running and accessible.");
+        return jfrogUrl;
     }
 
     /**
