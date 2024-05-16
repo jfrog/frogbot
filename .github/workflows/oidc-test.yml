@@ -63,7 +63,7 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
-          JF_WORKING_DIR: ./testdata/projects/npm
+          JF_WORKING_DIR: ./testdata/projects/noIssuesProject
           JF_FAIL: "FALSE"
           # @todo remove once scanners are stable
           JFROG_CLI_ANALYZER_MANAGER_VERSION: "1.6.4"
