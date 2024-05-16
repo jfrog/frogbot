@@ -46,7 +46,7 @@ jobs:
       - name: Create OpenID Connect integration
         shell: bash
         run: |
-          curl -X POST "${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.JFROG_PLATFORM_RT_TOKEN }}" -d '{
+          curl -X POST "${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
           "issuer_url": "https://token.actions.githubusercontent.com/",
           "provider_type": "GitHub",
@@ -57,7 +57,7 @@ jobs:
         run: |
           curl -X POST ${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
           -H 'Content-Type: application/json' \
-          -H 'Authorization: Bearer ${{ secrets.JFROG_PLATFORM_RT_TOKEN }}' \
+          -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}' \
           -d '{
                 "name": "oidc-test-identity-mapping",
                 "priority": "1",
