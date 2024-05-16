@@ -223,7 +223,7 @@ class Utils {
             if (response.message.statusCode == 200) {
                 return jfrogUrl;
             }
-            throw new Error("Ping to Xray returned failing status code " + response.message.statusCode + "Make sure the platform is up and running and accessible.");
+            throw new Error("Ping to Xray returned failing status code " + response.message.statusCode + "\nMake sure the platform is up and running and accessible.");
         });
     }
     /**
