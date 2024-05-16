@@ -184,7 +184,7 @@ export class Utils {
         }
         // Verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
-        console.log("PING URL: " + pingUrl)
+        console.log("PING URL: " + pingUrl.replace("ecosys", "eran"))
         const httpClient: HttpClient = new HttpClient();
         let response: HttpClientResponse;
         try {
