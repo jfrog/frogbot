@@ -200,9 +200,12 @@ export class Utils {
         throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE);
     }
 
+    /**
+     * This method will set up an OIDC token if the OIDC integration is set.
+     * If OIDC integration is set but not working, the action will fail causing frogbot to fail
+     * @param jfrogUrl - The JFrog platform URL
+     */
     public static async setupOidcTokenIfNeeded(jfrogUrl: string): Promise<void> {
-        // This method will only push Access Token to the environment if the OIDC integration is set
-        // If OIDC integration is set but not working, the action will fail causing frogbot to fail
         const oidcProviderName: string = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG);
         if (!oidcProviderName) {
             // No token is set if an oidc-provider-name wasn't provided
