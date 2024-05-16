@@ -210,25 +210,23 @@ class Utils {
                 throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
             }
             // Verify that the provided JFrog URL is valid and responsive
-            /*
-            const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
-            const httpClient: HttpClient = new HttpClient();
-            let response: HttpClientResponse;
+            const pingUrl = jfrogUrl.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
+            console.log("PING URL: " + pingUrl);
+            const httpClient = new http_client_1.HttpClient();
+            let response;
             try {
-                response = await httpClient.get(pingUrl);
-            } catch (error: any) {
+                response = yield httpClient.get(pingUrl);
+            }
+            catch (error) {
                 throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE + ', Error returned is ' + error.message);
             }
             if (response.message.statusCode == 200) {
-                const body: string = await response.readBody();
+                const body = yield response.readBody();
                 if (body == 'OK') {
                     return jfrogUrl;
                 }
             }
             throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE);
-    
-             */
-            return jfrogUrl;
         });
     }
     /**
