@@ -35,7 +35,7 @@ jobs:
       - name: Create OpenID Connect integration
         shell: bash
         run: |
-          curl -X POST "${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
+          curl -X POST "${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
           "issuer_url": "https://token.actions.githubusercontent.com/",
           "provider_type": "GitHub",
@@ -44,7 +44,7 @@ jobs:
       - name: Create OIDC integration Identity Mapping
         shell: bash
         run: |
-          curl -X POST ${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
+          curl -X POST ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
           -H 'Content-Type: application/json' \
           -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}' \
           -d '{
@@ -81,4 +81,4 @@ jobs:
         shell: bash
         if: always()
         run: |
-          curl -X DELETE ${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}'
+          curl -X DELETE ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}'
