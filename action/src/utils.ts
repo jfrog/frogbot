@@ -196,6 +196,7 @@ export class Utils {
         if (response.message.statusCode == 200) {
             const body: string = await response.readBody();
             console.log("PING RESPONSE: " + body)
+            console.log("EQUALITY STATUS: " + (body == "OK"))
             if (body == "OK") {
                 return jfrogUrl;
             }
