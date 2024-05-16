@@ -180,7 +180,7 @@ export class Utils {
         // First Verify JF_URL is provided through environment variable
         let jfrogUrl: string = process.env.JF_URL ?? '';
         if (!jfrogUrl) {
-            throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
+            throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/!!!@!!!');
         }
         // Verify that the provided JFrog URL is valid and responsive
         const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
