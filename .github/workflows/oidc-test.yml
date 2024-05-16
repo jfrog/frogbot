@@ -21,21 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-        # @todo required?
-      #- name: Setup NodeJS
-      #  uses: actions/setup-node@v3
-      #  with:
-      #    node-version: "16.x"
-
-      # @todo required?
-      # Install and run tests
-      #- name: Install
-      #  run: npm i
-      #- name: Lint
-      #  run: npm run lint
-      #- name: Unit tests
-      #  run: npm t
-
       # Generating a unique name for the Integration Configuration that will be created in the following step
       - name: Generate unique OIDC config name
         shell: bash
