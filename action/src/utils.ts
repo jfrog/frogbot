@@ -19,7 +19,7 @@ export class Utils {
     // OpenID Connect provider_name input
     private static readonly OIDC_INTEGRATION_PROVIDER_NAME_ARG: string = 'oidc-provider-name';
 
-    private static readonly JFROG_URL_VALIDATION_FAILURE_MESSAGE: string =
+    private static readonly INVALID_PLATFORM_URL_ERROR_MESSAGE: string =
         'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
 
     public static async addToPath() {
@@ -183,13 +183,13 @@ export class Utils {
             throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
         }
         // Verify that the provided JFrog URL is valid and responsive
-        const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/artifactory/api/system/ping';
+        const pingUrl: string = jfrogUrl!.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
         const httpClient: HttpClient = new HttpClient();
         let response: HttpClientResponse;
         try {
             response = await httpClient.get(pingUrl);
         } catch (error: any) {
-            throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE + ', Error returned is ' + error.message);
+            throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE + ', Error returned is ' + error.message);
         }
         if (response.message.statusCode == 200) {
             const body: string = await response.readBody();
@@ -197,7 +197,7 @@ export class Utils {
                 return jfrogUrl;
             }
         }
-        throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE);
+        throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE);
     }
 
     /**
@@ -236,12 +236,8 @@ export class Utils {
      * @param jfrogUrl - The JFrog platform URL
      * @param jsonWebToken - The JSON web token used in the token exchange
      * @param oidcProviderName - The OpenID Connect provider name
-     * @private
      */
     private static async initJfrogAccessTokenThroughOidcProtocol(jfrogUrl: string, jsonWebToken: string, oidcProviderName: string): Promise<void> {
-        // Assuming in this method that all parameters were provided
-
-        // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
         const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
 
         core.debug('Exchanging GitHub JSON web token with a JFrog access token...');

@@ -210,14 +210,14 @@ class Utils {
                 throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
             }
             // Verify that the provided JFrog URL is valid and responsive
-            const pingUrl = jfrogUrl.replace(/\/$/, '') + '/artifactory/api/system/ping';
+            const pingUrl = jfrogUrl.replace(/\/$/, '') + '/xray/api/v1/system/liveness';
             const httpClient = new http_client_1.HttpClient();
             let response;
             try {
                 response = yield httpClient.get(pingUrl);
             }
             catch (error) {
-                throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE + ', Error returned is ' + error.message);
+                throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE + ', Error returned is ' + error.message);
             }
             if (response.message.statusCode == 200) {
                 const body = yield response.readBody();
@@ -225,7 +225,7 @@ class Utils {
                     return jfrogUrl;
                 }
             }
-            throw new Error(Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE);
+            throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE);
         });
     }
     /**
@@ -264,12 +264,9 @@ class Utils {
      * @param jfrogUrl - The JFrog platform URL
      * @param jsonWebToken - The JSON web token used in the token exchange
      * @param oidcProviderName - The OpenID Connect provider name
-     * @private
      */
     static initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Assuming in this method that all parameters were provided
-            // If we've reached this stage, the jfrogCredentials.jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
             const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
             core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
             const httpClient = new http_client_1.HttpClient();
@@ -304,4 +301,4 @@ Utils.TOOL_NAME = 'frogbot';
 Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
 // OpenID Connect provider_name input
 Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG = 'oidc-provider-name';
-Utils.JFROG_URL_VALIDATION_FAILURE_MESSAGE = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
+Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE = 'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
