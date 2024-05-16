@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21.x
+
       # Generating a unique name for the Integration Configuration that will be created in the following step
       - name: Generate unique OIDC config name
         shell: bash
