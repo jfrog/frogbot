@@ -1,29 +1,20 @@
 name: "GitHub Action Test"
 on:
   push:
-    push:
-      tags-ignore:
-        - '**'
+    tags-ignore:
+      - '**'
   pull_request_target:
     types: [ labeled ]
-permissions:
-  contents: write
-  pull-requests: write
-  security-events: write
-  id-token: write
 jobs:
-  Frogbot-Test:
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    name: OIDC-Access integration test
+  test:
+    runs-on: ${{ matrix.os }}
     defaults:
       run:
         working-directory: action
     strategy:
-      fail-fast: false
       matrix:
-        os: [ ubuntu , windows, macos]
-    runs-on: ${{ matrix.os }}-latest
-
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+      fail-fast: false
     steps:
       # Checkout and install prerequisites
       - name: Checkout
@@ -32,6 +23,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16.x"
+
       # Install and run tests
       - name: Install
         run: npm i
@@ -39,58 +31,3 @@ jobs:
         run: npm run lint
       - name: Unit tests
         run: npm t
-
-      # Generating a unique name for the Integration Configuration that will be created in the following step
-      - name: Generate unique OIDC config name
-        shell: bash
-        run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
-
-      - name: Create OpenID Connect integration
-        shell: bash
-        run: |
-          curl -X POST "${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.JFROG_PLATFORM_RT_TOKEN }}" -d '{
-          "name": "${{ env.OIDC_PROVIDER_NAME }}",
-          "issuer_url": "https://token.actions.githubusercontent.com/",
-          "provider_type": "GitHub",
-          "description": "This is a test configuration created for OIDC-Access integration test" }'
-
-      - name: Create OIDC integration Identity Mapping
-        shell: bash
-        run: |
-          curl -X POST ${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
-          -H 'Content-Type: application/json' \
-          -H 'Authorization: Bearer ${{ secrets.JFROG_PLATFORM_RT_TOKEN }}' \
-          -d '{
-                "name": "oidc-test-identity-mapping",
-                "priority": "1",
-                "claims": {
-                  "repository": "${{ github.repository_owner }}/frogbot"
-                },
-                "token_spec": { 
-                   "username": "admin",
-                   "scope": "applied-permissions/admin",
-                   "audience": "*@*",
-                   "expires_in": 300                
-                }
-          }'
-
-      # Running frogbot with the OIDC integration
-      - name: Run Frogbot
-        uses: ./
-        env:
-          ACTIONS_STEP_DEBUG: true
-          JF_URL: ${{ secrets.PLATFORM_URL }}
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
-          JF_FAIL: "FALSE"
-          # @todo remove once scanners are stable
-          JFROG_CLI_ANALYZER_MANAGER_VERSION: "1.6.4"
-        with:
-          oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
-
-      # Removing the OIDC integration will remove the Identity Mapping as well
-      - name: Delete OIDC integration
-        shell: bash
-        if: always()
-        run: |
-          curl -X DELETE ${{ secrets.JFROG_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.JFROG_PLATFORM_RT_TOKEN }}'
