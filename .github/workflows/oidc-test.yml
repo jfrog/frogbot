@@ -2,7 +2,7 @@ name: "OIDC Test"
 on:
   push:
     tags-ignore:
-      - "**"
+      - '**'
   pull_request_target:
     types: [ labeled ]
 permissions:
