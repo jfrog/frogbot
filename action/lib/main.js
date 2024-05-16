@@ -35,17 +35,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const utils_1 = require("./utils");
 function main() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.startGroup('Frogbot');
-            // Validate JF_URL
-            let jfrogUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
-            if (!jfrogUrl) {
-                throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
-            }
-            yield utils_1.Utils.validatePlatformUrl(jfrogUrl);
-            yield utils_1.Utils.getJfrogOIDCCredentials(jfrogUrl);
+            let jfrogUrl = yield utils_1.Utils.getAndValidatePlatformUrl();
+            yield utils_1.Utils.setupOidcTokenIfNeeded(jfrogUrl);
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();
             switch (eventName) {

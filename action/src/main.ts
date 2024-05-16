@@ -4,13 +4,8 @@ import { Utils } from './utils';
 async function main() {
     try {
         core.startGroup('Frogbot');
-        // Validate JF_URL
-        let jfrogUrl: string = process.env.JF_URL?? '';
-        if (!jfrogUrl) {
-            throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
-        }
-        await Utils.validatePlatformUrl(jfrogUrl);
-        await Utils.getJfrogOIDCCredentials(jfrogUrl);
+        let jfrogUrl: string = await Utils.getAndValidatePlatformUrl();
+        await Utils.setupOidcTokenIfNeeded(jfrogUrl);
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
         switch (eventName) {
