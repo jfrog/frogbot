@@ -190,15 +190,17 @@ export class Utils {
         try {
             response = await httpClient.get(pingUrl);
         } catch (error: any) {
-            throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE + ', Error returned is ' + error.message);
+
+            throw new Error('Ping to Xray failed.\nMake sure JF_URL points on your full platform URL, for example: https://mycompany.jfrog.io/.\nMake sure the platform is up and running and accessible.' + '\nError returned is ' + error.message);
         }
         if (response.message.statusCode == 200) {
             const body: string = await response.readBody();
+            console.log("PING RESPONSE: " + body)
             if (body == 'OK') {
                 return jfrogUrl;
             }
         }
-        throw new Error(Utils.INVALID_PLATFORM_URL_ERROR_MESSAGE);
+        throw new Error("Ping to Xray returned failing status");
     }
 
     /**
