@@ -19,9 +19,6 @@ export class Utils {
     // OpenID Connect provider_name input
     private static readonly OIDC_INTEGRATION_PROVIDER_NAME_ARG: string = 'oidc-provider-name';
 
-    private static readonly INVALID_PLATFORM_URL_ERROR_MESSAGE: string =
-        'JF_URL must point on your full platform URL, for example: https://mycompany.jfrog.io/, make sure the platform is up and running and accessible.';
-
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
         let version: string = core.getInput(Utils.VERSION_ARG);
@@ -193,17 +190,10 @@ export class Utils {
 
             throw new Error('Ping to Xray failed.\nMake sure JF_URL points on your full platform URL, for example: https://mycompany.jfrog.io/.\nMake sure the platform is up and running and accessible.' + '\nError returned is ' + error.message);
         }
-        if (response.message.statusCode == 200){//(response.message.statusCode == 200) {
-            console.log("PING RESPONSE STATUS: " + response.message.statusCode)
-            //const body: string = await response.readBody();
-            //console.log("PING RESPONSE: " + body)
-            //console.log("EQUALITY STATUS: " + (body == "OK"))
-            //if (body == "OK") {
-            //    return jfrogUrl;
-            //}
+        if (response.message.statusCode == 200){
             return jfrogUrl;
         }
-        throw new Error("Ping to Xray returned failing status");
+        throw new Error("Ping to Xray returned failing status code " + response.message.statusCode + "Make sure the platform is up and running and accessible.");
     }
 
     /**
