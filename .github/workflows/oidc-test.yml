@@ -1,9 +1,9 @@
-name: "GitHub Action Test"
+name: "OIDC Test"
 on:
   push:
     tags-ignore:
       - '**'
-  pull_request_target:
+  pull_request:
     types: [ labeled ]
 permissions:
   contents: write
