@@ -230,6 +230,8 @@ class Utils {
     }
     static setupOidcTokenIfNeeded(jfrogUrl) {
         return __awaiter(this, void 0, void 0, function* () {
+            // This method will only push Access Token to the environment if the OIDC integration is set
+            // If OIDC integration is set but not working, the action will fail causing frogbot to fail
             const oidcProviderName = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG);
             if (!oidcProviderName) {
                 // No token is set if an oidc-provider-name wasn't provided
