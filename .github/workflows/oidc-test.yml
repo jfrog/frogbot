@@ -11,33 +11,32 @@ permissions:
   security-events: write
   id-token: write
 jobs:
-  Frogbot-Test:
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    name: OIDC-Access integration test
-    defaults:
-      run:
-        working-directory: action
+  oidc-test:
+    #if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
+    name: OIDC-Access integration test (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu , windows, macos]
+        os: [ ubuntu, windows, macos ]
     runs-on: ${{ matrix.os }}-latest
-
     steps:
-      # Checkout and install prerequisites
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.x"
+
+        # @todo required?
+      #- name: Setup NodeJS
+      #  uses: actions/setup-node@v3
+      #  with:
+      #    node-version: "16.x"
+
+      # @todo required?
       # Install and run tests
-      - name: Install
-        run: npm i
-      - name: Lint
-        run: npm run lint
-      - name: Unit tests
-        run: npm t
+      #- name: Install
+      #  run: npm i
+      #- name: Lint
+      #  run: npm run lint
+      #- name: Unit tests
+      #  run: npm t
 
       # Generating a unique name for the Integration Configuration that will be created in the following step
       - name: Generate unique OIDC config name
@@ -81,6 +80,7 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
+          JF_WORKING_DIR: ./testdata/projects/npm
           JF_FAIL: "FALSE"
           # @todo remove once scanners are stable
           JFROG_CLI_ANALYZER_MANAGER_VERSION: "1.6.4"
