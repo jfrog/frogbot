@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import { Utils } from './utils';
 
 async function main() {
+    // to delete comment
     try {
         core.startGroup('Frogbot');
         let jfrogUrl: string = await Utils.getAndValidatePlatformUrl();

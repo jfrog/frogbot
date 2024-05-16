@@ -36,6 +36,7 @@ const core = __importStar(require("@actions/core"));
 const utils_1 = require("./utils");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
+        // to delete comment
         try {
             core.startGroup('Frogbot');
             let jfrogUrl = yield utils_1.Utils.getAndValidatePlatformUrl();
