@@ -190,7 +190,7 @@ export class Utils {
 
             throw new Error('Ping to Xray failed.\nMake sure JF_URL points on your full platform URL, for example: https://mycompany.jfrog.io/.\nMake sure the platform is up and running and accessible.' + '\nError returned is ' + error.message);
         }
-        if (response!.message!.statusCode == 200){
+        if (response?.message?.statusCode == 200){
             return jfrogUrl;
         }
         throw new Error("Ping to Xray returned failing status code " + response.message.statusCode + "\nMake sure the platform is up and running and accessible.");
