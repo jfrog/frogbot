@@ -223,7 +223,7 @@ class Utils {
             if (response.message.statusCode == 200) {
                 const body = yield response.readBody();
                 console.log("PING RESPONSE: " + body);
-                if (body == 'OK') {
+                if (body == "OK") {
                     return jfrogUrl;
                 }
             }
