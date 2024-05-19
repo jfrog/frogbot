@@ -4,6 +4,8 @@ import { Utils } from './utils';
 async function main() {
     try {
         core.startGroup('Frogbot');
+        let jfrogUrl: string = await Utils.getJfrogPlatformUrl();
+        await Utils.setupOidcTokenIfNeeded(jfrogUrl);
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
         switch (eventName) {
