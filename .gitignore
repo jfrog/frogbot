@@ -6,3 +6,4 @@ coverage
 .vscode
 *.iml
 .DS_Store
+/testdata/vcsclientmock.go
