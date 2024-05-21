@@ -71,8 +71,6 @@ jobs:
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
           JF_WORKING_DIR: ./testdata/projects/noIssuesProject
           JF_FAIL: "FALSE"
-          # @todo remove once scanners are stable
-          JFROG_CLI_ANALYZER_MANAGER_VERSION: "1.6.4"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
