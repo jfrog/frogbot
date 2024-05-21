@@ -145,3 +145,5 @@ func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLine
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
 }
+
+// adding a comment
