@@ -302,7 +302,7 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
-	WriteContent(&contentBuilder, getFallbackCommentLocationDescription(location), content, footer(writer))
+	WriteContent(&contentBuilder, getFallbackCommentLocationDescription(location), content)
 	return contentBuilder.String()
 }
 
