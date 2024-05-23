@@ -113,6 +113,15 @@ jobs:
         with:
           version: 8
 
+      - name: Install Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: "17"
+
+      - name: Run Gradle build
+        run: ./gradlew build
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
