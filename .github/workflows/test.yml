@@ -113,6 +113,12 @@ jobs:
         with:
           version: 8
 
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
