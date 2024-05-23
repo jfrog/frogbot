@@ -119,9 +119,6 @@ jobs:
           distribution: "adopt"
           java-version: "17"
 
-      - name: Run Gradle build
-        run: ./gradlew build
-
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
