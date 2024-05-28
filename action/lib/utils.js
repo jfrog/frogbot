@@ -41,6 +41,7 @@ const fs_1 = require("fs");
 const os_1 = require("os");
 const path_1 = require("path");
 const simple_git_1 = require("simple-git");
+const http_client_1 = require("@actions/http-client");
 class Utils {
     static addToPath() {
         var _a;
@@ -200,9 +201,86 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
+    static getJfrogPlatformUrl() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            let jfrogUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
+            if (!jfrogUrl) {
+                throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
+            }
+            return jfrogUrl;
+        });
+    }
+    /**
+     * This method will set up an OIDC token if the OIDC integration is set.
+     * If OIDC integration is set but not working, the action will fail causing frogbot to fail
+     * @param jfrogUrl - The JFrog platform URL
+     */
+    static setupOidcTokenIfNeeded(jfrogUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const oidcProviderName = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG);
+            if (!oidcProviderName) {
+                // No token is set if an oidc-provider-name wasn't provided
+                return;
+            }
+            core.debug('Obtaining an access token through OpenID Connect...');
+            const audience = core.getInput(Utils.OIDC_AUDIENCE_ARG);
+            let jsonWebToken;
+            try {
+                core.debug('Fetching JSON web token');
+                jsonWebToken = yield core.getIDToken(audience);
+            }
+            catch (error) {
+                throw new Error(`Getting openID Connect JSON web token failed: ${error.message}`);
+            }
+            try {
+                return yield this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
+            }
+            catch (error) {
+                throw new Error(`OIDC authentication against JFrog platform failed, please check OIDC settings and mappings on the JFrog platform: ${error.message}`);
+            }
+        });
+    }
+    /**
+     * This method exchanges a JSON web token with a JFrog access token through the OpenID Connect protocol
+     * If we've reached this stage, the jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
+     * @param jfrogUrl - The JFrog platform URL
+     * @param jsonWebToken - The JSON web token used in the token exchange
+     * @param oidcProviderName - The OpenID Connect provider name
+     */
+    static initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const exchangeUrl = jfrogUrl.replace(/\/$/, '') + '/access/api/v1/oidc/token';
+            core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
+            const httpClient = new http_client_1.HttpClient();
+            const data = `{
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+            "subject_token": "${jsonWebToken}",
+            "provider_name": "${oidcProviderName}"
+        }`;
+            const additionalHeaders = {
+                'Content-Type': 'application/json',
+            };
+            const response = yield httpClient.post(exchangeUrl, data, additionalHeaders);
+            const responseString = yield response.readBody();
+            const responseJson = JSON.parse(responseString);
+            process.env.JF_ACCESS_TOKEN = responseJson.access_token;
+            if (responseJson.access_token) {
+                core.setSecret(responseJson.access_token);
+            }
+            if (responseJson.errors) {
+                throw new Error(`${JSON.stringify(responseJson.errors)}`);
+            }
+        });
+    }
 }
 exports.Utils = Utils;
 Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
 Utils.TOOL_NAME = 'frogbot';
+// OpenID Connect audience input
+Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
+// OpenID Connect provider_name input
+Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG = 'oidc-provider-name';
