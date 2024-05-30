@@ -1,9 +1,9 @@
 __tests__/runner/*
 frogbot
 frogbot.exe
-*mock*
 coverage
 .idea
 .vscode
 *.iml
 .DS_Store
+/testdata/vcsclientmock.go

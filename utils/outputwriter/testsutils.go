@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -23,19 +24,29 @@ var (
 type OutputTestCase struct {
 	name               string
 	writer             OutputWriter
-	expectedOutputPath string
-	expectedOutput     string
+	expectedOutputPath []string
+	expectedOutput     []string
 }
 
 type TestBodyResponse struct {
 	Body string `json:"body"`
 }
 
-func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
-	if testCase.expectedOutputPath != "" {
-		return GetOutputFromFile(t, testCase.expectedOutputPath)
+func GetExpectedTestCaseOutput(t *testing.T, testCase OutputTestCase) []string {
+	if len(testCase.expectedOutputPath) > 0 {
+		content := make([]string, len(testCase.expectedOutputPath))
+		for i, path := range testCase.expectedOutputPath {
+			content[i] = GetOutputFromFile(t, path)
+		}
+		return content
 	}
 	return testCase.expectedOutput
+}
+
+func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
+	out := GetExpectedTestCaseOutput(t, testCase)
+	require.Len(t, out, 1)
+	return out[0]
 }
 
 func GetOutputFromFile(t *testing.T, filePath string) string {

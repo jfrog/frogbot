@@ -390,7 +390,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if configFileContent != nil {
 		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
 	}
-	return BuildRepoAggregator(configFileContent, gitParamsFromEnv, jfrogServer, commandName)
+	return BuildRepoAggregator(gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
 // getConfigFileContent retrieves the content of the frogbot-config.yml file
@@ -418,7 +418,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -430,6 +430,7 @@ func BuildRepoAggregator(configFileContent []byte, gitParamsFromEnv *Git, server
 			return
 		}
 		repository.setOutputWriterDetails()
+		repository.OutputWriter.SetSizeLimit(gitClient)
 		resultAggregator = append(resultAggregator, repository)
 	}
 

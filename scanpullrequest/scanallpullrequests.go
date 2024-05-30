@@ -70,7 +70,7 @@ func shouldScanPullRequest(repo utils.Repository, client vcsclient.VcsClient, pr
 			return true, nil
 		}
 		// if this is a Frogbot 'scan results' comment and not 're-scan' request comment, do not scan this pull request.
-		if outputwriter.IsFrogbotSummaryComment(repo.OutputWriter, comment.Content) {
+		if outputwriter.IsFrogbotComment(comment.Content) {
 			return false, nil
 		}
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
@@ -20,6 +20,7 @@ const (
 	SecurityIssueFoundErr   = "issues were detected by Frogbot\n You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file"
 	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	analyticsScanPrScanType = "PR"
 )
 
 type ScanPullRequestCmd struct{}
@@ -87,8 +88,13 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
 
+	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
+	defer func() {
+		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
+	}()
+
 	// Audit PR code
-	issues, err := auditPullRequest(repo, client)
+	issues, err := auditPullRequest(repo, client, analyticsService)
 	if err != nil {
 		return
 	}
@@ -110,6 +116,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
 	if toFailTaskStatus(repo, issues) {
 		err = errors.New(SecurityIssueFoundErr)
+		return
 	}
 	return
 }
@@ -120,12 +127,18 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, analyticsService *securityutils.AnalyticsMetricsService) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+
+	// If MSI exists we always need to report events
+	if analyticsService.GetMsi() != "" {
+		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
+		scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
+	}
 
 	issuesCollection = &utils.IssuesCollection{}
 	for i := range repoConfig.Projects {
@@ -135,6 +148,9 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 			return
 		}
 		issuesCollection.Append(projectIssues)
+	}
+	if analyticsService.ShouldReportEvents() {
+		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issuesCollection.CountIssuesCollectionFindings())
 	}
 	return
 }
@@ -151,7 +167,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	}()
 
 	// Audit source branch
-	var sourceResults *xrayutils.Results
+	var sourceResults *securityutils.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
 	log.Info("Scanning source branch...")
 	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
@@ -180,7 +196,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	return
 }
 
-func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *xrayutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
+func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *securityutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
@@ -194,7 +210,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	}()
 
 	// Set target branch scan details
-	var targetResults *xrayutils.Results
+	var targetResults *securityutils.Results
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 	log.Info("Scanning target branch...")
 	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
@@ -207,24 +223,24 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	return
 }
 
-func getAllIssues(results *xrayutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
+func getAllIssues(results *securityutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	scanResults := results.ExtendedScanResults
-	xraySimpleJson, err := xrayutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
+	xraySimpleJson, err := securityutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
 	if err != nil {
 		return nil, err
 	}
 	return &utils.IssuesCollection{
 		Vulnerabilities: append(xraySimpleJson.Vulnerabilities, xraySimpleJson.SecurityViolations...),
-		Iacs:            xrayutils.PrepareIacs(scanResults.IacScanResults),
-		Secrets:         xrayutils.PrepareSecrets(scanResults.SecretsScanResults),
-		Sast:            xrayutils.PrepareSast(scanResults.SastScanResults),
+		Iacs:            securityutils.PrepareIacs(scanResults.IacScanResults),
+		Secrets:         securityutils.PrepareSecrets(scanResults.SecretsScanResults),
+		Sast:            securityutils.PrepareSast(scanResults.SastScanResults),
 		Licenses:        xraySimpleJson.LicensesViolations,
 	}, nil
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *xrayutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
+func getNewlyAddedIssues(targetResults, sourceResults *securityutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
 	var newLicenses []formats.LicenseRow
 	var err error
@@ -236,22 +252,22 @@ func getNewlyAddedIssues(targetResults, sourceResults *xrayutils.Results, allowe
 
 	var newIacs []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
-		targetIacRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
-		sourceIacRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
+		targetIacRows := securityutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
+		sourceIacRows := securityutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
 		newIacs = createNewSourceCodeRows(targetIacRows, sourceIacRows)
 	}
 
 	var newSecrets []formats.SourceCodeRow
 	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		targetSecretsRows := xrayutils.PrepareIacs(targetResults.ExtendedScanResults.SecretsScanResults)
-		sourceSecretsRows := xrayutils.PrepareIacs(sourceResults.ExtendedScanResults.SecretsScanResults)
+		targetSecretsRows := securityutils.PrepareIacs(targetResults.ExtendedScanResults.SecretsScanResults)
+		sourceSecretsRows := securityutils.PrepareIacs(sourceResults.ExtendedScanResults.SecretsScanResults)
 		newSecrets = createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
 	}
 
 	var newSast []formats.SourceCodeRow
 	if len(targetResults.ExtendedScanResults.SastScanResults) > 0 {
-		targetSastRows := xrayutils.PrepareSast(targetResults.ExtendedScanResults.SastScanResults)
-		sourceSastRows := xrayutils.PrepareSast(sourceResults.ExtendedScanResults.SastScanResults)
+		targetSastRows := securityutils.PrepareSast(targetResults.ExtendedScanResults.SastScanResults)
+		sourceSastRows := securityutils.PrepareSast(sourceResults.ExtendedScanResults.SastScanResults)
 		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
 	}
 
@@ -279,7 +295,7 @@ func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRo
 }
 
 // Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewVulnerabilitiesRows(targetResults, sourceResults *xrayutils.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseRow, err error) {
+func createNewVulnerabilitiesRows(targetResults, sourceResults *securityutils.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseRow, err error) {
 	targetScanAggregatedResults := aggregateScanResults(targetResults.GetScaScansXrayResults())
 	sourceScanAggregatedResults := aggregateScanResults(sourceResults.GetScaScansXrayResults())
 
@@ -295,16 +311,16 @@ func createNewVulnerabilitiesRows(targetResults, sourceResults *xrayutils.Result
 	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
 		return
 	}
-	licenseRows = xrayutils.GetViolatedLicenses(allowedLicenses, newLicenses)
+	licenseRows = securityutils.GetViolatedLicenses(allowedLicenses, newLicenses)
 	return
 }
 
-func getNewSecurityVulnerabilities(targetScan, sourceScan *services.ScanResponse, auditResults *xrayutils.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
-	targetVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
+func getNewSecurityVulnerabilities(targetScan, sourceScan *services.ScanResponse, auditResults *securityutils.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
+	targetVulnerabilitiesRows, err := securityutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
 	if err != nil {
 		return newVulnerabilitiesRows, err
 	}
-	sourceVulnerabilitiesRows, err := xrayutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
+	sourceVulnerabilitiesRows, err := securityutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
 	if err != nil {
 		return newVulnerabilitiesRows, err
 	}
@@ -326,12 +342,12 @@ func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.Vuln
 	return newRows
 }
 
-func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *xrayutils.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseRow, err error) {
-	targetSecurityViolationsRows, targetLicenseViolationsRows, _, err := xrayutils.PrepareViolations(targetScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
+func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *securityutils.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseRow, err error) {
+	targetSecurityViolationsRows, targetLicenseViolationsRows, _, err := securityutils.PrepareViolations(targetScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
 	if err != nil {
 		return
 	}
-	sourceSecurityViolationsRows, sourceLicenseViolationsRows, _, err := xrayutils.PrepareViolations(sourceScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
+	sourceSecurityViolationsRows, sourceLicenseViolationsRows, _, err := securityutils.PrepareViolations(sourceScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
 	if err != nil {
 		return
 	}
@@ -343,11 +359,11 @@ func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResult
 }
 
 func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicenses []formats.LicenseRow, err error) {
-	targetLicenses, err := xrayutils.PrepareLicenses(targetScan.Licenses)
+	targetLicenses, err := securityutils.PrepareLicenses(targetScan.Licenses)
 	if err != nil {
 		return
 	}
-	sourceLicenses, err := xrayutils.PrepareLicenses(sourceScan.Licenses)
+	sourceLicenses, err := securityutils.PrepareLicenses(sourceScan.Licenses)
 	if err != nil {
 		return
 	}

@@ -449,7 +449,7 @@ func TestGetAllIssues(t *testing.T) {
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 13},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 17},
 					ImpactedDependencyName: "Dep-1",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -468,7 +468,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 13,
+					SeverityNumValue: 17,
 				},
 				Finding: "Missing auto upgrade was detected",
 				Location: formats.Location{
@@ -485,7 +485,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 13,
+					SeverityNumValue: 17,
 				},
 				Finding: "Secret",
 				Location: formats.Location{
@@ -502,7 +502,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 13,
+					SeverityNumValue: 17,
 				},
 				Finding: "XSS Vulnerability",
 				Location: formats.Location{
@@ -690,13 +690,14 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 	}
 	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
 
-	configData, err := utils.ReadConfigFromFileSystem(configPath)
-	assert.NoError(t, err)
-	configAggregator, err := utils.BuildRepoAggregator(configData, gitTestParams, &serverParams, utils.ScanPullRequest)
-	assert.NoError(t, err)
-
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
+
+	configData, err := utils.ReadConfigFromFileSystem(configPath)
+	assert.NoError(t, err)
+	configAggregator, err := utils.BuildRepoAggregator(client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
+	assert.NoError(t, err)
+
 	return configAggregator, client
 }
 
@@ -808,7 +809,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 13,
+						SeverityNumValue: 17,
 					},
 					Finding: "Missing auto upgrade was detected",
 					Location: formats.Location{
@@ -838,7 +839,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 11,
+						SeverityNumValue: 14,
 					},
 					Finding: "enable_private_endpoint=false was detected",
 					Location: formats.Location{
@@ -893,7 +894,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 13,
+						SeverityNumValue: 17,
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -923,7 +924,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 11,
+						SeverityNumValue: 14,
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -978,7 +979,7 @@ func TestCreateNewSastRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 13,
+						SeverityNumValue: 17,
 					},
 					Finding: "XSS Vulnerability",
 					Location: formats.Location{
@@ -1008,7 +1009,7 @@ func TestCreateNewSastRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 11,
+						SeverityNumValue: 14,
 					},
 					Finding: "Stack Trace Exposure",
 					Location: formats.Location{

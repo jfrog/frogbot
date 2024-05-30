@@ -5,6 +5,7 @@
 
 ---
 
+
 ---
 ### ✍️ Summary
 
@@ -17,10 +18,13 @@
 | Medium | Applicable | component-D:v0.21.0 | component-D v0.21.0 | [0.24.3] | CVE-2022-26652, CVE-2023-4321 |
 | Low | Undetermined | github.com/mholt/archiver/v3:v3.5.1 | github.com/mholt/archiver/v3 v3.5.1 | - | - |
 
+
 ---
 ### 🔬 Research Details
 
 ---
+
+
 ---
 #### [ XRAY-122345 ] github.com/nats-io/nats-streaming-server v0.21.0
 

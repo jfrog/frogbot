@@ -1,3 +1,7 @@
+
+
+[comment]: <> (FrogbotReviewComment)
+
 <div align='center'>
 
 [![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
@@ -6,19 +10,19 @@
 
 
 ## 📦 Vulnerable Dependencies
+
 ### ✍️ Summary
 <div align='center'>
 
 | SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] | CVE-2022-3517 |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Undetermined | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] | CVE-2022-29217 |
+| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] | CVE-2022-29217 |
 
 </div>
 
-<details>
-<summary> <b>🔬 Research Details</b> </summary>
-<br>
+
+### 🔬 Research Details
 
 <details>
 <summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
@@ -72,8 +76,6 @@ For example, replace the following call -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=jwt.algorithms.get_default_algorithms())`
 With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
-
-</details>
 
 </details>
 

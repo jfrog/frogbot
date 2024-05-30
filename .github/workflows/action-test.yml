@@ -4,6 +4,7 @@ on:
     tags-ignore:
       - '**'
   pull_request:
+    types: [ labeled ]
 jobs:
   test:
     runs-on: ${{ matrix.os }}

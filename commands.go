@@ -3,16 +3,18 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
-
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
 	"github.com/jfrog/frogbot/v2/scanrepository"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"os"
+
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	clitool "github.com/urfave/cli/v2"
 )
 
@@ -102,7 +104,11 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	// Wait for usage reporting to finish.
 	waitForUsageResponse()
 
-	if err == nil {
+	if err != nil && usage.ShouldReportUsage() {
+		if reportError := securityutils.ReportError(frogbotDetails.ServerDetails, err, "frogbot"); reportError != nil {
+			log.Debug(reportError)
+		}
+	} else {
 		log.Info(fmt.Sprintf("Frogbot %q command finished successfully", commandName))
 	}
 	return err
