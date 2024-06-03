@@ -18,10 +18,10 @@ import (
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -57,9 +57,9 @@ var (
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
 
-var BuildToolsDependenciesMap = map[coreutils.Technology][]string{
-	coreutils.Go:  {"github.com/golang/go"},
-	coreutils.Pip: {"pip", "setuptools", "wheel"},
+var BuildToolsDependenciesMap = map[techutils.Technology][]string{
+	techutils.Go:  {"github.com/golang/go"},
+	techutils.Pip: {"pip", "setuptools", "wheel"},
 }
 
 type ErrUnsupportedFix struct {
@@ -435,7 +435,7 @@ func normalizeWhitespaces(text string) string {
 }
 
 // Converts Technology array into a string with a separator.
-func techArrayToString(techsArray []coreutils.Technology, separator string) (result string) {
+func techArrayToString(techsArray []techutils.Technology, separator string) (result string) {
 	if len(techsArray) == 0 {
 		return ""
 	}

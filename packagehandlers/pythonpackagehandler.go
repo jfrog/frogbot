@@ -3,12 +3,14 @@ package packagehandlers
 import (
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 )
 
 const (
@@ -39,11 +41,11 @@ func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 
 func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	switch vulnDetails.Technology {
-	case coreutils.Poetry:
+	case techutils.Poetry:
 		return py.handlePoetry(vulnDetails)
-	case coreutils.Pip:
+	case techutils.Pip:
 		return py.handlePip(vulnDetails)
-	case coreutils.Pipenv:
+	case techutils.Pipenv:
 		return py.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 	default:
 		return errors.New("unknown python package manger: " + vulnDetails.Technology.GetPackageType())

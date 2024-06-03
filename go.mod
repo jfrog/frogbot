@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.9.27
 	github.com/jfrog/froggit-go v1.15.0
-	github.com/jfrog/gofrog v1.7.1
+	github.com/jfrog/gofrog v1.7.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.53.0
 	github.com/jfrog/jfrog-cli-security v1.1.0
 	github.com/jfrog/jfrog-client-go v1.40.2
@@ -80,7 +80,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -119,12 +119,12 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.2.1-0.20240530135020-d86745699b3e
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240603094545-921e8151b2c3
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240603062421-539f1c60160f
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20240530101935-539b5837ce04
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev

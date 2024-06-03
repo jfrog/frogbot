@@ -14,9 +14,9 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
@@ -41,9 +41,9 @@ type ScanRepositoryCmd struct {
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request
 	aggregateFixes bool
 	// The current project technology
-	projectTech []coreutils.Technology
+	projectTech []techutils.Technology
 	// Stores all package manager handlers for detected issues
-	handlers map[coreutils.Technology]packagehandlers.PackageHandler
+	handlers map[techutils.Technology]packagehandlers.PackageHandler
 	// The AnalyticsMetricsService used for analytics event report
 	analyticsService *securityutils.AnalyticsMetricsService
 }
@@ -102,7 +102,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
-		cfp.projectTech = []coreutils.Technology{}
+		cfp.projectTech = []techutils.Technology{}
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
 		}
@@ -504,7 +504,7 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 		return nil
 	}
 	if len(cfp.projectTech) == 0 {
-		cfp.projectTech = []coreutils.Technology{vulnerability.Technology}
+		cfp.projectTech = []techutils.Technology{vulnerability.Technology}
 	}
 	vulnFixVersion := getMinimalFixVersion(vulnerability.ImpactedDependencyVersion, vulnerability.FixedVersions)
 	if vulnFixVersion == "" {
@@ -536,7 +536,7 @@ func (cfp *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vul
 	}
 
 	if cfp.handlers == nil {
-		cfp.handlers = make(map[coreutils.Technology]packagehandlers.PackageHandler)
+		cfp.handlers = make(map[techutils.Technology]packagehandlers.PackageHandler)
 	}
 
 	handler := cfp.handlers[vulnDetails.Technology]
