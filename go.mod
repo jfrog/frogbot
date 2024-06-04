@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.21
+go 1.22.3
 
 require (
 	github.com/go-git/go-git/v5 v5.12.0
@@ -119,9 +119,9 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240603094545-921e8151b2c3
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240604094541-c0167cfcfdfc
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240603062421-539f1c60160f
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240603153234-c15cde9842c7
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
