@@ -5,8 +5,8 @@ import (
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -69,7 +69,7 @@ func TestGetNewReviewComments(t *testing.T) {
 							ImpactedDependencyName: "component-C",
 						},
 						Cves:       []formats.CveRow{{Id: "CVE-2023-4321"}},
-						Technology: coreutils.Npm,
+						Technology: techutils.Npm,
 					},
 				},
 				Secrets: []formats.SourceCodeRow{
@@ -105,7 +105,7 @@ func TestGetNewReviewComments(t *testing.T) {
 							ImpactedDependencyName: "component-C",
 						},
 						Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
-						Technology: coreutils.Npm,
+						Technology: techutils.Npm,
 					},
 				},
 				Iacs: []formats.SourceCodeRow{

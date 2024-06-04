@@ -3,17 +3,18 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"net/http"
-	"regexp"
-	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -360,7 +361,7 @@ func (gm *GitManager) GenerateCommitMessage(impactedPackage string, fixVersion s
 	return formatStringWithPlaceHolders(template, impactedPackage, fixVersion, "", "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedCommitMessage(tech []coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedCommitMessage(tech []techutils.Technology) string {
 	template := gm.customTemplates.commitMessageTemplate
 	if template == "" {
 		// In aggregated mode, commit message and PR title are the same.
@@ -417,7 +418,7 @@ func (gm *GitManager) GeneratePullRequestTitle(impactedPackage string, version s
 	return formatStringWithPlaceHolders(template, impactedPackage, version, "", "", true)
 }
 
-func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Technology) string {
+func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []techutils.Technology) string {
 	template := gm.getPullRequestTitleTemplate(tech)
 	// If no technologies are provided, return the template as-is
 	if len(tech) == 0 {
@@ -426,7 +427,7 @@ func (gm *GitManager) GenerateAggregatedPullRequestTitle(tech []coreutils.Techno
 	return fmt.Sprintf(template, techArrayToString(tech, pullRequestTitleTechSeparator))
 }
 
-func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) string {
+func (gm *GitManager) getPullRequestTitleTemplate(tech []techutils.Technology) string {
 	// Check if a custom template is available
 	if customTemplate := gm.customTemplates.pullRequestTitleTemplate; customTemplate != "" {
 		return parseCustomTemplate(customTemplate, tech)
@@ -437,7 +438,7 @@ func (gm *GitManager) getPullRequestTitleTemplate(tech []coreutils.Technology) s
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot aggregate pull request from each base branch scanned.
-func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []coreutils.Technology) (fixBranchName string) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []techutils.Technology) (fixBranchName string) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
@@ -497,7 +498,7 @@ func setGoGitCustomClient() {
 }
 
 // Clean user template from input strings and add suffix.
-func parseCustomTemplate(customTemplate string, tech []coreutils.Technology) string {
+func parseCustomTemplate(customTemplate string, tech []techutils.Technology) string {
 	trimSpace := strings.TrimSpace(customTemplate)
 	// Find any input format strings
 	re := regexp.MustCompile(`%[sdvTtqwxXbcdoUxfeEgGp]`)

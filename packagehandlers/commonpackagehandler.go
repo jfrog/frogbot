@@ -2,15 +2,16 @@ package packagehandlers
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"io/fs"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 // PackageHandler interface to hold operations on packages
@@ -21,25 +22,25 @@ type PackageHandler interface {
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
 	switch vulnDetails.Technology {
-	case coreutils.Go:
+	case techutils.Go:
 		handler = &GoPackageHandler{}
-	case coreutils.Poetry:
+	case techutils.Poetry:
 		handler = &PythonPackageHandler{}
-	case coreutils.Pipenv:
+	case techutils.Pipenv:
 		handler = &PythonPackageHandler{}
-	case coreutils.Npm:
+	case techutils.Npm:
 		handler = &NpmPackageHandler{}
-	case coreutils.Yarn:
+	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
-	case coreutils.Pip:
+	case techutils.Pip:
 		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
-	case coreutils.Maven:
+	case techutils.Maven:
 		handler = NewMavenPackageHandler(details)
-	case coreutils.Nuget:
+	case techutils.Nuget:
 		handler = &NugetPackageHandler{}
-	case coreutils.Gradle:
+	case techutils.Gradle:
 		handler = &GradlePackageHandler{}
-	case coreutils.Pnpm:
+	case techutils.Pnpm:
 		handler = &PnpmPackageHandler{}
 	default:
 		handler = &UnsupportedPackageHandler{}
