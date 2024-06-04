@@ -14,7 +14,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
 
       - name: Go Cache
         uses: actions/cache@v3
@@ -44,7 +44,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
