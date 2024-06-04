@@ -75,8 +75,8 @@ jobs:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
       # Removing the OIDC integration will remove the Identity Mapping as well
-      - name: Delete OIDC integration
-        shell: bash
-        if: always()
-        run: |
-          curl -X DELETE ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}'
+      #- name: Delete OIDC integration
+      #  shell: bash
+      #  if: always()
+      #  run: |
+      #    curl -X DELETE ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}'
