@@ -220,6 +220,7 @@ export class Utils {
      */
     private static async initJfrogAccessTokenThroughOidcProtocol(jfrogUrl: string, jsonWebToken: string, oidcProviderName: string): Promise<void> {
         const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
+        console.log('print #1 : ' + exchangeUrl)
 
         core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
 
@@ -236,10 +237,10 @@ export class Utils {
         };
 
         const response: HttpClientResponse = await httpClient.post(exchangeUrl, data, additionalHeaders);
-        console.log(response.readBody())
         const responseString: string = await response.readBody();
+        console.log('print #2 : ' + responseString)
         const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
-        console.log(responseJson)
+        console.log('print #3 : ' + responseJson)
         process.env.JF_ACCESS_TOKEN = responseJson.access_token;
         if (responseJson.access_token) {
             core.setSecret(responseJson.access_token);
