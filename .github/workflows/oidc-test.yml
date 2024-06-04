@@ -37,7 +37,7 @@ jobs:
         run: |
           curl -X POST "${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
-          "issuer_url": "https://token.actions.githubusercontent.com/",
+          "issuer_url": "https://token.actions.githubusercontent.com",
           "provider_type": "GitHub",
           "description": "This is a test configuration created for OIDC-Access integration test" }'
 
