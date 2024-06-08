@@ -3,6 +3,13 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -12,17 +19,12 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 const rootTestDir = "scanrepository"
@@ -636,7 +638,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
 	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
-	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
+	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
@@ -644,7 +646,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
 	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
 	assert.NoError(t, err)
-	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]coreutils.Technology{}), prTitle)
+	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 }

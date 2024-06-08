@@ -22,6 +22,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -267,7 +268,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				ImpactedDependencyName: "component-C",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
-			Technology: coreutils.Yarn,
+			Technology: techutils.Yarn,
 		},
 		{
 			Summary:    "summary-2",
@@ -278,7 +279,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				ImpactedDependencyName: "component-D",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
-			Technology: coreutils.Yarn,
+			Technology: techutils.Yarn,
 		},
 	}
 

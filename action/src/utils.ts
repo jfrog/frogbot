@@ -6,12 +6,18 @@ import { chmodSync } from 'fs';
 import { platform, arch } from 'os';
 import { normalize, join } from 'path';
 import { BranchSummary, SimpleGit, simpleGit } from 'simple-git';
+import { HttpClient, HttpClientResponse } from '@actions/http-client';
+import { OutgoingHttpHeaders } from 'http';
 
 export class Utils {
     private static readonly LATEST_RELEASE_VERSION: string = '[RELEASE]';
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
+    // OpenID Connect audience input
+    private static readonly OIDC_AUDIENCE_ARG: string = 'oidc-audience';
+    // OpenID Connect provider_name input
+    private static readonly OIDC_INTEGRATION_PROVIDER_NAME_ARG: string = 'oidc-provider-name';
 
     public static async addToPath() {
         let fileName: string = Utils.getExecutableName();
@@ -167,4 +173,81 @@ export class Utils {
     public static isWindows() {
         return platform().startsWith('win');
     }
+    public static async getJfrogPlatformUrl(): Promise<string> {
+        let jfrogUrl: string = process.env.JF_URL ?? '';
+        if (!jfrogUrl) {
+            throw new Error('JF_URL must be provided and point on your full platform URL, for example: https://mycompany.jfrog.io/');
+        }
+        return jfrogUrl;
+    }
+
+    /**
+     * This method will set up an OIDC token if the OIDC integration is set.
+     * If OIDC integration is set but not working, the action will fail causing frogbot to fail
+     * @param jfrogUrl - The JFrog platform URL
+     */
+    public static async setupOidcTokenIfNeeded(jfrogUrl: string): Promise<void> {
+        const oidcProviderName: string = core.getInput(Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG);
+        if (!oidcProviderName) {
+            // No token is set if an oidc-provider-name wasn't provided
+            return;
+        }
+        core.debug('Obtaining an access token through OpenID Connect...');
+        const audience: string = core.getInput(Utils.OIDC_AUDIENCE_ARG);
+        let jsonWebToken: string | undefined;
+        try {
+            core.debug('Fetching JSON web token');
+            jsonWebToken = await core.getIDToken(audience);
+        } catch (error: any) {
+            throw new Error(`Getting openID Connect JSON web token failed: ${error.message}`);
+        }
+
+        try {
+            return await this.initJfrogAccessTokenThroughOidcProtocol(jfrogUrl, jsonWebToken, oidcProviderName);
+        } catch (error: any) {
+            throw new Error(
+                `OIDC authentication against JFrog platform failed, please check OIDC settings and mappings on the JFrog platform: ${error.message}`,
+            );
+        }
+    }
+
+    /**
+     * This method exchanges a JSON web token with a JFrog access token through the OpenID Connect protocol
+     * If we've reached this stage, the jfrogUrl field should hold a non-empty value obtained from process.env.JF_URL
+     * @param jfrogUrl - The JFrog platform URL
+     * @param jsonWebToken - The JSON web token used in the token exchange
+     * @param oidcProviderName - The OpenID Connect provider name
+     */
+    private static async initJfrogAccessTokenThroughOidcProtocol(jfrogUrl: string, jsonWebToken: string, oidcProviderName: string): Promise<void> {
+        const exchangeUrl: string = jfrogUrl!.replace(/\/$/, '') + '/access/api/v1/oidc/token';
+
+        core.debug('Exchanging GitHub JSON web token with a JFrog access token...');
+
+        const httpClient: HttpClient = new HttpClient();
+        const data: string = `{
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
+            "subject_token": "${jsonWebToken}",
+            "provider_name": "${oidcProviderName}"
+        }`;
+
+        const additionalHeaders: OutgoingHttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        const response: HttpClientResponse = await httpClient.post(exchangeUrl, data, additionalHeaders);
+        const responseString: string = await response.readBody();
+        const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
+        process.env.JF_ACCESS_TOKEN = responseJson.access_token;
+        if (responseJson.access_token) {
+            core.setSecret(responseJson.access_token);
+        }
+        if (responseJson.errors) {
+            throw new Error(`${JSON.stringify(responseJson.errors)}`);
+        }
+    }
+}
+export interface TokenExchangeResponseData {
+    access_token: string;
+    errors: string;
 }
