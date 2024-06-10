@@ -19,7 +19,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -232,7 +231,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Severity:   "high",
 			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-			Technology: coreutils.Maven.String(),
+			Technology: techutils.Maven.String(),
 		}},
 	}
 
@@ -245,7 +244,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "high",
 				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
 				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-				Technology: coreutils.Maven.String(),
+				Technology: techutils.Maven.String(),
 			},
 			{
 				IssueId:    "XRAY-2",
@@ -253,7 +252,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				Severity:   "low",
 				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
 				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
-				Technology: coreutils.Yarn.String(),
+				Technology: techutils.Yarn.String(),
 			},
 		},
 	}
