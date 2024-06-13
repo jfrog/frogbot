@@ -15,7 +15,7 @@ func (golang *GoPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	if golang.depsRepo != "" {
 		if err := golangutils.SetArtifactoryAsResolutionServer(golang.serverDetails, golang.depsRepo, goutils.GoProxyUrlParams{}); err != nil {
 			return err
-		} e
+		}
 	}
 	// In Golang, we can address every dependency as a direct dependency.
 	return golang.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
