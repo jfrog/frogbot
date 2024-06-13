@@ -35,16 +35,16 @@ var testPackagesData = []struct {
 	commandArgs []string
 }{
 	{
-		packageType: coreutils.Go.String(),
+		packageType: techutils.Go.String(),
 	},
 	{
-		packageType: coreutils.Maven.String(),
+		packageType: techutils.Maven.String(),
 	},
 	{
-		packageType: coreutils.Gradle.String(),
+		packageType: techutils.Gradle.String(),
 	},
 	{
-		packageType: coreutils.Npm.String(),
+		packageType: techutils.Npm.String(),
 		commandName: "npm",
 		commandArgs: []string{"install"},
 	},
@@ -59,23 +59,23 @@ var testPackagesData = []struct {
 		commandArgs: []string{"install"},
 	},
 	{
-		packageType: coreutils.Dotnet.String(),
+		packageType: techutils.Dotnet.String(),
 		commandName: "dotnet",
 		commandArgs: []string{"restore"},
 	},
 	{
-		packageType: coreutils.Nuget.String(),
+		packageType: techutils.Nuget.String(),
 		commandName: "nuget",
 		commandArgs: []string{"restore"},
 	},
 	{
-		packageType: coreutils.Pip.String(),
+		packageType: techutils.Pip.String(),
 	},
 	{
-		packageType: coreutils.Pipenv.String(),
+		packageType: techutils.Pipenv.String(),
 	},
 	{
-		packageType: coreutils.Poetry.String(),
+		packageType: techutils.Poetry.String(),
 	},
 }
 
@@ -384,7 +384,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 			}()
 			assert.NoError(t, err)
 			assert.NoError(t, biutils.CopyDir(projectPath, tmpDir, true, nil))
-			if pkg.packageType == coreutils.Gradle.String() {
+			if pkg.packageType == techutils.Gradle.String() {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
