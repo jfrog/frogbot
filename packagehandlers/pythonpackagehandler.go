@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 )
 
@@ -58,7 +57,7 @@ func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDet
 		return
 	}
 	// Update Poetry lock file as well
-	return runPackageMangerCommand(coreutils.Poetry.GetExecCommandName(), coreutils.Poetry.String(), []string{"update"})
+	return runPackageMangerCommand(techutils.Poetry.GetExecCommandName(), techutils.Poetry.String(), []string{"update"})
 }
 
 func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
