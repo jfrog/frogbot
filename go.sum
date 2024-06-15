@@ -975,8 +975,8 @@ github.com/nwaples/rardecode v1.1.3 h1:cWCaZwfM5H7nAD6PyEdcVnczzV8i/JtotnyW/dD9l
 github.com/nwaples/rardecode v1.1.3/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/onsi/gomega v1.27.10 h1:naR28SdDFlqrG6kScpT8VWpu1xWY5nJRCF3XaYyBjhI=
 github.com/onsi/gomega v1.27.10/go.mod h1:RsS8tutOdbdgzbPtzzATp12yT7kM5I5aElG3evPbQ0M=
-github.com/orz25/jfrog-cli-security v0.0.0-20240615085522-2986a0d2e24b h1:MxBRkLo/SsJuKbfVAAsRGH43il2/J4/LQVQ0Cd4Uo/8=
-github.com/orz25/jfrog-cli-security v0.0.0-20240615085522-2986a0d2e24b/go.mod h1:8Jmr6CBQIgB6zbyxuZLg/66x7M+7WWDkXBGCQPkw+j8=
+github.com/orz25/jfrog-cli-security v0.0.0-20240615134801-affc60eb43e4 h1:yNgPNXrr1UN9GUE65DbrPklTFCWPesTFyKTfAkxFeuw=
+github.com/orz25/jfrog-cli-security v0.0.0-20240615134801-affc60eb43e4/go.mod h1:8Jmr6CBQIgB6zbyxuZLg/66x7M+7WWDkXBGCQPkw+j8=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
 github.com/owenrumney/go-sarif/v2 v2.3.1 h1:77opmuqxQZE1UF6TylFz5XllVEI72WijgwpwNw4JTmY=
 github.com/owenrumney/go-sarif/v2 v2.3.1/go.mod h1:MSqMMx9WqlBSY7pXoOZWgEsVB4FDNfhcaXDA1j6Sr+w=
