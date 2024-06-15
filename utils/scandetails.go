@@ -144,7 +144,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
-		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams())
+		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
+		SetThreads(1)
 
 	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
