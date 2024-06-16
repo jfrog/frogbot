@@ -145,11 +145,9 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams())
-
 	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
-	auditParallelRunner := xrayutils.CreateSecurityParallelRunner(1)
-	auditResults, err = audit.RunAudit(auditParams, auditParallelRunner)
+	auditResults, err = audit.RunAudit(auditParams)
 	if auditResults != nil {
 		err = errors.Join(err, auditResults.ScansErr)
 	}
