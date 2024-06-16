@@ -151,7 +151,9 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 	auditResults, err = audit.RunAudit(auditParams, auditParallelRunner)
 
 	if auditResults != nil {
+		auditParallelRunner.ResultsMu.Lock()
 		err = errors.Join(err, auditResults.ScansErr)
+		auditParallelRunner.ResultsMu.Unlock()
 	}
 	return
 }
