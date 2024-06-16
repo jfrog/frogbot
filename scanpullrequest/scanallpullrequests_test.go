@@ -238,3 +238,7 @@ func fakeRepoDownload(_ context.Context, _, _, testProject, targetDir string) er
 func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
 	return testdata.NewMockVcsClient(gomock.NewController(t))
 }
+
+func TestNothing(t *testing.T) {
+	return
+}
