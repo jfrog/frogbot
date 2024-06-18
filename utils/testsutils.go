@@ -131,3 +131,14 @@ func CreateDotGitWithCommit(t *testing.T, wd, port string, repositoriesPath ...s
 		assert.NoError(t, err)
 	}
 }
+
+func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
+	newJfrogHomeDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	prevJfrogHomeDir := os.Getenv(JfrogHomeDirEnv)
+	assert.NoError(t, os.Setenv(JfrogHomeDirEnv, newJfrogHomeDir))
+	return newJfrogHomeDir, func() {
+		assert.NoError(t, os.Setenv(JfrogHomeDirEnv, prevJfrogHomeDir))
+		assert.NoError(t, fileutils.RemoveTempDir(newJfrogHomeDir))
+	}
+}
