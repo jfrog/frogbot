@@ -10,7 +10,6 @@ import (
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -24,22 +23,10 @@ var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "co
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
-	// Temp code for creating local JfrogHome for the test
-	newJfrogHomeDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(newJfrogHomeDir))
-	}()
-
-	prevJfrogHomeDir := os.Getenv("JFROG_CLI_HOME_DIR")
-	assert.NoError(t, os.Setenv("JFROG_CLI_HOME_DIR", newJfrogHomeDir))
-	defer func() {
-		assert.NoError(t, os.Setenv("JFROG_CLI_HOME_DIR", prevJfrogHomeDir))
-	}()
-	// END
-
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
+	defer restoreJfrogHomeFunc()
 
 	baseWd, err := os.Getwd()
 	assert.NoError(t, err)

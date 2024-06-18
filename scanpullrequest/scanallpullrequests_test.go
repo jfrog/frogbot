@@ -10,9 +10,7 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -103,19 +101,8 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	// Temp code for creating local JfrogHome for the test
-	newJfrogHomeDir, err := fileutils.CreateTempDir()
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(newJfrogHomeDir))
-	}()
-
-	prevJfrogHomeDir := os.Getenv("JFROG_CLI_HOME_DIR")
-	assert.NoError(t, os.Setenv("JFROG_CLI_HOME_DIR", newJfrogHomeDir))
-	defer func() {
-		assert.NoError(t, os.Setenv("JFROG_CLI_HOME_DIR", prevJfrogHomeDir))
-	}()
-	// END
+	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
+	defer restoreJfrogHomeFunc()
 
 	failOnSecurityIssues := false
 	firstRepoParams := utils.Params{
@@ -156,7 +143,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err = scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection()) // TODO add ':' in the err assignment if needed
+	err := scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
 	if assert.NoError(t, err) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))
