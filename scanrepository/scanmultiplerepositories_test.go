@@ -25,6 +25,8 @@ var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 func TestScanAndFixRepos(t *testing.T) {
 	serverParams, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
+	defer restoreJfrogHomeFunc()
 
 	baseWd, err := os.Getwd()
 	assert.NoError(t, err)

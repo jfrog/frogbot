@@ -101,6 +101,9 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
+	defer restoreJfrogHomeFunc()
+
 	failOnSecurityIssues := false
 	firstRepoParams := utils.Params{
 		Scan: utils.Scan{
