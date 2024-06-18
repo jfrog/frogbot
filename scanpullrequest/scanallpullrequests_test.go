@@ -10,6 +10,7 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
@@ -240,5 +241,6 @@ func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
 }
 
 func TestNothing(t *testing.T) {
+	log.Debug("bla")
 	return
 }
