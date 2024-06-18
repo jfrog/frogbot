@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	"github.com/jfrog/jfrog-cli-security/scangraph"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"os"
 	"path/filepath"
 )
 
@@ -89,6 +92,26 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
+func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanParams {
+	commonParams := &scangraph.CommonGraphScanParams{
+		RepoPath: sc.RepoPath,
+		Watches:  sc.Watches,
+		ScanType: sc.ScanType,
+	}
+	if sc.ProjectKey == "" {
+		commonParams.ProjectKey = os.Getenv(coreutils.Project)
+	} else {
+		commonParams.ProjectKey = sc.ProjectKey
+	}
+	commonParams.IncludeVulnerabilities = sc.IncludeVulnerabilities
+	commonParams.IncludeLicenses = sc.IncludeLicenses
+	commonParams.MultiScanId = sc.MultiScanId
+	if commonParams.MultiScanId != "" {
+		commonParams.XscVersion = sc.XscVersion
+	}
+	return commonParams
+}
+
 func createXrayScanParams(watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
@@ -117,17 +140,17 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetInstallCommandArgs(sc.InstallCommandArgs)
 
 	auditParams := audit.NewAuditParams().
-		SetXrayGraphScanParams(sc.XrayGraphScanParams).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
-		SetGraphBasicParams(auditBasicParams)
-
+		SetGraphBasicParams(auditBasicParams).
+		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams())
 	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
 	auditResults, err = audit.RunAudit(auditParams)
+
 	if auditResults != nil {
-		err = errors.Join(err, auditResults.ScaError, auditResults.JasError)
+		err = errors.Join(err, auditResults.ScansErr)
 	}
 	return
 }
