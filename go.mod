@@ -120,7 +120,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240618062622-738092bf42e2
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240618072910-0a68ca94678b
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
