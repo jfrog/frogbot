@@ -137,7 +137,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs)
+		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true)
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
