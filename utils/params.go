@@ -102,7 +102,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = jas.DefaultExcludePatterns
+			p.PathExclusions = jas.DefaultJasExcludePatterns
 		}
 	}
 	if p.UseWrapper == nil {
