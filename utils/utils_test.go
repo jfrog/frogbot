@@ -9,7 +9,7 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/formats"
-	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
@@ -384,34 +384,34 @@ func TestPrepareRunsForGithubReport(t *testing.T) {
 		expectedOutput *sarif.Run
 	}{
 		{
-			run:            utils.CreateRunWithDummyResults(),
+			run:            sarifutils.CreateRunWithDummyResults(),
 			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl),
 		},
 		{
 			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
-				utils.CreateResultWithOneLocation("file://root/dir/file", 0, 0, 0, 0, "snippet", "rule", "level"),
+				sarifutils.CreateResultWithOneLocation("file://root/dir/file", 0, 0, 0, 0, "snippet", "rule", "level"),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl).WithResults([]*sarif.Result{
-				utils.CreateResultWithOneLocation("file", 0, 0, 0, 0, "snippet", "rule", "level"),
+				sarifutils.CreateResultWithOneLocation("file", 0, 0, 0, 0, "snippet", "rule", "level"),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 		},
 		{
 			run: sarif.NewRunWithInformationURI("other tool", "other url").WithResults([]*sarif.Result{
-				utils.CreateResultWithLocations("findings", "rule", "level",
-					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
-					utils.CreateLocation("file://root/dir/dir2/file2", 1, 1, 1, 1, "snippet2"),
-				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(
-					utils.CreateLocation("file://root/dir/other/file", 2, 2, 2, 2, "other"),
-					utils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
+				sarifutils.CreateResultWithLocations("findings", "rule", "level",
+					sarifutils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
+					sarifutils.CreateLocation("file://root/dir/dir2/file2", 1, 1, 1, 1, "snippet2"),
+				).WithCodeFlows([]*sarif.CodeFlow{sarifutils.CreateCodeFlow(sarifutils.CreateThreadFlow(
+					sarifutils.CreateLocation("file://root/dir/other/file", 2, 2, 2, 2, "other"),
+					sarifutils.CreateLocation("file://root/dir/file", 0, 0, 0, 0, "snippet"),
 				))}),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 			expectedOutput: sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl).WithResults([]*sarif.Result{
-				utils.CreateResultWithLocations("findings", "rule", "level",
-					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
-					utils.CreateLocation("dir2/file2", 1, 1, 1, 1, "snippet2"),
-				).WithCodeFlows([]*sarif.CodeFlow{utils.CreateCodeFlow(utils.CreateThreadFlow(
-					utils.CreateLocation("other/file", 2, 2, 2, 2, "other"),
-					utils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
+				sarifutils.CreateResultWithLocations("findings", "rule", "level",
+					sarifutils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
+					sarifutils.CreateLocation("dir2/file2", 1, 1, 1, 1, "snippet2"),
+				).WithCodeFlows([]*sarif.CodeFlow{sarifutils.CreateCodeFlow(sarifutils.CreateThreadFlow(
+					sarifutils.CreateLocation("other/file", 2, 2, 2, 2, "other"),
+					sarifutils.CreateLocation("file", 0, 0, 0, 0, "snippet"),
 				))}),
 			}).WithInvocations([]*sarif.Invocation{sarif.NewInvocation().WithWorkingDirectory(sarif.NewSimpleArtifactLocation("root/dir"))}),
 		},

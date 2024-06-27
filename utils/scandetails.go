@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
-	"github.com/jfrog/jfrog-cli-security/scangraph"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"os"
-	"path/filepath"
 )
 
 type ScanDetails struct {
@@ -24,7 +26,7 @@ type ScanDetails struct {
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
 	fixableOnly              bool
-	minSeverityFilter        string
+	minSeverityFilter        severityutils.Severity
 	baseBranch               string
 }
 
@@ -52,9 +54,16 @@ func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetMinSeverity(minSeverity string) *ScanDetails {
-	sc.minSeverityFilter = minSeverity
-	return sc
+func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) {
+	if minSeverity == "" {
+		return sc, nil
+	}
+	if severity, err := severityutils.ParseSeverity(minSeverity, false); err != nil {
+		return sc, err
+	} else {
+		sc.minSeverityFilter = severity
+	}
+	return sc, nil
 }
 
 func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
@@ -78,7 +87,7 @@ func (sc *ScanDetails) FixableOnly() bool {
 	return sc.fixableOnly
 }
 
-func (sc *ScanDetails) MinSeverityFilter() string {
+func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
 	return sc.minSeverityFilter
 }
 

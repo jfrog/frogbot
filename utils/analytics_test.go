@@ -1,12 +1,13 @@
 package utils
 
 import (
+	"testing"
+
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateAnalyticsGeneralEvent(t *testing.T) {
@@ -31,7 +32,7 @@ func TestCreateAnalyticsGeneralEvent(t *testing.T) {
 		Password:       "password",
 	}
 
-	analyticsService := utils.NewAnalyticsMetricsService(serverDetails)
+	analyticsService := xsc.NewAnalyticsMetricsService(serverDetails)
 	analyticsGeneralEvent := createAnalyticsGeneralEvent(analyticsService, gitInfoContext, "monitor")
 
 	// Comparison is made manually for selected fields since some of the fields are machine-dependent and cannot be known in advance

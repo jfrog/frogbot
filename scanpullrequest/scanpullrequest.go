@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/formats"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
@@ -127,12 +128,14 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, analyticsService *securityutils.AnalyticsMetricsService) (issuesCollection *utils.IssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, analyticsService *xsc.AnalyticsMetricsService) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
-		SetMinSeverity(repoConfig.MinSeverity).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
+		return
+	}
 
 	// If MSI exists we always need to report events
 	if analyticsService.GetMsi() != "" {

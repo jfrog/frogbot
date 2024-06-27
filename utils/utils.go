@@ -20,6 +20,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-cli-security/formats"
+	"github.com/jfrog/jfrog-cli-security/formats/sarifutils"
 	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
@@ -259,7 +260,7 @@ func prepareRunsForGithubReport(runs []*sarif.Run) []*sarif.Run {
 	// If we upload to Github security tab multiple runs, it will only display the last run as active issues.
 	// Combine all runs into one run with multiple invocations, so the Github security tab will display all the results as not resolved.
 	combined := sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl)
-	xrayutils.AggregateMultipleRunsIntoSingle(runs, combined)
+	sarifutils.AggregateMultipleRunsIntoSingle(runs, combined)
 	return []*sarif.Run{combined}
 }
 
@@ -267,12 +268,12 @@ func convertToRelativePath(runs []*sarif.Run) {
 	for _, run := range runs {
 		for _, result := range run.Results {
 			for _, location := range result.Locations {
-				xrayutils.SetLocationFileName(location, xrayutils.GetRelativeLocationFileName(location, run.Invocations))
+				sarifutils.SetLocationFileName(location, sarifutils.GetRelativeLocationFileName(location, run.Invocations))
 			}
 			for _, flows := range result.CodeFlows {
 				for _, flow := range flows.ThreadFlows {
 					for _, location := range flow.Locations {
-						xrayutils.SetLocationFileName(location.Location, xrayutils.GetRelativeLocationFileName(location.Location, run.Invocations))
+						sarifutils.SetLocationFileName(location.Location, sarifutils.GetRelativeLocationFileName(location.Location, run.Invocations))
 					}
 				}
 			}
@@ -286,7 +287,7 @@ func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRo
 		return "", err
 	}
 	sarifReport.Runs = prepareRunsForGithubReport(sarifReport.Runs)
-	return xrayutils.ConvertSarifReportToString(sarifReport)
+	return sarifutils.ConvertSarifReportToString(sarifReport)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
@@ -389,7 +390,7 @@ func convertSarifPathsInCveApplicability(vulnerabilities []formats.Vulnerability
 			if cve.Applicability != nil {
 				for i := range cve.Applicability.Evidence {
 					for _, wd := range workingDirs {
-						cve.Applicability.Evidence[i].File = xrayutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, wd)
+						cve.Applicability.Evidence[i].File = sarifutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, wd)
 					}
 				}
 			}
@@ -401,7 +402,7 @@ func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string
 	for i := range iacs {
 		iac := &iacs[i]
 		for _, wd := range workingDirs {
-			iac.Location.File = xrayutils.ExtractRelativePath(iac.Location.File, wd)
+			iac.Location.File = sarifutils.ExtractRelativePath(iac.Location.File, wd)
 		}
 	}
 }
@@ -410,7 +411,7 @@ func convertSarifPathsInSecrets(secrets []formats.SourceCodeRow, workingDirs ...
 	for i := range secrets {
 		secret := &secrets[i]
 		for _, wd := range workingDirs {
-			secret.Location.File = xrayutils.ExtractRelativePath(secret.Location.File, wd)
+			secret.Location.File = sarifutils.ExtractRelativePath(secret.Location.File, wd)
 		}
 	}
 }
@@ -419,10 +420,10 @@ func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string
 	for i := range sast {
 		sastIssue := &sast[i]
 		for _, wd := range workingDirs {
-			sastIssue.Location.File = xrayutils.ExtractRelativePath(sastIssue.Location.File, wd)
+			sastIssue.Location.File = sarifutils.ExtractRelativePath(sastIssue.Location.File, wd)
 			for f := range sastIssue.CodeFlow {
 				for l := range sastIssue.CodeFlow[f] {
-					sastIssue.CodeFlow[f][l].File = xrayutils.ExtractRelativePath(sastIssue.CodeFlow[f][l].File, wd)
+					sastIssue.CodeFlow[f][l].File = sarifutils.ExtractRelativePath(sastIssue.CodeFlow[f][l].File, wd)
 				}
 			}
 		}

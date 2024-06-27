@@ -1,18 +1,19 @@
 package utils
 
 import (
+	"os"
+	"strings"
+
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
-	"os"
-	"strings"
 )
 
-func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, serverDetails *config.ServerDetails, scanType string) *utils.AnalyticsMetricsService {
+func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, serverDetails *config.ServerDetails, scanType string) *xsc.AnalyticsMetricsService {
 	log.Debug("Initiating General Event report to Analytics service")
-	analyticsService := utils.NewAnalyticsMetricsService(serverDetails)
+	analyticsService := xsc.NewAnalyticsMetricsService(serverDetails)
 	if !analyticsService.ShouldReportEvents() {
 		return analyticsService
 	}
@@ -25,7 +26,7 @@ func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, server
 	return analyticsService
 }
 
-func createAnalyticsGeneralEvent(analyticsService *utils.AnalyticsMetricsService, gitInfo *services.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
+func createAnalyticsGeneralEvent(analyticsService *xsc.AnalyticsMetricsService, gitInfo *services.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
 	generalEvent := analyticsService.CreateGeneralEvent(xscservices.FrogbotProduct, xscservices.FrogbotType)
 	generalEvent.ProductVersion = FrogbotVersion
 	generalEvent.FrogbotScanType = scanType
