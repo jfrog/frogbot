@@ -10,7 +10,7 @@ require (
 	github.com/jfrog/froggit-go v1.15.0
 	github.com/jfrog/gofrog v1.7.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.53.1
-	github.com/jfrog/jfrog-cli-security v1.4.0
+	github.com/jfrog/jfrog-cli-security v1.4.1
 	github.com/jfrog/jfrog-client-go v1.41.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
