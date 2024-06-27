@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/jas"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/commands/audit/sca"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	xrutils "github.com/jfrog/jfrog-cli-security/utils"
@@ -102,7 +103,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = jas.DefaultJasExcludePatterns
+			p.PathExclusions = sca.DefaultScaExcludePatterns
 		}
 	}
 	if p.UseWrapper == nil {
