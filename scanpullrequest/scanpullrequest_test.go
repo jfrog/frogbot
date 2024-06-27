@@ -57,6 +57,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 			{
 				IssueId:       "XRAY-4",
 				ViolationType: "license",
+				Severity:      "low",
 				LicenseKey:    "Apache-2.0",
 				Components:    map[string]services.Component{"Dep-2": {}},
 			},
@@ -83,6 +84,7 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 			{
 				IssueId:       "XRAY-3",
 				ViolationType: "license",
+				Severity:      "low",
 				LicenseKey:    "MIT",
 				Components:    map[string]services.Component{"Dep-1": {}},
 			},
@@ -99,9 +101,9 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	assert.Len(t, licenseViolations, 1)
 	assert.Len(t, securityViolationsRows, 2)
 	assert.Equal(t, "XRAY-2", securityViolationsRows[0].IssueId)
-	assert.Equal(t, "low", securityViolationsRows[0].Severity)
+	assert.Equal(t, "Low", securityViolationsRows[0].Severity)
 	assert.Equal(t, "XRAY-2", securityViolationsRows[1].IssueId)
-	assert.Equal(t, "low", securityViolationsRows[1].Severity)
+	assert.Equal(t, "Low", securityViolationsRows[1].Severity)
 	assert.Equal(t, "MIT", licenseViolations[0].LicenseKey)
 	assert.Equal(t, "Dep-1", licenseViolations[0].ImpactedDependencyName)
 

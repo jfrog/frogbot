@@ -13,6 +13,7 @@ import (
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -200,6 +201,13 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
+	}
+	if s.MinSeverity != "" {
+		var severity severityutils.Severity
+		if severity, err = severityutils.ParseSeverity(s.MinSeverity, false); err != nil {
+			return
+		}
+		s.MinSeverity = severity.String()
 	}
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})
