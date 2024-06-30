@@ -268,7 +268,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Applicable: "Applicable",
 			IssueId:    "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
 				ImpactedDependencyName: "component-C",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -279,7 +279,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Applicable: "Applicable",
 			IssueId:    "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
 				ImpactedDependencyName: "component-D",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -342,7 +342,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-2",
 			IssueId: "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
 				ImpactedDependencyName: "component-B",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
@@ -351,7 +351,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-1",
 			IssueId: "XRAY-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
 				ImpactedDependencyName: "component-A",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
@@ -836,7 +836,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				),
 			},
 			sourceIacResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("enable_private_endpoint=false was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+				sarifutils.CreateResultWithLocations("enable_private_endpoint=false was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.Medium).String(),
 					sarifutils.CreateLocation("file2", 2, 5, 3, 6, "gcp-violation"),
 				),
 			},
