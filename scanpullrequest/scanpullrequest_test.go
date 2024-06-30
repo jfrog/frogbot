@@ -139,6 +139,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 				IssueId:       "XRAY-3",
 				ViolationType: "license",
 				LicenseKey:    "MIT",
+				Severity:      "low",
 				Components:    map[string]services.Component{"Dep-1": {}},
 			},
 		},
@@ -149,7 +150,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-1",
 			Summary: "summary-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "high"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
 				ImpactedDependencyName: "component-A",
 			},
 		},
@@ -157,7 +158,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-2",
 			Summary: "summary-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
 				ImpactedDependencyName: "component-C",
 			},
 		},
