@@ -11,10 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jfrog/jfrog-cli-security/commands/audit/sca"
-
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	xrutils "github.com/jfrog/jfrog-cli-security/utils"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -103,7 +102,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = sca.DefaultScaExcludePatterns
+			p.PathExclusions = securityutils.DefaultScaExcludePatterns
 		}
 	}
 	if p.UseWrapper == nil {
@@ -203,8 +202,12 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-	if s.MinSeverity, err = xrutils.GetSeveritiesFormat(s.MinSeverity); err != nil {
-		return
+	if s.MinSeverity != "" {
+		var severity severityutils.Severity
+		if severity, err = severityutils.ParseSeverity(s.MinSeverity, false); err != nil {
+			return
+		}
+		s.MinSeverity = severity.String()
 	}
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})

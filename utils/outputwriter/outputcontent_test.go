@@ -6,7 +6,8 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/formats"
-	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -290,7 +291,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			vulnerabilities: []formats.VulnerabilityOrViolationRow{
 				{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           formats.SeverityDetails{Severity: "Critical", SeverityNumValue: utils.GetSeverity("Critical", utils.NotApplicable).SeverityNumValue},
+						SeverityDetails:           severityutils.GetAsDetails(severityutils.Critical, jasutils.NotApplicable, false),
 						ImpactedDependencyName:    "impacted",
 						ImpactedDependencyVersion: "3.0.0",
 						Components: []formats.ComponentRow{
@@ -305,7 +306,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					Summary: "Summary XRAY-122345",
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           formats.SeverityDetails{Severity: "High", SeverityNumValue: utils.GetSeverity("High", utils.ApplicabilityUndetermined).SeverityNumValue},
+						SeverityDetails:           severityutils.GetAsDetails(severityutils.High, jasutils.ApplicabilityUndetermined, false),
 						ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
 						ImpactedDependencyVersion: "v0.21.0",
 						Components: []formats.ComponentRow{
@@ -325,7 +326,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 				{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           formats.SeverityDetails{Severity: "Medium", SeverityNumValue: utils.GetSeverity("Medium", utils.Applicable).SeverityNumValue},
+						SeverityDetails:           severityutils.GetAsDetails(severityutils.Medium, jasutils.Applicable, false),
 						ImpactedDependencyName:    "component-D",
 						ImpactedDependencyVersion: "v0.21.0",
 						Components: []formats.ComponentRow{
@@ -348,7 +349,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					Summary: "Summary",
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           formats.SeverityDetails{Severity: "Low", SeverityNumValue: utils.GetSeverity("Low", utils.ApplicabilityUndetermined).SeverityNumValue},
+						SeverityDetails:           severityutils.GetAsDetails(severityutils.Low, jasutils.ApplicabilityUndetermined, false),
 						ImpactedDependencyName:    "github.com/mholt/archiver/v3",
 						ImpactedDependencyVersion: "v3.5.1",
 						Components: []formats.ComponentRow{

@@ -17,6 +17,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/formats"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
@@ -45,7 +46,7 @@ type ScanRepositoryCmd struct {
 	// Stores all package manager handlers for detected issues
 	handlers map[techutils.Technology]packagehandlers.PackageHandler
 	// The AnalyticsMetricsService used for analytics event report
-	analyticsService *securityutils.AnalyticsMetricsService
+	analyticsService *xsc.AnalyticsMetricsService
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
@@ -115,8 +116,10 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
-		SetFixableOnly(repository.FixableOnly).
-		SetMinSeverity(repository.MinSeverity)
+		SetFixableOnly(repository.FixableOnly)
+	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
+		return
+	}
 	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
 	if err != nil {
 		return
