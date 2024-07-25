@@ -19,9 +19,10 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
@@ -225,8 +226,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
+func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -281,8 +282,13 @@ func convertToRelativePath(runs []*sarif.Run) {
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
-	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots bool, allowedLicenses []string) (string, error) {
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IsMultipleRoots:              &isMultipleRoots,
+		AllowedLicenses:              allowedLicenses,
+		AllowResultsWithoutLocations: true,
+	})
+	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {
 		return "", err
 	}
@@ -370,7 +376,7 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 }
 
 func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return xrayutils.GetUniqueKey(
+	return conversion.GetUniqueKey(
 		vulnerability.ImpactedDependencyName,
 		vulnerability.ImpactedDependencyVersion,
 		vulnerability.IssueId,

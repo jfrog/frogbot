@@ -19,9 +19,11 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -41,6 +43,74 @@ const (
 	testSourceBranchName             = "pr"
 	testTargetBranchName             = "master"
 )
+
+func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse, applicable bool, allowedLicenses ...string) (securityViolationsRows []formats.VulnerabilityOrViolationRow, licenseViolations []formats.LicenseRow) {
+	sourceResults, err := scaToDummySimpleJsonResults(previousScan, applicable, allowedLicenses...)
+	assert.NoError(t, err)
+	targetResults, err := scaToDummySimpleJsonResults(currentScan, applicable, allowedLicenses...)
+	assert.NoError(t, err)
+	securityViolationsRows = getUniqueVulnerabilityOrViolationRows(
+		append(targetResults.Vulnerabilities, targetResults.SecurityViolations...),
+		append(sourceResults.Vulnerabilities, sourceResults.SecurityViolations...),
+	)
+	licenseViolations = getUniqueLicenseRows(targetResults.LicensesViolations, sourceResults.LicensesViolations)
+	return
+}
+
+func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool, allowedLicenses ...string) (formats.SimpleJsonResults, error) {
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{AllowedLicenses: allowedLicenses})
+	jasResults := &results.JasScansResults{}
+	if applicable {
+		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
+	}
+	cmdResults := &results.SecurityCommandResults{EntitledForJas: applicable, Targets: []*results.TargetResults{{
+		ScanTarget: results.ScanTarget{Target: "dummy"},
+		JasResults: jasResults,
+		ScaResults: &results.ScaScanResults{XrayResults: []services.ScanResponse{response}},
+	}}}
+	return convertor.ConvertToSimpleJson(cmdResults)
+}
+
+func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target []*sarif.Result) (jasViolationsRows []formats.SourceCodeRow) {
+	sourceResults, err := jasToDummySimpleJsonResults(scanType, source)
+	assert.NoError(t, err)
+	targetResults, err := jasToDummySimpleJsonResults(scanType, target)
+	assert.NoError(t, err)
+
+	var targetJasResults, sourceJasResults []formats.SourceCodeRow
+	switch scanType {
+	case jasutils.Sast:
+		targetJasResults = targetResults.Sast
+		sourceJasResults = sourceResults.Sast
+	case jasutils.Secrets:
+		targetJasResults = targetResults.Secrets
+		sourceJasResults = sourceResults.Secrets
+	case jasutils.IaC:
+		targetJasResults = targetResults.Iacs
+		sourceJasResults = sourceResults.Iacs
+	}
+
+	return createNewSourceCodeRows(targetJasResults, sourceJasResults)
+}
+
+func jasToDummySimpleJsonResults(scanType jasutils.JasScanType, jasScanResults []*sarif.Result) (formats.SimpleJsonResults, error) {
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{})
+
+	jasResults := &results.JasScansResults{}
+	switch scanType {
+	case jasutils.Sast:
+		jasResults.SastScanResults = append(jasResults.SastScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+	case jasutils.Secrets:
+		jasResults.SecretsScanResults = append(jasResults.SecretsScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+	case jasutils.IaC:
+		jasResults.IacScanResults = append(jasResults.IacScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+	}
+	cmdResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
+		ScanTarget: results.ScanTarget{Target: "dummy"},
+		JasResults: jasResults,
+	}}}
+	return convertor.ConvertToSimpleJson(cmdResults)
+}
 
 func TestCreateVulnerabilitiesRows(t *testing.T) {
 	// Previous scan with only one violation - XRAY-1
@@ -92,12 +162,8 @@ func TestCreateVulnerabilitiesRows(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	securityViolationsRows, licenseViolations, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		nil,
-	)
-	assert.NoError(t, err)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
+
 	assert.Len(t, licenseViolations, 1)
 	assert.Len(t, securityViolationsRows, 2)
 	assert.Equal(t, "XRAY-2", securityViolationsRows[0].IssueId)
@@ -172,17 +238,13 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		[]string{},
-	)
-	assert.NoError(t, err)
-	assert.Len(t, licenses, 1)
-	assert.Len(t, vulnerabilities, 2)
-	assert.ElementsMatch(t, expectedVulns, vulnerabilities)
-	assert.Equal(t, expectedLicenses[0].ImpactedDependencyName, licenses[0].ImpactedDependencyName)
-	assert.Equal(t, expectedLicenses[0].LicenseKey, licenses[0].LicenseKey)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
+
+	assert.Len(t, licenseViolations, 1)
+	assert.Len(t, securityViolationsRows, 2)
+	assert.ElementsMatch(t, expectedVulns, securityViolationsRows)
+	assert.Equal(t, expectedLicenses[0].ImpactedDependencyName, licenseViolations[0].ImpactedDependencyName)
+	assert.Equal(t, expectedLicenses[0].LicenseKey, licenseViolations[0].LicenseKey)
 }
 
 func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
@@ -217,13 +279,9 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no violations in the results
-	securityViolations, licenseViolations, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		[]string{"MIT"},
-	)
-	assert.NoError(t, err)
-	assert.Len(t, securityViolations, 0)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false, "MIT")
+
+	assert.Len(t, securityViolationsRows, 0)
 	assert.Len(t, licenseViolations, 0)
 }
 
@@ -288,27 +346,11 @@ func TestGetNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{
-			ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}},
-			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				EntitledForJas:           true,
-				ApplicabilityScanResults: []*sarif.Run{sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
-			},
-		},
-		&xrayutils.Results{
-			ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}},
-			ExtendedScanResults: &xrayutils.ExtendedScanResults{
-				EntitledForJas:           true,
-				ApplicabilityScanResults: []*sarif.Run{sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", ""))},
-			},
-		},
-		nil,
-	)
-	assert.NoError(t, err)
-	assert.Len(t, vulnerabilities, 2)
-	assert.Len(t, licenses, 0)
-	assert.ElementsMatch(t, expected, vulnerabilities)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, true)
+
+	assert.Len(t, securityViolationsRows, 2)
+	assert.Len(t, licenseViolations, 0)
+	assert.ElementsMatch(t, expected, securityViolationsRows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
@@ -359,15 +401,11 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		nil,
-	)
-	assert.NoError(t, err)
-	assert.Len(t, vulnerabilities, 2)
-	assert.Len(t, licenses, 0)
-	assert.ElementsMatch(t, expected, vulnerabilities)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
+
+	assert.Len(t, securityViolationsRows, 2)
+	assert.Len(t, licenseViolations, 0)
+	assert.ElementsMatch(t, expected, securityViolationsRows)
 }
 
 func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
@@ -395,20 +433,17 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	}
 
 	// Run createNewIssuesRows and expect no vulnerability in the results
-	vulnerabilities, licenses, err := createNewVulnerabilitiesRows(
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{previousScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		&xrayutils.Results{ScaResults: []*xrayutils.ScaScanResult{{XrayResults: []services.ScanResponse{currentScan}}}, ExtendedScanResults: &xrayutils.ExtendedScanResults{}},
-		nil,
-	)
-	assert.NoError(t, err)
-	assert.Len(t, vulnerabilities, 0)
-	assert.Len(t, licenses, 0)
+	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
+
+	assert.Len(t, securityViolationsRows, 0)
+	assert.Len(t, licenseViolations, 0)
 }
 
 func TestGetAllIssues(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
-	auditResults := &xrayutils.Results{
-		ScaResults: []*xrayutils.ScaScanResult{{
+	auditResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
+		ScanTarget: results.ScanTarget{Target: "dummy"},
+		ScaResults: &results.ScaScanResults{
 			XrayResults: []services.ScanResponse{{
 				Vulnerabilities: []services.Vulnerability{
 					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
@@ -416,8 +451,8 @@ func TestGetAllIssues(t *testing.T) {
 				},
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
 			}},
-		}},
-		ExtendedScanResults: &xrayutils.ExtendedScanResults{
+		},
+		JasResults: &results.JasScansResults{
 			ApplicabilityScanResults: []*sarif.Run{
 				sarifutils.CreateRunWithDummyResults(
 					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
@@ -445,9 +480,8 @@ func TestGetAllIssues(t *testing.T) {
 					),
 				),
 			},
-			EntitledForJas: true,
 		},
-	}
+	}}}
 	expectedOutput := &utils.IssuesCollection{
 		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
@@ -862,9 +896,7 @@ func TestCreateNewIacRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.targetIacResults...)})
-			sourceIacRows := xrayutils.PrepareIacs([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.sourceIacResults...)})
-			addedIacVulnerabilities := createNewSourceCodeRows(targetIacRows, sourceIacRows)
+			addedIacVulnerabilities := createJasDiff(t, jasutils.IaC, tc.sourceIacResults, tc.targetIacResults)
 			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
 		})
 	}
@@ -947,9 +979,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.targetSecretsResults...)})
-			sourceSecretsRows := xrayutils.PrepareSecrets([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.sourceSecretsResults...)})
-			addedSecretsVulnerabilities := createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
+			addedSecretsVulnerabilities := createJasDiff(t, jasutils.Secrets, tc.sourceSecretsResults, tc.targetSecretsResults)
 			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
 		})
 	}
@@ -1032,9 +1062,7 @@ func TestCreateNewSastRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			targetSastRows := xrayutils.PrepareSast([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.targetSastResults...)})
-			sourceSastRows := xrayutils.PrepareSast([]*sarif.Run{sarifutils.CreateRunWithDummyResults(tc.sourceSastResults...)})
-			addedSastVulnerabilities := createNewSourceCodeRows(targetSastRows, sourceSastRows)
+			addedSastVulnerabilities := createJasDiff(t, jasutils.Sast, tc.sourceSastResults, tc.targetSastResults)
 			assert.ElementsMatch(t, tc.expectedAddedSastVulnerabilities, addedSastVulnerabilities)
 		})
 	}

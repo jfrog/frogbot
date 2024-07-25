@@ -14,8 +14,10 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
-	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -155,7 +157,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings())
+			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{}).ConvertToSummary(scanResults); err != nil {
+				return err
+			} else {
+				cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(summary.GetTotalIssueCount())
+			}
 		}
 
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
@@ -167,7 +173,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		}
 
 		// Prepare the vulnerabilities map for each working dir path
-		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults, scanResults.IsMultipleProject())
+		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults)
 		if err != nil {
 			return err
 		}
@@ -183,22 +189,20 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*securityutils.Results, error) {
+func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityCommandResults, error) {
 	// Audit commit code
 	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
-	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
-	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
-	cfp.projectTech = auditResults.GetScaScannedTechnologies()
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, len(auditResults.GetJasScansResults(jasutils.Applicability)) > 0)
+	cfp.projectTech = auditResults.GetTechnologies()
 	return auditResults, nil
 }
 
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, isMultipleRoots)
+func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
+	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
 	if err != nil {
 		return nil, err
 	}
@@ -471,28 +475,22 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	for _, scanResult := range scanResults.GetScaScansXrayResults() {
-		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := securityutils.PrepareVulnerabilities(scanResult.Vulnerabilities, scanResults, isMultipleRoots, true)
-			if err != nil {
+	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{}).ConvertToSimpleJson(scanResults)
+	if err != nil {
+		return nil, err
+	}
+	if len(simpleJsonResult.Vulnerabilities) > 0 {
+		for i := range simpleJsonResult.Vulnerabilities {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.Vulnerabilities[i], vulnerabilitiesMap); err != nil {
 				return nil, err
 			}
-			for i := range vulnerabilities {
-				if err = cfp.addVulnerabilityToFixVersionsMap(&vulnerabilities[i], vulnerabilitiesMap); err != nil {
-					return nil, err
-				}
-			}
-		} else if len(scanResult.Violations) > 0 {
-			violations, _, _, err := securityutils.PrepareViolations(scanResult.Violations, scanResults, isMultipleRoots, true)
-			if err != nil {
+		}
+	} else if len(simpleJsonResult.SecurityViolations) > 0 {
+		for i := range simpleJsonResult.SecurityViolations {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.SecurityViolations[i], vulnerabilitiesMap); err != nil {
 				return nil, err
-			}
-			for i := range violations {
-				if err = cfp.addVulnerabilityToFixVersionsMap(&violations[i], vulnerabilitiesMap); err != nil {
-					return nil, err
-				}
 			}
 		}
 	}
