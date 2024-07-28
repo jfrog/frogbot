@@ -267,7 +267,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 			{
 				IssueId:       "XRAY-3",
 				LicenseKey:    "MIT",
-				Severity: 	   "medium",
+				Severity:      "medium",
 				ViolationType: "license",
 				Components:    map[string]services.Component{"component-B": {}},
 			},
@@ -559,8 +559,8 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				LicenseKey: "Apache-2.0",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails: formats.SeverityDetails {
-						Severity: "Medium",
+					SeverityDetails: formats.SeverityDetails{
+						Severity:         "Medium",
 						SeverityNumValue: 14,
 					},
 					ImpactedDependencyName: "Dep-1",
