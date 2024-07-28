@@ -388,3 +388,24 @@ func TestGetAggregatedPullRequestTitle(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMaskedUrlIfNeeded(t *testing.T) {
+	testsCases := []struct {
+		url      string
+		expected string
+	}{
+		{url: "https://example.com/owner/repo.git", expected: "https://example.com/owner/repo.git"},
+		{url: "https://<user>:<token>@git.jfrog.info/scm/jfrog/some-service.git", expected: "https://git.jfrog.info/scm/jfrog/some-service.git"},
+		{url: "http://example.com/owner/repo.git", expected: "http://example.com/owner/repo.git"},
+		{url: "http://<user>:<token>@git.jfrog.info/scm/jfrog/some-service.git", expected: "http://git.jfrog.info/scm/jfrog/some-service.git"},
+		{url: "git://example.com/owner/repo.git", expected: "git://example.com/owner/repo.git"},
+		{url: "git://<user>:<token>@git.jfrog.info/scm/jfrog/some-service.git", expected: "git://git.jfrog.info/scm/jfrog/some-service.git"},
+	}
+
+	for _, testcase := range testsCases {
+		t.Run("case: "+testcase.url, func(t *testing.T) {
+			maskedUrl := getMaskedUrlIfNeeded(testcase.url)
+			assert.Equal(t, testcase.expected, maskedUrl)
+		})
+	}
+}
