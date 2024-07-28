@@ -45,9 +45,9 @@ const (
 )
 
 func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse, applicable bool, allowedLicenses ...string) (securityViolationsRows []formats.VulnerabilityOrViolationRow, licenseViolations []formats.LicenseRow) {
-	sourceResults, err := scaToDummySimpleJsonResults(previousScan, applicable, allowedLicenses...)
+	sourceResults, err := scaToDummySimpleJsonResults(currentScan, applicable, allowedLicenses...)
 	assert.NoError(t, err)
-	targetResults, err := scaToDummySimpleJsonResults(currentScan, applicable, allowedLicenses...)
+	targetResults, err := scaToDummySimpleJsonResults(previousScan, applicable, allowedLicenses...)
 	assert.NoError(t, err)
 	securityViolationsRows = getUniqueVulnerabilityOrViolationRows(
 		append(targetResults.Vulnerabilities, targetResults.SecurityViolations...),
@@ -216,7 +216,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-1",
 			Summary: "summary-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 17},
 				ImpactedDependencyName: "component-A",
 			},
 		},
@@ -224,7 +224,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-2",
 			Summary: "summary-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
 				ImpactedDependencyName: "component-C",
 			},
 		},
@@ -267,6 +267,7 @@ func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
 			{
 				IssueId:       "XRAY-3",
 				LicenseKey:    "MIT",
+				Severity: 	   "medium",
 				ViolationType: "license",
 				Components:    map[string]services.Component{"component-B": {}},
 			},
@@ -384,7 +385,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-2",
 			IssueId: "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
 				ImpactedDependencyName: "component-B",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
@@ -393,7 +394,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-1",
 			IssueId: "XRAY-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 17},
 				ImpactedDependencyName: "component-A",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
@@ -558,6 +559,10 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				LicenseKey: "Apache-2.0",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails: formats.SeverityDetails {
+						Severity: "Medium",
+						SeverityNumValue: 14,
+					},
 					ImpactedDependencyName: "Dep-1",
 				},
 			},
