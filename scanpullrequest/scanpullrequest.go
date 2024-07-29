@@ -249,7 +249,7 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 // Returns all the issues found in the source branch that didn't exist in the target branch.
 func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	var err error
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses})
 	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
 	if err != nil {
 		return nil, err
