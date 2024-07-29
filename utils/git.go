@@ -14,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/client"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 
 	"github.com/go-git/go-git/v5"
@@ -162,7 +163,8 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	log.Debug(fmt.Sprintf("Running git clone %s (%s branch)...", gm.remoteGitUrl, branchName))
+	credentialsFreeRemoteGitUrl := removeCredentialsFromUrlIfNeeded(gm.remoteGitUrl)
+	log.Debug(fmt.Sprintf("Running git clone %s (%s branch)...", credentialsFreeRemoteGitUrl, branchName))
 	cloneOptions := &git.CloneOptions{
 		URL:           gm.remoteGitUrl,
 		Auth:          gm.auth,
@@ -174,10 +176,10 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, gm.remoteGitUrl, err.Error())
+		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, credentialsFreeRemoteGitUrl, err.Error())
 	}
 	gm.localGitRepository = repo
-	log.Debug(fmt.Sprintf("Project cloned from %s to %s", gm.remoteGitUrl, destinationPath))
+	log.Debug(fmt.Sprintf("Project cloned from %s to %s", credentialsFreeRemoteGitUrl, destinationPath))
 	return nil
 }
 
@@ -511,4 +513,14 @@ func parseCustomTemplate(customTemplate string, tech []techutils.Technology) str
 		suffix = " - %s Dependencies"
 	}
 	return normalizeWhitespaces(result) + suffix
+}
+
+// Removes credentials from clone URL if needed
+// Example: https://<username>:<token>@<repo url> -> https://<repo url>
+func removeCredentialsFromUrlIfNeeded(url string) string {
+	matchedResult := regexp.MustCompile(clientutils.CredentialsInUrlRegexp).FindString(url)
+	if matchedResult == "" {
+		return url
+	}
+	return clientutils.RemoveCredentials(url, matchedResult)
 }
