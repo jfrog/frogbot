@@ -163,8 +163,8 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	transport.UnsupportedCapabilities = []capability.Capability{
 		capability.ThinPack,
 	}
-	maskedRemoteGitUrl := getMaskedUrlIfNeeded(gm.remoteGitUrl)
-	log.Debug(fmt.Sprintf("Running git clone %s (%s branch)...", maskedRemoteGitUrl, branchName))
+	credentialsFreeRemoteGitUrl := removeCredentialsFromUrlIfNeeded(gm.remoteGitUrl)
+	log.Debug(fmt.Sprintf("Running git clone %s (%s branch)...", credentialsFreeRemoteGitUrl, branchName))
 	cloneOptions := &git.CloneOptions{
 		URL:           gm.remoteGitUrl,
 		Auth:          gm.auth,
@@ -176,10 +176,10 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	repo, err := git.PlainClone(destinationPath, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, maskedRemoteGitUrl, err.Error())
+		return fmt.Errorf("git clone %s from %s failed with error: %s", branchName, credentialsFreeRemoteGitUrl, err.Error())
 	}
 	gm.localGitRepository = repo
-	log.Debug(fmt.Sprintf("Project cloned from %s to %s", maskedRemoteGitUrl, destinationPath))
+	log.Debug(fmt.Sprintf("Project cloned from %s to %s", credentialsFreeRemoteGitUrl, destinationPath))
 	return nil
 }
 
@@ -515,7 +515,9 @@ func parseCustomTemplate(customTemplate string, tech []techutils.Technology) str
 	return normalizeWhitespaces(result) + suffix
 }
 
-func getMaskedUrlIfNeeded(url string) string {
+// Removes credentials from clone URL if needed
+// Example: https://<username>:<token>@<repo url> -> https://<repo url>
+func removeCredentialsFromUrlIfNeeded(url string) string {
 	matchedResult := regexp.MustCompile(clientutils.CredentialsInUrlRegexp).FindString(url)
 	if matchedResult == "" {
 		return url
