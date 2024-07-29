@@ -376,7 +376,7 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 }
 
 func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return conversion.GetUniqueKey(
+	return results.GetUniqueKey(
 		vulnerability.ImpactedDependencyName,
 		vulnerability.ImpactedDependencyVersion,
 		vulnerability.IssueId,
