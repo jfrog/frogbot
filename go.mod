@@ -8,7 +8,7 @@ require (
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.9.30
 	github.com/jfrog/froggit-go v1.16.1
-	github.com/jfrog/gofrog v1.7.4
+	github.com/jfrog/gofrog v1.7.5
 	github.com/jfrog/jfrog-cli-core/v2 v2.53.4
 	github.com/jfrog/jfrog-cli-security v1.5.1
 	github.com/jfrog/jfrog-client-go v1.43.0
@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.2
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -122,10 +122,10 @@ require (
 // attiasas:refactor_output
 replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240729092929-ce719c9700fe
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20240729065529-2b249c484570
 
-// replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
+replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go v1.8.9-0.20240729055355-5b51bf71e756
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20240729101143-6bedc1bf71a3
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
