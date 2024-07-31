@@ -199,12 +199,29 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	return
 }
 
+func prepareTargetForScan(pullRequestDetails vcsclient.PullRequestInfo, scanDetails *utils.ScanDetails) (targetBranchWd string, cleanupTarget func() error, err error) {
+	target := pullRequestDetails.Target
+	// Download target branch
+	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
+		return
+	}
+	// Get common parent commit between source and target and use it (checkout) to the target branch commit
+	log.Debug(fmt.Sprintf("Getting common parent commit between source branch: %s and target branch: %s", pullRequestDetails.Source.Name, target.Name))
+	gitManager := utils.NewGitManager()
+	if commonParentCommitHash, e := gitManager.GetCommonParentCommitHash(pullRequestDetails.Source.Name, target.Name); e != nil {
+		log.Warn(fmt.Sprintf("Failed to get common parent commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", pullRequestDetails.Source.Name, target.Name, e.Error()))
+	} else {
+		log.Debug("Checking out to common parent commit hash: " + commonParentCommitHash)
+		err = gitManager.CheckoutToHash(commonParentCommitHash)
+	}
+	return
+}
+
 func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *securityutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
-		targetBranchInfo := repoConfig.PullRequestDetails.Target
-		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
+		if targetBranchWd, cleanupTarget, err = prepareTargetForScan(repoConfig.PullRequestDetails, scanDetails); err != nil {
 			return
 		}
 	}
