@@ -203,8 +203,8 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string, keepLocalChange
 
 func (gm *GitManager) CheckoutToHash(hash string) error {
 	checkoutConfig := &git.CheckoutOptions{
-		Hash: plumbing.NewHash(hash),
-		Force:  true,
+		Hash:  plumbing.NewHash(hash),
+		Force: true,
 	}
 	worktree, err := gm.localGitRepository.Worktree()
 	if err != nil {
@@ -213,7 +213,7 @@ func (gm *GitManager) CheckoutToHash(hash string) error {
 	return worktree.Checkout(checkoutConfig)
 }
 
-func (gm *GitManager) GetCommonParentCommitHash(baseBranch, headBranch string) (string, error) {
+func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (string, error) {
 	// Get the commit object of the base branch
 	baseRef, err := gm.localGitRepository.Reference(GetFullBranchName(baseBranch), true)
 	if err != nil {

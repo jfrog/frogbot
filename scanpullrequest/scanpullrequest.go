@@ -206,15 +206,23 @@ func prepareTargetForScan(pullRequestDetails vcsclient.PullRequestInfo, scanDeta
 		return
 	}
 	// Get common parent commit between source and target and use it (checkout) to the target branch commit
-	log.Debug(fmt.Sprintf("Getting common parent commit between source branch: %s and target branch: %s", pullRequestDetails.Source.Name, target.Name))
-	gitManager := utils.NewGitManager()
-	if commonParentCommitHash, e := gitManager.GetCommonParentCommitHash(pullRequestDetails.Source.Name, target.Name); e != nil {
-		log.Warn(fmt.Sprintf("Failed to get common parent commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", pullRequestDetails.Source.Name, target.Name, e.Error()))
-	} else {
-		log.Debug("Checking out to common parent commit hash: " + commonParentCommitHash)
-		err = gitManager.CheckoutToHash(commonParentCommitHash)
+	if e := tryCheckoutToBestCommonAncestor(scanDetails, pullRequestDetails.Source.Name, target.Name); e != nil {
+		log.Warn(fmt.Sprintf("Failed to get best common ancestor commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", pullRequestDetails.Source.Name, target.Name, e.Error()))
 	}
 	return
+}
+
+func tryCheckoutToBestCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (err error) {
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetLocalRepository()
+	if err != nil {
+		return
+	}
+	bestAncestorHash, err := gitManager.GetBestCommonAncestorHash(baseBranch, headBranch)
+	if err != nil {
+		return
+	}
+	log.Debug("Checking out to best common ancestor commit hash: " + bestAncestorHash)
+	return gitManager.CheckoutToHash(bestAncestorHash)
 }
 
 func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *securityutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
