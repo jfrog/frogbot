@@ -39,6 +39,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+	
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}
@@ -83,12 +84,17 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err error) {
 	pullRequestDetails := repo.PullRequestDetails
+	log.Info(fmt.Sprintf("Pull request details URL: %s", pullRequestDetails.URL))
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
 		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
-
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repo.RepoOwner, repo.RepoName)
+	if err != nil {
+		return
+	}
+	repo.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
 	defer func() {
 		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
@@ -199,12 +205,39 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	return
 }
 
+func prepareTargetForScan(pullRequestDetails vcsclient.PullRequestInfo, scanDetails *utils.ScanDetails) (targetBranchWd string, cleanupTarget func() error, err error) {
+	target := pullRequestDetails.Target
+	// Download target branch
+	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
+		return
+	}
+	// Get common parent commit between source and target and use it (checkout) to the target branch commit
+	if e := tryCheckoutToBestCommonAncestor(scanDetails, pullRequestDetails.Source.Name, target.Name); e != nil {
+		log.Warn(fmt.Sprintf("Failed to get best common ancestor commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", pullRequestDetails.Source.Name, target.Name, e.Error()))
+	}
+	return
+}
+
+func tryCheckoutToBestCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (err error) {
+	log.Info(fmt.Sprintf("RepositoryCloneUrl: %s", scanDetails.Git.RepositoryCloneUrl))
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
+	if err != nil {
+		return
+	}
+	
+	bestAncestorHash, err := gitManager.GetBestCommonAncestorHash(baseBranch, headBranch)
+	if err != nil {
+		return
+	}
+	log.Debug("Checking out to best common ancestor commit hash: " + bestAncestorHash)
+	return gitManager.CheckoutToHash(bestAncestorHash)
+}
+
 func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *securityutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
-		targetBranchInfo := repoConfig.PullRequestDetails.Target
-		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
+		if targetBranchWd, cleanupTarget, err = prepareTargetForScan(repoConfig.PullRequestDetails, scanDetails); err != nil {
 			return
 		}
 	}

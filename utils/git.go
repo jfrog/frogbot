@@ -201,6 +201,69 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string, keepLocalChange
 	return err
 }
 
+func (gm *GitManager) CheckoutToHash(hash string) error {
+	checkoutConfig := &git.CheckoutOptions{
+		Hash:  plumbing.NewHash(hash),
+		Force: true,
+	}
+	worktree, err := gm.localGitRepository.Worktree()
+	if err != nil {
+		return err
+	}
+	return worktree.Checkout(checkoutConfig)
+}
+
+func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (string, error) {
+	// Fetch the latest changes from the remote
+	// if err := gm.
+	// 	return "", err
+	// }
+	// Get the commit object of the base branch
+	
+	baseRef, err := gm.localGitRepository.Reference(plumbing.NewBranchReferenceName(baseBranch), true)
+	if err != nil {
+		return "", err
+	}
+	baseCommit, err := gm.localGitRepository.CommitObject(baseRef.Hash())
+	if err != nil {
+		return "", err
+	}
+	log.Debug(fmt.Sprintf("Found commit %s for base branch %s", baseCommit.Hash.String(), baseBranch))
+	// Fetch the head branch and its commits
+	// TODO: fetch only if not in ref list (go over first -> extract to func)
+	
+
+	if err = gm.localGitRepository.Fetch(&git.FetchOptions{
+		RemoteName: gm.remoteName,
+		Auth:       gm.auth,
+		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, headBranch))},
+	}); err != nil {
+		return "", err
+	}
+	headRef, err := gm.localGitRepository.Reference(plumbing.NewBranchReferenceName(headBranch), true)
+	if err != nil {
+		return "", err
+	}
+	headCommit, err := gm.localGitRepository.CommitObject(headRef.Hash())
+	if err != nil {
+		return "", err
+	}
+	log.Debug(fmt.Sprintf("Found commit %s for head branch %s", headCommit.Hash.String(), headBranch))
+	// Preform a merge base between the two branches to find the common parent commit
+	// TODO: stop here, run merge-base in terminal on folder and see result hash
+	mergeBase, err := baseCommit.MergeBase(headCommit)
+	if err != nil {
+		return "", err
+	}
+	if len(mergeBase) == 0 {
+		return "", fmt.Errorf("failed to find a common parent commit between %s and %s", baseBranch, headBranch)
+	} else if len(mergeBase) > 1 {
+		log.Debug(fmt.Sprintf("Found %d common parent commits between %s and %s, using the first one", len(mergeBase), baseBranch, headBranch))
+	}
+	// Return the first common parent commit
+	return mergeBase[0].Hash.String(), nil
+}
+
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool, keepLocalChanges bool) error {
 	var checkoutConfig *git.CheckoutOptions
 	if keepLocalChanges {

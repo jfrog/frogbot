@@ -633,6 +633,8 @@ github.com/apache/thrift v0.16.0/go.mod h1:PHK3hniurgQaNMZYaCLEqXKsYK8upmhPbmdP2
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
+github.com/attiasas/jfrog-cli-security v0.0.0-20240801093546-f19002fc5efa h1:THyNu2VashuOpFv399jKt4MZQYba9rALM8rXhlOBlC0=
+github.com/attiasas/jfrog-cli-security v0.0.0-20240801093546-f19002fc5efa/go.mod h1:rTaZ9yeSQiSbfVFkRG/0OLPjq8Fis3dHBUgCVnIbe+E=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
@@ -901,8 +903,6 @@ github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYL
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
 github.com/jfrog/jfrog-cli-core/v2 v2.54.0 h1:vSVSADvuZ2vou4B5spfsUZ32oA/sl4mPVEVgqfNbjUM=
 github.com/jfrog/jfrog-cli-core/v2 v2.54.0/go.mod h1:ynAcz9jWDrcQi1/IkNLrIgfQnJO8LPLFwjLplgvY8KI=
-github.com/jfrog/jfrog-cli-security v1.6.3 h1:qo0anXfz/5l8bMZY0GsnTWM+a/qjHsn7ZY0KAaLxY0o=
-github.com/jfrog/jfrog-cli-security v1.6.3/go.mod h1:rTaZ9yeSQiSbfVFkRG/0OLPjq8Fis3dHBUgCVnIbe+E=
 github.com/jfrog/jfrog-client-go v1.43.1 h1:KIauYofb7R02mGDc8XADEvu245BJjUryjtq+YQQIbY8=
 github.com/jfrog/jfrog-client-go v1.43.1/go.mod h1:J/Ketm4TkBudXG8gAGY74jtNUbKhXn1+XaRfJcJVkvA=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
