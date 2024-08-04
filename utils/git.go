@@ -214,7 +214,12 @@ func (gm *GitManager) CheckoutToHash(hash string) error {
 }
 
 func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (string, error) {
+	// Fetch the latest changes from the remote
+	// if err := gm.
+	// 	return "", err
+	// }
 	// Get the commit object of the base branch
+	
 	baseRef, err := gm.localGitRepository.Reference(plumbing.NewBranchReferenceName(baseBranch), true)
 	if err != nil {
 		return "", err
@@ -224,6 +229,17 @@ func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (
 		return "", err
 	}
 	log.Debug(fmt.Sprintf("Found commit %s for base branch %s", baseCommit.Hash.String(), baseBranch))
+	// Fetch the head branch and its commits
+	// TODO: fetch only if not in ref list (go over first -> extract to func)
+	
+
+	if err = gm.localGitRepository.Fetch(&git.FetchOptions{
+		RemoteName: gm.remoteName,
+		Auth:       gm.auth,
+		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, headBranch))},
+	}); err != nil {
+		return "", err
+	}
 	headRef, err := gm.localGitRepository.Reference(plumbing.NewBranchReferenceName(headBranch), true)
 	if err != nil {
 		return "", err
@@ -234,6 +250,7 @@ func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (
 	}
 	log.Debug(fmt.Sprintf("Found commit %s for head branch %s", headCommit.Hash.String(), headBranch))
 	// Preform a merge base between the two branches to find the common parent commit
+	// TODO: stop here, run merge-base in terminal on folder and see result hash
 	mergeBase, err := baseCommit.MergeBase(headCommit)
 	if err != nil {
 		return "", err

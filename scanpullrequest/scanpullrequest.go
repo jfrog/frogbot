@@ -39,6 +39,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+	
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}
@@ -83,12 +84,17 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err error) {
 	pullRequestDetails := repo.PullRequestDetails
+	log.Info(fmt.Sprintf("Pull request details URL: %s", pullRequestDetails.URL))
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
 		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
-
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repo.RepoOwner, repo.RepoName)
+	if err != nil {
+		return
+	}
+	repo.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
 	defer func() {
 		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
@@ -213,10 +219,12 @@ func prepareTargetForScan(pullRequestDetails vcsclient.PullRequestInfo, scanDeta
 }
 
 func tryCheckoutToBestCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (err error) {
-	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetLocalRepository()
+	log.Info(fmt.Sprintf("RepositoryCloneUrl: %s", scanDetails.Git.RepositoryCloneUrl))
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
 	if err != nil {
 		return
 	}
+	
 	bestAncestorHash, err := gitManager.GetBestCommonAncestorHash(baseBranch, headBranch)
 	if err != nil {
 		return
