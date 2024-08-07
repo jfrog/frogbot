@@ -3,13 +3,14 @@ package utils
 import (
 	"context"
 	"fmt"
+	"net/smtp"
+	"strings"
+
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-security/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jordan-wright/email"
-	"net/smtp"
-	"strings"
 )
 
 var blacklistedEmailAddresses = []string{"no-reply", "no_reply", "noreply", "no.reply", "frogbot"}
