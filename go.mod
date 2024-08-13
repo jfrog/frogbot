@@ -120,7 +120,7 @@ require (
 )
 
 //attiasas:am_v_1_8_11
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240813082512-56bcc6db339a
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240813085149-ac65ec7b9710
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
