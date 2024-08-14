@@ -1,9 +1,0 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-if [ "$(git status action --porcelain=v1)" ]; then
-    cd action
-    npm i
-    npm prune --production
-    git add node_modules lib
-fi
