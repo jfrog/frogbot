@@ -1,10 +1,16 @@
 name: "Frogbot by JFrog"
-description: "Scan your pull requests with JFrog Xray for security vulnerabilities."
+description: "JFrog Frogbot is a Git bot that scans your pull requests and repositories for security vulnerabilities."
 author: "JFrog"
 inputs:
   version:
     description: "Frogbot version"
     default: "latest"
+    required: false
+  oidc-provider-name:
+    description: "Provider Name's value that was set in OpenId Connect integration in the JFrog platform."
+    required: false
+  oidc-audience:
+    description: "By default, this is the URL of the GitHub repository owner, such as the organization that owns the repository."
     required: false
 runs:
   using: "node16"

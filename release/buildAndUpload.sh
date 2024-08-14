@@ -9,8 +9,8 @@ build () {
   exeName="$4"
   echo "Building $exeName for $GOOS-$GOARCH ..."
 
-  CGO_ENABLED=0 jf go build -o "$exeName" -ldflags '-w -extldflags "-static" -X main.frogbotVersion='$version main.go
-  chmod +x $exeName
+  CGO_ENABLED=0 jf go build -o "$exeName" -ldflags '-w -extldflags "-static" -X github.com/jfrog/frogbot/v2/utils.FrogbotVersion='"$version"
+  chmod +x "$exeName"
 
   # Run verification after building plugin for the correct platform of this image.
   if [[ "$pkg" = "frogbot-linux-386" ]]; then
@@ -26,7 +26,7 @@ buildAndUpload () {
   fileExtension="$4"
   exeName="frogbot$fileExtension"
 
-  build $pkg $goos $goarch $exeName
+  build "$pkg" "$goos" "$goarch" "$exeName"
 
   destPath="$pkgPath/$version/$pkg/$exeName"
   echo "Uploading $exeName to $destPath ..."
@@ -43,7 +43,7 @@ verifyVersionMatching () {
     exit $exitCode
   fi
 
-  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v1.0.0")
+  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v2.0.0")
   echo "Output: $res"
   builtVersion="${res##* }"
   # Compare versions
@@ -55,7 +55,7 @@ verifyVersionMatching () {
 }
 
 version="$1"
-pkgPath="ecosys-frogbot/v1"
+pkgPath="ecosys-frogbot/v2"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.

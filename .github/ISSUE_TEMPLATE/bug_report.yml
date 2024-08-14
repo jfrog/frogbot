@@ -1,0 +1,90 @@
+---
+name: "🐛 Bug Report"
+description: Create a report to help us improve
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: What is the problem? A clear and concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: |
+        Please include full errors, uncaught exceptions, screenshots, and relevant logs.
+        Using environment variable JFROG_CLI_LOG_LEVEL="DEBUG" upon running the command will provide more log information.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: |
+        Provide steps to reproduce the behavior.
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: |
+        What did you expect to happen?
+    validations:
+      required: false
+
+  - type: input
+    id: frogbot-version
+    attributes:
+      label: JFrog Frogbot version
+    validations:
+      required: true
+
+  - type: input
+    id: package-manager
+    attributes:
+      label: Package manager info
+      description: |
+        Which package manager name and version is used to build the project?
+        What's the name and path of the descriptor file (package.json, pom.xml, etc)?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: git-provider
+    attributes:
+      label: Git provider
+      options:
+        - GitHub
+        - Bitbucket Server
+        - GitLab
+        - Azure DevOps
+    validations:
+      required: true
+
+  - type: textarea
+    id: frogbot-yaml
+    attributes:
+      label: JFrog Frogbot configuration yaml file
+    validations:
+      required: false
+
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system type and version
+    validations:
+      required: true
+
+  - type: input
+    id: xr-version
+    attributes:
+      label: JFrog Xray version
+    validations:
+      required: false
