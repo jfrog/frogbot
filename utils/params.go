@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"net/http"
 	"net/url"
 	"os"
@@ -136,6 +138,7 @@ type Scan struct {
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
+	ConfigProfile                   *services.ConfigProfile
 }
 
 type EmailDetails struct {
@@ -354,6 +357,12 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
+
+	configProfile, err := getConfigProfileIfExistsAndValid(jfrogServer)
+	if err != nil {
+		return
+	}
+
 	gitParamsFromEnv, err := extractGitParamsFromEnvs(commandName)
 	if err != nil {
 		return
@@ -379,6 +388,11 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	configAggregator, err := getConfigAggregator(client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
+	}
+
+	// We apply the configProfile to all received repositories. This loop must be deleted when we will no longer accept multiple repositories in a single scan
+	for i := range configAggregator {
+		configAggregator[i].Scan.ConfigProfile = configProfile
 	}
 
 	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
@@ -704,5 +718,34 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 	case http.StatusUnauthorized:
 		log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
 	}
+	return
+}
+
+// This function tries fetches a config profile if JF_CONFIG_PROFILE is provided.
+// If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
+func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
+	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
+	if profileName != "" {
+		/* TODO re-apply this code and delete the MockGetConfigProfile function & usage
+		configProfile, err = xsc.GetConfigProfile(jfrogServer, profileName)
+		if err != nil {
+			return
+		}
+
+		*/
+
+		configProfile, err = xsc.MockGetConfigProfile()
+		if err != nil {
+			return
+		}
+
+		if len(configProfile.Modules) != 1 || configProfile.Modules[0].PathFromRoot != "." {
+			// Currently, only a single Module that represents the entire project is supported
+			err = errors.New("more than one module was found in the provided config profile. Frogbot currently supports only one module per config profile")
+			return
+		}
+	}
+
+	log.Info("No JF_CONFIG_PROFILE environment variable was provided. All configurations will be induced from Env vars and files")
 	return
 }
