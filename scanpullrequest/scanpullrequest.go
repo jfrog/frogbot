@@ -132,7 +132,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
-		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
+		SetConfigProfile(repoConfig.ConfigProfile)
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
