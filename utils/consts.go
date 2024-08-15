@@ -31,6 +31,7 @@ const (
 	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
+	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE" // JFROG internal use ONLY!
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"
