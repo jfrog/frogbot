@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,6 +19,7 @@ import (
 var (
 	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
 	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
+	configProfileFile             = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {
@@ -674,6 +677,49 @@ func TestSetEmailDetails(t *testing.T) {
 			if err == nil {
 				assert.Equal(t, test.expectedServer, scan.SmtpServer)
 				assert.Equal(t, test.expectedPort, scan.SmtpPort)
+			}
+		})
+	}
+}
+
+func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
+	testcases := []struct {
+		profileName     string
+		failureExpected bool
+	}{
+		{
+			profileName:     ValidConfigProfile,
+			failureExpected: false,
+		},
+		{
+			profileName:     InvalidPathConfigProfile,
+			failureExpected: true,
+		},
+		{
+			profileName:     InvalidModulesConfigProfile,
+			failureExpected: true,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.profileName, func(t *testing.T) {
+			envCallbackFunc := SetEnvVarAndAssertWithCallback(t, JfrogConfigProfileEnv, testcase.profileName)
+			defer envCallbackFunc()
+
+			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t)
+			defer mockServer.Close()
+
+			configProfile, err := getConfigProfileIfExistsAndValid(serverDetails)
+			if testcase.failureExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				var configProfileContentForComparison []byte
+				configProfileContentForComparison, err = os.ReadFile(configProfileFile)
+				var configProfileFromFile services.ConfigProfile
+				err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
+				assert.NoError(t, err)
+				assert.Equal(t, configProfileFromFile, *configProfile)
 			}
 		})
 	}

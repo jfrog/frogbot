@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
@@ -721,31 +722,53 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 	return
 }
 
-// This function tries fetches a config profile if JF_CONFIG_PROFILE is provided.
+// This function fetches a config profile if JF_CONFIG_PROFILE is provided.
 // If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
 func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
-		/* TODO re-apply this code and delete the MockGetConfigProfile function & usage
 		configProfile, err = xsc.GetConfigProfile(jfrogServer, profileName)
+		if err != nil {
+			return
+		}
+
+		/* TODO delete comment
+		configProfile, err = mockGetConfigProfile()
 		if err != nil {
 			return
 		}
 
 		*/
 
-		configProfile, err = xsc.MockGetConfigProfile()
-		if err != nil {
+		// Currently, only a single Module that represents the entire project is supported
+		if len(configProfile.Modules) != 1 {
+			err = errors.New(fmt.Sprintf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName))
 			return
 		}
-
-		if len(configProfile.Modules) != 1 || configProfile.Modules[0].PathFromRoot != "." {
-			// Currently, only a single Module that represents the entire project is supported
-			err = errors.New("more than one module was found in the provided config profile. Frogbot currently supports only one module per config profile")
+		if configProfile.Modules[0].PathFromRoot != "." {
+			err = errors.New(fmt.Sprintf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot))
 			return
 		}
+		log.Info(fmt.Sprintf("Config profile '%s' was found. All scanners configurations will be featched from env vars and the config profile. jfrog-apps-config will be ignored if exists", profileName))
+		log.Info("Utilizing config profile is currently intended for Jfrog internal use ONLY. If used- the only supported feature is enablement/exclusion of Secrets and Sast scanners")
+	} else {
+		log.Info("No JF_CONFIG_PROFILE environment variable was provided. All configurations will be induced from Env vars and files")
 	}
-
-	log.Info("No JF_CONFIG_PROFILE environment variable was provided. All configurations will be induced from Env vars and files")
 	return
+}
+
+// TODO delete when done testing agains an operating server with the new ConfigProfile endpoints
+func mockGetConfigProfile() (*services.ConfigProfile, error) {
+	var configProfile *services.ConfigProfile
+	content, err := os.ReadFile("/Users/erant/Desktop/jfrog/jfrog-cli-security/tests/testdata/other/configProfile/configProfileExample.json")
+	if err != nil {
+		err = fmt.Errorf("failed to read config profile json file: %q", err)
+		return nil, err
+	}
+	err = json.Unmarshal(content, &configProfile)
+	if err != nil {
+		err = fmt.Errorf("failed to unmarshal config profile json: %q", err)
+		return nil, err
+	}
+	return configProfile, nil
 }

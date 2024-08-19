@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +20,12 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	ValidConfigProfile          = "default-profile"
+	InvalidPathConfigProfile    = "invalid-path-from-root-profile"
+	InvalidModulesConfigProfile = "invalid-modules-profile"
 )
 
 // Receive an environment variables key-values map, set and assert the environment variables.
@@ -41,6 +51,7 @@ func unsetEnvAndAssert(t *testing.T, key string) {
 	assert.NoError(t, os.Unsetenv(key))
 }
 
+// This function takes a map of environment variables and sets them, and returns a callback to UNSET them all
 func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 	for key, val := range envs {
 		setEnvAndAssert(t, key, val)
@@ -49,6 +60,22 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 		for key := range envs {
 			unsetEnvAndAssert(t, key)
 		}
+	}
+}
+
+// This function sets a single env var with a given value, and returns a callback that set the env var to its original value
+func SetEnvVarAndAssertWithCallback(t *testing.T, key, val string) func() {
+	oldValue, exist := os.LookupEnv(key)
+	setEnvAndAssert(t, key, val)
+
+	if exist {
+		return func() {
+			setEnvAndAssert(t, key, oldValue)
+		}
+	}
+
+	return func() {
+		unsetEnvAndAssert(t, key)
 	}
 }
 
@@ -141,4 +168,64 @@ func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
 		assert.NoError(t, os.Setenv(JfrogHomeDirEnv, prevJfrogHomeDir))
 		assert.NoError(t, fileutils.RemoveTempDir(newJfrogHomeDir))
 	}
+}
+
+func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
+	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile && r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusOK)
+			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			assert.NoError(t, err)
+			_, err = w.Write(content)
+			assert.NoError(t, err)
+		} else if r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile && r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusBadRequest)
+			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			assert.NoError(t, err)
+
+			// Adding a second module to make the profile invalid, as we currently support ONLY profile with a single module
+			var profile services.ConfigProfile
+			err = json.Unmarshal(content, &profile)
+			assert.NoError(t, err)
+			profile.Modules = append(profile.Modules, services.Module{
+				ModuleId:     999,
+				ModuleName:   "second-module",
+				PathFromRoot: ".",
+				ScanConfig: services.ScanConfig{
+					ScanTimeout:                  0,
+					ExcludePattern:               "",
+					EnableScaScan:                false,
+					EnableContextualAnalysisScan: false,
+				},
+			})
+			content, err = json.Marshal(profile)
+			assert.NoError(t, err)
+			_, err = w.Write(content)
+			assert.NoError(t, err)
+		} else if r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile && r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusBadRequest)
+			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			assert.NoError(t, err)
+
+			// Changing 'path_from_root' to a path different from '.' to make the module invalid, as we currently support ONLY a single module with '.' path
+			updatedContent := string(content)
+			strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
+
+			_, err = w.Write([]byte(updatedContent))
+			assert.NoError(t, err)
+		} else if r.RequestURI == "/xsc/api/v1/system/version" {
+			_, err := w.Write([]byte(fmt.Sprintf(`{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)))
+			assert.NoError(t, err)
+		} else {
+			assert.Fail(t, "received an unexpected request")
+		}
+	}))
+
+	url := mockServer.URL
+	serverDetails = &config.ServerDetails{
+		Url:     url + "/",
+		XrayUrl: url + "/xray/",
+		XscUrl:  url + "/xsc/",
+	}
+	return
 }
