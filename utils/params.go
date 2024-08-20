@@ -733,11 +733,11 @@ func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (co
 
 		// Currently, only a single Module that represents the entire project is supported
 		if len(configProfile.Modules) != 1 {
-			err = errors.New(fmt.Sprintf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName))
+			err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
 			return
 		}
 		if configProfile.Modules[0].PathFromRoot != "." {
-			err = errors.New(fmt.Sprintf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot))
+			err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot)
 			return
 		}
 		log.Info(fmt.Sprintf("Config profile '%s' was found. All scanners configurations will be featched from env vars and the config profile. jfrog-apps-config will be ignored if exists", profileName))

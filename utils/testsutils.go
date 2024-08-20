@@ -172,13 +172,14 @@ func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
 
 func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
 	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile && r.Method == http.MethodGet {
+		switch {
+		case r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
-		} else if r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile && r.Method == http.MethodGet {
+		case r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusBadRequest)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
@@ -202,21 +203,21 @@ func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Ser
 			assert.NoError(t, err)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
-		} else if r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile && r.Method == http.MethodGet {
+		case r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusBadRequest)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
 
 			// Changing 'path_from_root' to a path different from '.' to make the module invalid, as we currently support ONLY a single module with '.' path
 			updatedContent := string(content)
-			strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
+			updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 
 			_, err = w.Write([]byte(updatedContent))
 			assert.NoError(t, err)
-		} else if r.RequestURI == "/xsc/api/v1/system/version" {
+		case r.RequestURI == "/xsc/api/v1/system/version":
 			_, err := w.Write([]byte(fmt.Sprintf(`{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)))
 			assert.NoError(t, err)
-		} else {
+		default:
 			assert.Fail(t, "received an unexpected request")
 		}
 	}))
