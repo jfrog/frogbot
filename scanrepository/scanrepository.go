@@ -164,12 +164,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
-		}else if repository.GitProvider.String() == vcsutils.GitLab.String() {
+		} else if repository.GitProvider.String() == vcsutils.GitLab.String() {
 			// Uploads SARIF result to gitlab Dashborad
 			if err = utils.UploadSarifResults(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
-
+		}
 		// Prepare the vulnerabilities map for each working dir path
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults, scanResults.IsMultipleProject())
 		if err != nil {
