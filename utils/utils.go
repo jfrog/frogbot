@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -235,6 +236,34 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
+	return nil
+}
+
+func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	// Generate SARIF report from scan results
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
+	if err != nil {
+		return fmt.Errorf("failed to generate SARIF report: %w", err)
+	}
+
+	// Get SARIF output path from environment variable
+	sarifOutputPath := getTrimmedEnv(SarifOutputPathEnv)
+	if sarifOutputPath != "" {
+		file, err := os.Create(sarifOutputPath)
+		if err != nil {
+			return fmt.Errorf("failed to create SARIF file: %w", err)
+		}
+		defer file.Close()
+
+		encoder := json.NewEncoder(file)
+		if err := encoder.Encode(report); err != nil {
+			return fmt.Errorf("failed to write SARIF file: %w", err)
+		}
+		log.Debug("SARIF report has been saved to", sarifOutputPath)
+	} else {
+		log.Debug("SARIF output path not set. Skipping SARIF file creation.")
+	}
+
 	return nil
 }
 

@@ -100,6 +100,9 @@ const (
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
 	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
+
+	// SARIF file related environment variables
+	SarifOutputPathEnv = "JF_SARIF_OUTPUT_PATH"
 )
 
 type UnsupportedErrorType string
