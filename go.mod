@@ -9,9 +9,9 @@ require (
 	github.com/jfrog/build-info-go v1.9.34
 	github.com/jfrog/froggit-go v1.16.1
 	github.com/jfrog/gofrog v1.7.5
-	github.com/jfrog/jfrog-cli-core/v2 v2.54.1
+	github.com/jfrog/jfrog-cli-core/v2 v2.55.2
 	github.com/jfrog/jfrog-cli-security v1.6.5
-	github.com/jfrog/jfrog-client-go v1.44.1
+	github.com/jfrog/jfrog-client-go v1.44.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.9.0
@@ -119,12 +119,12 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240821062121-dc4c36c2c9cc
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240825074440-3946cf0f5c14
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20240821061855-b77673df1292
+replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20240825073929-bf5dbce89d93
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
