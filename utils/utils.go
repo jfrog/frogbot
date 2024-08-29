@@ -241,12 +241,11 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 
 func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
 	// Get SARIF output path from environment variable
-	log.Info("SarifOutputPathEnv in start  %s", SarifOutputPathEnv)
 	sarifOutputPath := getTrimmedEnv(SarifOutputPathEnv)
+
 	if sarifOutputPath == "" {
 		sarifOutputPath = "/tmp/sarifOutputPath.sarif" // Fallback path if env variable is not set
 	}
-	log.Info("sarifOutputPath after getTrimmedEnv  %s", SarifOutputPathEnv)
 	// Generate SARIF report
 	sarifReport, err := xrayutils.GenereateSarifReportFromResults(scanResults, scanResults.IsMultipleProject(), false, repo.AllowedLicenses)
 	if err != nil {

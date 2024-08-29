@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -177,6 +178,25 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	if err != nil {
 		return
 	}
+
+	// Generate SARIF report
+	log.Info("Generating SARIF report...")
+	sarifReportStr, err := utils.GenerateFrogbotSarifReport(sourceResults, sourceResults.IsMultipleProject(), repoConfig.AllowedLicenses)
+	if err != nil {
+		log.Error("Error generating SARIF report: ", err)
+		return
+	}
+
+	// Get SARIF output path from environment variable
+	sarifFilePath := "/tmp/sarifOutputPath.sarif"
+	// Write the SARIF report to a file
+	log.Info("Writing SARIF report to file: ", sarifFilePath)
+	err = ioutil.WriteFile(sarifFilePath, []byte(sarifReportStr), 0644)
+	if err != nil {
+		log.Error("Error writing SARIF report to file: ", err)
+		return
+	}
+	log.Info("SARIF report successfully written to file: ", sarifFilePath)
 
 	// Set JAS output flags
 	sourceScanResults := sourceResults.ExtendedScanResults
