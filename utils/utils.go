@@ -240,29 +240,45 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 }
 
 func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	// Generate SARIF report from scan results
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
+	// Get SARIF output path from environment variable
+	log.Info("SarifOutputPathEnv in start  %s", SarifOutputPathEnv)
+	sarifOutputPath := getTrimmedEnv(SarifOutputPathEnv)
+	if sarifOutputPath == "" {
+		sarifOutputPath = "/tmp/sarifOutputPath.sarif" // Fallback path if env variable is not set
+	}
+	log.Info("sarifOutputPath after getTrimmedEnv  %s", SarifOutputPathEnv)
+	// Generate SARIF report
+	sarifReport, err := xrayutils.GenereateSarifReportFromResults(scanResults, scanResults.IsMultipleProject(), false, repo.AllowedLicenses)
 	if err != nil {
 		return fmt.Errorf("failed to generate SARIF report: %w", err)
 	}
 
-	// Get SARIF output path from environment variable
-	sarifOutputPath := getTrimmedEnv(SarifOutputPathEnv)
-	if sarifOutputPath != "" {
-		file, err := os.Create(sarifOutputPath)
-		if err != nil {
-			return fmt.Errorf("failed to create SARIF file: %w", err)
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		if err := encoder.Encode(report); err != nil {
-			return fmt.Errorf("failed to write SARIF file: %w", err)
-		}
-		log.Debug("SARIF report has been saved to", sarifOutputPath)
-	} else {
-		log.Debug("SARIF output path not set. Skipping SARIF file creation.")
+	// Serialize the SARIF report to JSON
+	reportBytes, err := json.MarshalIndent(sarifReport, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal SARIF report to JSON: %w", err)
 	}
+	//report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
+	//if err != nil {
+	//	return err
+	//}
+	//// Open or create the SARIF output file
+	file, err := os.Create(sarifOutputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create SARIF file at %s: %w", sarifOutputPath, err)
+	}
+	defer file.Close() // Ensure the file is closed even if an error occurs
+
+	// Write the SARIF report to the file
+	//_, err = file.Write([]byte(sarifReport))
+	_, err = file.Write(reportBytes)
+
+	if err != nil {
+		return fmt.Errorf("failed to write SARIF file: %w", err)
+	}
+
+	// Log the action
+	log.Info("SARIF report has been written to %s", sarifOutputPath)
 
 	return nil
 }
