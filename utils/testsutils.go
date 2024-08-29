@@ -172,48 +172,50 @@ func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
 
 func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
 	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		secondModule := services.Module{
+			ModuleId:     999,
+			ModuleName:   "second-module",
+			PathFromRoot: ".",
+			ScanConfig: services.ScanConfig{
+				ScanTimeout:                  0,
+				ExcludePattern:               "",
+				EnableScaScan:                false,
+				EnableContextualAnalysisScan: false,
+			},
+		}
+
 		switch {
-		case r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
+		case strings.HasPrefix(r.RequestURI, "/xsc/api/v1/profile/"):
+			assert.Equal(t, http.MethodGet, r.Method)
+			if r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile {
+				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
+
+			if r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile {
+				// Adding a second module to make the profile invalid, as we currently support ONLY profile with a single module
+				var profile services.ConfigProfile
+				err = json.Unmarshal(content, &profile)
+				assert.NoError(t, err)
+				profile.Modules = append(profile.Modules, secondModule)
+				content, err = json.Marshal(profile)
+				assert.NoError(t, err)
+			}
+
+			if r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile {
+				// Changing 'path_from_root' to a path different from '.' to make the module invalid, as we currently support ONLY a single module with '.' path
+				updatedContent := string(content)
+				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
+				content = []byte(updatedContent)
+			}
+
 			_, err = w.Write(content)
 			assert.NoError(t, err)
-		case r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusBadRequest)
-			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
-			assert.NoError(t, err)
 
-			// Adding a second module to make the profile invalid, as we currently support ONLY profile with a single module
-			var profile services.ConfigProfile
-			err = json.Unmarshal(content, &profile)
-			assert.NoError(t, err)
-			profile.Modules = append(profile.Modules, services.Module{
-				ModuleId:     999,
-				ModuleName:   "second-module",
-				PathFromRoot: ".",
-				ScanConfig: services.ScanConfig{
-					ScanTimeout:                  0,
-					ExcludePattern:               "",
-					EnableScaScan:                false,
-					EnableContextualAnalysisScan: false,
-				},
-			})
-			content, err = json.Marshal(profile)
-			assert.NoError(t, err)
-			_, err = w.Write(content)
-			assert.NoError(t, err)
-		case r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusBadRequest)
-			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
-			assert.NoError(t, err)
-
-			// Changing 'path_from_root' to a path different from '.' to make the module invalid, as we currently support ONLY a single module with '.' path
-			updatedContent := string(content)
-			updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
-
-			_, err = w.Write([]byte(updatedContent))
-			assert.NoError(t, err)
 		case r.RequestURI == "/xsc/api/v1/system/version":
 			_, err := w.Write([]byte(fmt.Sprintf(`{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)))
 			assert.NoError(t, err)

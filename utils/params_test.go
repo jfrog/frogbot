@@ -687,24 +687,18 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		profileName     string
 		failureExpected bool
 	}{
-		/*
-			{
-				profileName:     ValidConfigProfile,
-				failureExpected: false,
-			},
-
-		*/
+		{
+			profileName:     ValidConfigProfile,
+			failureExpected: false,
+		},
 		{
 			profileName:     InvalidPathConfigProfile,
 			failureExpected: true,
 		},
-		/*
-			{
-				profileName:     InvalidModulesConfigProfile,
-				failureExpected: true,
-			},
-
-		*/
+		{
+			profileName:     InvalidModulesConfigProfile,
+			failureExpected: true,
+		},
 	}
 
 	for _, testcase := range testcases {
