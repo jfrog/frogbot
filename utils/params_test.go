@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"os"
 	"path/filepath"
@@ -703,7 +704,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.profileName, func(t *testing.T) {
-			envCallbackFunc := SetEnvVarAndAssertWithCallback(t, JfrogConfigProfileEnv, testcase.profileName)
+			envCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
 			defer envCallbackFunc()
 
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t)

@@ -63,22 +63,6 @@ func SetEnvsAndAssertWithCallback(t *testing.T, envs map[string]string) func() {
 	}
 }
 
-// This function sets a single env var with a given value, and returns a callback that set the env var to its original value
-func SetEnvVarAndAssertWithCallback(t *testing.T, key, val string) func() {
-	oldValue, exist := os.LookupEnv(key)
-	setEnvAndAssert(t, key, val)
-
-	if exist {
-		return func() {
-			setEnvAndAssert(t, key, oldValue)
-		}
-	}
-
-	return func() {
-		unsetEnvAndAssert(t, key)
-	}
-}
-
 func MockHasConnection() *UrlAccessChecker {
 	return &UrlAccessChecker{url: "url", connected: true}
 }
