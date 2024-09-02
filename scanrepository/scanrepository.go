@@ -156,7 +156,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository, sa
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings())
+			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings(true, true))
 		}
 
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {

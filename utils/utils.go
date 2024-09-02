@@ -374,14 +374,14 @@ func validateBranchName(branchName string) error {
 	}
 	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", "", true)
 	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
-		return fmt.Errorf(branchInvalidChars)
+		return errors.New(branchInvalidChars)
 	}
 	// Prefix cannot be '-'
 	if branchName[0] == '-' {
-		return fmt.Errorf(branchInvalidPrefix)
+		return errors.New(branchInvalidPrefix)
 	}
 	if len(branchName) > branchCharsMaxLength {
-		return fmt.Errorf(branchInvalidLength)
+		return errors.New(branchInvalidLength)
 	}
 	return nil
 }
