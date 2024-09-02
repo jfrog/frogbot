@@ -45,9 +45,6 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
-
-	// Sarif run output tool annotator
-	sarifToolName = "JFrog Frogbot"
 )
 
 var (
