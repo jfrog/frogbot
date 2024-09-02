@@ -39,6 +39,7 @@ type FrogbotDetails struct {
 	ServerDetails *coreconfig.ServerDetails
 	GitClient     vcsclient.VcsClient
 	ReleasesRepo  string
+	SarifPath     string
 }
 
 type RepoAggregator []Repository
@@ -358,11 +359,10 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-
+	sarifPath := getTrimmedEnv(SarifOutputPathEnv)
 	defer func() {
 		err = errors.Join(err, SanitizeEnv())
 	}()
-
 	// Build a version control client for REST API requests
 	client, err := vcsclient.
 		NewClientBuilder(gitParamsFromEnv.GitProvider).
@@ -381,7 +381,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv), SarifPath: sarifPath}
 	return
 }
 

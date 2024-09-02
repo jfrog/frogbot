@@ -239,13 +239,8 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 	return nil
 }
 
-func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	// Get SARIF output path from environment variable
-	sarifOutputPath := getTrimmedEnv(SarifOutputPathEnv)
+func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient, sarifPath string) error {
 
-	if sarifOutputPath == "" {
-		sarifOutputPath = "/tmp/sarifOutputPath.sarif" // Fallback path if env variable is not set
-	}
 	// Generate SARIF report
 	sarifReport, err := xrayutils.GenereateSarifReportFromResults(scanResults, scanResults.IsMultipleProject(), false, repo.AllowedLicenses)
 	if err != nil {
@@ -257,27 +252,22 @@ func UploadSarifResults(scanResults *xrayutils.Results, repo *Repository, branch
 	if err != nil {
 		return fmt.Errorf("failed to marshal SARIF report to JSON: %w", err)
 	}
-	//report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
-	//if err != nil {
-	//	return err
-	//}
+
 	//// Open or create the SARIF output file
-	file, err := os.Create(sarifOutputPath)
+	file, err := os.Create(sarifPath)
 	if err != nil {
-		return fmt.Errorf("failed to create SARIF file at %s: %w", sarifOutputPath, err)
+		return fmt.Errorf("failed to create SARIF file at %s: %w", sarifPath, err)
 	}
 	defer file.Close() // Ensure the file is closed even if an error occurs
 
 	// Write the SARIF report to the file
-	//_, err = file.Write([]byte(sarifReport))
 	_, err = file.Write(reportBytes)
 
 	if err != nil {
 		return fmt.Errorf("failed to write SARIF file: %w", err)
 	}
 
-	// Log the action
-	log.Info("SARIF report has been written to %s", sarifOutputPath)
+	log.Info("SARIF report has been written to %s", sarifPath)
 
 	return nil
 }
