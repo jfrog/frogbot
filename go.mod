@@ -120,7 +120,7 @@ require (
 )
 
 // attiasas:dockerscan_sarif_imp
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240902140837-aad0f9d31d6c
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240904115644-bb15ff25795e
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
