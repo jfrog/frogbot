@@ -160,7 +160,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 
 		if scanResults.ExtendedScanResults != nil && scanResults.ExtendedScanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
-			// Currently available on GitHub only
+			// Currently available on GitHub only and JFrog Advance Security package
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
