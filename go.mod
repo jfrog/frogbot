@@ -9,8 +9,8 @@ require (
 	github.com/jfrog/build-info-go v1.9.35
 	github.com/jfrog/froggit-go v1.16.1
 	github.com/jfrog/gofrog v1.7.5
-	github.com/jfrog/jfrog-cli-core/v2 v2.55.6
-	github.com/jfrog/jfrog-cli-security v1.7.2
+	github.com/jfrog/jfrog-cli-core/v2 v2.55.7
+	github.com/jfrog/jfrog-cli-security v1.8.0
 	github.com/jfrog/jfrog-client-go v1.46.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
@@ -119,8 +119,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// attiasas:dockerscan_sarif_imp
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240904115644-bb15ff25795e
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
