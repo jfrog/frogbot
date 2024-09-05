@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -28,7 +27,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -48,9 +46,6 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
-
-	// Sarif run output tool annotator
-	sarifToolName = "JFrog Frogbot"
 )
 
 var (
@@ -316,12 +311,11 @@ func convertToRelativePath(runs []*sarif.Run) {
 }
 
 func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
-	sarifReport, err := xrayutils.GenereateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
+	sarifReport, err := xrayutils.GenerateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
 	if err != nil {
 		return "", err
 	}
-	sarifReport.Runs = prepareRunsForGithubReport(sarifReport.Runs)
-	return sarifutils.ConvertSarifReportToString(sarifReport)
+	return xrayutils.WriteSarifResultsAsString(sarifReport, false)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
