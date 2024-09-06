@@ -150,7 +150,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-1",
 			Summary: "summary-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 15},
 				ImpactedDependencyName: "component-A",
 			},
 		},
@@ -158,7 +158,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-2",
 			Summary: "summary-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 9},
 				ImpactedDependencyName: "component-C",
 			},
 		},
@@ -342,7 +342,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-2",
 			IssueId: "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 9},
 				ImpactedDependencyName: "component-B",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
@@ -351,7 +351,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-1",
 			IssueId: "XRAY-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High"},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 15},
 				ImpactedDependencyName: "component-A",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
