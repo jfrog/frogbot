@@ -291,7 +291,7 @@ func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRo
 	}
 	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File+row.Snippet) && (row.Fingerprint != "" && !targetSourceCodeVulnerabilitiesKeys.Exists(row.Fingerprint)) {
 			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}
