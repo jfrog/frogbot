@@ -317,11 +317,15 @@ func getNewlyAddedIssues(targetResults, sourceResults *securityutils.Results, al
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
+		if row.Fingerprint != "" {
+			targetSourceCodeVulnerabilitiesKeys.Add(row.Fingerprint)
+		} else {
+			targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
+		}
 	}
 	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File+row.Snippet) && !targetSourceCodeVulnerabilitiesKeys.Exists(row.Fingerprint) {
 			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}
