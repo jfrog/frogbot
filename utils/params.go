@@ -129,6 +129,10 @@ func (p *Project) setDefaultsIfNeeded() error {
 	return nil
 }
 
+func (p *Project) GetTechFromInstallCmdIfExists() string {
+	return p.InstallCommandName
+}
+
 type Scan struct {
 	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
