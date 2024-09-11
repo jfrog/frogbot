@@ -154,7 +154,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
 		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
-		SetTechnologies([]string{sc.GetTechFromInstallCmdIfExists()})
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists())
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).

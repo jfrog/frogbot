@@ -129,8 +129,11 @@ func (p *Project) setDefaultsIfNeeded() error {
 	return nil
 }
 
-func (p *Project) GetTechFromInstallCmdIfExists() string {
-	return p.InstallCommandName
+func (p *Project) GetTechFromInstallCmdIfExists() []string {
+	if p.InstallCommandName != "" {
+		return []string{p.InstallCommandName}
+	}
+	return nil
 }
 
 type Scan struct {
