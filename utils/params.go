@@ -132,7 +132,7 @@ func (p *Project) setDefaultsIfNeeded() error {
 type Scan struct {
 	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
-	DetectionOnly                   bool      `yaml:"detectOnly,omitempty"`
+	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
