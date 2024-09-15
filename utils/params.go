@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
@@ -130,13 +132,18 @@ func (p *Project) setDefaultsIfNeeded() error {
 }
 
 func (p *Project) GetTechFromInstallCmdIfExists() []string {
+	var technologies []string
 	if p.InstallCommandName != "" {
-		technologies := []string{p.InstallCommandName}
+		if !slices.Contains(techutils.AllTechnologiesStrings, p.InstallCommandName) {
+			log.Warn(fmt.Sprintf("The technology ‘%s’ was inferred from the provided install command but is not listed among the supported technologies. Please provide an install command for one of the following supported technologies: %s", p.InstallCommandName, techutils.AllTechnologiesStrings))
+			return technologies
+		}
+		technologies = append(technologies, p.InstallCommandName)
 		if strings.ToLower(p.InstallCommandName) == "dotnet" {
 			technologies = append(technologies, "nuget")
 		}
 	}
-	return nil
+	return technologies
 }
 
 type Scan struct {
