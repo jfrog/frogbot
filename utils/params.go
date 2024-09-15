@@ -149,6 +149,7 @@ func (p *Project) GetTechFromInstallCmdIfExists() []string {
 type Scan struct {
 	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
+	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
@@ -207,6 +208,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if !s.FixableOnly {
 		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.DetectionOnly {
+		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
 		}
 	}

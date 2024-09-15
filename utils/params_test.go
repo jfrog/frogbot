@@ -166,6 +166,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		GitEmailAuthorEnv:    "myemail@jfrog.com",
 		MinSeverityEnv:       "high",
 		FixableOnlyEnv:       "true",
+		DetectionOnlyEnv:     "true",
 		AllowedLicensesEnv:   "MIT, Apache-2.0, ISC",
 		AvoidExtraMessages:   "true",
 	})
@@ -195,6 +196,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "this is my branch {BRANCH_NAME_HASH}", templates.branchNameTemplate)
 		assert.Equal(t, "High", repo.MinSeverity)
 		assert.True(t, repo.FixableOnly)
+		assert.True(t, repo.DetectionOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
 		assert.Equal(t, "build 1323", repo.PullRequestCommentTitle)
@@ -347,6 +349,7 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FailOnSecurityIssuesEnv:            "false",
 		MinSeverityEnv:                     "medium",
 		FixableOnlyEnv:                     "true",
+		DetectionOnlyEnv:                   "true",
 		AllowedLicensesEnv:                 "MIT, Apache-2.0",
 		AvoidExtraMessages:                 "true",
 		PullRequestCommentTitleEnv:         "build 1323",
@@ -389,6 +392,7 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
+	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
