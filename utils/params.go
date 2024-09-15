@@ -131,7 +131,10 @@ func (p *Project) setDefaultsIfNeeded() error {
 
 func (p *Project) GetTechFromInstallCmdIfExists() []string {
 	if p.InstallCommandName != "" {
-		return []string{p.InstallCommandName}
+		technologies := []string{p.InstallCommandName}
+		if strings.ToLower(p.InstallCommandName) == "dotnet" {
+			technologies = append(technologies, "nuget")
+		}
 	}
 	return nil
 }
