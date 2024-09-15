@@ -155,12 +155,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings())
+			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings(true, true))
 		}
 
-		if repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if scanResults.ExtendedScanResults != nil && scanResults.ExtendedScanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
-			// Currently available on GitHub only
+			// Currently available on GitHub only and JFrog Advance Security package
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
@@ -176,7 +176,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		}
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
-	if fixNeeded {
+	if repository.DetectionOnly {
+		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' environment variable to 'false'.", utils.DetectionOnlyEnv))
+	} else if fixNeeded {
 		return cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 	}
 	return nil
