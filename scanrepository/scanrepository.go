@@ -165,7 +165,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 				log.Warn(err)
 			}
 		}
-
+		if repository.DetectionOnly {
+			continue
+		}
 		// Prepare the vulnerabilities map for each working dir path
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults, scanResults.IsMultipleProject())
 		if err != nil {
