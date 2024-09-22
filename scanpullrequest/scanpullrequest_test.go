@@ -473,7 +473,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 17,
+					SeverityNumValue: 21,
 				},
 				Finding: "Missing auto upgrade was detected",
 				Location: formats.Location{
@@ -490,7 +490,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 17,
+					SeverityNumValue: 21,
 				},
 				Finding: "Secret",
 				Location: formats.Location{
@@ -507,7 +507,7 @@ func TestGetAllIssues(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 17,
+					SeverityNumValue: 21,
 				},
 				Finding: "XSS Vulnerability",
 				Location: formats.Location{
@@ -984,7 +984,7 @@ func TestCreateNewSastRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 17,
+						SeverityNumValue: 21,
 					},
 					Finding: "XSS Vulnerability",
 					Location: formats.Location{
@@ -1014,7 +1014,7 @@ func TestCreateNewSastRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 14,
+						SeverityNumValue: 17,
 					},
 					Finding: "Stack Trace Exposure",
 					Location: formats.Location{
