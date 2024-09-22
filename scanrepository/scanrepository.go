@@ -150,7 +150,8 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
 	for _, fullPathWd := range projectFullPathWorkingDirs {
-		scanResults, err := cfp.scan(fullPathWd)
+		cfp.scanDetails.SetConfigProfile(repository.ConfigProfile)
+		scanResults, err := cfp.scan(fullPathWd) // TODO here is the point where we lost the config profile (kept in repository) and we proceed only with scanDetails (that can store configProfile)
 		if err != nil {
 			return err
 		}
