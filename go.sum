@@ -707,8 +707,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20240922115836-ef3dba8d27c5 h1:qp1MD2Vkg8ZQxZgszKyUPUVJjb9Myvkou+1COkVhr+s=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20240922115836-ef3dba8d27c5/go.mod h1:QIHSX8FiuQWYtM6e0JPaREldPk8goNpUFtu9ZF2oG+U=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20240922143057-b942e87f8ca0 h1:sZWATqmRte+lTOiTYLC3lF4xTxXRQxHs1Meb3OWaYok=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20240922143057-b942e87f8ca0/go.mod h1:QIHSX8FiuQWYtM6e0JPaREldPk8goNpUFtu9ZF2oG+U=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fatih/color v1.14.1/go.mod h1:2oHN61fhTpgcxD3TSWCgKDiH1+x4OiDVVGH8WlgGZGg=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
