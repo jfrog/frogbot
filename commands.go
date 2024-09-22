@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	utils2 "github.com/jfrog/jfrog-cli-security/utils"
 	"os"
 
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
@@ -72,6 +73,7 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	if err != nil {
 		return err
 	}
+	utils2.PrintServerDetails(frogbotDetails.ServerDetails, "Right after collecting serverDetails from env vars")
 	// Check if the user has access to the frogbot repository (to access the resources needed)
 	frogbotRepoConnection := utils.CheckConnection(outputwriter.FrogbotRepoUrl)
 

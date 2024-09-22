@@ -165,6 +165,13 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetConfigProfile(sc.configProfile)
 	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
+	// FOR POC debug
+	serverDetails, err := auditParams.ServerDetails()
+	if err != nil {
+		return nil, err
+	}
+	xrayutils.PrintServerDetails(serverDetails, "From AuditParams, before RunAudit")
+
 	auditResults, err = audit.RunAudit(auditParams)
 
 	if auditResults != nil {

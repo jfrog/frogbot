@@ -55,6 +55,7 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 	}
 	repository := repoAggregator[0]
 	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+	securityutils.PrintServerDetails(cfp.scanDetails.ServerDetails, "Scan repository 'Run', from ScanRepositoryCmd")
 	return cfp.scanAndFixRepository(&repository, client)
 }
 
@@ -104,6 +105,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
+		securityutils.PrintServerDetails(cfp.scanDetails.ServerDetails, "Scan repository 'scanAndFixBranch', from ScanRepositoryCmd")
 		if err = cfp.scanAndFixProject(repository); err != nil {
 			return
 		}
@@ -187,6 +189,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 // Audit the dependencies of the current commit.
 func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*securityutils.Results, error) {
 	// Audit commit code
+	securityutils.PrintServerDetails(cfp.scanDetails.ServerDetails, "Scan repository 'scan', right before RunInstallAndAudit, from ScanRepositoryCmd")
 	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
 		return nil, err
