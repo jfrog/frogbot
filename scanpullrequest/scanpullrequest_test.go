@@ -150,7 +150,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-1",
 			Summary: "summary-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 15},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 18},
 				ImpactedDependencyName: "component-A",
 			},
 		},
@@ -158,7 +158,7 @@ func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
 			IssueId: "XRAY-2",
 			Summary: "summary-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 9},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 10},
 				ImpactedDependencyName: "component-C",
 			},
 		},
@@ -268,7 +268,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Applicable: "Applicable",
 			IssueId:    "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
 				ImpactedDependencyName: "component-C",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -279,7 +279,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 			Applicable: "Applicable",
 			IssueId:    "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 11},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
 				ImpactedDependencyName: "component-D",
 			},
 			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -342,7 +342,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-2",
 			IssueId: "XRAY-2",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 9},
+				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 10},
 				ImpactedDependencyName: "component-B",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
@@ -351,7 +351,7 @@ func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
 			Summary: "summary-1",
 			IssueId: "XRAY-1",
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 15},
+				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 18},
 				ImpactedDependencyName: "component-A",
 			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
@@ -454,7 +454,7 @@ func TestGetAllIssues(t *testing.T) {
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 17},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 21},
 					ImpactedDependencyName: "Dep-1",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -814,7 +814,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 17,
+						SeverityNumValue: 21,
 					},
 					Finding: "Missing auto upgrade was detected",
 					Location: formats.Location{
@@ -844,7 +844,7 @@ func TestCreateNewIacRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 14,
+						SeverityNumValue: 17,
 					},
 					Finding: "enable_private_endpoint=false was detected",
 					Location: formats.Location{
@@ -899,7 +899,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "High",
-						SeverityNumValue: 17,
+						SeverityNumValue: 21,
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -929,7 +929,7 @@ func TestCreateNewSecretRows(t *testing.T) {
 				{
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
-						SeverityNumValue: 14,
+						SeverityNumValue: 17,
 					},
 					Finding: "Secret",
 					Location: formats.Location{
