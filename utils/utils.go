@@ -239,7 +239,7 @@ func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRo
 		return "", err
 	}
 	return xrayutils.WriteSarifResultsAsString(sarifReport, false)
-}
+}d
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
