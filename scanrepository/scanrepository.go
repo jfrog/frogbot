@@ -160,13 +160,18 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{}).ConvertToSummary(scanResults); err != nil {
 				return err
 			} else {
-				cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(summary.GetTotalIssueCount(true, true))
+				totalFindings := summary.GetTotalViolations()
+				if totalFindings == 0 {
+					totalFindings = summary.GetTotalVulnerabilities()
+				}
+				cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(totalFindings)
 			}
 		}
 
-		if scanResults.ExtendedScanResults != nil && scanResults.ExtendedScanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if scanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only and JFrog Advance Security package
+			// Only if Jas entitlement is available
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}

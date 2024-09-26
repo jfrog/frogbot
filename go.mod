@@ -120,7 +120,7 @@ require (
 )
 
 // attiasas:refactor_output
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security refactor_output
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20240926112715-8358e8d26f52
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

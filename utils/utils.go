@@ -22,6 +22,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
+	"github.com/jfrog/jfrog-cli-security/utils/results/output"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
@@ -236,15 +237,14 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 
 func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots bool, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IsMultipleRoots:              &isMultipleRoots,
-		AllowedLicenses:              allowedLicenses,
-		AllowResultsWithoutLocations: true,
+		IsMultipleRoots: &isMultipleRoots,
+		AllowedLicenses: allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {
 		return "", err
 	}
-	return xrayutils.WriteSarifResultsAsString(sarifReport, false)
+	return output.WriteSarifResultsAsString(sarifReport, false)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
