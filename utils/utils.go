@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -28,7 +27,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 )
 
 const (
@@ -48,9 +46,6 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
-
-	// Sarif run output tool annotator
-	sarifToolName = "JFrog Frogbot"
 )
 
 var (
@@ -239,49 +234,6 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
-func prepareRunsForGithubReport(runs []*sarif.Run) []*sarif.Run {
-	for _, run := range runs {
-		for _, rule := range run.Tool.Driver.Rules {
-			// Github security tab can display markdown content on Help attribute and not description
-			if rule.Help == nil && rule.FullDescription != nil {
-				rule.Help = rule.FullDescription
-			}
-		}
-		// Github security tab can't accept results without locations, remove them
-		results := []*sarif.Result{}
-		for _, result := range run.Results {
-			if len(result.Locations) == 0 {
-				continue
-			}
-			results = append(results, result)
-		}
-		run.Results = results
-	}
-	convertToRelativePath(runs)
-	// If we upload to Github security tab multiple runs, it will only display the last run as active issues.
-	// Combine all runs into one run with multiple invocations, so the Github security tab will display all the results as not resolved.
-	combined := sarif.NewRunWithInformationURI(sarifToolName, outputwriter.FrogbotRepoUrl)
-	sarifutils.AggregateMultipleRunsIntoSingle(runs, combined)
-	return []*sarif.Run{combined}
-}
-
-func convertToRelativePath(runs []*sarif.Run) {
-	for _, run := range runs {
-		for _, result := range run.Results {
-			for _, location := range result.Locations {
-				sarifutils.SetLocationFileName(location, sarifutils.GetRelativeLocationFileName(location, run.Invocations))
-			}
-			for _, flows := range result.CodeFlows {
-				for _, flow := range flows.ThreadFlows {
-					for _, location := range flow.Locations {
-						sarifutils.SetLocationFileName(location.Location, sarifutils.GetRelativeLocationFileName(location.Location, run.Invocations))
-					}
-				}
-			}
-		}
-	}
-}
-
 func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots bool, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IsMultipleRoots:              &isMultipleRoots,
@@ -292,8 +244,7 @@ func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults,
 	if err != nil {
 		return "", err
 	}
-	sarifReport.Runs = prepareRunsForGithubReport(sarifReport.Runs)
-	return sarifutils.ConvertSarifReportToString(sarifReport)
+	return xrayutils.WriteSarifResultsAsString(sarifReport, false)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
@@ -346,14 +297,14 @@ func validateBranchName(branchName string) error {
 	}
 	branchNameWithoutPlaceHolders := formatStringWithPlaceHolders(branchName, "", "", "", "", true)
 	if branchInvalidCharsRegex.MatchString(branchNameWithoutPlaceHolders) {
-		return fmt.Errorf(branchInvalidChars)
+		return errors.New(branchInvalidChars)
 	}
 	// Prefix cannot be '-'
 	if branchName[0] == '-' {
-		return fmt.Errorf(branchInvalidPrefix)
+		return errors.New(branchInvalidPrefix)
 	}
 	if len(branchName) > branchCharsMaxLength {
-		return fmt.Errorf(branchInvalidLength)
+		return errors.New(branchInvalidLength)
 	}
 	return nil
 }

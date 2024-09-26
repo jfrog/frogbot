@@ -57,7 +57,7 @@ jobs:
                    "username": "admin",
                    "scope": "applied-permissions/admin",
                    "audience": "*@*",
-                   "expires_in": 300                
+                   "expires_in": 1200            
                 }
           }'
 
@@ -71,6 +71,7 @@ jobs:
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
           JF_WORKING_DIR: ./testdata/projects/noIssuesProject
           JF_FAIL: "FALSE"
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 

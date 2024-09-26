@@ -229,7 +229,7 @@ func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient
 
 	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(reviewComments), 9)
+	assert.GreaterOrEqual(t, len(reviewComments), 11)
 }
 
 func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
