@@ -495,12 +495,16 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	xrUrl := strings.TrimSuffix(getTrimmedEnv(jfrogXrayUrlEnv), "/")
 	rtUrl := strings.TrimSuffix(getTrimmedEnv(jfrogArtifactoryUrlEnv), "/")
 	if xrUrl != "" && rtUrl != "" {
+		if platformUrl != "" {
+			log.Warn("Ignoring", JFrogUrlEnv, "environment variable as both", jfrogXrayUrlEnv, "and", jfrogArtifactoryUrlEnv, "are provided")
+		}
 		server.XrayUrl = xrUrl + "/"
 		server.ArtifactoryUrl = rtUrl + "/"
 	} else {
 		if platformUrl == "" {
 			return nil, fmt.Errorf("%s or %s and %s environment variables are missing", JFrogUrlEnv, jfrogXrayUrlEnv, jfrogArtifactoryUrlEnv)
 		}
+		log.Debug("Using", JFrogUrlEnv, "as the base JFrog platform URL for Artifactory and Xray")
 		server.Url = platformUrl + "/"
 		server.XrayUrl = platformUrl + "/xray/"
 		server.ArtifactoryUrl = platformUrl + "/artifactory/"
