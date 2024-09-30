@@ -633,8 +633,8 @@ github.com/apache/thrift v0.16.0/go.mod h1:PHK3hniurgQaNMZYaCLEqXKsYK8upmhPbmdP2
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/attiasas/jfrog-cli-security v0.0.0-20240929065354-882ec7bf21fe h1:coScO9aJZa8P81iqVxnEmKQLpjk+rOkfhyRarSDpRxg=
-github.com/attiasas/jfrog-cli-security v0.0.0-20240929065354-882ec7bf21fe/go.mod h1:0vBYBP1jztDf5e25Ww3CkQAA1C609CAccz9NJLoSoRk=
+github.com/attiasas/jfrog-cli-security v0.0.0-20240930161129-6c0b4b6d1d47 h1:u9Z97zsMFKcJCsppn3WlAppSUjV/zQ4rI4U549re2yU=
+github.com/attiasas/jfrog-cli-security v0.0.0-20240930161129-6c0b4b6d1d47/go.mod h1:0vBYBP1jztDf5e25Ww3CkQAA1C609CAccz9NJLoSoRk=
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
