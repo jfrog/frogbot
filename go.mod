@@ -121,7 +121,7 @@ require (
 
 replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20240930115444-6caa0bf25ae7
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/eranturgeman/jfrog-cli-core/v2 v2.0.0-20240930121225-808a1fa452f2
 
 replace github.com/jfrog/build-info-go => github.com/eranturgeman/build-info-go v0.0.0-20240930115102-002856a2c70e
 
