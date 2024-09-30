@@ -237,8 +237,10 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 
 func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots bool, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IsMultipleRoots: &isMultipleRoots,
-		AllowedLicenses: allowedLicenses,
+		IncludeVulnerabilities: true,
+		HasViolationContext:    true,
+		IsMultipleRoots:        &isMultipleRoots,
+		AllowedLicenses:        allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {

@@ -58,7 +58,7 @@ func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse
 }
 
 func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool, allowedLicenses ...string) (formats.SimpleJsonResults, error) {
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{AllowedLicenses: allowedLicenses})
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, AllowedLicenses: allowedLicenses})
 	jasResults := &results.JasScansResults{}
 	if applicable {
 		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
@@ -94,7 +94,7 @@ func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target [
 }
 
 func jasToDummySimpleJsonResults(scanType jasutils.JasScanType, jasScanResults []*sarif.Result) (formats.SimpleJsonResults, error) {
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{})
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true})
 
 	jasResults := &results.JasScansResults{}
 	switch scanType {

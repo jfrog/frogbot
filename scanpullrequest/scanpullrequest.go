@@ -231,9 +231,11 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		AllowedLicenses:  allowedLicenses,
-		IncludeLicenses:  true,
-		SimplifiedOutput: true,
+		IncludeVulnerabilities: true,
+		HasViolationContext:    true,
+		AllowedLicenses:        allowedLicenses,
+		IncludeLicenses:        true,
+		SimplifiedOutput:       true,
 	}).ConvertToSimpleJson(cmdResults)
 	if err != nil {
 		return nil, err
@@ -250,7 +252,7 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 // Returns all the issues found in the source branch that didn't exist in the target branch.
 func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string) (*utils.IssuesCollection, error) {
 	var err error
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
 	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
 	if err != nil {
 		return nil, err
