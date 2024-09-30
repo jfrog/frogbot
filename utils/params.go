@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
@@ -127,15 +131,32 @@ func (p *Project) setDefaultsIfNeeded() error {
 	return nil
 }
 
+func (p *Project) GetTechFromInstallCmdIfExists() []string {
+	var technologies []string
+	if p.InstallCommandName != "" {
+		if !slices.Contains(techutils.AllTechnologiesStrings, p.InstallCommandName) {
+			log.Warn(fmt.Sprintf("The technology ‘%s’ was inferred from the provided install command but is not listed among the supported technologies. Please provide an install command for one of the following supported technologies: %s", p.InstallCommandName, techutils.AllTechnologiesStrings))
+			return technologies
+		}
+		technologies = append(technologies, p.InstallCommandName)
+		if strings.ToLower(p.InstallCommandName) == "dotnet" {
+			technologies = append(technologies, "nuget")
+		}
+	}
+	return technologies
+}
+
 type Scan struct {
 	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
+	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
+	ConfigProfile                   *services.ConfigProfile
 }
 
 type EmailDetails struct {
@@ -187,6 +208,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if !s.FixableOnly {
 		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.DetectionOnly {
+		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
 		}
 	}
@@ -354,6 +380,12 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
+
+	configProfile, err := getConfigProfileIfExistsAndValid(jfrogServer)
+	if err != nil {
+		return
+	}
+
 	gitParamsFromEnv, err := extractGitParamsFromEnvs(commandName)
 	if err != nil {
 		return
@@ -379,6 +411,11 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	configAggregator, err := getConfigAggregator(client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
+	}
+
+	// We apply the configProfile to all received repositories. This loop must be deleted when we will no longer accept multiple repositories in a single scan
+	for i := range configAggregator {
+		configAggregator[i].Scan.ConfigProfile = configProfile
 	}
 
 	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
@@ -704,5 +741,31 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 	case http.StatusUnauthorized:
 		log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
 	}
+	return
+}
+
+// This function fetches a config profile if JF_CONFIG_PROFILE is provided.
+// If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
+func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
+	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
+	if profileName == "" {
+		log.Debug(fmt.Sprintf("No %s environment variable was provided. All configurations will be induced from Env vars and files", JfrogConfigProfileEnv))
+		return
+	}
+
+	if configProfile, err = xsc.GetConfigProfile(jfrogServer, profileName); err != nil {
+		return
+	}
+
+	// Currently, only a single Module that represents the entire project is supported
+	if len(configProfile.Modules) != 1 {
+		err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
+		return
+	}
+	if configProfile.Modules[0].PathFromRoot != "." {
+		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot)
+		return
+	}
+	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", profileName))
 	return
 }

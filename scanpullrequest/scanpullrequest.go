@@ -138,7 +138,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
-		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues)
+		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
+		SetConfigProfile(repoConfig.ConfigProfile)
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
@@ -319,11 +320,15 @@ func getNewlyAddedIssues(targetResults, sourceResults *securityutils.Results, al
 func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
 	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
 	for _, row := range targetResults {
-		targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
+		if row.Fingerprint != "" {
+			targetSourceCodeVulnerabilitiesKeys.Add(row.Fingerprint)
+		} else {
+			targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
+		}
 	}
 	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
 	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File + row.Snippet) {
+		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File+row.Snippet) && !targetSourceCodeVulnerabilitiesKeys.Exists(row.Fingerprint) {
 			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
 		}
 	}

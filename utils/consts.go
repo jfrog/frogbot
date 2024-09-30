@@ -31,6 +31,7 @@ const (
 	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
 	JFrogPasswordEnv       = "JF_PASSWORD"
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
+	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
 	GitProvider     = "JF_GIT_PROVIDER"
@@ -59,6 +60,7 @@ const (
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
+	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
 	WatchesDelimiter                   = ","
 

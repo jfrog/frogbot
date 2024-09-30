@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"os"
 	"path/filepath"
 
@@ -28,6 +29,7 @@ type ScanDetails struct {
 	fixableOnly              bool
 	minSeverityFilter        severityutils.Severity
 	baseBranch               string
+	configProfile            *clientservices.ConfigProfile
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -68,6 +70,11 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) 
 
 func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
 	sc.baseBranch = branch
+	return sc
+}
+
+func (sc *ScanDetails) SetConfigProfile(configProfile *clientservices.ConfigProfile) *ScanDetails {
+	sc.configProfile = configProfile
 	return sc
 }
 
@@ -146,14 +153,16 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true)
+		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists())
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
-		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams())
+		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
+		SetConfigProfile(sc.configProfile)
 	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
 	auditResults, err = audit.RunAudit(auditParams)
