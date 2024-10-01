@@ -219,7 +219,7 @@ func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (
 	// 	return "", err
 	// }
 	// Get the commit object of the base branch
-	
+
 	baseRef, err := gm.localGitRepository.Reference(plumbing.NewBranchReferenceName(baseBranch), true)
 	if err != nil {
 		return "", err
@@ -231,7 +231,6 @@ func (gm *GitManager) GetBestCommonAncestorHash(baseBranch, headBranch string) (
 	log.Debug(fmt.Sprintf("Found commit %s for base branch %s", baseCommit.Hash.String(), baseBranch))
 	// Fetch the head branch and its commits
 	// TODO: fetch only if not in ref list (go over first -> extract to func)
-	
 
 	if err = gm.localGitRepository.Fetch(&git.FetchOptions{
 		RemoteName: gm.remoteName,

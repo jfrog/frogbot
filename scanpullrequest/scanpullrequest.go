@@ -39,7 +39,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 		}
 	}
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	
+
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}
@@ -225,7 +225,7 @@ func tryCheckoutToBestCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 	if err != nil {
 		return
 	}
-	
+
 	bestAncestorHash, err := gitManager.GetBestCommonAncestorHash(baseBranch, headBranch)
 	if err != nil {
 		return
