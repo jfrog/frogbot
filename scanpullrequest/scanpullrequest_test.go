@@ -569,7 +569,7 @@ func TestGetAllIssues(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := getAllIssues(auditResults, allowedLicenses)
+	issuesRows, err := getAllIssues(auditResults, allowedLicenses, false)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.Vulnerabilities, issuesRows.Vulnerabilities)

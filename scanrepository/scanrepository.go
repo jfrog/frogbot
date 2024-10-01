@@ -157,7 +157,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			return err
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true}).ConvertToSummary(scanResults); err != nil {
+			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: cfp.scanDetails.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
 				return err
 			} else {
 				totalFindings := summary.GetTotalViolations()
@@ -172,7 +172,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only and JFrog Advance Security package
 			// Only if Jas entitlement is available
-			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client(), cfp.scanDetails.HasViolationContext()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -211,7 +211,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 }
 
 func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
+	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, cfp.scanDetails.HasViolationContext())
 	if err != nil {
 		return nil, err
 	}
@@ -484,9 +484,9 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults, hasViolationContext bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true}).ConvertToSimpleJson(scanResults)
+	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: hasViolationContext}).ConvertToSimpleJson(scanResults)
 	if err != nil {
 		return nil, err
 	}

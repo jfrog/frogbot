@@ -129,6 +129,10 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 	return commonParams
 }
 
+func (sc *ScanDetails) HasViolationContext() bool {
+	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
+}
+
 func createXrayScanParams(watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
