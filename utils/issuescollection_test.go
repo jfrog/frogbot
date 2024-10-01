@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"github.com/jfrog/jfrog-cli-security/formats"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCountIssuesCollectionFindings(t *testing.T) {
