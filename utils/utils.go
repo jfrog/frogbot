@@ -311,7 +311,7 @@ func convertToRelativePath(runs []*sarif.Run) {
 }
 
 func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
-	sarifReport, err := xrayutils.GenerateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses)
+	sarifReport, err := xrayutils.GenerateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses, xrayutils.GetAllSupportedScans())
 	if err != nil {
 		return "", err
 	}
