@@ -204,7 +204,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*securityutils.Res
 	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
 	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
 	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
-	cfp.projectTech = auditResults.GetScaScannedTechnologies()
+	cfp.projectTech = auditResults.GetScaScannedTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
 
