@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os/exec"
+	// "os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -156,6 +156,7 @@ func (gm *GitManager) Checkout(branchName string) error {
 }
 
 func (gm *GitManager) CheckoutToHash(hash, targetBranchWd string) error {
+	log.Debug("Running git fetch...")
 	if err := gm.Fetch(); err != nil {
 		return err
 	}
@@ -164,48 +165,22 @@ func (gm *GitManager) CheckoutToHash(hash, targetBranchWd string) error {
 		return fmt.Errorf("'git checkout %s' failed with error: %s", hash, err.Error())
 	}
 	return nil
-	// worktree, err := gm.localGitRepository.Worktree()
-	// if err != nil {
-	// 	return err
-	// }
-	// if err = worktree.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(hash), Keep: true}); err != nil {
-	// 	return fmt.Errorf("'git checkout %s' failed with error: %s", hash, err.Error())
-	// }
-	// cmd := exec.Command("git", "checkout", hash)
-	// cmd.Dir = targetBranchWd
-	// if output, err := cmd.CombinedOutput(); err != nil {
-	// 	return fmt.Errorf("'git checkout %s' failed with error: %s", hash, string(output))
-	// } else if len(output) > 0 {
-	// 	log.Debug("git checkout output:", string(output))
-	// }
-	// return nil
 }
 
 func (gm *GitManager) Fetch() error {
 	log.Debug("Running git fetch...")
 	err := gm.localGitRepository.Fetch(&git.FetchOptions{
 		RemoteName: gm.remoteName,
-		RemoteURL: gm.remoteGitUrl,
+		RemoteURL:  gm.remoteGitUrl,
 		Auth:       gm.auth,
 	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return fmt.Errorf("git fetch failed with error: %s", err.Error())
 	}
-	log.Debug("Running local git fetch...")
-	cmd := exec.Command("git", "fetch", "--all")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("git fetch failed with error: %s", string(output))
-	} else if len(output) > 0 {
-		log.Debug("git fetch output:", string(output))
-	}
 	return nil
 }
 
 func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, headBranch string) (string, error) {
-	// Make sure data is fetched
-	// if err := gm.Fetch(); err != nil {
-	// 	return "", err
-	// }
 	// Get the commit of the base branch
 	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(baseBranch))
 	if err != nil {
@@ -289,13 +264,13 @@ func (gm *GitManager) createBranchAndCheckoutToHash(hash string, keepLocalChange
 	var checkoutConfig *git.CheckoutOptions
 	if keepLocalChanges {
 		checkoutConfig = &git.CheckoutOptions{
-			Hash:   plumbing.NewHash(hash),
-			Keep:   true,
+			Hash: plumbing.NewHash(hash),
+			Keep: true,
 		}
 	} else {
 		checkoutConfig = &git.CheckoutOptions{
-			Hash:   plumbing.NewHash(hash),
-			Force:  true,
+			Hash:  plumbing.NewHash(hash),
+			Force: true,
 		}
 	}
 	worktree, err := gm.localGitRepository.Worktree()

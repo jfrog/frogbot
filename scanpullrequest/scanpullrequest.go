@@ -179,7 +179,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 		return
 	}
 
-	// // Set JAS output flags
+	// Set JAS output flags
 	sourceScanResults := sourceResults.ExtendedScanResults
 	repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
 
@@ -248,35 +248,12 @@ func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 	if err != nil {
 		return
 	}
-	log.Info(fmt.Sprintf("RepositoryCloneUrl: %s", repositoryInfo.CloneInfo.HTTP))
 	scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
-
 	bestAncestorHash, err := getMostCommonAncestorCommitHash(scanDetails, baseBranch, headBranch)
 	if err != nil {
 		return
 	}
 	return checkoutToCommitAtTempWorkingDir(scanDetails, bestAncestorHash, targetBranchWd)
-
-	// gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
-	// if err != nil {
-	// 	return
-	// }
-	// log.Info(fmt.Sprintf("RepositoryCloneUrl After: %s", scanDetails.Git.RepositoryCloneUrl))
-
-	// bestAncestorHash, err := gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
-	// if err != nil {
-	// 	return
-	// }
-	// cwd, err := os.Getwd()
-	// if err != nil {
-	// 	return
-	// }
-	// if err = os.Chdir(targetBranchWd); err != nil {
-	// 	return
-	// }
-	// defer os.Chdir(cwd)
-	// log.Debug("Checking out to best common ancestor commit hash: " + bestAncestorHash)
-	// return gitManager.CheckoutToHash(bestAncestorHash, targetBranchWd)
 }
 
 func getMostCommonAncestorCommitHash(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (hash string, err error) {
@@ -288,6 +265,7 @@ func getMostCommonAncestorCommitHash(scanDetails *utils.ScanDetails, baseBranch,
 }
 
 func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash, wd string) (err error) {
+	// Change working directory to the temp target branch directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return
@@ -296,6 +274,7 @@ func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash
 		return
 	}
 	defer os.Chdir(cwd)
+	// Load .git info in directory and Checkout to the commit hash
 	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
 	if err != nil {
 		return

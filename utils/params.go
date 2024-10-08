@@ -279,18 +279,18 @@ type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
 	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
-	RepoOwner                string
-	RepoName                 string   `yaml:"repoName,omitempty"`
-	Branches                 []string `yaml:"branches,omitempty"`
-	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle  string   `yaml:"pullRequestCommentTitle,omitempty"`
-	AvoidExtraMessages       bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails       vcsclient.PullRequestInfo
-	RepositoryCloneUrl       string
+	RepoOwner                     string
+	RepoName                      string   `yaml:"repoName,omitempty"`
+	Branches                      []string `yaml:"branches,omitempty"`
+	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails            vcsclient.PullRequestInfo
+	RepositoryCloneUrl            string
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
