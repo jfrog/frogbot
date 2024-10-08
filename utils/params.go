@@ -278,6 +278,7 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
+	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
 	RepoOwner                string
 	RepoName                 string   `yaml:"repoName,omitempty"`
 	Branches                 []string `yaml:"branches,omitempty"`
@@ -328,6 +329,11 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	if !g.UseMostCommonAncestorAsTarget {
+		if g.UseMostCommonAncestorAsTarget, err = getBoolEnv(UseMostCommonAncestorAsTargetEnv, true); err != nil {
+			return
+		}
 	}
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return

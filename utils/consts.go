@@ -45,6 +45,7 @@ const (
 	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
 	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
 	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
+	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
