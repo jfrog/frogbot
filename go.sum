@@ -707,6 +707,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/envoyproxy/protoc-gen-validate v0.6.7/go.mod h1:dyJXwwfPK2VSqiB9Klm1J6romD608Ba7Hij42vrOBCo=
 github.com/envoyproxy/protoc-gen-validate v0.9.1/go.mod h1:OKNgG7TCp5pF4d6XftA0++PMirau2/yoOwVac3AbF2w=
 github.com/envoyproxy/protoc-gen-validate v0.10.0/go.mod h1:DRjgyB0I43LtJapqN6NiRwroiAU2PaFuvk/vjgh61ss=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20241008091046-472d89537fb1 h1:AE4+Ww2hovGbEyu8/OP6M9VGrpFPUGtgzrl+ut9oNY0=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20241008091046-472d89537fb1/go.mod h1:0vBYBP1jztDf5e25Ww3CkQAA1C609CAccz9NJLoSoRk=
 github.com/fatih/color v1.14.1 h1:qfhVLaG5s+nCROl1zJsZRxFeYrHLqWroPOQ8BWiNb4w=
 github.com/fatih/color v1.14.1/go.mod h1:2oHN61fhTpgcxD3TSWCgKDiH1+x4OiDVVGH8WlgGZGg=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
@@ -901,8 +903,6 @@ github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYL
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
 github.com/jfrog/jfrog-cli-core/v2 v2.56.1 h1:+Me+RQx8BYKib+RZLFtGWFftLjEd3NrjVVxJbSYElKU=
 github.com/jfrog/jfrog-cli-core/v2 v2.56.1/go.mod h1:+a9VRDizwc+SK2Io6e4Yp8j7hkTeQstQTmNVwrxdh6Q=
-github.com/jfrog/jfrog-cli-security v1.10.1 h1:0YfDosXXazUJVQRBPmeoUwvrmEotMSGyE+3ICELmFJE=
-github.com/jfrog/jfrog-cli-security v1.10.1/go.mod h1:Z4hS3Ge6LDqOF2vXeO6duuNZyPCEaKjoyoeJ7vGoy54=
 github.com/jfrog/jfrog-client-go v1.47.1 h1:VT2v28/usTSP56+i3MC3fgRvZoh6vjRgQgs8xTk+sYU=
 github.com/jfrog/jfrog-client-go v1.47.1/go.mod h1:7M/vgei7VGcLjUxwQ/3r9pH3lvDHlt6Q+Gw+YMis/mc=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
