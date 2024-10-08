@@ -1,0 +1,12 @@
+{
+  "name": "yarn1-new",
+  "version": "1.0.0",
+  "description": "new mutli project",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "minimist": "1.2.5",
+    "snyk": "1.995.0"
+  }
+}

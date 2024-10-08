@@ -87,6 +87,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		expectedVersionUpdatesInBranch map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
+		allowPartialResults            bool
 	}{
 		{
 			testName:                       "aggregate",
@@ -135,6 +136,16 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
 		},
+		{
+			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
+			testName:                       "partial-results-enabled",
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-yarn-dependencies-master": {"minimist", "snyk"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-yarn-dependencies-master": {"1.2.6", "1.1064.0"}},
+			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
+			aggregateFixes:                 true,
+			configPath:                     "../testdata/scanrepository/cmd/partial-results-enabled/.frogbot/frogbot-config.yml",
+			allowPartialResults:            true,
+		},
 	}
 	baseDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -149,6 +160,12 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
 				defer func() {
 					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+				}()
+			}
+			if test.allowPartialResults {
+				assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "true"))
+				defer func() {
+					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
 			var port string
