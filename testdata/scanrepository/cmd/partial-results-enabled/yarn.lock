@@ -7,7 +7,7 @@ minimist@1.2.5:
   resolved "https://entplus.jfrog.io/artifactory/api/npm/npm-virtual/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
   integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
 
-snyk@1.995.0:
-  version "1.995.0"
-  resolved "https://entplus.jfrog.io/artifactory/api/npm/npm-virtual/snyk/-/snyk-1.995.0.tgz#b807e853d06a85aa172509ce76f4118b890598c5"
-  integrity sha512-rd0iWW8jr/e6lQ2ncnXbfAXPnBdjQP95dFCdltQf3HwjCTE6vTgH0iiKTlglfR33VrNJJVrjsV527qrlMIiZXQ==
+mpath@0.7.0:
+  version "0.7.0"
+  resolved "https://entplus.jfrog.io/artifactory/api/npm/npm-virtual/mpath/-/mpath-0.7.0.tgz#20e8102e276b71709d6e07e9f8d4d0f641afbfb8"
+  integrity sha512-Aiq04hILxhz1L+f7sjGyn7IxYzWm1zLNNXcfhDtx04kZ2Gk7uvFdgZ8ts1cWa/6d0TQmag2yR8zSGZUmp0tFNg==

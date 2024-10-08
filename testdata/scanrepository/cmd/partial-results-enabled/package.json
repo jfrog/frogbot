@@ -7,6 +7,6 @@
   "private": true,
   "dependencies": {
     "minimist": "1.2.5",
-    "snyk": "1.995.0"
+    "mpath": "0.7.0"
   }
 }

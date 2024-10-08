@@ -139,8 +139,8 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
 			testName:                       "partial-results-enabled",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-yarn-dependencies-master": {"minimist", "snyk"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-yarn-dependencies-master": {"1.2.6", "1.1064.0"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-yarn-dependencies-master": {"minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-yarn-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/partial-results-enabled/.frogbot/frogbot-config.yml",
