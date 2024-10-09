@@ -42,6 +42,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 		handler = &GradlePackageHandler{}
 	case techutils.Pnpm:
 		handler = &PnpmPackageHandler{}
+	case techutils.Conan:
+		handler = &ConanPackageHandler{}
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
