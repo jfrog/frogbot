@@ -32,7 +32,7 @@ func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabil
 }
 
 func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	isConanFileTxtExists, err := fileutils.IsFileExists(conanFileTxt, false)
+	isConanFileTxtExists, err := fileutils.IsDirExists(conanFileTxt, false)
 	if err != nil {
 		err = fmt.Errorf("failed while serching for conanfile in project: %s", err.Error())
 		return
@@ -42,7 +42,7 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 			return
 		}
 	}
-	isConanFilePyExists, err := fileutils.IsFileExists(conanFilePy, false)
+	isConanFilePyExists, err := fileutils.IsDirExists(conanFilePy, false)
 	if err != nil {
 		err = fmt.Errorf("failed while serching for conanfile in project: %s", err.Error())
 		return
