@@ -1,0 +1,11 @@
+{
+  "name": "inner-project",
+  "version": "1.0.0",
+  "description": "inner project",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "un-installable-dep": "2.5.0"
+  }
+}

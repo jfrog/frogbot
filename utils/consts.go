@@ -62,6 +62,7 @@ const (
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
+	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
 
 	// Email related environment variables

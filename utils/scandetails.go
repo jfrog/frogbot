@@ -30,6 +30,7 @@ type ScanDetails struct {
 	minSeverityFilter        severityutils.Severity
 	baseBranch               string
 	configProfile            *clientservices.ConfigProfile
+	allowPartialResults      bool
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -66,6 +67,11 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) 
 		sc.minSeverityFilter = severity
 	}
 	return sc, nil
+}
+
+func (sc *ScanDetails) SetAllowPartialResults(allowPartialResults bool) *ScanDetails {
+	sc.allowPartialResults = allowPartialResults
+	return sc
 }
 
 func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
@@ -106,6 +112,10 @@ func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
 func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	sc.RepoName = repoName
 	return sc
+}
+
+func (sc *ScanDetails) AllowPartialResults() bool {
+	return sc.allowPartialResults
 }
 
 func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanParams {
@@ -154,7 +164,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
 		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
-		SetTechnologies(sc.GetTechFromInstallCmdIfExists())
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
+		SetAllowPartialResults(sc.allowPartialResults)
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).

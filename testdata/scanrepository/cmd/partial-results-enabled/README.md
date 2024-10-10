@@ -1,0 +1,2 @@
+This project is used to test a specific case of scan repository where part of the project (inner-project) cannot be installed and should fail the flow
+This test project is used to test allow-partial-results feature that should avoid failing the flow over some errors
