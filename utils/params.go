@@ -278,18 +278,19 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner                string
-	RepoName                 string   `yaml:"repoName,omitempty"`
-	Branches                 []string `yaml:"branches,omitempty"`
-	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle  string   `yaml:"pullRequestCommentTitle,omitempty"`
-	AvoidExtraMessages       bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails       vcsclient.PullRequestInfo
-	RepositoryCloneUrl       string
+	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
+	RepoOwner                     string
+	RepoName                      string   `yaml:"repoName,omitempty"`
+	Branches                      []string `yaml:"branches,omitempty"`
+	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails            vcsclient.PullRequestInfo
+	RepositoryCloneUrl            string
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -328,6 +329,11 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	if !g.UseMostCommonAncestorAsTarget {
+		if g.UseMostCommonAncestorAsTarget, err = getBoolEnv(UseMostCommonAncestorAsTargetEnv, true); err != nil {
+			return
+		}
 	}
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
