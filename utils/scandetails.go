@@ -27,6 +27,7 @@ type ScanDetails struct {
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
 	fixableOnly              bool
+	skipAutoInstall          bool
 	minSeverityFilter        severityutils.Severity
 	baseBranch               string
 	configProfile            *clientservices.ConfigProfile
@@ -53,6 +54,11 @@ func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey 
 
 func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	sc.fixableOnly = fixable
+	return sc
+}
+
+func (sc *ScanDetails) SetSkipAutoInstall(skipAutoInstall bool) *ScanDetails {
+	sc.skipAutoInstall = skipAutoInstall
 	return sc
 }
 
@@ -154,7 +160,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
 		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
-		SetTechnologies(sc.GetTechFromInstallCmdIfExists())
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
+		SetSkipAutoInstall(sc.skipAutoInstall)
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
