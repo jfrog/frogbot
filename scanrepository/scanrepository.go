@@ -117,8 +117,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
-		SetSkipAutoInstall(repository.SkipAutoInstall)
-	SetFixableOnly(repository.FixableOnly).
+		SetSkipAutoInstall(repository.SkipAutoInstall).
+		SetFixableOnly(repository.FixableOnly).
 		SetAllowPartialResults(repository.AllowPartialResults)
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
