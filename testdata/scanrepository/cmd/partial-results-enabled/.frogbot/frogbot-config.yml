@@ -12,7 +12,7 @@
 
       aggregateFixes: true
 
-      # List of subprojects / project dirs inside the Git repository
+    scan:
       projects:
         - workingDirs:
           - "."

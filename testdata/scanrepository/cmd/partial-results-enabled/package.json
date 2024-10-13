@@ -1,7 +1,7 @@
 {
-  "name": "yarn1-new",
+  "name": "partial-results-enabled",
   "version": "1.0.0",
-  "description": "new mutli project",
+  "description": "test project to check allow-partial-results feature",
   "main": "index.js",
   "license": "MIT",
   "private": true,
