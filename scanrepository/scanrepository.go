@@ -119,7 +119,9 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
-		SetSkipAutoInstall(repository.SkipAutoInstall)
+		SetSkipAutoInstall(repository.SkipAutoInstall).
+		SetFixableOnly(repository.FixableOnly).
+		SetAllowPartialResults(repository.AllowPartialResults)
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}
@@ -155,7 +157,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
-			return err
+			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
+				return err
+			}
+			continue
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
 			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: cfp.scanDetails.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
@@ -183,7 +188,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		// Prepare the vulnerabilities map for each working dir path
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults)
 		if err != nil {
-			return err
+			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
+				return err
+			}
+			continue
 		}
 		if len(currPathVulnerabilities) > 0 {
 			fixNeeded = true
@@ -207,7 +215,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 	}
 	log.Info("Xray scan completed")
 	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, len(auditResults.GetJasScansResults(jasutils.Applicability)) > 0)
-	cfp.projectTech = auditResults.GetTechnologies()
+	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
 
@@ -226,9 +234,14 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.Securit
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.aggregateFixes {
-		return cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
+		err = cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
+	} else {
+		err = cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
 	}
-	return cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
+	if err != nil {
+		return utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
+	}
+	return
 }
 
 func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
@@ -615,7 +628,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.R
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		currentFixes, e := cfp.fixMultiplePackages(fullPath, vulnerabilities)
 		if e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("the following errors occurred while fixing vulnerabilities in %s:\n%s", fullPath, e))
 			continue
 		}
 		fixedVulnerabilities = append(fixedVulnerabilities, currentFixes...)

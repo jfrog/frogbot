@@ -158,6 +158,7 @@ type Scan struct {
 	EmailDetails                    `yaml:",inline"`
 	ConfigProfile                   *services.ConfigProfile
 	SkipAutoInstall                 bool
+	AllowPartialResults             bool
 }
 
 type EmailDetails struct {
@@ -246,6 +247,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if len(s.AllowedLicenses) == 0 {
 		if s.AllowedLicenses, err = readArrayParamFromEnv(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
+			return
+		}
+	}
+	if !s.AllowPartialResults {
+		if s.AllowPartialResults, err = getBoolEnv(AllowPartialResultsEnv, false); err != nil {
 			return
 		}
 	}
