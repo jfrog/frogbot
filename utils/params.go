@@ -158,6 +158,7 @@ type Scan struct {
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
 	ConfigProfile                   *services.ConfigProfile
+	SkipAutoInstall                 bool
 }
 
 type EmailDetails struct {
@@ -235,6 +236,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 		s.MinSeverity = severity.String()
+	}
+	if !s.SkipAutoInstall {
+		if s.SkipAutoInstall, err = getBoolEnv(SkipAutoInstallEnv, false); err != nil {
+			return
+		}
 	}
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})
