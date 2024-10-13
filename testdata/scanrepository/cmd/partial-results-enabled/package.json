@@ -1,0 +1,12 @@
+{
+  "name": "partial-results-enabled",
+  "version": "1.0.0",
+  "description": "test project to check allow-partial-results feature",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "minimist": "1.2.5",
+    "mpath": "0.7.0"
+  }
+}
