@@ -10,8 +10,10 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -172,7 +174,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	}()
 
 	// Audit source branch
-	var sourceResults *securityutils.Results
+	var sourceResults *results.SecurityCommandResults
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
 	log.Info("Scanning source branch...")
 	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
@@ -181,12 +183,11 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	}
 
 	// Set JAS output flags
-	sourceScanResults := sourceResults.ExtendedScanResults
-	repoConfig.OutputWriter.SetJasOutputFlags(sourceScanResults.EntitledForJas, len(sourceScanResults.ApplicabilityScanResults) > 0)
+	repoConfig.OutputWriter.SetJasOutputFlags(sourceResults.EntitledForJas, len(sourceResults.GetJasScansResults(jasutils.Applicability)) > 0)
 
 	// Get all issues that exist in the source branch
 	if repoConfig.IncludeAllVulnerabilities {
-		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses); err != nil {
+		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses, scanDetails.HasViolationContext()); err != nil {
 			return
 		}
 		utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd)
@@ -201,7 +202,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	return
 }
 
-func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *securityutils.Results) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
+func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *results.SecurityCommandResults) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
@@ -215,7 +216,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	}()
 
 	// Set target branch scan details
-	var targetResults *securityutils.Results
+	var targetResults *results.SecurityCommandResults
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 	log.Info("Scanning target branch...")
 	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
@@ -224,56 +225,68 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	}
 
 	// Get newly added issues
-	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses)
+	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses, scanDetails.HasViolationContext())
 	return
 }
 
-func getAllIssues(results *securityutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
+func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
-	scanResults := results.ExtendedScanResults
-	xraySimpleJson, err := securityutils.ConvertXrayScanToSimpleJson(results, results.IsMultipleProject(), false, true, allowedLicenses)
+	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IncludeVulnerabilities: true,
+		HasViolationContext:    hasViolationContext,
+		AllowedLicenses:        allowedLicenses,
+		IncludeLicenses:        true,
+		SimplifiedOutput:       true,
+	}).ConvertToSimpleJson(cmdResults)
 	if err != nil {
 		return nil, err
 	}
 	return &utils.IssuesCollection{
-		Vulnerabilities: append(xraySimpleJson.Vulnerabilities, xraySimpleJson.SecurityViolations...),
-		Iacs:            securityutils.PrepareIacs(scanResults.IacScanResults),
-		Secrets:         securityutils.PrepareSecrets(scanResults.SecretsScanResults),
-		Sast:            securityutils.PrepareSast(scanResults.SastScanResults),
-		Licenses:        xraySimpleJson.LicensesViolations,
+		Vulnerabilities: append(simpleJsonResults.Vulnerabilities, simpleJsonResults.SecurityViolations...),
+		Iacs:            simpleJsonResults.Iacs,
+		Secrets:         simpleJsonResults.Secrets,
+		Sast:            simpleJsonResults.Sast,
+		Licenses:        simpleJsonResults.LicensesViolations,
 	}, nil
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *securityutils.Results, allowedLicenses []string) (*utils.IssuesCollection, error) {
-	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
-	var newLicenses []formats.LicenseRow
+func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {
 	var err error
-	if len(sourceResults.GetScaScansXrayResults()) > 0 {
-		if newVulnerabilitiesOrViolations, newLicenses, err = createNewVulnerabilitiesRows(targetResults, sourceResults, allowedLicenses); err != nil {
-			return nil, err
-		}
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
+	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
+	if err != nil {
+		return nil, err
+	}
+	simpleJsonTarget, err := convertor.ConvertToSimpleJson(targetResults)
+	if err != nil {
+		return nil, err
+	}
+
+	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
+	if len(simpleJsonSource.Vulnerabilities) > 0 || len(simpleJsonSource.SecurityViolations) > 0 {
+		newVulnerabilitiesOrViolations = append(
+			getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities),
+			getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations)...,
+		)
+	}
+
+	var newLicenses []formats.LicenseRow
+	if len(simpleJsonSource.LicensesViolations) > 0 {
+		newLicenses = getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations)
 	}
 
 	var newIacs []formats.SourceCodeRow
-	if len(sourceResults.ExtendedScanResults.IacScanResults) > 0 {
-		targetIacRows := securityutils.PrepareIacs(targetResults.ExtendedScanResults.IacScanResults)
-		sourceIacRows := securityutils.PrepareIacs(sourceResults.ExtendedScanResults.IacScanResults)
-		newIacs = createNewSourceCodeRows(targetIacRows, sourceIacRows)
+	if len(simpleJsonSource.Iacs) > 0 {
+		newIacs = createNewSourceCodeRows(simpleJsonTarget.Iacs, simpleJsonSource.Iacs)
 	}
-
 	var newSecrets []formats.SourceCodeRow
-	if len(sourceResults.ExtendedScanResults.SecretsScanResults) > 0 {
-		targetSecretsRows := securityutils.PrepareIacs(targetResults.ExtendedScanResults.SecretsScanResults)
-		sourceSecretsRows := securityutils.PrepareIacs(sourceResults.ExtendedScanResults.SecretsScanResults)
-		newSecrets = createNewSourceCodeRows(targetSecretsRows, sourceSecretsRows)
+	if len(simpleJsonSource.Secrets) > 0 {
+		newSecrets = createNewSourceCodeRows(simpleJsonTarget.Secrets, simpleJsonSource.Secrets)
 	}
-
 	var newSast []formats.SourceCodeRow
-	if len(targetResults.ExtendedScanResults.SastScanResults) > 0 {
-		targetSastRows := securityutils.PrepareSast(targetResults.ExtendedScanResults.SastScanResults)
-		sourceSastRows := securityutils.PrepareSast(sourceResults.ExtendedScanResults.SastScanResults)
-		newSast = createNewSourceCodeRows(targetSastRows, sourceSastRows)
+	if len(simpleJsonSource.Sast) > 0 {
+		newSast = createNewSourceCodeRows(simpleJsonTarget.Sast, simpleJsonSource.Sast)
 	}
 
 	return &utils.IssuesCollection{
@@ -303,40 +316,6 @@ func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRo
 	return addedSourceCodeVulnerabilities
 }
 
-// Create vulnerabilities rows. The rows should contain only the new issues added by this PR
-func createNewVulnerabilitiesRows(targetResults, sourceResults *securityutils.Results, allowedLicenses []string) (vulnerabilityOrViolationRows []formats.VulnerabilityOrViolationRow, licenseRows []formats.LicenseRow, err error) {
-	targetScanAggregatedResults := aggregateScanResults(targetResults.GetScaScansXrayResults())
-	sourceScanAggregatedResults := aggregateScanResults(sourceResults.GetScaScansXrayResults())
-
-	if len(sourceScanAggregatedResults.Violations) > 0 {
-		return getNewViolations(&targetScanAggregatedResults, &sourceScanAggregatedResults, sourceResults)
-	}
-	if len(sourceScanAggregatedResults.Vulnerabilities) > 0 {
-		if vulnerabilityOrViolationRows, err = getNewSecurityVulnerabilities(&targetScanAggregatedResults, &sourceScanAggregatedResults, sourceResults); err != nil {
-			return
-		}
-	}
-	var newLicenses []formats.LicenseRow
-	if newLicenses, err = getNewLicenseRows(&targetScanAggregatedResults, &sourceScanAggregatedResults); err != nil {
-		return
-	}
-	licenseRows = securityutils.GetViolatedLicenses(allowedLicenses, newLicenses)
-	return
-}
-
-func getNewSecurityVulnerabilities(targetScan, sourceScan *services.ScanResponse, auditResults *securityutils.Results) (newVulnerabilitiesRows []formats.VulnerabilityOrViolationRow, err error) {
-	targetVulnerabilitiesRows, err := securityutils.PrepareVulnerabilities(targetScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
-	if err != nil {
-		return newVulnerabilitiesRows, err
-	}
-	sourceVulnerabilitiesRows, err := securityutils.PrepareVulnerabilities(sourceScan.Vulnerabilities, auditResults, auditResults.IsMultipleProject(), true)
-	if err != nil {
-		return newVulnerabilitiesRows, err
-	}
-	newVulnerabilitiesRows = getUniqueVulnerabilityOrViolationRows(targetVulnerabilitiesRows, sourceVulnerabilitiesRows)
-	return
-}
-
 func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
 	existingRows := make(map[string]formats.VulnerabilityOrViolationRow)
 	var newRows []formats.VulnerabilityOrViolationRow
@@ -349,35 +328,6 @@ func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.Vuln
 		}
 	}
 	return newRows
-}
-
-func getNewViolations(targetScan, sourceScan *services.ScanResponse, auditResults *securityutils.Results) (newSecurityViolationsRows []formats.VulnerabilityOrViolationRow, newLicenseViolationsRows []formats.LicenseRow, err error) {
-	targetSecurityViolationsRows, targetLicenseViolationsRows, _, err := securityutils.PrepareViolations(targetScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
-	if err != nil {
-		return
-	}
-	sourceSecurityViolationsRows, sourceLicenseViolationsRows, _, err := securityutils.PrepareViolations(sourceScan.Violations, auditResults, auditResults.IsMultipleProject(), true)
-	if err != nil {
-		return
-	}
-	newSecurityViolationsRows = getUniqueVulnerabilityOrViolationRows(targetSecurityViolationsRows, sourceSecurityViolationsRows)
-	if len(sourceLicenseViolationsRows) > 0 {
-		newLicenseViolationsRows = getUniqueLicenseRows(targetLicenseViolationsRows, sourceLicenseViolationsRows)
-	}
-	return
-}
-
-func getNewLicenseRows(targetScan, sourceScan *services.ScanResponse) (newLicenses []formats.LicenseRow, err error) {
-	targetLicenses, err := securityutils.PrepareLicenses(targetScan.Licenses)
-	if err != nil {
-		return
-	}
-	sourceLicenses, err := securityutils.PrepareLicenses(sourceScan.Licenses)
-	if err != nil {
-		return
-	}
-	newLicenses = getUniqueLicenseRows(targetLicenses, sourceLicenses)
-	return
 }
 
 func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseRow) []formats.LicenseRow {

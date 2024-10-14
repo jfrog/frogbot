@@ -18,9 +18,11 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	"github.com/jfrog/jfrog-cli-security/formats/sarifutils"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
+	"github.com/jfrog/jfrog-cli-security/utils/results/output"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
@@ -220,8 +222,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.IsMultipleProject(), repo.AllowedLicenses)
+func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient, hasViolationContext bool) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), hasViolationContext, repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -233,12 +235,18 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *xrayutils.Results, repo 
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *xrayutils.Results, isMultipleRoots bool, allowedLicenses []string) (string, error) {
-	sarifReport, err := xrayutils.GenerateSarifReportFromResults(extendedResults, isMultipleRoots, false, allowedLicenses, xrayutils.GetAllSupportedScans())
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots, hasViolationContext bool, allowedLicenses []string) (string, error) {
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IncludeVulnerabilities: true,
+		HasViolationContext:    hasViolationContext,
+		IsMultipleRoots:        &isMultipleRoots,
+		AllowedLicenses:        allowedLicenses,
+	})
+	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {
 		return "", err
 	}
-	return xrayutils.WriteSarifResultsAsString(sarifReport, false)
+	return output.WriteSarifResultsAsString(sarifReport, false)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
@@ -321,7 +329,7 @@ func BuildServerConfigFile(server *config.ServerDetails) (previousJFrogHomeDir, 
 }
 
 func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow) string {
-	return xrayutils.GetUniqueKey(
+	return results.GetUniqueKey(
 		vulnerability.ImpactedDependencyName,
 		vulnerability.ImpactedDependencyVersion,
 		vulnerability.IssueId,

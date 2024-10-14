@@ -17,8 +17,8 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -450,22 +450,22 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 	cfp := &ScanRepositoryCmd{}
 
 	testCases := []struct {
-		name            string
-		scanResults     *xrayutils.Results
-		isMultipleRoots bool
-		expectedMap     map[string]*utils.VulnerabilityDetails
+		name        string
+		scanResults *results.SecurityCommandResults
+		expectedMap map[string]*utils.VulnerabilityDetails
 	}{
 		{
 			name: "Scan results with no violations and vulnerabilities",
-			scanResults: &xrayutils.Results{
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
-			scanResults: &xrayutils.Results{
-				ScaResults: []*xrayutils.ScaScanResult{{
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+				ScaResults: &results.ScaScanResults{
 					XrayResults: []services.ScanResponse{
 						{
 							Vulnerabilities: []services.Vulnerability{
@@ -498,9 +498,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 							},
 						},
 					},
-				}},
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+				},
+				JasResults: &results.JasScansResults{},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -515,8 +515,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		},
 		{
 			name: "Scan results with violations and no vulnerabilities",
-			scanResults: &xrayutils.Results{
-				ScaResults: []*xrayutils.ScaScanResult{{
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+				ScaResults: &results.ScaScanResults{
 					XrayResults: []services.ScanResponse{
 						{
 							Violations: []services.Violation{
@@ -551,9 +552,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 							},
 						},
 					},
-				}},
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+				},
+				JasResults: &results.JasScansResults{},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -570,7 +571,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, testCase.isMultipleRoots)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, true)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
