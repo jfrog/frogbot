@@ -26,9 +26,9 @@ func buildBitbucketServerClient(t *testing.T, bitbucketServerToken string) vcscl
 	return bbClient
 }
 
-func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
+func buildBitbucketServerIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, bitbucketServerIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl, "FROG")
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl, "FROG", useLocalRepo)
 	testDetails.ApiEndpoint = bitbucketServerApiEndpoint
 	return testDetails
 }
@@ -53,19 +53,24 @@ func waitForConnection(t *testing.T) {
 	require.NoError(t, retryExecutor.Execute())
 }
 
-func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildBitbucketServerIntegrationTestDetails(t)
+func bitbucketServerTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildBitbucketServerIntegrationTestDetails(t, useLocalRepo)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	waitForConnection(t)
 	return bbClient, testDetails
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t)
+	bbClient, testDetails := bitbucketServerTestsInit(t, false)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t)
+	bbClient, testDetails := bitbucketServerTestsInit(t, false)
+	runScanRepositoryCmd(t, bbClient, testDetails)
+}
+
+func TestBitbucketServer_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	bbClient, testDetails := bitbucketServerTestsInit(t, true)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }
