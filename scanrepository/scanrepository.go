@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	biutils "github.com/jfrog/build-info-go/utils"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -80,17 +82,17 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
 	}()
 
-	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
+	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
 	}
-	cfp.baseWd = clonedRepoDir
+	cfp.baseWd = repoDir
 	defer func() {
 		// On dry run don't delete the folder as we want to validate results
 		if cfp.dryRun {
 			return
 		}
-		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
+		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
 	}()
 
 	// If MSI exists we always need to report events
@@ -476,7 +478,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 	return pullRequestTitle, prBody, extraComments, nil
 }
 
-func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
+func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
 	if cfp.dryRun {
 		tempWd = filepath.Join(cfp.dryRunRepoPath, cfp.scanDetails.RepoName)
 	} else {
@@ -487,13 +489,26 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 	}
 	log.Debug("Created temp working directory:", tempWd)
 
-	// Clone the content of the repo to the new working directory
-	if err = cfp.gitManager.Clone(tempWd, cfp.scanDetails.BaseBranch()); err != nil {
-		return
+	if cfp.scanDetails.UseLocalRepository {
+		var curDir string
+		if curDir, err = os.Getwd(); err != nil {
+			return
+		}
+		if err = biutils.CopyDir(curDir, tempWd, true, nil); err != nil {
+			return
+		}
+		// 'CD' into the temp working directory
+		restoreDir, err = utils.Chdir(tempWd)
+		// Set the current copied local dir as the local git repository we are working with
+		err = cfp.gitManager.SetLocalRepository()
+	} else {
+		// Clone the content of the repo to the new working directory
+		if err = cfp.gitManager.Clone(tempWd, cfp.scanDetails.BaseBranch()); err != nil {
+			return
+		}
+		// 'CD' into the temp working directory
+		restoreDir, err = utils.Chdir(tempWd)
 	}
-
-	// 'CD' into the temp working directory
-	restoreDir, err = utils.Chdir(tempWd)
 	return
 }
 
