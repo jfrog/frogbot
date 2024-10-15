@@ -499,6 +499,9 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (te
 		}
 		// 'CD' into the temp working directory
 		restoreDir, err = utils.Chdir(tempWd)
+		if err != nil {
+			return
+		}
 		// Set the current copied local dir as the local git repository we are working with
 		err = cfp.gitManager.SetLocalRepository()
 	} else {
