@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-security/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
 )
 
 type IssuesCollection struct {
