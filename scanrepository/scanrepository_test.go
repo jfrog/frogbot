@@ -711,10 +711,10 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 			defer cleanup()
 
 			var file *os.File
-			var filePath string
-			tempFileName := test.name + ".txt"
 			if test.createFileBeforeInit {
-				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, tempFileName)
+				var fileError error
+				file, fileError = os.CreateTemp(testDir, test.name)
+				assert.NoError(t, fileError)
 				defer func() {
 					assert.NoError(t, file.Close())
 				}()
@@ -723,7 +723,9 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 			utils.CreateDotGitWithCommit(t, testDir, "1234", "")
 
 			if !test.createFileBeforeInit {
-				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, tempFileName)
+				var fileError error
+				file, fileError = os.CreateTemp(testDir, test.name)
+				assert.NoError(t, fileError)
 				defer func() {
 					assert.NoError(t, file.Close())
 				}()
@@ -736,7 +738,7 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 			scanRepoCmd := ScanRepositoryCmd{baseWd: testDir}
 			assert.NoError(t, scanRepoCmd.cleanNewFilesMissingInRemote())
 
-			exists, err := fileutils.IsFileExists(filePath, false)
+			exists, err := fileutils.IsFileExists(file.Name(), false)
 			assert.NoError(t, err)
 			if test.createFileBeforeInit {
 				assert.True(t, exists)
