@@ -85,6 +85,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
+		expectedMissingFilesInBranch   map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
 		allowPartialResults            bool
@@ -100,6 +101,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
@@ -108,6 +110,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-multi-project",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies-master": {"pyjwt", "pexpect"}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies-master": {"2.4.0"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
@@ -219,6 +222,14 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				packageVersionUpdatesInBranch := test.expectedVersionUpdatesInBranch[branch]
 				for _, updatedVersion := range packageVersionUpdatesInBranch {
 					assert.Contains(t, string(resultDiff), updatedVersion)
+				}
+			}
+
+			if len(test.expectedMissingFilesInBranch) > 0 {
+				for branch, expectedMissingFiles := range test.expectedMissingFilesInBranch {
+					resultDiff, err := verifyLockFileDiff(branch, expectedMissingFiles...)
+					assert.NoError(t, err)
+					assert.Empty(t, resultDiff)
 				}
 			}
 		})
@@ -690,6 +701,27 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	} else {
 		args = []string{"diff", baseBranch, fixBranch}
 		args = append(args, packageDescriptorPaths...)
+		output, err = exec.Command("git", args...).Output()
+	}
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		err = errors.New("git error: " + string(exitError.Stderr))
+	}
+	return
+}
+
+func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []byte, err error) {
+	log.Debug(fmt.Sprintf("Checking lock files differences in %s between branches 'master' and '%s'", lockFiles, branchToInspect))
+	// Suppress condition always false warning
+	//goland:noinspection ALL
+	var args []string
+	if coreutils.IsWindows() {
+		args = []string{"/c", "git", "ls-tree", branchToInspect, "--"}
+		args = append(args, lockFiles...)
+		output, err = exec.Command("cmd", args...).Output()
+	} else {
+		args = []string{"ls-tree", branchToInspect, "--"}
+		args = append(args, lockFiles...)
 		output, err = exec.Command("git", args...).Output()
 	}
 	var exitError *exec.ExitError
