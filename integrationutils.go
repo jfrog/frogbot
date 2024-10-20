@@ -80,18 +80,18 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		useLocalRepo = "true"
 	}
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv:             "requirements.txt",
-		utils.GitPullRequestIDEnv:             testDetails.PullRequestID,
-		utils.GitProvider:                     testDetails.GitProvider,
-		utils.GitTokenEnv:                     testDetails.GitToken,
-		utils.GitRepoEnv:                      testDetails.RepoName,
-		utils.GitRepoOwnerEnv:                 testDetails.RepoOwner,
-		utils.BranchNameTemplateEnv:           testDetails.CustomBranchName,
-		utils.GitApiEndpointEnv:               testDetails.ApiEndpoint,
-		utils.GitProjectEnv:                   testDetails.GitProject,
-		utils.GitUsernameEnv:                  testDetails.GitUsername,
-		utils.GitBaseBranchEnv:                mainBranch,
-		utils.GitUseCurrentLocalRepositoryEnv: useLocalRepo,
+		utils.RequirementsFileEnv:      "requirements.txt",
+		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
+		utils.GitProvider:              testDetails.GitProvider,
+		utils.GitTokenEnv:              testDetails.GitToken,
+		utils.GitRepoEnv:               testDetails.RepoName,
+		utils.GitRepoOwnerEnv:          testDetails.RepoOwner,
+		utils.BranchNameTemplateEnv:    testDetails.CustomBranchName,
+		utils.GitApiEndpointEnv:        testDetails.ApiEndpoint,
+		utils.GitProjectEnv:            testDetails.GitProject,
+		utils.GitUsernameEnv:           testDetails.GitUsername,
+		utils.GitBaseBranchEnv:         mainBranch,
+		utils.GitUseLocalRepositoryEnv: useLocalRepo,
 	})
 	return func() {
 		envRestoreFunc()

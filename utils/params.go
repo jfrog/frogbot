@@ -375,7 +375,7 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 		}
 	}
 	if !g.UseLocalRepository {
-		if g.UseLocalRepository, err = getBoolEnv(GitUseCurrentLocalRepositoryEnv, false); err != nil {
+		if g.UseLocalRepository, err = getBoolEnv(GitUseLocalRepositoryEnv, false); err != nil {
 			return
 		}
 	}
