@@ -19,23 +19,28 @@ func buildGitLabClient(t *testing.T, gitlabToken string) vcsclient.VcsClient {
 	return azureClient
 }
 
-func buildGitLabIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
+func buildGitLabIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, gitlabIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2")
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2", useLocalRepo)
 }
 
-func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildGitLabIntegrationTestDetails(t)
+func gitlabTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildGitLabIntegrationTestDetails(t, useLocalRepo)
 	gitlabClient := buildGitLabClient(t, testDetails.GitToken)
 	return gitlabClient, testDetails
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t)
+	gitlabClient, testDetails := gitlabTestsInit(t, false)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t)
+	gitlabClient, testDetails := gitlabTestsInit(t, false)
+	runScanRepositoryCmd(t, gitlabClient, testDetails)
+}
+
+func TestGitLab_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	gitlabClient, testDetails := gitlabTestsInit(t, true)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }
