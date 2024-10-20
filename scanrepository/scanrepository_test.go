@@ -715,12 +715,6 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 				var fileError error
 				file, fileError = os.CreateTemp(testDir, test.name)
 				assert.NoError(t, fileError)
-				/*
-					defer func() {
-						assert.NoError(t, file.Close())
-					}()
-
-				*/
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, "1234", "")
@@ -729,12 +723,6 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 				var fileError error
 				file, fileError = os.CreateTemp(testDir, test.name)
 				assert.NoError(t, fileError)
-				/*
-					defer func() {
-						assert.NoError(t, file.Close())
-					}()
-
-				*/
 			}
 
 			// Making a change in the file so it will be modified in the working tree
