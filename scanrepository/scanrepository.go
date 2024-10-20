@@ -401,7 +401,6 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
 		log.Warn(fmt.Sprintf("failed fo clean untracked files from '%s' due to the following errors: %s", cfp.baseWd, err.Error()))
-		err = nil
 	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
@@ -488,7 +487,7 @@ func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
 			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
 			if fileDeletionErr != nil {
-				err = errors.Join(err, errors.New(fmt.Sprintf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error())))
+				err = errors.Join(err, fmt.Errorf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error()))
 				continue
 			}
 		}
