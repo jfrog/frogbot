@@ -466,6 +466,18 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	return nil
 }
 
+func (gm *GitManager) GetRemoteGitUrl() string {
+	return gm.remoteGitUrl
+}
+
+func (gm *GitManager) GetAuth() *githttp.BasicAuth {
+	return gm.auth
+}
+
+func (gm *GitManager) GetRemoteName() string {
+	return gm.remoteName
+}
+
 func toBasicAuth(username, token string) *githttp.BasicAuth {
 	// The username can be anything except for an empty string
 	if username == "" {

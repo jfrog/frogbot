@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"os"
 	"path/filepath"
@@ -313,7 +314,7 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 	return
 }
 
-// fixIssuesSinglePR fixes all the vulnerabilities in a single aggregated pull request.
+// Fixes all the vulnerabilities in a single aggregated pull request.
 // If an existing aggregated fix is present, it checks for different scan results.
 // If the scan results are the same, no action is taken.
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
@@ -398,6 +399,9 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 		return &utils.ErrNothingToCommit{PackageName: vulnDetails.ImpactedDependencyName}
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
+	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
+		log.Warn(fmt.Sprintf("failed fo clean untracked files from '%s' due to the following errors: %s", cfp.baseWd, err.Error()))
+	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -443,10 +447,13 @@ func (cfp *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Reposi
 	return pullRequestInfo, utils.DeletePullRequestComments(repository, cfp.scanDetails.Client(), int(pullRequestInfo.ID))
 }
 
-// openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
+// Handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
 func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech)
+	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
+		return
+	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -454,6 +461,38 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposi
 		return
 	}
 	return cfp.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
+}
+
+func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
+	// Open the local repository
+	localRepo, err := git.PlainOpen(cfp.baseWd)
+	if err != nil {
+		return err
+	}
+
+	// Getting the repository working tree
+	worktree, err := localRepo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Getting the working tree status
+	gitStatus, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	for relativeFilePath, status := range gitStatus {
+		if status.Worktree == git.Untracked {
+			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
+			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
+			if fileDeletionErr != nil {
+				err = errors.Join(err, fmt.Errorf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error()))
+				continue
+			}
+		}
+	}
+	return err
 }
 
 func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
