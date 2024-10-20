@@ -3,7 +3,6 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -720,14 +719,7 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 				}()
 			}
 
-			// Creating .git and commiting existing changes to simulate a clean worktree
-			dotGit, err := git.PlainInit(testDir, false)
-			assert.NoError(t, err)
-			worktree, err := dotGit.Worktree()
-			assert.NoError(t, err)
-			assert.NoError(t, worktree.AddWithOptions(&git.AddOptions{All: true}))
-			_, err = worktree.Commit("first commit", &git.CommitOptions{})
-			assert.NoError(t, err)
+			utils.CreateDotGitWithCommit(t, testDir, "1234", "")
 
 			if !test.createFileBeforeInit {
 				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, "myFile.txt")
@@ -737,7 +729,7 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 			}
 
 			// Making a change in the file so it will be modified in the working tree
-			_, err = file.WriteString("My initial string")
+			_, err := file.WriteString("My initial string")
 			assert.NoError(t, err)
 
 			scanRepoCmd := ScanRepositoryCmd{baseWd: testDir}
