@@ -216,3 +216,10 @@ func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Ser
 	}
 	return
 }
+
+func CreateFileInPathAndAssert(t *testing.T, path string, fileName string) (string, *os.File) {
+	filePath := filepath.Join(path, fileName)
+	file, err := os.Create(filePath)
+	assert.NoError(t, err)
+	return filePath, file
+}

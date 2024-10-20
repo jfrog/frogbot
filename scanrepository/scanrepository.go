@@ -400,7 +400,8 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
-		return
+		log.Warn(fmt.Sprintf("failed fo clean untracked files from '%s' due to the following errors: %s", cfp.baseWd, err.Error()))
+		err = nil
 	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
@@ -464,17 +465,19 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposi
 }
 
 func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
-	// Open the local repository and get its Git status
+	// Open the local repository
 	localRepo, err := git.PlainOpen(cfp.baseWd)
 	if err != nil {
 		return err
 	}
 
+	// Getting the repository working tree
 	worktree, err := localRepo.Worktree()
 	if err != nil {
 		return err
 	}
 
+	// Getting the working tree status
 	gitStatus, err := worktree.Status()
 	if err != nil {
 		return err
@@ -482,15 +485,15 @@ func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 
 	for relativeFilePath, status := range gitStatus {
 		if status.Worktree == git.Untracked {
-			log.Debug(fmt.Sprintf("Deleting file '%s' that was created locally during the scan/fix process", relativeFilePath))
+			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
 			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
 			if fileDeletionErr != nil {
-				log.Debug(fmt.Sprintf("Failed to delete file '%s' with error: %s:", relativeFilePath, fileDeletionErr.Error()))
+				err = errors.Join(err, errors.New(fmt.Sprintf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error())))
 				continue
 			}
 		}
 	}
-	return nil
+	return err
 }
 
 func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {

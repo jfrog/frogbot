@@ -3,13 +3,7 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
-
+	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -25,6 +19,12 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
 const rootTestDir = "scanrepository"
@@ -678,6 +678,81 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
+}
+
+// This test simulates the cleaning action of cleanNewFilesMissingInRemote.
+// Every file that has been newly CREATED after cloning the repo (here - after creating .git repo) should be removed. Every other file should be kept.
+func TestCleanNewFilesMissingInRemote(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		relativeTestDirPath  string
+		createFileBeforeInit bool
+	}{
+		{
+			name:                 "new file should remain",
+			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
+			createFileBeforeInit: true,
+		},
+		{
+			name:                 "new file should be deleted",
+			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
+			createFileBeforeInit: false,
+		},
+	}
+
+	baseDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
+	defer func() {
+		assert.NoError(t, os.Chdir(baseDir))
+	}()
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, test.relativeTestDirPath)
+			defer cleanup()
+
+			var file *os.File
+			var filePath string
+			if test.createFileBeforeInit {
+				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, "myFile.txt")
+				defer func() {
+					assert.NoError(t, file.Close())
+				}()
+			}
+
+			// Creating .git and commiting existing changes to simulate a clean worktree
+			dotGit, err := git.PlainInit(testDir, false)
+			assert.NoError(t, err)
+			worktree, err := dotGit.Worktree()
+			assert.NoError(t, err)
+			assert.NoError(t, worktree.AddWithOptions(&git.AddOptions{All: true}))
+			_, err = worktree.Commit("first commit", &git.CommitOptions{})
+			assert.NoError(t, err)
+
+			if !test.createFileBeforeInit {
+				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, "myFile.txt")
+				defer func() {
+					assert.NoError(t, file.Close())
+				}()
+			}
+
+			// Making a change in the file so it will be modified in the working tree
+			_, err = file.WriteString("My initial string")
+			assert.NoError(t, err)
+
+			scanRepoCmd := ScanRepositoryCmd{baseWd: testDir}
+			assert.NoError(t, scanRepoCmd.cleanNewFilesMissingInRemote())
+
+			exists, err := fileutils.IsFileExists(filePath, false)
+			assert.NoError(t, err)
+			if test.createFileBeforeInit {
+				assert.True(t, exists)
+			} else {
+				assert.False(t, exists)
+			}
+		})
+	}
+
 }
 
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType string) {
