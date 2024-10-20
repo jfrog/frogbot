@@ -688,12 +688,12 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 		createFileBeforeInit bool
 	}{
 		{
-			name:                 "new file should remain",
+			name:                 "new_file_should_remain",
 			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
 			createFileBeforeInit: true,
 		},
 		{
-			name:                 "new file should be deleted",
+			name:                 "new_file_should_be_deleted",
 			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
 			createFileBeforeInit: false,
 		},
@@ -712,8 +712,9 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 
 			var file *os.File
 			var filePath string
+			tempFileName := test.name + ".txt"
 			if test.createFileBeforeInit {
-				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, "myFile.txt")
+				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, tempFileName)
 				defer func() {
 					assert.NoError(t, file.Close())
 				}()
@@ -722,7 +723,7 @@ func TestCleanNewFilesMissingInRemote(t *testing.T) {
 			utils.CreateDotGitWithCommit(t, testDir, "1234", "")
 
 			if !test.createFileBeforeInit {
-				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, "myFile.txt")
+				filePath, file = utils.CreateFileInPathAndAssert(t, testDir, tempFileName)
 				defer func() {
 					assert.NoError(t, file.Close())
 				}()
