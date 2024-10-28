@@ -20,25 +20,30 @@ func buildAzureReposClient(t *testing.T, azureToken string) vcsclient.VcsClient 
 	return azureClient
 }
 
-func buildAzureReposIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
+func buildAzureReposIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, azureIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl, "frogbot-test")
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl, "frogbot-test", useLocalRepo)
 	testDetails.ApiEndpoint = azureApiEndpoint
 	return testDetails
 }
 
-func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildAzureReposIntegrationTestDetails(t)
+func azureReposTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildAzureReposIntegrationTestDetails(t, useLocalRepo)
 	azureClient := buildAzureReposClient(t, testDetails.GitToken)
 	return azureClient, testDetails
 }
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	azureClient, testDetails := azureReposTestsInit(t)
+	azureClient, testDetails := azureReposTestsInit(t, false)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
-	azureClient, testDetails := azureReposTestsInit(t)
+	azureClient, testDetails := azureReposTestsInit(t, false)
+	runScanRepositoryCmd(t, azureClient, testDetails)
+}
+
+func TestAzureRepos_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	azureClient, testDetails := azureReposTestsInit(t, true)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }

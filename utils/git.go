@@ -92,7 +92,7 @@ func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, er
 	}
 
 	if gm.localGitRepository == nil {
-		if _, err = gm.SetLocalRepository(); err != nil {
+		if _, err = gm.SetLocalRepositoryAndRemoteName(); err != nil {
 			return gm, err
 		}
 	}
@@ -115,12 +115,18 @@ func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, er
 	return gm, nil
 }
 
-func (gm *GitManager) SetLocalRepository() (*GitManager, error) {
+func (gm *GitManager) SetLocalRepositoryAndRemoteName() (*GitManager, error) {
 	var err error
 	// Re-initialize the repository and update remoteName
 	gm.remoteName = vcsutils.RemoteName
-	gm.localGitRepository, err = git.PlainOpen(".")
+	err = gm.SetLocalRepository()
 	return gm, err
+}
+
+func (gm *GitManager) SetLocalRepository() error {
+	var err error
+	gm.localGitRepository, err = git.PlainOpen(".")
+	return err
 }
 
 func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
@@ -458,6 +464,18 @@ func (gm *GitManager) dryRunClone(destination string) error {
 	}
 	gm.localGitRepository = repo
 	return nil
+}
+
+func (gm *GitManager) GetRemoteGitUrl() string {
+	return gm.remoteGitUrl
+}
+
+func (gm *GitManager) GetAuth() *githttp.BasicAuth {
+	return gm.auth
+}
+
+func (gm *GitManager) GetRemoteName() string {
+	return gm.remoteName
 }
 
 func toBasicAuth(username, token string) *githttp.BasicAuth {

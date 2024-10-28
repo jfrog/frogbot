@@ -302,6 +302,7 @@ type Git struct {
 	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails       vcsclient.PullRequestInfo
 	RepositoryCloneUrl       string
+	UseLocalRepository       bool
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -370,6 +371,11 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 	}
 	if !g.AggregateFixes {
 		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
+			return
+		}
+	}
+	if !g.UseLocalRepository {
+		if g.UseLocalRepository, err = getBoolEnv(GitUseLocalRepositoryEnv, false); err != nil {
 			return
 		}
 	}
