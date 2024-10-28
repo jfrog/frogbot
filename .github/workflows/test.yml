@@ -30,7 +30,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Go Cache
@@ -79,7 +79,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Go Cache
@@ -145,7 +145,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -173,7 +173,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -201,7 +201,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -223,7 +223,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Unzip Preconfigured Bitbucket Home
