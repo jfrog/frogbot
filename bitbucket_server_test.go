@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	//#nosec G101 -- False positive - no hardcoded credentials.
 	bitbucketServerIntegrationTokenEnv = "FROGBOT_TESTS_BB_SERVER_TOKEN"
 	bitbucketServerApiEndpoint         = "http://localhost:7990/rest"
 	bitbucketServerGitCloneUrl         = "http://localhost:7990/scm/frog/integration.git"

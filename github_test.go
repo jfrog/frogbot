@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	//#nosec G101 -- False positive - no hardcoded credentials.
 	githubIntegrationTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
 	githubGitCloneUrl         = "https://github.com/frogbot-test/integration.git"
 )
