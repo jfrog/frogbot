@@ -188,7 +188,10 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
 		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
 		SetSkipAutoInstall(sc.skipAutoInstall).
-		SetAllowPartialResults(sc.allowPartialResults)
+		SetAllowPartialResults(sc.allowPartialResults).
+		SetExclusions(sc.PathExclusions).
+		SetIsRecursiveScan(sc.IsRecursiveScan).
+		SetUseJas(!sc.DisableJas())
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
@@ -197,7 +200,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile)
-	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan).SetUseJas(!sc.DisableJas())
 
 	auditResults, err = audit.RunAudit(auditParams)
 

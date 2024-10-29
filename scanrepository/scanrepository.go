@@ -124,7 +124,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
-		SetAllowPartialResults(repository.AllowPartialResults).SetDisableJas(repository.DisableJas)
+		SetAllowPartialResults(repository.AllowPartialResults).
+		SetDisableJas(repository.DisableJas)
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}
