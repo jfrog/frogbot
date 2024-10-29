@@ -185,7 +185,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
+		SetInstallCommandArgs(sc.InstallCommandArgs).
 		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
 		SetSkipAutoInstall(sc.skipAutoInstall).
 		SetAllowPartialResults(sc.allowPartialResults).
