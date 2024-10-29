@@ -61,7 +61,7 @@ const (
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
-	DisableJasEnv                      = "JF_DISABLE_ADVANCE_SECURITY"
+	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
 	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
