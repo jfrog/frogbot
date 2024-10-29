@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"os"
 	"path/filepath"
+
+	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -28,6 +29,7 @@ type ScanDetails struct {
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
 	fixableOnly              bool
+	disableJas               bool
 	skipAutoInstall          bool
 	minSeverityFilter        severityutils.Severity
 	baseBranch               string
@@ -37,6 +39,11 @@ type ScanDetails struct {
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
 	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+}
+
+func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
+	sc.disableJas = disable
+	return sc
 }
 
 func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
@@ -105,6 +112,10 @@ func (sc *ScanDetails) FailOnInstallationErrors() bool {
 
 func (sc *ScanDetails) FixableOnly() bool {
 	return sc.fixableOnly
+}
+
+func (sc *ScanDetails) DisableJas() bool {
+	return sc.disableJas
 }
 
 func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
@@ -186,7 +197,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile)
-	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
+	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan).SetUseJas(!sc.DisableJas())
 
 	auditResults, err = audit.RunAudit(auditParams)
 
