@@ -222,7 +222,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		}
 	}
 	if !s.AddPrCommentOnSuccess {
-		if s.AddPrCommentOnSuccess, err = getBoolEnv(AddPrCommentOnSuccessEnv, false); err != nil {
+		if s.AddPrCommentOnSuccess, err = getBoolEnv(AddPrCommentOnSuccessEnv, true); err != nil {
 			return
 		}
 	}

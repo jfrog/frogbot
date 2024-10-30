@@ -199,7 +199,6 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 		assert.Equal(t, "High", repo.MinSeverity)
 		assert.True(t, repo.FixableOnly)
 		assert.True(t, repo.DisableJas)
-		assert.True(t, repo.AddPrCommentOnSuccess)
 		assert.True(t, repo.DetectionOnly)
 		assert.Equal(t, true, repo.AggregateFixes)
 		assert.Equal(t, "myemail@jfrog.com", repo.EmailAuthor)
@@ -351,7 +350,6 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		IncludeAllVulnerabilitiesEnv:       "true",
 		AvoidPreviousPrCommentsDeletionEnv: "true",
 		FailOnSecurityIssuesEnv:            "false",
-		AddPrCommentOnSuccessEnv:           "false",
 		MinSeverityEnv:                     "medium",
 		FixableOnlyEnv:                     "true",
 		DisableJasEnv:                      "true",
@@ -399,7 +397,7 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.DisableJas)
-	assert.Equal(t, false, repo.AddPrCommentOnSuccess)
+	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
