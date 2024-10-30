@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
 	"github.com/jfrog/frogbot/v2/scanrepository"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -36,17 +38,19 @@ type IntegrationTestDetails struct {
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
+	UseLocalRepo     bool
 }
 
-func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string) *IntegrationTestDetails {
+func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string, useLocalRepo bool) *IntegrationTestDetails {
 	return &IntegrationTestDetails{
-		GitProject:  repoName,
-		RepoOwner:   repoOwner,
-		RepoName:    repoName,
-		GitToken:    token,
-		GitUsername: "frogbot",
-		GitProvider: gitProvider,
-		GitCloneURL: gitCloneUrl,
+		GitProject:   repoName,
+		RepoOwner:    repoOwner,
+		RepoName:     repoName,
+		GitToken:     token,
+		GitUsername:  "frogbot",
+		GitProvider:  gitProvider,
+		GitCloneURL:  gitCloneUrl,
+		UseLocalRepo: useLocalRepo,
 	}
 }
 
@@ -71,18 +75,23 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// Frogbot sanitizes all the environment variables that start with 'JF',
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
+	useLocalRepo := "false"
+	if testDetails.UseLocalRepo {
+		useLocalRepo = "true"
+	}
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv:   "requirements.txt",
-		utils.GitPullRequestIDEnv:   testDetails.PullRequestID,
-		utils.GitProvider:           testDetails.GitProvider,
-		utils.GitTokenEnv:           testDetails.GitToken,
-		utils.GitRepoEnv:            testDetails.RepoName,
-		utils.GitRepoOwnerEnv:       testDetails.RepoOwner,
-		utils.BranchNameTemplateEnv: testDetails.CustomBranchName,
-		utils.GitApiEndpointEnv:     testDetails.ApiEndpoint,
-		utils.GitProjectEnv:         testDetails.GitProject,
-		utils.GitUsernameEnv:        testDetails.GitUsername,
-		utils.GitBaseBranchEnv:      mainBranch,
+		utils.RequirementsFileEnv:      "requirements.txt",
+		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
+		utils.GitProvider:              testDetails.GitProvider,
+		utils.GitTokenEnv:              testDetails.GitToken,
+		utils.GitRepoEnv:               testDetails.RepoName,
+		utils.GitRepoOwnerEnv:          testDetails.RepoOwner,
+		utils.BranchNameTemplateEnv:    testDetails.CustomBranchName,
+		utils.GitApiEndpointEnv:        testDetails.ApiEndpoint,
+		utils.GitProjectEnv:            testDetails.GitProject,
+		utils.GitUsernameEnv:           testDetails.GitUsername,
+		utils.GitBaseBranchEnv:         mainBranch,
+		utils.GitUseLocalRepositoryEnv: useLocalRepo,
 	})
 	return func() {
 		envRestoreFunc()
@@ -173,11 +182,28 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 }
 
 func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails) {
-	_, restoreFunc := utils.ChangeToTempDirWithCallback(t)
+	testTempDir, restoreFunc := utils.ChangeToTempDirWithCallback(t)
 	defer func() {
 		assert.NoError(t, restoreFunc())
 	}()
 
+	// When testing using local repository clone the repository before the test starts so we can work with it as if it existed locally
+	if testDetails.UseLocalRepo {
+		cloneOptions := &git.CloneOptions{
+			URL: testDetails.GitCloneURL,
+			Auth: &githttp.BasicAuth{
+				Username: testDetails.GitUsername,
+				Password: testDetails.GitToken,
+			},
+			RemoteName:    "origin",
+			ReferenceName: utils.GetFullBranchName("main"),
+			SingleBranch:  true,
+			Depth:         1,
+			Tags:          git.NoTags,
+		}
+		_, err := git.PlainClone(testTempDir, false, cloneOptions)
+		require.NoError(t, err)
+	}
 	timestamp := getTimestamp()
 	// Add a timestamp to the fixing pull requests, to identify them later
 	testDetails.CustomBranchName = "frogbot-{IMPACTED_PACKAGE}-{BRANCH_NAME_HASH}-" + timestamp

@@ -3,13 +3,6 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
-
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -17,14 +10,20 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
 const rootTestDir = "scanrepository"
@@ -85,8 +84,10 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
+		expectedMissingFilesInBranch   map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
+		allowPartialResults            bool
 	}{
 		{
 			testName:                       "aggregate",
@@ -99,6 +100,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
@@ -107,6 +109,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-multi-project",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies-master": {"pyjwt", "pexpect"}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies-master": {"2.4.0"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
@@ -135,6 +138,16 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
 		},
+		{
+			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
+			testName:                       "partial-results-enabled",
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"1.2.6", "0.8.4"}},
+			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
+			aggregateFixes:                 true,
+			configPath:                     "../testdata/scanrepository/cmd/partial-results-enabled/.frogbot/frogbot-config.yml",
+			allowPartialResults:            true,
+		},
 	}
 	baseDir, err := os.Getwd()
 	assert.NoError(t, err)
@@ -149,6 +162,12 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
 				defer func() {
 					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
+				}()
+			}
+			if test.allowPartialResults {
+				assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "true"))
+				defer func() {
+					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
 			var port string
@@ -202,6 +221,14 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 				packageVersionUpdatesInBranch := test.expectedVersionUpdatesInBranch[branch]
 				for _, updatedVersion := range packageVersionUpdatesInBranch {
 					assert.Contains(t, string(resultDiff), updatedVersion)
+				}
+			}
+
+			if len(test.expectedMissingFilesInBranch) > 0 {
+				for branch, expectedMissingFiles := range test.expectedMissingFilesInBranch {
+					resultDiff, err := verifyLockFileDiff(branch, expectedMissingFiles...)
+					assert.NoError(t, err)
+					assert.Empty(t, resultDiff)
 				}
 			}
 		})
@@ -433,22 +460,22 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 	cfp := &ScanRepositoryCmd{}
 
 	testCases := []struct {
-		name            string
-		scanResults     *xrayutils.Results
-		isMultipleRoots bool
-		expectedMap     map[string]*utils.VulnerabilityDetails
+		name        string
+		scanResults *results.SecurityCommandResults
+		expectedMap map[string]*utils.VulnerabilityDetails
 	}{
 		{
 			name: "Scan results with no violations and vulnerabilities",
-			scanResults: &xrayutils.Results{
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
-			scanResults: &xrayutils.Results{
-				ScaResults: []*xrayutils.ScaScanResult{{
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+				ScaResults: &results.ScaScanResults{
 					XrayResults: []services.ScanResponse{
 						{
 							Vulnerabilities: []services.Vulnerability{
@@ -481,9 +508,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 							},
 						},
 					},
-				}},
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+				},
+				JasResults: &results.JasScansResults{},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -498,8 +525,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		},
 		{
 			name: "Scan results with violations and no vulnerabilities",
-			scanResults: &xrayutils.Results{
-				ScaResults: []*xrayutils.ScaScanResult{{
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+				ScaResults: &results.ScaScanResults{
 					XrayResults: []services.ScanResponse{
 						{
 							Violations: []services.Violation{
@@ -534,9 +562,9 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 							},
 						},
 					},
-				}},
-				ExtendedScanResults: &xrayutils.ExtendedScanResults{},
-			},
+				},
+				JasResults: &results.JasScansResults{},
+			}}},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -553,7 +581,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, testCase.isMultipleRoots)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, true)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
@@ -651,6 +679,72 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 }
 
+// This test simulates the cleaning action of cleanNewFilesMissingInRemote.
+// Every file that has been newly CREATED after cloning the repo (here - after creating .git repo) should be removed. Every other file should be kept.
+func TestCleanNewFilesMissingInRemote(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		relativeTestDirPath  string
+		createFileBeforeInit bool
+	}{
+		{
+			name:                 "new_file_should_remain",
+			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
+			createFileBeforeInit: true,
+		},
+		{
+			name:                 "new_file_should_be_deleted",
+			relativeTestDirPath:  filepath.Join(rootTestDir, "cmd", "aggregate"),
+			createFileBeforeInit: false,
+		},
+	}
+
+	baseDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
+	defer func() {
+		assert.NoError(t, os.Chdir(baseDir))
+	}()
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, test.relativeTestDirPath)
+			defer cleanup()
+
+			var file *os.File
+			if test.createFileBeforeInit {
+				var fileError error
+				file, fileError = os.CreateTemp(testDir, test.name)
+				assert.NoError(t, fileError)
+			}
+
+			utils.CreateDotGitWithCommit(t, testDir, "1234", "")
+
+			if !test.createFileBeforeInit {
+				var fileError error
+				file, fileError = os.CreateTemp(testDir, test.name)
+				assert.NoError(t, fileError)
+			}
+
+			// Making a change in the file so it will be modified in the working tree
+			_, err := file.WriteString("My initial string")
+			assert.NoError(t, err)
+			assert.NoError(t, file.Close())
+
+			scanRepoCmd := ScanRepositoryCmd{baseWd: testDir}
+			assert.NoError(t, scanRepoCmd.cleanNewFilesMissingInRemote())
+
+			exists, err := fileutils.IsFileExists(file.Name(), false)
+			assert.NoError(t, err)
+			if test.createFileBeforeInit {
+				assert.True(t, exists)
+			} else {
+				assert.False(t, exists)
+			}
+		})
+	}
+
+}
+
 func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, expectedType string) {
 	for _, resp := range scanResponse {
 		for _, vulnerability := range resp.Vulnerabilities {
@@ -672,6 +766,27 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	} else {
 		args = []string{"diff", baseBranch, fixBranch}
 		args = append(args, packageDescriptorPaths...)
+		output, err = exec.Command("git", args...).Output()
+	}
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		err = errors.New("git error: " + string(exitError.Stderr))
+	}
+	return
+}
+
+func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []byte, err error) {
+	log.Debug(fmt.Sprintf("Checking lock files differences in %s between branches 'master' and '%s'", lockFiles, branchToInspect))
+	// Suppress condition always false warning
+	//goland:noinspection ALL
+	var args []string
+	if coreutils.IsWindows() {
+		args = []string{"/c", "git", "ls-tree", branchToInspect, "--"}
+		args = append(args, lockFiles...)
+		output, err = exec.Command("cmd", args...).Output()
+	} else {
+		args = []string{"ls-tree", branchToInspect, "--"}
+		args = append(args, lockFiles...)
 		output, err = exec.Command("git", args...).Output()
 	}
 	var exitError *exec.ExitError

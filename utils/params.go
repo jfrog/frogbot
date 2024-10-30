@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
-	"github.com/jfrog/jfrog-client-go/xsc/services"
-	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
@@ -153,10 +154,13 @@ type Scan struct {
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
+	DisableJas                      bool      `yaml:"disableJas,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
 	ConfigProfile                   *services.ConfigProfile
+	SkipAutoInstall                 bool
+	AllowPartialResults             bool
 }
 
 type EmailDetails struct {
@@ -211,6 +215,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
+	if !s.DisableJas {
+		if s.DisableJas, err = getBoolEnv(DisableJasEnv, false); err != nil {
+			return
+		}
+	}
 	if !s.DetectionOnly {
 		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
@@ -235,11 +244,21 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		}
 		s.MinSeverity = severity.String()
 	}
+	if !s.SkipAutoInstall {
+		if s.SkipAutoInstall, err = getBoolEnv(SkipAutoInstallEnv, false); err != nil {
+			return
+		}
+	}
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})
 	}
 	if len(s.AllowedLicenses) == 0 {
 		if s.AllowedLicenses, err = readArrayParamFromEnv(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
+			return
+		}
+	}
+	if !s.AllowPartialResults {
+		if s.AllowPartialResults, err = getBoolEnv(AllowPartialResultsEnv, false); err != nil {
 			return
 		}
 	}
@@ -291,6 +310,7 @@ type Git struct {
 	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails            vcsclient.PullRequestInfo
 	RepositoryCloneUrl            string
+	UseLocalRepository       bool
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -364,6 +384,11 @@ func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) 
 	}
 	if !g.AggregateFixes {
 		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
+			return
+		}
+	}
+	if !g.UseLocalRepository {
+		if g.UseLocalRepository, err = getBoolEnv(GitUseLocalRepositoryEnv, false); err != nil {
 			return
 		}
 	}

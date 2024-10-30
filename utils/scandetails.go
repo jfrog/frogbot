@@ -4,15 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"os"
 	"path/filepath"
+
+	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -27,13 +29,21 @@ type ScanDetails struct {
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
 	fixableOnly              bool
+	disableJas               bool
+	skipAutoInstall          bool
 	minSeverityFilter        severityutils.Severity
 	baseBranch               string
 	configProfile            *clientservices.ConfigProfile
+	allowPartialResults      bool
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
 	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+}
+
+func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
+	sc.disableJas = disable
+	return sc
 }
 
 func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
@@ -56,6 +66,11 @@ func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	return sc
 }
 
+func (sc *ScanDetails) SetSkipAutoInstall(skipAutoInstall bool) *ScanDetails {
+	sc.skipAutoInstall = skipAutoInstall
+	return sc
+}
+
 func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) {
 	if minSeverity == "" {
 		return sc, nil
@@ -66,6 +81,11 @@ func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) 
 		sc.minSeverityFilter = severity
 	}
 	return sc, nil
+}
+
+func (sc *ScanDetails) SetAllowPartialResults(allowPartialResults bool) *ScanDetails {
+	sc.allowPartialResults = allowPartialResults
+	return sc
 }
 
 func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
@@ -94,6 +114,10 @@ func (sc *ScanDetails) FixableOnly() bool {
 	return sc.fixableOnly
 }
 
+func (sc *ScanDetails) DisableJas() bool {
+	return sc.disableJas
+}
+
 func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
 	return sc.minSeverityFilter
 }
@@ -106,6 +130,10 @@ func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
 func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	sc.RepoName = repoName
 	return sc
+}
+
+func (sc *ScanDetails) AllowPartialResults() bool {
+	return sc.allowPartialResults
 }
 
 func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanParams {
@@ -128,6 +156,10 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 	return commonParams
 }
 
+func (sc *ScanDetails) HasViolationContext() bool {
+	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
+}
+
 func createXrayScanParams(watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
@@ -145,16 +177,21 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xrayutils.Results, err error) {
-	auditBasicParams := (&xrayutils.AuditBasicParams{}).
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults, err error) {
+	auditBasicParams := (&utils.AuditBasicParams{}).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs).SetUseJas(true).
-		SetTechnologies(sc.GetTechFromInstallCmdIfExists())
+		SetInstallCommandArgs(sc.InstallCommandArgs).
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
+		SetSkipAutoInstall(sc.skipAutoInstall).
+		SetAllowPartialResults(sc.allowPartialResults).
+		SetExclusions(sc.PathExclusions).
+		SetIsRecursiveScan(sc.IsRecursiveScan).
+		SetUseJas(!sc.DisableJas())
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
@@ -163,12 +200,11 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *xra
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile)
-	auditParams.SetExclusions(sc.PathExclusions).SetIsRecursiveScan(sc.IsRecursiveScan)
 
 	auditResults, err = audit.RunAudit(auditParams)
 
 	if auditResults != nil {
-		err = errors.Join(err, auditResults.ScansErr)
+		err = errors.Join(err, auditResults.GetErrors())
 	}
 	return
 }

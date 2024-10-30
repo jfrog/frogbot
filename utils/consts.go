@@ -34,11 +34,12 @@ const (
 	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
-	GitProvider     = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv = "JF_GIT_OWNER"
-	GitRepoEnv      = "JF_GIT_REPO"
-	GitProjectEnv   = "JF_GIT_PROJECT"
-	GitUsernameEnv  = "JF_GIT_USERNAME"
+	GitProvider              = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv          = "JF_GIT_OWNER"
+	GitRepoEnv               = "JF_GIT_REPO"
+	GitProjectEnv            = "JF_GIT_PROJECT"
+	GitUsernameEnv           = "JF_GIT_USERNAME"
+	GitUseLocalRepositoryEnv = "JF_USE_LOCAL_REPOSITORY"
 
 	// Git naming template environment variables
 	BranchNameTemplateEnv            = "JF_BRANCH_NAME_TEMPLATE"
@@ -61,8 +62,11 @@ const (
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
+	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
+	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
+	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
 
 	// Email related environment variables

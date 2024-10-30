@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	biutils "github.com/jfrog/build-info-go/utils"
 
 	"github.com/jfrog/frogbot/v2/packagehandlers"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -14,8 +18,10 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -78,17 +84,17 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
 	}()
 
-	clonedRepoDir, restoreBaseDir, err := cfp.cloneRepositoryAndCheckoutToBranch()
+	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
 	}
-	cfp.baseWd = clonedRepoDir
+	cfp.baseWd = repoDir
 	defer func() {
 		// On dry run don't delete the folder as we want to validate results
 		if cfp.dryRun {
 			return
 		}
-		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(clonedRepoDir))
+		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
 	}()
 
 	// If MSI exists we always need to report events
@@ -116,7 +122,10 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
-		SetFixableOnly(repository.FixableOnly)
+		SetFixableOnly(repository.FixableOnly).
+		SetSkipAutoInstall(repository.SkipAutoInstall).
+		SetAllowPartialResults(repository.AllowPartialResults).
+		SetDisableJas(repository.DisableJas)
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}
@@ -152,16 +161,28 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	for _, fullPathWd := range projectFullPathWorkingDirs {
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
-			return err
+			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
+				return err
+			}
+			continue
 		}
 		if cfp.analyticsService.ShouldReportEvents() {
-			cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(scanResults.CountScanResultsFindings(true, true))
+			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: cfp.scanDetails.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
+				return err
+			} else {
+				totalFindings := summary.GetTotalViolations()
+				if totalFindings == 0 {
+					totalFindings = summary.GetTotalVulnerabilities()
+				}
+				cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(totalFindings)
+			}
 		}
 
-		if scanResults.ExtendedScanResults != nil && scanResults.ExtendedScanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if scanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only and JFrog Advance Security package
-			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
+			// Only if Jas entitlement is available
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client(), cfp.scanDetails.HasViolationContext()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -169,9 +190,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 			continue
 		}
 		// Prepare the vulnerabilities map for each working dir path
-		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults, scanResults.IsMultipleProject())
+		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults)
 		if err != nil {
-			return err
+			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
+				return err
+			}
+			continue
 		}
 		if len(currPathVulnerabilities) > 0 {
 			fixNeeded = true
@@ -187,22 +211,20 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*securityutils.Results, error) {
+func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityCommandResults, error) {
 	// Audit commit code
 	auditResults, err := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err != nil {
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	contextualAnalysisResultsExists := len(auditResults.ExtendedScanResults.ApplicabilityScanResults) > 0
-	entitledForJas := auditResults.ExtendedScanResults.EntitledForJas
-	cfp.OutputWriter.SetJasOutputFlags(entitledForJas, contextualAnalysisResultsExists)
-	cfp.projectTech = auditResults.GetScaScannedTechnologies()
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, len(auditResults.GetJasScansResults(jasutils.Applicability)) > 0)
+	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
 
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, isMultipleRoots)
+func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
+	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, cfp.scanDetails.HasViolationContext())
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +238,14 @@ func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *securityutils.R
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.aggregateFixes {
-		return cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
+		err = cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
+	} else {
+		err = cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
 	}
-	return cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
+	if err != nil {
+		return utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
+	}
+	return
 }
 
 func (cfp *ScanRepositoryCmd) fixIssuesSeparatePRs(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) error {
@@ -288,7 +315,7 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 	return
 }
 
-// fixIssuesSinglePR fixes all the vulnerabilities in a single aggregated pull request.
+// Fixes all the vulnerabilities in a single aggregated pull request.
 // If an existing aggregated fix is present, it checks for different scan results.
 // If the scan results are the same, no action is taken.
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
@@ -373,6 +400,9 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 		return &utils.ErrNothingToCommit{PackageName: vulnDetails.ImpactedDependencyName}
 	}
 	commitMessage := cfp.gitManager.GenerateCommitMessage(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
+	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
+		log.Warn(fmt.Sprintf("failed fo clean untracked files from '%s' due to the following errors: %s", cfp.baseWd, err.Error()))
+	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -418,10 +448,13 @@ func (cfp *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Reposi
 	return pullRequestInfo, utils.DeletePullRequestComments(repository, cfp.scanDetails.Client(), int(pullRequestInfo.ID))
 }
 
-// openAggregatedPullRequest handles the opening or updating of a pull request when the aggregate mode is active.
+// Handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
 func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := cfp.gitManager.GenerateAggregatedCommitMessage(cfp.projectTech)
+	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
+		return
+	}
 	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
 		return
 	}
@@ -429,6 +462,38 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposi
 		return
 	}
 	return cfp.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
+}
+
+func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
+	// Open the local repository
+	localRepo, err := git.PlainOpen(cfp.baseWd)
+	if err != nil {
+		return err
+	}
+
+	// Getting the repository working tree
+	worktree, err := localRepo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Getting the working tree status
+	gitStatus, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+
+	for relativeFilePath, status := range gitStatus {
+		if status.Worktree == git.Untracked {
+			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
+			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
+			if fileDeletionErr != nil {
+				err = errors.Join(err, fmt.Errorf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error()))
+				continue
+			}
+		}
+	}
+	return err
 }
 
 func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
@@ -453,7 +518,7 @@ func (cfp *ScanRepositoryCmd) preparePullRequestDetails(vulnerabilitiesDetails .
 	return pullRequestTitle, prBody, extraComments, nil
 }
 
-func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
+func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (tempWd string, restoreDir func() error, err error) {
 	if cfp.dryRun {
 		tempWd = filepath.Join(cfp.dryRunRepoPath, cfp.scanDetails.RepoName)
 	} else {
@@ -464,39 +529,49 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryAndCheckoutToBranch() (tempWd strin
 	}
 	log.Debug("Created temp working directory:", tempWd)
 
-	// Clone the content of the repo to the new working directory
-	if err = cfp.gitManager.Clone(tempWd, cfp.scanDetails.BaseBranch()); err != nil {
-		return
+	if cfp.scanDetails.UseLocalRepository {
+		var curDir string
+		if curDir, err = os.Getwd(); err != nil {
+			return
+		}
+		if err = biutils.CopyDir(curDir, tempWd, true, nil); err != nil {
+			return
+		}
+		// 'CD' into the temp working directory
+		restoreDir, err = utils.Chdir(tempWd)
+		if err != nil {
+			return
+		}
+		// Set the current copied local dir as the local git repository we are working with
+		err = cfp.gitManager.SetLocalRepository()
+	} else {
+		// Clone the content of the repo to the new working directory
+		if err = cfp.gitManager.Clone(tempWd, cfp.scanDetails.BaseBranch()); err != nil {
+			return
+		}
+		// 'CD' into the temp working directory
+		restoreDir, err = utils.Chdir(tempWd)
 	}
-
-	// 'CD' into the temp working directory
-	restoreDir, err = utils.Chdir(tempWd)
 	return
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *securityutils.Results, isMultipleRoots bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults, hasViolationContext bool) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	for _, scanResult := range scanResults.GetScaScansXrayResults() {
-		if len(scanResult.Vulnerabilities) > 0 {
-			vulnerabilities, err := securityutils.PrepareVulnerabilities(scanResult.Vulnerabilities, scanResults, isMultipleRoots, true)
-			if err != nil {
+	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: hasViolationContext}).ConvertToSimpleJson(scanResults)
+	if err != nil {
+		return nil, err
+	}
+	if len(simpleJsonResult.Vulnerabilities) > 0 {
+		for i := range simpleJsonResult.Vulnerabilities {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.Vulnerabilities[i], vulnerabilitiesMap); err != nil {
 				return nil, err
 			}
-			for i := range vulnerabilities {
-				if err = cfp.addVulnerabilityToFixVersionsMap(&vulnerabilities[i], vulnerabilitiesMap); err != nil {
-					return nil, err
-				}
-			}
-		} else if len(scanResult.Violations) > 0 {
-			violations, _, _, err := securityutils.PrepareViolations(scanResult.Violations, scanResults, isMultipleRoots, true)
-			if err != nil {
+		}
+	} else if len(simpleJsonResult.SecurityViolations) > 0 {
+		for i := range simpleJsonResult.SecurityViolations {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.SecurityViolations[i], vulnerabilitiesMap); err != nil {
 				return nil, err
-			}
-			for i := range violations {
-				if err = cfp.addVulnerabilityToFixVersionsMap(&violations[i], vulnerabilitiesMap); err != nil {
-					return nil, err
-				}
 			}
 		}
 	}
@@ -611,7 +686,7 @@ func (cfp *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.R
 	for fullPath, vulnerabilities := range vulnerabilitiesMap {
 		currentFixes, e := cfp.fixMultiplePackages(fullPath, vulnerabilities)
 		if e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in %s:\n%s", fullPath, e))
+			err = errors.Join(err, fmt.Errorf("the following errors occurred while fixing vulnerabilities in %s:\n%s", fullPath, e))
 			continue
 		}
 		fixedVulnerabilities = append(fixedVulnerabilities, currentFixes...)

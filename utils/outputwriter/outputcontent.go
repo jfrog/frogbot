@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-security/formats"
-	xrayutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 )
 
 const (
@@ -258,7 +258,7 @@ func createVulnerabilityResearchDescription(vulnerability *formats.Vulnerability
 }
 
 func getVulnerabilityDescriptionIdentifier(cveRows []formats.CveRow, xrayId string) string {
-	identifier := xrayutils.GetIssueIdentifier(cveRows, xrayId)
+	identifier := results.GetIssueIdentifier(cveRows, xrayId, ", ")
 	if identifier == "" {
 		return ""
 	}
