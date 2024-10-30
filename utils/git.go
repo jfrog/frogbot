@@ -162,7 +162,6 @@ func (gm *GitManager) Checkout(branchName string) error {
 }
 
 func (gm *GitManager) CheckoutToHash(hash, targetBranchWd string) error {
-	log.Debug("Running git fetch...")
 	if err := gm.Fetch(); err != nil {
 		return err
 	}
@@ -186,7 +185,7 @@ func (gm *GitManager) Fetch() error {
 	return nil
 }
 
-func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, headBranch string) (string, error) {
+func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
 	// Get the commit of the base branch
 	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(baseBranch))
 	if err != nil {
@@ -196,8 +195,8 @@ func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, headBranch string) (
 	if err != nil {
 		return "", err
 	}
-	// Get the commit of the head branch
-	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(headBranch))
+	// Get the HEAD commit of the target branch
+	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(targetBranch))
 	if err != nil {
 		return "", err
 	}
@@ -206,15 +205,15 @@ func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, headBranch string) (
 		return "", err
 	}
 	// Get the most common ancestor
-	log.Debug(fmt.Sprintf("Finding common ancestor between %s and %s...", baseBranch, headBranch))
+	log.Debug(fmt.Sprintf("Finding common ancestor between %s and %s...", baseBranch, targetBranch))
 	ancestorCommit, err := baseCommit.MergeBase(headCommit)
 	if err != nil {
 		return "", err
 	}
 	if len(ancestorCommit) == 0 {
-		return "", fmt.Errorf("no common ancestor found for %s and %s", baseBranch, headBranch)
+		return "", fmt.Errorf("no common ancestor found for %s and %s", baseBranch, targetBranch)
 	} else if len(ancestorCommit) > 1 {
-		return "", fmt.Errorf("more than one common ancestor found for %s and %s", baseBranch, headBranch)
+		return "", fmt.Errorf("more than one common ancestor found for %s and %s", baseBranch, targetBranch)
 	}
 	return ancestorCommit[0].Hash.String(), nil
 }

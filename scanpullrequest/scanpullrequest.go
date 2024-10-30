@@ -276,7 +276,9 @@ func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash
 	if err = os.Chdir(wd); err != nil {
 		return
 	}
-	defer os.Chdir(cwd)
+	defer func() {
+		err = errors.Join(err, os.Chdir(cwd))
+	}()
 	// Load .git info in directory and Checkout to the commit hash
 	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
 	if err != nil {
