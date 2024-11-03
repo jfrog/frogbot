@@ -42,10 +42,11 @@ const (
 	GitUseLocalRepositoryEnv = "JF_USE_LOCAL_REPOSITORY"
 
 	// Git naming template environment variables
-	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
-	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
-	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
-	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
+	BranchNameTemplateEnv            = "JF_BRANCH_NAME_TEMPLATE"
+	CommitMessageTemplateEnv         = "JF_COMMIT_MESSAGE_TEMPLATE"
+	PullRequestTitleTemplateEnv      = "JF_PULL_REQUEST_TITLE_TEMPLATE"
+	PullRequestCommentTitleEnv       = "JF_PR_COMMENT_TITLE"
+	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
@@ -61,6 +62,7 @@ const (
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
+	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
 	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"

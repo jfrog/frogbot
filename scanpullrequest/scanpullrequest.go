@@ -136,7 +136,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
 		SetConfigProfile(repoConfig.ConfigProfile).
-		SetSkipAutoInstall(repoConfig.SkipAutoInstall)
+		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
+		SetDisableJas(repoConfig.DisableJas)
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
@@ -206,8 +207,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
-		targetBranchInfo := repoConfig.PullRequestDetails.Target
-		if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), targetBranchInfo.Owner, targetBranchInfo.Repository, targetBranchInfo.Name); err != nil {
+		if targetBranchWd, cleanupTarget, err = prepareTargetForScan(repoConfig.PullRequestDetails, scanDetails); err != nil {
 			return
 		}
 	}
@@ -227,6 +227,64 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	// Get newly added issues
 	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses, scanDetails.HasViolationContext())
 	return
+}
+
+func prepareTargetForScan(pullRequestDetails vcsclient.PullRequestInfo, scanDetails *utils.ScanDetails) (targetBranchWd string, cleanupTarget func() error, err error) {
+	target := pullRequestDetails.Target
+	// Download target branch
+	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
+		return
+	}
+	if !scanDetails.Git.UseMostCommonAncestorAsTarget {
+		return
+	}
+	log.Debug("Using most common ancestor commit as target branch commit")
+	// Get common parent commit between source and target and use it (checkout) to the target branch commit
+	if e := tryCheckoutToMostCommonAncestor(scanDetails, pullRequestDetails.Source.Name, target.Name, targetBranchWd); e != nil {
+		log.Warn(fmt.Sprintf("Failed to get best common ancestor commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", pullRequestDetails.Source.Name, target.Name, e.Error()))
+	}
+	return
+}
+
+func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch, targetBranchWd string) (err error) {
+	repositoryInfo, err := scanDetails.Client().GetRepositoryInfo(context.Background(), scanDetails.RepoOwner, scanDetails.RepoName)
+	if err != nil {
+		return
+	}
+	scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	bestAncestorHash, err := getMostCommonAncestorCommitHash(scanDetails, baseBranch, headBranch)
+	if err != nil {
+		return
+	}
+	return checkoutToCommitAtTempWorkingDir(scanDetails, bestAncestorHash, targetBranchWd)
+}
+
+func getMostCommonAncestorCommitHash(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (hash string, err error) {
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
+	if err != nil {
+		return
+	}
+	return gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
+}
+
+func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash, wd string) (err error) {
+	// Change working directory to the temp target branch directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+	if err = os.Chdir(wd); err != nil {
+		return
+	}
+	defer func() {
+		err = errors.Join(err, os.Chdir(cwd))
+	}()
+	// Load .git info in directory and Checkout to the commit hash
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
+	if err != nil {
+		return
+	}
+	return gitManager.CheckoutToHash(commitHash, wd)
 }
 
 func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {

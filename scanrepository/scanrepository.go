@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	biutils "github.com/jfrog/build-info-go/utils"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/go-git/go-git/v5"
+	biutils "github.com/jfrog/build-info-go/utils"
 
 	"github.com/jfrog/frogbot/v2/packagehandlers"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -123,8 +124,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
-		SetFixableOnly(repository.FixableOnly).
-		SetAllowPartialResults(repository.AllowPartialResults)
+		SetAllowPartialResults(repository.AllowPartialResults).
+		SetDisableJas(repository.DisableJas)
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}

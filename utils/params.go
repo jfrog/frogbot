@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
-	"github.com/jfrog/jfrog-client-go/xsc/services"
-	"golang.org/x/exp/slices"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
@@ -153,6 +154,7 @@ type Scan struct {
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
+	DisableJas                      bool      `yaml:"disableJas,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
@@ -210,6 +212,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if !s.FixableOnly {
 		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.DisableJas {
+		if s.DisableJas, err = getBoolEnv(DisableJasEnv, false); err != nil {
 			return
 		}
 	}
@@ -290,19 +297,20 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner                string
-	RepoName                 string   `yaml:"repoName,omitempty"`
-	Branches                 []string `yaml:"branches,omitempty"`
-	BranchNameTemplate       string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate    string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle  string   `yaml:"pullRequestCommentTitle,omitempty"`
-	AvoidExtraMessages       bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor              string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes           bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails       vcsclient.PullRequestInfo
-	RepositoryCloneUrl       string
-	UseLocalRepository       bool
+	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
+	RepoOwner                     string
+	RepoName                      string   `yaml:"repoName,omitempty"`
+	Branches                      []string `yaml:"branches,omitempty"`
+	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails            vcsclient.PullRequestInfo
+	RepositoryCloneUrl            string
+	UseLocalRepository            bool
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -341,6 +349,11 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	if !g.UseMostCommonAncestorAsTarget {
+		if g.UseMostCommonAncestorAsTarget, err = getBoolEnv(UseMostCommonAncestorAsTargetEnv, true); err != nil {
+			return
+		}
 	}
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return

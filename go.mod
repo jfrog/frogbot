@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.23.2
+go 1.22.7
 
 require (
 	github.com/go-git/go-git/v5 v5.12.0
@@ -10,7 +10,7 @@ require (
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.56.4
-	github.com/jfrog/jfrog-cli-security v1.12.0
+	github.com/jfrog/jfrog-cli-security v1.12.3
 	github.com/jfrog/jfrog-client-go v1.47.3
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
@@ -117,7 +117,7 @@ require (
 )
 
 // attiasas:improve_tests
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241028135144-593677d410fe
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241103141617-c857f3215cea
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
