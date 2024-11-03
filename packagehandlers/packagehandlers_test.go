@@ -344,6 +344,30 @@ func TestUpdateDependency(t *testing.T) {
 				descriptorsToCheck: []string{"package.json"},
 			},
 		},
+
+		// Conan test cases
+		{
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					IsDirectDependency:          true,
+					SuggestedFixedVersion:       "3.0.14",
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: true,
+				testDirName:  filepath.Join("conan", "conan_txt"),
+			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.0.14",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl"}},
+				},
+				scanDetails:  scanDetails,
+				fixSupported: true,
+				testDirName:  filepath.Join("conan", "conan_py"),
+			},
+		},
 	}
 
 	for _, testBatch := range testCases {
