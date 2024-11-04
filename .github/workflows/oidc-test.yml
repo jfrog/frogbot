@@ -24,7 +24,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.22.7
           cache: false
 
       # Generating a unique name for the Integration Configuration that will be created in the following step

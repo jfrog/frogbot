@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	//#nosec G101 -- False positive - no hardcoded credentials.
 	gitlabIntegrationTokenEnv = "FROGBOT_TESTS_GITLAB_TOKEN"
 	gitlabGitCloneUrl         = "https://gitlab.com/frogbot-test2/integration.git"
 )

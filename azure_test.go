@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	//#nosec G101 -- False positive - no hardcoded credentials.
 	azureIntegrationTokenEnv = "FROGBOT_TESTS_AZURE_TOKEN"
 	azureApiEndpoint         = "https://dev.azure.com/frogbot-test"
 	azureGitCloneUrl         = "https://frogbot-test@dev.azure.com/frogbot-test/integration/_git/integration"

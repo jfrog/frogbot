@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -177,7 +176,7 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 	return
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults, err error) {
+func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&utils.AuditBasicParams{}).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
@@ -201,12 +200,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile)
 
-	auditResults, err = audit.RunAudit(auditParams)
-
-	if auditResults != nil {
-		err = errors.Join(err, auditResults.GetErrors())
-	}
-	return
+	return audit.RunAudit(auditParams)
 }
 
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
