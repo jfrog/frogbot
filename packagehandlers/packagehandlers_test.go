@@ -351,7 +351,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					IsDirectDependency:          true,
 					SuggestedFixedVersion:       "3.0.14",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
 				},
 				scanDetails:  scanDetails,
 				fixSupported: true,
@@ -361,7 +361,7 @@ func TestUpdateDependency(t *testing.T) {
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "3.0.14",
 					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl"}},
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
 				},
 				scanDetails:  scanDetails,
 				fixSupported: true,
