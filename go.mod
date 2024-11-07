@@ -9,9 +9,9 @@ require (
 	github.com/jfrog/build-info-go v1.10.3
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-core/v2 v2.56.4
+	github.com/jfrog/jfrog-cli-core/v2 v2.56.5
 	github.com/jfrog/jfrog-cli-security v1.12.3
-	github.com/jfrog/jfrog-client-go v1.47.3
+	github.com/jfrog/jfrog-client-go v1.47.4
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.9.0
@@ -116,7 +116,8 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.12.4-0.20241103154303-1f6712663f75
+// attiasas:cmd_git_audit
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241107113154-54b27eb7503e
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

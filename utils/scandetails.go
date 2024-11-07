@@ -148,10 +148,6 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 	}
 	commonParams.IncludeVulnerabilities = sc.IncludeVulnerabilities
 	commonParams.IncludeLicenses = sc.IncludeLicenses
-	commonParams.MultiScanId = sc.MultiScanId
-	if commonParams.MultiScanId != "" {
-		commonParams.XscVersion = sc.XscVersion
-	}
 	return commonParams
 }
 
@@ -193,6 +189,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetUseJas(!sc.DisableJas())
 
 	auditParams := audit.NewAuditParams().
+		SetMsi(sc.MultiScanId).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
