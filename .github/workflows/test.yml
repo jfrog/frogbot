@@ -40,11 +40,6 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
 
-      - name: Install Conan
-        run: |
-            python -m pip install --upgrade pip
-            pip install conan
-
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
@@ -140,6 +135,9 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "11"
+
+      - name: Install Conan
+        run: pip install conan
 
       # Generate mocks
       - name: Generate mocks
