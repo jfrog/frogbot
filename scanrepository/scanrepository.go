@@ -600,7 +600,7 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
 		if err != nil {
 			if cfp.scanDetails.AllowPartialResults() {
-				log.Warn(fmt.Sprintf("An empty impact path was provided for '%s'. Since partial-results is allowed the vulnerability is considered as indirect dependency and will not be fixed", vulnerability.ImpactedDependencyName))
+				log.Warn(fmt.Sprintf("An error occurred while determining if the dependency '%s' is direct: %s.\nAs partial results are permitted, the vulnerability will not be fixed", vulnerability.ImpactedDependencyName, err.Error()))
 			} else {
 				return err
 			}

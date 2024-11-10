@@ -287,7 +287,7 @@ func GetRelativeWd(fullPathWd, baseWd string) string {
 // The impact graph of direct dependencies consists of only two elements.
 func IsDirectDependency(impactPath [][]formats.ComponentRow) (bool, error) {
 	if len(impactPath) == 0 {
-		return false, fmt.Errorf("invalid impact path provided")
+		return false, fmt.Errorf("empty impact path was provided")
 	}
 	return len(impactPath[0]) < 3, nil
 }
