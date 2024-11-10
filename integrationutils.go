@@ -75,11 +75,6 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// Frogbot sanitizes all the environment variables that start with 'JF',
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
-	//nolint:unused
-	useLocalRepo := "false"
-	if testDetails.UseLocalRepo {
-		useLocalRepo = "true"
-	}
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
 		utils.RequirementsFileEnv:      "requirements.txt",
 		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
@@ -92,7 +87,7 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		utils.GitProjectEnv:            testDetails.GitProject,
 		utils.GitUsernameEnv:           testDetails.GitUsername,
 		utils.GitBaseBranchEnv:         mainBranch,
-		utils.GitUseLocalRepositoryEnv: useLocalRepo,
+		utils.GitUseLocalRepositoryEnv: fmt.Sprintf("%t", testDetails.UseLocalRepo),
 	})
 	return func() {
 		envRestoreFunc()
