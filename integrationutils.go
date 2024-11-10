@@ -75,6 +75,7 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// Frogbot sanitizes all the environment variables that start with 'JF',
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
+	//nolint:unused
 	useLocalRepo := "false"
 	if testDetails.UseLocalRepo {
 		useLocalRepo = "true"
