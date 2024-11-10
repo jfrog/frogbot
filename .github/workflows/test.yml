@@ -136,7 +136,7 @@ jobs:
           distribution: "adopt"
           java-version: "11"
 
-      - name: Install Conan
+      - name: Install Conan //conan
         run: pip install conan
 
       # Generate mocks
