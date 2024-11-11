@@ -599,7 +599,11 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 	} else {
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
 		if err != nil {
-			return err
+			if cfp.scanDetails.AllowPartialResults() {
+				log.Warn(fmt.Sprintf("An error occurred while determining if the dependency '%s' is direct: %s.\nAs partial results are permitted, the vulnerability will not be fixed", vulnerability.ImpactedDependencyName, err.Error()))
+			} else {
+				return err
+			}
 		}
 		// First appearance of a version that fixes the current impacted package
 		newVulnDetails := utils.NewVulnerabilityDetails(*vulnerability, vulnFixVersion)
