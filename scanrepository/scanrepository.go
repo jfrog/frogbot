@@ -128,11 +128,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
-		findings := 0
-		if findings, err = cfp.scanAndFixProject(repository); err != nil {
-			return
+		if findings, e := cfp.scanAndFixProject(repository); e != nil {
+			return e
+		} else {
+			totalFindings += findings
 		}
-		totalFindings += findings
 	}
 
 	return
