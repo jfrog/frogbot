@@ -93,19 +93,11 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
 
-	// analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
-	// defer func() {
-	// 	analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
-	// }()
-
 	// Audit PR code
 	issues, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
 	}
-	// if analyticsService.ShouldReportEvents() {
-	// 	analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issues.CountIssuesCollectionFindings())
-	// }
 
 	// Output results
 	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
@@ -161,12 +153,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.CountIssuesCollectionFindings(), err)
 		}
 	}()
-
-	// If MSI exists we always need to report events
-	// if analyticsService.GetMsi() != "" {
-	// 	// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
-	// 	scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
-	// }
 
 	issuesCollection = &utils.IssuesCollection{}
 	for i := range repoConfig.Projects {

@@ -84,11 +84,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
-	// cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
-	// defer func() {
-	// 	cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
-	// }()
-
 	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -101,16 +96,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		}
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
 	}()
-
-	// If MSI exists we always need to report events
-	// if cfp.analyticsService.GetMsi() != "" {
-	// 	// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
-	// 	cfp.scanDetails.XrayGraphScanParams.MultiScanId = cfp.analyticsService.GetMsi()
-	// 	cfp.scanDetails.XrayGraphScanParams.XscVersion, err = cfp.analyticsService.XscManager().GetVersion()
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// }
 
 	cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime = xsc.SendNewScanEvent(
 		cfp.scanDetails.XrayVersion,
