@@ -206,7 +206,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
-			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
+			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
