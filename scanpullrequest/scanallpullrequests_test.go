@@ -3,6 +3,10 @@ package scanpullrequest
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/testdata"
@@ -10,10 +14,8 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 var (
@@ -101,11 +103,15 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&server)
+	assert.NoError(t, err)
+
 	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
 	defer restoreJfrogHomeFunc()
 
 	failOnSecurityIssues := false
 	firstRepoParams := utils.Params{
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &failOnSecurityIssues,
 			Projects: []utils.Project{{
@@ -118,7 +124,8 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		Git: gitParams.Git,
 	}
 	secondRepoParams := utils.Params{
-		Git: gitParams.Git,
+		Git:           gitParams.Git,
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &failOnSecurityIssues,
 			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
@@ -143,7 +150,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
+	err = scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
 	if assert.NoError(t, err) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))

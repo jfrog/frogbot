@@ -275,8 +275,8 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
-	XrayVersion     string   `yaml:"_"`
-	XscVersion      string   `yaml:"_"`
+	XrayVersion     string
+	XscVersion      string
 	Watches         []string `yaml:"watches,omitempty"`
 	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
 }

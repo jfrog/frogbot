@@ -156,10 +156,10 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
 	)
 
-	totalFindings := 0
-
 	defer func() {
-		xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, totalFindings, err)
+		if issuesCollection != nil {
+			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.CountIssuesCollectionFindings(), err)
+		}
 	}()
 
 	// If MSI exists we always need to report events
@@ -175,7 +175,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
 			return
 		}
-		totalFindings += projectIssues.CountIssuesCollectionFindings()
 		issuesCollection.Append(projectIssues)
 	}
 	return

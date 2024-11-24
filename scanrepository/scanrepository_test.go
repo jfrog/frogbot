@@ -399,6 +399,9 @@ func TestGenerateFixBranchName(t *testing.T) {
 func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&environmentVars)
+	assert.NoError(t, err)
+
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
 	trueVal := true
 	params := utils.Params{
@@ -431,9 +434,12 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: &services.XrayGraphScanParams{},
-				Project:             &frogbotParams.Projects[0],
-				ServerDetails:       &frogbotParams.Server,
+				XrayGraphScanParams: &services.XrayGraphScanParams{
+					XrayVersion: xrayVersion,
+					XscVersion:  xscVersion,
+				},
+				Project:       &frogbotParams.Projects[0],
+				ServerDetails: &frogbotParams.Server,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
