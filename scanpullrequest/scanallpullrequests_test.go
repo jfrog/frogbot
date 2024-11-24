@@ -168,9 +168,13 @@ func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&server)
+	assert.NoError(t, err)
+
 	falseVal := false
 	gitParams.Git.GitProvider = vcsutils.BitbucketServer
 	params := utils.Params{
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
 			FailOnSecurityIssues: &falseVal,
 			Projects: []utils.Project{{
@@ -192,7 +196,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
+	err = scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_simplified.md"))
