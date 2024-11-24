@@ -10,6 +10,7 @@ import (
 
 	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
+	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -182,7 +183,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -229,7 +230,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -263,7 +264,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(commandName)
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator(nil, nil, gitParams, server, commandName)
+	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -379,12 +380,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, nil, &gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
 
-	repoAggregator, err = BuildRepoAggregator(nil, nil, &gitParams, &server, ScanPullRequest)
+	repoAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	repo = repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
@@ -554,7 +555,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, fileContent, gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, fileContent, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
@@ -694,32 +695,58 @@ func TestSetEmailDetails(t *testing.T) {
 
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
+		name            string
 		profileName     string
+		xrayVersion     string
 		failureExpected bool
 	}{
 		{
+			name:            "Deprecated Server - Valid ConfigProfile",
 			profileName:     ValidConfigProfile,
+			xrayVersion:     "3.0.0",
 			failureExpected: false,
 		},
 		{
+			name:            "Deprecated Server - Invalid Path From Root ConfigProfile",
 			profileName:     InvalidPathConfigProfile,
+			xrayVersion:     "3.0.0",
 			failureExpected: true,
 		},
 		{
+			name:            "Deprecated Server - Invalid Modules ConfigProfile",
 			profileName:     InvalidModulesConfigProfile,
+			xrayVersion:     "3.0.0",
+			failureExpected: true,
+		},
+		{
+			name:            "Valid ConfigProfile",
+			profileName:     ValidConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			failureExpected: false,
+		},
+		{
+			name:            "Invalid Path From Root ConfigProfile",
+			profileName:     InvalidPathConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			failureExpected: true,
+		},
+		{
+			name:            "Invalid Modules ConfigProfile",
+			profileName:     InvalidModulesConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: true,
 		},
 	}
 
 	for _, testcase := range testcases {
-		t.Run(testcase.profileName, func(t *testing.T) {
+		t.Run(testcase.name, func(t *testing.T) {
 			envCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
 			defer envCallbackFunc()
 
-			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t)
+			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
-			configProfile, err := getConfigProfileIfExistsAndValid(serverDetails)
+			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails)
 			if testcase.failureExpected {
 				assert.Error(t, err)
 			} else {

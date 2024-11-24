@@ -26,7 +26,9 @@ const (
 	analyticsScanPrScanType = "PR"
 )
 
-type ScanPullRequestCmd struct{}
+type ScanPullRequestCmd struct {
+	XrayVersion string
+}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -91,16 +93,19 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
 
-	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
-	defer func() {
-		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
-	}()
+	// analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
+	// defer func() {
+	// 	analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
+	// }()
 
 	// Audit PR code
-	issues, err := auditPullRequest(repo, client, analyticsService)
+	issues, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
 	}
+	// if analyticsService.ShouldReportEvents() {
+	// 	analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issues.CountIssuesCollectionFindings())
+	// }
 
 	// Output results
 	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
@@ -130,7 +135,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, analyticsService *xsc.AnalyticsMetricsService) (issuesCollection *utils.IssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
@@ -141,12 +146,27 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
+	scanDetails.XrayVersion = repoConfig.XrayVersion
+	scanDetails.XscVersion = repoConfig.XscVersion
+
+	scanDetails.MultiScanId, scanDetails.StartTime = xsc.SendNewScanEvent(
+		scanDetails.XrayVersion,
+		scanDetails.XscVersion,
+		scanDetails.ServerDetails,
+		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
+	)
+
+	totalFindings := 0
+
+	defer func() {
+		xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, totalFindings, err)
+	}()
 
 	// If MSI exists we always need to report events
-	if analyticsService.GetMsi() != "" {
-		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
-		scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
-	}
+	// if analyticsService.GetMsi() != "" {
+	// 	// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
+	// 	scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
+	// }
 
 	issuesCollection = &utils.IssuesCollection{}
 	for i := range repoConfig.Projects {
@@ -155,10 +175,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
 			return
 		}
+		totalFindings += projectIssues.CountIssuesCollectionFindings()
 		issuesCollection.Append(projectIssues)
-	}
-	if analyticsService.ShouldReportEvents() {
-		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issuesCollection.CountIssuesCollectionFindings())
 	}
 	return
 }

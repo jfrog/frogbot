@@ -3,6 +3,13 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -10,6 +17,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -18,12 +26,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 const rootTestDir = "scanrepository"
@@ -170,6 +172,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
+			xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&serverParams)
+			assert.NoError(t, err)
+
 			var port string
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, nil, test.testName))
 			defer server.Close()
@@ -198,7 +203,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -299,6 +304,8 @@ pr body
 	defer restoreEnv()
 	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
 	defer cleanup()
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&serverParams)
+	assert.NoError(t, err)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			var port string
@@ -326,7 +333,7 @@ pr body
 			// Load default configurations
 			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(client, configData, gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}

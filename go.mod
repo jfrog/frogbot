@@ -29,7 +29,10 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v1.1.2 // indirect
+	github.com/VividCortex/ewma v1.2.0 // indirect
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/beevik/etree v1.4.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -95,6 +98,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
+	github.com/vbauerster/mpb/v8 v8.8.3 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -119,13 +123,13 @@ require (
 )
 
 // attiasas:xsc_to_xray
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241121124418-9bd0b000b72f
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241124080606-40f6d08e258b
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:transition_xsc_url
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241121131417-9397a6b53b0a
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241121140610-2b71c4552d15
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev

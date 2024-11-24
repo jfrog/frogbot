@@ -17,6 +17,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/jfrog-cli-security/cli"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
@@ -40,6 +41,8 @@ var (
 )
 
 type FrogbotDetails struct {
+	XrayVersion   string
+	XscVersion    string
 	Repositories  RepoAggregator
 	ServerDetails *coreconfig.ServerDetails
 	GitClient     vcsclient.VcsClient
@@ -272,6 +275,8 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
+	XrayVersion     string   `yaml:"_"`
+	XscVersion      string   `yaml:"_"`
 	Watches         []string `yaml:"watches,omitempty"`
 	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
 }
@@ -411,8 +416,12 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer)
+	if err != nil {
+		return
+	}
 
-	configProfile, err := getConfigProfileIfExistsAndValid(jfrogServer)
+	configProfile, err := getConfigProfileIfExistsAndValid(xrayVersion, xscVersion, jfrogServer)
 	if err != nil {
 		return
 	}
@@ -439,7 +448,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configAggregator, err := getConfigAggregator(client, gitParamsFromEnv, jfrogServer, commandName)
+	configAggregator, err := getConfigAggregator(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
@@ -449,12 +458,12 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		configAggregator[i].Scan.ConfigProfile = configProfile
 	}
 
-	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
 	return
 }
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
-func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
+func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
 	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, commandName)
 	if err != nil {
 		return nil, err
@@ -462,7 +471,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if configFileContent != nil {
 		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
 	}
-	return BuildRepoAggregator(gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
+	return BuildRepoAggregator(xrayVersion, xscVersion, gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
 // getConfigFileContent retrieves the content of the frogbot-config.yml file
@@ -490,7 +499,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -498,6 +507,8 @@ func BuildRepoAggregator(gitClient vcsclient.VcsClient, configFileContent []byte
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
+		repository.Params.XrayVersion = xrayVersion
+		repository.Params.XscVersion = xscVersion
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}
@@ -777,14 +788,14 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 
 // This function fetches a config profile if JF_CONFIG_PROFILE is provided.
 // If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
-func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
+func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName == "" {
 		log.Debug(fmt.Sprintf("No %s environment variable was provided. All configurations will be induced from Env vars and files", JfrogConfigProfileEnv))
 		return
 	}
 
-	if configProfile, err = xsc.GetConfigProfile(jfrogServer, profileName); err != nil {
+	if configProfile, err = xsc.GetConfigProfile(xrayVersion, xscVersion, jfrogServer, profileName); err != nil {
 		return
 	}
 
