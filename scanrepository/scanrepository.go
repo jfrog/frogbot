@@ -54,7 +54,6 @@ type ScanRepositoryCmd struct {
 
 	XrayVersion string
 	XscVersion  string
-	// The AnalyticsMetricsService used for analytics event report
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
