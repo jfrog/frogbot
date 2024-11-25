@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
@@ -34,6 +35,7 @@ type ScanDetails struct {
 	baseBranch               string
 	configProfile            *clientservices.ConfigProfile
 	allowPartialResults      bool
+	StartTime                time.Time
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -148,10 +150,6 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 	}
 	commonParams.IncludeVulnerabilities = sc.IncludeVulnerabilities
 	commonParams.IncludeLicenses = sc.IncludeLicenses
-	commonParams.MultiScanId = sc.MultiScanId
-	if commonParams.MultiScanId != "" {
-		commonParams.XscVersion = sc.XscVersion
-	}
 	return commonParams
 }
 
@@ -178,6 +176,8 @@ func createXrayScanParams(watches []string, project string, includeLicenses bool
 
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&utils.AuditBasicParams{}).
+		SetXrayVersion(sc.XrayVersion).
+		SetXscVersion(sc.XscVersion).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
 		SetDepsRepo(sc.DepsRepo).
@@ -198,7 +198,9 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
-		SetConfigProfile(sc.configProfile)
+		SetConfigProfile(sc.configProfile).
+		SetMultiScanId(sc.MultiScanId).
+		SetStartTime(sc.StartTime)
 
 	return audit.RunAudit(auditParams)
 }
