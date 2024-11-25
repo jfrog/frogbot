@@ -122,14 +122,12 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// attiasas:xsc_to_xray
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20241124094455-a6122065912f
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.13.2-0.20241125090915-8dbf035c0394
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// attiasas:transition_xsc_url
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241121140610-2b71c4552d15
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20241124172451-50bd3e54f1e0
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev

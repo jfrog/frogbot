@@ -22,10 +22,6 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuW
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/attiasas/jfrog-cli-security v0.0.0-20241124094455-a6122065912f h1:oi8xWijdEPZXH5MWHeGWDEiexdsCz0qdSFPbYfdOo/s=
-github.com/attiasas/jfrog-cli-security v0.0.0-20241124094455-a6122065912f/go.mod h1:k4ks2Zq7aU+6Sz6MTTW6tQmMiX1QmQt8GWfzoz6EFBg=
-github.com/attiasas/jfrog-client-go v0.0.0-20241121140610-2b71c4552d15 h1:0NWisTlqXXw8SKvSHFAzkJOYked437OspjLzVWWoX8Q=
-github.com/attiasas/jfrog-client-go v0.0.0-20241121140610-2b71c4552d15/go.mod h1:1a7bmQHkRmPEza9wva2+WVrYzrGbosrMymq57kyG5gU=
 github.com/beevik/etree v1.4.0 h1:oz1UedHRepuY3p4N5OjE0nK1WLCqtzHf25bxplKOHLs=
 github.com/beevik/etree v1.4.0/go.mod h1:cyWiXwGoasx60gHvtnEh5x8+uIjUVnjWqBvEnhnqKDA=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
@@ -137,6 +133,10 @@ github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYL
 github.com/jfrog/jfrog-apps-config v1.0.1/go.mod h1:8AIIr1oY9JuH5dylz2S6f8Ym2MaadPLR6noCBO4C22w=
 github.com/jfrog/jfrog-cli-core/v2 v2.56.7 h1:pB4ronzVk60k/lf9bUL9HxBZ8PbMW6LhbIFld9NXNNc=
 github.com/jfrog/jfrog-cli-core/v2 v2.56.7/go.mod h1:puLwWcnXYCJqUOvhscXRJiKNzPdj0adP+zadKy6A/gU=
+github.com/jfrog/jfrog-cli-security v1.13.2-0.20241125090915-8dbf035c0394 h1:ws3gGhXezgv4/zhNt9zSOaKgpZel8qR1T9y8m0ZXIsE=
+github.com/jfrog/jfrog-cli-security v1.13.2-0.20241125090915-8dbf035c0394/go.mod h1:dfwS1m/MCz0dHQKmLQhSK1ZcPhuQE0gKAOPug3jLV3Q=
+github.com/jfrog/jfrog-client-go v1.28.1-0.20241124172451-50bd3e54f1e0 h1:YROG+bJY4QJEz9KdKUbBlbOHXY1vnDhhi0/cXrEgu9E=
+github.com/jfrog/jfrog-client-go v1.28.1-0.20241124172451-50bd3e54f1e0/go.mod h1:1a7bmQHkRmPEza9wva2+WVrYzrGbosrMymq57kyG5gU=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible/go.mod h1:1c7szIrayyPPB/987hsnvNzLushdWf4o/79s3P08L8A=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
