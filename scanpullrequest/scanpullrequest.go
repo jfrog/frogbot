@@ -327,43 +327,16 @@ func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandRe
 	if err != nil {
 		return nil, err
 	}
-
-	var newVulnerabilitiesOrViolations []formats.VulnerabilityOrViolationRow
-	if len(simpleJsonSource.Vulnerabilities) > 0 || len(simpleJsonSource.SecurityViolations) > 0 {
-		newVulnerabilitiesOrViolations = append(
-			getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities),
-			getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations)...,
-		)
-	}
-
-	var newLicenses []formats.LicenseRow
-	if len(simpleJsonSource.LicensesViolations) > 0 {
-		newLicenses = getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations)
-	}
-
-	var newIacs []formats.SourceCodeRow
-	if len(simpleJsonSource.IacsVulnerabilities) > 0 {
-		newIacs = createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities)
-	}
-	if len(simpleJsonSource.IacsViolations) > 0 {
-		newIacs = append(newIacs, createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations)...)
-
-	}
-	var newSecrets []formats.SourceCodeRow
-	if len(simpleJsonSource.Secrets) > 0 {
-		newSecrets = createNewSourceCodeRows(simpleJsonTarget.Secrets, simpleJsonSource.Secrets)
-	}
-	var newSast []formats.SourceCodeRow
-	if len(simpleJsonSource.Sast) > 0 {
-		newSast = createNewSourceCodeRows(simpleJsonTarget.Sast, simpleJsonSource.Sast)
-	}
-
 	return &utils.IssuesCollection{
-		Vulnerabilities:    newVulnerabilitiesOrViolations,
-		Iacs:               newIacs,
-		Secrets:            newSecrets,
-		Sast:               newSast,
-		LicensesViolations: newLicenses,
+		ScaVulnerabilities:    getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities),
+		ScaViolations: 	    	getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations),
+		IacVulnerabilities:               createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities),
+		IacViolations:                    createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations),
+		SecretsVulnerabilities:            createNewSourceCodeRows(simpleJsonTarget.SecretsVulnerabilities, simpleJsonSource.SecretsVulnerabilities),
+		SecretsViolations: 			   createNewSourceCodeRows(simpleJsonTarget.SecretsViolations, simpleJsonSource.SecretsViolations),
+		SastVulnerabilities:               createNewSourceCodeRows(simpleJsonTarget.SastVulnerabilities, simpleJsonSource.SastVulnerabilities),
+		SastViolations: 				  createNewSourceCodeRows(simpleJsonTarget.SastViolations, simpleJsonSource.SastViolations),
+		LicensesViolations: getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations),
 	}, nil
 }
 

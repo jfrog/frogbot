@@ -106,12 +106,12 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 }
 
 func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
-	if !issuesCollection.IssuesExists() {
+	if !issuesCollection.PresentableIssuesExists() {
 		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
 	}
 
 	content := []string{}
-	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
+	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(append(issuesCollection.ScaVulnerabilities, issuesCollection.ScaViolations...), writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
 	if licensesContent := outputwriter.LicensesContent(issuesCollection.LicensesViolations, writer); len(licensesContent) > 0 {
