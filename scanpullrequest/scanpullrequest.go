@@ -105,7 +105,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	// Output results
 	shouldSendExposedSecretsEmail := issues.SecretsIssuesExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
-		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.Secrets)
+		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.GetUniqueSecretsIssues())
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
 		}
@@ -126,7 +126,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 
 func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bool {
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
-	return failFlagSet && issues.IssuesExists()
+	return failFlagSet && issues.PresentableIssuesExists()
 }
 
 // Downloads Pull Requests branches code and audits them
@@ -300,11 +300,18 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 		return nil, err
 	}
 	return &utils.IssuesCollection{
-		Vulnerabilities:    append(simpleJsonResults.Vulnerabilities, simpleJsonResults.SecurityViolations...),
-		Iacs:               simpleJsonResults.Iacs,
-		Secrets:            simpleJsonResults.Secrets,
-		Sast:               simpleJsonResults.Sast,
+		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
+		ScaViolations: 		simpleJsonResults.SecurityViolations,
 		LicensesViolations: simpleJsonResults.LicensesViolations,
+
+		IacVulnerabilities: simpleJsonResults.IacsVulnerabilities,
+		IacViolations:      simpleJsonResults.IacsViolations,
+
+		SecretsVulnerabilities: simpleJsonResults.SecretsVulnerabilities,
+		SecretsViolations: 	simpleJsonResults.SecretsViolations,
+
+		SastVulnerabilities: simpleJsonResults.SastVulnerabilities,
+		SastViolations: 	simpleJsonResults.SastViolations,
 	}, nil
 }
 

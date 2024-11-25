@@ -45,18 +45,21 @@ func (ic *IssuesCollection) IacIssuesExists() bool {
 
 func (ic *IssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCodeRow) {
 	parsedIssues := datastructures.MakeSet[string]()
-	for _, issue := range ic.SecretsViolations {
-		issueId := issue.Location
-		if !parsedIssues.Exists(issue.SecretsViolations) {
-			unique = append(unique, issue)
-			parsedIssues.Add(issue.IssueId)
+	for _, violation := range ic.SecretsViolations {
+		issueId := violation.ToString() + "|" + violation.Finding
+		if parsedIssues.Exists(issueId) {
+			continue
 		}
+		parsedIssues.Add(issueId)
+		unique = append(unique, violation)
 	}
-	for _, issue := range ic.SastVulnerabilities {
-		if !parsedIssues.Exists(issue.IssueId) {
-			unique = append(unique, issue)
-			parsedIssues.Add(issue.IssueId)
+	for _, vulnerability := range ic.SecretsVulnerabilities {
+		issueId := vulnerability.ToString() + "|" + vulnerability.Finding
+		if parsedIssues.Exists(issueId) {
+			continue
 		}
+		parsedIssues.Add(issueId)
+		unique = append(unique, vulnerability)
 	}
 	return
 }
