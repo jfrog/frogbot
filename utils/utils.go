@@ -337,10 +337,14 @@ func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow
 }
 
 func ConvertSarifPathsToRelative(issues *IssuesCollection, workingDirs ...string) {
-	convertSarifPathsInCveApplicability(issues.Vulnerabilities, workingDirs...)
-	convertSarifPathsInIacs(issues.Iacs, workingDirs...)
-	convertSarifPathsInSecrets(issues.Secrets, workingDirs...)
-	convertSarifPathsInSast(issues.Sast, workingDirs...)
+	convertSarifPathsInCveApplicability(issues.ScaVulnerabilities, workingDirs...)
+	convertSarifPathsInIacs(issues.IacsVulnerabilities, workingDirs...)
+	convertSarifPathsInSecrets(issues.SecretsVulnerabilities, workingDirs...)
+	convertSarifPathsInSast(issues.SastVulnerabilities, workingDirs...)
+	convertSarifPathsInCveApplicability(issues.ScaViolations, workingDirs...)
+	convertSarifPathsInIacs(issues.IacsViolations, workingDirs...)
+	convertSarifPathsInSecrets(issues.SecretsViolations, workingDirs...)
+	convertSarifPathsInSast(issues.SastViolations, workingDirs...)
 }
 
 func convertSarifPathsInCveApplicability(vulnerabilities []formats.VulnerabilityOrViolationRow, workingDirs ...string) {

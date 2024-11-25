@@ -114,7 +114,7 @@ func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.Vulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
-	if licensesContent := outputwriter.LicensesContent(issuesCollection.Licenses, writer); len(licensesContent) > 0 {
+	if licensesContent := outputwriter.LicensesContent(issuesCollection.LicensesViolations, writer); len(licensesContent) > 0 {
 		content = append(content, licensesContent)
 	}
 	return outputwriter.GetPRSummaryContent(content, true, true, writer)

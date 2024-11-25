@@ -233,10 +233,10 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 		GitProvider:   sc.GitProvider.String(),
 		GitProject:    gitProject,
 		BranchName:    scannedBranch,
-		LastCommit:    latestCommit.Url,
-		CommitHash:    latestCommit.Hash,
-		CommitMessage: latestCommit.Message,
-		CommitAuthor:  latestCommit.AuthorName,
+		LastCommitUrl:    latestCommit.Url,
+		LastCommitHash:    latestCommit.Hash,
+		LastCommitMessage: latestCommit.Message,
+		LastCommitAuthor:  latestCommit.AuthorName,
 	}
 	return
 }

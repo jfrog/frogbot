@@ -555,7 +555,7 @@ func TestGetAllIssues(t *testing.T) {
 				},
 			},
 		},
-		Licenses: []formats.LicenseRow{
+		LicensesViolations: []formats.LicenseRow{
 			{
 				LicenseKey: "Apache-2.0",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
@@ -576,7 +576,7 @@ func TestGetAllIssues(t *testing.T) {
 		assert.ElementsMatch(t, expectedOutput.Iacs, issuesRows.Iacs)
 		assert.ElementsMatch(t, expectedOutput.Secrets, issuesRows.Secrets)
 		assert.ElementsMatch(t, expectedOutput.Sast, issuesRows.Sast)
-		assert.ElementsMatch(t, expectedOutput.Licenses, issuesRows.Licenses)
+		assert.ElementsMatch(t, expectedOutput.LicensesViolations, issuesRows.LicensesViolations)
 	}
 }
 

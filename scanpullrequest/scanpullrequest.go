@@ -103,7 +103,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Output results
-	shouldSendExposedSecretsEmail := issues.SecretsExists() && repo.SmtpServer != ""
+	shouldSendExposedSecretsEmail := issues.SecretsIssuesExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
 		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, issues.Secrets)
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
@@ -184,7 +184,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	}
 
 	// Set JAS output flags
-	repoConfig.OutputWriter.SetJasOutputFlags(sourceResults.EntitledForJas, len(sourceResults.GetJasScansResults(jasutils.Applicability)) > 0)
+	repoConfig.OutputWriter.SetJasOutputFlags(sourceResults.EntitledForJas, sourceResults.HasJasScansResults(jasutils.Applicability))
 
 	// Get all issues that exist in the source branch
 	if repoConfig.IncludeAllVulnerabilities {
@@ -300,11 +300,11 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 		return nil, err
 	}
 	return &utils.IssuesCollection{
-		Vulnerabilities: append(simpleJsonResults.Vulnerabilities, simpleJsonResults.SecurityViolations...),
-		Iacs:            simpleJsonResults.Iacs,
-		Secrets:         simpleJsonResults.Secrets,
-		Sast:            simpleJsonResults.Sast,
-		Licenses:        simpleJsonResults.LicensesViolations,
+		Vulnerabilities:    append(simpleJsonResults.Vulnerabilities, simpleJsonResults.SecurityViolations...),
+		Iacs:               simpleJsonResults.Iacs,
+		Secrets:            simpleJsonResults.Secrets,
+		Sast:               simpleJsonResults.Sast,
+		LicensesViolations: simpleJsonResults.LicensesViolations,
 	}, nil
 }
 
@@ -335,8 +335,12 @@ func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandRe
 	}
 
 	var newIacs []formats.SourceCodeRow
-	if len(simpleJsonSource.Iacs) > 0 {
-		newIacs = createNewSourceCodeRows(simpleJsonTarget.Iacs, simpleJsonSource.Iacs)
+	if len(simpleJsonSource.IacsVulnerabilities) > 0 {
+		newIacs = createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities)
+	}
+	if len(simpleJsonSource.IacsViolations) > 0 {
+		newIacs = append(newIacs, createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations)...)
+
 	}
 	var newSecrets []formats.SourceCodeRow
 	if len(simpleJsonSource.Secrets) > 0 {
@@ -348,11 +352,11 @@ func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandRe
 	}
 
 	return &utils.IssuesCollection{
-		Vulnerabilities: newVulnerabilitiesOrViolations,
-		Iacs:            newIacs,
-		Secrets:         newSecrets,
-		Sast:            newSast,
-		Licenses:        newLicenses,
+		Vulnerabilities:    newVulnerabilitiesOrViolations,
+		Iacs:               newIacs,
+		Secrets:            newSecrets,
+		Sast:               newSast,
+		LicensesViolations: newLicenses,
 	}, nil
 }
 

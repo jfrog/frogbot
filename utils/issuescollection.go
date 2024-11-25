@@ -6,71 +6,144 @@ import (
 )
 
 type IssuesCollection struct {
-	Vulnerabilities []formats.VulnerabilityOrViolationRow
-	Iacs            []formats.SourceCodeRow
-	Secrets         []formats.SourceCodeRow
-	Sast            []formats.SourceCodeRow
-	Licenses        []formats.LicenseRow
+	ScaVulnerabilities     []formats.VulnerabilityOrViolationRow
+	IacVulnerabilities    []formats.SourceCodeRow
+	SecretsVulnerabilities []formats.SourceCodeRow
+	SastVulnerabilities    []formats.SourceCodeRow
+
+	ScaViolations          []formats.VulnerabilityOrViolationRow
+	LicensesViolations     []formats.LicenseRow
+	IacViolations         []formats.SourceCodeRow
+	SecretsViolations      []formats.SourceCodeRow
+	SastViolations         []formats.SourceCodeRow
 }
 
-func (ic *IssuesCollection) VulnerabilitiesExists() bool {
-	return len(ic.Vulnerabilities) > 0
+// func (ic *IssuesCollection) GetUniqueScaIssues() (unique []formats.VulnerabilityOrViolationRow) {
+// 	parsedIssues := datastructures.MakeSet[string]()
+// 	for _, issue := range ic.ScaViolations {
+// 		if !parsedIssues.Exists(issue.IssueId + "|" + component.Name + "|" + component.Version) {
+// 			unique = append(unique, issue)
+// 			parsedIssues.Add(issue.IssueId)
+// 		}
+// 	}
+// 	for _, issue := range ic.ScaVulnerabilities {
+// 		if !parsedIssues.Exists(issue.IssueId) {
+// 			unique = append(unique, issue)
+// 			parsedIssues.Add(issue.IssueId)
+// 		}
+// 	}
+// 	return
+// }
+
+func (ic *IssuesCollection) ScaIssuesExists() bool {
+	return len(ic.ScaVulnerabilities) > 0 || len(ic.ScaViolations) > 0
 }
 
-func (ic *IssuesCollection) IacExists() bool {
-	return len(ic.Iacs) > 0
+func (ic *IssuesCollection) IacIssuesExists() bool {
+	return len(ic.IacVulnerabilities) > 0 || len(ic.IacViolations) > 0
 }
 
-func (ic *IssuesCollection) LicensesExists() bool {
-	return len(ic.Licenses) > 0
+func (ic *IssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCodeRow) {
+	parsedIssues := datastructures.MakeSet[string]()
+	for _, issue := range ic.SecretsViolations {
+		issueId := issue.Location
+		if !parsedIssues.Exists(issue.SecretsViolations) {
+			unique = append(unique, issue)
+			parsedIssues.Add(issue.IssueId)
+		}
+	}
+	for _, issue := range ic.SastVulnerabilities {
+		if !parsedIssues.Exists(issue.IssueId) {
+			unique = append(unique, issue)
+			parsedIssues.Add(issue.IssueId)
+		}
+	}
+	return
 }
 
-func (ic *IssuesCollection) SecretsExists() bool {
-	return len(ic.Secrets) > 0
+func (ic *IssuesCollection) SecretsIssuesExists() bool {
+	return len(ic.SecretsVulnerabilities) > 0 || len(ic.SecretsViolations) > 0
 }
 
-func (ic *IssuesCollection) SastExists() bool {
-	return len(ic.Sast) > 0
+func (ic *IssuesCollection) SastIssuesExists() bool {
+	return len(ic.SastVulnerabilities) > 0 || len(ic.SastViolations) > 0
 }
 
-func (ic *IssuesCollection) IssuesExists() bool {
-	return ic.VulnerabilitiesExists() || ic.IacExists() || ic.LicensesExists() || ic.SastExists()
+func (ic *IssuesCollection) LicensesViolationsExists() bool {
+	return len(ic.LicensesViolations) > 0
+}
+
+func (ic *IssuesCollection) PresentableIssuesExists() bool {
+	return ic.ScaIssuesExists() || ic.IacIssuesExists() || ic.LicensesViolationsExists() || ic.SastIssuesExists()
 }
 
 func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	if issues == nil {
 		return
 	}
-	if len(issues.Vulnerabilities) > 0 {
-		ic.Vulnerabilities = append(ic.Vulnerabilities, issues.Vulnerabilities...)
+	if len(issues.ScaVulnerabilities) > 0 {
+		ic.ScaVulnerabilities = append(ic.ScaVulnerabilities, issues.ScaVulnerabilities...)
 	}
-	if len(issues.Secrets) > 0 {
-		ic.Secrets = append(ic.Secrets, issues.Secrets...)
+	if len(issues.ScaViolations) > 0 {
+		ic.ScaViolations = append(ic.ScaViolations, issues.ScaViolations...)
+		
 	}
-	if len(issues.Sast) > 0 {
-		ic.Sast = append(ic.Sast, issues.Sast...)
+	if len(issues.SecretsVulnerabilities) > 0 {
+		ic.SecretsVulnerabilities = append(ic.SecretsVulnerabilities, issues.SecretsVulnerabilities...)
 	}
-	if len(issues.Iacs) > 0 {
-		ic.Iacs = append(ic.Iacs, issues.Iacs...)
+	if len(issues.SecretsViolations) > 0 {
+		ic.SecretsViolations = append(ic.SecretsViolations, issues.SecretsViolations...)
 	}
-	if len(issues.Licenses) > 0 {
-		ic.Licenses = append(ic.Licenses, issues.Licenses...)
+	if len(issues.SastVulnerabilities) > 0 {
+		ic.SastVulnerabilities = append(ic.SastVulnerabilities, issues.SastVulnerabilities...)
+	}
+	if len(issues.SastViolations) > 0 {
+		ic.SastViolations = append(ic.SastViolations, issues.SastViolations...)
+	}
+	if len(issues.IacVulnerabilities) > 0 {
+		ic.IacVulnerabilities = append(ic.IacVulnerabilities, issues.IacVulnerabilities...)
+	}
+	if len(issues.IacViolations) > 0 {
+		ic.IacViolations = append(ic.IacViolations, issues.IacViolations...)
+	}
+	if len(issues.LicensesViolations) > 0 {
+		ic.LicensesViolations = append(ic.LicensesViolations, issues.LicensesViolations...)
 	}
 }
 
 func (ic *IssuesCollection) CountIssuesCollectionFindings() int {
 	uniqueFindings := datastructures.MakeSet[string]()
 
-	var totalFindings int
-	for _, vulnerability := range ic.Vulnerabilities {
+	for _, vulnerability := range ic.ScaVulnerabilities {
 		for _, component := range vulnerability.Components {
 			uniqueFindings.Add(vulnerability.IssueId + "|" + component.Name + "|" + component.Version)
 		}
 	}
-	totalFindings += uniqueFindings.Size()
+	for _, violations := range ic.ScaViolations {
+		for _, component := range violations.Components {
+			uniqueFindings.Add(violations.IssueId + "|" + component.Name + "|" + component.Version)
+		}
+	}
+	for _, vulnerability := range ic.IacVulnerabilities {
+		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
+	}
+	for _, violations := range ic.IacViolations {
+		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
+	}
+	for _, vulnerability := range ic.SecretsVulnerabilities {
+		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
+	}
+	for _, violations := range ic.SecretsViolations {
+		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
+	}
+	for _, vulnerability := range ic.SastVulnerabilities {
+		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
+	}
+	for _, violations := range ic.SastViolations {
+		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
+	}
 
-	totalFindings += len(ic.Iacs)
-	totalFindings += len(ic.Sast)
-	totalFindings += len(ic.Secrets)
-	return totalFindings
+	return uniqueFindings.Size()
 }
+
+

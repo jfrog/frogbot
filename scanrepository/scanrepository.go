@@ -218,7 +218,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, len(auditResults.GetJasScansResults(jasutils.Applicability)) > 0)
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
 	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
