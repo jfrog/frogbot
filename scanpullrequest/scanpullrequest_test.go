@@ -62,7 +62,7 @@ func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, AllowedLicenses: allowedLicenses})
 	jasResults := &results.JasScansResults{}
 	if applicable {
-		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
+		jasResults.JasVulnerabilities.ApplicabilityScanResults = append(jasResults.JasVulnerabilities.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
 	}
 	cmdResults := &results.SecurityCommandResults{EntitledForJas: applicable, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -81,14 +81,14 @@ func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target [
 	var targetJasResults, sourceJasResults []formats.SourceCodeRow
 	switch scanType {
 	case jasutils.Sast:
-		targetJasResults = targetResults.Sast
-		sourceJasResults = sourceResults.Sast
+		targetJasResults = targetResults.SastVulnerabilities
+		sourceJasResults = sourceResults.SastVulnerabilities
 	case jasutils.Secrets:
-		targetJasResults = targetResults.Secrets
-		sourceJasResults = sourceResults.Secrets
+		targetJasResults = targetResults.SecretsVulnerabilities
+		sourceJasResults = sourceResults.SecretsVulnerabilities
 	case jasutils.IaC:
-		targetJasResults = targetResults.Iacs
-		sourceJasResults = sourceResults.Iacs
+		targetJasResults = targetResults.IacsVulnerabilities
+		sourceJasResults = sourceResults.IacsVulnerabilities
 	}
 
 	return createNewSourceCodeRows(targetJasResults, sourceJasResults)
@@ -97,14 +97,14 @@ func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target [
 func jasToDummySimpleJsonResults(scanType jasutils.JasScanType, jasScanResults []*sarif.Result) (formats.SimpleJsonResults, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true})
 
-	jasResults := &results.JasScansResults{}
+	jasResults := &results.JasScansResults{JasVulnerabilities: &results.JasScanResults{}}
 	switch scanType {
 	case jasutils.Sast:
-		jasResults.SastScanResults = append(jasResults.SastScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.SastScanResults = append(jasResults.JasVulnerabilities.SastScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
 	case jasutils.Secrets:
-		jasResults.SecretsScanResults = append(jasResults.SecretsScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.SecretsScanResults = append(jasResults.JasVulnerabilities.SecretsScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
 	case jasutils.IaC:
-		jasResults.IacScanResults = append(jasResults.IacScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.IacScanResults = append(jasResults.JasVulnerabilities.IacScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
 	}
 	cmdResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -455,37 +455,39 @@ func TestGetAllIssues(t *testing.T) {
 			}},
 		},
 		JasResults: &results.JasScansResults{
-			ApplicabilityScanResults: []*sarif.Run{
-				sarifutils.CreateRunWithDummyResults(
-					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
-					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
-				),
-			},
-			IacScanResults: []*sarif.Run{
-				sarifutils.CreateRunWithDummyResults(
-					sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-						sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+			JasVulnerabilities: &results.JasScanResults{
+				ApplicabilityScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
+						sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
 					),
-				),
-			},
-			SecretsScanResults: []*sarif.Run{
-				sarifutils.CreateRunWithDummyResults(
-					sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-						sarifutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
+				},
+				IacScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+						),
 					),
-				),
-			},
-			SastScanResults: []*sarif.Run{
-				sarifutils.CreateRunWithDummyResults(
-					sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-						sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+				},
+				SecretsScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
+						),
 					),
-				),
+				},
+				SastScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+						),
+					),
+				},
 			},
 		},
 	}}}
 	expectedOutput := &utils.IssuesCollection{
-		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
@@ -505,7 +507,7 @@ func TestGetAllIssues(t *testing.T) {
 				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
 			},
 		},
-		Iacs: []formats.SourceCodeRow{
+		IacVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
@@ -522,7 +524,7 @@ func TestGetAllIssues(t *testing.T) {
 				},
 			},
 		},
-		Secrets: []formats.SourceCodeRow{
+		SecretsVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
@@ -539,7 +541,7 @@ func TestGetAllIssues(t *testing.T) {
 				},
 			},
 		},
-		Sast: []formats.SourceCodeRow{
+		SastVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
@@ -573,10 +575,10 @@ func TestGetAllIssues(t *testing.T) {
 	issuesRows, err := getAllIssues(auditResults, allowedLicenses, false)
 
 	if assert.NoError(t, err) {
-		assert.ElementsMatch(t, expectedOutput.Vulnerabilities, issuesRows.Vulnerabilities)
-		assert.ElementsMatch(t, expectedOutput.Iacs, issuesRows.Iacs)
-		assert.ElementsMatch(t, expectedOutput.Secrets, issuesRows.Secrets)
-		assert.ElementsMatch(t, expectedOutput.Sast, issuesRows.Sast)
+		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.IacVulnerabilities, issuesRows.IacVulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.SecretsVulnerabilities, issuesRows.SecretsVulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.SastVulnerabilities, issuesRows.SastVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.LicensesViolations, issuesRows.LicensesViolations)
 	}
 }

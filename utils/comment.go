@@ -111,7 +111,7 @@ func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, write
 	}
 
 	content := []string{}
-	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(append(issuesCollection.ScaVulnerabilities, issuesCollection.ScaViolations...), writer); len(vulnerabilitiesContent) > 0 {
+	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.GetScaIssues(), writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
 	if licensesContent := outputwriter.LicensesContent(issuesCollection.LicensesViolations, writer); len(licensesContent) > 0 {
@@ -186,7 +186,7 @@ func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcs
 func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
 
-	for _, vulnerability := range issues.Vulnerabilities {
+	for _, vulnerability := range issues.GetScaIssues() {
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil {
 				for _, evidence := range cve.Applicability.Evidence {
@@ -195,10 +195,10 @@ func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsT
 			}
 		}
 	}
-	for _, iac := range issues.Iacs {
+	for _, iac := range issues.GetUniqueIacIssues() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeReviewContent(IacComment, iac, writer)))
 	}
-	for _, sast := range issues.Sast {
+	for _, sast := range issues.GetUniqueSastIssues() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
 	}
 	return

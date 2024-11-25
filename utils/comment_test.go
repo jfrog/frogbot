@@ -59,7 +59,7 @@ func TestGetNewReviewComments(t *testing.T) {
 		{
 			name: "No issues for review comments",
 			issues: &IssuesCollection{
-				Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 					{
 						Summary:    "summary-2",
 						Applicable: "Applicable",
@@ -72,7 +72,7 @@ func TestGetNewReviewComments(t *testing.T) {
 						Technology: techutils.Npm,
 					},
 				},
-				Secrets: []formats.SourceCodeRow{
+				SecretsVulnerabilities: []formats.SourceCodeRow{
 					{
 						SeverityDetails: formats.SeverityDetails{
 							Severity:         "High",
@@ -95,7 +95,7 @@ func TestGetNewReviewComments(t *testing.T) {
 		{
 			name: "With issues for review comments",
 			issues: &IssuesCollection{
-				Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 					{
 						Summary:    "summary-2",
 						Applicable: "Applicable",
@@ -108,7 +108,7 @@ func TestGetNewReviewComments(t *testing.T) {
 						Technology: techutils.Npm,
 					},
 				},
-				Iacs: []formats.SourceCodeRow{
+				IacVulnerabilities: []formats.SourceCodeRow{
 					{
 						SeverityDetails: formats.SeverityDetails{
 							Severity:         "High",
@@ -125,7 +125,7 @@ func TestGetNewReviewComments(t *testing.T) {
 						},
 					},
 				},
-				Sast: []formats.SourceCodeRow{
+				SastVulnerabilities: []formats.SourceCodeRow{
 					{
 						SeverityDetails: formats.SeverityDetails{
 							Severity:         "High",

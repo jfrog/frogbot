@@ -7,36 +7,27 @@ import (
 
 type IssuesCollection struct {
 	ScaVulnerabilities     []formats.VulnerabilityOrViolationRow
-	IacVulnerabilities    []formats.SourceCodeRow
+	IacVulnerabilities     []formats.SourceCodeRow
 	SecretsVulnerabilities []formats.SourceCodeRow
 	SastVulnerabilities    []formats.SourceCodeRow
 
-	ScaViolations          []formats.VulnerabilityOrViolationRow
-	LicensesViolations     []formats.LicenseRow
-	IacViolations         []formats.SourceCodeRow
-	SecretsViolations      []formats.SourceCodeRow
-	SastViolations         []formats.SourceCodeRow
+	ScaViolations      []formats.VulnerabilityOrViolationRow
+	LicensesViolations []formats.LicenseRow
+	IacViolations      []formats.SourceCodeRow
+	SecretsViolations  []formats.SourceCodeRow
+	SastViolations     []formats.SourceCodeRow
 }
 
-// func (ic *IssuesCollection) GetUniqueScaIssues() (unique []formats.VulnerabilityOrViolationRow) {
-// 	parsedIssues := datastructures.MakeSet[string]()
-// 	for _, issue := range ic.ScaViolations {
-// 		if !parsedIssues.Exists(issue.IssueId + "|" + component.Name + "|" + component.Version) {
-// 			unique = append(unique, issue)
-// 			parsedIssues.Add(issue.IssueId)
-// 		}
-// 	}
-// 	for _, issue := range ic.ScaVulnerabilities {
-// 		if !parsedIssues.Exists(issue.IssueId) {
-// 			unique = append(unique, issue)
-// 			parsedIssues.Add(issue.IssueId)
-// 		}
-// 	}
-// 	return
-// }
+func (ic *IssuesCollection) GetScaIssues() (unique []formats.VulnerabilityOrViolationRow) {
+	return append(ic.ScaVulnerabilities, ic.ScaViolations...)
+}
 
 func (ic *IssuesCollection) ScaIssuesExists() bool {
 	return len(ic.ScaVulnerabilities) > 0 || len(ic.ScaViolations) > 0
+}
+
+func (ic *IssuesCollection) GetUniqueIacIssues() (unique []formats.SourceCodeRow) {
+	return getUniqueJasIssues(ic.IacVulnerabilities, ic.IacViolations)
 }
 
 func (ic *IssuesCollection) IacIssuesExists() bool {
@@ -44,8 +35,20 @@ func (ic *IssuesCollection) IacIssuesExists() bool {
 }
 
 func (ic *IssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCodeRow) {
+	return getUniqueJasIssues(ic.SecretsVulnerabilities, ic.SecretsViolations)
+}
+
+func (ic *IssuesCollection) SecretsIssuesExists() bool {
+	return len(ic.SecretsVulnerabilities) > 0 || len(ic.SecretsViolations) > 0
+}
+
+func (ic *IssuesCollection) GetUniqueSastIssues() (unique []formats.SourceCodeRow) {
+	return getUniqueJasIssues(ic.SastVulnerabilities, ic.SastViolations)
+}
+
+func getUniqueJasIssues(vulnerabilities, violations []formats.SourceCodeRow) (unique []formats.SourceCodeRow) {
 	parsedIssues := datastructures.MakeSet[string]()
-	for _, violation := range ic.SecretsViolations {
+	for _, violation := range violations {
 		issueId := violation.ToString() + "|" + violation.Finding
 		if parsedIssues.Exists(issueId) {
 			continue
@@ -53,7 +56,7 @@ func (ic *IssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCod
 		parsedIssues.Add(issueId)
 		unique = append(unique, violation)
 	}
-	for _, vulnerability := range ic.SecretsVulnerabilities {
+	for _, vulnerability := range vulnerabilities {
 		issueId := vulnerability.ToString() + "|" + vulnerability.Finding
 		if parsedIssues.Exists(issueId) {
 			continue
@@ -62,10 +65,6 @@ func (ic *IssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCod
 		unique = append(unique, vulnerability)
 	}
 	return
-}
-
-func (ic *IssuesCollection) SecretsIssuesExists() bool {
-	return len(ic.SecretsVulnerabilities) > 0 || len(ic.SecretsViolations) > 0
 }
 
 func (ic *IssuesCollection) SastIssuesExists() bool {
@@ -89,7 +88,7 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	}
 	if len(issues.ScaViolations) > 0 {
 		ic.ScaViolations = append(ic.ScaViolations, issues.ScaViolations...)
-		
+
 	}
 	if len(issues.SecretsVulnerabilities) > 0 {
 		ic.SecretsVulnerabilities = append(ic.SecretsVulnerabilities, issues.SecretsVulnerabilities...)
@@ -115,38 +114,13 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 }
 
 func (ic *IssuesCollection) CountIssuesCollectionFindings() int {
-	uniqueFindings := datastructures.MakeSet[string]()
+	count := 0
 
-	for _, vulnerability := range ic.ScaVulnerabilities {
-		for _, component := range vulnerability.Components {
-			uniqueFindings.Add(vulnerability.IssueId + "|" + component.Name + "|" + component.Version)
-		}
-	}
-	for _, violations := range ic.ScaViolations {
-		for _, component := range violations.Components {
-			uniqueFindings.Add(violations.IssueId + "|" + component.Name + "|" + component.Version)
-		}
-	}
-	for _, vulnerability := range ic.IacVulnerabilities {
-		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
-	}
-	for _, violations := range ic.IacViolations {
-		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
-	}
-	for _, vulnerability := range ic.SecretsVulnerabilities {
-		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
-	}
-	for _, violations := range ic.SecretsViolations {
-		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
-	}
-	for _, vulnerability := range ic.SastVulnerabilities {
-		uniqueFindings.Add(vulnerability.ToString() + "|" + vulnerability.Finding)
-	}
-	for _, violations := range ic.SastViolations {
-		uniqueFindings.Add(violations.ToString() + "|" + violations.Finding)
-	}
+	count += len(ic.GetScaIssues())
+	count += len(ic.GetUniqueIacIssues())
+	count += len(ic.GetUniqueSecretsIssues())
+	count += len(ic.GetUniqueSastIssues())
+	count += len(ic.LicensesViolations)
 
-	return uniqueFindings.Size()
+	return count
 }
-
-

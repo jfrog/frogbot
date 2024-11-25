@@ -230,15 +230,15 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	}
 	gitInfo = &services.XscGitInfoContext{
 		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
-		GitRepoUrl:    sc.Git.RepositoryCloneUrl,
-		GitRepoName:   sc.RepoName,
-		GitProvider:   sc.GitProvider.String(),
-		GitProject:    gitProject,
-		BranchName:    scannedBranch,
-		LastCommitUrl:    latestCommit.Url,
-		LastCommitHash:    latestCommit.Hash,
-		LastCommitMessage: latestCommit.Message,
-		LastCommitAuthor:  latestCommit.AuthorName,
+		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
+		GitRepoName:          sc.RepoName,
+		GitProvider:          sc.GitProvider.String(),
+		GitProject:           gitProject,
+		BranchName:           scannedBranch,
+		LastCommitUrl:        latestCommit.Url,
+		LastCommitHash:       latestCommit.Hash,
+		LastCommitMessage:    latestCommit.Message,
+		LastCommitAuthor:     latestCommit.AuthorName,
 	}
 	return
 }

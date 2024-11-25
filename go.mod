@@ -3,9 +3,6 @@ module github.com/jfrog/frogbot/v2
 go 1.22.9
 
 toolchain go1.23.3
-go 1.22.9
-
-toolchain go1.23.3
 
 require (
 	github.com/go-git/go-git/v5 v5.12.0
@@ -126,7 +123,7 @@ require (
 )
 
 // eranturgeman:jas-violations-support
-replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241125121334-069dbae0f2e9
 
 // replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241124185605-a69b532152fc
 
@@ -135,6 +132,6 @@ replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:add_repo_context_scan_graph
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241124184755-a8b7f3de7938
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241125121151-c243bb1fe709
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev

@@ -9,7 +9,7 @@ import (
 
 func TestCountIssuesCollectionFindings(t *testing.T) {
 	issuesCollection := IssuesCollection{
-		Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 					Components: []formats.ComponentRow{
@@ -42,17 +42,17 @@ func TestCountIssuesCollectionFindings(t *testing.T) {
 			},
 		},
 
-		Iacs: []formats.SourceCodeRow{
+		IacVulnerabilities: []formats.SourceCodeRow{
 			{
 				ScannerDescription: "Iac issue",
 			},
 		},
-		Secrets: []formats.SourceCodeRow{
+		SecretsVulnerabilities: []formats.SourceCodeRow{
 			{
 				ScannerDescription: "Secret issue",
 			},
 		},
-		Sast: []formats.SourceCodeRow{
+		SastVulnerabilities: []formats.SourceCodeRow{
 			{
 				ScannerDescription: "Sast issue1",
 			},
