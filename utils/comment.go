@@ -106,7 +106,7 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 }
 
 func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
-	if !issuesCollection.PresentableIssuesExists() {
+	if !issuesCollection.PresentableIssuesExists() && !issuesCollection.ViolationsExists() {
 		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
 	}
 
