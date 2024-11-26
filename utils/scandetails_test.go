@@ -9,25 +9,42 @@ import (
 func TestCreateXrayScanParams(t *testing.T) {
 	// Project
 	scanDetails := &ScanDetails{}
-	scanDetails.SetXrayGraphScanParams(nil, "", false)
+	scanDetails.SetXrayGraphScanParams("", nil, "", false)
 	assert.Empty(t, scanDetails.Watches)
 	assert.Equal(t, "", scanDetails.ProjectKey)
 	assert.True(t, scanDetails.IncludeVulnerabilities)
 	assert.False(t, scanDetails.IncludeLicenses)
 
 	// Watches
-	scanDetails.SetXrayGraphScanParams([]string{"watch-1", "watch-2"}, "", false)
+	scanDetails.SetXrayGraphScanParams("", []string{"watch-1", "watch-2"}, "", false)
 	assert.Equal(t, []string{"watch-1", "watch-2"}, scanDetails.Watches)
 	assert.Equal(t, "", scanDetails.ProjectKey)
 	assert.False(t, scanDetails.IncludeVulnerabilities)
 	assert.False(t, scanDetails.IncludeLicenses)
 
 	// Project
-	scanDetails.SetXrayGraphScanParams(nil, "project", true)
+	scanDetails.SetXrayGraphScanParams("", nil, "project", true)
 	assert.Empty(t, scanDetails.Watches)
 	assert.Equal(t, "project", scanDetails.ProjectKey)
 	assert.False(t, scanDetails.IncludeVulnerabilities)
 	assert.True(t, scanDetails.IncludeLicenses)
+
+	// GitInfoContext
+	scanDetails.SetXrayGraphScanParams("http://localhost:8080/my-user/my-project.git", nil, "", false)
+	assert.Empty(t, scanDetails.Watches)
+	assert.Equal(t, "", scanDetails.ProjectKey)
+	assert.False(t, scanDetails.IncludeVulnerabilities)
+	assert.False(t, scanDetails.IncludeLicenses)
+	assert.NotNil(t, scanDetails.XscGitInfoContext)
+	assert.Equal(t, "http://localhost:8080/my-user/my-project.git", scanDetails.XscGitInfoContext.GitRepoHttpsCloneUrl)
+
+	// Vulnerabilities
+	scanDetails.SetXrayGraphScanParams("", nil, "", true)
+	assert.Empty(t, scanDetails.Watches)
+	assert.Equal(t, "", scanDetails.ProjectKey)
+	assert.True(t, scanDetails.IncludeVulnerabilities)
+	assert.True(t, scanDetails.IncludeLicenses)
+	assert.Nil(t, scanDetails.XscGitInfoContext)
 }
 
 func TestGetFullPathWorkingDirs(t *testing.T) {

@@ -122,9 +122,14 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
+	if err != nil {
+		return
+	}
+
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
+		SetXrayGraphScanParams(repositoryInfo.CloneInfo.HTTP, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
@@ -137,10 +142,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
-	if err != nil {
-		return
-	}
+
 	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
 	cfp.aggregateFixes = repository.Git.AggregateFixes

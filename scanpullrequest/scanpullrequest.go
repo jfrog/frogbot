@@ -26,9 +26,7 @@ const (
 	analyticsScanPrScanType = "PR"
 )
 
-type ScanPullRequestCmd struct {
-	XrayVersion string
-}
+type ScanPullRequestCmd struct{}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -128,16 +126,25 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
+
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
+	if err != nil {
+		return
+	}
+	repoConfig.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
+		SetXrayGraphScanParams(repositoryInfo.CloneInfo.HTTP, repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
 		SetConfigProfile(repoConfig.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
+		SetXscGitInfoContext(repoConfig.PullRequestDetails.Source.Name, repoConfig.Project, client).
 		SetDisableJas(repoConfig.DisableJas)
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
+
 	scanDetails.XrayVersion = repoConfig.XrayVersion
 	scanDetails.XscVersion = repoConfig.XscVersion
 

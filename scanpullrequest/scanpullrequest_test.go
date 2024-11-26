@@ -62,7 +62,7 @@ func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, AllowedLicenses: allowedLicenses})
 	jasResults := &results.JasScansResults{}
 	if applicable {
-		jasResults.JasVulnerabilities.ApplicabilityScanResults = append(jasResults.JasVulnerabilities.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
+		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
 	}
 	cmdResults := &results.SecurityCommandResults{EntitledForJas: applicable, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -455,13 +455,13 @@ func TestGetAllIssues(t *testing.T) {
 			}},
 		},
 		JasResults: &results.JasScansResults{
+			ApplicabilityScanResults: []*sarif.Run{
+				sarifutils.CreateRunWithDummyResults(
+					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
+					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
+				),
+			},
 			JasVulnerabilities: &results.JasScanResults{
-				ApplicabilityScanResults: []*sarif.Run{
-					sarifutils.CreateRunWithDummyResults(
-						sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
-						sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
-					),
-				},
 				IacScanResults: []*sarif.Run{
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),

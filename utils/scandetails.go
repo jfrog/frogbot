@@ -57,8 +57,8 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(watches []string, jfrogProjectKey string, includeLicenses bool) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(watches, jfrogProjectKey, includeLicenses)
+func (sc *ScanDetails) SetXrayGraphScanParams(httpCloneUrl string, watches []string, jfrogProjectKey string, includeLicenses bool) *ScanDetails {
+	sc.XrayGraphScanParams = createXrayScanParams(httpCloneUrl, watches, jfrogProjectKey, includeLicenses)
 	return sc
 }
 
@@ -157,10 +157,24 @@ func (sc *ScanDetails) HasViolationContext() bool {
 	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
 }
 
-func createXrayScanParams(watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
+func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	params = &services.XrayGraphScanParams{
 		ScanType:        services.Dependency,
 		IncludeLicenses: includeLicenses,
+	}
+	if len(httpCloneUrl) > 0 && params.XscGitInfoContext == nil {
+		// TODO: control with other var, this is always true.
+		if project != "" {
+			log.Warn("Using git URL as violation context, project key will be ignored.")
+		}
+		params.ProjectKey = ""
+
+		params.Watches = watches
+
+		params.XscGitInfoContext = &services.XscGitInfoContext{
+			GitRepoHttpsCloneUrl: httpCloneUrl,
+		}
+		return
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
@@ -199,6 +213,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile).
+		SetGitInfoContext(sc.XscGitInfoContext).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 
