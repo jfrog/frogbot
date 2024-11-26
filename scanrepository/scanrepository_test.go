@@ -594,7 +594,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, true)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, true, true)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]

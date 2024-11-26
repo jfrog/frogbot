@@ -154,7 +154,7 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 }
 
 func (sc *ScanDetails) HasViolationContext() bool {
-	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
+	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != "" || (sc.XscGitInfoContext != nil && sc.XscGitInfoContext.GitRepoHttpsCloneUrl != "")
 }
 
 func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {

@@ -121,7 +121,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 
 func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bool {
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
-	return failFlagSet && issues.PresentableIssuesExists()
+	return failFlagSet && (issues.PresentableIssuesExists() || issues.ViolationsExists())
 }
 
 // Downloads Pull Requests branches code and audits them
@@ -195,10 +195,9 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 
 	// Set JAS output flags
 	repoConfig.OutputWriter.SetJasOutputFlags(sourceResults.EntitledForJas, sourceResults.HasJasScansResults(jasutils.Applicability))
-
 	// Get all issues that exist in the source branch
 	if repoConfig.IncludeAllVulnerabilities {
-		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses, scanDetails.HasViolationContext()); err != nil {
+		if auditIssues, err = getAllIssues(sourceResults, repoConfig.AllowedLicenses, scanDetails.IncludeVulnerabilities, scanDetails.HasViolationContext()); err != nil {
 			return
 		}
 		utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd)
@@ -235,7 +234,7 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	}
 
 	// Get newly added issues
-	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses, scanDetails.HasViolationContext())
+	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses, scanDetails.IncludeVulnerabilities, scanDetails.HasViolationContext())
 	return
 }
 
@@ -297,10 +296,10 @@ func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash
 	return gitManager.CheckoutToHash(commitHash, wd)
 }
 
-func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {
+func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*utils.IssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IncludeVulnerabilities: true,
+		IncludeVulnerabilities: includeVulnerabilities,
 		HasViolationContext:    hasViolationContext,
 		AllowedLicenses:        allowedLicenses,
 		IncludeLicenses:        true,
@@ -326,9 +325,9 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {
+func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*utils.IssuesCollection, error) {
 	var err error
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: includeVulnerabilities, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
 	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
 	if err != nil {
 		return nil, err

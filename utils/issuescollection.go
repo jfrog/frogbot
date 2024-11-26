@@ -79,6 +79,10 @@ func (ic *IssuesCollection) PresentableIssuesExists() bool {
 	return ic.ScaIssuesExists() || ic.IacIssuesExists() || ic.LicensesViolationsExists() || ic.SastIssuesExists()
 }
 
+func (ic *IssuesCollection) ViolationsExists() bool {
+	return len(ic.ScaViolations) > 0 || len(ic.IacViolations) > 0 || len(ic.SecretsViolations) > 0 || len(ic.SastViolations) > 0 || len(ic.LicensesViolations) > 0
+}
+
 func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 	if issues == nil {
 		return
@@ -90,24 +94,28 @@ func (ic *IssuesCollection) Append(issues *IssuesCollection) {
 		ic.ScaViolations = append(ic.ScaViolations, issues.ScaViolations...)
 
 	}
+
 	if len(issues.SecretsVulnerabilities) > 0 {
 		ic.SecretsVulnerabilities = append(ic.SecretsVulnerabilities, issues.SecretsVulnerabilities...)
 	}
 	if len(issues.SecretsViolations) > 0 {
 		ic.SecretsViolations = append(ic.SecretsViolations, issues.SecretsViolations...)
 	}
+
 	if len(issues.SastVulnerabilities) > 0 {
 		ic.SastVulnerabilities = append(ic.SastVulnerabilities, issues.SastVulnerabilities...)
 	}
 	if len(issues.SastViolations) > 0 {
 		ic.SastViolations = append(ic.SastViolations, issues.SastViolations...)
 	}
+
 	if len(issues.IacVulnerabilities) > 0 {
 		ic.IacVulnerabilities = append(ic.IacVulnerabilities, issues.IacVulnerabilities...)
 	}
 	if len(issues.IacViolations) > 0 {
 		ic.IacViolations = append(ic.IacViolations, issues.IacViolations...)
 	}
+
 	if len(issues.LicensesViolations) > 0 {
 		ic.LicensesViolations = append(ic.LicensesViolations, issues.LicensesViolations...)
 	}

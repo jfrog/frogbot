@@ -222,8 +222,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient, hasViolationContext bool) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), hasViolationContext, repo.AllowedLicenses)
+func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient, includeVulnerabilities, hasViolationContext bool) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), includeVulnerabilities, hasViolationContext, repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -235,9 +235,9 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots, hasViolationContext bool, allowedLicenses []string) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots, includeVulnerabilities, hasViolationContext bool, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IncludeVulnerabilities: true,
+		IncludeVulnerabilities: includeVulnerabilities,
 		HasViolationContext:    hasViolationContext,
 		IsMultipleRoots:        &isMultipleRoots,
 		AllowedLicenses:        allowedLicenses,
