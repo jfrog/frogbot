@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 const (
-	conanTechName = "conan"
-	conanFileTxt  = "conanfile.txt"
-	conanFilePy   = "conanfile.py"
+	conanFileTxt = "conanfile.txt"
+	conanFilePy  = "conanfile.py"
 )
 
 type ConanPackageHandler struct {
@@ -42,7 +42,8 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 		if err = conan.updateConanFile(conanFileTxt, vulnDetails); err != nil {
 			return
 		}
-		return conan.installConanDependencies(conanFileTxt)
+		conan.logNoInstallationMessage()
+		return
 	}
 	isConanFilePyExists, err := fileutils.IsFileExists(conanFilePy, false)
 	if err != nil {
@@ -53,7 +54,8 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 		if err = conan.updateConanFile(conanFilePy, vulnDetails); err != nil {
 			return
 		}
-		return conan.installConanDependencies(conanFilePy)
+		conan.logNoInstallationMessage()
+		return
 	}
 	// If no conanfile found, return an error
 	return fmt.Errorf("failed to update conan dependency: conanfile not found")
@@ -83,12 +85,12 @@ func (conan *ConanPackageHandler) updateConanFile(conanFileName string, vulnDeta
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
 	if err = os.WriteFile(conanFileName, []byte(fixedFile), 0600); err != nil {
-		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.ImpactedDependencyName, err.Error())
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", conanFileName, vulnDetails.ImpactedDependencyName, err.Error())
 	}
 	return
 }
 
-func (conan *ConanPackageHandler) installConanDependencies(conanFile string) (err error) {
-	commandArgs := []string{"install", conanFile, "--build=missing"}
-	return runPackageMangerCommand(conanTechName, conanTechName, commandArgs)
+func (conan *ConanPackageHandler) logNoInstallationMessage() {
+	log.Info("Requirements file was updated with a suggested fix version, but no installation was performed. " +
+		"In order to update the dependencies, please run 'conan install' command")
 }
