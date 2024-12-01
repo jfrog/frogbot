@@ -26,7 +26,9 @@ const (
 	analyticsScanPrScanType = "PR"
 )
 
-type ScanPullRequestCmd struct{}
+type ScanPullRequestCmd struct {
+	XrayVersion string
+}
 
 // Run ScanPullRequest method only works for a single repository scan.
 // Therefore, the first repository config represents the repository on which Frogbot runs, and it is the only one that matters.
@@ -91,13 +93,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
 
-	analyticsService := utils.AddAnalyticsGeneralEvent(nil, &repo.Server, analyticsScanPrScanType)
-	defer func() {
-		analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
-	}()
-
 	// Audit PR code
-	issues, err := auditPullRequest(repo, client, analyticsService)
+	issues, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
 	}
@@ -130,7 +127,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bo
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, analyticsService *xsc.AnalyticsMetricsService) (issuesCollection *utils.IssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetXrayGraphScanParams(repoConfig.Watches, repoConfig.JFrogProjectKey, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
@@ -141,12 +138,21 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
+	scanDetails.XrayVersion = repoConfig.XrayVersion
+	scanDetails.XscVersion = repoConfig.XscVersion
 
-	// If MSI exists we always need to report events
-	if analyticsService.GetMsi() != "" {
-		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
-		scanDetails.XrayGraphScanParams.MultiScanId = analyticsService.GetMsi()
-	}
+	scanDetails.MultiScanId, scanDetails.StartTime = xsc.SendNewScanEvent(
+		scanDetails.XrayVersion,
+		scanDetails.XscVersion,
+		scanDetails.ServerDetails,
+		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
+	)
+
+	defer func() {
+		if issuesCollection != nil {
+			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.CountIssuesCollectionFindings(), err)
+		}
+	}()
 
 	issuesCollection = &utils.IssuesCollection{}
 	for i := range repoConfig.Projects {
@@ -156,9 +162,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient, 
 			return
 		}
 		issuesCollection.Append(projectIssues)
-	}
-	if analyticsService.ShouldReportEvents() {
-		analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(issuesCollection.CountIssuesCollectionFindings())
 	}
 	return
 }
@@ -178,8 +181,8 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	var sourceResults *results.SecurityCommandResults
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
 	log.Info("Scanning source branch...")
-	sourceResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
-	if err != nil {
+	sourceResults = scanDetails.RunInstallAndAudit(workingDirs...)
+	if err = sourceResults.GetErrors(); err != nil {
 		return
 	}
 
@@ -219,8 +222,8 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	var targetResults *results.SecurityCommandResults
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 	log.Info("Scanning target branch...")
-	targetResults, err = scanDetails.RunInstallAndAudit(workingDirs...)
-	if err != nil {
+	targetResults = scanDetails.RunInstallAndAudit(workingDirs...)
+	if err = targetResults.GetErrors(); err != nil {
 		return
 	}
 

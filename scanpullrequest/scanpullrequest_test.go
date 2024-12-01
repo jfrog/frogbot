@@ -19,6 +19,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
@@ -635,11 +636,14 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	params, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&params)
+	assert.NoError(t, err)
+
 	// Create mock GitLab server
 	server := httptest.NewServer(createGitLabHandler(t, projectName))
 	defer server.Close()
 
-	configAggregator, client := prepareConfigAndClient(t, configPath, server, params)
+	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params)
 	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
 	defer cleanUp()
 
@@ -722,7 +726,7 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
 		RepoOwner:   "jfrog",
@@ -739,7 +743,7 @@ func prepareConfigAndClient(t *testing.T, configPath string, server *httptest.Se
 
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
-	configAggregator, err := utils.BuildRepoAggregator(client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
+	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
 	return configAggregator, client
