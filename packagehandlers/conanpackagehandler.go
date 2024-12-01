@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -33,60 +31,44 @@ func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabil
 }
 
 func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	isConanFileTxtExists, err := fileutils.IsFileExists(conanFileTxt, false)
+	conanDescriptors, err := conan.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
 	if err != nil {
 		err = fmt.Errorf("failed while serching for conanfile in project: %s", err.Error())
 		return
 	}
-	if isConanFileTxtExists {
-		if err = conan.updateConanFile(conanFileTxt, vulnDetails); err != nil {
+	isAnyDescriptorFileChanged := false
+	for _, descriptor := range conanDescriptors {
+		var isFileChanged bool
+		isFileChanged, err = conan.updateConanFile(descriptor, vulnDetails)
+		if err != nil {
 			return
 		}
-		conan.logNoInstallationMessage()
-		return
+		isAnyDescriptorFileChanged = isAnyDescriptorFileChanged || isFileChanged
 	}
-	isConanFilePyExists, err := fileutils.IsFileExists(conanFilePy, false)
-	if err != nil {
-		err = fmt.Errorf("failed while serching for conanfile in project: %s", err.Error())
-		return
+	if !isAnyDescriptorFileChanged {
+		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
 	}
-	if isConanFilePyExists {
-		if err = conan.updateConanFile(conanFilePy, vulnDetails); err != nil {
-			return
-		}
-		conan.logNoInstallationMessage()
-		return
-	}
-	// If no conanfile found, return an error
-	return fmt.Errorf("failed to update conan dependency: conanfile not found")
-
+	conan.logNoInstallationMessage()
+	return
 }
 
-func (conan *ConanPackageHandler) updateConanFile(conanFileName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
-	var fixedFile string
-	wd, err := os.Getwd()
+func (conan *ConanPackageHandler) updateConanFile(conanFile string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+	data, err := os.ReadFile(conanFile)
 	if err != nil {
-		return
-	}
-	filePath := filepath.Clean(filepath.Join(wd, conanFileName))
-	if !strings.HasPrefix(filePath, wd) {
-		return errors.New("wrong requirements file input")
-	}
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
+		return false, errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
 	}
 	currentFile := string(data)
 	fixedPackage := vulnDetails.ImpactedDependencyName + "/" + vulnDetails.SuggestedFixedVersion
 	impactedDependency := vulnDetails.ImpactedDependencyName + "/" + vulnDetails.ImpactedDependencyVersion
-	fixedFile = strings.Replace(currentFile, impactedDependency, strings.ToLower(fixedPackage), 1)
+	fixedFile := strings.Replace(currentFile, impactedDependency, strings.ToLower(fixedPackage), 1)
 
-	if fixedFile == "" {
-		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
+	if fixedFile == currentFile {
+		return false, fmt.Errorf("impacted dependency '%s' not found in descriptor '%s', fix failed vulnerability", impactedDependency, conanFile)
 	}
-	if err = os.WriteFile(conanFileName, []byte(fixedFile), 0600); err != nil {
-		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", conanFileName, vulnDetails.ImpactedDependencyName, err.Error())
+	if err = os.WriteFile(conanFile, []byte(fixedFile), 0600); err != nil {
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", conanFile, vulnDetails.ImpactedDependencyName, err.Error())
 	}
+	isFileChanged = true
 	return
 }
 

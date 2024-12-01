@@ -369,6 +369,17 @@ func TestUpdateDependency(t *testing.T) {
 				testDirName:        filepath.Join("conan", "conan_py"),
 				descriptorsToCheck: []string{"conanfile.py"},
 			},
+			{
+				vulnDetails: &utils.VulnerabilityDetails{
+					SuggestedFixedVersion:       "3.0.14",
+					IsDirectDependency:          true,
+					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
+				},
+				scanDetails:        scanDetails,
+				fixSupported:       true,
+				testDirName:        filepath.Join("conan", "conan_py_txt"),
+				descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
+			},
 		},
 	}
 
