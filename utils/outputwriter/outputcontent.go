@@ -134,6 +134,23 @@ func vulnerabilitiesSummaryContent(vulnerabilities []formats.VulnerabilityOrViol
 	return contentBuilder.String()
 }
 
+func getIssuesSummaryTable(writer OutputWriter) string {
+	// Construct table
+	columns := []string{"Severity/Risk", "ID", "Type"}
+	if writer.IsShowingCaColumn() {
+		columns = append(columns, "Contextual Analysis")
+	}
+	columns = append(columns, "Direct Dependency", "Impacted Dependency", "File Path", "Line")
+	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
+	if _, ok := writer.(*SimplifiedOutput); ok {
+		// The values in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
+		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
+		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
+		table.GetColumnInfo("Direct Dependency").ColumnType = MultiRowColumn
+	}
+
+}
+
 func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	// Construct table
 	columns := []string{"SEVERITY"}
