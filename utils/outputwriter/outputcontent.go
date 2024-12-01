@@ -6,6 +6,7 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 )
 
@@ -19,6 +20,7 @@ const (
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
 
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE Vulnerability"
+	secretsTitle            = "🗝️ Secret Detected"
 	iacTitle                = "🛠️ Infrastructure as Code Vulnerability"
 	sastTitle               = "🎯 Static Application Security Testing (SAST) Vulnerability"
 )
@@ -335,7 +337,30 @@ func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails,
 }
 
 func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
-	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), finding).Build()
+	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, jasutils.Applicable.String()), finding).Build()
+}
+
+func getSecretsDescriptionTable(severity, finding, status string, writer OutputWriter) string {
+	columns := []string{"Severity", "Finding"}
+	applicability := jasutils.Applicable.String()
+	if status != "" {
+		columns = append(columns, "Contextual Analysis")
+		if status == jasutils.Inactive.String() {
+			applicability = jasutils.NotApplicable.String()
+		}
+		return NewMarkdownTable(columns...).AddRow(writer.FormattedSeverity(severity, applicability), finding, status).Build()
+	}
+	return NewMarkdownTable(columns...).AddRow(writer.FormattedSeverity(severity, applicability), finding).Build()
+}
+
+func SecretReviewContent(severity, finding, fullDetails, applicability string, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(secretsTitle, 2),
+		writer.MarkInCenter(getSecretsDescriptionTable(severity, finding, applicability, writer)),
+		writer.MarkAsDetails("Full description", 3, fullDetails),
+	)
+	return contentBuilder.String()
 }
 
 func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
