@@ -4,7 +4,7 @@
 ## 🗝️ Secret Detected
 
 ---
-| Severity                | Finding                  | Contextual Analysis                  |
+| Severity                | Finding                  | Status                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: |
 | Medium | Secret keys were found | Active |
 

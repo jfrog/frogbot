@@ -2,7 +2,7 @@
 ## 🗝️ Secret Detected
 <div align='center'>
 
-| Severity                | Finding                  | Contextual Analysis                  |
+| Severity                | Finding                  | Status                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: |
 | ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | Secret keys were found | Active |
 
