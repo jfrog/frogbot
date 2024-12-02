@@ -20,9 +20,10 @@ const (
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
 
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE Vulnerability"
-	secretsTitle            = "🗝️ Secret Detected"
-	iacTitle                = "🛠️ Infrastructure as Code Vulnerability"
-	sastTitle               = "🎯 Static Application Security Testing (SAST) Vulnerability"
+	//#nosec G101 -- not a secret
+	secretsTitle = "🗝️ Secret Detected"
+	iacTitle     = "🛠️ Infrastructure as Code Vulnerability"
+	sastTitle    = "🎯 Static Application Security Testing (SAST) Vulnerability"
 )
 
 var (
@@ -344,7 +345,7 @@ func getSecretsDescriptionTable(severity, finding, status string, writer OutputW
 	columns := []string{"Severity", "Finding"}
 	applicability := jasutils.Applicable.String()
 	if status != "" {
-		columns = append(columns, "Contextual Analysis")
+		columns = append(columns, "Status")
 		if status == jasutils.Inactive.String() {
 			applicability = jasutils.NotApplicable.String()
 		}
