@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
@@ -119,13 +120,13 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	return
 }
 
-func toFailTaskStatus(repo *utils.Repository, issues *utils.IssuesCollection) bool {
+func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollection) bool {
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
 	return failFlagSet && (issues.PresentableIssuesExists() || issues.ViolationsExists())
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *utils.IssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, err error) {
 
 	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
 	if err != nil {
@@ -161,10 +162,10 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		}
 	}()
 
-	issuesCollection = &utils.IssuesCollection{}
+	issuesCollection = &issues.ScansIssuesCollection{}
 	for i := range repoConfig.Projects {
 		scanDetails.SetProject(&repoConfig.Projects[i])
-		var projectIssues *utils.IssuesCollection
+		var projectIssues *issues.ScansIssuesCollection
 		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
 			return
 		}
@@ -173,7 +174,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	return
 }
 
-func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (auditIssues *utils.IssuesCollection, err error) {
+func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (auditIssues *issues.ScansIssuesCollection, err error) {
 	// Download source branch
 	sourcePullRequestInfo := scanDetails.PullRequestDetails.Source
 	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(scanDetails.Client(), sourcePullRequestInfo.Owner, sourcePullRequestInfo.Repository, sourcePullRequestInfo.Name)
@@ -212,7 +213,7 @@ func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.
 	return
 }
 
-func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *results.SecurityCommandResults) (newIssues *utils.IssuesCollection, targetBranchWd string, err error) {
+func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *results.SecurityCommandResults) (newIssues *issues.ScansIssuesCollection, targetBranchWd string, err error) {
 	// Download target branch (if needed)
 	cleanupTarget := func() error { return nil }
 	if !repoConfig.IncludeAllVulnerabilities {
@@ -296,7 +297,7 @@ func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash
 	return gitManager.CheckoutToHash(commitHash, wd)
 }
 
-func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*utils.IssuesCollection, error) {
+func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*issues.ScansIssuesCollection, error) {
 	log.Info("Frogbot is configured to show all vulnerabilities")
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: includeVulnerabilities,
@@ -308,7 +309,7 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 	if err != nil {
 		return nil, err
 	}
-	return &utils.IssuesCollection{
+	return &issues.ScansIssuesCollection{
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,
 		LicensesViolations: simpleJsonResults.LicensesViolations,
@@ -325,7 +326,7 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*utils.IssuesCollection, error) {
+func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*issues.ScansIssuesCollection, error) {
 	var err error
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: includeVulnerabilities, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
 	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
@@ -336,7 +337,7 @@ func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandRe
 	if err != nil {
 		return nil, err
 	}
-	return &utils.IssuesCollection{
+	return &issues.ScansIssuesCollection{
 		ScaVulnerabilities:     getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities),
 		ScaViolations:          getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations),
 		IacVulnerabilities:     createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities),
@@ -381,14 +382,14 @@ func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.Vuln
 	return newRows
 }
 
-func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseRow) []formats.LicenseRow {
-	existingLicenses := make(map[string]formats.LicenseRow)
-	var newLicenses []formats.LicenseRow
+func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseViolationRow) []formats.LicenseViolationRow {
+	existingLicenses := make(map[string]formats.LicenseViolationRow)
+	var newLicenses []formats.LicenseViolationRow
 	for _, row := range targetRows {
-		existingLicenses[getUniqueLicenseKey(row)] = row
+		existingLicenses[getUniqueLicenseKey(row.LicenseRow)] = row
 	}
 	for _, row := range sourceRows {
-		if _, exists := existingLicenses[getUniqueLicenseKey(row)]; !exists {
+		if _, exists := existingLicenses[getUniqueLicenseKey(row.LicenseRow)]; !exists {
 			newLicenses = append(newLicenses, row)
 		}
 	}

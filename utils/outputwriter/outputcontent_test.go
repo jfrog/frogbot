@@ -411,12 +411,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 func TestLicensesContent(t *testing.T) {
 	testCases := []struct {
 		name     string
-		licenses []formats.LicenseRow
+		licenses []formats.LicenseViolationRow
 		cases    []OutputTestCase
 	}{
 		{
 			name:     "No license violations",
-			licenses: []formats.LicenseRow{},
+			licenses: []formats.LicenseViolationRow{},
 			cases: []OutputTestCase{
 				{
 					name:           "Standard output",
@@ -432,36 +432,39 @@ func TestLicensesContent(t *testing.T) {
 		},
 		{
 			name: "License violations",
-			licenses: []formats.LicenseRow{
+			licenses: []formats.LicenseViolationRow{
 				{
-					LicenseKey: "License1",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-
-						Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-						ImpactedDependencyName:    "Dep1",
-						ImpactedDependencyVersion: "2.0",
-						SeverityDetails: formats.SeverityDetails{
-							Severity: "High",
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "License1",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
+							ImpactedDependencyName:    "Dep1",
+							ImpactedDependencyVersion: "2.0",
+							SeverityDetails: formats.SeverityDetails{
+								Severity: "High",
+							},
 						},
 					},
 				},
 				{
-					LicenseKey: "License2",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						Components: []formats.ComponentRow{
-							{
-								Name:    "root",
-								Version: "1.0.0",
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "License2",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							Components: []formats.ComponentRow{
+								{
+									Name:    "root",
+									Version: "1.0.0",
+								},
+								{
+									Name:    "minimatch",
+									Version: "1.2.3",
+								},
 							},
-							{
-								Name:    "minimatch",
-								Version: "1.2.3",
+							ImpactedDependencyName:    "Dep2",
+							ImpactedDependencyVersion: "3.0",
+							SeverityDetails: formats.SeverityDetails{
+								Severity: "High",
 							},
-						},
-						ImpactedDependencyName:    "Dep2",
-						ImpactedDependencyVersion: "3.0",
-						SeverityDetails: formats.SeverityDetails{
-							Severity: "High",
 						},
 					},
 				},

@@ -51,9 +51,21 @@ func NewCellData(values ...string) CellData {
 func NewMarkdownTable(columns ...string) *MarkdownTableBuilder {
 	columnsInfo := []*MarkdownColumn{}
 	for _, column := range columns {
-		columnsInfo = append(columnsInfo, &MarkdownColumn{Name: column, ColumnType: SeparatorDelimited, DefaultValue: cellDefaultValue})
+		columnsInfo = append(columnsInfo, NewMarkdownTableSingleValueColumn(column, cellDefaultValue))
 	}
+	return NewMarkdownTableWithColumns(columnsInfo)
+}
+
+func NewMarkdownTableWithColumns(columnsInfo []*MarkdownColumn) *MarkdownTableBuilder {
 	return &MarkdownTableBuilder{columns: columnsInfo, delimiter: simpleSeparator}
+}
+
+func NewMarkdownTableSingleValueColumn(name, defaultValue string) *MarkdownColumn {
+	return &MarkdownColumn{Name: name, ColumnType: SeparatorDelimited, DefaultValue: defaultValue}
+}
+
+func NewMarkdownTableMultiValueColumn(name, defaultValue string) *MarkdownColumn {
+	return &MarkdownColumn{Name: name, ColumnType: MultiRowColumn, DefaultValue: defaultValue}
 }
 
 // Set the delimiter that will be used to separate multiple values in a cell.

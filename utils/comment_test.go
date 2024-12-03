@@ -3,6 +3,7 @@ package utils
 import (
 	"testing"
 
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -53,12 +54,12 @@ func TestGetNewReviewComments(t *testing.T) {
 	repo := &Repository{OutputWriter: &outputwriter.StandardOutput{}}
 	testCases := []struct {
 		name           string
-		issues         *IssuesCollection
+		issues         *issues.ScansIssuesCollection
 		expectedOutput []ReviewComment
 	}{
 		{
 			name: "No issues for review comments",
-			issues: &IssuesCollection{
+			issues: &issues.ScansIssuesCollection{
 				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 					{
 						Summary:    "summary-2",
@@ -94,7 +95,7 @@ func TestGetNewReviewComments(t *testing.T) {
 		},
 		{
 			name: "With issues for review comments",
-			issues: &IssuesCollection{
+			issues: &issues.ScansIssuesCollection{
 				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 					{
 						Summary:    "summary-2",

@@ -1,4 +1,4 @@
-package utils
+package issues
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestCountIssuesCollectionFindings(t *testing.T) {
-	issuesCollection := IssuesCollection{
+	issuesCollection := ScansIssuesCollection{
 		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{

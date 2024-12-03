@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -336,7 +337,7 @@ func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow
 		len(vulnerability.FixedVersions) > 0)
 }
 
-func ConvertSarifPathsToRelative(issues *IssuesCollection, workingDirs ...string) {
+func ConvertSarifPathsToRelative(issues *issues.ScansIssuesCollection, workingDirs ...string) {
 	convertSarifPathsInCveApplicability(issues.ScaVulnerabilities, workingDirs...)
 	convertSarifPathsInIacs(issues.IacVulnerabilities, workingDirs...)
 	convertSarifPathsInSecrets(issues.SecretsVulnerabilities, workingDirs...)

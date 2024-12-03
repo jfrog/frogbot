@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -30,7 +31,7 @@ const (
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
-func HandlePullRequestCommentsAfterScan(issues *IssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
+func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
 		// The removal of comments may fail for various reasons,
 		// such as concurrent scanning of pull requests and attempts
@@ -105,7 +106,7 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
-func generatePullRequestSummaryComment(issuesCollection *IssuesCollection, writer outputwriter.OutputWriter) []string {
+func generatePullRequestSummaryComment(issuesCollection *issues.ScansIssuesCollection, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.PresentableIssuesExists() && !issuesCollection.ViolationsExists() {
 		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
 	}
@@ -136,7 +137,7 @@ func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoNam
 	return pullRequestsComments, nil
 }
 
-func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *IssuesCollection) (err error) {
+func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.VcsClient, issues *issues.ScansIssuesCollection) (err error) {
 	commentsToAdd := getNewReviewComments(repo, issues)
 	if len(commentsToAdd) == 0 {
 		return
@@ -183,7 +184,7 @@ func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcs
 	return
 }
 
-func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsToAdd []ReviewComment) {
+func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
 
 	for _, vulnerability := range issues.GetScaIssues() {

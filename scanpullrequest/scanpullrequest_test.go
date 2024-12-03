@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -45,7 +46,7 @@ const (
 	testTargetBranchName             = "master"
 )
 
-func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse, applicable bool, allowedLicenses ...string) (securityViolationsRows []formats.VulnerabilityOrViolationRow, licenseViolations []formats.LicenseRow) {
+func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse, applicable bool, allowedLicenses ...string) (securityViolationsRows []formats.VulnerabilityOrViolationRow, licenseViolations []formats.LicenseViolationRow) {
 	sourceResults, err := scaToDummySimpleJsonResults(currentScan, applicable, allowedLicenses...)
 	assert.NoError(t, err)
 	targetResults, err := scaToDummySimpleJsonResults(previousScan, applicable, allowedLicenses...)
@@ -486,7 +487,7 @@ func TestGetAllIssues(t *testing.T) {
 			},
 		},
 	}}}
-	expectedOutput := &utils.IssuesCollection{
+	expectedOutput := &issues.ScansIssuesCollection{
 		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
 				Applicable:    "Applicable",
@@ -558,15 +559,17 @@ func TestGetAllIssues(t *testing.T) {
 				},
 			},
 		},
-		LicensesViolations: []formats.LicenseRow{
+		LicensesViolations: []formats.LicenseViolationRow{
 			{
-				LicenseKey: "Apache-2.0",
-				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "Medium",
-						SeverityNumValue: 14,
+				LicenseRow: formats.LicenseRow{
+					LicenseKey: "Apache-2.0",
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						SeverityDetails: formats.SeverityDetails{
+							Severity:         "Medium",
+							SeverityNumValue: 14,
+						},
+						ImpactedDependencyName: "Dep-1",
 					},
-					ImpactedDependencyName: "Dep-1",
 				},
 			},
 		},

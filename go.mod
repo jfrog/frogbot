@@ -1,19 +1,17 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.22.9
-
-toolchain go1.23.3
+go 1.23.3
 
 require (
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.10.5
+	github.com/jfrog/build-info-go v1.10.6
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-core/v2 v2.56.7
+	github.com/jfrog/jfrog-cli-core/v2 v2.57.0
 	github.com/jfrog/jfrog-cli-security v1.13.1
-	github.com/jfrog/jfrog-client-go v1.47.6
+	github.com/jfrog/jfrog-client-go v1.48.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.9.0
@@ -124,7 +122,7 @@ require (
 
 // eranturgeman:jas-violations-support
 // replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241126101846-e580111b0f4b
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241203111641-2e4a959b3031
 
 // replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241124185605-a69b532152fc
 
@@ -133,6 +131,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:add_repo_context_scan_graph
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241125121151-c243bb1fe709
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20241202121042-ba0c6c74db7a
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
