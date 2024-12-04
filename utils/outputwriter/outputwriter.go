@@ -219,8 +219,8 @@ func MarkAsLink(content, link string) string {
 	return fmt.Sprintf("[%s](%s)", content, link)
 }
 
-func MarkAsNote(content string) string {
-	return fmt.Sprintf("> %s", content)
+func MarkAsBullet(content string) string {
+	return fmt.Sprintf("- %s", content)
 }
 
 func SectionDivider() string {

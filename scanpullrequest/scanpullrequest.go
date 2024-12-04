@@ -122,7 +122,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 
 func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollection) bool {
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
-	return failFlagSet && (issues.PresentableIssuesExists() || issues.ViolationsExists())
+	return failFlagSet && issues.IssuesExists(repo.PullRequestSecretComments)
 }
 
 // Downloads Pull Requests branches code and audits them
@@ -158,7 +158,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 
 	defer func() {
 		if issuesCollection != nil {
-			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.CountIssuesCollectionFindings(), err)
+			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetTotalIssues(), err)
 		}
 	}()
 

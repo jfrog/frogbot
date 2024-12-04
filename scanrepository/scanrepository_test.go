@@ -21,6 +21,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/validations"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -489,8 +490,8 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
 				ScanTarget: results.ScanTarget{Target: "target1"},
 				ScaResults: &results.ScaScanResults{
-					XrayResults: []services.ScanResponse{
-						{
+					XrayResults: validations.NewMockScaResults(
+						services.ScanResponse{
 							Vulnerabilities: []services.Vulnerability{
 								{
 									Cves: []services.Cve{
@@ -520,7 +521,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 								},
 							},
 						},
-					},
+					),
 				},
 				JasResults: &results.JasScansResults{},
 			}}},
@@ -541,8 +542,8 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
 				ScanTarget: results.ScanTarget{Target: "target1"},
 				ScaResults: &results.ScaScanResults{
-					XrayResults: []services.ScanResponse{
-						{
+					XrayResults: validations.NewMockScaResults(
+						services.ScanResponse{
 							Violations: []services.Violation{
 								{
 									ViolationType: "security",
@@ -574,7 +575,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 								},
 							},
 						},
-					},
+					),
 				},
 				JasResults: &results.JasScansResults{},
 			}}},

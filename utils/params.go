@@ -310,6 +310,7 @@ type Git struct {
 	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
 	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
@@ -354,6 +355,11 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	if !g.PullRequestSecretComments {
+		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
+			return
+		}
 	}
 	if !g.UseMostCommonAncestorAsTarget {
 		if g.UseMostCommonAncestorAsTarget, err = getBoolEnv(UseMostCommonAncestorAsTargetEnv, true); err != nil {

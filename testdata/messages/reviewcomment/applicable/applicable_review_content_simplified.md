@@ -1,7 +1,7 @@
 
 
 ---
-## 📦🔍 Contextual Analysis CVE Vulnerability
+## 📦🔍 Contextual Analysis CVE
 
 ---
 | Severity                | Impacted Dependency                  | Finding                  | CVE                  |

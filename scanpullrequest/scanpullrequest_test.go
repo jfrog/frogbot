@@ -28,6 +28,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/validations"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
@@ -63,12 +64,12 @@ func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, AllowedLicenses: allowedLicenses})
 	jasResults := &results.JasScansResults{}
 	if applicable {
-		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))
+		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))...)
 	}
 	cmdResults := &results.SecurityCommandResults{EntitledForJas: applicable, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		JasResults: jasResults,
-		ScaResults: &results.ScaScanResults{XrayResults: []services.ScanResponse{response}},
+		ScaResults: &results.ScaScanResults{XrayResults: validations.NewMockScaResults(response)},
 	}}}
 	return convertor.ConvertToSimpleJson(cmdResults)
 }
@@ -98,14 +99,14 @@ func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target [
 func jasToDummySimpleJsonResults(scanType jasutils.JasScanType, jasScanResults []*sarif.Result) (formats.SimpleJsonResults, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true})
 
-	jasResults := &results.JasScansResults{JasVulnerabilities: &results.JasScanResults{}}
+	jasResults := &results.JasScansResults{JasVulnerabilities: results.JasScanResults{}}
 	switch scanType {
 	case jasutils.Sast:
-		jasResults.JasVulnerabilities.SastScanResults = append(jasResults.JasVulnerabilities.SastScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.SastScanResults = append(jasResults.JasVulnerabilities.SastScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
 	case jasutils.Secrets:
-		jasResults.JasVulnerabilities.SecretsScanResults = append(jasResults.JasVulnerabilities.SecretsScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.SecretsScanResults = append(jasResults.JasVulnerabilities.SecretsScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
 	case jasutils.IaC:
-		jasResults.JasVulnerabilities.IacScanResults = append(jasResults.JasVulnerabilities.IacScanResults, sarifutils.CreateRunWithDummyResults(jasScanResults...))
+		jasResults.JasVulnerabilities.IacScanResults = append(jasResults.JasVulnerabilities.IacScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
 	}
 	cmdResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -447,43 +448,43 @@ func TestGetAllIssues(t *testing.T) {
 	auditResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
-			XrayResults: []services.ScanResponse{{
+			XrayResults: validations.NewMockScaResults(services.ScanResponse{
 				Vulnerabilities: []services.Vulnerability{
 					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
 					{Cves: []services.Cve{{Id: "CVE-2023-3122"}}, Severity: "Low", Components: map[string]services.Component{"Dep-2": {FixedVersions: []string{"1.2.2"}}}},
 				},
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
-			}},
+			}),
 		},
 		JasResults: &results.JasScansResults{
-			ApplicabilityScanResults: []*sarif.Run{
+			ApplicabilityScanResults: validations.NewMockJasRuns(
 				sarifutils.CreateRunWithDummyResults(
 					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
 					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
 				),
-			},
-			JasVulnerabilities: &results.JasScanResults{
-				IacScanResults: []*sarif.Run{
+			),
+			JasVulnerabilities: results.JasScanResults{
+				IacScanResults: validations.NewMockJasRuns(
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
 						),
 					),
-				},
-				SecretsScanResults: []*sarif.Run{
+				),
+				SecretsScanResults: validations.NewMockJasRuns(
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
 						),
 					),
-				},
-				SastScanResults: []*sarif.Run{
+				),
+				SastScanResults: validations.NewMockJasRuns(
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
 						),
 					),
-				},
+				),
 			},
 		},
 	}}}

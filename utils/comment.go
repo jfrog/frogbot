@@ -26,6 +26,7 @@ const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
+	SecretComment     ReviewCommentType = "Secrets"
 
 	RescanRequestComment   = "rescan"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
@@ -186,7 +187,6 @@ func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcs
 
 func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
-
 	for _, vulnerability := range issues.GetScaIssues() {
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil {
@@ -201,6 +201,12 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 	}
 	for _, sast := range issues.GetUniqueSastIssues() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
+	}
+	if !repo.Params.PullRequestSecretComments {
+		return
+	}
+	for _, secret := range issues.GetUniqueSecretsIssues() {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, secret, writer)))
 	}
 	return
 }
@@ -251,6 +257,19 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, issue format
 			issue.Finding,
 			issue.ScannerDescription,
 			issue.CodeFlow,
+			writer,
+		), writer)
+	case SecretComment:
+		applicability := ""
+		if issue.Applicability != nil {
+			applicability = issue.Applicability.Status
+		}
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(
+			issue.Severity,
+			issue.IssueId,
+			issue.Finding,
+			issue.ScannerDescription,
+			applicability,
 			writer,
 		), writer)
 	}

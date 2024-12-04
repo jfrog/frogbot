@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
@@ -28,9 +29,11 @@ const (
 	vulnerableDependenciesTitle                   = "📦 Vulnerable Dependencies"
 	vulnerableDependenciesResearchDetailsSubTitle = "🔬 Research Details"
 
+	//#nosec G101 -- not a secret
+	secretsTitle            = "🗝️ Secret"
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE"
 	iacTitle                = "🛠️ Infrastructure as Code"
-	sastTitle               = "🎯 Static Application Security Testing (SAST) Vulnerability"
+	sastTitle               = "🎯 Static Application Security Testing (SAST)"
 )
 
 var (
@@ -130,27 +133,23 @@ func footer(writer OutputWriter) string {
 func scanSummaryContent(issues issues.ScansIssuesCollection, violations bool, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	issueType := "vulnerabilities"
+	totalIssues := issues.GetTotalVulnerabilities()
 	if violations {
 		issueType = "violations"
+		totalIssues = issues.GetTotalViolations()
 	}
 	// Title
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(scanSummaryTitle, 2),
-		fmt.Sprintf("▶️ Frogbot scanned for %s and found %d issues", issueType, issues.GetTotalViolations()),
+		MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", issueType, totalIssues)),
 	)
-	// Summary
-	scaStatus, scaFailed := getSubScanResultStatus(issues.ScaScanPerformed, issues.ScaScanStatus)
-	applicabilityStatus, _ := getSubScanResultStatus(issues.ApplicabilityScanPerformed, issues.ApplicabilityScanStatus)
-	sastStatus, sastFailed := getSubScanResultStatus(issues.SastScanPerformed, issues.SastScanStatus)
-	secretsStatus, secretsFailed := getSubScanResultStatus(issues.SecretsScanPerformed, issues.SecretsScanStatus)
-	iacStatus, iacFailed := getSubScanResultStatus(issues.IacScan, issues.IacScanStatus)
 	// Create table, a row for each sub scans summary
-	table := NewMarkdownTable("Scan Category", "Result", "Security Issues")
-	table.AddRow(MarkAsBold("Software Composition Analysis"), scaStatus, getScanSecurityIssuesDetails(issues, utils.ScaScan, scaFailed, violations, writer))
-	table.AddRow(MarkAsBold("Contextual Analysis"), applicabilityStatus, "")
-	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), sastStatus, getScanSecurityIssuesDetails(issues, utils.SastScan, sastFailed, violations, writer))
-	table.AddRow(MarkAsBold("Secrets"), secretsStatus, getScanSecurityIssuesDetails(issues, utils.SecretsScan, secretsFailed, violations, writer))
-	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), iacStatus, getScanSecurityIssuesDetails(issues, utils.IacScan, iacFailed, violations, writer))
+	table := NewMarkdownTable("Scan Category", "Status", "Security Issues")
+	table.AddRow(MarkAsBold("Software Composition Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.ScaScan, violations, writer))
+	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
+	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.SastScan, violations, writer))
+	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), getScanSecurityIssuesDetails(issues, utils.SecretsScan, violations, writer))
+	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, utils.IacScan, violations, writer))
 	WriteContent(&contentBuilder, writer.MarkInCenter(table.Build()))
 	// link to the scan results in JFrog
 	// WriteNewLine(&contentBuilder)
@@ -158,18 +157,18 @@ func scanSummaryContent(issues issues.ScansIssuesCollection, violations bool, wr
 	return contentBuilder.String()
 }
 
-func getSubScanResultStatus(scanPerformed bool, statusCode int) (string, bool) {
-	if !scanPerformed {
-		return "ℹ️ Not Scanned", false
+func getSubScanResultStatus(scanStatusCode *int) string {
+	if scanStatusCode == nil {
+		return "ℹ️ Not Scanned"
 	}
-	if statusCode == 0 {
-		return "✅ Done", false
+	if *scanStatusCode == 0 {
+		return "✅ Done"
 	}
-	return "❌ Failed", true
+	return "❌ Failed"
 }
 
-func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType utils.SubScanType, failed, violation bool, writer OutputWriter) string {
-	if failed || (scanType == utils.ScaScan && !issues.ScaScanPerformed) || (scanType == utils.SastScan && !issues.SastScanPerformed) || (scanType == utils.SecretsScan && !issues.SecretsScanPerformed) || (scanType == utils.IacScan && !issues.IacScan) {
+func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType utils.SubScanType, violation bool, writer OutputWriter) string {
+	if issues.IsScanNotCompleted(scanType) {
 		// Failed/Not scanned, no need to show the details
 		return ""
 	}
@@ -189,7 +188,7 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType 
 		return "Not Found"
 	}
 	var contentBuilder strings.Builder
-	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", getTotalIssues(severityCountMap)), 3, toSeverityDetails(severityCountMap, writer)))
+	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", getTotalIssues(severityCountMap)), 3, toSeverityDetails(severityCountMap)))
 	return contentBuilder.String()
 }
 
@@ -200,7 +199,7 @@ func getTotalIssues(severities map[severityutils.Severity]int) (total int) {
 	return
 }
 
-func toSeverityDetails(severities map[severityutils.Severity]int, writer OutputWriter) string {
+func toSeverityDetails(severities map[severityutils.Severity]int) string {
 	var contentBuilder strings.Builder
 	// Get severities with values and write them sorted (Critical, High, Medium, Low, Unknown)
 	if count, ok := severities[severityutils.Critical]; ok && count > 0 {
@@ -224,7 +223,7 @@ func toSeverityDetails(severities map[severityutils.Severity]int, writer OutputW
 // Policy Violations
 
 // Summary content for the security violations that we can't yet have location on (SCA, License)
-func SecurityViolationsContent(issues issues.ScansIssuesCollection, writer OutputWriter) (content []string) {
+func PolicyViolationsContent(issues issues.ScansIssuesCollection, writer OutputWriter) (content []string) {
 	if issues.GetTotalViolations() == 0 {
 		return []string{}
 	}
@@ -701,7 +700,17 @@ func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails,
 // JAS
 
 func getJasDescriptionTable(severity, finding string, writer OutputWriter) string {
-	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), finding).Build()
+	return NewMarkdownTable("Severity", "Finding").AddRow(writer.FormattedSeverity(severity, jasutils.Applicable.String()), finding).Build()
+}
+
+func SecretReviewContent(severity, issueId, finding, fullDetails, applicability string, writer OutputWriter) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(fmt.Sprintf("%s Vulnerability", secretsTitle), 2),
+		writer.MarkInCenter(getSecretsDescriptionTable(severity, issueId, finding, applicability, writer)),
+		writer.MarkAsDetails("Full description", 3, fullDetails),
+	)
+	return contentBuilder.String()
 }
 
 func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter) string {
@@ -717,7 +726,7 @@ func IacReviewContent(severity, finding, fullDetails string, writer OutputWriter
 func SastReviewContent(severity, finding, fullDetails string, codeFlows [][]formats.Location, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
-		writer.MarkAsTitle(sastTitle, 2),
+		writer.MarkAsTitle(fmt.Sprintf("%s Vulnerability", sastTitle), 2),
 		writer.MarkInCenter(getJasDescriptionTable(severity, finding, writer)),
 		writer.MarkAsDetails("Full description", 3, fullDetails),
 	)
@@ -780,6 +789,31 @@ func getJasIssueDescriptionTable(issue formats.SourceCodeRow, writer OutputWrite
 	return NewMarkdownTable(columns...).AddRow(rowData...).Build()
 }
 
+func getSecretsDescriptionTable(severity, issueId, finding, status string, writer OutputWriter) string {
+	// Determine the issue applicable status
+	applicability := jasutils.Applicable.String()
+	if status != "" {
+		if status == jasutils.Inactive.String() {
+			applicability = jasutils.NotApplicable.String()
+		}
+	}
+	columns := []string{"Severity"}
+	rowData := []string{writer.FormattedSeverity(severity, applicability)}
+	// Determine if issueId is provided
+	if issueId != "" {
+		columns = append(columns, "ID")
+		rowData = append(rowData, issueId)
+	}
+	columns = append(columns, "Finding")
+	rowData = append(rowData, finding)
+	// Determine if status is provided
+	if status != "" {
+		columns = append(columns, "Status")
+		rowData = append(rowData, status)
+	}
+	return NewMarkdownTable(columns...).AddRow(rowData...).Build()
+}
+
 func getIacViolationFullDescription(issue formats.SourceCodeRow, writer OutputWriter) string {
 	return getJasViolationFullDescription(issue, getBaseJasViolationDetailsTable(issue.Watch, issue.Policies, []string{issue.CWE}, writer).Build(), writer)
 }
@@ -816,5 +850,25 @@ func SastViolationReviewContent(issue formats.SourceCodeRow, writer OutputWriter
 func getSastViolationFullDescription(issue formats.SourceCodeRow, writer OutputWriter) string {
 	table := getBaseJasViolationDetailsTable(issue.Watch, issue.Policies, []string{issue.CWE}, writer)
 	table.AddRow(MarkAsBold("Rule ID:"), issue.RuleId)
+	return getJasViolationFullDescription(issue, table.Build(), writer)
+}
+
+func SecretViolationReviewContent(issue formats.SourceCodeRow, writer OutputWriter) string {
+	applicability := ""
+	if issue.Applicability != nil {
+		applicability = issue.Applicability.Status
+	}
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(fmt.Sprintf("%s Violation", secretsTitle), 2),
+		writer.MarkInCenter(getSecretsDescriptionTable(issue.Severity, issue.IssueId, issue.Finding, applicability, writer)),
+		writer.MarkAsDetails("Full description", 3, getSecretsViolationFullDescription(issue, writer)),
+	)
+	return contentBuilder.String()
+}
+
+func getSecretsViolationFullDescription(issue formats.SourceCodeRow, writer OutputWriter) string {
+	table := getBaseJasViolationDetailsTable(issue.Watch, issue.Policies, []string{issue.CWE}, writer)
+	table.AddRow(MarkAsBold("Abbreviation:"), issue.RuleId)
 	return getJasViolationFullDescription(issue, table.Build(), writer)
 }
