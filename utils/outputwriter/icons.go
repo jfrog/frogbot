@@ -27,6 +27,12 @@ const (
 	notApplicableLowSeveritySource      ImageSource = "v2/notApplicableLow.png"
 	unknownSeveritySource               ImageSource = "v2/applicableUnknownSeverity.png"
 	notApplicableUnknownSeveritySource  ImageSource = "v2/notApplicableUnknown.png"
+
+	smallCriticalSeveritySource 		ImageSource = "v2/smallCritical.svg"
+	smallHighSeveritySource 			ImageSource = "v2/smallHigh.svg"
+	smallMediumSeveritySource 			ImageSource = "v2/smallMedium.svg"
+	smallLowSeveritySource 				ImageSource = "v2/smallLow.svg"
+	smallUnknownSeveritySource 			ImageSource = "v2/smallUnknown.svg"
 )
 
 func getSeverityTag(iconName IconName, applicability string) string {
@@ -34,6 +40,10 @@ func getSeverityTag(iconName IconName, applicability string) string {
 		return getNotApplicableIconTags(iconName)
 	}
 	return getApplicableIconTags(iconName)
+}
+
+func getSmallSeverityTag(iconName IconName) string {
+	return getSmallApplicableIconTags(iconName)
 }
 
 func getNotApplicableIconTags(iconName IconName) string {
@@ -62,6 +72,20 @@ func getApplicableIconTags(iconName IconName) string {
 		return GetIconTag(lowSeveritySource) + "<br>"
 	}
 	return GetIconTag(unknownSeveritySource) + "<br>"
+}
+
+func getSmallApplicableIconTags(iconName IconName) string {
+	switch strings.ToLower(string(iconName)) {
+	case "critical":
+		return GetIconTag(smallCriticalSeveritySource) + " "
+	case "high":
+		return GetIconTag(smallHighSeveritySource) + " "
+	case "medium":
+		return GetIconTag(smallMediumSeveritySource) + " "
+	case "low":
+		return GetIconTag(smallLowSeveritySource) + " "
+	}
+	return GetIconTag(smallUnknownSeveritySource) + " "
 }
 
 func GetBanner(banner ImageSource) string {

@@ -13,8 +13,12 @@ func (so *StandardOutput) Separator() string {
 	return "<br>"
 }
 
-func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
-	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+func (so *StandardOutput) FormattedSeverity(severity, applicability string, small bool) string {
+	if small {
+		return fmt.Sprintf("%s%8s", getSmallSeverityTag(IconName(severity)), severity)
+	} else {
+		return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+	}
 }
 
 func (so *StandardOutput) Image(source ImageSource) string {

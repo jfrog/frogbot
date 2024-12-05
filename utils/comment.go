@@ -46,7 +46,7 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 	}
 
 	// Add summary (SCA, license) scan comment
-	for _, comment := range generatePullRequestSummaryComment(issues, repo.OutputWriter) {
+	for _, comment := range generatePullRequestSummaryComment(issues, repo.ViolationContext, repo.PullRequestSecretComments, repo.OutputWriter) {
 		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 			err = errors.New("couldn't add pull request comment: " + err.Error())
 			return
@@ -90,7 +90,7 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 }
 
 func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (description string, extraComments []string) {
-	content := outputwriter.GetPRSummaryContent(outputwriter.VulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+	content := outputwriter.GetMainCommentContent(outputwriter.GetVulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
 	if len(content) == 1 {
 		// Limit is not reached, use the entire content as the description
 		description = content[0]
@@ -107,19 +107,22 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
-func generatePullRequestSummaryComment(issuesCollection *issues.ScansIssuesCollection, writer outputwriter.OutputWriter) []string {
-	if !issuesCollection.PresentableIssuesExists() && !issuesCollection.ViolationsExists() {
-		return outputwriter.GetPRSummaryContent([]string{}, false, true, writer)
+func generatePullRequestSummaryComment(issuesCollection *issues.ScansIssuesCollection, violationContext ViolationContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
+	if !issuesCollection.IssuesExists(includeSecrets) {
+		// No Issues
+		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
-
 	content := []string{}
-	if vulnerabilitiesContent := outputwriter.VulnerabilitiesContent(issuesCollection.GetScaIssues(), writer); len(vulnerabilitiesContent) > 0 {
+	// if violationContext != None {
+	content = append(content, outputwriter.ScanSummaryContent(*issuesCollection, string(violationContext), includeSecrets, writer))
+	// }
+	if violationsContent := outputwriter.PolicyViolationsContent(*issuesCollection, writer); len(violationsContent) > 0 {
+		content = append(content, violationsContent...)
+	}
+	if vulnerabilitiesContent := outputwriter.GetVulnerabilitiesContent(issuesCollection.ScaVulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
-	if licensesContent := outputwriter.LicensesContent(issuesCollection.LicensesViolations, writer); len(licensesContent) > 0 {
-		content = append(content, licensesContent)
-	}
-	return outputwriter.GetPRSummaryContent(content, true, true, writer)
+	return outputwriter.GetMainCommentContent(content, true, true, writer)
 }
 
 func IsFrogbotRescanComment(comment string) bool {
@@ -177,7 +180,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 
 func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
-		if outputwriter.IsFrogbotComment(comment.Content) || outputwriter.IsFrogbotSummaryComment(writer, comment.Content) {
+		if outputwriter.IsFrogbotComment(comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
 			reviewComments = append(reviewComments, comment)
 		}
@@ -187,26 +190,23 @@ func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcs
 
 func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
-	for _, vulnerability := range issues.GetScaIssues() {
-		for _, cve := range vulnerability.Cves {
-			if cve.Applicability != nil {
-				for _, evidence := range cve.Applicability.Evidence {
-					commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, evidence.Location, generateApplicabilityReviewContent(evidence, cve, vulnerability, writer)))
-				}
-			}
-		}
+	for _, applicableEvidence := range issues.GetApplicableEvidences() {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, applicableEvidence.Location, generateApplicabilityReviewContent(applicableEvidence, cve, vulnerability, writer)))
 	}
-	for _, iac := range issues.GetUniqueIacIssues() {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeReviewContent(IacComment, iac, writer)))
+	for _, iac := range issues.IacVulnerabilities {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeVulnerabilityReviewContent(IacComment, iac, writer)))
+	}
+	for _, iac := range issues.IacViolations {
+
 	}
 	for _, sast := range issues.GetUniqueSastIssues() {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeVulnerabilityReviewContent(SastComment, sast, writer)))
 	}
 	if !repo.Params.PullRequestSecretComments {
 		return
 	}
 	for _, secret := range issues.GetUniqueSecretsIssues() {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, secret, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeVulnerabilityReviewContent(SecretComment, secret, writer)))
 	}
 	return
 }
@@ -242,36 +242,26 @@ func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve forma
 	), writer)
 }
 
-func generateSourceCodeReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+func generateSourceCodeVulnerabilityReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
 	switch commentType {
 	case IacComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(
-			issue.Severity,
-			issue.Finding,
-			issue.ScannerDescription,
-			writer,
-		), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, false ,writer), writer)
 	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(
-			issue.Severity,
-			issue.Finding,
-			issue.ScannerDescription,
-			issue.CodeFlow,
-			writer,
-		), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, false ,writer), writer)
 	case SecretComment:
-		applicability := ""
-		if issue.Applicability != nil {
-			applicability = issue.Applicability.Status
-		}
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(
-			issue.Severity,
-			issue.IssueId,
-			issue.Finding,
-			issue.ScannerDescription,
-			applicability,
-			writer,
-		), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, false ,writer), writer)
+	}
+	return
+}
+
+func generateSourceCodeViolationReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+	switch commentType {
+	case IacComment:
+		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, true, writer), writer)
+	case SastComment:
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, true, writer), writer)
+	case SecretComment:
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, true, writer), writer)
 	}
 	return
 }

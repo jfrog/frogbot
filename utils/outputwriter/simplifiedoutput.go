@@ -17,7 +17,7 @@ func (smo *SimplifiedOutput) Separator() string {
 	return simpleSeparator
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
 	return severity
 }
 

@@ -277,6 +277,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 type JFrogPlatform struct {
 	XrayVersion     string
 	XscVersion      string
+	ViolationContext ViolationContext `yaml:"violationContext,omitempty"` 
 	Watches         []string `yaml:"watches,omitempty"`
 	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
 }
@@ -288,13 +289,27 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-
 	if jp.JFrogProjectKey == "" {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
+	}
+	if jp.ViolationContext == None {
+		var violationContextStr string
+		if err = readParamFromEnv(ViolationContextEnv, &violationContextStr); err != nil && !e.IsMissingEnvErr(err) {
+			return
+		}
+		jp.ViolationContext = ViolationContext(violationContextStr)
+	}
+	// Validate or set Default base on other params
+	if jp.ViolationContext == None {
+		if len(jp.Watches) > 0 {
+			jp.ViolationContext = WatchContext
+		} else if jp.JFrogProjectKey != "" {
+			jp.ViolationContext = ProjectContext
+		}
 	}
 	return
 }

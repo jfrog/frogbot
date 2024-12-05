@@ -7,6 +7,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
 
+
 // TODO: after refactor, move this to security-cli as a new formats or remove this and use the existing formats
 // Group issues by scan type
 type ScansIssuesCollection struct {
@@ -173,20 +174,36 @@ func (ic *ScansIssuesCollection) SastIssuesExists() bool {
 	return len(ic.SastVulnerabilities) > 0 || len(ic.SastViolations) > 0
 }
 
-func (ic *ScansIssuesCollection) GetTotalIssues() int {
-	return ic.GetTotalVulnerabilities() + ic.GetTotalViolations()
+func (ic *ScansIssuesCollection) GetTotalIssues(includeSecrets bool) int {
+	return ic.GetTotalVulnerabilities(includeSecrets) + ic.GetTotalViolations(includeSecrets)
+}
+
+func (ic *ScansIssuesCollection) GetApplicableEvidences() []formats.Evidence {
+	
 }
 
 // Violations
 
-func (ic *ScansIssuesCollection) GetTotalViolations() int {
-	return len(ic.ScaViolations) + len(ic.IacViolations) + len(ic.SecretsViolations) + len(ic.SastViolations) + len(ic.LicensesViolations)
+func (ic *ScansIssuesCollection) GetTotalViolations(includeSecrets bool) int {
+	total := ic.GetTotalScaViolations() + len(ic.IacViolations) + len(ic.SastViolations)
+	if includeSecrets {
+		total += len(ic.SecretsViolations)
+	}
+	return total
+}
+
+func (ic *ScansIssuesCollection) GetTotalScaViolations() int {
+	return len(ic.ScaViolations) + len(ic.LicensesViolations)
 }
 
 // Vulnerabilities
 
-func (ic *ScansIssuesCollection) GetTotalVulnerabilities() int {
-	return len(ic.ScaVulnerabilities) + len(ic.IacVulnerabilities) + len(ic.SecretsVulnerabilities) + len(ic.SastVulnerabilities)
+func (ic *ScansIssuesCollection) GetTotalVulnerabilities(includeSecrets bool) int {
+	total := len(ic.ScaVulnerabilities) + len(ic.IacVulnerabilities) + len(ic.SastVulnerabilities)
+	if includeSecrets {
+		total += len(ic.SecretsVulnerabilities)
+	}
+	return total
 }
 
 
