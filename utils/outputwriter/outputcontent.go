@@ -571,10 +571,8 @@ func SecretReviewContent(issue formats.SourceCodeRow, violation bool, writer Out
 func getSecretsDescriptionTable(severity, issueId, finding, status string, writer OutputWriter) string {
 	// Determine the issue applicable status
 	applicability := jasutils.Applicable.String()
-	if status != "" {
-		if status == jasutils.Inactive.String() {
-			applicability = jasutils.NotApplicable.String()
-		}
+	if status == jasutils.Inactive.String() {
+		applicability = jasutils.NotApplicable.String()
 	}
 	columns := []string{"Severity"}
 	rowData := []string{writer.FormattedSeverity(severity, applicability, false)}
