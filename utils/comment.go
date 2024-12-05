@@ -25,6 +25,7 @@ const (
 	ApplicableComment ReviewCommentType = "Applicable"
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
+	SecretComment     ReviewCommentType = "Secrets"
 
 	RescanRequestComment   = "rescan"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
@@ -201,6 +202,12 @@ func getNewReviewComments(repo *Repository, issues *IssuesCollection) (commentsT
 	for _, sast := range issues.Sast {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, sast, writer)))
 	}
+	if !repo.Params.PullRequestSecretComments {
+		return
+	}
+	for _, secret := range issues.Secrets {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, secret, writer)))
+	}
 	return
 }
 
@@ -250,6 +257,18 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, issue format
 			issue.Finding,
 			issue.ScannerDescription,
 			issue.CodeFlow,
+			writer,
+		), writer)
+	case SecretComment:
+		applicability := ""
+		if issue.Applicability != nil {
+			applicability = issue.Applicability.Status
+		}
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(
+			issue.Severity,
+			issue.Finding,
+			issue.ScannerDescription,
+			applicability,
 			writer,
 		), writer)
 	}

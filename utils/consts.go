@@ -34,19 +34,21 @@ const (
 	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
-	GitProvider              = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv          = "JF_GIT_OWNER"
-	GitRepoEnv               = "JF_GIT_REPO"
-	GitProjectEnv            = "JF_GIT_PROJECT"
-	GitUsernameEnv           = "JF_GIT_USERNAME"
-	GitUseLocalRepositoryEnv = "JF_USE_LOCAL_REPOSITORY"
+	GitProvider                      = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv                  = "JF_GIT_OWNER"
+	GitRepoEnv                       = "JF_GIT_REPO"
+	GitProjectEnv                    = "JF_GIT_PROJECT"
+	GitUsernameEnv                   = "JF_GIT_USERNAME"
+	GitUseLocalRepositoryEnv         = "JF_USE_LOCAL_REPOSITORY"
+	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
 
 	// Git naming template environment variables
-	BranchNameTemplateEnv            = "JF_BRANCH_NAME_TEMPLATE"
-	CommitMessageTemplateEnv         = "JF_COMMIT_MESSAGE_TEMPLATE"
-	PullRequestTitleTemplateEnv      = "JF_PULL_REQUEST_TITLE_TEMPLATE"
-	PullRequestCommentTitleEnv       = "JF_PR_COMMENT_TITLE"
-	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
+	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
+	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
+	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
+	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
+	//#nosec G101 -- not a secret
+	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
