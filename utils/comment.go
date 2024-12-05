@@ -208,6 +208,9 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 	for _, secret := range issues.GetUniqueSecretsIssues() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeVulnerabilityReviewContent(SecretComment, secret, writer)))
 	}
+	for _, secret := range issues.Secrets {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, secret, writer)))
+	}
 	return
 }
 
