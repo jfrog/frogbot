@@ -52,6 +52,11 @@ func TestCountIssuesCollectionFindings(t *testing.T) {
 				ScannerDescription: "Secret issue",
 			},
 		},
+		SecretsViolations: []formats.SourceCodeRow{
+			{
+				ScannerDescription: "Secret violation",
+			},
+		},
 		SastVulnerabilities: []formats.SourceCodeRow{
 			{
 				ScannerDescription: "Sast issue1",
@@ -62,6 +67,10 @@ func TestCountIssuesCollectionFindings(t *testing.T) {
 		},
 	}
 
-	findingsAmount := issuesCollection.CountIssuesCollectionFindings()
-	assert.Equal(t, 8, findingsAmount)
+	// With Secrets
+	findingsAmount := issuesCollection.GetTotalIssues(true)
+	assert.Equal(t, 9, findingsAmount)
+	// No Secrets
+	findingsAmount = issuesCollection.GetTotalIssues(false)
+	assert.Equal(t, 7, findingsAmount)
 }

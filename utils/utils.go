@@ -51,12 +51,13 @@ const (
 )
 
 // ViolationContext is a type for violation context (None,Project,GitRepo)
-const(	
-	None ViolationContext = "" // No violation context
-	WatchContext   ViolationContext = "watch violations"
-	ProjectContext ViolationContext = "project violations"
-	GitRepoContext ViolationContext = "Git repository violations"
+const (
+	None           ViolationContext = "" // No violation context
+	WatchContext   ViolationContext = "watch"
+	ProjectContext ViolationContext = "project"
+	GitRepoContext ViolationContext = "git"
 )
+
 type ViolationContext string
 
 var (

@@ -2,11 +2,15 @@ package issues
 
 import (
 	// "github.com/jfrog/gofrog/datastructures"
+	"fmt"
+	"maps"
+
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
-
 
 // TODO: after refactor, move this to security-cli as a new formats or remove this and use the existing formats
 // Group issues by scan type
@@ -35,7 +39,7 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 		return
 	}
 	// Status
-	ic.appendStatus(issues.ScanStatus)
+	ic.AppendStatus(issues.ScanStatus)
 	// Sca
 	if len(issues.ScaVulnerabilities) > 0 {
 		ic.ScaVulnerabilities = append(ic.ScaVulnerabilities, issues.ScaVulnerabilities...)
@@ -69,20 +73,20 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	}
 }
 
-func (ic ScansIssuesCollection) appendStatus(scanStatus formats.ScanStatus) {
-	if ic.ScaStatusCode == nil || *ic.ScaStatusCode == 0 {
+func (ic *ScansIssuesCollection) AppendStatus(scanStatus formats.ScanStatus) {
+	if ic.ScaStatusCode == nil || (*ic.ScaStatusCode == 0 && scanStatus.ScaStatusCode != nil) {
 		ic.ScaStatusCode = scanStatus.ScaStatusCode
 	}
-	if ic.IacStatusCode == nil || *ic.IacStatusCode == 0 {
+	if ic.IacStatusCode == nil || (*ic.IacStatusCode == 0 && scanStatus.IacStatusCode != nil) {
 		ic.IacStatusCode = scanStatus.IacStatusCode
 	}
-	if ic.SecretsStatusCode == nil || *ic.SecretsStatusCode == 0 {
+	if ic.SecretsStatusCode == nil || (*ic.SecretsStatusCode == 0 && scanStatus.SecretsStatusCode != nil) {
 		ic.SecretsStatusCode = scanStatus.SecretsStatusCode
 	}
-	if ic.SastStatusCode == nil || *ic.SastStatusCode == 0 {
+	if ic.SastStatusCode == nil || (*ic.SastStatusCode == 0 && scanStatus.SastStatusCode != nil) {
 		ic.SastStatusCode = scanStatus.SastStatusCode
 	}
-	if ic.ApplicabilityStatusCode == nil || *ic.ApplicabilityStatusCode == 0 {
+	if ic.ApplicabilityStatusCode == nil || (*ic.ApplicabilityStatusCode == 0 && scanStatus.ApplicabilityStatusCode != nil) {
 		ic.ApplicabilityStatusCode = scanStatus.ApplicabilityStatusCode
 	}
 }
@@ -107,6 +111,26 @@ func (ic *ScansIssuesCollection) GetScanStatus(scanType utils.SubScanType) *int 
 		return ic.ApplicabilityStatusCode
 	}
 	return nil
+}
+
+// Only if performed and failed
+func (ic *ScansIssuesCollection) HasErrors() bool {
+	if scaStatus := ic.GetScanStatus(utils.ScaScan); scaStatus != nil && *scaStatus != 0 {
+		return true
+	}
+	if applicabilityStatus := ic.GetScanStatus(utils.ContextualAnalysisScan); applicabilityStatus != nil && *applicabilityStatus != 0 {
+		return true
+	}
+	if iacStatus := ic.GetScanStatus(utils.IacScan); iacStatus != nil && *iacStatus != 0 {
+		return true
+	}
+	if secretsStatus := ic.GetScanStatus(utils.SecretsScan); secretsStatus != nil && *secretsStatus != 0 {
+		return true
+	}
+	if sastStatus := ic.GetScanStatus(utils.SastScan); sastStatus != nil && *sastStatus != 0 {
+		return true
+	}
+	return false
 }
 
 func (ic *ScansIssuesCollection) GetScanDetails(scanType utils.SubScanType, violation bool) map[severityutils.Severity]int {
@@ -178,8 +202,71 @@ func (ic *ScansIssuesCollection) GetTotalIssues(includeSecrets bool) int {
 	return ic.GetTotalVulnerabilities(includeSecrets) + ic.GetTotalViolations(includeSecrets)
 }
 
-func (ic *ScansIssuesCollection) GetApplicableEvidences() []formats.Evidence {
-	
+type ApplicableEvidences struct {
+	Evidence                                                                    formats.Evidence
+	Severity, FullDetails, IssueId, CveSummary, ImpactedDependency, Remediation string
+}
+
+func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []ApplicableEvidences) {
+	issueIdToApplicableInfo := map[string]formats.Applicability{}
+	issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}
+	// Collect evidences from Violations
+	for _, securityViolation := range ic.ScaViolations {
+		if securityViolation.Applicable != jasutils.Applicable.String() {
+			// We only want applicable issues
+			continue
+		}
+		issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
+		if _, exists := issueIdToIssue[issueId]; exists {
+			// No need to add the same issue twice
+			continue
+		}
+		for _, cve := range securityViolation.Cves {
+			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+				issueIdToIssue[issueId] = securityViolation
+				issueIdToApplicableInfo[issueId] = *cve.Applicability
+			}
+		}
+	}
+	// Collect evidences from Vulnerabilities
+	for _, vulnerability := range ic.ScaVulnerabilities {
+		if vulnerability.Applicable != jasutils.Applicable.String() {
+			// We only want applicable issues
+			continue
+		}
+		issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
+		if _, exists := issueIdToIssue[issueId]; exists {
+			// No need to add the same issue twice
+			continue
+		}
+		for _, cve := range vulnerability.Cves {
+			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+				issueIdToIssue[issueId] = vulnerability
+				issueIdToApplicableInfo[issueId] = *cve.Applicability
+			}
+		}
+	}
+	// Create ApplicableEvidences from collected data
+	for issueId := range maps.Keys(issueIdToApplicableInfo) {
+		issue := issueIdToIssue[issueId]
+		applicableInfo := issueIdToApplicableInfo[issueId]
+		remediation := ""
+		if issue.JfrogResearchInformation != nil {
+			remediation = issue.JfrogResearchInformation.Remediation
+		}
+		for _, evidence := range applicableInfo.Evidence {
+			evidences = append(evidences, ApplicableEvidences{
+				Evidence:           evidence,
+				Severity:           issue.Severity,
+				FullDetails:        applicableInfo.ScannerDescription,
+				IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
+				CveSummary:         issue.Summary,
+				ImpactedDependency: fmt.Sprintf("%s:%s", issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
+				Remediation:        remediation,
+			})
+		}
+	}
+	return
 }
 
 // Violations
@@ -206,22 +293,9 @@ func (ic *ScansIssuesCollection) GetTotalVulnerabilities(includeSecrets bool) in
 	return total
 }
 
-
-
-
+// func (ic *ScansIssuesCollection) GetTotal()
 
 // ---------------------------------------
-
-
-
-
-
-
-
-
-
-
-
 
 // func (ic *ScansIssuesCollection) GetScaIssues() (unique []formats.VulnerabilityOrViolationRow) {
 // 	return append(ic.ScaVulnerabilities, ic.ScaViolations...)
@@ -230,7 +304,6 @@ func (ic *ScansIssuesCollection) GetTotalVulnerabilities(includeSecrets bool) in
 // func (ic *ScansIssuesCollection) GetUniqueIacIssues() (unique []formats.SourceCodeRow) {
 // 	return getUniqueJasIssues(ic.IacVulnerabilities, ic.IacViolations)
 // }
-
 
 // func (ic *ScansIssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCodeRow) {
 // 	return getUniqueJasIssues(ic.SecretsVulnerabilities, ic.SecretsViolations)

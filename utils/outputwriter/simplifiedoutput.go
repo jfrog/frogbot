@@ -3,6 +3,8 @@ package outputwriter
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
 
 const (
@@ -17,7 +19,11 @@ func (smo *SimplifiedOutput) Separator() string {
 	return simpleSeparator
 }
 
-func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string, _ bool) string {
+func (smo *SimplifiedOutput) SeverityIcon(severity severityutils.Severity) string {
+	return severityutils.GetSeverityIcon(severity)
+}
+
+func (smo *SimplifiedOutput) FormattedSeverity(severity, _ string) string {
 	return severity
 }
 

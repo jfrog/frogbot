@@ -32,6 +32,20 @@ const (
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
+func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int, scanError error) (err error) {
+	if issues == nil {
+		log.Debug("Can't generate error comment without issues collection")
+		return
+	}
+	writer := repo.OutputWriter
+	for _, comment := range outputwriter.GetFrogbotErrorCommentContent([]string{outputwriter.ScanSummaryContent(*issues, getViolationContextText(repo.ViolationContext), repo.PullRequestSecretComments, writer)}, scanError, writer) {
+		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
+			return errors.New("couldn't add pull request comment: " + err.Error())
+		}
+	}
+	return
+}
+
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
 		// The removal of comments may fail for various reasons,
@@ -107,18 +121,31 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
+func getViolationContextText(violationContext ViolationContext) string {
+	switch violationContext {
+	case WatchContext:
+		return outputwriter.WatchViolations
+	case ProjectContext:
+		return outputwriter.ProjectViolations
+	case GitRepoContext:
+		return outputwriter.GitRepoViolations
+	default:
+		return outputwriter.NoViolations
+	}
+}
+
 func generatePullRequestSummaryComment(issuesCollection *issues.ScansIssuesCollection, violationContext ViolationContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
 		// No Issues
 		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
-	content := []string{}
-	// if violationContext != None {
-	content = append(content, outputwriter.ScanSummaryContent(*issuesCollection, string(violationContext), includeSecrets, writer))
-	// }
+	// Summary
+	content := []string{outputwriter.ScanSummaryContent(*issuesCollection, getViolationContextText(violationContext), includeSecrets, writer)}
+	// Violations
 	if violationsContent := outputwriter.PolicyViolationsContent(*issuesCollection, writer); len(violationsContent) > 0 {
 		content = append(content, violationsContent...)
 	}
+	// Vulnerabilities
 	if vulnerabilitiesContent := outputwriter.GetVulnerabilitiesContent(issuesCollection.ScaVulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
@@ -190,26 +217,33 @@ func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcs
 
 func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
-	for _, applicableEvidence := range issues.GetApplicableEvidences() {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, applicableEvidence.Location, generateApplicabilityReviewContent(applicableEvidence, cve, vulnerability, writer)))
+	// CVE Applicable Evidence review comments
+	for _, applicableEvidences := range issues.GetApplicableEvidences() {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, applicableEvidences.Evidence.Location, generateApplicabilityReviewContent(applicableEvidences, writer)))
 	}
+	// IAC review comments
 	for _, iac := range issues.IacVulnerabilities {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeVulnerabilityReviewContent(IacComment, iac, writer)))
 	}
 	for _, iac := range issues.IacViolations {
-
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeViolationReviewContent(IacComment, iac, writer)))
 	}
-	for _, sast := range issues.GetUniqueSastIssues() {
+	// SAST review comments
+	for _, sast := range issues.SastVulnerabilities {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeVulnerabilityReviewContent(SastComment, sast, writer)))
 	}
+	for _, sast := range issues.SastViolations {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeViolationReviewContent(SastComment, sast, writer)))
+	}
+	// Secrets review comments
 	if !repo.Params.PullRequestSecretComments {
 		return
 	}
-	for _, secret := range issues.GetUniqueSecretsIssues() {
+	for _, secret := range issues.SecretsVulnerabilities {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeVulnerabilityReviewContent(SecretComment, secret, writer)))
 	}
-	for _, secret := range issues.Secrets {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, secret, writer)))
+	for _, secret := range issues.SecretsViolations {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeViolationReviewContent(SecretComment, secret, writer)))
 	}
 	return
 }
@@ -228,31 +262,18 @@ func generateReviewComment(commentType ReviewCommentType, location formats.Locat
 
 }
 
-func generateApplicabilityReviewContent(issue formats.Evidence, relatedCve formats.CveRow, relatedVulnerability formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) string {
-	remediation := ""
-	if relatedVulnerability.JfrogResearchInformation != nil {
-		remediation = relatedVulnerability.JfrogResearchInformation.Remediation
-	}
-	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(
-		relatedVulnerability.Severity,
-		issue.Reason,
-		relatedCve.Applicability.ScannerDescription,
-		relatedCve.Id,
-		relatedVulnerability.Summary,
-		fmt.Sprintf("%s:%s", relatedVulnerability.ImpactedDependencyName, relatedVulnerability.ImpactedDependencyVersion),
-		remediation,
-		writer,
-	), writer)
+func generateApplicabilityReviewContent(issue issues.ApplicableEvidences, writer outputwriter.OutputWriter) string {
+	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(issue, writer), writer)
 }
 
 func generateSourceCodeVulnerabilityReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
 	switch commentType {
 	case IacComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, false ,writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, false, writer), writer)
 	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, false ,writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, false, writer), writer)
 	case SecretComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, false ,writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, false, writer), writer)
 	}
 	return
 }

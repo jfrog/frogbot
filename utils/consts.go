@@ -57,7 +57,7 @@ const (
 	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
 	jfrogWatchesEnv                    = "JF_WATCHES"
 	jfrogProjectEnv                    = "JF_PROJECT"
-	ViolationContextEnv  			   = "JF_VIOLATION_CONTEXT"
+	ViolationContextEnv                = "JF_VIOLATION_CONTEXT"
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"

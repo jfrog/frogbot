@@ -127,9 +127,15 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		return
 	}
 
+	gitRepoContextValue := ""
+	if repository.ViolationContext == utils.GitRepoContext {
+		// The violation context is the Git repository, inject the Git repository context to the scan details
+		gitRepoContextValue = repositoryInfo.CloneInfo.HTTP
+	}
+
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(repositoryInfo.CloneInfo.HTTP, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
+		SetXrayGraphScanParams(gitRepoContextValue, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetSkipAutoInstall(repository.SkipAutoInstall).

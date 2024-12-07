@@ -194,14 +194,14 @@ func TestGetPRSummaryContent(t *testing.T) {
 
 func TestScanSummaryContent(t *testing.T) {
 	testCases := []struct {
-		name         string
+		name             string
 		violationContext string
-		includeSecrets bool
-		issues       issues.ScansIssuesCollection
-		cases        []OutputTestCase
+		includeSecrets   bool
+		issues           issues.ScansIssuesCollection
+		cases            []OutputTestCase
 	}{
 		{
-			name: "No issues",
+			name:   "No issues",
 			issues: issues.ScansIssuesCollection{},
 			cases: []OutputTestCase{
 				{
@@ -618,11 +618,15 @@ func TestGenerateReviewComment(t *testing.T) {
 func TestApplicableReviewContent(t *testing.T) {
 	testCases := []struct {
 		name                                                                             string
+		issue                                                                            issues.ApplicableEvidences
 		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
 		cases                                                                            []OutputTestCase
 	}{
 		{
-			name:               "Applicable CVE review comment content",
+			name: "Applicable CVE review comment content",
+			issue: issues.ApplicableEvidences{
+				Severity: "Critical",
+			},
 			severity:           "Critical",
 			finding:            "The vulnerable function flask.Flask.run is called",
 			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",

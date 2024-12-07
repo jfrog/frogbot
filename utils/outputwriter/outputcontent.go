@@ -17,11 +17,20 @@ const (
 	FrogbotTitlePrefix      = "[🐸 Frogbot]"
 	FrogbotRepoUrl          = "https://github.com/jfrog/frogbot"
 	FrogbotDocumentationUrl = "https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot"
+	JfrogSupportUrl         = "https://jfrog.com/support/"
 	ReviewCommentId         = "FrogbotReviewComment"
 
 	scanSummaryTitle             = "📗 Scan Summary"
 	issuesDetailsSubTitle        = "🔖 Details"
 	jfrogResearchDetailsSubTitle = "🔬 JFrog Research Details"
+
+	jobErrorTitle = "⚠️ Error Details"
+
+	// Violation Contexts text
+	NoViolations      = "Vulnerabilities"
+	WatchViolations   = "watch violations"
+	ProjectViolations = "project violations"
+	GitRepoViolations = "Git repository violations"
 
 	policyViolationTitle   = "🚥 Policy Violations"
 	securityViolationTitle = "🚨 Security Violations"
@@ -148,36 +157,69 @@ func footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
+func GetFrogbotErrorCommentContent(contentForComments []string, err error, writer OutputWriter) (comments []string) {
+	// First decorate with error suffix, then wrap content with the base decorator
+	return ConvertContentToComments(contentForComments, writer, getFrogbotErrorSuffixDecorator(writer, err), GetFrogbotCommentBaseDecorator(writer))
+}
+
+// Adding markdown prefix to identify Frogbot comment and a footer with the link to the documentation
+func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecorator {
+	return func(_ int, content string) string {
+		var comment strings.Builder
+		WriteNewLine(&comment)
+		// Error
+		WriteContent(&comment, writer.MarkAsTitle("Error:", 4), err.Error())
+		WriteNewLine(&comment)
+		// Action steps
+		WriteContent(&comment,
+			writer.MarkAsTitle("Next Steps:", 4),
+			"1. Please try to rerun the scan.",
+			fmt.Sprintf("2. If the issue persists, consider checking the %s for troubleshooting tips.", MarkAsLink("Frogbot documentation", FrogbotDocumentationUrl)),
+			fmt.Sprintf("3. If you still need assistance, feel free to reach out to %s.", MarkAsLink("JFrog Support", JfrogSupportUrl)),
+		)
+		WriteNewLine(&comment)
+		WriteContent(&comment, "Thank you for your understanding!")
+
+		return content + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
+	}
+}
+
 // Summary content
 
 func ScanSummaryContent(issues issues.ScansIssuesCollection, violationContext string, includeSecrets bool, writer OutputWriter) string {
-	if !issues.IssuesExists(includeSecrets) {
+	if !issues.IssuesExists(includeSecrets) && !issues.HasErrors() {
 		return ""
 	}
 	var contentBuilder strings.Builder
 	totalIssues := issues.GetTotalVulnerabilities(includeSecrets)
 	violations := false
-	if violationContext != "" {
+	if violationContext != "" && violationContext != NoViolations {
 		totalIssues = issues.GetTotalViolations(includeSecrets)
 		violations = true
 	}
+	title := MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", violationContext, totalIssues))
+	if issues.HasErrors() {
+		title = MarkAsBullet(fmt.Sprintf("Frogbot attempted to scan for %s but encountered an error.", violationContext))
+	}
 	// Title
-	WriteContent(&contentBuilder,
-		writer.MarkAsTitle(scanSummaryTitle, 2),
-		MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", getIssueType(violations), totalIssues)),
-	)
+	WriteContent(&contentBuilder, writer.MarkAsTitle(scanSummaryTitle, 2), title)
+	WriteNewLine(&contentBuilder)
 	// Create table, a row for each sub scans summary
 	secretsDetails := ""
 	if includeSecrets {
 		secretsDetails = getScanSecurityIssuesDetails(issues, utils.SecretsScan, violations, writer)
 	}
-	table := NewMarkdownTable("Scan Category", "Status", "Security Issues")
+	table := NewMarkdownTableWithColumns(
+		NewMarkdownTableSingleValueColumn("Scan Category", "⚠️", false),
+		NewMarkdownTableSingleValueColumn("Status", "⚠️", true),
+		NewMarkdownTableSingleValueColumn("Security Issues", "-", false),
+	)
 	table.AddRow(MarkAsBold("Software Composition Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.ScaScan, violations, writer))
 	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
 	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.SastScan, violations, writer))
 	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), secretsDetails)
 	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, utils.IacScan, violations, writer))
-	WriteContent(&contentBuilder, writer.MarkInCenter(table.Build()))
+	WriteContent(&contentBuilder, table.Build())
 	return contentBuilder.String()
 }
 
@@ -192,7 +234,7 @@ func getSubScanResultStatus(scanStatusCode *int) string {
 }
 
 func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType utils.SubScanType, violation bool, writer OutputWriter) string {
-	if issues.IsScanNotCompleted(scanType) {
+	if issues.HasErrors() || issues.IsScanNotCompleted(scanType) {
 		// Failed/Not scanned, no need to show the details
 		return ""
 	}
@@ -207,12 +249,13 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType 
 	case utils.IacScan:
 		severityCountMap = issues.GetScanDetails(utils.IacScan, violation)
 	}
-	if len(severityCountMap) == 0 {
+	totalIssues := getTotalIssues(severityCountMap)
+	if totalIssues == 0 {
 		// No Issues
 		return "Not Found"
 	}
 	var contentBuilder strings.Builder
-	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", getTotalIssues(severityCountMap)), 3, toSeverityDetails(severityCountMap)))
+	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", totalIssues), 3, toSeverityDetails(severityCountMap, writer)))
 	return contentBuilder.String()
 }
 
@@ -223,23 +266,16 @@ func getTotalIssues(severities map[severityutils.Severity]int) (total int) {
 	return
 }
 
-func toSeverityDetails(severities map[severityutils.Severity]int) string {
+func toSeverityDetails(severities map[severityutils.Severity]int, writer OutputWriter) string {
 	var contentBuilder strings.Builder
-	// Get severities with values and write them sorted (Critical, High, Medium, Low, Unknown)
-	if count, ok := severities[severityutils.Critical]; ok && count > 0 {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %d %s", severityutils.GetSeverityIcon(severityutils.Critical), count, severityutils.Critical.String()))
-	}
-	if count, ok := severities[severityutils.High]; ok && count > 0 {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %d %s", severityutils.GetSeverityIcon(severityutils.High), count, severityutils.High.String()))
-	}
-	if count, ok := severities[severityutils.Medium]; ok && count > 0 {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %d %s", severityutils.GetSeverityIcon(severityutils.Medium), count, severityutils.Medium.String()))
-	}
-	if count, ok := severities[severityutils.Low]; ok && count > 0 {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %d %s", severityutils.GetSeverityIcon(severityutils.Low), count, severityutils.Low.String()))
-	}
-	if count, ok := severities[severityutils.Unknown]; ok && count > 0 {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %d %s", severityutils.GetSeverityIcon(severityutils.Unknown), count, severityutils.Unknown.String()))
+	sortedSeverities := []severityutils.Severity{severityutils.Critical, severityutils.High, severityutils.Medium, severityutils.Low, severityutils.Unknown}
+	for _, severity := range sortedSeverities {
+		if count, ok := severities[severity]; ok && count > 0 {
+			if contentBuilder.Len() > 0 {
+				contentBuilder.WriteString(writer.Separator())
+			}
+			contentBuilder.WriteString(fmt.Sprintf("%s %d %s", writer.SeverityIcon(severity), count, severity.String()))
+		}
 	}
 	return contentBuilder.String()
 }
@@ -302,7 +338,7 @@ func getSecurityViolationsSummaryTable(violations []formats.VulnerabilityOrViola
 	}
 	// Construct rows
 	for _, violation := range violations {
-		row := []CellData{{writer.FormattedSeverity(violation.Severity, violation.Applicable, false)}, getCveIdsCellData(violation.Cves, violation.IssueId)}
+		row := []CellData{{writer.FormattedSeverity(violation.Severity, violation.Applicable)}, getCveIdsCellData(violation.Cves, violation.IssueId)}
 		if writer.IsShowingCaColumn() {
 			row = append(row, NewCellData(violation.Applicable))
 		}
@@ -347,7 +383,7 @@ func getLicenseViolationsSummaryTable(licenses []formats.LicenseViolationRow, wr
 	}
 	for _, license := range licenses {
 		table.AddRowWithCellData(
-			NewCellData(writer.FormattedSeverity(license.Severity, "Applicable", false)),
+			NewCellData(writer.FormattedSeverity(license.Severity, "Applicable")),
 			NewCellData(license.LicenseKey),
 			getDirectDependenciesCellData(license.Components),
 			NewCellData(fmt.Sprintf("%s:%s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)),
@@ -428,7 +464,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 	}
 	// Construct rows
 	for _, vulnerability := range vulnerabilities {
-		row := []CellData{{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable, false)}, getCveIdsCellData(vulnerability.Cves, vulnerability.IssueId)}
+		row := []CellData{{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable)}, getCveIdsCellData(vulnerability.Cves, vulnerability.IssueId)}
 		if writer.IsShowingCaColumn() {
 			row = append(row, NewCellData(vulnerability.Applicable))
 		}
@@ -444,22 +480,22 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 
 // Applicable CVE Evidence
 
-func ApplicableCveReviewContent(severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string, writer OutputWriter) string {
+func ApplicableCveReviewContent(issue issues.ApplicableEvidences, writer OutputWriter) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(contextualAnalysisTitle, 2),
-		writer.MarkInCenter(GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding, writer)),
-		writer.MarkAsDetails("Description", 3, fullDetails),
-		writer.MarkAsDetails("CVE details", 3, cveDetails),
+		writer.MarkInCenter(GetApplicabilityDescriptionTable(issue.Severity, issue.IssueId, issue.ImpactedDependency, issue.Evidence.Reason, writer)),
+		writer.MarkAsDetails("Description", 3, issue.FullDetails),
+		writer.MarkAsDetails("CVE details", 3, issue.CveSummary),
 	)
-	if len(remediation) > 0 {
-		WriteContent(&contentBuilder, writer.MarkAsDetails("Remediation", 3, remediation))
+	if len(issue.Remediation) > 0 {
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Remediation", 3, issue.Remediation))
 	}
 	return contentBuilder.String()
 }
 
-func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding string, writer OutputWriter) string {
-	table := NewMarkdownTable("Severity", "Impacted Dependency", "Finding", "CVE").AddRow(writer.FormattedSeverity(severity, "Applicable", false), impactedDependency, finding, cve)
+func GetApplicabilityDescriptionTable(severity, issueId, impactedDependency, finding string, writer OutputWriter) string {
+	table := NewMarkdownTable("Severity", "ID", "Impacted Dependency", "Finding").AddRow(writer.FormattedSeverity(severity, "Applicable"), issueId, impactedDependency, finding)
 	return table.Build()
 }
 
@@ -467,7 +503,7 @@ func GetApplicabilityDescriptionTable(severity, cve, impactedDependency, finding
 
 func getJasIssueDescriptionTable(issue formats.SourceCodeRow, writer OutputWriter) string {
 	columns := []string{"Severity"}
-	rowData := []string{writer.FormattedSeverity(issue.Severity, "Applicable", false)}
+	rowData := []string{writer.FormattedSeverity(issue.Severity, "Applicable")}
 	// Optional issueId column (as stored at the platform)
 	if issue.IssueId != "" {
 		columns = append(columns, "ID")
@@ -480,8 +516,10 @@ func getJasIssueDescriptionTable(issue formats.SourceCodeRow, writer OutputWrite
 
 func getJasFullDescription(issue formats.SourceCodeRow, violation bool, issueDescTable string, writer OutputWriter) string {
 	var contentBuilder strings.Builder
+	// Separator
+	WriteNewLine(&contentBuilder)
 	// Write the vulnerability/violation details
-	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%s Details", getIssueType(violation)), 4, issueDescTable))
+	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violation)), 3), issueDescTable)
 	// Separator
 	WriteNewLine(&contentBuilder)
 	// Write the description
@@ -575,7 +613,7 @@ func getSecretsDescriptionTable(severity, issueId, finding, status string, write
 		applicability = jasutils.NotApplicable.String()
 	}
 	columns := []string{"Severity"}
-	rowData := []string{writer.FormattedSeverity(severity, applicability, false)}
+	rowData := []string{writer.FormattedSeverity(severity, applicability)}
 	// Determine if issueId is provided
 	if issueId != "" {
 		columns = append(columns, "ID")
@@ -605,6 +643,7 @@ func getIssueType(violation bool) string {
 	}
 	return "Vulnerability"
 }
+
 func getDirectDependenciesCellData(components []formats.ComponentRow) (dependencies CellData) {
 	if len(components) == 0 {
 		return NewCellData()
@@ -673,6 +712,7 @@ func getComponentIssueIdentifier(key, compName, version, watch string) (id strin
 func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content string) {
 	var contentBuilder strings.Builder
 	// Title
+	WriteNewLine(&contentBuilder)
 	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
 	// Details Table
 	directComponent := []string{}
@@ -687,7 +727,8 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		noHeaderTable.AddRow(MarkAsBold("Watch Name:"), issue.Watch)
 	}
 	if issue.JfrogResearchInformation != nil && issue.JfrogResearchInformation.Severity != "" {
-		noHeaderTable.AddRow(MarkAsBold("Jfrog Research Severity:"), writer.FormattedSeverity(issue.JfrogResearchInformation.Severity, "Applicable", true))
+		severity := severityutils.Severity(issue.JfrogResearchInformation.Severity)
+		noHeaderTable.AddRow(MarkAsBold("Jfrog Research Severity:"), fmt.Sprintf("%s %s", writer.SeverityIcon(severity), severity.String()))
 	}
 	if issue.Applicable != "" {
 		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), issue.Applicable)
@@ -704,14 +745,20 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	WriteContent(&contentBuilder, noHeaderTable.Build())
 
 	// Summary
-	if issue.Summary != "" {
-		WriteContent(&contentBuilder, issue.Summary)
+	summary := issue.Summary
+	if issue.JfrogResearchInformation != nil && issue.JfrogResearchInformation.Summary != "" {
+		summary = issue.JfrogResearchInformation.Summary
+	}
+	if summary != "" {
+		WriteNewLine(&contentBuilder)
+		WriteContent(&contentBuilder, summary)
 	}
 
 	// Jfrog Research Details
-	if issue.JfrogResearchInformation == nil {
+	if issue.JfrogResearchInformation == nil || (issue.JfrogResearchInformation.Details == "" && issue.JfrogResearchInformation.Remediation == "") {
 		return contentBuilder.String()
 	}
+	WriteNewLine(&contentBuilder)
 	WriteContent(&contentBuilder, writer.MarkAsTitle(jfrogResearchDetailsSubTitle, 3))
 
 	if issue.JfrogResearchInformation.Details != "" {

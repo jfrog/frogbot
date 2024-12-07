@@ -3,6 +3,8 @@ package outputwriter
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
 
 type StandardOutput struct {
@@ -13,12 +15,19 @@ func (so *StandardOutput) Separator() string {
 	return "<br>"
 }
 
-func (so *StandardOutput) FormattedSeverity(severity, applicability string, small bool) string {
-	if small {
-		return fmt.Sprintf("%s%8s", getSmallSeverityTag(IconName(severity)), severity)
-	} else {
-		return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
+func (so *StandardOutput) SeverityIcon(severity severityutils.Severity) string {
+	if !so.hasInternetConnection {
+		return severityutils.GetSeverityIcon(severity)
 	}
+	return getSmallSeverityTag(IconName(severity))
+
+}
+
+func (so *StandardOutput) FormattedSeverity(severity, applicability string) string {
+	if !so.hasInternetConnection {
+		return severity
+	}
+	return fmt.Sprintf("%s%8s", getSeverityTag(IconName(severity), applicability), severity)
 }
 
 func (so *StandardOutput) Image(source ImageSource) string {
@@ -34,12 +43,9 @@ func (so *StandardOutput) MarkInCenter(content string) string {
 
 func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
 	if summary != "" {
-		summary = fmt.Sprintf("<summary> <b>%s</b> </summary>\n", summary)
+		summary = fmt.Sprintf("<summary><b>%s</b></summary>", summary)
 	}
-	if subTitleDepth > 0 {
-		summary += "<br>\n"
-	}
-	return fmt.Sprintf("<details>\n%s\n%s\n\n</details>\n", summary, content)
+	return fmt.Sprintf("<details>%s%s<br></details>", summary, content)
 }
 
 func (so *StandardOutput) MarkAsTitle(title string, subTitleDepth int) string {

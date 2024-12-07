@@ -6,11 +6,22 @@ import (
 )
 
 const (
-	tableRowFirstColumnSeparator = "| :---------------------: |"
-	tableRowColumnSeparator      = " :-----------------------------------: |"
-	cellFirstCellPlaceholder     = "| %s                |"
-	cellCellPlaceholder          = " %s                  |"
-	cellDefaultValue             = "-"
+
+	// tableRowFirstColumnSeparator = "| :---------------------: |"
+	// tableRowColumnSeparator      = " :-----------------------------------: |"
+	// cellFirstCellPlaceholder     = "| %s                |"
+	// cellCellPlaceholder          = " %s                  |"
+
+	cellDefaultValue = "-"
+
+	firstCellPlaceholder = "| %s                |"
+	cellPlaceholder      = " %s                  |"
+
+	centeredFirstColumnSeparator = "| :---------------------: |"
+	centeredColumnSeparator      = " :-----------------------------------: |"
+
+	defaultFirstColumnSeparator = "| --------------------- |"
+	defaultColumnSeparator      = " ----------------------------------- |"
 
 	// (Default value for columns) If more than one value exists in a cell, the values will be separated by the delimiter.
 	SeparatorDelimited MarkdownColumnType = "single"
@@ -32,6 +43,7 @@ type MarkdownColumnType string
 
 type MarkdownColumn struct {
 	Name         string
+	Centered     bool
 	ColumnType   MarkdownColumnType
 	DefaultValue string
 }
@@ -51,21 +63,21 @@ func NewCellData(values ...string) CellData {
 func NewMarkdownTable(columns ...string) *MarkdownTableBuilder {
 	columnsInfo := []*MarkdownColumn{}
 	for _, column := range columns {
-		columnsInfo = append(columnsInfo, NewMarkdownTableSingleValueColumn(column, cellDefaultValue))
+		columnsInfo = append(columnsInfo, NewMarkdownTableSingleValueColumn(column, cellDefaultValue, true))
 	}
-	return NewMarkdownTableWithColumns(columnsInfo)
+	return NewMarkdownTableWithColumns(columnsInfo...)
 }
 
-func NewMarkdownTableWithColumns(columnsInfo []*MarkdownColumn) *MarkdownTableBuilder {
+func NewMarkdownTableWithColumns(columnsInfo ...*MarkdownColumn) *MarkdownTableBuilder {
 	return &MarkdownTableBuilder{columns: columnsInfo, delimiter: simpleSeparator}
 }
 
-func NewMarkdownTableSingleValueColumn(name, defaultValue string) *MarkdownColumn {
-	return &MarkdownColumn{Name: name, ColumnType: SeparatorDelimited, DefaultValue: defaultValue}
+func NewMarkdownTableSingleValueColumn(name, defaultValue string, centered bool) *MarkdownColumn {
+	return &MarkdownColumn{Name: name, ColumnType: SeparatorDelimited, DefaultValue: defaultValue, Centered: centered}
 }
 
-func NewMarkdownTableMultiValueColumn(name, defaultValue string) *MarkdownColumn {
-	return &MarkdownColumn{Name: name, ColumnType: MultiRowColumn, DefaultValue: defaultValue}
+func NewMarkdownTableMultiValueColumn(name, defaultValue string, centered bool) *MarkdownColumn {
+	return &MarkdownColumn{Name: name, ColumnType: MultiRowColumn, DefaultValue: defaultValue, Centered: centered}
 }
 
 // Set the delimiter that will be used to separate multiple values in a cell.
@@ -126,18 +138,26 @@ func (t *MarkdownTableBuilder) Build() string {
 	// Header
 	for c, column := range t.columns {
 		if c == 0 {
-			tableBuilder.WriteString(fmt.Sprintf(cellFirstCellPlaceholder, column.Name))
+			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
 		} else {
-			tableBuilder.WriteString(fmt.Sprintf(cellCellPlaceholder, column.Name))
+			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
 		}
 	}
 	tableBuilder.WriteString("\n")
 	// Separator
-	for c := range t.columns {
+	for c, column := range t.columns {
 		if c == 0 {
-			tableBuilder.WriteString(tableRowFirstColumnSeparator)
+			columnSeparator := defaultFirstColumnSeparator
+			if column.Centered {
+				columnSeparator = centeredFirstColumnSeparator
+			}
+			tableBuilder.WriteString(columnSeparator)
 		} else {
-			tableBuilder.WriteString(tableRowColumnSeparator)
+			columnSeparator := defaultColumnSeparator
+			if column.Centered {
+				columnSeparator = centeredColumnSeparator
+			}
+			tableBuilder.WriteString(columnSeparator)
 		}
 	}
 	// Content

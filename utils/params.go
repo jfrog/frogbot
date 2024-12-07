@@ -275,11 +275,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
-	XrayVersion     string
-	XscVersion      string
-	ViolationContext ViolationContext `yaml:"violationContext,omitempty"` 
-	Watches         []string `yaml:"watches,omitempty"`
-	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
+	XrayVersion      string
+	XscVersion       string
+	ViolationContext ViolationContext `yaml:"violationContext,omitempty"`
+	Watches          []string         `yaml:"watches,omitempty"`
+	JFrogProjectKey  string           `yaml:"jfrogProjectKey,omitempty"`
 }
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
@@ -297,11 +297,7 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 		err = nil
 	}
 	if jp.ViolationContext == None {
-		var violationContextStr string
-		if err = readParamFromEnv(ViolationContextEnv, &violationContextStr); err != nil && !e.IsMissingEnvErr(err) {
-			return
-		}
-		jp.ViolationContext = ViolationContext(violationContextStr)
+		jp.ViolationContext = ViolationContext(getTrimmedEnv(ViolationContextEnv))
 	}
 	// Validate or set Default base on other params
 	if jp.ViolationContext == None {
@@ -311,6 +307,9 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 			jp.ViolationContext = ProjectContext
 		}
 	}
+	// if jp.ViolationContext == None {
+	// 	jp.ViolationContext = GitRepoContext
+	// }
 	return
 }
 

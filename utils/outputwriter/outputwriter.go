@@ -6,6 +6,7 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -105,7 +106,8 @@ type OutputWriter interface {
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	// Markdown interface
-	FormattedSeverity(severity, applicability string, small bool) string
+	SeverityIcon(severity severityutils.Severity) string
+	FormattedSeverity(severity, applicability string) string
 	Separator() string
 	MarkInCenter(content string) string
 	MarkAsDetails(summary string, subTitleDepth int, content string) string
