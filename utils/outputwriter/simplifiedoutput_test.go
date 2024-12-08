@@ -57,7 +57,7 @@ func TestSimpleFormattedSeverity(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			smo := &SimplifiedOutput{}
-			assert.Equal(t, tc.expectedOutput, smo.FormattedSeverity(tc.severity, tc.applicability, false))
+			assert.Equal(t, tc.expectedOutput, smo.FormattedSeverity(tc.severity, tc.applicability))
 		})
 	}
 }

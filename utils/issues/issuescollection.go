@@ -141,6 +141,9 @@ func (ic *ScansIssuesCollection) GetScanDetails(scanType utils.SubScanType, viol
 			for _, violation := range ic.ScaViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
 			}
+			for _, violation := range ic.LicensesViolations {
+				scanDetails[severityutils.GetSeverity(violation.Severity)]++
+			}
 		} else {
 			for _, vulnerability := range ic.ScaVulnerabilities {
 				scanDetails[severityutils.GetSeverity(vulnerability.Severity)]++

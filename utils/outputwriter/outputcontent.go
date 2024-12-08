@@ -216,7 +216,7 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, violationContext st
 	)
 	table.AddRow(MarkAsBold("Software Composition Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.ScaScan, violations, writer))
 	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
-	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.SastScan, violations, writer))
+	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.SastScan)), getScanSecurityIssuesDetails(issues, utils.SastScan, violations, writer))
 	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), secretsDetails)
 	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, utils.IacScan, violations, writer))
 	WriteContent(&contentBuilder, table.Build())
@@ -255,7 +255,7 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType 
 		return "Not Found"
 	}
 	var contentBuilder strings.Builder
-	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", totalIssues), 3, toSeverityDetails(severityCountMap, writer)))
+	WriteContent(&contentBuilder, writer.MarkAsDetails(fmt.Sprintf("%d Issues Found", totalIssues), 0, toSeverityDetails(severityCountMap, writer)))
 	return contentBuilder.String()
 }
 

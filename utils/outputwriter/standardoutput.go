@@ -41,7 +41,7 @@ func (so *StandardOutput) MarkInCenter(content string) string {
 	return GetMarkdownCenterTag(content)
 }
 
-func (so *StandardOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
+func (so *StandardOutput) MarkAsDetails(summary string, _ int, content string) string {
 	if summary != "" {
 		summary = fmt.Sprintf("<summary><b>%s</b></summary>", summary)
 	}

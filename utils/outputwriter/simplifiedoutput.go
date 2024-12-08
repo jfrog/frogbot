@@ -41,7 +41,7 @@ func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, co
 
 func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {
 	if subTitleDepth == 0 {
-		return fmt.Sprintf("%s\n%s\n%s", SectionDivider(), title, SectionDivider())
+		return title
 	}
 	return fmt.Sprintf("%s\n%s %s\n%s", SectionDivider(), strings.Repeat("#", subTitleDepth), title, SectionDivider())
 }
