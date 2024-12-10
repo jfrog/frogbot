@@ -693,6 +693,7 @@ func TestSetEmailDetails(t *testing.T) {
 	}
 }
 
+// TODO eran fix test according to new logic
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
