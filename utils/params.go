@@ -422,7 +422,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer) // TODO eran what do we do with the no-longer-relevant xsc version?
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer)
 	if err != nil {
 		return
 	}

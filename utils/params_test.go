@@ -702,6 +702,13 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		failureExpected bool
 	}{
 		{
+			name:            "Deprecated Server - Valid ConfigProfile",
+			useProfile:      true,
+			profileName:     ValidConfigProfile,
+			xrayVersion:     "3.0.0",
+			failureExpected: false,
+		},
+		{
 			name:       "Profile usage is not required",
 			useProfile: false,
 		},
