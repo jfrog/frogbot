@@ -794,7 +794,8 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 }
 
 // This function attempts to fetch a config profile if JF_USE_CONFIG_PROFILE is set to true.
-// If so we try to get the profile by the repo Url. If not found we fallback to get it by profile name (provided through JF_CONFIG_PROFILE).
+// If we need to use a profile, we first try to get the profile by name that can be provided through JF_CONFIG_PROFILE. If name is provided but profile doesn't exist we return an error.
+// If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
 // When a profile is found we verify several conditions on it.
 // If a profile was requested but not found by url nor by name we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
@@ -804,32 +805,24 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		return
 	}
 
-	// We first try to get a config profile by repo Url
-	// TODO eran verify that we dont get an error in case we request to use a profile but there is non to be found by Url, but rather through profile name
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer); err != nil {
-		return
-	}
-	if configProfile != nil {
-		err = verifyConfigProfileValidity(configProfile)
-		return
-	}
-
-	// If no profile was found by the repoUrl, we check if a profile was provided by name
+	// We first try to get a config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
-	if profileName == "" {
-		err = fmt.Errorf("usage of a configuration profile was requested, but no associated profile was found for '%s' repository, nor a profile name was provided through the '%s' variable", jfrogServer.Url, JfrogConfigProfileEnv)
-		return
-	}
-	if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, xscVersion, jfrogServer, profileName); err != nil {
-		return
-	}
-	if configProfile != nil {
+	if profileName != "" {
+		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
+		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, xscVersion, jfrogServer, profileName); err != nil || configProfile == nil {
+			return
+		}
 		err = verifyConfigProfileValidity(configProfile)
 		return
 	}
 
-	// If we reach this point it means we could not get a config profile by Url nor by name even though it was requested, hence - we return an error
-	return configProfile, fmt.Errorf("config profile was requested but not found through Url nor through profile's name. Please check the provided server details and the %s env var value if provided", JfrogConfigProfileEnv)
+	// If no profile was found by name, we check if a profile is associated to the repo URL
+	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer); err != nil || configProfile == nil {
+		return
+	}
+	err = verifyConfigProfileValidity(configProfile)
+	return
 }
 
 func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err error) {

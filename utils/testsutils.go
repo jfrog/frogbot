@@ -27,6 +27,7 @@ const (
 	ValidConfigProfile          = "default-profile"
 	InvalidPathConfigProfile    = "invalid-path-from-root-profile"
 	InvalidModulesConfigProfile = "invalid-modules-profile"
+	NonExistingProfile          = "non-existing-profile"
 )
 
 // Receive an environment variables key-values map, set and assert the environment variables.
@@ -175,12 +176,12 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		}
 
 		switch {
-		case strings.Contains(r.RequestURI, "/xsc/"+apiUrlPart+"profile/"):
+		// Endpoints for Profile by name
+		case strings.Contains(r.RequestURI, "/xsc/"+apiUrlPart+"profile/"): // xsc/api/v1/profile
 			assert.Equal(t, http.MethodGet, r.Method)
-			if strings.Contains(r.RequestURI, "/profile/"+ValidConfigProfile) {
-				w.WriteHeader(http.StatusOK)
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
+			if strings.Contains(r.RequestURI, NonExistingProfile) {
+				w.WriteHeader(http.StatusNotFound)
+				return
 			}
 
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
@@ -202,7 +203,16 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write(content)
+			assert.NoError(t, err)
 
+		// Endpoint to profile by URL
+		case strings.Contains(r.RequestURI, "/xsc/profile_repos"):
+			assert.Equal(t, http.MethodPost, r.Method)
+			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			assert.NoError(t, err)
+			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
 
