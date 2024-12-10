@@ -97,7 +97,7 @@ func TestMarkdownTableBuild(t *testing.T) {
 			name:           "No rows",
 			columns:        []string{"col1"},
 			rows:           [][]string{},
-			expectedOutput: "| col1                |\n" + defaultFirstColumnSeparator,
+			expectedOutput: "| col1                |\n" + centeredFirstColumnSeparator,
 		},
 		{
 			name:    "Same number of columns",
@@ -107,7 +107,7 @@ func TestMarkdownTableBuild(t *testing.T) {
 				{"row2col1", "row2col2"},
 				{"row3col1", "row3col2"},
 			},
-			expectedOutput: "| col1                | col2                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + `
 | row1col1 | row1col2 |
 | row2col1 | row2col2 |
 | row3col1 | row3col2 |`,
@@ -123,7 +123,7 @@ func TestMarkdownTableBuild(t *testing.T) {
 				{"row4col1"},
 				{"row5col1", "row5col2", "row5col3"},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + centeredColumnSeparator + `
 | row1col1 | row1col2 | - |
 | row2col1 | row2col2 | - |
 | row3col1 | - | row3col3 |
@@ -147,7 +147,7 @@ func TestHideEmptyColumnsInTable(t *testing.T) {
 	columns := []*MarkdownColumn{
 		{Name: "col1", HideIfAllEmpty: true},
 		{Name: "col2", HideIfAllEmpty: true, Centered: true},
-		{Name: "col3", HideIfAllEmpty: false},
+		{Name: "col3", HideIfAllEmpty: false, DefaultValue: "-"},
 		{Name: "col4", HideIfAllEmpty: true},
 	}
 	testCases := []struct {
@@ -161,7 +161,7 @@ func TestHideEmptyColumnsInTable(t *testing.T) {
 				{"row1col1", "row1col2", "", "row1col4"},
 				{"row2col1", "row2col2", "", "row2col4"},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  | col4                |\n" + defaultFirstColumnSeparator + centeredColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  | col4                  |\n" + defaultFirstColumnSeparator + centeredColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
 | row1col1 | row1col2 | - | row1col4 |
 | row2col1 | row2col2 | - | row2col4 |`,
 		},
@@ -181,8 +181,9 @@ func TestHideEmptyColumnsInTable(t *testing.T) {
 				{"", "", "row1col3", ""},
 				{"", "", "", ""},
 			},
-			expectedOutput: "| col3                  |\n" + defaultFirstColumnSeparator + `
-| row1col3 |`,
+			expectedOutput: "| col3                |\n" + defaultFirstColumnSeparator + `
+| row1col3 |
+| - |`,
 		},
 	}
 	for _, tc := range testCases {
@@ -209,7 +210,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 			rows: [][]CellData{
 				{{""}, {"row1col2"}, {"row1col3"}},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + centeredColumnSeparator + `
 | - | row1col2 | row1col3 |`,
 		},
 		{
@@ -219,7 +220,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 				{{"row1col1"}, {"row1col2"}, {"row1col3"}},
 				{{"row2col1"}, {"row2col2"}, {"row2col3"}},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + centeredColumnSeparator + `
 | row1col1 | row1col2 | row1col3 |
 | row2col1 | row2col2 | row2col3 |`,
 		},
@@ -231,7 +232,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
 				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + centeredColumnSeparator + `
 | row1col1 | - | row1col3 |
 | row2col1 | row2col2 | row2col3val1, row2col3val2 |
 | row3col1 | row3col2val1, row3col2val2, row3col2val3 | row3col3 |`,
@@ -244,7 +245,7 @@ func TestMultipleValuesInColumnRow(t *testing.T) {
 				{{"row2col1"}, {"row2col2"}, {"row2col3val1", "row2col3val2"}},
 				{{"row3col1"}, {"row3col2val1", "row3col2val2", "row3col2val3"}, {"row3col3"}},
 			},
-			expectedOutput: "| col1                | col2                  | col3                  |\n" + defaultFirstColumnSeparator + defaultColumnSeparator + defaultColumnSeparator + `
+			expectedOutput: "| col1                | col2                  | col3                  |\n" + centeredFirstColumnSeparator + centeredColumnSeparator + centeredColumnSeparator + `
 | row1col1 | - | row1col3 |
 | row2col1 | row2col2 | row2col3val1, row2col3val2 |
 | row3col1 | row3col2val1 | row3col3 |

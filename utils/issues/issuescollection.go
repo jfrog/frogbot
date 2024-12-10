@@ -1,8 +1,6 @@
 package issues
 
 import (
-	// "github.com/jfrog/gofrog/datastructures"
-	"fmt"
 	"maps"
 
 	"github.com/jfrog/jfrog-cli-security/utils"
@@ -259,7 +257,7 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 				ScannerDescription: applicableInfo.ScannerDescription,
 				IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
 				CveSummary:         issue.Summary,
-				ImpactedDependency: fmt.Sprintf("%s:%s", issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
+				ImpactedDependency: results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
 				Remediation:        remediation,
 			})
 		}

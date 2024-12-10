@@ -126,11 +126,11 @@ func TestSimpleMarkAsDetails(t *testing.T) {
 		subTitleDepth  int
 	}{
 		{
-			name:           "empty",
-			summary:        "",
+			name:           "inline",
+			summary:        "title",
 			subTitleDepth:  0,
-			content:        "",
-			expectedOutput: "\n---\n\n\n---\n",
+			content:        "details",
+			expectedOutput: "title: details",
 		},
 		{
 			name:           "empty content",
@@ -184,10 +184,10 @@ func TestSimpleMarkAsTitle(t *testing.T) {
 		subTitleDepth  int
 	}{
 		{
-			name:           "empty",
-			title:          "",
+			name:           "inline",
+			title:          "title",
 			subTitleDepth:  0,
-			expectedOutput: "\n---\n\n\n---",
+			expectedOutput: "title",
 		},
 		{
 			name:           "Main title",

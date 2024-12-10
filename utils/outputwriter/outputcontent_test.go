@@ -1,6 +1,7 @@
 package outputwriter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -323,7 +324,42 @@ func TestScanSummaryContent(t *testing.T) {
 }
 
 func TestGetFrogbotErrorCommentContent(t *testing.T) {
-
+	testCases := []struct {
+		name   string
+		cases  []OutputTestCase
+		issues issues.ScansIssuesCollection
+	}{
+		{
+			name: "error details",
+			issues: issues.ScansIssuesCollection{
+				ScanStatus: formats.ScanStatus{
+					IacStatusCode: utils.NewIntPtr(33),
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "error_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "error_simplified.md")},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				output := GetFrogbotErrorCommentContent([]string{ScanSummaryContent(tc.issues, "", false, test.writer)}, fmt.Errorf("Some error that occurred in scan"), test.writer)
+				assert.Len(t, output, 1)
+				assert.Equal(t, expectedOutput, output[0])
+			})
+		}
+	}
 }
 
 func TestVulnerabilitiesContent(t *testing.T) {
@@ -425,17 +461,17 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true}},
+					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true}},
+					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md")},
 				},
 				{
 					name:   "Split Standard output",
-					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1720, commentSizeLimit: 1720}},
+					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true, descriptionSizeLimit: 1720, commentSizeLimit: 1720}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split2.md"),
@@ -443,7 +479,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 				{
 					name:   "Split Simplified output",
-					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1000, commentSizeLimit: 1000}},
+					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true, descriptionSizeLimit: 1000, commentSizeLimit: 2000}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split2.md"),
@@ -550,7 +586,7 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			JfrogResearchInformation: &formats.JfrogResearchInformation{
 				Remediation: "some remediation",
 			},
-			Cves: []formats.CveRow{{}},
+			Cves: []formats.CveRow{},
 		},
 		{
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
@@ -615,12 +651,12 @@ func TestLicensesContent(t *testing.T) {
 				{
 					name:           "Standard output",
 					writer:         &StandardOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 			},
 		},
@@ -629,7 +665,8 @@ func TestLicensesContent(t *testing.T) {
 			licenses: []formats.LicenseViolationRow{
 				{
 					LicenseRow: formats.LicenseRow{
-						LicenseKey: "License1",
+						LicenseKey:  "License1",
+						LicenseName: "License1 full name",
 						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 							Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
 							ImpactedDependencyName:    "Dep1",
@@ -638,6 +675,10 @@ func TestLicensesContent(t *testing.T) {
 								Severity: "High",
 							},
 						},
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch",
+						Policies: []string{"policy1", "policy2"},
 					},
 				},
 				{
@@ -661,6 +702,10 @@ func TestLicensesContent(t *testing.T) {
 							},
 						},
 					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch2",
+						Policies: []string{"policy3"},
+					},
 				},
 			},
 			cases: []OutputTestCase{
@@ -680,7 +725,8 @@ func TestLicensesContent(t *testing.T) {
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				assert.Equal(t, GetExpectedTestOutput(t, test), getLicenseViolationsContent(issues.ScansIssuesCollection{LicensesViolations: tc.licenses}, test.writer))
+				expectedOutput := GetExpectedTestCaseOutput(t, test)
+				assert.Equal(t, expectedOutput, PolicyViolationsContent(issues.ScansIssuesCollection{LicensesViolations: tc.licenses}, test.writer))
 			})
 		}
 	}

@@ -9,8 +9,8 @@ type ImageSource string
 type IconName string
 
 const (
-	// baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
-	baseResourceUrl = "https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/"
+	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
+	// baseResourceUrl = "https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/"
 
 	NoVulnerabilityPrBannerSource       ImageSource = "v2/noVulnerabilityBannerPR.png"
 	NoVulnerabilityMrBannerSource       ImageSource = "v2/noVulnerabilityBannerMR.png"
@@ -78,15 +78,15 @@ func getApplicableIconTags(iconName IconName) string {
 func getSmallApplicableIconTags(iconName IconName) string {
 	switch strings.ToLower(string(iconName)) {
 	case "critical":
-		return GetImgTag(smallCriticalSeveritySource, "critical")
+		return GetImgTag(smallCriticalSeveritySource, "")
 	case "high":
-		return GetImgTag(smallHighSeveritySource, "high")
+		return GetImgTag(smallHighSeveritySource, "")
 	case "medium":
-		return GetImgTag(smallMediumSeveritySource, "medium")
+		return GetImgTag(smallMediumSeveritySource, "")
 	case "low":
-		return GetImgTag(smallLowSeveritySource, "low")
+		return GetImgTag(smallLowSeveritySource, "")
 	}
-	return GetImgTag(smallUnknownSeveritySource, "unknown")
+	return GetImgTag(smallUnknownSeveritySource, "")
 }
 
 func GetBanner(banner ImageSource) string {

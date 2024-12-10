@@ -4,7 +4,7 @@
 
 | Severity                | Finding                  |
 | :---------------------: | :-----------------------------------: |
-| ![low](https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/v2/applicableLowSeverity.png)<br>     Low | Found a Use of Insecure Random |
+| ![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | Found a Use of Insecure Random |
 
 </div>
 

@@ -150,7 +150,7 @@ func untitledForJasMsg(writer OutputWriter) string {
 	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
 		return ""
 	}
-	return writer.MarkAsDetails("Note:", 0, fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
+	return writer.MarkAsDetails("Note", 0, fmt.Sprintf("\n%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {
@@ -345,7 +345,7 @@ func getSecurityViolationsSummaryTable(violations []formats.VulnerabilityOrViola
 		}
 		row = append(row,
 			getDirectDependenciesCellData(violation.Components),
-			NewCellData(fmt.Sprintf("%s:%s", violation.ImpactedDependencyName, violation.ImpactedDependencyVersion)),
+			NewCellData(results.GetDependencyId(violation.ImpactedDependencyName, violation.ImpactedDependencyVersion)),
 			NewCellData(violation.Watch),
 		)
 		table.AddRowWithCellData(row...)
@@ -387,7 +387,7 @@ func getLicenseViolationsSummaryTable(licenses []formats.LicenseViolationRow, wr
 			NewCellData(writer.FormattedSeverity(license.Severity, "Applicable")),
 			NewCellData(license.LicenseKey),
 			getDirectDependenciesCellData(license.Components),
-			NewCellData(fmt.Sprintf("%s:%s", license.ImpactedDependencyName, license.ImpactedDependencyVersion)),
+			NewCellData(results.GetDependencyId(license.ImpactedDependencyName, license.ImpactedDependencyVersion)),
 			NewCellData(license.Watch),
 		)
 	}
@@ -425,14 +425,14 @@ func getScaLicenseViolationDetails(violation formats.LicenseViolationRow, writer
 	// Details Table
 	directComponent := []string{}
 	for _, component := range violation.ImpactedDependencyDetails.Components {
-		directComponent = append(directComponent, fmt.Sprintf("%s:%s", component.Name, component.Version))
+		directComponent = append(directComponent, results.GetDependencyId(component.Name, component.Version))
 	}
 	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(violation.Policies...))
 	noHeaderTable.AddRow(MarkAsBold("Watch Name:"), violation.Watch)
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
-	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), fmt.Sprintf("%s:%s", violation.ImpactedDependencyName, violation.ImpactedDependencyVersion))
+	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), results.GetDependencyId(violation.ImpactedDependencyName, violation.ImpactedDependencyVersion))
 	noHeaderTable.AddRow(MarkAsBold("Full Name:"), violation.LicenseName)
 
 	WriteContent(&contentBuilder, noHeaderTable.Build(), "\n")
@@ -601,7 +601,7 @@ func getDirectDependenciesCellData(components []formats.ComponentRow) (dependenc
 		return NewCellData()
 	}
 	for _, component := range components {
-		dependencies = append(dependencies, fmt.Sprintf("%s:%s", component.Name, component.Version))
+		dependencies = append(dependencies, results.GetDependencyId(component.Name, component.Version))
 	}
 	return
 }
@@ -669,7 +669,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	// Details Table
 	directComponent := []string{}
 	for _, component := range issue.ImpactedDependencyDetails.Components {
-		directComponent = append(directComponent, fmt.Sprintf("%s:%s", component.Name, component.Version))
+		directComponent = append(directComponent, results.GetDependencyId(component.Name, component.Version))
 	}
 	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
@@ -686,7 +686,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), issue.Applicable)
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
-	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), fmt.Sprintf("%s:%s", issue.ImpactedDependencyName, issue.ImpactedDependencyVersion))
+	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion))
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Fixed Versions:")), NewCellData(issue.FixedVersions...))
 
 	cvss := []string{}

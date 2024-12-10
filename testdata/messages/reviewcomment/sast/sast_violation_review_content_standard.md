@@ -4,9 +4,9 @@
 
 | Severity                | ID                  | Finding                  | Watch Name                  | Policies                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![low](https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/v2/applicableLowSeverity.png)<br>     Low | sast-violation-id | Found a Use of Insecure Random | jas-watch | policy1<br>policy2 |
-| ![high](https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/v2/applicableHighSeverity.png)<br>    High | sast-violation-id-2 | Found a Use of Insecure Random | jas-watch2 | policy3 |
-| ![high](https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/v2/applicableHighSeverity.png)<br>    High | sast-violation-id-3 | Found An Express Not Using Helmet | jas-watch2 | policy3 |
+| ![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | sast-violation-id | Found a Use of Insecure Random | jas-watch | policy1<br>policy2 |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | sast-violation-id-2 | Found a Use of Insecure Random | jas-watch2 | policy3 |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | sast-violation-id-3 | Found An Express Not Using Helmet | jas-watch2 | policy3 |
 
 </div>
 
