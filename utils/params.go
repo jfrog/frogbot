@@ -460,7 +460,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	}
 
 	// We apply the configProfile to all received repositories. If no config profile was fetched, a nil value is passed
-	//TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
+	// TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
 	for i := range configAggregator {
 		configAggregator[i].Scan.ConfigProfile = configProfile
 	}
