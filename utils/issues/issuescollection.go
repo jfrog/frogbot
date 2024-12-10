@@ -1,8 +1,6 @@
 package issues
 
 import (
-	"maps"
-
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
@@ -209,60 +207,117 @@ type ApplicableEvidences struct {
 	Severity, ScannerDescription, IssueId, CveSummary, ImpactedDependency, Remediation string
 }
 
+func toApplicableEvidences(issue formats.VulnerabilityOrViolationRow, cve formats.CveRow, evidence formats.Evidence) ApplicableEvidences {
+	remediation := ""
+	if issue.JfrogResearchInformation != nil {
+		remediation = issue.JfrogResearchInformation.Remediation
+	}
+	return ApplicableEvidences{
+		Evidence:           evidence,
+		Severity:           issue.Severity,
+		ScannerDescription: cve.Applicability.ScannerDescription,
+		IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ", "),
+		CveSummary:         issue.Summary,
+		ImpactedDependency: results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
+		Remediation:        remediation,
+	}
+}
+
 func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []ApplicableEvidences) {
-	issueIdToApplicableInfo := map[string]formats.Applicability{}
-	issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}
 	// Collect evidences from Violations
+	idToEvidence := map[string]ApplicableEvidences{}
 	for _, securityViolation := range ic.ScaViolations {
-		issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
-		if _, exists := issueIdToIssue[issueId]; exists {
-			// No need to add the same issue twice
-			continue
-		}
 		for _, cve := range securityViolation.Cves {
 			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
 				// We only want applicable issues
-				issueIdToIssue[issueId] = securityViolation
-				issueIdToApplicableInfo[issueId] = *cve.Applicability
+				for _, evidence := range cve.Applicability.Evidence {
+					issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
+					id := issueId + evidence.Location.ToString()
+					if _, exists := idToEvidence[id]; exists {
+						// No need to add the same issue twice
+						continue
+					}
+					idToEvidence[id] = toApplicableEvidences(securityViolation, cve, evidence)
+				}
 			}
 		}
 	}
 	// Collect evidences from Vulnerabilities
 	for _, vulnerability := range ic.ScaVulnerabilities {
-		issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
-		if _, exists := issueIdToIssue[issueId]; exists {
-			// No need to add the same issue twice
-			continue
-		}
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
 				// We only want applicable issues
-				issueIdToIssue[issueId] = vulnerability
-				issueIdToApplicableInfo[issueId] = *cve.Applicability
+				for _, evidence := range cve.Applicability.Evidence {
+					issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
+					id := issueId + evidence.Location.ToString()
+					if _, exists := idToEvidence[id]; exists {
+						// No need to add the same issue twice
+						continue
+					}
+					idToEvidence[id] = toApplicableEvidences(vulnerability, cve, evidence)
+				}
 			}
 		}
 	}
-	// Create ApplicableEvidences from collected data
-	for issueId := range maps.Keys(issueIdToApplicableInfo) {
-		issue := issueIdToIssue[issueId]
-		applicableInfo := issueIdToApplicableInfo[issueId]
-		remediation := ""
-		if issue.JfrogResearchInformation != nil {
-			remediation = issue.JfrogResearchInformation.Remediation
-		}
-		for _, evidence := range applicableInfo.Evidence {
-			evidences = append(evidences, ApplicableEvidences{
-				Evidence:           evidence,
-				Severity:           issue.Severity,
-				ScannerDescription: applicableInfo.ScannerDescription,
-				IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
-				CveSummary:         issue.Summary,
-				ImpactedDependency: results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
-				Remediation:        remediation,
-			})
-		}
+	
+	for _, evidence := range idToEvidence {
+		evidences = append(evidences, evidence)
 	}
-	return
+	return 
+
+	// issueIdToApplicableInfo := map[string]formats.Applicability{}
+	// issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}
+	// // Collect evidences from Violations
+	// for _, securityViolation := range ic.ScaViolations {
+	// 	issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
+	// 	if _, exists := issueIdToIssue[issueId]; exists {
+	// 		// No need to add the same issue twice
+	// 		continue
+	// 	}
+	// 	for _, cve := range securityViolation.Cves {
+	// 		if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+	// 			// We only want applicable issues
+	// 			issueIdToIssue[issueId] = securityViolation
+	// 			issueIdToApplicableInfo[issueId] = *cve.Applicability
+	// 		}
+	// 	}
+	// }
+	// // Collect evidences from Vulnerabilities
+	// for _, vulnerability := range ic.ScaVulnerabilities {
+	// 	issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
+	// 	if _, exists := issueIdToIssue[issueId]; exists {
+	// 		// No need to add the same issue twice
+	// 		continue
+	// 	}
+	// 	for _, cve := range vulnerability.Cves {
+	// 		if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+	// 			// We only want applicable issues
+	// 			issueIdToIssue[issueId] = vulnerability
+	// 			issueIdToApplicableInfo[issueId] = *cve.Applicability
+	// 		}
+	// 	}
+	// }
+	// // Create ApplicableEvidences from collected data
+	// for issueId := range maps.Keys(issueIdToApplicableInfo) {
+	// 	issue := issueIdToIssue[issueId]
+	// 	applicableInfo := issueIdToApplicableInfo[issueId]
+	// 	remediation := ""
+	// 	if issue.JfrogResearchInformation != nil {
+	// 		remediation = issue.JfrogResearchInformation.Remediation
+	// 	}
+	// 	for _, evidence := range applicableInfo.Evidence {
+	// 		evidences = append(evidences, ApplicableEvidences{
+	// 			Evidence:           evidence,
+	// 			Severity:           issue.Severity,
+	// 			ScannerDescription: applicableInfo.ScannerDescription,
+	// 			IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
+	// 			CveSummary:         issue.Summary,
+	// 			ImpactedDependency: results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
+	// 			Remediation:        remediation,
+	// 		})
+	// 	}
+	// }
+	// return
 }
 
 // Violations

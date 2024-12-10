@@ -312,11 +312,11 @@ func TestGetApplicableEvidences(t *testing.T) {
 			expectedEvidences: []ApplicableEvidences{
 				{
 					Evidence: formats.Evidence{Reason: "reason", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 2, EndLine: 3, EndColumn: 4, Snippet: "snippet1"}},
-					Severity: "High", ScannerDescription: "scanner", IssueId: "Xray-Id", CveSummary: "summary", ImpactedDependency: "impacted-name:1.0.0", Remediation: "remediation",
+					Severity: "Critical", ScannerDescription: "scanner", IssueId: "CVE-2021-1234", CveSummary: "summary", ImpactedDependency: "impacted-name:1.0.0", Remediation: "remediation",
 				},
 				{
 					Evidence: formats.Evidence{Reason: "other reason", Location: formats.Location{File: "file2", StartLine: 5, StartColumn: 6, EndLine: 7, EndColumn: 8, Snippet: "snippet2"}},
-					Severity: "High", ScannerDescription: "scanner", IssueId: "Xray-Id", CveSummary: "summary", ImpactedDependency: "impacted-name:1.0.0", Remediation: "remediation",
+					Severity: "High", ScannerDescription: "scanner", IssueId: "CVE-2021-1234", CveSummary: "summary", ImpactedDependency: "impacted-name:1.0.0", Remediation: "remediation",
 				},
 			},
 		},
