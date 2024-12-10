@@ -52,25 +52,25 @@ func TestStandardSeparator(t *testing.T) {
 
 func TestStandardFormattedSeverity(t *testing.T) {
 	testCases := []struct {
-		name           string
-		severity       string
-		applicability  string
-		expectedOutput string
+		name               string
+		severity           string
+		applicability      string
+		expectedOutput     string
 		internetConnection bool
 	}{
 		{
-			name:           "Applicable severity",
-			severity:       "Low",
-			applicability:  "Applicable",
+			name:               "Applicable severity",
+			severity:           "Low",
+			applicability:      "Applicable",
 			internetConnection: true,
-			expectedOutput: "![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low",
+			expectedOutput:     "![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low",
 		},
 		{
-			name:           "Not applicable severity",
-			severity:       "Medium",
-			applicability:  "Not Applicable",
+			name:               "Not applicable severity",
+			severity:           "Medium",
+			applicability:      "Not Applicable",
 			internetConnection: true,
-			expectedOutput: "![medium (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableMedium.png)<br>  Medium",
+			expectedOutput:     "![medium (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableMedium.png)<br>  Medium",
 		},
 		{
 			name:           "Applicable severity",

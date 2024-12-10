@@ -515,6 +515,9 @@ func TestGetAllIssues(t *testing.T) {
 					Severity:         "High",
 					SeverityNumValue: 21,
 				},
+				ScannerInfo: formats.ScannerInfo{
+					RuleId: "rule",
+				},
 				Finding: "Missing auto upgrade was detected",
 				Location: formats.Location{
 					File:        "file1",
@@ -532,6 +535,9 @@ func TestGetAllIssues(t *testing.T) {
 					Severity:         "High",
 					SeverityNumValue: 21,
 				},
+				ScannerInfo: formats.ScannerInfo{
+					RuleId: "rule",
+				},
 				Finding: "Secret",
 				Location: formats.Location{
 					File:        "index.js",
@@ -548,6 +554,9 @@ func TestGetAllIssues(t *testing.T) {
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
 					SeverityNumValue: 21,
+				},
+				ScannerInfo: formats.ScannerInfo{
+					RuleId: "rule",
 				},
 				Finding: "XSS Vulnerability",
 				Location: formats.Location{
@@ -571,6 +580,9 @@ func TestGetAllIssues(t *testing.T) {
 						},
 						ImpactedDependencyName: "Dep-1",
 					},
+				},
+				ViolationContext: formats.ViolationContext{
+					Watch: "jfrog_custom_license_violation",
 				},
 			},
 		},
@@ -865,6 +877,9 @@ func TestCreateNewIacRows(t *testing.T) {
 						Severity:         "High",
 						SeverityNumValue: 21,
 					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
+					},
 					Finding: "Missing auto upgrade was detected",
 					Location: formats.Location{
 						File:        "file1",
@@ -894,6 +909,9 @@ func TestCreateNewIacRows(t *testing.T) {
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
 						SeverityNumValue: 17,
+					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
 					},
 					Finding: "enable_private_endpoint=false was detected",
 					Location: formats.Location{
@@ -948,6 +966,9 @@ func TestCreateNewSecretRows(t *testing.T) {
 						Severity:         "High",
 						SeverityNumValue: 21,
 					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
+					},
 					Finding: "Secret",
 					Location: formats.Location{
 						File:        "file1",
@@ -977,6 +998,9 @@ func TestCreateNewSecretRows(t *testing.T) {
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
 						SeverityNumValue: 17,
+					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -1031,6 +1055,9 @@ func TestCreateNewSastRows(t *testing.T) {
 						Severity:         "High",
 						SeverityNumValue: 21,
 					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
+					},
 					Finding: "XSS Vulnerability",
 					Location: formats.Location{
 						File:        "file1",
@@ -1060,6 +1087,9 @@ func TestCreateNewSastRows(t *testing.T) {
 					SeverityDetails: formats.SeverityDetails{
 						Severity:         "Medium",
 						SeverityNumValue: 17,
+					},
+					ScannerInfo: formats.ScannerInfo{
+						RuleId: "rule",
 					},
 					Finding: "Stack Trace Exposure",
 					Location: formats.Location{

@@ -259,11 +259,11 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 			}
 		}
 	}
-	
+
 	for _, evidence := range idToEvidence {
 		evidences = append(evidences, evidence)
 	}
-	return 
+	return
 
 	// issueIdToApplicableInfo := map[string]formats.Applicability{}
 	// issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}

@@ -122,26 +122,24 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
-	if err != nil {
-		return
-	}
-
-	gitRepoContextValue := ""
-	if repository.ViolationContext == utils.GitRepoContext {
-		// The violation context is the Git repository, inject the Git repository context to the scan details
-		gitRepoContextValue = repositoryInfo.CloneInfo.HTTP
-	}
-
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(gitRepoContextValue, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
 		SetAllowPartialResults(repository.AllowPartialResults).
 		SetDisableJas(repository.DisableJas)
 
+	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
+	if err != nil {
+		return
+	}
+	gitRepoContextValue := ""
+	if repository.ViolationContext == utils.GitRepoContext {
+		// The violation context is the Git repository, inject the Git repository context to the scan details
+		gitRepoContextValue = repositoryInfo.CloneInfo.HTTP
+	}
+	cfp.scanDetails.SetXrayGraphScanParams(gitRepoContextValue, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0)
 	cfp.scanDetails.XrayVersion = cfp.XrayVersion
 	cfp.scanDetails.XscVersion = cfp.XscVersion
 

@@ -9,20 +9,46 @@
 </div>
 
 
-## 📦 Vulnerable Dependencies
 
-### ✍️ Summary
+## 📗 Scan Summary
+- Frogbot scanned for Vulnerabilities and found 1 issues
+
+| Scan Category                | Status                  | Security Issues                  |
+| --------------------- | :-----------------------------------: | ----------------------------------- |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>1 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallCritical.svg" alt=""/> 1 Critical<br></details> |
+| **Contextual Analysis** | ✅ Done | - |
+| **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
+| **Secrets** | ✅ Done | - |
+| **Infrastructure as Code (IaC)** | ✅ Done | Not Found |
+
+### 📦 Vulnerable Dependencies
+
 <div align='center'>
 
-| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
+| Severity                | ID                  | Contextual Analysis                  | Direct Dependencies                  | Impacted Dependency                  | Fixed Versions                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical | Not Applicable | minimist:1.2.5 | minimist 1.2.5 | [0.2.4]<br>[1.2.6] | CVE-2021-44906 |
+| ![critical (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical | CVE-2021-44906 | Not Applicable | minimist:1.2.5 | minimist 1.2.5 | [0.2.4]<br>[1.2.6] |
 
 </div>
 
 
-### 🔬 Research Details
+### 🔖 Details
 
+
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> High |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimist:1.2.5 |
+| **Impacted Dependency:** | minimist:1.2.5 |
+| **Fixed Versions:** | [0.2.4], [1.2.6] |
+| **CVSS V3:** | 9.8 |
+
+Insufficient input validation in Minimist npm package leads to prototype pollution of constructor functions when parsing arbitrary arguments.
+
+### 🔬 JFrog Research Details
 
 **Description:**
 [Minimist](https://github.com/substack/minimist) is a simple and very popular argument parser. It is used by more than 14 million by Mar 2022. This package developers stopped developing it since April 2020 and its community released a [newer version](https://github.com/meszaros-lajos-gyorgy/minimist-lite) supported by the community.
@@ -42,6 +68,7 @@ This vulnerability can be triggered when the attacker-controlled input is parsed
 ##### Development mitigations
 
 Add the `Object.freeze(Object.prototype);` directive once at the beginning of your main JS source code file (ex. `index.js`), preferably after all your `require` directives. This will prevent any changes to the prototype object, thus completely negating prototype pollution attacks.
+
 
 
 ---
