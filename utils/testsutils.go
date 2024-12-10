@@ -159,7 +159,8 @@ func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
 func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
 	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiUrlPart := "api/v1/"
-		if xscutils.IsXscXrayInnerService(xrayVersion) {
+		var isXrayAfterXscMigration bool
+		if isXrayAfterXscMigration = xscutils.IsXscXrayInnerService(xrayVersion); isXrayAfterXscMigration {
 			apiUrlPart = ""
 		}
 
@@ -208,7 +209,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 			assert.NoError(t, err)
 
 		// Endpoint to profile by URL
-		case strings.Contains(r.RequestURI, "/xsc/profile_repos"):
+		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
 			assert.Equal(t, http.MethodPost, r.Method)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
