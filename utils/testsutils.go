@@ -211,7 +211,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		// Endpoint to profile by URL
 		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
 			assert.Equal(t, http.MethodPost, r.Method)
-			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			content, err := os.ReadFile("../testdata/configprofile/configProfileWithRepoExample.json")
 			assert.NoError(t, err)
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(content)

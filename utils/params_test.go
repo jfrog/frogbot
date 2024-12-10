@@ -23,6 +23,7 @@ var (
 	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
 	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
 	configProfileFile             = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
+	configProfileWithRepoFile     = filepath.Join("..", "testdata", "configprofile", "configProfileWithRepoExample.json")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {
@@ -700,6 +701,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		profileName     string
 		xrayVersion     string
 		failureExpected bool
+		profileWithRepo bool
 	}{
 		{
 			name:            "Deprecated Server - Valid ConfigProfile",
@@ -740,6 +742,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			profileName:     "",
 			xrayVersion:     services.ConfigProfileByUrlMinXrayVersion,
 			failureExpected: false,
+			profileWithRepo: true,
 		},
 		{
 			name:            "Profile by Name - Non existing profile name",
@@ -766,24 +769,30 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			defer mockServer.Close()
 
 			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails)
-			if testcase.useProfile {
-				if testcase.failureExpected {
-					assert.Error(t, err)
-				} else {
-					require.NotNil(t, configProfile)
-					assert.NoError(t, err)
-					var configProfileContentForComparison []byte
-					configProfileContentForComparison, err = os.ReadFile(configProfileFile)
-					assert.NoError(t, err)
-					var configProfileFromFile services.ConfigProfile
-					err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
-					assert.NoError(t, err)
-					assert.Equal(t, configProfileFromFile, *configProfile)
-				}
-			} else {
+
+			if !testcase.useProfile {
 				assert.Nil(t, configProfile)
 				assert.Nil(t, err)
+				return
 			}
+			if testcase.failureExpected {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NotNil(t, configProfile)
+			assert.NoError(t, err)
+			var configProfileContentForComparison []byte
+			if testcase.profileWithRepo {
+				configProfileContentForComparison, err = os.ReadFile(configProfileWithRepoFile)
+			} else {
+				configProfileContentForComparison, err = os.ReadFile(configProfileFile)
+			}
+			assert.NoError(t, err)
+			var configProfileFromFile services.ConfigProfile
+			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
+			assert.NoError(t, err)
+			assert.Equal(t, configProfileFromFile, *configProfile)
 		})
 	}
 }
