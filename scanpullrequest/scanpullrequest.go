@@ -352,29 +352,30 @@ func getResultScanStatues(includeVulnerabilities, hasViolationContext bool, cmdR
 }
 
 // Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*issues.ScansIssuesCollection, error) {
-	var err error
+func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (newIssues *issues.ScansIssuesCollection, err error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: includeVulnerabilities, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
 	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
 	if err != nil {
-		return nil, err
+		return
 	}
 	simpleJsonTarget, err := convertor.ConvertToSimpleJson(targetResults)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &issues.ScansIssuesCollection{
-		ScanStatus:             getScanStatus(simpleJsonTarget, simpleJsonSource),
-		ScaVulnerabilities:     getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities),
-		ScaViolations:          getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations),
-		IacVulnerabilities:     createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities),
-		IacViolations:          createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations),
-		SecretsVulnerabilities: createNewSourceCodeRows(simpleJsonTarget.SecretsVulnerabilities, simpleJsonSource.SecretsVulnerabilities),
-		SecretsViolations:      createNewSourceCodeRows(simpleJsonTarget.SecretsViolations, simpleJsonSource.SecretsViolations),
-		SastVulnerabilities:    createNewSourceCodeRows(simpleJsonTarget.SastVulnerabilities, simpleJsonSource.SastVulnerabilities),
-		SastViolations:         createNewSourceCodeRows(simpleJsonTarget.SastViolations, simpleJsonSource.SastViolations),
-		LicensesViolations:     getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations),
-	}, nil
+	newIssues = &issues.ScansIssuesCollection{}
+	newIssues.ScanStatus = getScanStatus(simpleJsonTarget, simpleJsonSource)
+	// Get the unique sca vulnerabilities and violations between the source and target branches
+	newIssues.ScaVulnerabilities = getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities)
+	newIssues.ScaViolations = getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations)
+	newIssues.LicensesViolations = getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations)
+	// Get the unique source code vulnerabilities and violations between the source and target branches
+	newIssues.IacVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities)
+	newIssues.IacViolations = createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations)
+	newIssues.SecretsVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.SecretsVulnerabilities, simpleJsonSource.SecretsVulnerabilities)
+	newIssues.SecretsViolations = createNewSourceCodeRows(simpleJsonTarget.SecretsViolations, simpleJsonSource.SecretsViolations)
+	newIssues.SastVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.SastVulnerabilities, simpleJsonSource.SastVulnerabilities)
+	newIssues.SastViolations = createNewSourceCodeRows(simpleJsonTarget.SastViolations, simpleJsonSource.SastViolations)
+	return
 }
 
 func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {

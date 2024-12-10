@@ -162,7 +162,7 @@ func GetFrogbotErrorCommentContent(contentForComments []string, err error, write
 	return ConvertContentToComments(contentForComments, writer, getFrogbotErrorSuffixDecorator(writer, err), GetFrogbotCommentBaseDecorator(writer))
 }
 
-// Adding markdown prefix to identify Frogbot comment and a footer with the link to the documentation
+// Adding markdown suffix to show the error details and next steps
 func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecorator {
 	return func(_ int, content string) string {
 		var comment strings.Builder
@@ -179,8 +179,7 @@ func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecor
 		)
 		WriteNewLine(&comment)
 		WriteContent(&comment, "Thank you for your understanding!")
-
-		return content + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
+		return content + "\n" + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
 	}
 }
 
@@ -197,12 +196,14 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, violationContext st
 		totalIssues = issues.GetTotalViolations(includeSecrets)
 		violations = true
 	}
-	title := MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", violationContext, totalIssues))
-	if issues.HasErrors() {
-		title = MarkAsBullet(fmt.Sprintf("Frogbot attempted to scan for %s but encountered an error.", violationContext))
-	}
 	// Title
-	WriteContent(&contentBuilder, writer.MarkAsTitle(scanSummaryTitle, 2), title)
+	WriteContent(&contentBuilder, writer.MarkAsTitle(scanSummaryTitle, 2))
+	if issues.HasErrors() {
+		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot attempted to scan for %s but encountered an error.", violationContext)))
+		return contentBuilder.String()
+	} else {
+		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", violationContext, totalIssues)))
+	}
 	WriteNewLine(&contentBuilder)
 	// Create table, a row for each sub scans summary
 	secretsDetails := ""
@@ -241,13 +242,13 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType 
 	var severityCountMap map[severityutils.Severity]int
 	switch scanType {
 	case utils.ScaScan:
-		severityCountMap = issues.GetScanDetails(utils.ScaScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.ScaScan, violation)
 	case utils.SastScan:
-		severityCountMap = issues.GetScanDetails(utils.SastScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SastScan, violation)
 	case utils.SecretsScan:
-		severityCountMap = issues.GetScanDetails(utils.SecretsScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SecretsScan, violation)
 	case utils.IacScan:
-		severityCountMap = issues.GetScanDetails(utils.IacScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.IacScan, violation)
 	}
 	totalIssues := getTotalIssues(severityCountMap)
 	if totalIssues == 0 {
@@ -325,7 +326,7 @@ func getDecoratorWithSecurityViolationTitle(writer OutputWriter) func(int, strin
 
 func getSecurityViolationsSummaryTable(violations []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
 	// Construct table
-	columns := []string{"Severity/Risk", "ID"}
+	columns := []string{"Severity", "ID"}
 	if writer.IsShowingCaColumn() {
 		columns = append(columns, "Contextual Analysis")
 	}
@@ -401,7 +402,7 @@ func getLicenseViolationsDetailsContent(licenseViolations []formats.LicenseViola
 		if len(licenseViolations) == 1 {
 			content = append(content, getScaLicenseViolationDetails(violation, writer))
 		} else {
-			content = append(content, writer.MarkAsDetails(
+			content = append(content, "\n"+writer.MarkAsDetails(
 				getComponentIssueIdentifier(violation.LicenseKey, violation.ImpactedDependencyName, violation.ImpactedDependencyVersion, violation.Watch), 4,
 				getScaLicenseViolationDetails(violation, writer),
 			))
@@ -417,14 +418,25 @@ func getLicenseViolationsDetailsContent(licenseViolations []formats.LicenseViola
 }
 
 func getScaLicenseViolationDetails(violation formats.LicenseViolationRow, writer OutputWriter) (content string) {
-	noHeaderTable := NewMarkdownTable("", "")
-
-	if len(violation.Policies) > 0 {
-		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(violation.Policies...))
+	var contentBuilder strings.Builder
+	// Title
+	WriteNewLine(&contentBuilder)
+	WriteContent(&contentBuilder, writer.MarkAsTitle("Violation Details", 3))
+	// Details Table
+	directComponent := []string{}
+	for _, component := range violation.ImpactedDependencyDetails.Components {
+		directComponent = append(directComponent, fmt.Sprintf("%s:%s", component.Name, component.Version))
 	}
+	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
+
+	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(violation.Policies...))
+	noHeaderTable.AddRow(MarkAsBold("Watch Name:"), violation.Watch)
+	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
+	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), fmt.Sprintf("%s:%s", violation.ImpactedDependencyName, violation.ImpactedDependencyVersion))
 	noHeaderTable.AddRow(MarkAsBold("Full Name:"), violation.LicenseName)
 
-	return noHeaderTable.Build()
+	WriteContent(&contentBuilder, noHeaderTable.Build(), "\n")
+	return contentBuilder.String()
 }
 
 // Sca Vulnerabilities
@@ -485,11 +497,11 @@ func ApplicableCveReviewContent(issue issues.ApplicableEvidences, writer OutputW
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(contextualAnalysisTitle, 2),
 		writer.MarkInCenter(GetApplicabilityDescriptionTable(issue.Severity, issue.IssueId, issue.ImpactedDependency, issue.Evidence.Reason, writer)),
-		writer.MarkAsDetails("Description", 3, issue.FullDetails),
-		writer.MarkAsDetails("CVE details", 3, issue.CveSummary),
+		writer.MarkAsDetails("Description", 3, "\n"+issue.ScannerDescription+"\n"),
+		writer.MarkAsDetails("CVE details", 3, "\n"+issue.CveSummary+"\n"),
 	)
 	if len(issue.Remediation) > 0 {
-		WriteContent(&contentBuilder, writer.MarkAsDetails("Remediation", 3, issue.Remediation))
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Remediation", 3, "\n\n"+issue.Remediation+"\n\n"))
 	}
 	return contentBuilder.String()
 }
@@ -501,138 +513,78 @@ func GetApplicabilityDescriptionTable(severity, issueId, impactedDependency, fin
 
 // JAS
 
-func getJasIssueDescriptionTable(issue formats.SourceCodeRow, writer OutputWriter) string {
-	columns := []string{"Severity"}
-	rowData := []string{writer.FormattedSeverity(issue.Severity, "Applicable")}
-	// Optional issueId column (as stored at the platform)
-	if issue.IssueId != "" {
-		columns = append(columns, "ID")
-		rowData = append(rowData, issue.IssueId)
-	}
-	columns = append(columns, "Finding")
-	rowData = append(rowData, issue.Finding)
-	return NewMarkdownTable(columns...).AddRow(rowData...).Build()
-}
-
-func getJasFullDescription(issue formats.SourceCodeRow, violation bool, issueDescTable string, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	// Separator
-	WriteNewLine(&contentBuilder)
-	// Write the vulnerability/violation details
-	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violation)), 3), issueDescTable)
-	// Separator
-	WriteNewLine(&contentBuilder)
-	// Write the description
-	WriteContent(&contentBuilder, issue.ScannerDescription)
-	return contentBuilder.String()
-}
-
-func getBaseJasDetailsTable(watch string, policies, cwe []string, writer OutputWriter) *MarkdownTableBuilder {
-	noHeaderTable := NewMarkdownTable("", "").SetDelimiter(writer.Separator())
-	// For Violations
-	if len(policies) > 0 {
-		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(policies...))
-	}
-	if watch != "" {
-		noHeaderTable.AddRow(MarkAsBold("Watch Name:"), watch)
-	}
-	// General CWE attribute if exists
-	if len(cwe) > 0 {
-		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CWE:")), NewCellData(cwe...))
-	}
-	return noHeaderTable
-}
-
-func IacReviewContent(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
+func IacReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(fmt.Sprintf("%s %s", iacTitle, getIssueType(violation)), 2),
-		writer.MarkInCenter(getJasIssueDescriptionTable(issue, writer)),
-		writer.MarkAsDetails("Full description", 3, getIacFullDescription(issue, violation, writer)),
+		writer.MarkInCenter(getJasIssueDescriptionTable(writer, issues...)),
+		getJasFullDescription(violation, writer, getBaseJasDetailsTable, issues...),
 	)
 	return contentBuilder.String()
 }
 
-func getIacFullDescription(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
-	return getJasFullDescription(issue, violation, getBaseJasDetailsTable(issue.Watch, issue.Policies, issue.CWE, writer).Build(), writer)
-}
-
-func SastReviewContent(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
+func SastReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(fmt.Sprintf("%s %s", sastTitle, getIssueType(violation)), 2),
-		writer.MarkInCenter(getJasIssueDescriptionTable(issue, writer)),
-		writer.MarkAsDetails("Full description", 3, getSastFullDescription(issue, violation, writer)),
+		writer.MarkInCenter(getJasIssueDescriptionTable(writer, issues...)),
+		getJasFullDescription(violation, writer, getSastRuleFullDescriptionTable, issues...),
 	)
-	if len(issue.CodeFlow) > 0 {
-		WriteContent(&contentBuilder, writer.MarkAsDetails("Code Flows", 3, sastCodeFlowsReviewContent(issue.CodeFlow, writer)))
-	}
 	return contentBuilder.String()
 }
 
-func getSastFullDescription(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
-	table := getBaseJasDetailsTable(issue.Watch, issue.Policies, issue.CWE, writer)
-	table.AddRow(MarkAsBold("Rule ID:"), issue.RuleId)
-	return getJasFullDescription(issue, violation, table.Build(), writer)
+func getSastRuleFullDescriptionTable(info formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
+	table := getBaseJasDetailsTable(info, writer)
+	table.AddRow(MarkAsBold("Rule ID:"), info.RuleId)
+	return table
 }
 
-func sastCodeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
-	var contentBuilder strings.Builder
-	for _, flow := range codeFlows {
-		WriteContent(&contentBuilder, writer.MarkAsDetails("Vulnerable data flow analysis result", 4, sastDataFlowLocationsReviewContent(flow)))
-	}
-	return contentBuilder.String()
-}
-
-func sastDataFlowLocationsReviewContent(flow []formats.Location) string {
-	var contentBuilder strings.Builder
-	for _, location := range flow {
-		WriteContent(&contentBuilder, fmt.Sprintf("%s %s (at %s line %d)\n", "↘️", MarkAsQuote(location.Snippet), location.File, location.StartLine))
-	}
-	return contentBuilder.String()
-}
-
-func SecretReviewContent(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
-	applicability := ""
-	if issue.Applicability != nil {
-		applicability = issue.Applicability.Status
-	}
+func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(fmt.Sprintf("%s %s", secretsTitle, getIssueType(violation)), 2),
-		writer.MarkInCenter(getSecretsDescriptionTable(issue.Severity, issue.IssueId, issue.Finding, applicability, writer)),
-		writer.MarkAsDetails("Full description", 3, getSecretsFullDescription(issue, violation, writer)),
+		writer.MarkInCenter(getSecretsDescriptionTable(writer, issues...)),
+		getJasFullDescription(violation, writer, getSecretsRuleFullDescriptionTable, issues...),
 	)
 	return contentBuilder.String()
 }
 
-func getSecretsDescriptionTable(severity, issueId, finding, status string, writer OutputWriter) string {
-	// Determine the issue applicable status
-	applicability := jasutils.Applicable.String()
-	if status == jasutils.Inactive.String() {
-		applicability = jasutils.NotApplicable.String()
+func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
+	// Construct table
+	table := NewMarkdownTable("Severity", "ID", "Status", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
+	// Hide optional columns if all empty (violations/no status)
+	table.GetColumnInfo("ID").HideIfAllEmpty = true
+	table.GetColumnInfo("Status").HideIfAllEmpty = true
+	table.GetColumnInfo("Watch Name").HideIfAllEmpty = true
+	table.GetColumnInfo("Policies").HideIfAllEmpty = true
+	// Construct rows
+	for _, issue := range issues {
+		// Determine the issue applicable status
+		applicability := jasutils.Applicable.String()
+		status := ""
+		if issue.Applicability != nil && issue.Applicability.Status != "" {
+			status = issue.Applicability.Status
+			if status == jasutils.Inactive.String() {
+				// Update the applicability status to Not Applicable for Inactive
+				applicability = jasutils.NotApplicable.String()
+			}
+		}
+		table.AddRowWithCellData(
+			NewCellData(writer.FormattedSeverity(issue.Severity, applicability)),
+			NewCellData(issue.IssueId),
+			NewCellData(status),
+			NewCellData(issue.Finding),
+			NewCellData(issue.Watch),
+			NewCellData(issue.Policies...),
+		)
 	}
-	columns := []string{"Severity"}
-	rowData := []string{writer.FormattedSeverity(severity, applicability)}
-	// Determine if issueId is provided
-	if issueId != "" {
-		columns = append(columns, "ID")
-		rowData = append(rowData, issueId)
-	}
-	columns = append(columns, "Finding")
-	rowData = append(rowData, finding)
-	// Determine if status is provided
-	if status != "" {
-		columns = append(columns, "Status")
-		rowData = append(rowData, status)
-	}
-	return NewMarkdownTable(columns...).AddRow(rowData...).Build()
+	return table.Build()
 }
 
-func getSecretsFullDescription(issue formats.SourceCodeRow, violation bool, writer OutputWriter) string {
-	table := getBaseJasDetailsTable(issue.Watch, issue.Policies, issue.CWE, writer)
-	table.AddRow(MarkAsBold("Abbreviation:"), issue.RuleId)
-	return getJasFullDescription(issue, violation, table.Build(), writer)
+func getSecretsRuleFullDescriptionTable(info formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
+	table := getBaseJasDetailsTable(info, writer)
+	table.AddRow(MarkAsBold("Abbreviation:"), info.RuleId)
+	return table
 }
 
 // Utilities
@@ -673,7 +625,7 @@ func getScaSecurityIssueDetailsContent(issues []formats.VulnerabilityOrViolation
 		if len(issues) == 1 {
 			content = append(content, getScaSecurityIssueDetails(issue, violations, writer))
 		} else {
-			content = append(content, writer.MarkAsDetails(
+			content = append(content, "\n"+writer.MarkAsDetails(
 				getComponentIssueIdentifier(results.GetIssueIdentifier(issue.Cves, issue.IssueId, ", "), issue.ImpactedDependencyName, issue.ImpactedDependencyVersion, issue.Watch), 4,
 				getScaSecurityIssueDetails(issue, violations, writer),
 			))
@@ -719,7 +671,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	for _, component := range issue.ImpactedDependencyDetails.Components {
 		directComponent = append(directComponent, fmt.Sprintf("%s:%s", component.Name, component.Version))
 	}
-	noHeaderTable := NewMarkdownTable("", "")
+	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(issue.Policies...))
 	}
@@ -770,106 +722,116 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		WriteContent(&contentBuilder, MarkAsBold("Remediation:"), issue.JfrogResearchInformation.Remediation)
 	}
 
+	return contentBuilder.String() + "\n"
+}
+
+func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
+	// Construct table
+	table := NewMarkdownTable("Severity", "ID", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
+	// Hide optional columns if all empty (not violations)
+	table.GetColumnInfo("ID").HideIfAllEmpty = true
+	table.GetColumnInfo("Watch Name").HideIfAllEmpty = true
+	table.GetColumnInfo("Policies").HideIfAllEmpty = true
+	// Construct rows
+	for _, issue := range issues {
+		table.AddRowWithCellData(
+			NewCellData(writer.FormattedSeverity(issue.Severity, "Applicable")),
+			NewCellData(issue.IssueId),
+			NewCellData(issue.Finding),
+			NewCellData(issue.Watch),
+			NewCellData(issue.Policies...),
+		)
+	}
+	return table.Build()
+}
+
+// For Jas we show description for each unique rule
+func getJasFullDescription(violations bool, writer OutputWriter, generateRuleTable func(formats.ScannerInfo, OutputWriter) *MarkdownTableBuilder, issues ...formats.SourceCodeRow) string {
+	// Group by scanner info
+	rulesInfo := map[string]formats.ScannerInfo{}
+	codeFlows := map[string][][]formats.Location{}
+	for _, issue := range issues {
+		if _, ok := rulesInfo[issue.RuleId]; ok {
+			codeFlows[issue.RuleId] = append(codeFlows[issue.RuleId], issue.CodeFlow...)
+			continue
+		}
+		rulesInfo[issue.RuleId] = issue.ScannerInfo
+		codeFlows[issue.RuleId] = issue.CodeFlow
+	}
+	// Write the details for each rule
+	var contentBuilder strings.Builder
+	for _, info := range rulesInfo {
+		var scannerCodeFlows [][]formats.Location
+		if v, ok := codeFlows[info.RuleId]; ok {
+			scannerCodeFlows = v
+		}
+		if len(rulesInfo) == 1 {
+			WriteContent(&contentBuilder,
+				writer.MarkAsDetails("Full description", 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer)),
+				codeFlowsReviewContent(scannerCodeFlows, writer),
+			)
+			break
+		}
+		WriteContent(&contentBuilder, writer.MarkAsDetails(getJasDetailsIdentifier(info), 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
+	}
 	return contentBuilder.String()
 }
 
-// TODO: DELETE
+func getJasDetailsIdentifier(info formats.ScannerInfo) string {
+	id := info.RuleId
+	if info.ScannerShortDescription != "" {
+		id = info.ScannerShortDescription
+	}
+	return fmt.Sprintf("[ %s ]", id)
+}
 
-// func VulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
-// 	if len(vulnerabilities) == 0 {
-// 		return []string{}
-// 	}
-// 	content = append(content, writer.MarkAsTitle(vulnerableDependenciesTitle, 2))
-// 	content = append(content, vulnerabilitiesSummaryContent(vulnerabilities, writer))
-// 	content = append(content, vulnerabilityDetailsContent(vulnerabilities, writer)...)
-// 	return
-// }
+func getJasRuleFullDescription(violation bool, scannerDescription string, issueDescTable *MarkdownTableBuilder, writer OutputWriter, codeFlows ...[]formats.Location) string {
+	var contentBuilder strings.Builder
+	// Separator
+	WriteNewLine(&contentBuilder)
+	// Write the vulnerability/violation details
+	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violation)), 3))
+	if issueDescTable != nil && issueDescTable.HasContent() {
+		WriteContent(&contentBuilder, issueDescTable.Build())
+		// Separator
+		WriteNewLine(&contentBuilder)
+	}
+	// Write the description
+	WriteContent(&contentBuilder, scannerDescription, "\n")
+	// Write the code flows if exists
+	if len(codeFlows) > 0 {
+		WriteContent(&contentBuilder, codeFlowsReviewContent(codeFlows, writer))
+	}
+	return contentBuilder.String()
+}
 
-// func vulnerabilitiesSummaryContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) string {
-// 	var contentBuilder strings.Builder
-// 	WriteContent(&contentBuilder,
-// 		writer.MarkAsTitle("✍️ Summary", 3),
-// 		writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)),
-// 	)
-// 	return contentBuilder.String()
-// }
+func codeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter) string {
+	if len(codeFlows) == 0 {
+		return ""
+	}
+	var contentBuilder strings.Builder
+	for _, flow := range codeFlows {
+		WriteContent(&contentBuilder, writer.MarkAsDetails("Vulnerable data flow analysis result", 4, dataFlowLocationsReviewContent(flow)))
+	}
+	return writer.MarkAsDetails("Code Flows", 3, contentBuilder.String())
+}
 
-// type vulnerabilityOrViolationDetails struct {
-// 	details           string
-// 	title             string
-// 	dependencyName    string
-// 	dependencyVersion string
-// }
+func dataFlowLocationsReviewContent(flow []formats.Location) string {
+	var contentBuilder strings.Builder
+	for i, location := range flow {
+		if i == 0 {
+			WriteNewLine(&contentBuilder)
+		}
+		WriteContent(&contentBuilder, fmt.Sprintf("%s %s (at %s line %d)\n", "↘️", MarkAsQuote(location.Snippet), location.File, location.StartLine))
+	}
+	return contentBuilder.String()
+}
 
-// func vulnerabilityDetailsContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
-// 	vulnerabilitiesWithDetails := getVulnerabilityWithDetails(vulnerabilities)
-// 	if len(vulnerabilitiesWithDetails) == 0 {
-// 		return
-// 	}
-// 	// Prepare content for each vulnerability details
-// 	for i := range vulnerabilitiesWithDetails {
-// 		if len(vulnerabilitiesWithDetails) == 1 {
-// 			content = append(content, vulnerabilitiesWithDetails[i].details)
-// 		} else {
-// 			content = append(content, writer.MarkAsDetails(
-// 				fmt.Sprintf(`%s %s %s`, vulnerabilitiesWithDetails[i].title,
-// 					vulnerabilitiesWithDetails[i].dependencyName,
-// 					vulnerabilitiesWithDetails[i].dependencyVersion),
-// 				4, vulnerabilitiesWithDetails[i].details,
-// 			))
-// 		}
-// 	}
-// 	// Split content if it exceeds the size limit and decorate it with title
-// 	return ConvertContentToComments(content, writer, func(commentCount int, detailsContent string) string {
-// 		contentBuilder := strings.Builder{}
-// 		WriteContent(&contentBuilder, writer.MarkAsTitle(jfrogResearchDetailsSubTitle, 3))
-// 		WriteContent(&contentBuilder, detailsContent)
-// 		return contentBuilder.String()
-// 	})
-// }
-
-// func getVulnerabilityWithDetails(vulnerabilities []formats.VulnerabilityOrViolationRow) (vulnerabilitiesWithDetails []vulnerabilityOrViolationDetails) {
-// 	for i := range vulnerabilities {
-// 		vulDescriptionContent := createVulnerabilityResearchDescription(&vulnerabilities[i])
-// 		if vulDescriptionContent == "" {
-// 			// No content
-// 			continue
-// 		}
-// 		vulnerabilitiesWithDetails = append(vulnerabilitiesWithDetails, vulnerabilityOrViolationDetails{
-// 			details:           vulDescriptionContent,
-// 			title:             getScaCveIdentifier(vulnerabilities[i].Cves, vulnerabilities[i].IssueId),
-// 			dependencyName:    vulnerabilities[i].ImpactedDependencyName,
-// 			dependencyVersion: vulnerabilities[i].ImpactedDependencyVersion,
-// 		})
-// 	}
-// 	return
-// }
-
-// func getScaCveIdentifier(cveRows []formats.CveRow, xrayId string) string {
-// 	identifier := results.GetIssueIdentifier(cveRows, xrayId, ", ")
-// 	if identifier == "" {
-// 		return ""
-// 	}
-// 	return fmt.Sprintf("[ %s ]", identifier)
-// }
-
-// func createVulnerabilityResearchDescription(vulnerability *formats.VulnerabilityOrViolationRow) string {
-// 	var descriptionBuilder strings.Builder
-// 	vulnResearch := vulnerability.JfrogResearchInformation
-// 	if vulnResearch == nil {
-// 		vulnResearch = &formats.JfrogResearchInformation{Details: vulnerability.Summary}
-// 	} else if vulnResearch.Details == "" {
-// 		vulnResearch.Details = vulnerability.Summary
-// 	}
-
-// 	if vulnResearch.Details != "" {
-// 		WriteContent(&descriptionBuilder, MarkAsBold("Description:"), vulnResearch.Details)
-// 	}
-// 	if vulnResearch.Remediation != "" {
-// 		if vulnResearch.Details != "" {
-// 			WriteNewLine(&descriptionBuilder)
-// 		}
-// 		WriteContent(&descriptionBuilder, MarkAsBold("Remediation:"), vulnResearch.Remediation)
-// 	}
-// 	return descriptionBuilder.String()
-// }
+func getBaseJasDetailsTable(ruleInfo formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
+	noHeaderTable := NewNoHeaderMarkdownTable(2, false).SetDelimiter(writer.Separator())
+	// General CWE attribute if exists
+	if len(ruleInfo.Cwe) > 0 {
+		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CWE:")), NewCellData(ruleInfo.Cwe...))
+	}
+	return noHeaderTable
+}

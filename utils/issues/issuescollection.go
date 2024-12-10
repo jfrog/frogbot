@@ -133,10 +133,10 @@ func (ic *ScansIssuesCollection) HasErrors() bool {
 	return false
 }
 
-func (ic *ScansIssuesCollection) GetScanDetails(scanType utils.SubScanType, violation bool) map[severityutils.Severity]int {
+func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubScanType, violation bool) map[severityutils.Severity]int {
 	scanDetails := map[severityutils.Severity]int{}
-
 	if scanType == utils.ScaScan {
+		// Count Sca issues
 		if violation {
 			for _, violation := range ic.ScaViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
@@ -151,33 +151,34 @@ func (ic *ScansIssuesCollection) GetScanDetails(scanType utils.SubScanType, viol
 		}
 		return scanDetails
 	}
-
 	jasIssues := []formats.SourceCodeRow{}
 	switch scanType {
 	case utils.IacScan:
+		// Count Iac issues
 		if violation {
 			jasIssues = ic.IacViolations
 		} else {
 			jasIssues = ic.IacVulnerabilities
 		}
 	case utils.SecretsScan:
+		// Count Secrets issues
 		if violation {
 			jasIssues = ic.SecretsViolations
 		} else {
 			jasIssues = ic.SecretsVulnerabilities
 		}
 	case utils.SastScan:
+		// Count Sast issues
 		if violation {
 			jasIssues = ic.SastViolations
 		} else {
 			jasIssues = ic.SastVulnerabilities
 		}
 	}
-
+	// Count the issues
 	for _, issue := range jasIssues {
 		scanDetails[severityutils.GetSeverity(issue.Severity)]++
 	}
-
 	return scanDetails
 }
 
@@ -206,8 +207,8 @@ func (ic *ScansIssuesCollection) GetTotalIssues(includeSecrets bool) int {
 }
 
 type ApplicableEvidences struct {
-	Evidence                                                                    formats.Evidence
-	Severity, FullDetails, IssueId, CveSummary, ImpactedDependency, Remediation string
+	Evidence                                                                           formats.Evidence
+	Severity, ScannerDescription, IssueId, CveSummary, ImpactedDependency, Remediation string
 }
 
 func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []ApplicableEvidences) {
@@ -215,10 +216,6 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 	issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}
 	// Collect evidences from Violations
 	for _, securityViolation := range ic.ScaViolations {
-		if securityViolation.Applicable != jasutils.Applicable.String() {
-			// We only want applicable issues
-			continue
-		}
 		issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
 		if _, exists := issueIdToIssue[issueId]; exists {
 			// No need to add the same issue twice
@@ -226,6 +223,7 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 		}
 		for _, cve := range securityViolation.Cves {
 			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+				// We only want applicable issues
 				issueIdToIssue[issueId] = securityViolation
 				issueIdToApplicableInfo[issueId] = *cve.Applicability
 			}
@@ -233,10 +231,6 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 	}
 	// Collect evidences from Vulnerabilities
 	for _, vulnerability := range ic.ScaVulnerabilities {
-		if vulnerability.Applicable != jasutils.Applicable.String() {
-			// We only want applicable issues
-			continue
-		}
 		issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
 		if _, exists := issueIdToIssue[issueId]; exists {
 			// No need to add the same issue twice
@@ -244,6 +238,7 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 		}
 		for _, cve := range vulnerability.Cves {
 			if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
+				// We only want applicable issues
 				issueIdToIssue[issueId] = vulnerability
 				issueIdToApplicableInfo[issueId] = *cve.Applicability
 			}
@@ -261,7 +256,7 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 			evidences = append(evidences, ApplicableEvidences{
 				Evidence:           evidence,
 				Severity:           issue.Severity,
-				FullDetails:        applicableInfo.ScannerDescription,
+				ScannerDescription: applicableInfo.ScannerDescription,
 				IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
 				CveSummary:         issue.Summary,
 				ImpactedDependency: fmt.Sprintf("%s:%s", issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),

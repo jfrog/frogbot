@@ -36,7 +36,11 @@ func (smo *SimplifiedOutput) MarkInCenter(content string) string {
 }
 
 func (smo *SimplifiedOutput) MarkAsDetails(summary string, subTitleDepth int, content string) string {
-	return fmt.Sprintf("%s\n%s", smo.MarkAsTitle(summary, subTitleDepth), content)
+	delimiter := "\n"
+	if subTitleDepth == 0 {
+		delimiter = ": "
+	}
+	return fmt.Sprintf("%s%s%s", smo.MarkAsTitle(summary, subTitleDepth), delimiter, content)
 }
 
 func (smo *SimplifiedOutput) MarkAsTitle(title string, subTitleDepth int) string {

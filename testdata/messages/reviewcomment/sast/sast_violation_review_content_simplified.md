@@ -1,24 +1,35 @@
 
 
 ---
-## 🎯 Static Application Security Testing (SAST) Vulnerability
+## 🎯 Static Application Security Testing (SAST) Violation
 
 ---
-| Severity                | Finding                  |
-| :---------------------: | :-----------------------------------: |
-| Low | Stack Trace Exposure |
+| Severity                | ID                  | Finding                  | Watch Name                  | Policies                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| Low | sast-violation-id | Found a Use of Insecure Random | jas-watch | policy1, policy2 |
+| High | sast-violation-id-2 | Found a Use of Insecure Random | jas-watch2 | policy3 |
+| High | sast-violation-id-3 | Found An Express Not Using Helmet | jas-watch2 | policy3 |
+
 
 ---
-### Full description
+### [ Use of Insecure Random ]
 
 ---
 
-### Overview
-Stack trace exposure is a type of security vulnerability that occurs when a program reveals
-sensitive information, such as the names and locations of internal files and variables,
-in error messages or other diagnostic output. This can happen when a program crashes or
-encounters an error, and the stack trace (a record of the program's call stack at the time
-of the error) is included in the output.
+
+
+---
+### Violation Details
+
+---
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **CWE:** | CWE-798, CWE-799 |
+| **Rule ID:** | js-insecure-random |
+
+Scanner Description....
+
+
 
 ---
 ### Code Flows
@@ -31,6 +42,7 @@ of the error) is included in the output.
 
 ---
 
+
 ↘️ `other-snippet` (at file2 line 1)
 
 ↘️ `snippet` (at file line 0)
@@ -41,6 +53,26 @@ of the error) is included in the output.
 
 ---
 
+
 ↘️ `a-snippet` (at file line 10)
 
 ↘️ `snippet` (at file line 0)
+
+
+---
+### [ Express Not Using Helmet ]
+
+---
+
+
+
+---
+### Violation Details
+
+---
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Rule ID:** | js-express-without-helmet |
+
+Scanner Description....
+

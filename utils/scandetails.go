@@ -204,8 +204,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
 		SetIsRecursiveScan(sc.IsRecursiveScan).
-		SetUseJas(!sc.DisableJas()) //.
-		// SetScansToPerform([]utils.SubScanType{utils.ScaScan, utils.ContextualAnalysisScan, utils.SastScan, utils.SecretsScan, utils.SecretTokenValidationScan})
+		SetUseJas(!sc.DisableJas()).
+		SetScansToPerform([]utils.SubScanType{utils.ScaScan, utils.ContextualAnalysisScan, utils.SastScan, utils.SecretsScan, utils.SecretTokenValidationScan})
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).

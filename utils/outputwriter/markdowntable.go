@@ -42,10 +42,13 @@ type MarkdownTableBuilder struct {
 type MarkdownColumnType string
 
 type MarkdownColumn struct {
-	Name         string
-	Centered     bool
-	ColumnType   MarkdownColumnType
-	DefaultValue string
+	Name           string
+	Centered       bool
+	HideIfAllEmpty bool
+	ColumnType     MarkdownColumnType
+	DefaultValue   string
+	// Internal flag to determine if the column should be hidden
+	shouldHideColumn bool
 }
 
 // CellData represents the data of a cell in the markdown table. Each cell can contain multiple values.
@@ -68,6 +71,15 @@ func NewMarkdownTable(columns ...string) *MarkdownTableBuilder {
 	return NewMarkdownTableWithColumns(columnsInfo...)
 }
 
+// Create a markdown table builder with the provided number of columns.
+func NewNoHeaderMarkdownTable(nColumns int, firstColumnCentered bool) *MarkdownTableBuilder {
+	columnsInfo := []*MarkdownColumn{}
+	for i := 0; i < nColumns; i++ {
+		columnsInfo = append(columnsInfo, NewMarkdownTableSingleValueColumn("", cellDefaultValue, i != 0 || firstColumnCentered))
+	}
+	return NewMarkdownTableWithColumns(columnsInfo...)
+}
+
 func NewMarkdownTableWithColumns(columnsInfo ...*MarkdownColumn) *MarkdownTableBuilder {
 	return &MarkdownTableBuilder{columns: columnsInfo, delimiter: simpleSeparator}
 }
@@ -76,14 +88,14 @@ func NewMarkdownTableSingleValueColumn(name, defaultValue string, centered bool)
 	return &MarkdownColumn{Name: name, ColumnType: SeparatorDelimited, DefaultValue: defaultValue, Centered: centered}
 }
 
-func NewMarkdownTableMultiValueColumn(name, defaultValue string, centered bool) *MarkdownColumn {
-	return &MarkdownColumn{Name: name, ColumnType: MultiRowColumn, DefaultValue: defaultValue, Centered: centered}
-}
-
 // Set the delimiter that will be used to separate multiple values in a cell.
 func (t *MarkdownTableBuilder) SetDelimiter(delimiter string) *MarkdownTableBuilder {
 	t.delimiter = delimiter
 	return t
+}
+
+func (t *MarkdownTableBuilder) HasContent() bool {
+	return len(t.rows) > 0
 }
 
 // Get the column information output controller by the provided name.
@@ -135,18 +147,38 @@ func (t *MarkdownTableBuilder) Build() string {
 		return ""
 	}
 	var tableBuilder strings.Builder
+	// Calculate Hidden columns
+	for c := range t.columns {
+		// Reset shouldHideColumn flag
+		t.columns[c].shouldHideColumn = t.columns[c].HideIfAllEmpty
+	}
+	for _, row := range t.rows {
+		for c, cell := range row {
+			// In table, empty cell = cell with no values = cell with one empty value
+			t.columns[c].shouldHideColumn = t.columns[c].shouldHideColumn && (len(cell) == 0 || (len(cell) == 1 && cell[0] == ""))
+		}
+	}
 	// Header
-	for c, column := range t.columns {
-		if c == 0 {
+	actualColumnCount := 0
+	for _, column := range t.columns {
+		if column.shouldHideColumn {
+			continue
+		}
+		if actualColumnCount == 0 {
 			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
 		} else {
 			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
 		}
+		actualColumnCount++
 	}
 	tableBuilder.WriteString("\n")
 	// Separator
-	for c, column := range t.columns {
-		if c == 0 {
+	actualColumnCount = 0
+	for _, column := range t.columns {
+		if column.shouldHideColumn {
+			continue
+		}
+		if actualColumnCount == 0 {
 			columnSeparator := defaultFirstColumnSeparator
 			if column.Centered {
 				columnSeparator = centeredFirstColumnSeparator
@@ -159,6 +191,7 @@ func (t *MarkdownTableBuilder) Build() string {
 			}
 			tableBuilder.WriteString(columnSeparator)
 		}
+		actualColumnCount++
 	}
 	// Content
 	for _, row := range t.rows {
@@ -193,6 +226,9 @@ func (t *MarkdownTableBuilder) getMultiValueRowsContent(row []CellData, multiVal
 		}
 		content := []string{}
 		for column, cell := range row {
+			if t.columns[column].shouldHideColumn {
+				continue
+			}
 			if column == multiValueColumnIndex {
 				// Multi values column separated by different rows, add the specific value for this row
 				content = append(content, value)
@@ -215,6 +251,9 @@ func (t *MarkdownTableBuilder) getMultiValueRowsContent(row []CellData, multiVal
 func (t *MarkdownTableBuilder) getSeparatorDelimitedRowContent(row []CellData) string {
 	content := []string{}
 	for column, columnInfo := range t.columns {
+		if columnInfo.shouldHideColumn {
+			continue
+		}
 		content = append(content, t.getCellContent(row[column], columnInfo.DefaultValue))
 	}
 	return buildRowContent(content...)

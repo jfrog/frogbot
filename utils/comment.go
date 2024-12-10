@@ -223,29 +223,84 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 	}
 	// IAC review comments
 	for _, iac := range issues.IacVulnerabilities {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeVulnerabilityReviewContent(IacComment, iac, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeReviewContent(IacComment, false, writer, iac)))
 	}
-	for _, iac := range issues.IacViolations {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, iac.Location, generateSourceCodeViolationReviewContent(IacComment, iac, writer)))
+	for _, similarIacIssues := range groupSimilarJasIssues(issues.IacViolations) {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(IacComment, similarIacIssues.Location, generateSourceCodeReviewContent(IacComment, true, writer, similarIacIssues.issues...)))
 	}
 	// SAST review comments
 	for _, sast := range issues.SastVulnerabilities {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeVulnerabilityReviewContent(SastComment, sast, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeReviewContent(SastComment, false, writer, sast)))
 	}
-	for _, sast := range issues.SastViolations {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, sast.Location, generateSourceCodeViolationReviewContent(SastComment, sast, writer)))
+	if len(issues.SastViolations) > 0 {
+		for _, similarSastIssues := range groupSimilarJasIssues(issues.SastViolations) {
+			commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, similarSastIssues.Location, generateSourceCodeReviewContent(SastComment, true, writer, similarSastIssues.issues...)))
+		}
 	}
 	// Secrets review comments
 	if !repo.Params.PullRequestSecretComments {
 		return
 	}
 	for _, secret := range issues.SecretsVulnerabilities {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeVulnerabilityReviewContent(SecretComment, secret, writer)))
+		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeReviewContent(SecretComment, false, writer, secret)))
 	}
-	for _, secret := range issues.SecretsViolations {
-		commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, secret.Location, generateSourceCodeViolationReviewContent(SecretComment, secret, writer)))
+	if len(issues.SecretsViolations) > 0 {
+		for _, similarSecretsIssues := range groupSimilarJasIssues(issues.SecretsViolations) {
+			commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, similarSecretsIssues.Location, generateSourceCodeReviewContent(SecretComment, true, writer, similarSecretsIssues.issues...)))
+		}
 	}
 	return
+}
+
+type similarIssues struct {
+	formats.Location
+	issues []formats.SourceCodeRow
+}
+
+// For JAS violations we can have similar issues at the same location from different watches, we need to group similar issues to add them to the same comment.
+func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []similarIssues) {
+	idToIssues := make(map[string]similarIssues)
+	for _, issue := range issues {
+		id := getSourceCodeRowId(issue)
+		if similarIssue, ok := idToIssues[id]; ok {
+			similarIssue.issues = append(similarIssue.issues, issue)
+			idToIssues[id] = similarIssue
+			continue
+		}
+		idToIssues[id] = similarIssues{
+			Location: issue.Location,
+			issues:   []formats.SourceCodeRow{issue},
+		}
+	}
+	for _, similarIssue := range idToIssues {
+		groupedIssues = append(groupedIssues, similarIssue)
+	}
+	return
+}
+
+// // We group issues by their watches, so we can add all the watches to the same comment.
+// func groupSimilarIssues(issues []formats.SourceCodeRow) (groupedIssues []formats.SourceCodeRow, issuesWatches map[string][]formats.ViolationContext) {
+// 	issuesWatches = make(map[string][]formats.ViolationContext)
+// 	for _, issue := range issues {
+// 		if issue.Watch == "" {
+// 			// no violation context, just add to the list
+// 			groupedIssues = append(groupedIssues, issue)
+// 			continue
+// 		}
+// 		id := getSourceCodeRowId(issue)
+// 		if watches, ok := issuesWatches[id]; ok {
+// 			issuesWatches[id] = append(watches, issue.ViolationContext)
+// 			continue
+// 		}
+// 		groupedIssues = append(groupedIssues, issue)
+// 		issuesWatches[id] = []formats.ViolationContext{issue.ViolationContext}
+// 	}
+// 	return groupedIssues, issuesWatches
+// }
+
+// We show different comments for each location and rule ID. (we group similar issues/violations to the same comment)
+func getSourceCodeRowId(issue formats.SourceCodeRow) string {
+	return issue.RuleId + issue.Location.ToString()
 }
 
 func generateReviewComment(commentType ReviewCommentType, location formats.Location, content string) (comment ReviewComment) {
@@ -266,26 +321,26 @@ func generateApplicabilityReviewContent(issue issues.ApplicableEvidences, writer
 	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(issue, writer), writer)
 }
 
-func generateSourceCodeVulnerabilityReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
-	switch commentType {
-	case IacComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, false, writer), writer)
-	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, false, writer), writer)
-	case SecretComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, false, writer), writer)
-	}
-	return
-}
+// func generateSourceCodeVulnerabilityReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+// 	switch commentType {
+// 	case IacComment:
+// 		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, writer), writer)
+// 	case SastComment:
+// 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, writer), writer)
+// 	case SecretComment:
+// 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, writer), writer)
+// 	}
+// 	return
+// }
 
-func generateSourceCodeViolationReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
+func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bool, writer outputwriter.OutputWriter, similarIssues ...formats.SourceCodeRow) (content string) {
 	switch commentType {
 	case IacComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, true, writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(violation, writer, similarIssues...), writer)
 	case SastComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, true, writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
-		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, true, writer), writer)
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
 	}
 	return
 }
