@@ -422,7 +422,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer)
+	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer) // TODO eran what do we do with the no-longer-relevant xsc version?
 	if err != nil {
 		return
 	}
@@ -459,7 +459,8 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	// We apply the configProfile to all received repositories. This loop must be deleted when we will no longer accept multiple repositories in a single scan
+	// We apply the configProfile to all received repositories. If no config profile was fetched, a nil value is passed
+	//TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
 	for i := range configAggregator {
 		configAggregator[i].Scan.ConfigProfile = configProfile
 	}
@@ -792,28 +793,55 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 	return
 }
 
-// This function fetches a config profile if JF_CONFIG_PROFILE is provided.
-// If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
+// This function attempts to fetch a config profile if JF_USE_CONFIG_PROFILE is set to true.
+// If so we try to get the profile by the repo Url. If not found we fallback to get it by profile name (provided through JF_CONFIG_PROFILE).
+// When a profile is found we verify several conditions on it.
+// If a profile was requested but not found by url nor by name we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
+	useConfigProfile := strings.ToLower(getTrimmedEnv(JfrogUseConfigProfileEnv))
+	if useConfigProfile == "false" || useConfigProfile == "" {
+		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
+		return
+	}
+
+	// We first try to get a config profile by repo Url
+	// TODO eran verify that we dont get an error in case we request to use a profile but there is non to be found by Url, but rather through profile name
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer); err != nil {
+		return
+	}
+	if configProfile != nil {
+		err = verifyConfigProfileValidity(configProfile)
+		return
+	}
+
+	// If no profile was found by the repoUrl, we check if a profile was provided by name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName == "" {
-		log.Debug(fmt.Sprintf("No %s environment variable was provided. All configurations will be induced from Env vars and files", JfrogConfigProfileEnv))
+		err = fmt.Errorf("usage of a configuration profile was requested, but no associated profile was found for '%s' repository, nor a profile name was provided through the '%s' variable", jfrogServer.Url, JfrogConfigProfileEnv)
+		return
+	}
+	if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, xscVersion, jfrogServer, profileName); err != nil {
+		return
+	}
+	if configProfile != nil {
+		err = verifyConfigProfileValidity(configProfile)
 		return
 	}
 
-	if configProfile, err = xsc.GetConfigProfile(xrayVersion, xscVersion, jfrogServer, profileName); err != nil {
-		return
-	}
+	// If we reach this point it means we could not get a config profile by Url nor by name even though it was requested, hence - we return an error
+	return configProfile, fmt.Errorf("config profile was requested but not found through Url nor through profile's name. Please check the provided server details and the %s env var value if provided", JfrogConfigProfileEnv)
+}
 
+func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err error) {
 	// Currently, only a single Module that represents the entire project is supported
 	if len(configProfile.Modules) != 1 {
 		err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
 		return
 	}
 	if configProfile.Modules[0].PathFromRoot != "." {
-		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot)
+		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, configProfile.ProfileName, configProfile.Modules[0].PathFromRoot)
 		return
 	}
-	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", profileName))
+	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", configProfile.ProfileName))
 	return
 }
