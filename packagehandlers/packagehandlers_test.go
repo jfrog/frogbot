@@ -355,7 +355,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				scanDetails:        scanDetails,
 				fixSupported:       true,
-				testDirName:        filepath.Join("conan"),
+				testDirName:        "conan",
 				descriptorsToCheck: []string{"conanfile.txt"},
 			},
 			{
@@ -366,7 +366,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				scanDetails:        scanDetails,
 				fixSupported:       true,
-				testDirName:        filepath.Join("conan"),
+				testDirName:        "conan",
 				descriptorsToCheck: []string{"conanfile.py"},
 			},
 			{
@@ -377,7 +377,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				scanDetails:        scanDetails,
 				fixSupported:       true,
-				testDirName:        filepath.Join("conan"),
+				testDirName:        "conan",
 				descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
 			},
 		},
