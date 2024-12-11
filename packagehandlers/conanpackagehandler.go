@@ -33,7 +33,7 @@ func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabil
 func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	conanDescriptors, err := conan.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
 	if err != nil {
-		err = fmt.Errorf("failed while serching for conanfile in project: %s", err.Error())
+		err = fmt.Errorf("failed while searching for Conan descriptor files in project: %s", err.Error())
 		return
 	}
 	isAnyDescriptorFileChanged := false
