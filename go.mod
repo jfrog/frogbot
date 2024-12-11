@@ -126,6 +126,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20241210142012-3ee757f8edf6
+replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20241211115330-69ae63f37137
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev

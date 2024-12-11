@@ -59,8 +59,8 @@ github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
 github.com/eranturgeman/jfrog-cli-security v0.0.0-20241210143322-1714ad25038a h1:uz8zyrDadTn4YMZlcv2Cr7/RoAbWuiRxVaY86mUkQHE=
 github.com/eranturgeman/jfrog-cli-security v0.0.0-20241210143322-1714ad25038a/go.mod h1:M85ArbX2Gt4c80gfFAVpXkMvukOoAggiL6bk5ddhUe0=
-github.com/eranturgeman/jfrog-client-go v0.0.0-20241210142012-3ee757f8edf6 h1:crfs7lcwkyi+f3KwBclBJZLQV+mn8JWg0DOTzfokxg8=
-github.com/eranturgeman/jfrog-client-go v0.0.0-20241210142012-3ee757f8edf6/go.mod h1:1a7bmQHkRmPEza9wva2+WVrYzrGbosrMymq57kyG5gU=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20241211115330-69ae63f37137 h1:nBqpgVKY6RKxTW1ToSr8Loed9v/1MN+LpdmhAINIoME=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20241211115330-69ae63f37137/go.mod h1:1a7bmQHkRmPEza9wva2+WVrYzrGbosrMymq57kyG5gU=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/forPelevin/gomoji v1.2.0 h1:9k4WVSSkE1ARO/BWywxgEUBvR/jMnao6EZzrql5nxJ8=
