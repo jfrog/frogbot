@@ -8,7 +8,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 )
 
-// TODO: after refactor, move this to security-cli as a new formats or remove this and use the existing formats
 // Group issues by scan type
 type ScansIssuesCollection struct {
 	formats.ScanStatus
@@ -264,60 +263,6 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 		evidences = append(evidences, evidence)
 	}
 	return
-
-	// issueIdToApplicableInfo := map[string]formats.Applicability{}
-	// issueIdToIssue := map[string]formats.VulnerabilityOrViolationRow{}
-	// // Collect evidences from Violations
-	// for _, securityViolation := range ic.ScaViolations {
-	// 	issueId := results.GetIssueIdentifier(securityViolation.Cves, securityViolation.IssueId, "-")
-	// 	if _, exists := issueIdToIssue[issueId]; exists {
-	// 		// No need to add the same issue twice
-	// 		continue
-	// 	}
-	// 	for _, cve := range securityViolation.Cves {
-	// 		if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
-	// 			// We only want applicable issues
-	// 			issueIdToIssue[issueId] = securityViolation
-	// 			issueIdToApplicableInfo[issueId] = *cve.Applicability
-	// 		}
-	// 	}
-	// }
-	// // Collect evidences from Vulnerabilities
-	// for _, vulnerability := range ic.ScaVulnerabilities {
-	// 	issueId := results.GetIssueIdentifier(vulnerability.Cves, vulnerability.IssueId, "-")
-	// 	if _, exists := issueIdToIssue[issueId]; exists {
-	// 		// No need to add the same issue twice
-	// 		continue
-	// 	}
-	// 	for _, cve := range vulnerability.Cves {
-	// 		if cve.Applicability != nil && cve.Applicability.Status == jasutils.Applicable.String() {
-	// 			// We only want applicable issues
-	// 			issueIdToIssue[issueId] = vulnerability
-	// 			issueIdToApplicableInfo[issueId] = *cve.Applicability
-	// 		}
-	// 	}
-	// }
-	// // Create ApplicableEvidences from collected data
-	// for issueId := range maps.Keys(issueIdToApplicableInfo) {
-	// 	issue := issueIdToIssue[issueId]
-	// 	applicableInfo := issueIdToApplicableInfo[issueId]
-	// 	remediation := ""
-	// 	if issue.JfrogResearchInformation != nil {
-	// 		remediation = issue.JfrogResearchInformation.Remediation
-	// 	}
-	// 	for _, evidence := range applicableInfo.Evidence {
-	// 		evidences = append(evidences, ApplicableEvidences{
-	// 			Evidence:           evidence,
-	// 			Severity:           issue.Severity,
-	// 			ScannerDescription: applicableInfo.ScannerDescription,
-	// 			IssueId:            results.GetIssueIdentifier(issue.Cves, issue.IssueId, ","),
-	// 			CveSummary:         issue.Summary,
-	// 			ImpactedDependency: results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion),
-	// 			Remediation:        remediation,
-	// 		})
-	// 	}
-	// }
-	// return
 }
 
 // Violations
@@ -343,68 +288,3 @@ func (ic *ScansIssuesCollection) GetTotalVulnerabilities(includeSecrets bool) in
 	}
 	return total
 }
-
-// func (ic *ScansIssuesCollection) GetTotal()
-
-// ---------------------------------------
-
-// func (ic *ScansIssuesCollection) GetScaIssues() (unique []formats.VulnerabilityOrViolationRow) {
-// 	return append(ic.ScaVulnerabilities, ic.ScaViolations...)
-// }
-
-// func (ic *ScansIssuesCollection) GetUniqueIacIssues() (unique []formats.SourceCodeRow) {
-// 	return getUniqueJasIssues(ic.IacVulnerabilities, ic.IacViolations)
-// }
-
-// func (ic *ScansIssuesCollection) GetUniqueSecretsIssues() (unique []formats.SourceCodeRow) {
-// 	return getUniqueJasIssues(ic.SecretsVulnerabilities, ic.SecretsViolations)
-// }
-
-// func (ic *ScansIssuesCollection) GetUniqueSastIssues() (unique []formats.SourceCodeRow) {
-// 	return getUniqueJasIssues(ic.SastVulnerabilities, ic.SastViolations)
-// }
-
-// func getUniqueJasIssues(vulnerabilities, violations []formats.SourceCodeRow) (unique []formats.SourceCodeRow) {
-// 	parsedIssues := datastructures.MakeSet[string]()
-// 	for _, violation := range violations {
-// 		issueId := violation.Location.ToString() + "|" + violation.Finding
-// 		if parsedIssues.Exists(issueId) {
-// 			continue
-// 		}
-// 		parsedIssues.Add(issueId)
-// 		unique = append(unique, violation)
-// 	}
-// 	for _, vulnerability := range vulnerabilities {
-// 		issueId := vulnerability.Location.ToString() + "|" + vulnerability.Finding
-// 		if parsedIssues.Exists(issueId) {
-// 			continue
-// 		}
-// 		parsedIssues.Add(issueId)
-// 		unique = append(unique, vulnerability)
-// 	}
-// 	return
-// }
-
-// func (ic *ScansIssuesCollection) LicensesViolationsExists() bool {
-// 	return len(ic.LicensesViolations) > 0
-// }
-
-// func (ic *ScansIssuesCollection) PresentableIssuesExists() bool {
-// 	return ic.ScaIssuesExists() || ic.IacIssuesExists() || ic.LicensesViolationsExists() || ic.SastIssuesExists()
-// }
-
-// func (ic *ScansIssuesCollection) ViolationsExists() bool {
-// 	return len(ic.ScaViolations) > 0 || len(ic.IacViolations) > 0 || len(ic.SecretsViolations) > 0 || len(ic.SastViolations) > 0 || len(ic.LicensesViolations) > 0
-// }
-
-// func (ic *ScansIssuesCollection) CountIssuesCollectionFindings() int {
-// 	count := 0
-
-// 	count += len(ic.GetScaIssues())
-// 	count += len(ic.GetUniqueIacIssues())
-// 	count += len(ic.GetUniqueSecretsIssues())
-// 	count += len(ic.GetUniqueSastIssues())
-// 	count += len(ic.LicensesViolations)
-
-// 	return count
-// }

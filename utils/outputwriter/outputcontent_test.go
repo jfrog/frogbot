@@ -810,7 +810,7 @@ func TestGenerateReviewComment(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
 				output := GenerateReviewCommentContent(content, test.writer)
 				if tc.location != nil {
-					output = GetFallbackReviewCommentContent(content, *tc.location, test.writer)
+					output = GetFallbackReviewCommentContent(content, *tc.location)
 				}
 				assert.Equal(t, expectedOutput, output)
 			})

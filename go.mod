@@ -121,11 +121,8 @@ require (
 )
 
 // eranturgeman:jas-violations-support
-replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
-
-// replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241204143029-e901cd468c75
-
-// replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241124185605-a69b532152fc
+// replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241211070414-848d30bb3042
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

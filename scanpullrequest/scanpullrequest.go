@@ -41,7 +41,7 @@ func (cmd *ScanPullRequestCmd) Run(configAggregator utils.RepoAggregator, client
 			return
 		}
 	}
-	repoConfig.OutputWriter.SetHasInternetConnection( /*false*/ frogbotRepoConnection.IsConnected())
+	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
 		return
 	}
@@ -310,7 +310,7 @@ func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash
 }
 
 func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (*issues.ScansIssuesCollection, error) {
-	log.Info("Frogbot is configured to show all vulnerabilities")
+	log.Info("Frogbot is configured to show all issues")
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: includeVulnerabilities,
 		HasViolationContext:    hasViolationContext,

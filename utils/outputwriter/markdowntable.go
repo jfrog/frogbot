@@ -6,12 +6,6 @@ import (
 )
 
 const (
-
-	// tableRowFirstColumnSeparator = "| :---------------------: |"
-	// tableRowColumnSeparator      = " :-----------------------------------: |"
-	// cellFirstCellPlaceholder     = "| %s                |"
-	// cellCellPlaceholder          = " %s                  |"
-
 	cellDefaultValue = "-"
 
 	firstCellPlaceholder = "| %s                |"

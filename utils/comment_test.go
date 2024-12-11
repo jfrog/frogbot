@@ -12,7 +12,6 @@ import (
 )
 
 func TestGetFrogbotReviewComments(t *testing.T) {
-	writer := &outputwriter.StandardOutput{}
 	testCases := []struct {
 		name             string
 		existingComments []vcsclient.CommentInfo
@@ -44,7 +43,7 @@ func TestGetFrogbotReviewComments(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output := getFrogbotComments(writer, tc.existingComments)
+			output := getFrogbotComments(tc.existingComments)
 			assert.ElementsMatch(t, tc.expectedOutput, output)
 		})
 	}
@@ -205,8 +204,6 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 
 func TestGetNewReviewComments(t *testing.T) {
 	writer := &outputwriter.StandardOutput{}
-
-	// repo := &Repository{OutputWriter: &outputwriter.StandardOutput{}}
 	testCases := []struct {
 		name                    string
 		generateSecretsComments bool

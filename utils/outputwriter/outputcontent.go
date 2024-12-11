@@ -63,7 +63,7 @@ func GenerateReviewCommentContent(content string, writer OutputWriter) string {
 }
 
 // When can't create review comment, create a fallback comment by adding the location description to the content as a prefix
-func GetFallbackReviewCommentContent(content string, location formats.Location, writer OutputWriter) string {
+func GetFallbackReviewCommentContent(content string, location formats.Location) string {
 	var contentBuilder strings.Builder
 	contentBuilder.WriteString(MarkdownComment(ReviewCommentId))
 	WriteContent(&contentBuilder, getFallbackCommentLocationDescription(location), content)
@@ -293,7 +293,7 @@ func PolicyViolationsContent(issues issues.ScansIssuesCollection, writer OutputW
 	return ConvertContentToComments(policyViolationContent, writer, getDecoratorWithPolicyViolationTitle(writer))
 }
 
-func getDecoratorWithPolicyViolationTitle(writer OutputWriter) func(int, string) string {
+func getDecoratorWithPolicyViolationTitle(writer OutputWriter) CommentDecorator {
 	return func(commentCount int, content string) string {
 		contentBuilder := strings.Builder{}
 		// Decorate each part of the split content with a title as prefix and return the content
@@ -314,7 +314,7 @@ func getSecurityViolationsContent(issues issues.ScansIssuesCollection, writer Ou
 	return ConvertContentToComments(content, writer, getDecoratorWithSecurityViolationTitle(writer))
 }
 
-func getDecoratorWithSecurityViolationTitle(writer OutputWriter) func(int, string) string {
+func getDecoratorWithSecurityViolationTitle(writer OutputWriter) CommentDecorator {
 	return func(commentCount int, content string) string {
 		contentBuilder := strings.Builder{}
 		// Decorate each part of the split content with a title as prefix and return the content
@@ -364,7 +364,7 @@ func getLicenseViolationsContent(issues issues.ScansIssuesCollection, writer Out
 	return ConvertContentToComments(content, writer, getDecoratorWithLicenseViolationTitle(writer))
 }
 
-func getDecoratorWithLicenseViolationTitle(writer OutputWriter) func(int, string) string {
+func getDecoratorWithLicenseViolationTitle(writer OutputWriter) CommentDecorator {
 	return func(commentCount int, content string) string {
 		contentBuilder := strings.Builder{}
 		// Decorate each part of the split content with a title as prefix and return the content
@@ -450,7 +450,7 @@ func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolatio
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
 }
 
-func getDecoratorWithScaVulnerabilitiesTitle(writer OutputWriter) func(int, string) string {
+func getDecoratorWithScaVulnerabilitiesTitle(writer OutputWriter) CommentDecorator {
 	return func(commentCount int, content string) string {
 		contentBuilder := strings.Builder{}
 		// Decorate each part of the split content with a title as prefix and return the content

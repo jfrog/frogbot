@@ -32,6 +32,7 @@ const (
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
+// In Scan PR, if there is an error, a comment will be added to the PR with the error message.
 func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int, scanError error) (err error) {
 	if issues == nil {
 		log.Debug("Can't generate error comment without issues collection")
@@ -46,6 +47,7 @@ func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *R
 	return
 }
 
+// In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
 		// The removal of comments may fail for various reasons,
@@ -91,7 +93,7 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 			"failed to get comments. the following details were used in order to fetch the comments: <%s/%s> pull request #%d. the error received: %s",
 			repository.RepoOwner, repository.RepoName, int(repository.PullRequestDetails.ID), err.Error())
 	}
-	commentsToDelete := getFrogbotComments(repository.OutputWriter, comments)
+	commentsToDelete := getFrogbotComments(comments)
 	// Delete
 	if len(commentsToDelete) > 0 {
 		for _, commentToDelete := range commentsToDelete {
@@ -178,7 +180,7 @@ func addReviewComments(repo *Repository, pullRequestID int, client vcsclient.Vcs
 		log.Debug("creating a review comment for", comment.Type, comment.Location.File, comment.Location.StartLine, comment.Location.StartColumn)
 		if e := client.AddPullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, comment.CommentInfo); e != nil {
 			log.Debug("couldn't add pull request review comment, fallback to regular comment: " + e.Error())
-			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, outputwriter.GetFallbackReviewCommentContent(comment.CommentInfo.Content, comment.Location, repo.OutputWriter), pullRequestID); err != nil {
+			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, outputwriter.GetFallbackReviewCommentContent(comment.CommentInfo.Content, comment.Location), pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request  comment, fallback to comment: " + err.Error())
 				return
 			}
@@ -197,7 +199,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	}
 	// Delete old review comments
 	if len(existingComments) > 0 {
-		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotComments(repo.OutputWriter, existingComments)...); err != nil {
+		if err = client.DeletePullRequestReviewComments(context.Background(), repo.RepoOwner, repo.RepoName, pullRequestID, getFrogbotComments(existingComments)...); err != nil {
 			err = errors.New("couldn't delete pull request review comment: " + err.Error())
 			return
 		}
@@ -205,7 +207,7 @@ func DeleteExistingPullRequestReviewComments(repo *Repository, pullRequestID int
 	return
 }
 
-func getFrogbotComments(writer outputwriter.OutputWriter, existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
+func getFrogbotComments(existingComments []vcsclient.CommentInfo) (reviewComments []vcsclient.CommentInfo) {
 	for _, comment := range existingComments {
 		if outputwriter.IsFrogbotComment(comment.Content) {
 			log.Debug("Deleting comment id:", comment.ID)
@@ -278,26 +280,6 @@ func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []simi
 	return
 }
 
-// // We group issues by their watches, so we can add all the watches to the same comment.
-// func groupSimilarIssues(issues []formats.SourceCodeRow) (groupedIssues []formats.SourceCodeRow, issuesWatches map[string][]formats.ViolationContext) {
-// 	issuesWatches = make(map[string][]formats.ViolationContext)
-// 	for _, issue := range issues {
-// 		if issue.Watch == "" {
-// 			// no violation context, just add to the list
-// 			groupedIssues = append(groupedIssues, issue)
-// 			continue
-// 		}
-// 		id := getSourceCodeRowId(issue)
-// 		if watches, ok := issuesWatches[id]; ok {
-// 			issuesWatches[id] = append(watches, issue.ViolationContext)
-// 			continue
-// 		}
-// 		groupedIssues = append(groupedIssues, issue)
-// 		issuesWatches[id] = []formats.ViolationContext{issue.ViolationContext}
-// 	}
-// 	return groupedIssues, issuesWatches
-// }
-
 // We show different comments for each location and rule ID. (we group similar issues/violations to the same comment)
 func getSourceCodeRowId(issue formats.SourceCodeRow) string {
 	return issue.RuleId + issue.Location.ToString()
@@ -320,18 +302,6 @@ func generateReviewComment(commentType ReviewCommentType, location formats.Locat
 func generateApplicabilityReviewContent(issue issues.ApplicableEvidences, writer outputwriter.OutputWriter) string {
 	return outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent(issue, writer), writer)
 }
-
-// func generateSourceCodeVulnerabilityReviewContent(commentType ReviewCommentType, issue formats.SourceCodeRow, writer outputwriter.OutputWriter) (content string) {
-// 	switch commentType {
-// 	case IacComment:
-// 		return outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent(issue, writer), writer)
-// 	case SastComment:
-// 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(issue, writer), writer)
-// 	case SecretComment:
-// 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(issue, writer), writer)
-// 	}
-// 	return
-// }
 
 func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bool, writer outputwriter.OutputWriter, similarIssues ...formats.SourceCodeRow) (content string) {
 	switch commentType {
