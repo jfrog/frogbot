@@ -1,7 +1,6 @@
 package packagehandlers
 
 import (
-	"errors"
 	"fmt"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -47,15 +46,16 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 	}
 	if !isAnyDescriptorFileChanged {
 		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
+	} else {
+		conan.logNoInstallationMessage()
 	}
-	conan.logNoInstallationMessage()
 	return
 }
 
 func (conan *ConanPackageHandler) updateConanFile(conanFile string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	data, err := os.ReadFile(conanFile)
 	if err != nil {
-		return false, errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
+		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s\n", conanFile, err.Error())
 	}
 	currentFile := string(data)
 	fixedPackage := vulnDetails.ImpactedDependencyName + "/" + vulnDetails.SuggestedFixedVersion
@@ -63,7 +63,8 @@ func (conan *ConanPackageHandler) updateConanFile(conanFile string, vulnDetails 
 	fixedFile := strings.Replace(currentFile, impactedDependency, strings.ToLower(fixedPackage), 1)
 
 	if fixedFile == currentFile {
-		return false, fmt.Errorf("impacted dependency '%s' not found in descriptor '%s', fix failed vulnerability", impactedDependency, conanFile)
+		log.Info(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFile))
+		return false, nil
 	}
 	if err = os.WriteFile(conanFile, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", conanFile, vulnDetails.ImpactedDependencyName, err.Error())
