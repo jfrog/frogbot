@@ -3,7 +3,7 @@
   "repository": {
     "id": "my-repo-id-123",
     "name": "my-repo",
-    "url": "https://github.com/myUser/my-repo.git",
+    "url": "https://github.com/myUser/my-repo",
     "provider": "github"
   },
   "frogbot_config": {
