@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
 	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -694,6 +697,7 @@ func TestSetEmailDetails(t *testing.T) {
 	}
 }
 
+// TODO eran fix test. add repoInfo to mock also
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
@@ -768,7 +772,17 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
-			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails)
+			var mockVcsClient *testdata.MockVcsClient
+			var mockGitParams *Git
+			if testcase.profileWithRepo {
+				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo")
+				mockGitParams = &Git{
+					RepoOwner: "myUser",
+					RepoName:  "my-repo",
+				}
+			}
+
+			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
 
 			if !testcase.useProfile {
 				assert.Nil(t, configProfile)
@@ -795,4 +809,16 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			assert.Equal(t, configProfileFromFile, *configProfile)
 		})
 	}
+}
+
+func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
+	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
+	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
+		CloneInfo: vcsclient.CloneInfo{
+			HTTP: "https://github.com/myUser/my-repo.git",
+			SSH:  "git@github.com:myUser/my-repo.git",
+		},
+		RepositoryVisibility: 0,
+	}, nil)
+	return mockVcsClient
 }
