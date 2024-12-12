@@ -127,6 +127,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
+		SetConfigProfile(repository.ConfigProfile).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
 		SetAllowPartialResults(repository.AllowPartialResults).
 		SetDisableJas(repository.DisableJas)
