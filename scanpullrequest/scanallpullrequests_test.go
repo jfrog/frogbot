@@ -3,6 +3,7 @@ package scanpullrequest
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -103,7 +103,7 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&server)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&server)
 	assert.NoError(t, err)
 
 	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
@@ -168,7 +168,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&server)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&server)
 	assert.NoError(t, err)
 
 	falseVal := false

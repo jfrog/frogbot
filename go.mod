@@ -10,8 +10,8 @@ require (
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.57.0
-	github.com/jfrog/jfrog-cli-security v1.13.3
-	github.com/jfrog/jfrog-client-go v1.48.2
+	github.com/jfrog/jfrog-cli-security v1.13.4
+	github.com/jfrog/jfrog-client-go v1.48.3
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.9.0
@@ -97,6 +97,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
 	github.com/vbauerster/mpb/v8 v8.8.3 // indirect
+	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -106,21 +107,21 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.27.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
