@@ -816,9 +816,15 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		return
 	}
 
+	// Getting repository's url in order to get repository HTTP url
+	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName)
+	if err != nil {
+		return nil, err
+	}
+
 	// If no profile was found by name, we check if a profile is associated to the repo URL
 	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, gitClient, gitParams.RepoOwner, gitParams.RepoName); err != nil || configProfile == nil {
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repositoryInfo.CloneInfo.HTTP); err != nil || configProfile == nil {
 		return
 	}
 	err = verifyConfigProfileValidity(configProfile)
