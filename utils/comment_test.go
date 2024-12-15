@@ -50,11 +50,12 @@ func TestGetFrogbotReviewComments(t *testing.T) {
 }
 
 func TestGetNewReviewComments(t *testing.T) {
-	repo := &Repository{OutputWriter: &outputwriter.StandardOutput{}}
+	writer := &outputwriter.StandardOutput{}
 	testCases := []struct {
-		name           string
-		issues         *IssuesCollection
-		expectedOutput []ReviewComment
+		name                    string
+		generateSecretsComments bool
+		issues                  *IssuesCollection
+		expectedOutput          []ReviewComment
 	}{
 		{
 			name: "No issues for review comments",
@@ -91,6 +92,73 @@ func TestGetNewReviewComments(t *testing.T) {
 				},
 			},
 			expectedOutput: []ReviewComment{},
+		},
+		{
+			name:                    "Secret review comments",
+			generateSecretsComments: true,
+			issues: &IssuesCollection{
+				Vulnerabilities: []formats.VulnerabilityOrViolationRow{
+					{
+						Summary:    "summary-2",
+						Applicable: "Applicable",
+						IssueId:    "XRAY-2",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							SeverityDetails:        formats.SeverityDetails{Severity: "low"},
+							ImpactedDependencyName: "component-C",
+						},
+						Cves:       []formats.CveRow{{Id: "CVE-2023-4321"}},
+						Technology: techutils.Npm,
+					},
+				},
+				Secrets: []formats.SourceCodeRow{
+					{
+						SeverityDetails: formats.SeverityDetails{
+							Severity:         "High",
+							SeverityNumValue: 13,
+						},
+						Finding:       "secret finding",
+						Applicability: &formats.Applicability{Status: "Inactive"},
+						Location: formats.Location{
+							File:        "index.js",
+							StartLine:   5,
+							StartColumn: 6,
+							EndLine:     7,
+							EndColumn:   8,
+							Snippet:     "access token exposed",
+						},
+					},
+				},
+			},
+			expectedOutput: []ReviewComment{
+				{
+					Location: formats.Location{
+						File:        "index.js",
+						StartLine:   5,
+						StartColumn: 6,
+						EndLine:     7,
+						EndColumn:   8,
+						Snippet:     "access token exposed",
+					},
+					Type: SecretComment,
+					CommentInfo: vcsclient.PullRequestComment{
+						CommentInfo: vcsclient.CommentInfo{
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent("High", "secret finding", "", "Inactive", writer), writer),
+						},
+						PullRequestDiff: vcsclient.PullRequestDiff{
+							OriginalFilePath:    "index.js",
+							OriginalStartLine:   5,
+							OriginalStartColumn: 6,
+							OriginalEndLine:     7,
+							OriginalEndColumn:   8,
+							NewFilePath:         "index.js",
+							NewStartLine:        5,
+							NewStartColumn:      6,
+							NewEndLine:          7,
+							NewEndColumn:        8,
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "With issues for review comments",
@@ -156,7 +224,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: ApplicableComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", "", repo.OutputWriter), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ApplicableCveReviewContent("Low", "", "", "CVE-2023-4321", "summary-2", "component-C:", "", writer), writer),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -184,7 +252,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: IacComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent("High", "Missing auto upgrade was detected", "", repo.OutputWriter), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.IacReviewContent("High", "Missing auto upgrade was detected", "", writer), writer),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -212,7 +280,7 @@ func TestGetNewReviewComments(t *testing.T) {
 					Type: SastComment,
 					CommentInfo: vcsclient.PullRequestComment{
 						CommentInfo: vcsclient.CommentInfo{
-							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}, repo.OutputWriter), repo.OutputWriter),
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent("High", "XSS Vulnerability", "", [][]formats.Location{}, writer), writer),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{
 							OriginalFilePath:    "file1",
@@ -233,6 +301,7 @@ func TestGetNewReviewComments(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			repo := &Repository{OutputWriter: writer, Params: Params{Git: Git{PullRequestSecretComments: tc.generateSecretsComments}}}
 			output := getNewReviewComments(repo, tc.issues)
 			assert.ElementsMatch(t, tc.expectedOutput, output)
 		})
