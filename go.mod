@@ -97,6 +97,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
 	github.com/vbauerster/mpb/v8 v8.8.3 // indirect
+	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -120,7 +121,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.13.5-0.20241215113932-a42170d6675e
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

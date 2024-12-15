@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,7 +18,6 @@ import (
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +30,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
 	defer restoreJfrogHomeFunc()
 
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&serverParams)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 	assert.NoError(t, err)
 
 	baseWd, err := os.Getwd()

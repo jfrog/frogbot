@@ -3,6 +3,7 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -17,7 +18,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -172,7 +172,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
-			xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&serverParams)
+			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
 			var port string
@@ -304,7 +304,7 @@ pr body
 	defer restoreEnv()
 	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
 	defer cleanup()
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&serverParams)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 	assert.NoError(t, err)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -399,7 +399,7 @@ func TestGenerateFixBranchName(t *testing.T) {
 func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&environmentVars)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&environmentVars)
 	assert.NoError(t, err)
 
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
