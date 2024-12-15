@@ -18,6 +18,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -27,10 +28,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v1.1.2 // indirect
-	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/beevik/etree v1.4.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -96,7 +94,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
-	github.com/vbauerster/mpb/v8 v8.8.3 // indirect
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -107,26 +104,26 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.27.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.13.5-0.20241215113932-a42170d6675e
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241215123059-0360f8d1edc9
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20241215103234-87d1da5743ae
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
