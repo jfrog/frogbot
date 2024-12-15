@@ -26,7 +26,6 @@ var (
 	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
 	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
 	configProfileFile             = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
-	configProfileWithRepoFile     = filepath.Join("..", "testdata", "configprofile", "configProfileWithRepoExample.json")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {
@@ -697,7 +696,6 @@ func TestSetEmailDetails(t *testing.T) {
 	}
 }
 
-// TODO eran fix test. add repoInfo to mock also
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
@@ -796,13 +794,9 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 			require.NotNil(t, configProfile)
 			assert.NoError(t, err)
-			var configProfileContentForComparison []byte
-			if testcase.profileWithRepo {
-				configProfileContentForComparison, err = os.ReadFile(configProfileWithRepoFile)
-			} else {
-				configProfileContentForComparison, err = os.ReadFile(configProfileFile)
-			}
+			configProfileContentForComparison, err := os.ReadFile(configProfileFile)
 			assert.NoError(t, err)
+			assert.NotEmpty(t, configProfileContentForComparison)
 			var configProfileFromFile services.ConfigProfile
 			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
 			assert.NoError(t, err)
