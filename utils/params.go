@@ -307,9 +307,9 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 			jp.ViolationContext = ProjectContext
 		}
 	}
-	// if jp.ViolationContext == None {
-	// 	jp.ViolationContext = GitRepoContext
-	// }
+	if jp.ViolationContext == None {
+		jp.ViolationContext = GitRepoContext
+	}
 	return
 }
 

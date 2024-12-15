@@ -4,13 +4,12 @@ import (
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateAnalyticsGeneralEvent(t *testing.T) {
-	gitInfoContext := &services.XscGitInfoContext{
+	gitInfoContext := &xscservices.XscGitInfoContext{
 		GitRepoHttpsCloneUrl: "http://localhost:8080/my-user/my-project.git",
 		GitRepoName:          "my-project",
 		GitProject:           "my-user",

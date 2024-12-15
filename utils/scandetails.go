@@ -19,12 +19,14 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
 type ScanDetails struct {
 	*Project
 	*Git
 	*services.XrayGraphScanParams
+	*xscservices.XscGitInfoContext
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
 	failOnInstallationErrors bool
@@ -139,9 +141,10 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 
 func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanParams {
 	commonParams := &scangraph.CommonGraphScanParams{
-		RepoPath: sc.RepoPath,
-		Watches:  sc.Watches,
-		ScanType: sc.ScanType,
+		RepoPath:             sc.RepoPath,
+		Watches:              sc.Watches,
+		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
+		ScanType:             sc.ScanType,
 	}
 	if sc.ProjectKey == "" {
 		commonParams.ProjectKey = os.Getenv(coreutils.Project)
@@ -154,7 +157,8 @@ func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanP
 }
 
 func (sc *ScanDetails) HasViolationContext() bool {
-	return sc.ProjectKey != "" || len(sc.Watches) > 0 || sc.RepoPath != "" || (sc.XscGitInfoContext != nil && sc.XscGitInfoContext.GitRepoHttpsCloneUrl != "")
+	// TODO: infer this info from the results of the scan and delete this method.
+	return sc.ProjectKey != "" || sc.Git.RepositoryCloneUrl != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
 }
 
 func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
@@ -162,19 +166,13 @@ func createXrayScanParams(httpCloneUrl string, watches []string, project string,
 		ScanType:        services.Dependency,
 		IncludeLicenses: includeLicenses,
 	}
-	if len(httpCloneUrl) > 0 && params.XscGitInfoContext == nil {
-		// TODO: control with other var, this is always true.
-		if project != "" {
-			log.Warn("Using git URL as violation context, project key will be ignored.")
-		}
-		params.ProjectKey = ""
-
-		params.Watches = watches
-
-		params.XscGitInfoContext = &services.XscGitInfoContext{
-			GitRepoHttpsCloneUrl: httpCloneUrl,
-		}
-		return
+	defer func() {
+		log.Debug(fmt.Sprintf("Passing XrayGraphScanParams: %+v", params))
+	}()
+	if len(httpCloneUrl) > 0 {
+		// We always pass the clone URL to the platform, with other parameters combined.
+		// the logic to decide whether to use it or not is in the audit command.
+		params.GitRepoHttpsCloneUrl = httpCloneUrl
 	}
 	if len(watches) > 0 {
 		params.Watches = watches
@@ -184,7 +182,11 @@ func createXrayScanParams(httpCloneUrl string, watches []string, project string,
 		params.ProjectKey = project
 		return
 	}
-	params.IncludeVulnerabilities = true
+	// TODO: --vuln flag, should be able to get both vulnerabilities and violations.
+	// since if watch is defined on git-repo resource there is no way to get vulnerabilities.
+	if len(httpCloneUrl) == 0 {
+		params.IncludeVulnerabilities = true
+	}
 	return
 }
 
@@ -213,7 +215,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
 		SetConfigProfile(sc.configProfile).
-		SetGitInfoContext(sc.XscGitInfoContext).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 
@@ -234,7 +235,7 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 // ScannedBranch - name of the branch we are scanning.
 // GitProject - [Optional] relevant for azure repos and Bitbucket server.
 // Client vscClient
-func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *services.XscGitInfoContext, err error) {
+func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *xscservices.XscGitInfoContext, err error) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
@@ -243,11 +244,11 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	if gitProject == "" {
 		gitProject = sc.RepoOwner
 	}
-	gitInfo = &services.XscGitInfoContext{
+	gitInfo = &xscservices.XscGitInfoContext{
 		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
 		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
 		GitRepoName:          sc.RepoName,
-		GitProvider:          sc.GitProvider.String(),
+		GitProvider:          sc.Git.GitProvider.String(),
 		GitProject:           gitProject,
 		BranchName:           scannedBranch,
 		LastCommitUrl:        latestCommit.Url,
