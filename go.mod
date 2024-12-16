@@ -27,10 +27,7 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.9.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v1.1.2 // indirect
-	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/beevik/etree v1.4.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -96,7 +93,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
-	github.com/vbauerster/mpb/v8 v8.8.3 // indirect
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -122,7 +118,7 @@ require (
 )
 
 // eranturgeman:jas-violations-support
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241215092417-d288e4c9056e
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241216131728-40f074cfa72b
 
 // replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20241211092436-7d612014c0cc
 

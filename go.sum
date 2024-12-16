@@ -24,8 +24,6 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPd
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/attiasas/jfrog-client-go v0.0.0-20241215085345-1cce31921430 h1:2SgkgR15RVfLNKpwcCG+kUC6+xCimMDGJ5MbkuA7Sk0=
 github.com/attiasas/jfrog-client-go v0.0.0-20241215085345-1cce31921430/go.mod h1:3rdSCzKoN1l3wklL33D7nu+nB3089rIgxwyoprFdCaw=
-github.com/beevik/etree v1.4.0 h1:oz1UedHRepuY3p4N5OjE0nK1WLCqtzHf25bxplKOHLs=
-github.com/beevik/etree v1.4.0/go.mod h1:cyWiXwGoasx60gHvtnEh5x8+uIjUVnjWqBvEnhnqKDA=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0/go.mod h1:bm7JXdkRd4BHJk9HpwqAI8BoAY1lps46Enkdqw6aRX0=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
@@ -59,8 +57,8 @@ github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a h1:mATvB/9r/3gvcej
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20241215092417-d288e4c9056e h1:/P79HxXlNWUq5aJO52BRVGduFQQWZR2rwM+sZmdV4jY=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20241215092417-d288e4c9056e/go.mod h1:y/SU5vJdL876jwVsxlOsOa1WmIPI/P80IlDusH9V9mA=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20241216131728-40f074cfa72b h1:SROhNEOLiRim0DGcMN2P9hXBLirD7iyINj5M7C5rLsA=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20241216131728-40f074cfa72b/go.mod h1:xTaYKgsO6t5SvNyV4W5V2MfGcn26jF/UVWDxnT6fcvc=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/forPelevin/gomoji v1.2.0 h1:9k4WVSSkE1ARO/BWywxgEUBvR/jMnao6EZzrql5nxJ8=
