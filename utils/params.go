@@ -17,7 +17,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/jfrog-cli-security/cli"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
@@ -436,7 +435,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(jfrogServer)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(jfrogServer)
 	if err != nil {
 		return
 	}

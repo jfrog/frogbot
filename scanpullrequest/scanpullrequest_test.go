@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +21,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/cli"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
@@ -654,7 +654,7 @@ func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSec
 	params, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
 
-	xrayVersion, xscVersion, err := cli.GetJfrogServicesVersion(&params)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
 	assert.NoError(t, err)
 
 	// Create mock GitLab server
