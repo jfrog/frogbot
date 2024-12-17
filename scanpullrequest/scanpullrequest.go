@@ -271,7 +271,9 @@ func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 	if err != nil {
 		return
 	}
-	gitManager.Fetch()
+	if err = gitManager.Fetch(); err != nil {
+		return
+	}
 	// Get the most common ancestor commit hash
 	bestAncestorHash, err := gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
 	if err != nil {
