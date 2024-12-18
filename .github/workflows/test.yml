@@ -108,6 +108,23 @@ jobs:
         with:
           dotnet-version: "6.x"
 
+      - name: Install NuGet on Linux
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: 6.11.0
+        if: runner.os == 'Linux'
+
+      - name: Install Mono on Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates
+          sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
+        if: runner.os == 'Linux'
+        shell: 'bash'
+
       - name: Install Pnpm
         uses: pnpm/action-setup@v3
         with:
