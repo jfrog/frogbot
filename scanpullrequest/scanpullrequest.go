@@ -255,39 +255,31 @@ func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 		return
 	}
 	scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
-	bestAncestorHash, err := getMostCommonAncestorCommitHash(scanDetails, baseBranch, headBranch)
-	if err != nil {
-		return
-	}
-	return checkoutToCommitAtTempWorkingDir(scanDetails, bestAncestorHash, targetBranchWd)
-}
-
-func getMostCommonAncestorCommitHash(scanDetails *utils.ScanDetails, baseBranch, headBranch string) (hash string, err error) {
-	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
-	if err != nil {
-		return
-	}
-	return gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
-}
-
-func checkoutToCommitAtTempWorkingDir(scanDetails *utils.ScanDetails, commitHash, wd string) (err error) {
 	// Change working directory to the temp target branch directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return
 	}
-	if err = os.Chdir(wd); err != nil {
+	if err = os.Chdir(targetBranchWd); err != nil {
 		return
 	}
 	defer func() {
 		err = errors.Join(err, os.Chdir(cwd))
 	}()
-	// Load .git info in directory and Checkout to the commit hash
+	// Create a new git manager and fetch
 	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
 	if err != nil {
 		return
 	}
-	return gitManager.CheckoutToHash(commitHash, wd)
+	if err = gitManager.Fetch(); err != nil {
+		return
+	}
+	// Get the most common ancestor commit hash
+	bestAncestorHash, err := gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
+	if err != nil {
+		return
+	}
+	return gitManager.CheckoutToHash(bestAncestorHash)
 }
 
 func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string, hasViolationContext bool) (*utils.IssuesCollection, error) {

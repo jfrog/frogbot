@@ -161,10 +161,7 @@ func (gm *GitManager) Checkout(branchName string) error {
 	return nil
 }
 
-func (gm *GitManager) CheckoutToHash(hash, targetBranchWd string) error {
-	if err := gm.Fetch(); err != nil {
-		return err
-	}
+func (gm *GitManager) CheckoutToHash(hash string) error {
 	log.Debug("Running git checkout to hash:", hash)
 	if err := gm.createBranchAndCheckoutToHash(hash, false); err != nil {
 		return fmt.Errorf("'git checkout %s' failed with error: %s", hash, err.Error())
@@ -187,7 +184,7 @@ func (gm *GitManager) Fetch() error {
 
 func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
 	// Get the commit of the base branch
-	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(baseBranch))
+	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, baseBranch)))
 	if err != nil {
 		return "", err
 	}
@@ -196,7 +193,7 @@ func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string)
 		return "", err
 	}
 	// Get the HEAD commit of the target branch
-	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(targetBranch))
+	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, targetBranch)))
 	if err != nil {
 		return "", err
 	}
