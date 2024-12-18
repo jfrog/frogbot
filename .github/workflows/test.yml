@@ -108,7 +108,13 @@ jobs:
         with:
           dotnet-version: "6.x"
 
-      - name: Install Mono on Ubuntu
+      - name: Install NuGet on Linux
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: 6.11.0
+        if: runner.os == 'Linux'
+
+      - name: Install Mono on Linux
         run: |
           sudo apt-get update
           sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates
