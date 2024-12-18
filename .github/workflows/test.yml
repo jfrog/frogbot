@@ -116,8 +116,7 @@ jobs:
           echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
           sudo apt-get update
           sudo apt-get install -y mono-complete
-
-        if: matrix.os == 'ubuntu'
+        if: runner.os == 'Linux'
         shell: 'bash'
 
       - name: Install Pnpm
