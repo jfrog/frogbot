@@ -804,7 +804,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		return
 	}
 
-	// We first try to get a config profile by profile's name
+	// Attempt to get the config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
 		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
@@ -821,7 +821,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		return nil, err
 	}
 
-	// If no profile was found by name, we check if a profile is associated to the repo URL
+	// Attempt to get a config profile associated with the repo URL
 	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
 	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repositoryInfo.CloneInfo.HTTP); err != nil || configProfile == nil {
 		return
