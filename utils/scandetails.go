@@ -25,7 +25,7 @@ import (
 type ScanDetails struct {
 	*Project
 	*Git
-	
+
 	// *services.XrayGraphScanParams
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
@@ -42,8 +42,8 @@ type ScanDetails struct {
 	results.ResultContext
 	MultiScanId string
 	XrayVersion string
-	XscVersion string
-	StartTime                time.Time
+	XscVersion  string
+	StartTime   time.Time
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -152,12 +152,12 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 
 func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeVulnerabilities, includeLicenses bool) (params *services.XrayGraphScanParams) {
 	return &services.XrayGraphScanParams{
-		Watches: 	   watches,
-		ProjectKey:   project,
-		GitRepoHttpsCloneUrl: httpCloneUrl,
+		Watches:                watches,
+		ProjectKey:             project,
+		GitRepoHttpsCloneUrl:   httpCloneUrl,
 		IncludeVulnerabilities: includeVulnerabilities,
-		IncludeLicenses: includeLicenses,
-		ScanType:        services.Dependency,
+		IncludeLicenses:        includeLicenses,
+		ScanType:               services.Dependency,
 	}
 }
 

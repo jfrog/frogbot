@@ -60,7 +60,6 @@ const (
 
 // type ViolationContext string
 
-
 var (
 	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"

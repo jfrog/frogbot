@@ -142,7 +142,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 			for _, violation := range ic.LicensesViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
 			}
-		} 
+		}
 		if vulnerabilities {
 			for _, vulnerability := range ic.ScaVulnerabilities {
 				scanDetails[severityutils.GetSeverity(vulnerability.Severity)]++
@@ -157,7 +157,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		// Count Iac issues only if requested
 		if violation {
 			jasViolations = ic.IacViolations
-		} 
+		}
 		if vulnerabilities {
 			jasVulnerabilities = ic.IacVulnerabilities
 		}
@@ -165,7 +165,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		// Count Secrets issues only if requested
 		if violation {
 			jasViolations = ic.SecretsViolations
-		} 
+		}
 		if vulnerabilities {
 			jasVulnerabilities = ic.SecretsVulnerabilities
 		}
@@ -173,7 +173,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		// Count Sast issues only if requested
 		if violation {
 			jasViolations = ic.SastViolations
-		} 
+		}
 		if vulnerabilities {
 			jasVulnerabilities = ic.SastVulnerabilities
 		}

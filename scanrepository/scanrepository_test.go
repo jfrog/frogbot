@@ -435,8 +435,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayVersion: xrayVersion,
-				XscVersion:  xscVersion,
+				XrayVersion:   xrayVersion,
+				XscVersion:    xscVersion,
 				Project:       &frogbotParams.Projects[0],
 				ServerDetails: &frogbotParams.Server,
 			}
@@ -550,7 +550,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 								Violations: []services.Violation{
 									{
 										ViolationType: "security",
-										WatchName:    "w1",
+										WatchName:     "w1",
 										Cves: []services.Cve{
 											{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
 											{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
@@ -565,7 +565,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 									},
 									{
 										ViolationType: "security",
-										WatchName:    "w1",
+										WatchName:     "w1",
 										Cves: []services.Cve{
 											{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
 											{Id: "CVE-2022-4321", CvssV3Score: "7.9"},

@@ -306,7 +306,7 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 		return nil, err
 	}
 	return &issues.ScansIssuesCollection{
-		ResultContext: 		cmdResults.ResultContext,
+		ResultContext:      cmdResults.ResultContext,
 		ScanStatus:         simpleJsonResults.Statuses,
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,

@@ -6,12 +6,12 @@ import (
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
-	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -233,12 +233,12 @@ func TestScanSummaryContent(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name             string
-		context 		results.ResultContext
-		includeSecrets   bool
-		scanStatus       formats.ScanStatus
-		issues           issues.ScansIssuesCollection
-		cases            []OutputTestCase
+		name           string
+		context        results.ResultContext
+		includeSecrets bool
+		scanStatus     formats.ScanStatus
+		issues         issues.ScansIssuesCollection
+		cases          []OutputTestCase
 	}{
 		{
 			name:       "No issues",
@@ -261,7 +261,7 @@ func TestScanSummaryContent(t *testing.T) {
 			name:       "Vulnerabilities",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
-			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", IncludeVulnerabilities: true},
+			context:    results.ResultContext{GitRepoHttpsCloneUrl: "url", IncludeVulnerabilities: true},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -279,7 +279,7 @@ func TestScanSummaryContent(t *testing.T) {
 			name:       "Violations",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
-			context: results.ResultContext{Watches: []string{"watch"}},
+			context:    results.ResultContext{Watches: []string{"watch"}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -297,7 +297,7 @@ func TestScanSummaryContent(t *testing.T) {
 			name:       "Violations and Vulnerabilities",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
-			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}, IncludeVulnerabilities: true},
+			context:    results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}, IncludeVulnerabilities: true},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",

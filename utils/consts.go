@@ -51,14 +51,14 @@ const (
 	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
-	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
-	RequirementsFileEnv                = "JF_REQUIREMENTS_FILE"
-	WorkingDirectoryEnv                = "JF_WORKING_DIR"
-	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
-	jfrogWatchesEnv                    = "JF_WATCHES"
-	jfrogProjectEnv                    = "JF_PROJECT"
+	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
+	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
+	WorkingDirectoryEnv = "JF_WORKING_DIR"
+	PathExclusionsEnv   = "JF_PATH_EXCLUSIONS"
+	jfrogWatchesEnv     = "JF_WATCHES"
+	jfrogProjectEnv     = "JF_PROJECT"
 	// To include vulnerabilities and violations
-	IncludeVulnerabilitiesEnv                = "JF_INCLUDE_VULNERABILITIES"
+	IncludeVulnerabilitiesEnv = "JF_INCLUDE_VULNERABILITIES"
 	// To include all the vulnerabilities in the source branch at PR scan
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"

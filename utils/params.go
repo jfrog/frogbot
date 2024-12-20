@@ -274,11 +274,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
-	XrayVersion      string
-	XscVersion       string
-	Watches          []string         `yaml:"watches,omitempty"`
-	IncludeVulnerabilities bool           `yaml:"includeVulnerabilities,omitempty"`
-	JFrogProjectKey  string           `yaml:"jfrogProjectKey,omitempty"`
+	XrayVersion            string
+	XscVersion             string
+	Watches                []string `yaml:"watches,omitempty"`
+	IncludeVulnerabilities bool     `yaml:"includeVulnerabilities,omitempty"`
+	JFrogProjectKey        string   `yaml:"jfrogProjectKey,omitempty"`
 }
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
@@ -306,22 +306,22 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
-	RepoOwner                     string
-	RepoName                      string   `yaml:"repoName,omitempty"`
-	Branches                      []string `yaml:"branches,omitempty"`
-	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
-	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
-	PullRequestDisableErrorComment   bool     `yaml:"pullRequestDisableErrorComment,omitempty"`
-	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails            vcsclient.PullRequestInfo
-	RepositoryCloneUrl            string
-	UseLocalRepository            bool
+	UseMostCommonAncestorAsTarget  bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
+	RepoOwner                      string
+	RepoName                       string   `yaml:"repoName,omitempty"`
+	Branches                       []string `yaml:"branches,omitempty"`
+	BranchNameTemplate             string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate          string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate       string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle        string   `yaml:"pullRequestCommentTitle,omitempty"`
+	PullRequestSecretComments      bool     `yaml:"pullRequestSecretComments,omitempty"`
+	PullRequestDisableErrorComment bool     `yaml:"pullRequestDisableErrorComment,omitempty"`
+	AvoidExtraMessages             bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor                    string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes                 bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails             vcsclient.PullRequestInfo
+	RepositoryCloneUrl             string
+	UseLocalRepository             bool
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
