@@ -32,20 +32,20 @@ const (
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
-// In Scan PR, if there is an error, a comment will be added to the PR with the error message.
-func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int, scanError error) (err error) {
-	if issues == nil {
-		log.Debug("Can't generate error comment without issues collection")
-		return
-	}
-	writer := repo.OutputWriter
-	for _, comment := range outputwriter.GetFrogbotErrorCommentContent([]string{outputwriter.ScanSummaryContent(*issues, getViolationContextText(repo.ViolationContext), repo.PullRequestSecretComments, writer)}, scanError, writer) {
-		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
-			return errors.New("couldn't add pull request comment: " + err.Error())
-		}
-	}
-	return
-}
+// // In Scan PR, if there is an error, a comment will be added to the PR with the error message.
+// func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int, scanError error) (err error) {
+// 	if issues == nil {
+// 		log.Debug("Can't generate error comment without issues collection")
+// 		return
+// 	}
+// 	writer := repo.OutputWriter
+// 	for _, comment := range outputwriter.GetFrogbotErrorCommentContent([]string{outputwriter.ScanSummaryContent(*issues, getResultsContextText(repo.ViolationContext), repo.PullRequestSecretComments, writer)}, scanError, writer) {
+// 		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
+// 			return errors.New("couldn't add pull request comment: " + err.Error())
+// 		}
+// 	}
+// 	return
+// }
 
 // In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
@@ -62,7 +62,7 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 	}
 
 	// Add summary (SCA, license) scan comment
-	for _, comment := range generatePullRequestSummaryComment(issues, repo.ViolationContext, repo.PullRequestSecretComments, repo.OutputWriter) {
+	for _, comment := range generatePullRequestSummaryComment(*issues, repo.PullRequestSecretComments, repo.OutputWriter) {
 		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 			err = errors.New("couldn't add pull request comment: " + err.Error())
 			return
@@ -123,28 +123,15 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
-func getViolationContextText(violationContext ViolationContext) string {
-	switch violationContext {
-	case WatchContext:
-		return outputwriter.WatchViolations
-	case ProjectContext:
-		return outputwriter.ProjectViolations
-	case GitRepoContext:
-		return outputwriter.GitRepoViolations
-	default:
-		return outputwriter.NoViolations
-	}
-}
-
-func generatePullRequestSummaryComment(issuesCollection *issues.ScansIssuesCollection, violationContext ViolationContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
+func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, includeSecrets bool, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
 		// No Issues
 		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
 	// Summary
-	content := []string{outputwriter.ScanSummaryContent(*issuesCollection, getViolationContextText(violationContext), includeSecrets, writer)}
+	content := []string{outputwriter.ScanSummaryContent(issuesCollection, issuesCollection.ResultContext, includeSecrets, writer)}
 	// Violations
-	if violationsContent := outputwriter.PolicyViolationsContent(*issuesCollection, writer); len(violationsContent) > 0 {
+	if violationsContent := outputwriter.PolicyViolationsContent(issuesCollection, writer); len(violationsContent) > 0 {
 		content = append(content, violationsContent...)
 	}
 	// Vulnerabilities

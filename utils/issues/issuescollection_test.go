@@ -232,12 +232,13 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 		name                  string
 		scanType              utils.SubScanType
 		violation             bool
+		vulnerabilities 	 bool
 		expectedSeverityCount map[string]int
 	}{
 		{
 			name:                  "Sca Vulnerabilities",
 			scanType:              utils.ScaScan,
-			violation:             false,
+			vulnerabilities:             true,
 			expectedSeverityCount: map[string]int{"High": 1, "Low": 1},
 		},
 		{
@@ -247,9 +248,16 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 			expectedSeverityCount: map[string]int{"Critical": 1, "Medium": 1},
 		},
 		{
+			name: "Sca Vulnerabilities and Violations",
+			scanType:              utils.ScaScan,
+			vulnerabilities:             true,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"High": 1, "Low": 1, "Critical": 1, "Medium": 1},
+		},
+		{
 			name:                  "Iac Vulnerabilities",
 			scanType:              utils.IacScan,
-			violation:             false,
+			vulnerabilities:             true,
 			expectedSeverityCount: map[string]int{"Low": 1},
 		},
 		{
@@ -259,9 +267,16 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 			expectedSeverityCount: map[string]int{},
 		},
 		{
+			name: "Iac Vulnerabilities and Violations",
+			scanType:              utils.IacScan,
+			vulnerabilities:             true,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"Low": 1},
+		},
+		{
 			name:                  "Secrets Vulnerabilities",
 			scanType:              utils.SecretsScan,
-			violation:             false,
+			vulnerabilities:             true,
 			expectedSeverityCount: map[string]int{"High": 1},
 		},
 		{
@@ -271,9 +286,16 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 			expectedSeverityCount: map[string]int{"High": 1},
 		},
 		{
+			name: "Secrets Vulnerabilities and Violations",
+			scanType:              utils.SecretsScan,
+			vulnerabilities:             true,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"High": 2},
+		},
+		{
 			name:                  "Sast Vulnerabilities",
 			scanType:              utils.SastScan,
-			violation:             false,
+			vulnerabilities:             true,
 			expectedSeverityCount: map[string]int{"High": 1, "Unknown": 1},
 		},
 		{
@@ -282,11 +304,18 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 			violation:             true,
 			expectedSeverityCount: map[string]int{},
 		},
+		{
+			name: "Sast Vulnerabilities and Violations",
+			scanType:              utils.SastScan,
+			vulnerabilities:             true,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"High": 1, "Unknown": 1},
+		},
 	}
 	issuesCollection := getTestData()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			severityCount := issuesCollection.GetScanIssuesSeverityCount(tc.scanType, tc.violation)
+			severityCount := issuesCollection.GetScanIssuesSeverityCount(tc.scanType, tc.vulnerabilities, tc.violation)
 			assert.Len(t, severityCount, len(tc.expectedSeverityCount))
 			for severity, count := range tc.expectedSeverityCount {
 				actualCount, ok := severityCount[severityutils.GetSeverity(severity)]

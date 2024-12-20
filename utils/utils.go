@@ -51,14 +51,15 @@ const (
 )
 
 // ViolationContext is a type for violation context (None,Project,GitRepo)
-const (
-	None           ViolationContext = "" // No violation context
-	WatchContext   ViolationContext = "watch"
-	ProjectContext ViolationContext = "project"
-	GitRepoContext ViolationContext = "git"
-)
+// const (
+// 	None           ViolationContext = "" // No violation context
+// 	WatchContext   ViolationContext = "watch"
+// 	ProjectContext ViolationContext = "project"
+// 	GitRepoContext ViolationContext = "git"
+// )
 
-type ViolationContext string
+// type ViolationContext string
+
 
 var (
 	TrueVal                 = true
@@ -233,8 +234,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient, includeVulnerabilities, hasViolationContext bool) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), includeVulnerabilities, hasViolationContext, repo.AllowedLicenses)
+func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -246,11 +247,10 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots, includeVulnerabilities, hasViolationContext bool, allowedLicenses []string) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IncludeVulnerabilities: includeVulnerabilities,
-		HasViolationContext:    hasViolationContext,
-		IsMultipleRoots:        &isMultipleRoots,
+		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
+		HasViolationContext:    extendedResults.HasViolationContext(),
 		AllowedLicenses:        allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)

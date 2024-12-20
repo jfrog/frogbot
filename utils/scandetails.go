@@ -3,7 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
-	"os"
+	// "os"
 	"path/filepath"
 	"time"
 
@@ -11,12 +11,12 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	// "github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
-	"github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
+	// "github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
@@ -25,7 +25,8 @@ import (
 type ScanDetails struct {
 	*Project
 	*Git
-	*services.XrayGraphScanParams
+	
+	// *services.XrayGraphScanParams
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
 	client                   vcsclient.VcsClient
@@ -37,6 +38,11 @@ type ScanDetails struct {
 	baseBranch               string
 	configProfile            *clientservices.ConfigProfile
 	allowPartialResults      bool
+
+	results.ResultContext
+	MultiScanId string
+	XrayVersion string
+	XscVersion string
 	StartTime                time.Time
 }
 
@@ -59,10 +65,15 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetXrayGraphScanParams(httpCloneUrl string, watches []string, jfrogProjectKey string, includeLicenses bool) *ScanDetails {
-	sc.XrayGraphScanParams = createXrayScanParams(httpCloneUrl, watches, jfrogProjectKey, includeLicenses)
+func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
+	sc.ResultContext = audit.CreateResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses)
 	return sc
 }
+
+// func (sc *ScanDetails) SetXrayGraphScanParams(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
+// 	sc.XrayGraphScanParams = createXrayScanParams(httpCloneUrl, watches, jfrogProjectKey, includeVulnerabilities, includeLicenses)
+// 	return sc
+// }
 
 func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	sc.fixableOnly = fixable
@@ -139,55 +150,15 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-func (sc *ScanDetails) CreateCommonGraphScanParams() *scangraph.CommonGraphScanParams {
-	commonParams := &scangraph.CommonGraphScanParams{
-		RepoPath:             sc.RepoPath,
-		Watches:              sc.Watches,
-		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
-		ScanType:             sc.ScanType,
-	}
-	if sc.ProjectKey == "" {
-		commonParams.ProjectKey = os.Getenv(coreutils.Project)
-	} else {
-		commonParams.ProjectKey = sc.ProjectKey
-	}
-	commonParams.IncludeVulnerabilities = sc.IncludeVulnerabilities
-	commonParams.IncludeLicenses = sc.IncludeLicenses
-	return commonParams
-}
-
-func (sc *ScanDetails) HasViolationContext() bool {
-	// TODO: infer this info from the results of the scan and delete this method.
-	return sc.ProjectKey != "" || sc.Git.RepositoryCloneUrl != "" || len(sc.Watches) > 0 || sc.RepoPath != ""
-}
-
-func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeLicenses bool) (params *services.XrayGraphScanParams) {
-	params = &services.XrayGraphScanParams{
-		ScanType:        services.Dependency,
+func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeVulnerabilities, includeLicenses bool) (params *services.XrayGraphScanParams) {
+	return &services.XrayGraphScanParams{
+		Watches: 	   watches,
+		ProjectKey:   project,
+		GitRepoHttpsCloneUrl: httpCloneUrl,
+		IncludeVulnerabilities: includeVulnerabilities,
 		IncludeLicenses: includeLicenses,
+		ScanType:        services.Dependency,
 	}
-	defer func() {
-		log.Debug(fmt.Sprintf("Passing XrayGraphScanParams: %+v", params))
-	}()
-	if len(httpCloneUrl) > 0 {
-		// We always pass the clone URL to the platform, with other parameters combined.
-		// the logic to decide whether to use it or not is in the audit command.
-		params.GitRepoHttpsCloneUrl = httpCloneUrl
-	}
-	if len(watches) > 0 {
-		params.Watches = watches
-		return
-	}
-	if project != "" {
-		params.ProjectKey = project
-		return
-	}
-	// TODO: --vuln flag, should be able to get both vulnerabilities and violations.
-	// since if watch is defined on git-repo resource there is no way to get vulnerabilities.
-	if len(httpCloneUrl) == 0 {
-		params.IncludeVulnerabilities = true
-	}
-	return
 }
 
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
@@ -213,7 +184,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
-		SetCommonGraphScanParams(sc.CreateCommonGraphScanParams()).
+		SetResultsContext(sc.ResultContext).
 		SetConfigProfile(sc.configProfile).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)

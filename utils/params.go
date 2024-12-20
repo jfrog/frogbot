@@ -276,8 +276,8 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 type JFrogPlatform struct {
 	XrayVersion      string
 	XscVersion       string
-	ViolationContext ViolationContext `yaml:"violationContext,omitempty"`
 	Watches          []string         `yaml:"watches,omitempty"`
+	IncludeVulnerabilities bool           `yaml:"includeVulnerabilities,omitempty"`
 	JFrogProjectKey  string           `yaml:"jfrogProjectKey,omitempty"`
 }
 
@@ -295,19 +295,10 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
 	}
-	if jp.ViolationContext == None {
-		jp.ViolationContext = ViolationContext(getTrimmedEnv(ViolationContextEnv))
-	}
-	// Validate or set Default base on other params
-	if jp.ViolationContext == None {
-		if len(jp.Watches) > 0 {
-			jp.ViolationContext = WatchContext
-		} else if jp.JFrogProjectKey != "" {
-			jp.ViolationContext = ProjectContext
+	if !jp.IncludeVulnerabilities {
+		if jp.IncludeVulnerabilities, err = getBoolEnv(IncludeVulnerabilitiesEnv, false); err != nil {
+			return
 		}
-	}
-	if jp.ViolationContext == None {
-		jp.ViolationContext = GitRepoContext
 	}
 	return
 }
@@ -324,6 +315,7 @@ type Git struct {
 	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
 	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
+	PullRequestDisableErrorComment   bool     `yaml:"pullRequestDisableErrorComment,omitempty"`
 	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`

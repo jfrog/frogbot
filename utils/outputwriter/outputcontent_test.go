@@ -1,15 +1,16 @@
 package outputwriter
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
+	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -233,7 +234,7 @@ func TestScanSummaryContent(t *testing.T) {
 
 	testCases := []struct {
 		name             string
-		violationContext string
+		context 		results.ResultContext
 		includeSecrets   bool
 		scanStatus       formats.ScanStatus
 		issues           issues.ScansIssuesCollection
@@ -257,9 +258,10 @@ func TestScanSummaryContent(t *testing.T) {
 			},
 		},
 		{
-			name:       "With vulnerabilities",
+			name:       "Vulnerabilities",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
+			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", IncludeVulnerabilities: true},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -274,9 +276,10 @@ func TestScanSummaryContent(t *testing.T) {
 			},
 		},
 		{
-			name:       "With violation context",
+			name:       "Violations",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
+			context: results.ResultContext{Watches: []string{"watch"}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -291,11 +294,30 @@ func TestScanSummaryContent(t *testing.T) {
 			},
 		},
 		{
+			name:       "Violations and Vulnerabilities",
+			issues:     testIssues,
+			scanStatus: testScanStatus,
+			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}, IncludeVulnerabilities: true},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_both_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_both_simplified.md")},
+				},
+			},
+		},
+		{
 			name:   "with errors",
 			issues: issues.ScansIssuesCollection{},
 			scanStatus: formats.ScanStatus{
 				IacStatusCode: utils.NewIntPtr(33),
 			},
+			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -316,47 +338,8 @@ func TestScanSummaryContent(t *testing.T) {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
 				tc.issues.ScanStatus = tc.scanStatus
-				output := ScanSummaryContent(tc.issues, tc.violationContext, tc.includeSecrets, test.writer)
+				output := ScanSummaryContent(tc.issues, tc.context, tc.includeSecrets, test.writer)
 				assert.Equal(t, expectedOutput, output)
-			})
-		}
-	}
-}
-
-func TestGetFrogbotErrorCommentContent(t *testing.T) {
-	testCases := []struct {
-		name   string
-		cases  []OutputTestCase
-		issues issues.ScansIssuesCollection
-	}{
-		{
-			name: "error details",
-			issues: issues.ScansIssuesCollection{
-				ScanStatus: formats.ScanStatus{
-					IacStatusCode: utils.NewIntPtr(33),
-				},
-			},
-			cases: []OutputTestCase{
-				{
-					name:               "Standard output",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "error_standard.md")},
-				},
-				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "error_simplified.md")},
-				},
-			},
-		},
-	}
-	for _, tc := range testCases {
-		for _, test := range tc.cases {
-			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				expectedOutput := GetExpectedTestOutput(t, test)
-				output := GetFrogbotErrorCommentContent([]string{ScanSummaryContent(tc.issues, "", false, test.writer)}, fmt.Errorf("Some error that occurred in scan"), test.writer)
-				assert.Len(t, output, 1)
-				assert.Equal(t, expectedOutput, output[0])
 			})
 		}
 	}

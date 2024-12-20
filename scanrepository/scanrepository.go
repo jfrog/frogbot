@@ -134,12 +134,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if err != nil {
 		return
 	}
-	gitRepoContextValue := ""
-	if repository.ViolationContext == utils.GitRepoContext {
-		// The violation context is the Git repository, inject the Git repository context to the scan details
-		gitRepoContextValue = repositoryInfo.CloneInfo.HTTP
-	}
-	cfp.scanDetails.SetXrayGraphScanParams(gitRepoContextValue, repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0)
+	cfp.scanDetails.SetResultsContext(repositoryInfo.CloneInfo.HTTP, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0)
 	cfp.scanDetails.XrayVersion = cfp.XrayVersion
 	cfp.scanDetails.XscVersion = cfp.XscVersion
 
@@ -181,7 +176,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			}
 			continue
 		}
-		if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: cfp.scanDetails.IncludeVulnerabilities, HasViolationContext: cfp.scanDetails.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
+		if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
 			return totalFindings, err
 		} else {
 			findingCount := summary.GetTotalViolations()
@@ -195,7 +190,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only and JFrog Advance Security package
 			// Only if Jas entitlement is available
-			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client(), cfp.scanDetails.IncludeVulnerabilities, cfp.scanDetails.HasViolationContext()); err != nil {
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -237,7 +232,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 }
 
 func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, cfp.scanDetails.IncludeVulnerabilities, cfp.scanDetails.HasViolationContext())
+	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
 	if err != nil {
 		return nil, err
 	}
@@ -569,9 +564,9 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (te
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults, includeVulnerabilities, hasViolationContext bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: includeVulnerabilities, HasViolationContext: hasViolationContext}).ConvertToSimpleJson(scanResults)
+	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSimpleJson(scanResults)
 	if err != nil {
 		return nil, err
 	}

@@ -157,71 +157,86 @@ func footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
-func GetFrogbotErrorCommentContent(contentForComments []string, err error, writer OutputWriter) (comments []string) {
-	// First decorate with error suffix, then wrap content with the base decorator
-	return ConvertContentToComments(contentForComments, writer, getFrogbotErrorSuffixDecorator(writer, err), GetFrogbotCommentBaseDecorator(writer))
-}
+// func GetFrogbotErrorCommentContent(contentForComments []string, err error, writer OutputWriter) (comments []string) {
+// 	// First decorate with error suffix, then wrap content with the base decorator
+// 	return ConvertContentToComments(contentForComments, writer, getFrogbotErrorSuffixDecorator(writer, err), GetFrogbotCommentBaseDecorator(writer))
+// }
 
 // Adding markdown suffix to show the error details and next steps
-func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecorator {
-	return func(_ int, content string) string {
-		var comment strings.Builder
-		WriteNewLine(&comment)
-		// Error
-		WriteContent(&comment, writer.MarkAsTitle("Error:", 4), err.Error())
-		WriteNewLine(&comment)
-		// Action steps
-		WriteContent(&comment,
-			writer.MarkAsTitle("Next Steps:", 4),
-			"1. Please try to rerun the scan.",
-			fmt.Sprintf("2. If the issue persists, consider checking the %s for troubleshooting tips.", MarkAsLink("Frogbot documentation", FrogbotDocumentationUrl)),
-			fmt.Sprintf("3. If you still need assistance, feel free to reach out to %s.", MarkAsLink("JFrog Support", JfrogSupportUrl)),
-		)
-		WriteNewLine(&comment)
-		WriteContent(&comment, "Thank you for your understanding!")
-		return content + "\n" + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
-	}
-}
+// func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecorator {
+// 	return func(_ int, content string) string {
+// 		var comment strings.Builder
+// 		WriteNewLine(&comment)
+// 		// Error
+// 		WriteContent(&comment, writer.MarkAsTitle("Error:", 4), err.Error())
+// 		WriteNewLine(&comment)
+// 		// Action steps
+// 		WriteContent(&comment,
+// 			writer.MarkAsTitle("Next Steps:", 4),
+// 			"1. Please try to rerun the scan.",
+// 			fmt.Sprintf("2. If the issue persists, consider checking the %s for troubleshooting tips.", MarkAsLink("Frogbot documentation", FrogbotDocumentationUrl)),
+// 			fmt.Sprintf("3. If you still need assistance, feel free to reach out to %s.", MarkAsLink("JFrog Support", JfrogSupportUrl)),
+// 		)
+// 		WriteNewLine(&comment)
+// 		WriteContent(&comment, "Thank you for your understanding!")
+// 		return content + "\n" + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
+// 	}
+// }
 
 // Summary content
 
-func ScanSummaryContent(issues issues.ScansIssuesCollection, violationContext string, includeSecrets bool, writer OutputWriter) string {
+func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.ResultContext, includeSecrets bool, writer OutputWriter) string {
 	if !issues.IssuesExists(includeSecrets) && !issues.HasErrors() {
 		return ""
 	}
 	var contentBuilder strings.Builder
-	totalIssues := issues.GetTotalVulnerabilities(includeSecrets)
-	violations := false
-	if violationContext != "" && violationContext != NoViolations {
-		totalIssues = issues.GetTotalViolations(includeSecrets)
-		violations = true
+	totalIssues := 0
+	if issues.HasViolationContext() {
+		totalIssues += issues.GetTotalViolations(includeSecrets)
+	}
+	if issues.IncludeVulnerabilities {
+		totalIssues += issues.GetTotalVulnerabilities(includeSecrets)
 	}
 	// Title
 	WriteContent(&contentBuilder, writer.MarkAsTitle(scanSummaryTitle, 2))
 	if issues.HasErrors() {
-		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot attempted to scan for %s but encountered an error.", violationContext)))
+		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot attempted to scan for %s but encountered an error.", getResultsContextString(context))))
 		return contentBuilder.String()
 	} else {
-		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", violationContext, totalIssues)))
+		WriteContent(&contentBuilder, MarkAsBullet(fmt.Sprintf("Frogbot scanned for %s and found %d issues", getResultsContextString(context), totalIssues)))
 	}
 	WriteNewLine(&contentBuilder)
 	// Create table, a row for each sub scans summary
 	secretsDetails := ""
 	if includeSecrets {
-		secretsDetails = getScanSecurityIssuesDetails(issues, utils.SecretsScan, violations, writer)
+		secretsDetails = getScanSecurityIssuesDetails(issues, context, utils.SecretsScan, writer)
 	}
 	table := NewMarkdownTableWithColumns(
 		NewMarkdownTableSingleValueColumn("Scan Category", "⚠️", false),
 		NewMarkdownTableSingleValueColumn("Status", "⚠️", true),
 		NewMarkdownTableSingleValueColumn("Security Issues", "-", false),
 	)
-	table.AddRow(MarkAsBold("Software Composition Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, utils.ScaScan, violations, writer))
+	table.AddRow(MarkAsBold("Software Composition Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ScaScan)), getScanSecurityIssuesDetails(issues, context, utils.ScaScan, writer))
 	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
-	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.SastScan)), getScanSecurityIssuesDetails(issues, utils.SastScan, violations, writer))
+	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.SastScan)), getScanSecurityIssuesDetails(issues, context, utils.SastScan, writer))
 	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), secretsDetails)
-	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, utils.IacScan, violations, writer))
+	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, context, utils.IacScan, writer))
 	WriteContent(&contentBuilder, table.Build())
 	return contentBuilder.String()
+}
+
+func getResultsContextString(context results.ResultContext) string {
+	out := ""
+	if context.HasViolationContext() {
+		out += "violations"
+	}
+	if context.IncludeVulnerabilities {
+		if out != "" {
+			out += " and "
+		}
+		out += "vulnerabilities"
+	}
+	return out
 }
 
 func getSubScanResultStatus(scanStatusCode *int) string {
@@ -234,21 +249,23 @@ func getSubScanResultStatus(scanStatusCode *int) string {
 	return "❌ Failed"
 }
 
-func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, scanType utils.SubScanType, violation bool, writer OutputWriter) string {
+func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, context results.ResultContext, scanType utils.SubScanType, writer OutputWriter) string {
 	if issues.HasErrors() || issues.IsScanNotCompleted(scanType) {
 		// Failed/Not scanned, no need to show the details
 		return ""
 	}
 	var severityCountMap map[severityutils.Severity]int
+	countViolations := context.HasViolationContext()
+	countVulnerabilities := context.IncludeVulnerabilities
 	switch scanType {
 	case utils.ScaScan:
-		severityCountMap = issues.GetScanIssuesSeverityCount(utils.ScaScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.ScaScan, countVulnerabilities, countViolations)
 	case utils.SastScan:
-		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SastScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SastScan, countVulnerabilities, countViolations)
 	case utils.SecretsScan:
-		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SecretsScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SecretsScan, countVulnerabilities, countViolations)
 	case utils.IacScan:
-		severityCountMap = issues.GetScanIssuesSeverityCount(utils.IacScan, violation)
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.IacScan, countVulnerabilities, countViolations)
 	}
 	totalIssues := getTotalIssues(severityCountMap)
 	if totalIssues == 0 {
@@ -553,10 +570,10 @@ func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCod
 	// Construct table
 	table := NewMarkdownTable("Severity", "ID", "Status", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
 	// Hide optional columns if all empty (violations/no status)
-	table.GetColumnInfo("ID").HideIfAllEmpty = true
-	table.GetColumnInfo("Status").HideIfAllEmpty = true
-	table.GetColumnInfo("Watch Name").HideIfAllEmpty = true
-	table.GetColumnInfo("Policies").HideIfAllEmpty = true
+	table.GetColumnInfo("ID").OmitEmpty = true
+	table.GetColumnInfo("Status").OmitEmpty = true
+	table.GetColumnInfo("Watch Name").OmitEmpty = true
+	table.GetColumnInfo("Policies").OmitEmpty = true
 	// Construct rows
 	for _, issue := range issues {
 		// Determine the issue applicable status
@@ -729,9 +746,9 @@ func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCo
 	// Construct table
 	table := NewMarkdownTable("Severity", "ID", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
 	// Hide optional columns if all empty (not violations)
-	table.GetColumnInfo("ID").HideIfAllEmpty = true
-	table.GetColumnInfo("Watch Name").HideIfAllEmpty = true
-	table.GetColumnInfo("Policies").HideIfAllEmpty = true
+	table.GetColumnInfo("ID").OmitEmpty = true
+	table.GetColumnInfo("Watch Name").OmitEmpty = true
+	table.GetColumnInfo("Policies").OmitEmpty = true
 	// Construct rows
 	for _, issue := range issues {
 		table.AddRowWithCellData(

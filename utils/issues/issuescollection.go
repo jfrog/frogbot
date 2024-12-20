@@ -11,6 +11,7 @@ import (
 // Group issues by scan type
 type ScansIssuesCollection struct {
 	formats.ScanStatus
+	results.ResultContext
 
 	LicensesViolations []formats.LicenseViolationRow
 
@@ -33,6 +34,8 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	if issues == nil {
 		return
 	}
+	// Result context should be the same for all collections
+	ic.ResultContext = issues.ResultContext
 	// Status
 	ic.AppendStatus(issues.ScanStatus)
 	// Sca
@@ -128,10 +131,10 @@ func (ic *ScansIssuesCollection) HasErrors() bool {
 	return false
 }
 
-func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubScanType, violation bool) map[severityutils.Severity]int {
+func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubScanType, vulnerabilities, violation bool) map[severityutils.Severity]int {
 	scanDetails := map[severityutils.Severity]int{}
 	if scanType == utils.ScaScan {
-		// Count Sca issues
+		// Count Sca issues only if requested
 		if violation {
 			for _, violation := range ic.ScaViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
@@ -139,39 +142,47 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 			for _, violation := range ic.LicensesViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
 			}
-		} else {
+		} 
+		if vulnerabilities {
 			for _, vulnerability := range ic.ScaVulnerabilities {
 				scanDetails[severityutils.GetSeverity(vulnerability.Severity)]++
 			}
 		}
 		return scanDetails
 	}
-	jasIssues := []formats.SourceCodeRow{}
+	jasVulnerabilities := []formats.SourceCodeRow{}
+	jasViolations := []formats.SourceCodeRow{}
 	switch scanType {
 	case utils.IacScan:
-		// Count Iac issues
+		// Count Iac issues only if requested
 		if violation {
-			jasIssues = ic.IacViolations
-		} else {
-			jasIssues = ic.IacVulnerabilities
+			jasViolations = ic.IacViolations
+		} 
+		if vulnerabilities {
+			jasVulnerabilities = ic.IacVulnerabilities
 		}
 	case utils.SecretsScan:
-		// Count Secrets issues
+		// Count Secrets issues only if requested
 		if violation {
-			jasIssues = ic.SecretsViolations
-		} else {
-			jasIssues = ic.SecretsVulnerabilities
+			jasViolations = ic.SecretsViolations
+		} 
+		if vulnerabilities {
+			jasVulnerabilities = ic.SecretsVulnerabilities
 		}
 	case utils.SastScan:
-		// Count Sast issues
+		// Count Sast issues only if requested
 		if violation {
-			jasIssues = ic.SastViolations
-		} else {
-			jasIssues = ic.SastVulnerabilities
+			jasViolations = ic.SastViolations
+		} 
+		if vulnerabilities {
+			jasVulnerabilities = ic.SastVulnerabilities
 		}
 	}
 	// Count the issues
-	for _, issue := range jasIssues {
+	for _, issue := range jasVulnerabilities {
+		scanDetails[severityutils.GetSeverity(issue.Severity)]++
+	}
+	for _, issue := range jasViolations {
 		scanDetails[severityutils.GetSeverity(issue.Severity)]++
 	}
 	return scanDetails

@@ -57,7 +57,9 @@ const (
 	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
 	jfrogWatchesEnv                    = "JF_WATCHES"
 	jfrogProjectEnv                    = "JF_PROJECT"
-	ViolationContextEnv                = "JF_VIOLATION_CONTEXT"
+	// To include vulnerabilities and violations
+	IncludeVulnerabilitiesEnv                = "JF_INCLUDE_VULNERABILITIES"
+	// To include all the vulnerabilities in the source branch at PR scan
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"

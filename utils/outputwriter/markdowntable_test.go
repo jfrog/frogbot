@@ -145,10 +145,10 @@ func TestMarkdownTableBuild(t *testing.T) {
 
 func TestHideEmptyColumnsInTable(t *testing.T) {
 	columns := []*MarkdownColumn{
-		{Name: "col1", HideIfAllEmpty: true},
-		{Name: "col2", HideIfAllEmpty: true, Centered: true},
-		{Name: "col3", HideIfAllEmpty: false, DefaultValue: "-"},
-		{Name: "col4", HideIfAllEmpty: true},
+		{Name: "col1", OmitEmpty: true},
+		{Name: "col2", OmitEmpty: true, Centered: true},
+		{Name: "col3", OmitEmpty: false, DefaultValue: "-"},
+		{Name: "col4", OmitEmpty: true},
 	}
 	testCases := []struct {
 		name           string

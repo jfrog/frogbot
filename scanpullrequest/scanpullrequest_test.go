@@ -588,7 +588,7 @@ func TestGetAllIssues(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := getAllIssues(auditResults, allowedLicenses, true, false)
+	issuesRows, err := getAllIssues(auditResults, allowedLicenses)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)

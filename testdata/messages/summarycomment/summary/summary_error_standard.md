@@ -1,3 +1,3 @@
 
 ## 📗 Scan Summary
-- Frogbot attempted to scan for  but encountered an error.
+- Frogbot attempted to scan for violations but encountered an error.

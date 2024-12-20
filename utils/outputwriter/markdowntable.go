@@ -36,11 +36,11 @@ type MarkdownTableBuilder struct {
 type MarkdownColumnType string
 
 type MarkdownColumn struct {
-	Name           string
-	Centered       bool
-	HideIfAllEmpty bool
-	ColumnType     MarkdownColumnType
-	DefaultValue   string
+	Name         string
+	Centered     bool
+	OmitEmpty    bool
+	ColumnType   MarkdownColumnType
+	DefaultValue string
 	// Internal flag to determine if the column should be hidden
 	shouldHideColumn bool
 }
@@ -144,7 +144,7 @@ func (t *MarkdownTableBuilder) Build() string {
 	// Calculate Hidden columns
 	for c := range t.columns {
 		// Reset shouldHideColumn flag
-		t.columns[c].shouldHideColumn = t.columns[c].HideIfAllEmpty
+		t.columns[c].shouldHideColumn = t.columns[c].OmitEmpty
 	}
 	for _, row := range t.rows {
 		for c, cell := range row {
