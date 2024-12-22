@@ -780,7 +780,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 				}
 			}
 
-			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
 
 			if !testcase.useProfile {
 				assert.Nil(t, configProfile)
@@ -794,6 +794,9 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 			require.NotNil(t, configProfile)
 			assert.NoError(t, err)
+			if testcase.profileWithRepo {
+				assert.NotEmpty(t, repoCloneUrl)
+			}
 			configProfileContentForComparison, err := os.ReadFile(configProfileFile)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, configProfileContentForComparison)

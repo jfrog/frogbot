@@ -448,12 +448,12 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configProfile, err := getConfigProfileIfExistsAndValid(xrayVersion, xscVersion, jfrogServer, client, gitParamsFromEnv)
+	configAggregator, err := getConfigAggregator(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
 
-	configAggregator, err := getConfigAggregator(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, xscVersion, jfrogServer, client, gitParamsFromEnv)
 	if err != nil {
 		return
 	}
@@ -462,6 +462,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	// TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
 	for i := range configAggregator {
 		configAggregator[i].Scan.ConfigProfile = configProfile
+		configAggregator[i].Git.RepositoryCloneUrl = repoCloneUrl
 	}
 
 	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
@@ -797,8 +798,9 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 // If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
 // When a profile is found we verify several conditions on it.
 // If a profile was requested but not found by url nor by name we return an error.
-func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, err error) {
-	if useConfigProfile, err := getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
+func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
+	var useConfigProfile bool
+	if useConfigProfile, err = getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
 		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
 		return
 	}
@@ -817,12 +819,13 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 	// Getting repository's url in order to get repository HTTP url
 	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
+	repoCloneUrl = repositoryInfo.CloneInfo.HTTP
 
 	// Attempt to get a config profile associated with the repo URL
 	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repositoryInfo.CloneInfo.HTTP); err != nil || configProfile == nil {
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
 		return
 	}
 	err = verifyConfigProfileValidity(configProfile)
