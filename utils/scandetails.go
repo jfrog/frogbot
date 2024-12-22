@@ -70,11 +70,6 @@ func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, 
 	return sc
 }
 
-// func (sc *ScanDetails) SetXrayGraphScanParams(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
-// 	sc.XrayGraphScanParams = createXrayScanParams(httpCloneUrl, watches, jfrogProjectKey, includeVulnerabilities, includeLicenses)
-// 	return sc
-// }
-
 func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
 	sc.fixableOnly = fixable
 	return sc

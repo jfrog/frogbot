@@ -234,9 +234,9 @@ func TestScanSummaryContent(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		context        results.ResultContext
 		includeSecrets bool
 		scanStatus     formats.ScanStatus
+		context        results.ResultContext
 		issues         issues.ScansIssuesCollection
 		cases          []OutputTestCase
 	}{
@@ -261,7 +261,7 @@ func TestScanSummaryContent(t *testing.T) {
 			name:       "Vulnerabilities",
 			issues:     testIssues,
 			scanStatus: testScanStatus,
-			context:    results.ResultContext{GitRepoHttpsCloneUrl: "url", IncludeVulnerabilities: true},
+			context:    results.ResultContext{IncludeVulnerabilities: true},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -338,6 +338,7 @@ func TestScanSummaryContent(t *testing.T) {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
 				tc.issues.ScanStatus = tc.scanStatus
+				tc.issues.ResultContext = tc.context
 				output := ScanSummaryContent(tc.issues, tc.context, tc.includeSecrets, test.writer)
 				assert.Equal(t, expectedOutput, output)
 			})
