@@ -1,19 +1,22 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
+	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/jfrog/jfrog-client-go/utils/tests"
-	"github.com/jfrog/jfrog-client-go/xsc/services"
-	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
-
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-client-go/utils/tests"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
@@ -696,43 +699,57 @@ func TestSetEmailDetails(t *testing.T) {
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
+		useProfile      bool
 		profileName     string
 		xrayVersion     string
 		failureExpected bool
+		profileWithRepo bool
 	}{
 		{
 			name:            "Deprecated Server - Valid ConfigProfile",
+			useProfile:      true,
 			profileName:     ValidConfigProfile,
 			xrayVersion:     "3.0.0",
 			failureExpected: false,
 		},
 		{
-			name:            "Deprecated Server - Invalid Path From Root ConfigProfile",
-			profileName:     InvalidPathConfigProfile,
-			xrayVersion:     "3.0.0",
-			failureExpected: true,
+			name:       "Profile usage is not required",
+			useProfile: false,
 		},
 		{
-			name:            "Deprecated Server - Invalid Modules ConfigProfile",
-			profileName:     InvalidModulesConfigProfile,
-			xrayVersion:     "3.0.0",
-			failureExpected: true,
-		},
-		{
-			name:            "Valid ConfigProfile",
+			name:            "Profile by name - Valid ConfigProfile",
+			useProfile:      true,
 			profileName:     ValidConfigProfile,
 			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: false,
 		},
 		{
-			name:            "Invalid Path From Root ConfigProfile",
+			name:            "Profile by name - Invalid Path From Root ConfigProfile",
+			useProfile:      true,
 			profileName:     InvalidPathConfigProfile,
 			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: true,
 		},
 		{
-			name:            "Invalid Modules ConfigProfile",
+			name:            "Profile by name - Invalid Modules ConfigProfile",
+			useProfile:      true,
 			profileName:     InvalidModulesConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			failureExpected: true,
+		},
+		{
+			// We are not creating test cases for Profile by URL verifications since they are the same verifications as Profile by name
+			name:            "Profile by URL - Valid ConfigProfile",
+			useProfile:      true,
+			profileName:     "",
+			xrayVersion:     services.ConfigProfileByUrlMinXrayVersion,
+			failureExpected: false,
+			profileWithRepo: true,
+		},
+		{
+			name:            "Profile by Name - Non existing profile name",
+			useProfile:      true,
+			profileName:     NonExistingProfile,
 			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: true,
 		},
@@ -740,25 +757,65 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			envCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
-			defer envCallbackFunc()
+			if testcase.useProfile {
+				useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
+				defer useProfileEnvCallBackFunc()
+			}
+
+			if testcase.profileName != "" {
+				profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
+				defer profileNameEnvCallbackFunc()
+			}
 
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
-			configProfile, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails)
+			var mockVcsClient *testdata.MockVcsClient
+			var mockGitParams *Git
+			if testcase.profileWithRepo {
+				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo")
+				mockGitParams = &Git{
+					RepoOwner: "myUser",
+					RepoName:  "my-repo",
+				}
+			}
+
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
+
+			if !testcase.useProfile {
+				assert.Nil(t, configProfile)
+				assert.Nil(t, err)
+				return
+			}
 			if testcase.failureExpected {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				var configProfileContentForComparison []byte
-				configProfileContentForComparison, err = os.ReadFile(configProfileFile)
-				assert.NoError(t, err)
-				var configProfileFromFile services.ConfigProfile
-				err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
-				assert.NoError(t, err)
-				assert.Equal(t, configProfileFromFile, *configProfile)
+				return
 			}
+
+			require.NotNil(t, configProfile)
+			assert.NoError(t, err)
+			if testcase.profileWithRepo {
+				assert.NotEmpty(t, repoCloneUrl)
+			}
+			configProfileContentForComparison, err := os.ReadFile(configProfileFile)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, configProfileContentForComparison)
+			var configProfileFromFile services.ConfigProfile
+			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
+			assert.NoError(t, err)
+			assert.Equal(t, configProfileFromFile, *configProfile)
 		})
 	}
+}
+
+func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
+	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
+	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
+		CloneInfo: vcsclient.CloneInfo{
+			HTTP: "https://github.com/myUser/my-repo.git",
+			SSH:  "git@github.com:myUser/my-repo.git",
+		},
+		RepositoryVisibility: 0,
+	}, nil)
+	return mockVcsClient
 }

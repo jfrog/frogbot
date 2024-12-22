@@ -139,7 +139,6 @@ jobs:
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        if: ${{ matrix.suite.name != 'Unit' }}
 
       - name: Run Tests
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}

@@ -126,6 +126,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
+		SetConfigProfile(repository.ConfigProfile).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
 		SetAllowPartialResults(repository.AllowPartialResults).
 		SetDisableJas(repository.DisableJas)
@@ -141,8 +142,17 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
 	}
+	if repository.Git.RepositoryCloneUrl != "" {
+		cfp.scanDetails.Git.RepositoryCloneUrl = repository.Git.RepositoryCloneUrl
+	} else {
+		var repositoryInfo vcsclient.RepositoryInfo
+		repositoryInfo, err = client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
+		if err != nil {
+			return
+		}
+		cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	}
 
-	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	// Set the outputwriter interface for the relevant vcs git provider

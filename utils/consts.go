@@ -24,14 +24,15 @@ const (
 	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
-	JFrogUserEnv           = "JF_USER"
-	JFrogUrlEnv            = "JF_URL"
-	jfrogXrayUrlEnv        = "JF_XRAY_URL"
-	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
-	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
-	JFrogPasswordEnv       = "JF_PASSWORD"
-	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE"
+	JFrogUserEnv             = "JF_USER"
+	JFrogUrlEnv              = "JF_URL"
+	jfrogXrayUrlEnv          = "JF_XRAY_URL"
+	jfrogArtifactoryUrlEnv   = "JF_ARTIFACTORY_URL"
+	jfrogReleasesRepoEnv     = "JF_RELEASES_REPO"
+	JFrogPasswordEnv         = "JF_PASSWORD"
+	JFrogTokenEnv            = "JF_ACCESS_TOKEN"
+	JfrogUseConfigProfileEnv = "JF_USE_CONFIG_PROFILE"
+	JfrogConfigProfileEnv    = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
 	GitProvider                      = "JF_GIT_PROVIDER"
