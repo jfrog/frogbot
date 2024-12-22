@@ -798,8 +798,7 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 // When a profile is found we verify several conditions on it.
 // If a profile was requested but not found by url nor by name we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, err error) {
-	useConfigProfile := strings.ToLower(getTrimmedEnv(JfrogUseConfigProfileEnv))
-	if useConfigProfile == "false" || useConfigProfile == "" {
+	if useConfigProfile, err := getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
 		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
 		return
 	}
