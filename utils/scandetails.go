@@ -180,6 +180,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetXscVersion(sc.XscVersion).
 		SetPipRequirementsFile(sc.PipRequirementsFile).
 		SetUseWrapper(*sc.UseWrapper).
+		SetMaxTreeDepth(sc.MaxPnpmTreeDepth).
 		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
