@@ -134,6 +134,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	repoConfig.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
+		SetJfrogVersions(repoConfig.XrayVersion, repoConfig.XscVersion).
 		SetResultsContext(repositoryInfo.CloneInfo.HTTP, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
@@ -144,8 +145,6 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
 	}
-	scanDetails.XrayVersion = repoConfig.XrayVersion
-	scanDetails.XscVersion = repoConfig.XscVersion
 
 	scanDetails.MultiScanId, scanDetails.StartTime = xsc.SendNewScanEvent(
 		scanDetails.XrayVersion,

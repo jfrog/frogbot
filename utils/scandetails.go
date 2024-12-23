@@ -50,6 +50,12 @@ func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, gi
 	return &ScanDetails{client: client, ServerDetails: server, Git: git}
 }
 
+func (sc *ScanDetails) SetJfrogVersions(xrayVersion, xscVersion string) *ScanDetails {
+	sc.XrayVersion = xrayVersion
+	sc.XscVersion = xscVersion
+	return sc
+}
+
 func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
 	sc.disableJas = disable
 	return sc
