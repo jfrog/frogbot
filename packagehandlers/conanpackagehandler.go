@@ -52,10 +52,10 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 	return
 }
 
-func (conan *ConanPackageHandler) updateConanFile(conanFile string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
-	data, err := os.ReadFile(conanFile)
+func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+	data, err := os.ReadFile(conanFilePath)
 	if err != nil {
-		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s\n", conanFile, err.Error())
+		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s\n", conanFilePath, err.Error())
 	}
 	currentFile := string(data)
 	fixedPackage := vulnDetails.ImpactedDependencyName + "/" + vulnDetails.SuggestedFixedVersion
@@ -63,11 +63,11 @@ func (conan *ConanPackageHandler) updateConanFile(conanFile string, vulnDetails 
 	fixedFile := strings.Replace(currentFile, impactedDependency, strings.ToLower(fixedPackage), 1)
 
 	if fixedFile == currentFile {
-		log.Info(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFile))
+		log.Debug(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFilePath))
 		return false, nil
 	}
-	if err = os.WriteFile(conanFile, []byte(fixedFile), 0600); err != nil {
-		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", conanFile, vulnDetails.ImpactedDependencyName, err.Error())
+	if err = os.WriteFile(conanFilePath, []byte(fixedFile), 0600); err != nil {
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", vulnDetails.ImpactedDependencyName, conanFilePath, err.Error())
 	}
 	isFileChanged = true
 	return
