@@ -113,7 +113,8 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	firstRepoParams := utils.Params{
 		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
-			FailOnSecurityIssues: &failOnSecurityIssues,
+			AddPrCommentOnSuccess: true,
+			FailOnSecurityIssues:  &failOnSecurityIssues,
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},

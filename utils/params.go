@@ -157,6 +157,7 @@ type Scan struct {
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	DisableJas                      bool      `yaml:"disableJas,omitempty"`
+	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
@@ -219,6 +220,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if !s.DisableJas {
 		if s.DisableJas, err = getBoolEnv(DisableJasEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.AddPrCommentOnSuccess {
+		if s.AddPrCommentOnSuccess, err = getBoolEnv(AddPrCommentOnSuccessEnv, true); err != nil {
 			return
 		}
 	}
