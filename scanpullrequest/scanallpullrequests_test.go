@@ -128,8 +128,9 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		Git:           gitParams.Git,
 		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
-			FailOnSecurityIssues: &failOnSecurityIssues,
-			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
+			AddPrCommentOnSuccess: true,
+			FailOnSecurityIssues:  &failOnSecurityIssues,
+			Projects:              []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
 	}
 
 	configAggregator := utils.RepoAggregator{
