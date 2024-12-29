@@ -61,6 +61,7 @@ const (
 	jfrogProjectEnv                    = "JF_PROJECT"
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
+	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"
 	UseWrapperEnv                      = "JF_USE_WRAPPER"
 	DepsRepoEnv                        = "JF_DEPS_REPO"

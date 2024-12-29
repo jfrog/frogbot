@@ -401,6 +401,7 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.DisableJas)
+	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
