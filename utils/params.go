@@ -89,6 +89,7 @@ type Project struct {
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
 	PathExclusions      []string `yaml:"pathExclusions,omitempty"`
 	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
+	MaxPnpmTreeDepth    string   `yaml:"maxPnpmTreeDepth,omitempty"`
 	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
@@ -131,6 +132,10 @@ func (p *Project) setDefaultsIfNeeded() error {
 	if p.DepsRepo == "" {
 		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
 	}
+	if p.MaxPnpmTreeDepth == "" {
+		p.MaxPnpmTreeDepth = getTrimmedEnv(MaxPnpmTreeDepthEnv)
+	}
+
 	return nil
 }
 
