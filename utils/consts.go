@@ -53,6 +53,7 @@ const (
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
+	MaxPnpmTreeDepthEnv                = "JF_PNPM_MAX_TREE_DEPTH"
 	RequirementsFileEnv                = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv                = "JF_WORKING_DIR"
 	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
