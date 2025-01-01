@@ -24,14 +24,6 @@ const (
 	issuesDetailsSubTitle        = "🔖 Details"
 	jfrogResearchDetailsSubTitle = "🔬 JFrog Research Details"
 
-	jobErrorTitle = "⚠️ Error Details"
-
-	// Violation Contexts text
-	NoViolations      = "Vulnerabilities"
-	WatchViolations   = "watch violations"
-	ProjectViolations = "project violations"
-	GitRepoViolations = "Git repository violations"
-
 	policyViolationTitle   = "🚥 Policy Violations"
 	securityViolationTitle = "🚨 Security Violations"
 	licenseViolationTitle  = "⚖️ License Violations"

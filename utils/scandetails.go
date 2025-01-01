@@ -151,17 +151,6 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-func createXrayScanParams(httpCloneUrl string, watches []string, project string, includeVulnerabilities, includeLicenses bool) (params *services.XrayGraphScanParams) {
-	return &services.XrayGraphScanParams{
-		Watches:                watches,
-		ProjectKey:             project,
-		GitRepoHttpsCloneUrl:   httpCloneUrl,
-		IncludeVulnerabilities: includeVulnerabilities,
-		IncludeLicenses:        includeLicenses,
-		ScanType:               services.Dependency,
-	}
-}
-
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&utils.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
