@@ -53,6 +53,7 @@ const (
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
+	MaxPnpmTreeDepthEnv = "JF_PNPM_MAX_TREE_DEPTH"
 	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
 	WorkingDirectoryEnv = "JF_WORKING_DIR"
 	PathExclusionsEnv   = "JF_PATH_EXCLUSIONS"
@@ -63,6 +64,7 @@ const (
 	// To include all the vulnerabilities in the source branch at PR scan
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
+	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"
 	UseWrapperEnv                      = "JF_USE_WRAPPER"
 	DepsRepoEnv                        = "JF_DEPS_REPO"
