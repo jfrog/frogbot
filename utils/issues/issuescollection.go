@@ -11,7 +11,6 @@ import (
 // Group issues by scan type
 type ScansIssuesCollection struct {
 	formats.ScanStatus
-	results.ResultContext
 
 	LicensesViolations []formats.LicenseViolationRow
 
@@ -34,8 +33,6 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	if issues == nil {
 		return
 	}
-	// Result context should be the same for all collections
-	ic.ResultContext = issues.ResultContext
 	// Status
 	ic.AppendStatus(issues.ScanStatus)
 	// Sca

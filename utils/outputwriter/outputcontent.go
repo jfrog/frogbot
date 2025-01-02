@@ -157,10 +157,10 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.Res
 	}
 	var contentBuilder strings.Builder
 	totalIssues := 0
-	if issues.HasViolationContext() {
+	if context.HasViolationContext() {
 		totalIssues += issues.GetTotalViolations(includeSecrets)
 	}
-	if issues.IncludeVulnerabilities {
+	if context.IncludeVulnerabilities {
 		totalIssues += issues.GetTotalVulnerabilities(includeSecrets)
 	}
 	// Title

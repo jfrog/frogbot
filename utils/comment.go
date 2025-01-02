@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -33,7 +34,7 @@ const (
 )
 
 // In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
-func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
+func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, resultContext results.ResultContext, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
 		// The removal of comments may fail for various reasons,
 		// such as concurrent scanning of pull requests and attempts
@@ -48,7 +49,7 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 
 	// Add summary (SCA, license) scan comment
 	if issues.IssuesExists(repo.PullRequestSecretComments) || repo.AddPrCommentOnSuccess {
-		for _, comment := range generatePullRequestSummaryComment(*issues, repo.PullRequestSecretComments, repo.OutputWriter) {
+		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.PullRequestSecretComments, repo.OutputWriter) {
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request comment: " + err.Error())
 				return
@@ -110,13 +111,13 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
-func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, includeSecrets bool, writer outputwriter.OutputWriter) []string {
+func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, resultContext results.ResultContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
 		// No Issues
 		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
 	// Summary
-	content := []string{outputwriter.ScanSummaryContent(issuesCollection, issuesCollection.ResultContext, includeSecrets, writer)}
+	content := []string{outputwriter.ScanSummaryContent(issuesCollection, resultContext, includeSecrets, writer)}
 	// Violations
 	if violationsContent := outputwriter.PolicyViolationsContent(issuesCollection, writer); len(violationsContent) > 0 {
 		content = append(content, violationsContent...)

@@ -93,7 +93,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	issues, err := auditPullRequest(repo, client)
+	issues, resultContext, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
 	}
@@ -108,7 +108,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Handle PR comments for scan output
-	if err = utils.HandlePullRequestCommentsAfterScan(issues, repo, client, int(pullRequestDetails.ID)); err != nil {
+	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
 
@@ -126,7 +126,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 }
 
 // Downloads Pull Requests branches code and audits them
-func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, err error) {
+func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
 	repositoryCloneUrl, err := repoConfig.GetRepositoryHttpsCloneUrl(client)
 	if err != nil {
 		return
@@ -169,6 +169,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		}
 		issuesCollection.Append(projectIssues)
 	}
+	resultContext = scanDetails.ResultContext
 	return
 }
 
@@ -304,7 +305,6 @@ func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []
 		return nil, err
 	}
 	return &issues.ScansIssuesCollection{
-		ResultContext:      cmdResults.ResultContext,
 		ScanStatus:         simpleJsonResults.Statuses,
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,
@@ -346,7 +346,7 @@ func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandRe
 		return
 	}
 	// ResultContext is general attribute similar for all results, taking it from the source results
-	newIssues = &issues.ScansIssuesCollection{ResultContext: sourceResults.ResultContext}
+	newIssues = &issues.ScansIssuesCollection{}
 	newIssues.ScanStatus = getScanStatus(simpleJsonTarget, simpleJsonSource)
 	// Get the unique sca vulnerabilities and violations between the source and target branches
 	newIssues.ScaVulnerabilities = getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities)

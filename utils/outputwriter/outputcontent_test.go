@@ -338,7 +338,6 @@ func TestScanSummaryContent(t *testing.T) {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
 				tc.issues.ScanStatus = tc.scanStatus
-				tc.issues.ResultContext = tc.context
 				output := ScanSummaryContent(tc.issues, tc.context, tc.includeSecrets, test.writer)
 				assert.Equal(t, expectedOutput, output)
 			})
