@@ -445,7 +445,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 
 func TestGetAllIssues(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
-	auditResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
+	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
 			XrayResults: validations.NewMockScaResults(services.ScanResponse{
@@ -497,7 +497,7 @@ func TestGetAllIssues(t *testing.T) {
 					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 21},
 					ImpactedDependencyName: "Dep-1",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			},
 			{
 				Applicable:    "Not Applicable",
@@ -506,7 +506,7 @@ func TestGetAllIssues(t *testing.T) {
 					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 2},
 					ImpactedDependencyName: "Dep-2",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable", ScannerDescription: "rule-msg"}}},
 			},
 		},
 		IacVulnerabilities: []formats.SourceCodeRow{
@@ -516,7 +516,8 @@ func TestGetAllIssues(t *testing.T) {
 					SeverityNumValue: 21,
 				},
 				ScannerInfo: formats.ScannerInfo{
-					RuleId: "rule",
+					ScannerDescription: "rule-msg",
+					RuleId:             "rule",
 				},
 				Finding: "Missing auto upgrade was detected",
 				Location: formats.Location{
@@ -536,7 +537,8 @@ func TestGetAllIssues(t *testing.T) {
 					SeverityNumValue: 21,
 				},
 				ScannerInfo: formats.ScannerInfo{
-					RuleId: "rule",
+					ScannerDescription: "rule-msg",
+					RuleId:             "rule",
 				},
 				Finding: "Secret",
 				Location: formats.Location{
@@ -556,7 +558,8 @@ func TestGetAllIssues(t *testing.T) {
 					SeverityNumValue: 21,
 				},
 				ScannerInfo: formats.ScannerInfo{
-					RuleId: "rule",
+					ScannerDescription: "rule-msg",
+					RuleId:             "rule",
 				},
 				Finding: "XSS Vulnerability",
 				Location: formats.Location{
