@@ -131,11 +131,11 @@ func (ic *ScansIssuesCollection) HasErrors() bool {
 	return false
 }
 
-func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubScanType, vulnerabilities, violation bool) map[severityutils.Severity]int {
+func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubScanType, vulnerabilities, isViolation bool) map[severityutils.Severity]int {
 	scanDetails := map[severityutils.Severity]int{}
 	if scanType == utils.ScaScan {
 		// Count Sca issues only if requested
-		if violation {
+		if isViolation {
 			for _, violation := range ic.ScaViolations {
 				scanDetails[severityutils.GetSeverity(violation.Severity)]++
 			}
@@ -155,7 +155,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 	switch scanType {
 	case utils.IacScan:
 		// Count Iac issues only if requested
-		if violation {
+		if isViolation {
 			jasViolations = ic.IacViolations
 		}
 		if vulnerabilities {
@@ -163,7 +163,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		}
 	case utils.SecretsScan:
 		// Count Secrets issues only if requested
-		if violation {
+		if isViolation {
 			jasViolations = ic.SecretsViolations
 		}
 		if vulnerabilities {
@@ -171,7 +171,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		}
 	case utils.SastScan:
 		// Count Sast issues only if requested
-		if violation {
+		if isViolation {
 			jasViolations = ic.SastViolations
 		}
 		if vulnerabilities {
@@ -208,13 +208,18 @@ func (ic *ScansIssuesCollection) SastIssuesExists() bool {
 	return len(ic.SastVulnerabilities) > 0 || len(ic.SastViolations) > 0
 }
 
-func (ic *ScansIssuesCollection) GetTotalIssues(includeSecrets bool) int {
+func (ic *ScansIssuesCollection) GetAllIssuesCount(includeSecrets bool) int {
 	return ic.GetTotalVulnerabilities(includeSecrets) + ic.GetTotalViolations(includeSecrets)
 }
 
 type ApplicableEvidences struct {
-	Evidence                                                                           formats.Evidence
-	Severity, ScannerDescription, IssueId, CveSummary, ImpactedDependency, Remediation string
+	Evidence           formats.Evidence
+	Severity           string
+	ScannerDescription string
+	IssueId            string
+	CveSummary         string
+	ImpactedDependency string
+	Remediation        string
 }
 
 func toApplicableEvidences(issue formats.VulnerabilityOrViolationRow, cve formats.CveRow, evidence formats.Evidence) ApplicableEvidences {

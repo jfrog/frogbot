@@ -53,7 +53,7 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 	testCases := []struct {
 		name          string
 		issues        []formats.SourceCodeRow
-		groupedIssues []similarIssues
+		groupedIssues []jasCommentIssues
 	}{
 		{
 			name: "No issues",
@@ -68,7 +68,7 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 					ScannerInfo:     formats.ScannerInfo{RuleId: "rule1"},
 				},
 			},
-			groupedIssues: []similarIssues{
+			groupedIssues: []jasCommentIssues{
 				{
 					formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"},
 					[]formats.SourceCodeRow{
@@ -98,7 +98,7 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 					ScannerInfo:     formats.ScannerInfo{RuleId: "rule2"},
 				},
 			},
-			groupedIssues: []similarIssues{
+			groupedIssues: []jasCommentIssues{
 				{
 					formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"},
 					[]formats.SourceCodeRow{
@@ -124,7 +124,7 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 			},
 		},
 		{
-			name: "Multiple issues - similar issues",
+			name: "Multiple issues - with similar issues",
 			issues: []formats.SourceCodeRow{
 				{
 					SeverityDetails: formats.SeverityDetails{Severity: "High"},
@@ -151,7 +151,7 @@ func TestGroupSimilarJasIssues(t *testing.T) {
 					ScannerInfo:     formats.ScannerInfo{RuleId: "rule1"},
 				},
 			},
-			groupedIssues: []similarIssues{
+			groupedIssues: []jasCommentIssues{
 				{
 					formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"},
 					[]formats.SourceCodeRow{

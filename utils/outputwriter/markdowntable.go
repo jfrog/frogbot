@@ -143,36 +143,38 @@ func (t *MarkdownTableBuilder) Build() string {
 	var tableBuilder strings.Builder
 	// Calculate Hidden columns
 	for c := range t.columns {
-		// Reset shouldHideColumn flag
+		// Reset shouldHideColumn flag to the defined value in the column
+		// If the column OmitEmpty flag is set, the column will be hidden if all the values in the column are empty
 		t.columns[c].shouldHideColumn = t.columns[c].OmitEmpty
 	}
 	for _, row := range t.rows {
 		for c, cell := range row {
 			// In table, empty cell = cell with no values = cell with one empty value
+			// So we want don't want to hide the column if at least one cell has a value in it
 			t.columns[c].shouldHideColumn = t.columns[c].shouldHideColumn && (len(cell) == 0 || (len(cell) == 1 && cell[0] == ""))
 		}
 	}
 	// Header
-	actualColumnCount := 0
+	isFirstCol := true
 	for _, column := range t.columns {
 		if column.shouldHideColumn {
 			continue
 		}
-		if actualColumnCount == 0 {
+		if isFirstCol {
 			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
 		} else {
 			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
 		}
-		actualColumnCount++
+		isFirstCol = false
 	}
 	tableBuilder.WriteString("\n")
 	// Separator
-	actualColumnCount = 0
+	isFirstCol = true
 	for _, column := range t.columns {
 		if column.shouldHideColumn {
 			continue
 		}
-		if actualColumnCount == 0 {
+		if isFirstCol {
 			columnSeparator := defaultFirstColumnSeparator
 			if column.Centered {
 				columnSeparator = centeredFirstColumnSeparator
@@ -185,7 +187,7 @@ func (t *MarkdownTableBuilder) Build() string {
 			}
 			tableBuilder.WriteString(columnSeparator)
 		}
-		actualColumnCount++
+		isFirstCol = false
 	}
 	// Content
 	for _, row := range t.rows {

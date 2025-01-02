@@ -50,16 +50,6 @@ const (
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
 )
 
-// ViolationContext is a type for violation context (None,Project,GitRepo)
-// const (
-// 	None           ViolationContext = "" // No violation context
-// 	WatchContext   ViolationContext = "watch"
-// 	ProjectContext ViolationContext = "project"
-// 	GitRepoContext ViolationContext = "git"
-// )
-
-// type ViolationContext string
-
 var (
 	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"

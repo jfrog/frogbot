@@ -149,32 +149,6 @@ func footer(writer OutputWriter) string {
 	return fmt.Sprintf("%s\n%s", SectionDivider(), writer.MarkInCenter(CommentGeneratedByFrogbot))
 }
 
-// func GetFrogbotErrorCommentContent(contentForComments []string, err error, writer OutputWriter) (comments []string) {
-// 	// First decorate with error suffix, then wrap content with the base decorator
-// 	return ConvertContentToComments(contentForComments, writer, getFrogbotErrorSuffixDecorator(writer, err), GetFrogbotCommentBaseDecorator(writer))
-// }
-
-// Adding markdown suffix to show the error details and next steps
-// func getFrogbotErrorSuffixDecorator(writer OutputWriter, err error) CommentDecorator {
-// 	return func(_ int, content string) string {
-// 		var comment strings.Builder
-// 		WriteNewLine(&comment)
-// 		// Error
-// 		WriteContent(&comment, writer.MarkAsTitle("Error:", 4), err.Error())
-// 		WriteNewLine(&comment)
-// 		// Action steps
-// 		WriteContent(&comment,
-// 			writer.MarkAsTitle("Next Steps:", 4),
-// 			"1. Please try to rerun the scan.",
-// 			fmt.Sprintf("2. If the issue persists, consider checking the %s for troubleshooting tips.", MarkAsLink("Frogbot documentation", FrogbotDocumentationUrl)),
-// 			fmt.Sprintf("3. If you still need assistance, feel free to reach out to %s.", MarkAsLink("JFrog Support", JfrogSupportUrl)),
-// 		)
-// 		WriteNewLine(&comment)
-// 		WriteContent(&comment, "Thank you for your understanding!")
-// 		return content + "\n" + writer.MarkAsDetails(jobErrorTitle, 3, comment.String())
-// 	}
-// }
-
 // Summary content
 
 func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.ResultContext, includeSecrets bool, writer OutputWriter) string {
@@ -409,15 +383,18 @@ func getLicenseViolationsDetailsContent(licenseViolations []formats.LicenseViola
 	}
 	for _, violation := range licenseViolations {
 		if len(licenseViolations) == 1 {
+			// No need for <details> tag if there is only one violation, just show the details
 			content = append(content, getScaLicenseViolationDetails(violation, writer))
 		} else {
+			// Add wrap the content of each violation in a <details> tag
 			content = append(content, "\n"+writer.MarkAsDetails(
-				getComponentIssueIdentifier(violation.LicenseKey, violation.ImpactedDependencyName, violation.ImpactedDependencyVersion, violation.Watch), 4,
+				getComponentIssueIdentifier(violation.LicenseKey, violation.ImpactedDependencyName, violation.ImpactedDependencyVersion, violation.Watch),
+				4,
 				getScaLicenseViolationDetails(violation, writer),
 			))
 		}
 	}
-	// Split content if it exceeds the size limit and decorate it with title
+	// Split content if it exceeds the size limit and decorate each comment with title as prefix
 	return ConvertContentToComments(content, writer, func(commentCount int, detailsContent string) string {
 		contentBuilder := strings.Builder{}
 		WriteContent(&contentBuilder, writer.MarkAsTitle(issuesDetailsSubTitle, 3))
@@ -632,15 +609,17 @@ func getScaSecurityIssueDetailsContent(issues []formats.VulnerabilityOrViolation
 	}
 	for _, issue := range issuesWithDetails {
 		if len(issues) == 1 {
+			// No need for <details> tag if there is only one issue, just show the details
 			content = append(content, getScaSecurityIssueDetails(issue, violations, writer))
 		} else {
+			// Add wrap the content of each issue in a <details> tag
 			content = append(content, "\n"+writer.MarkAsDetails(
 				getComponentIssueIdentifier(results.GetIssueIdentifier(issue.Cves, issue.IssueId, ", "), issue.ImpactedDependencyName, issue.ImpactedDependencyVersion, issue.Watch), 4,
 				getScaSecurityIssueDetails(issue, violations, writer),
 			))
 		}
 	}
-	// Split content if it exceeds the size limit and decorate it with title
+	// Split content if it exceeds the size limit and decorate it with title as prefix
 	return ConvertContentToComments(content, writer, func(commentCount int, detailsContent string) string {
 		contentBuilder := strings.Builder{}
 		WriteContent(&contentBuilder, writer.MarkAsTitle(issuesDetailsSubTitle, 3))
@@ -777,6 +756,7 @@ func getJasFullDescription(violations bool, writer OutputWriter, generateRuleTab
 		if len(rulesInfo) == 1 {
 			WriteContent(&contentBuilder,
 				writer.MarkAsDetails("Full description", 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer)),
+				// TODO: should remove this?
 				codeFlowsReviewContent(scannerCodeFlows, writer),
 			)
 			break

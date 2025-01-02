@@ -169,7 +169,7 @@ func TestCountIssuesCollectionFindings(t *testing.T) {
 	issuesCollection := getTestData()
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			findingsAmount := issuesCollection.GetTotalIssues(tc.includeSecrets)
+			findingsAmount := issuesCollection.GetAllIssuesCount(tc.includeSecrets)
 			assert.Equal(t, tc.expectedFindings, findingsAmount)
 		})
 	}

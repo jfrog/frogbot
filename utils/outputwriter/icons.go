@@ -10,7 +10,6 @@ type IconName string
 
 const (
 	baseResourceUrl = "https://raw.githubusercontent.com/jfrog/frogbot/master/resources/"
-	// baseResourceUrl = "https://raw.githubusercontent.com/attiasas/frogbot/jas_violations/resources/"
 
 	NoVulnerabilityPrBannerSource       ImageSource = "v2/noVulnerabilityBannerPR.png"
 	NoVulnerabilityMrBannerSource       ImageSource = "v2/noVulnerabilityBannerMR.png"

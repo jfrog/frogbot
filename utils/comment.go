@@ -32,21 +32,6 @@ const (
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
-// // In Scan PR, if there is an error, a comment will be added to the PR with the error message.
-// func HandlePullRequestErrorComment(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int, scanError error) (err error) {
-// 	if issues == nil {
-// 		log.Debug("Can't generate error comment without issues collection")
-// 		return
-// 	}
-// 	writer := repo.OutputWriter
-// 	for _, comment := range outputwriter.GetFrogbotErrorCommentContent([]string{outputwriter.ScanSummaryContent(*issues, getResultsContextText(repo.ViolationContext), repo.PullRequestSecretComments, writer)}, scanError, writer) {
-// 		if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
-// 			return errors.New("couldn't add pull request comment: " + err.Error())
-// 		}
-// 	}
-// 	return
-// }
-
 // In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
 	if !repo.Params.AvoidPreviousPrCommentsDeletion {
@@ -243,14 +228,16 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 	return
 }
 
-type similarIssues struct {
+type jasCommentIssues struct {
+	// The location of the issue that the comment will be added to.
 	formats.Location
+	// Similar issues at the same location that will be shown in the same comment.
 	issues []formats.SourceCodeRow
 }
 
-// For JAS violations we can have similar issues at the same location from different watches, we need to group similar issues to add them to the same comment.
-func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []similarIssues) {
-	idToIssues := make(map[string]similarIssues)
+// For JAS violations we can have similar issues at the same location, we need to group similar issues to add them to the same comment based on `getSourceCodeRowId`.
+func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []jasCommentIssues) {
+	idToIssues := make(map[string]jasCommentIssues)
 	for _, issue := range issues {
 		id := getSourceCodeRowId(issue)
 		if similarIssue, ok := idToIssues[id]; ok {
@@ -258,7 +245,7 @@ func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []simi
 			idToIssues[id] = similarIssue
 			continue
 		}
-		idToIssues[id] = similarIssues{
+		idToIssues[id] = jasCommentIssues{
 			Location: issue.Location,
 			issues:   []formats.SourceCodeRow{issue},
 		}
@@ -269,7 +256,7 @@ func groupSimilarJasIssues(issues []formats.SourceCodeRow) (groupedIssues []simi
 	return
 }
 
-// We show different comments for each location and rule ID. (we group similar issues/violations to the same comment)
+// Similar comment should have the same location and rule-id.
 func getSourceCodeRowId(issue formats.SourceCodeRow) string {
 	return issue.RuleId + issue.Location.ToString()
 }

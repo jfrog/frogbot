@@ -122,9 +122,14 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
+	repositoryCloneUrl, err := repository.Git.GetRepositoryHttpsCloneUrl(client)
+	if err != nil {
+		return
+	}
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
+		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
 		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetConfigProfile(repository.ConfigProfile).
@@ -132,24 +137,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetAllowPartialResults(repository.AllowPartialResults).
 		SetDisableJas(repository.DisableJas)
 
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
-	if err != nil {
-		return
-	}
-	cfp.scanDetails.SetResultsContext(repositoryInfo.CloneInfo.HTTP, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0)
-
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
 		return
-	}
-	if repository.Git.RepositoryCloneUrl != "" {
-		cfp.scanDetails.Git.RepositoryCloneUrl = repository.Git.RepositoryCloneUrl
-	} else {
-		var repositoryInfo vcsclient.RepositoryInfo
-		repositoryInfo, err = client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
-		if err != nil {
-			return
-		}
-		cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 	}
 
 	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
@@ -161,7 +150,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
-		SetRemoteGitUrl(cfp.scanDetails.Git.RepositoryCloneUrl)
+		SetRemoteGitUrl(repositoryCloneUrl)
 	if err != nil {
 		return
 	}

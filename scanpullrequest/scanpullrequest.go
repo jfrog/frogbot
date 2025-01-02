@@ -127,15 +127,14 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 
 // Downloads Pull Requests branches code and audits them
 func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
+	repositoryCloneUrl, err := repoConfig.GetRepositoryHttpsCloneUrl(client)
 	if err != nil {
 		return
 	}
-	repoConfig.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
 
 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetJfrogVersions(repoConfig.XrayVersion, repoConfig.XscVersion).
-		SetResultsContext(repositoryInfo.CloneInfo.HTTP, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
+		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
 		SetConfigProfile(repoConfig.ConfigProfile).
@@ -155,7 +154,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 
 	defer func() {
 		if issuesCollection != nil {
-			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetTotalIssues(true), err)
+			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), err)
 		}
 	}()
 
@@ -252,24 +251,19 @@ func prepareTargetForScan(gitDetails utils.Git, scanDetails *utils.ScanDetails) 
 		return
 	}
 	log.Debug("Using most common ancestor commit as target branch commit")
+
 	// Get common parent commit between source and target and use it (checkout) to the target branch commit
-	if e := tryCheckoutToMostCommonAncestor(scanDetails, gitDetails.PullRequestDetails.Source.Name, target.Name, targetBranchWd, gitDetails.RepositoryCloneUrl); e != nil {
+	repoCloneUrl, err := scanDetails.GetRepositoryHttpsCloneUrl(scanDetails.Client())
+	if err != nil {
+		return
+	}
+	if e := tryCheckoutToMostCommonAncestor(scanDetails, gitDetails.PullRequestDetails.Source.Name, target.Name, targetBranchWd, repoCloneUrl); e != nil {
 		log.Warn(fmt.Sprintf("Failed to get best common ancestor commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", gitDetails.PullRequestDetails.Source.Name, target.Name, e.Error()))
 	}
 	return
 }
 
 func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch, targetBranchWd, cloneRepoUrl string) (err error) {
-	if cloneRepoUrl != "" {
-		scanDetails.Git.RepositoryCloneUrl = cloneRepoUrl
-	} else {
-		var repositoryInfo vcsclient.RepositoryInfo
-		repositoryInfo, err = scanDetails.Client().GetRepositoryInfo(context.Background(), scanDetails.RepoOwner, scanDetails.RepoName)
-		if err != nil {
-			return
-		}
-		scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
-	}
 	// Change working directory to the temp target branch directory
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -282,7 +276,7 @@ func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 		err = errors.Join(err, os.Chdir(cwd))
 	}()
 	// Create a new git manager and fetch
-	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.Git.RepositoryCloneUrl)
+	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(cloneRepoUrl)
 	if err != nil {
 		return
 	}

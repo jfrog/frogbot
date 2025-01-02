@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	// "os"
 	"path/filepath"
 	"time"
 
@@ -11,14 +10,11 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	// "github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
-	// "github.com/jfrog/jfrog-cli-security/utils/xray/scangraph"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
@@ -26,7 +22,6 @@ type ScanDetails struct {
 	*Project
 	*Git
 
-	// *services.XrayGraphScanParams
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
 	client                   vcsclient.VcsClient

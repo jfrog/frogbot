@@ -317,22 +317,34 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	UseMostCommonAncestorAsTarget  bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
-	RepoOwner                      string
-	RepoName                       string   `yaml:"repoName,omitempty"`
-	Branches                       []string `yaml:"branches,omitempty"`
-	BranchNameTemplate             string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate          string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate       string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle        string   `yaml:"pullRequestCommentTitle,omitempty"`
-	PullRequestSecretComments      bool     `yaml:"pullRequestSecretComments,omitempty"`
-	PullRequestDisableErrorComment bool     `yaml:"pullRequestDisableErrorComment,omitempty"`
-	AvoidExtraMessages             bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor                    string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes                 bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails             vcsclient.PullRequestInfo
-	RepositoryCloneUrl             string
-	UseLocalRepository             bool
+	UseMostCommonAncestorAsTarget bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
+	RepoOwner                     string
+	RepoName                      string   `yaml:"repoName,omitempty"`
+	Branches                      []string `yaml:"branches,omitempty"`
+	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
+	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails            vcsclient.PullRequestInfo
+	RepositoryCloneUrl            string
+	UseLocalRepository            bool
+}
+
+func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
+	if g.RepositoryCloneUrl != "" {
+		return g.RepositoryCloneUrl, nil
+	}
+	// If the repository clone URL is not cached, we fetch it from the VCS provider
+	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), g.RepoOwner, g.RepoName)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch the repository clone URL. %s", err.Error())
+	}
+	g.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	return g.RepositoryCloneUrl, nil
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -821,7 +833,6 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
 		return
 	}
-
 	// Attempt to get the config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
@@ -832,14 +843,10 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		err = verifyConfigProfileValidity(configProfile)
 		return
 	}
-
 	// Getting repository's url in order to get repository HTTP url
-	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName)
-	if err != nil {
-		return nil, "", err
+	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
+		return
 	}
-	repoCloneUrl = repositoryInfo.CloneInfo.HTTP
-
 	// Attempt to get a config profile associated with the repo URL
 	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
 	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
