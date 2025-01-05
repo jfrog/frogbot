@@ -751,16 +751,6 @@ func getJasFullDescription(violations bool, writer OutputWriter, generateRuleTab
 			title = getJasDetailsIdentifier(info)
 		}
 		WriteContent(&contentBuilder, writer.MarkAsDetails(title, 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
-
-		// if len(rulesInfo) == 1 {
-		// 	WriteContent(&contentBuilder,
-		// 		writer.MarkAsDetails("Full description", 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer)),
-		// 		// TODO: should remove this?
-		// 		codeFlowsReviewContent(scannerCodeFlows, writer),
-		// 	)
-		// 	break
-		// }
-		// WriteContent(&contentBuilder, writer.MarkAsDetails(getJasDetailsIdentifier(info), 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
 	}
 	return contentBuilder.String()
 }
