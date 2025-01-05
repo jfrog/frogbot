@@ -19,7 +19,7 @@
 
 Scanner Description....
 
-<br></details>
+
 <details><summary><b>Code Flows</b></summary>
 <details><summary><b>Vulnerable data flow analysis result</b></summary>
 
@@ -32,4 +32,4 @@ Scanner Description....
 ↘️ `a-snippet` (at file line 10)
 
 ↘️ `snippet` (at file line 0)
-<br></details><br></details>
+<br></details><br></details><br></details>

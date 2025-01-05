@@ -2,6 +2,7 @@ package outputwriter
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -11,6 +12,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -736,16 +738,7 @@ func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCo
 // For Jas we show description for each unique rule
 func getJasFullDescription(violations bool, writer OutputWriter, generateRuleTable func(formats.ScannerInfo, OutputWriter) *MarkdownTableBuilder, issues ...formats.SourceCodeRow) string {
 	// Group by scanner info
-	rulesInfo := map[string]formats.ScannerInfo{}
-	codeFlows := map[string][][]formats.Location{}
-	for _, issue := range issues {
-		if _, ok := rulesInfo[issue.RuleId]; ok {
-			codeFlows[issue.RuleId] = append(codeFlows[issue.RuleId], issue.CodeFlow...)
-			continue
-		}
-		rulesInfo[issue.RuleId] = issue.ScannerInfo
-		codeFlows[issue.RuleId] = issue.CodeFlow
-	}
+	rulesInfo, codeFlows := groupIssuesByScanner(issues...)
 	// Write the details for each rule
 	var contentBuilder strings.Builder
 	for _, info := range rulesInfo {
@@ -753,17 +746,42 @@ func getJasFullDescription(violations bool, writer OutputWriter, generateRuleTab
 		if v, ok := codeFlows[info.RuleId]; ok {
 			scannerCodeFlows = v
 		}
-		if len(rulesInfo) == 1 {
-			WriteContent(&contentBuilder,
-				writer.MarkAsDetails("Full description", 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer)),
-				// TODO: should remove this?
-				codeFlowsReviewContent(scannerCodeFlows, writer),
-			)
-			break
+		title := "Full description"
+		if len(rulesInfo) > 1 {
+			title = getJasDetailsIdentifier(info)
 		}
-		WriteContent(&contentBuilder, writer.MarkAsDetails(getJasDetailsIdentifier(info), 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
+		WriteContent(&contentBuilder, writer.MarkAsDetails(title, 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
+
+		// if len(rulesInfo) == 1 {
+		// 	WriteContent(&contentBuilder,
+		// 		writer.MarkAsDetails("Full description", 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer)),
+		// 		// TODO: should remove this?
+		// 		codeFlowsReviewContent(scannerCodeFlows, writer),
+		// 	)
+		// 	break
+		// }
+		// WriteContent(&contentBuilder, writer.MarkAsDetails(getJasDetailsIdentifier(info), 3, getJasRuleFullDescription(violations, info.ScannerDescription, generateRuleTable(info, writer), writer, scannerCodeFlows...)))
 	}
 	return contentBuilder.String()
+}
+
+func groupIssuesByScanner(issues ...formats.SourceCodeRow) (rulesInfo []formats.ScannerInfo, codeFlows map[string][][]formats.Location) {
+	rulesInfoMap := map[string]formats.ScannerInfo{}
+	codeFlows = map[string][][]formats.Location{}
+	for _, issue := range issues {
+		if _, ok := rulesInfoMap[issue.RuleId]; ok {
+			codeFlows[issue.RuleId] = append(codeFlows[issue.RuleId], issue.CodeFlow...)
+			continue
+		}
+		rulesInfoMap[issue.RuleId] = issue.ScannerInfo
+		codeFlows[issue.RuleId] = issue.CodeFlow
+	}
+	rulesInfo = maps.Values(rulesInfoMap)
+	// Sort by rule id
+	sort.Slice(rulesInfo, func(i, j int) bool {
+		return rulesInfo[i].RuleId < rulesInfo[j].RuleId
+	})
+	return
 }
 
 func getJasDetailsIdentifier(info formats.ScannerInfo) string {

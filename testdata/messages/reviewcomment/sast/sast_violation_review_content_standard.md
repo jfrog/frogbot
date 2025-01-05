@@ -11,6 +11,16 @@
 </div>
 
 
+<details><summary><b>[ Express Not Using Helmet ]</b></summary>
+
+### Violation Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Rule ID:** | js-express-without-helmet |
+
+Scanner Description....
+
+<br></details>
 <details><summary><b>[ Use of Insecure Random ]</b></summary>
 
 ### Violation Details
@@ -35,13 +45,3 @@ Scanner Description....
 
 ↘️ `snippet` (at file line 0)
 <br></details><br></details><br></details>
-<details><summary><b>[ Express Not Using Helmet ]</b></summary>
-
-### Violation Details
-|                 |                   |
-| --------------------- | :-----------------------------------: |
-| **Rule ID:** | js-express-without-helmet |
-
-Scanner Description....
-
-<br></details>

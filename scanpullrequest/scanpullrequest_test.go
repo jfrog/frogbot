@@ -333,7 +333,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
 				ImpactedDependencyName: "component-C",
 			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			Technology: techutils.Yarn,
 		},
 		{
@@ -344,7 +344,7 @@ func TestGetNewVulnerabilities(t *testing.T) {
 				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
 				ImpactedDependencyName: "component-D",
 			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", Evidence: []formats.Evidence{{Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			Technology: techutils.Yarn,
 		},
 	}
