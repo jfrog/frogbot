@@ -285,10 +285,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
-	XrayVersion     string
-	XscVersion      string
-	Watches         []string `yaml:"watches,omitempty"`
-	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
+	XrayVersion            string
+	XscVersion             string
+	Watches                []string `yaml:"watches,omitempty"`
+	IncludeVulnerabilities bool     `yaml:"includeVulnerabilities,omitempty"`
+	JFrogProjectKey        string   `yaml:"jfrogProjectKey,omitempty"`
 }
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
@@ -298,13 +299,17 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-
 	if jp.JFrogProjectKey == "" {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
+	}
+	if !jp.IncludeVulnerabilities {
+		if jp.IncludeVulnerabilities, err = getBoolEnv(IncludeVulnerabilitiesEnv, false); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -327,6 +332,19 @@ type Git struct {
 	PullRequestDetails            vcsclient.PullRequestInfo
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
+}
+
+func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
+	if g.RepositoryCloneUrl != "" {
+		return g.RepositoryCloneUrl, nil
+	}
+	// If the repository clone URL is not cached, we fetch it from the VCS provider
+	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), g.RepoOwner, g.RepoName)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch the repository clone URL. %s", err.Error())
+	}
+	g.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	return g.RepositoryCloneUrl, nil
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -815,7 +833,6 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
 		return
 	}
-
 	// Attempt to get the config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
@@ -826,14 +843,10 @@ func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServe
 		err = verifyConfigProfileValidity(configProfile)
 		return
 	}
-
 	// Getting repository's url in order to get repository HTTP url
-	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName)
-	if err != nil {
-		return nil, "", err
+	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
+		return
 	}
-	repoCloneUrl = repositoryInfo.CloneInfo.HTTP
-
 	// Attempt to get a config profile associated with the repo URL
 	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
 	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {

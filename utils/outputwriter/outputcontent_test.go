@@ -4,14 +4,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetPRSummaryContent(t *testing.T) {
+func TestGetMainCommentContent(t *testing.T) {
 	testCases := []struct {
 		name         string
 		cases        []OutputTestCase
@@ -19,7 +23,7 @@ func TestGetPRSummaryContent(t *testing.T) {
 		isComment    bool
 	}{
 		{
-			name:         "Summary comment No issues found",
+			name:         "Main comment No issues found",
 			issuesExists: false,
 			isComment:    true,
 			cases: []OutputTestCase{
@@ -76,7 +80,7 @@ func TestGetPRSummaryContent(t *testing.T) {
 			},
 		},
 		{
-			name:         "Summary comment Found issues",
+			name:         "Main comment Found issues",
 			issuesExists: true,
 			isComment:    true,
 			cases: []OutputTestCase{
@@ -185,9 +189,157 @@ func TestGetPRSummaryContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				output := GetPRSummaryContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, test.writer)
+				output := GetMainCommentContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, test.writer)
 				assert.Len(t, output, 1)
 				assert.Equal(t, expectedOutput, output[0])
+			})
+		}
+	}
+}
+
+func TestScanSummaryContent(t *testing.T) {
+	testScanStatus := formats.ScanStatus{
+		ScaStatusCode:           utils.NewIntPtr(0),
+		ApplicabilityStatusCode: utils.NewIntPtr(0),
+		SastStatusCode:          utils.NewIntPtr(0),
+		SecretsStatusCode:       utils.NewIntPtr(0),
+	}
+	testIssues := issues.ScansIssuesCollection{
+		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Critical"}}},
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "High"}}},
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "High"}}},
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}}},
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Low"}}},
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Unknown"}}},
+		},
+		ScaViolations: []formats.VulnerabilityOrViolationRow{
+			{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Critical"}}},
+		},
+		LicensesViolations: []formats.LicenseViolationRow{
+			{LicenseRow: formats.LicenseRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "High"}}}},
+			{LicenseRow: formats.LicenseRow{ImpactedDependencyDetails: formats.ImpactedDependencyDetails{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}}}},
+		},
+		SecretsVulnerabilities: []formats.SourceCodeRow{
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+		},
+		SastVulnerabilities: []formats.SourceCodeRow{
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+			{SeverityDetails: formats.SeverityDetails{Severity: "Low"}},
+		},
+		SastViolations: []formats.SourceCodeRow{{SeverityDetails: formats.SeverityDetails{Severity: "High"}}},
+	}
+
+	testCases := []struct {
+		name           string
+		includeSecrets bool
+		scanStatus     formats.ScanStatus
+		context        results.ResultContext
+		issues         issues.ScansIssuesCollection
+		cases          []OutputTestCase
+	}{
+		{
+			name:       "No issues",
+			issues:     issues.ScansIssuesCollection{},
+			scanStatus: testScanStatus,
+			cases: []OutputTestCase{
+				{
+					name:           "Standard output",
+					writer:         &StandardOutput{},
+					expectedOutput: []string{""},
+				},
+				{
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: []string{""},
+				},
+			},
+		},
+		{
+			name:       "Vulnerabilities",
+			issues:     testIssues,
+			scanStatus: testScanStatus,
+			context:    results.ResultContext{IncludeVulnerabilities: true},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_simplified.md")},
+				},
+			},
+		},
+		{
+			name:       "Violations",
+			issues:     testIssues,
+			scanStatus: testScanStatus,
+			context:    results.ResultContext{Watches: []string{"watch"}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_violation_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_violation_simplified.md")},
+				},
+			},
+		},
+		{
+			name:       "Violations and Vulnerabilities",
+			issues:     testIssues,
+			scanStatus: testScanStatus,
+			context:    results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}, IncludeVulnerabilities: true},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_both_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_both_simplified.md")},
+				},
+			},
+		},
+		{
+			name:   "with errors",
+			issues: issues.ScansIssuesCollection{},
+			scanStatus: formats.ScanStatus{
+				IacStatusCode: utils.NewIntPtr(33),
+			},
+			context: results.ResultContext{GitRepoHttpsCloneUrl: "url", PlatformWatches: &xrayApi.ResourcesWatchesBody{GitRepositoryWatches: []string{"watch"}}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_error_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "summary", "summary_error_simplified.md")},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				tc.issues.ScanStatus = tc.scanStatus
+				output := ScanSummaryContent(tc.issues, tc.context, tc.includeSecrets, test.writer)
+				assert.Equal(t, expectedOutput, output)
 			})
 		}
 	}
@@ -287,96 +439,22 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple Vulnerabilities with Contextual Analysis",
-			vulnerabilities: []formats.VulnerabilityOrViolationRow{
-				{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           severityutils.GetAsDetails(severityutils.Critical, jasutils.NotApplicable, false),
-						ImpactedDependencyName:    "impacted",
-						ImpactedDependencyVersion: "3.0.0",
-						Components: []formats.ComponentRow{
-							{Name: "dep1", Version: "1.0.0"},
-							{Name: "dep2", Version: "2.0.0"},
-						},
-					},
-					Applicable:    "Not Applicable",
-					FixedVersions: []string{"4.0.0", "5.0.0"},
-					Cves:          []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
-				},
-				{
-					Summary: "Summary XRAY-122345",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           severityutils.GetAsDetails(severityutils.High, jasutils.ApplicabilityUndetermined, false),
-						ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
-						ImpactedDependencyVersion: "v0.21.0",
-						Components: []formats.ComponentRow{
-							{
-								Name:    "github.com/nats-io/nats-streaming-server",
-								Version: "v0.21.0",
-							},
-						},
-					},
-					Applicable:    "Undetermined",
-					FixedVersions: []string{"[0.24.1]"},
-					IssueId:       "XRAY-122345",
-					JfrogResearchInformation: &formats.JfrogResearchInformation{
-						Remediation: "some remediation",
-					},
-					Cves: []formats.CveRow{{}},
-				},
-				{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           severityutils.GetAsDetails(severityutils.Medium, jasutils.Applicable, false),
-						ImpactedDependencyName:    "component-D",
-						ImpactedDependencyVersion: "v0.21.0",
-						Components: []formats.ComponentRow{
-							{
-								Name:    "component-D",
-								Version: "v0.21.0",
-							},
-						},
-					},
-					Applicable:    "Applicable",
-					FixedVersions: []string{"[0.24.3]"},
-					JfrogResearchInformation: &formats.JfrogResearchInformation{
-						Remediation: "some remediation",
-					},
-					Cves: []formats.CveRow{
-						{Id: "CVE-2022-26652"},
-						{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable"}},
-					},
-				},
-				{
-					Summary: "Summary",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails:           severityutils.GetAsDetails(severityutils.Low, jasutils.ApplicabilityUndetermined, false),
-						ImpactedDependencyName:    "github.com/mholt/archiver/v3",
-						ImpactedDependencyVersion: "v3.5.1",
-						Components: []formats.ComponentRow{
-							{
-								Name:    "github.com/mholt/archiver/v3",
-								Version: "v3.5.1",
-							},
-						},
-					},
-					Applicable: "Undetermined",
-					Cves:       []formats.CveRow{},
-				},
-			},
+			name:            "multiple Vulnerabilities with Contextual Analysis",
+			vulnerabilities: getTestScaIssues(false),
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true}},
+					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true}},
+					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified.md")},
 				},
 				{
 					name:   "Split Standard output",
-					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1720, commentSizeLimit: 1720}},
+					writer: &StandardOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true, descriptionSizeLimit: 1720, commentSizeLimit: 1720}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_standard_split2.md"),
@@ -384,7 +462,7 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 				{
 					name:   "Split Simplified output",
-					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, descriptionSizeLimit: 1000, commentSizeLimit: 1000}},
+					writer: &SimplifiedOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true, descriptionSizeLimit: 1000, commentSizeLimit: 2000}},
 					expectedOutputPath: []string{
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split1.md"),
 						filepath.Join(testSummaryCommentDir, "vulnerabilities", "vulnerabilities_simplified_split2.md"),
@@ -392,15 +470,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "Split vulnerabilities content",
-		},
 	}
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestCaseOutput(t, test)
-				output := ConvertContentToComments(VulnerabilitiesContent(tc.vulnerabilities, test.writer), test.writer)
+				output := ConvertContentToComments(GetVulnerabilitiesContent(tc.vulnerabilities, test.writer), test.writer)
 				assert.Len(t, output, len(expectedOutput))
 				assert.ElementsMatch(t, expectedOutput, output)
 			})
@@ -408,15 +483,15 @@ func TestVulnerabilitiesContent(t *testing.T) {
 	}
 }
 
-func TestLicensesContent(t *testing.T) {
+func TestSecurityViolationsContent(t *testing.T) {
 	testCases := []struct {
-		name     string
-		licenses []formats.LicenseRow
-		cases    []OutputTestCase
+		name   string
+		issues issues.ScansIssuesCollection
+		cases  []OutputTestCase
 	}{
 		{
-			name:     "No license violations",
-			licenses: []formats.LicenseRow{},
+			name:   "No security violations",
+			issues: issues.ScansIssuesCollection{},
 			cases: []OutputTestCase{
 				{
 					name:           "Standard output",
@@ -431,51 +506,18 @@ func TestLicensesContent(t *testing.T) {
 			},
 		},
 		{
-			name: "License violations",
-			licenses: []formats.LicenseRow{
-				{
-					LicenseKey: "License1",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-
-						Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
-						ImpactedDependencyName:    "Dep1",
-						ImpactedDependencyVersion: "2.0",
-						SeverityDetails: formats.SeverityDetails{
-							Severity: "High",
-						},
-					},
-				},
-				{
-					LicenseKey: "License2",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						Components: []formats.ComponentRow{
-							{
-								Name:    "root",
-								Version: "1.0.0",
-							},
-							{
-								Name:    "minimatch",
-								Version: "1.2.3",
-							},
-						},
-						ImpactedDependencyName:    "Dep2",
-						ImpactedDependencyVersion: "3.0",
-						SeverityDetails: formats.SeverityDetails{
-							Severity: "High",
-						},
-					},
-				},
-			},
+			name:   "Security violations",
+			issues: issues.ScansIssuesCollection{ScaViolations: getTestScaIssues(true)},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "license", "license_violation_standard.md")},
+					writer:             &StandardOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "violations", "security", "security_violation_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "license", "license_violation_simplified.md")},
+					writer:             &SimplifiedOutput{MarkdownOutput{showCaColumn: true, hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "violations", "security", "security_violation_simplified.md")},
 				},
 			},
 		},
@@ -483,7 +525,191 @@ func TestLicensesContent(t *testing.T) {
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
-				assert.Equal(t, GetExpectedTestOutput(t, test), LicensesContent(tc.licenses, test.writer))
+				expectedOutput := GetExpectedTestCaseOutput(t, test)
+				output := ConvertContentToComments(getSecurityViolationsContent(tc.issues, test.writer), test.writer)
+				assert.Len(t, output, len(expectedOutput))
+				assert.ElementsMatch(t, expectedOutput, output)
+			})
+		}
+	}
+}
+
+func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
+	issues := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           severityutils.GetAsDetails(severityutils.Critical, jasutils.NotApplicable, false),
+				ImpactedDependencyName:    "impacted",
+				ImpactedDependencyVersion: "3.0.0",
+				Components: []formats.ComponentRow{
+					{Name: "dep1", Version: "1.0.0"},
+					{Name: "dep2", Version: "2.0.0"},
+				},
+			},
+			Applicable:    "Not Applicable",
+			FixedVersions: []string{"4.0.0", "5.0.0"},
+			Cves:          []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+		},
+		{
+			Summary: "Summary XRAY-122345",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           severityutils.GetAsDetails(severityutils.High, jasutils.ApplicabilityUndetermined, false),
+				ImpactedDependencyName:    "github.com/nats-io/nats-streaming-server",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/nats-io/nats-streaming-server",
+						Version: "v0.21.0",
+					},
+				},
+			},
+			Applicable:    "Undetermined",
+			FixedVersions: []string{"[0.24.1]"},
+			IssueId:       "XRAY-122345",
+			JfrogResearchInformation: &formats.JfrogResearchInformation{
+				Remediation: "some remediation",
+			},
+			Cves: []formats.CveRow{},
+		},
+		{
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           severityutils.GetAsDetails(severityutils.Medium, jasutils.Applicable, false),
+				ImpactedDependencyName:    "component-D",
+				ImpactedDependencyVersion: "v0.21.0",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "component-D",
+						Version: "v0.21.0",
+					},
+				},
+			},
+			Applicable:    "Applicable",
+			FixedVersions: []string{"[0.24.3]"},
+			JfrogResearchInformation: &formats.JfrogResearchInformation{
+				Remediation: "some remediation",
+			},
+			Cves: []formats.CveRow{
+				{Id: "CVE-2022-26652"},
+				{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable"}},
+			},
+		},
+		{
+			Summary: "Summary",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           severityutils.GetAsDetails(severityutils.Low, jasutils.ApplicabilityUndetermined, false),
+				ImpactedDependencyName:    "github.com/mholt/archiver/v3",
+				ImpactedDependencyVersion: "v3.5.1",
+				Components: []formats.ComponentRow{
+					{
+						Name:    "github.com/mholt/archiver/v3",
+						Version: "v3.5.1",
+					},
+				},
+			},
+			Applicable: "Undetermined",
+			Cves:       []formats.CveRow{},
+		},
+	}
+	if violations {
+		for _, issue := range issues {
+			issue.ViolationContext = formats.ViolationContext{
+				Watch:    "watch",
+				Policies: []string{"policy1", "policy2"},
+			}
+		}
+	}
+	return issues
+}
+
+func TestLicensesContent(t *testing.T) {
+	testCases := []struct {
+		name     string
+		licenses []formats.LicenseViolationRow
+		cases    []OutputTestCase
+	}{
+		{
+			name:     "No license violations",
+			licenses: []formats.LicenseViolationRow{},
+			cases: []OutputTestCase{
+				{
+					name:           "Standard output",
+					writer:         &StandardOutput{},
+					expectedOutput: []string{},
+				},
+				{
+					name:           "Simplified output",
+					writer:         &SimplifiedOutput{},
+					expectedOutput: []string{},
+				},
+			},
+		},
+		{
+			name: "License violations",
+			licenses: []formats.LicenseViolationRow{
+				{
+					LicenseRow: formats.LicenseRow{
+						LicenseKey:  "License1",
+						LicenseName: "License1 full name",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							Components:                []formats.ComponentRow{{Name: "Comp1", Version: "1.0"}},
+							ImpactedDependencyName:    "Dep1",
+							ImpactedDependencyVersion: "2.0",
+							SeverityDetails: formats.SeverityDetails{
+								Severity: "High",
+							},
+						},
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch",
+						Policies: []string{"policy1", "policy2"},
+					},
+				},
+				{
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "License2",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							Components: []formats.ComponentRow{
+								{
+									Name:    "root",
+									Version: "1.0.0",
+								},
+								{
+									Name:    "minimatch",
+									Version: "1.2.3",
+								},
+							},
+							ImpactedDependencyName:    "Dep2",
+							ImpactedDependencyVersion: "3.0",
+							SeverityDetails: formats.SeverityDetails{
+								Severity: "High",
+							},
+						},
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch2",
+						Policies: []string{"policy3"},
+					},
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "violations", "license", "license_violation_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "violations", "license", "license_violation_simplified.md")},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestCaseOutput(t, test)
+				assert.Equal(t, expectedOutput, PolicyViolationsContent(issues.ScansIssuesCollection{LicensesViolations: tc.licenses}, test.writer))
 			})
 		}
 	}
@@ -567,7 +793,7 @@ func TestGenerateReviewComment(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
 				output := GenerateReviewCommentContent(content, test.writer)
 				if tc.location != nil {
-					output = GetFallbackReviewCommentContent(content, *tc.location, test.writer)
+					output = GetFallbackReviewCommentContent(content, *tc.location)
 				}
 				assert.Equal(t, expectedOutput, output)
 			})
@@ -578,39 +804,48 @@ func TestGenerateReviewComment(t *testing.T) {
 func TestApplicableReviewContent(t *testing.T) {
 	testCases := []struct {
 		name                                                                             string
+		issue                                                                            issues.ApplicableEvidences
 		severity, finding, fullDetails, cve, cveDetails, impactedDependency, remediation string
 		cases                                                                            []OutputTestCase
 	}{
 		{
-			name:               "Applicable CVE review comment content",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
-			remediation:        "some remediation",
+			name: "Applicable CVE review comment content",
+			issue: issues.ApplicableEvidences{
+				Severity:           "Critical",
+				IssueId:            "CVE-2022-29361",
+				ScannerDescription: "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+				CveSummary:         "cveDetails",
+				ImpactedDependency: "werkzeug:1.0.1",
+				Remediation:        "some remediation",
+				Evidence: formats.Evidence{
+					Reason: "The vulnerable function flask.Flask.run is called",
+				},
+			},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "applicable", "applicable_review_content_simplified.md")},
 				},
 			},
 		},
 		{
-			name:               "No remediation",
-			severity:           "Critical",
-			finding:            "The vulnerable function flask.Flask.run is called",
-			fullDetails:        "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
-			cve:                "CVE-2022-29361",
-			cveDetails:         "cveDetails",
-			impactedDependency: "werkzeug:1.0.1",
+			name: "No remediation and internet connection",
+			issue: issues.ApplicableEvidences{
+				Severity:           "Critical",
+				IssueId:            "CVE-2022-29361",
+				ScannerDescription: "The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.",
+				CveSummary:         "cveDetails",
+				ImpactedDependency: "werkzeug:1.0.1",
+				Evidence: formats.Evidence{
+					Reason: "The vulnerable function flask.Flask.run is called",
+				},
+			},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -630,7 +865,7 @@ func TestApplicableReviewContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				assert.Equal(t, expectedOutput, ApplicableCveReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.cve, tc.cveDetails, tc.impactedDependency, tc.remediation, test.writer))
+				assert.Equal(t, expectedOutput, ApplicableCveReviewContent(tc.issue, test.writer))
 			})
 		}
 	}
@@ -638,44 +873,107 @@ func TestApplicableReviewContent(t *testing.T) {
 
 func TestSecretsReviewContent(t *testing.T) {
 	testCases := []struct {
-		name                                   string
-		severity, finding, fullDetails, status string
-		cases                                  []OutputTestCase
+		name   string
+		issues []formats.SourceCodeRow
+		cases  []OutputTestCase
 	}{
 		{
-			name:        "Secret review comment content",
-			severity:    "Medium",
-			finding:     "Secret keys were found",
-			fullDetails: "Storing hardcoded secrets in your source code or binary artifact could lead to several risks.\n\nIf the secret is associated with a wide scope of privileges, attackers could extract it from the source code or binary artifact and use it maliciously to attack many targets. For example, if the hardcoded password gives high-privilege access to an AWS account, the attackers may be able to query/modify company-wide sensitive data without per-user authentication.\n\n## Best practices\n\nUse safe storage when storing high-privilege secrets such as passwords and tokens, for example -\n\n* ### Environment Variables\n\nEnvironment variables are set outside of the application code, and can be dynamically passed to the application only when needed, for example -\n`SECRET_VAR=MySecret ./my_application`\nThis way, `MySecret` does not have to be hardcoded into `my_application`.\n\nNote that if your entire binary artifact is published (ex. a Docker container published to Docker Hub), the value for the environment variable must not be stored in the artifact itself (ex. inside the `Dockerfile` or one of the container's files) but rather must be passed dynamically, for example in the `docker run` call as an argument.\n\n* ### Secret management services\n\nExternal vendors offer cloud-based secret management services, that provide proper access control to each secret. The given access to each secret can be dynamically modified or even revoked. Some examples include -\n\n* [Hashicorp Vault](https://www.vaultproject.io)\n* [AWS KMS](https://aws.amazon.com/kms) (Key Management Service)\n* [Google Cloud KMS](https://cloud.google.com/security-key-management)\n\n## Least-privilege principle\n\nStoring a secret in a hardcoded manner can be made safer, by making sure the secret grants the least amount of privilege as needed by the application.\nFor example - if the application needs to read a specific table from a specific database, and the secret grants access to perform this operation **only** (meaning - no access to other tables, no write access at all) then the damage from any secret leaks is mitigated.\nThat being said, it is still not recommended to store secrets in a hardcoded manner, since this type of storage does not offer any way to revoke or moderate the usage of the secret.\n",
+			name: "Secret review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "High"},
+				Finding:         "Secret keys were found",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					Cwe:                     []string{"CWE-798", "CWE-799"},
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+			}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_review_content_no_ca_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_review_content_no_ca_simplified.md")},
 				},
 			},
 		},
 		{
-			name:        "Secret review comment content with applicability status",
-			severity:    "Medium",
-			status:      "Active",
-			finding:     "Secret keys were found",
-			fullDetails: "Storing hardcoded secrets in your source code or binary artifact could lead to several risks.\n\nIf the secret is associated with a wide scope of privileges, attackers could extract it from the source code or binary artifact and use it maliciously to attack many targets. For example, if the hardcoded password gives high-privilege access to an AWS account, the attackers may be able to query/modify company-wide sensitive data without per-user authentication.\n\n## Best practices\n\nUse safe storage when storing high-privilege secrets such as passwords and tokens, for example -\n\n* ### Environment Variables\n\nEnvironment variables are set outside of the application code, and can be dynamically passed to the application only when needed, for example -\n`SECRET_VAR=MySecret ./my_application`\nThis way, `MySecret` does not have to be hardcoded into `my_application`.\n\nNote that if your entire binary artifact is published (ex. a Docker container published to Docker Hub), the value for the environment variable must not be stored in the artifact itself (ex. inside the `Dockerfile` or one of the container's files) but rather must be passed dynamically, for example in the `docker run` call as an argument.\n\n* ### Secret management services\n\nExternal vendors offer cloud-based secret management services, that provide proper access control to each secret. The given access to each secret can be dynamically modified or even revoked. Some examples include -\n\n* [Hashicorp Vault](https://www.vaultproject.io)\n* [AWS KMS](https://aws.amazon.com/kms) (Key Management Service)\n* [Google Cloud KMS](https://cloud.google.com/security-key-management)\n\n## Least-privilege principle\n\nStoring a secret in a hardcoded manner can be made safer, by making sure the secret grants the least amount of privilege as needed by the application.\nFor example - if the application needs to read a specific table from a specific database, and the secret grants access to perform this operation **only** (meaning - no access to other tables, no write access at all) then the damage from any secret leaks is mitigated.\nThat being said, it is still not recommended to store secrets in a hardcoded manner, since this type of storage does not offer any way to revoke or moderate the usage of the secret.\n",
+			name: "Secret review comment content with applicability status",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "High"},
+				Applicability:   &formats.Applicability{Status: jasutils.Active.String()},
+				Finding:         "Secret keys were found",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					Cwe:                     []string{"CWE-798", "CWE-799"},
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+			}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_review_content_simplified.md")},
+				},
+			},
+		},
+		{
+			name: "Secrets violation review comment content with applicability status",
+			issues: []formats.SourceCodeRow{
+				{
+					SeverityDetails: formats.SeverityDetails{Severity: "High"},
+					Applicability:   &formats.Applicability{Status: jasutils.Active.String()},
+					Finding:         "Secret keys were found",
+					ScannerInfo: formats.ScannerInfo{
+						RuleId:                  "rule-id",
+						Cwe:                     []string{"CWE-798", "CWE-799"},
+						ScannerDescription:      "Scanner Description....",
+						ScannerShortDescription: "Scanner Short Description",
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "jas-watch",
+						IssueId:  "secret-violation-id",
+						Policies: []string{"policy1"},
+					},
+				},
+				{
+					SeverityDetails: formats.SeverityDetails{Severity: "Critical"},
+					Applicability:   &formats.Applicability{Status: jasutils.Inactive.String()},
+					Finding:         "Secret keys were found",
+					ScannerInfo: formats.ScannerInfo{
+						RuleId:                  "rule-id",
+						Cwe:                     []string{"CWE-798", "CWE-799"},
+						ScannerDescription:      "Scanner Description....",
+						ScannerShortDescription: "Scanner Short Description",
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "jas-watch2",
+						IssueId:  "secret-violation-id-2",
+						Policies: []string{"policy1", "policy2"},
+					},
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_violation_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "secrets", "secret_violation_review_content_simplified.md")},
 				},
 			},
 		},
@@ -685,7 +983,14 @@ func TestSecretsReviewContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				assert.Equal(t, expectedOutput, SecretReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.status, test.writer))
+				violations := false
+				for _, issue := range tc.issues {
+					if issue.Watch != "" {
+						violations = true
+						break
+					}
+				}
+				assert.Equal(t, expectedOutput, SecretReviewContent(violations, test.writer, tc.issues...))
 			})
 		}
 	}
@@ -693,25 +998,60 @@ func TestSecretsReviewContent(t *testing.T) {
 
 func TestIacReviewContent(t *testing.T) {
 	testCases := []struct {
-		name                           string
-		severity, finding, fullDetails string
-		cases                          []OutputTestCase
+		name   string
+		issues []formats.SourceCodeRow
+		cases  []OutputTestCase
 	}{
 		{
-			name:        "Iac review comment content",
-			severity:    "Medium",
-			finding:     "Missing auto upgrade was detected",
-			fullDetails: "Resource `google_container_node_pool` should have `management.auto_upgrade=true`\n\nVulnerable example - \n```\nresource \"google_container_node_pool\" \"vulnerable_example\" {\n    management {\n     auto_upgrade = false\n   }\n}\n```\n",
+			name: "Iac review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Medium"},
+				Finding:         "Missing auto upgrade was detected",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+			}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
-					writer:             &StandardOutput{},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_review_content_standard.md")},
 				},
 				{
 					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_review_content_simplified.md")},
+				},
+			},
+		},
+		{
+			name: "Iac violation review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Medium"},
+				Finding:         "Missing auto upgrade was detected",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+				ViolationContext: formats.ViolationContext{
+					IssueId:  "iac-violation-id",
+					Watch:    "jas-watch",
+					Policies: []string{"policy1", "policy2"},
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_violation_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "iac", "iac_violation_review_content_simplified.md")},
 				},
 			},
 		},
@@ -721,7 +1061,14 @@ func TestIacReviewContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				assert.Equal(t, expectedOutput, IacReviewContent(tc.severity, tc.finding, tc.fullDetails, test.writer))
+				violations := false
+				for _, issue := range tc.issues {
+					if issue.Watch != "" {
+						violations = true
+						break
+					}
+				}
+				assert.Equal(t, expectedOutput, IacReviewContent(violations, test.writer, tc.issues...))
 			})
 		}
 	}
@@ -729,74 +1076,22 @@ func TestIacReviewContent(t *testing.T) {
 
 func TestSastReviewContent(t *testing.T) {
 	testCases := []struct {
-		name        string
-		severity    string
-		finding     string
-		fullDetails string
-		codeFlows   [][]formats.Location
-		cases       []OutputTestCase
+		name   string
+		issues []formats.SourceCodeRow
+		cases  []OutputTestCase
 	}{
 		{
-			name:        "Sast review comment content",
-			severity:    "Low",
-			finding:     "Stack Trace Exposure",
-			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
-			codeFlows: [][]formats.Location{
-				{
-					{
-						File:        "file2",
-						StartLine:   1,
-						StartColumn: 2,
-						EndLine:     3,
-						EndColumn:   4,
-						Snippet:     "other-snippet",
-					},
-					{
-						File:        "file",
-						StartLine:   0,
-						StartColumn: 0,
-						EndLine:     0,
-						EndColumn:   0,
-						Snippet:     "snippet",
-					},
+			name: "No code flows (no internet connection)",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Low"},
+				Finding:         "Found a Use of Insecure Random",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "js-insecure-random",
+					Cwe:                     []string{"CWE-798", "CWE-799"},
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Use of Insecure Random",
 				},
-				{
-					{
-						File:        "file",
-						StartLine:   10,
-						StartColumn: 20,
-						EndLine:     10,
-						EndColumn:   30,
-						Snippet:     "a-snippet",
-					},
-					{
-						File:        "file",
-						StartLine:   0,
-						StartColumn: 0,
-						EndLine:     0,
-						EndColumn:   0,
-						Snippet:     "snippet",
-					},
-				},
-			},
-			cases: []OutputTestCase{
-				{
-					name:               "Standard output",
-					writer:             &StandardOutput{},
-					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_standard.md")},
-				},
-				{
-					name:               "Simplified output",
-					writer:             &SimplifiedOutput{},
-					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_simplified.md")},
-				},
-			},
-		},
-		{
-			name:        "No code flows",
-			severity:    "Low",
-			finding:     "Stack Trace Exposure",
-			fullDetails: "\n### Overview\nStack trace exposure is a type of security vulnerability that occurs when a program reveals\nsensitive information, such as the names and locations of internal files and variables,\nin error messages or other diagnostic output. This can happen when a program crashes or\nencounters an error, and the stack trace (a record of the program's call stack at the time\nof the error) is included in the output.",
+			}},
 			cases: []OutputTestCase{
 				{
 					name:               "Standard output",
@@ -810,13 +1105,182 @@ func TestSastReviewContent(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Sast review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Low"},
+				Finding:         "Found a Use of Insecure Random",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "js-insecure-random",
+					Cwe:                     []string{"CWE-798", "CWE-799"},
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Use of Insecure Random",
+				},
+				CodeFlow: [][]formats.Location{
+					{
+						{
+							File:        "file2",
+							StartLine:   1,
+							StartColumn: 2,
+							EndLine:     3,
+							EndColumn:   4,
+							Snippet:     "other-snippet",
+						},
+						{
+							File:        "file",
+							StartLine:   0,
+							StartColumn: 0,
+							EndLine:     0,
+							EndColumn:   0,
+							Snippet:     "snippet",
+						},
+					},
+					{
+						{
+							File:        "file",
+							StartLine:   10,
+							StartColumn: 20,
+							EndLine:     10,
+							EndColumn:   30,
+							Snippet:     "a-snippet",
+						},
+						{
+							File:        "file",
+							StartLine:   0,
+							StartColumn: 0,
+							EndLine:     0,
+							EndColumn:   0,
+							Snippet:     "snippet",
+						},
+					},
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_review_content_simplified.md")},
+				},
+			},
+		},
+		{
+			name: "Sast violation review comment content",
+			issues: []formats.SourceCodeRow{
+				{
+					SeverityDetails: formats.SeverityDetails{Severity: "Low"},
+					Finding:         "Found a Use of Insecure Random",
+					ScannerInfo: formats.ScannerInfo{
+						RuleId:                  "js-insecure-random",
+						Cwe:                     []string{"CWE-798", "CWE-799"},
+						ScannerDescription:      "Scanner Description....",
+						ScannerShortDescription: "Use of Insecure Random",
+					},
+					ViolationContext: formats.ViolationContext{
+						IssueId:  "sast-violation-id",
+						Watch:    "jas-watch",
+						Policies: []string{"policy1", "policy2"},
+					},
+					CodeFlow: [][]formats.Location{
+						{
+							{
+								File:        "file2",
+								StartLine:   1,
+								StartColumn: 2,
+								EndLine:     3,
+								EndColumn:   4,
+								Snippet:     "other-snippet",
+							},
+							{
+								File:        "file",
+								StartLine:   0,
+								StartColumn: 0,
+								EndLine:     0,
+								EndColumn:   0,
+								Snippet:     "snippet",
+							},
+						},
+						{
+							{
+								File:        "file",
+								StartLine:   10,
+								StartColumn: 20,
+								EndLine:     10,
+								EndColumn:   30,
+								Snippet:     "a-snippet",
+							},
+							{
+								File:        "file",
+								StartLine:   0,
+								StartColumn: 0,
+								EndLine:     0,
+								EndColumn:   0,
+								Snippet:     "snippet",
+							},
+						},
+					},
+				},
+				{
+					SeverityDetails: formats.SeverityDetails{Severity: "High"},
+					Finding:         "Found a Use of Insecure Random",
+					ScannerInfo: formats.ScannerInfo{
+						RuleId:                  "js-insecure-random",
+						Cwe:                     []string{"CWE-798", "CWE-799"},
+						ScannerDescription:      "Scanner Description....",
+						ScannerShortDescription: "Use of Insecure Random",
+					},
+					ViolationContext: formats.ViolationContext{
+						IssueId:  "sast-violation-id-2",
+						Watch:    "jas-watch2",
+						Policies: []string{"policy3"},
+					},
+				},
+				{
+					SeverityDetails: formats.SeverityDetails{Severity: "High"},
+					Finding:         "Found An Express Not Using Helmet",
+					ScannerInfo: formats.ScannerInfo{
+						RuleId:                  "js-express-without-helmet",
+						ScannerDescription:      "Scanner Description....",
+						ScannerShortDescription: "Express Not Using Helmet",
+					},
+					ViolationContext: formats.ViolationContext{
+						IssueId:  "sast-violation-id-3",
+						Watch:    "jas-watch2",
+						Policies: []string{"policy3"},
+					},
+				},
+			},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_violation_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "sast", "sast_violation_review_content_simplified.md")},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				assert.Equal(t, expectedOutput, SastReviewContent(tc.severity, tc.finding, tc.fullDetails, tc.codeFlows, test.writer))
+				violations := false
+				for _, issue := range tc.issues {
+					if issue.Watch != "" {
+						violations = true
+						break
+					}
+				}
+				assert.Equal(t, expectedOutput, SastReviewContent(violations, test.writer, tc.issues...))
 			})
 		}
 	}

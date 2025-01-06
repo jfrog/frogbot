@@ -6,11 +6,10 @@ import (
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
-func CreateScanEvent(serviceDetails *config.ServerDetails, gitInfo *services.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
+func CreateScanEvent(serviceDetails *config.ServerDetails, gitInfo *xscservices.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
 	event := xsc.CreateAnalyticsEvent(xscservices.FrogbotProduct, xscservices.FrogbotType, serviceDetails)
 	event.ProductVersion = FrogbotVersion
 	event.FrogbotScanType = scanType
