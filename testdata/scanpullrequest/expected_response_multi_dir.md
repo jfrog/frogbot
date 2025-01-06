@@ -11,7 +11,7 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for Vulnerabilities and found 2 issues
+- Frogbot scanned for vulnerabilities and found 2 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |

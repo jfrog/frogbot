@@ -881,7 +881,8 @@ func TestCreateNewIacRows(t *testing.T) {
 						SeverityNumValue: 21,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "Missing auto upgrade was detected",
 					Location: formats.Location{
@@ -914,7 +915,8 @@ func TestCreateNewIacRows(t *testing.T) {
 						SeverityNumValue: 17,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "enable_private_endpoint=false was detected",
 					Location: formats.Location{
@@ -970,7 +972,8 @@ func TestCreateNewSecretRows(t *testing.T) {
 						SeverityNumValue: 21,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -1003,7 +1006,8 @@ func TestCreateNewSecretRows(t *testing.T) {
 						SeverityNumValue: 17,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "Secret",
 					Location: formats.Location{
@@ -1059,7 +1063,8 @@ func TestCreateNewSastRows(t *testing.T) {
 						SeverityNumValue: 21,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "XSS Vulnerability",
 					Location: formats.Location{
@@ -1092,7 +1097,8 @@ func TestCreateNewSastRows(t *testing.T) {
 						SeverityNumValue: 17,
 					},
 					ScannerInfo: formats.ScannerInfo{
-						RuleId: "rule",
+						RuleId:             "rule",
+						ScannerDescription: "rule-msg",
 					},
 					Finding: "Stack Trace Exposure",
 					Location: formats.Location{
