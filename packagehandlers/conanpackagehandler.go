@@ -47,7 +47,8 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 	if !isAnyDescriptorFileChanged {
 		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
 	} else {
-		conan.logNoInstallationMessage()
+		log.Info("Requirements file was updated with a suggested fix version, but no installation was performed. " +
+			"In order to update the dependencies, please run 'conan install' command")
 	}
 	return
 }
@@ -71,9 +72,4 @@ func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDeta
 	}
 	isFileChanged = true
 	return
-}
-
-func (conan *ConanPackageHandler) logNoInstallationMessage() {
-	log.Info("Requirements file was updated with a suggested fix version, but no installation was performed. " +
-		"In order to update the dependencies, please run 'conan install' command")
 }
