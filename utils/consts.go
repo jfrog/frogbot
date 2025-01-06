@@ -33,6 +33,7 @@ const (
 	JFrogTokenEnv            = "JF_ACCESS_TOKEN"
 	JfrogUseConfigProfileEnv = "JF_USE_CONFIG_PROFILE"
 	JfrogConfigProfileEnv    = "JF_CONFIG_PROFILE"
+	JfrogApplicationKey      = "JF_APPLICATION_KEY"
 
 	// Git environment variables
 	GitProvider                      = "JF_GIT_PROVIDER"

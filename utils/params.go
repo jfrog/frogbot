@@ -594,6 +594,7 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	} else {
 		return nil, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
 	}
+	server.ApplicationKey = getTrimmedEnv(JfrogApplicationKey)
 	return &server, nil
 }
 
