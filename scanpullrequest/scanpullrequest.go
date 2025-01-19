@@ -163,8 +163,10 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		scanDetails.SetProject(&repoConfig.Projects[i])
 		var projectIssues *issues.ScansIssuesCollection
 		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
-			// Make sure status on scans are passed to show in the summary
-			issuesCollection.AppendStatus(projectIssues.ScanStatus)
+			if projectIssues != nil {
+				// Make sure status on scans are passed to show in the summary
+				issuesCollection.AppendStatus(projectIssues.ScanStatus)
+			}
 			return
 		}
 		issuesCollection.Append(projectIssues)
