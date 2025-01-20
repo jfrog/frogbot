@@ -184,10 +184,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			totalFindings += findingCount
 		}
 
-		if scanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
-			// Currently available on GitHub only and JFrog Advance Security package
-			// Only if Jas entitlement is available
+			// Currently available on GitHub only
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
