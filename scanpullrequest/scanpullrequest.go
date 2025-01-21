@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/v2/utils/application"
 	"os"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -151,6 +152,12 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		scanDetails.ServerDetails,
 		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
 	)
+
+	applicationService := application.NewApplicationManager(client, repoConfig.Git)
+	commitInfo, err := applicationService.CreateApplicationCommitInfo()
+	if err != nil {
+		return
+	}
 
 	defer func() {
 		if issuesCollection != nil {
