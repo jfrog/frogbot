@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils/application"
 	"os"
+	"strconv"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -16,7 +16,9 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
+	"github.com/jfrog/jfrog-cli-security/utils/unifiedpolicy"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	evaluate "github.com/jfrog/jfrog-client-go/unifiedpolicy/services"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 )
@@ -153,8 +155,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
 	)
 
-	applicationService := application.NewApplicationManager(client, repoConfig.Git)
-	commitInfo, err := applicationService.CreateApplicationCommitInfo()
+	err = utils.SendCommitInfo(scanDetails)
 	if err != nil {
 		return
 	}
@@ -177,7 +178,28 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		issuesCollection.Append(projectIssues)
 	}
 	resultContext = scanDetails.ResultContext
+
+	err = sendUnifiedPolicyEvaluationRequest(scanDetails, err)
 	return
+}
+
+func sendUnifiedPolicyEvaluationRequest(scanDetails *utils.ScanDetails, err error) error {
+	evaluateRequest := &evaluate.EvaluateRequest{
+		Action: "application:pr",
+		Context: evaluate.Context{
+			Stage: "development",
+		},
+		Resource: evaluate.Resource{
+			ApplicationKey: scanDetails.ApplicationKey,
+			Type:           "pr",
+			MultiScanId:    scanDetails.MultiScanId,
+			GitRepoUrl:     scanDetails.Git.RepositoryCloneUrl,
+			PullRequestId:  strconv.FormatInt(scanDetails.Git.PullRequestDetails.ID, 10),
+		},
+	}
+	// currently we will not be using the unified policy decision, as we are still running the traditional policies and watches flow.
+	_, err = unifiedpolicy.Evaluate(scanDetails.ServerDetails, evaluateRequest)
+	return err
 }
 
 func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (auditIssues *issues.ScansIssuesCollection, err error) {

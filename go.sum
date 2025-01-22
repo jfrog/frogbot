@@ -190,6 +190,7 @@ github.com/orto17/froggit-go v0.0.0-20250113090427-0a3d80025d0c h1:cy2uZ2sQTRxaV
 github.com/orto17/froggit-go v0.0.0-20250113090427-0a3d80025d0c/go.mod h1:5VpdQfAcbuyFl9x/x8HGm7kVk719kEtW/8YJFvKcHPA=
 github.com/orto17/jfrog-cli-core/v2 v2.0.0-20250106064835-4987fc040d3d h1:FS4HhBj3d8qFmLcIqMUsqpWUFJ800919w7aJA3yprLM=
 github.com/orto17/jfrog-cli-core/v2 v2.0.0-20250106064835-4987fc040d3d/go.mod h1:LfKvCRXbvwgE0V6aX3/GabkzCedghXq0Y6lmsEuxr44=
+github.com/orto17/jfrog-cli-security v0.0.0-20250106071330-575521ecca16/go.mod h1:L0NSfgYh8GPpI7upJXQ5lxl8MDhORj+9r+r4aC+vz5I=
 github.com/orto17/jfrog-client-go v0.0.0-20250105135705-d0d16a2c04fa h1:1gfSR4cS3AngC3PPC5YQRh2cdjaoWy7vKLZwdb6O7YU=
 github.com/orto17/jfrog-client-go v0.0.0-20250105135705-d0d16a2c04fa/go.mod h1:2ySOMva54L3EYYIlCBYBTcTgqfrrQ19gtpA/MWfA/ec=
 github.com/owenrumney/go-sarif v1.1.1/go.mod h1:dNDiPlF04ESR/6fHlPyq7gHKmrM0sHUvAGjsoh8ZH0U=
