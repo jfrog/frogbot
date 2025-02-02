@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
@@ -98,7 +99,7 @@ type Project struct {
 
 func (p *Project) setDefaultsIfNeeded() error {
 	if len(p.WorkingDirs) == 0 {
-		workingDirs, _ := readArrayParamFromEnv(WorkingDirectoryEnv, WatchesDelimiter)
+		workingDirs, _ := readArrayParamFromEnv(WorkingDirectoryEnv, CommaDelimiter)
 		if len(workingDirs) == 0 {
 			// If no working directories are provided, and none exist in the environment variable, we designate the project's root directory as our sole working directory.
 			// We then execute a recursive scan across the entire project, commencing from the root.
@@ -294,7 +295,7 @@ type JFrogPlatform struct {
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 	e := &ErrMissingEnv{}
 	if len(jp.Watches) == 0 {
-		if jp.Watches, err = readArrayParamFromEnv(jfrogWatchesEnv, WatchesDelimiter); err != nil && !e.IsMissingEnvErr(err) {
+		if jp.Watches, err = readArrayParamFromEnv(jfrogWatchesEnv, CommaDelimiter); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 	}
