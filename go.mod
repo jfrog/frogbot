@@ -9,6 +9,7 @@ require (
 	github.com/jfrog/build-info-go v1.10.8
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
+	github.com/jfrog/jfrog-cli-artifactory v0.1.11
 	github.com/jfrog/jfrog-cli-core/v2 v2.57.7
 	github.com/jfrog/jfrog-cli-security v1.14.1
 	github.com/jfrog/jfrog-client-go v1.49.1
@@ -17,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -102,8 +103,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
@@ -118,12 +118,14 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.14.2-0.20250126153907-09bce2d7f5df
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.14.2-0.20250130082759-0d5b0bef7b8e
 
-// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250130104846-27e495de291e
+
+replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-artifactory v0.1.12-0.20250130144915-01446cff31ac
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250126110945-81abbdde452f
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
