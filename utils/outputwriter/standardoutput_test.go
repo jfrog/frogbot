@@ -52,27 +52,42 @@ func TestStandardSeparator(t *testing.T) {
 
 func TestStandardFormattedSeverity(t *testing.T) {
 	testCases := []struct {
-		name           string
-		severity       string
-		applicability  string
-		expectedOutput string
+		name               string
+		severity           string
+		applicability      string
+		expectedOutput     string
+		internetConnection bool
 	}{
+		{
+			name:               "Applicable severity",
+			severity:           "Low",
+			applicability:      "Applicable",
+			internetConnection: true,
+			expectedOutput:     "![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low",
+		},
+		{
+			name:               "Not applicable severity",
+			severity:           "Medium",
+			applicability:      "Not Applicable",
+			internetConnection: true,
+			expectedOutput:     "![medium (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableMedium.png)<br>  Medium",
+		},
 		{
 			name:           "Applicable severity",
 			severity:       "Low",
 			applicability:  "Applicable",
-			expectedOutput: "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low",
+			expectedOutput: "Low",
 		},
 		{
 			name:           "Not applicable severity",
 			severity:       "Medium",
 			applicability:  "Not Applicable",
-			expectedOutput: "![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableMedium.png)<br>  Medium",
+			expectedOutput: "Medium",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			smo := &StandardOutput{}
+			smo := &StandardOutput{MarkdownOutput: MarkdownOutput{hasInternetConnection: tc.internetConnection}}
 			assert.Equal(t, tc.expectedOutput, smo.FormattedSeverity(tc.severity, tc.applicability))
 		})
 	}
@@ -161,42 +176,42 @@ func TestStandardMarkAsDetails(t *testing.T) {
 			summary:        "",
 			subTitleDepth:  0,
 			content:        "",
-			expectedOutput: "<details>\n\n\n\n</details>\n",
+			expectedOutput: "<details><br></details>",
 		},
 		{
 			name:           "empty content",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "",
-			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\n\n\n</details>\n",
+			expectedOutput: "<details><summary><b>summary</b></summary><br></details>",
 		},
 		{
 			name:           "empty summary",
 			summary:        "",
 			subTitleDepth:  0,
 			content:        "content",
-			expectedOutput: "<details>\n\ncontent\n\n</details>\n",
+			expectedOutput: "<details>content<br></details>",
 		},
 		{
 			name:           "Main details",
 			summary:        "summary",
 			subTitleDepth:  1,
 			content:        "content",
-			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
+			expectedOutput: "<details><summary><b>summary</b></summary>content<br></details>",
 		},
 		{
 			name:           "Sub details",
 			summary:        "summary",
 			subTitleDepth:  2,
 			content:        "content",
-			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
+			expectedOutput: "<details><summary><b>summary</b></summary>content<br></details>",
 		},
 		{
 			name:           "Sub sub details",
 			summary:        "summary",
 			subTitleDepth:  3,
 			content:        "content",
-			expectedOutput: "<details>\n<summary> <b>summary</b> </summary>\n<br>\n\ncontent\n\n</details>\n",
+			expectedOutput: "<details><summary><b>summary</b></summary>content<br></details>",
 		},
 	}
 	for _, tc := range testCases {

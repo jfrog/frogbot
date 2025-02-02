@@ -12,9 +12,7 @@
 ```
 some content
 ```
-<details>
-<summary> <b>Note:</b> </summary>
-
+<details><summary><b>Note</b></summary>
 
 ---
 <div align='center'>
@@ -22,10 +20,7 @@ some content
 **Frogbot** also supports **Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning**. This features are included as part of the [JFrog Advanced Security](https://jfrog.com/advanced-security) package, which isn't enabled on your system.
 
 </div>
-
-
-</details>
-
+<br></details>
 
 ---
 <div align='center'>

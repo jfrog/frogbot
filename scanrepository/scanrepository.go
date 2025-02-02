@@ -51,8 +51,9 @@ type ScanRepositoryCmd struct {
 	projectTech []techutils.Technology
 	// Stores all package manager handlers for detected issues
 	handlers map[techutils.Technology]packagehandlers.PackageHandler
-	// The AnalyticsMetricsService used for analytics event report
-	analyticsService *xsc.AnalyticsMetricsService
+
+	XrayVersion string
+	XscVersion  string
 }
 
 func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
@@ -61,6 +62,8 @@ func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vc
 	}
 	repository := repoAggregator[0]
 	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+	cfp.XrayVersion = repository.XrayVersion
+	cfp.XscVersion = repository.XscVersion
 	return cfp.scanAndFixRepository(&repository, client)
 }
 
@@ -79,11 +82,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
-	cfp.analyticsService = utils.AddAnalyticsGeneralEvent(cfp.scanDetails.XscGitInfoContext, cfp.scanDetails.ServerDetails, analyticsScanRepositoryScanType)
-	defer func() {
-		cfp.analyticsService.UpdateAndSendXscAnalyticsGeneralEventFinalize(err)
-	}()
-
 	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -97,43 +95,52 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
 	}()
 
-	// If MSI exists we always need to report events
-	if cfp.analyticsService.GetMsi() != "" {
-		// MSI is passed to XrayGraphScanParams, so it can be later used by other analytics events in the scan phase
-		cfp.scanDetails.XrayGraphScanParams.MultiScanId = cfp.analyticsService.GetMsi()
-		cfp.scanDetails.XrayGraphScanParams.XscVersion, err = cfp.analyticsService.XscManager().GetVersion()
-		if err != nil {
-			return
-		}
-	}
+	cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime = xsc.SendNewScanEvent(
+		cfp.scanDetails.XrayVersion,
+		cfp.scanDetails.XscVersion,
+		cfp.scanDetails.ServerDetails,
+		utils.CreateScanEvent(cfp.scanDetails.ServerDetails, cfp.scanDetails.XscGitInfoContext, analyticsScanRepositoryScanType),
+	)
+
+	totalFindings := 0
+
+	defer func() {
+		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, err)
+	}()
 
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
-		if err = cfp.scanAndFixProject(repository); err != nil {
-			return
+		if findings, e := cfp.scanAndFixProject(repository); e != nil {
+			return e
+		} else {
+			totalFindings += findings
 		}
 	}
+
 	return
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
-	// Set the scan details
-	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
-		SetXrayGraphScanParams(repository.Watches, repository.JFrogProjectKey, len(repository.AllowedLicenses) > 0).
-		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
-		SetFixableOnly(repository.FixableOnly).
-		SetSkipAutoInstall(repository.SkipAutoInstall).
-		SetAllowPartialResults(repository.AllowPartialResults).
-		SetDisableJas(repository.DisableJas)
-	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
-		return
-	}
-	repositoryInfo, err := client.GetRepositoryInfo(context.Background(), cfp.scanDetails.RepoOwner, cfp.scanDetails.RepoName)
+	repositoryCloneUrl, err := repository.Git.GetRepositoryHttpsCloneUrl(client)
 	if err != nil {
 		return
 	}
-	cfp.scanDetails.Git.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	// Set the scan details
+	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
+		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
+		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
+		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
+		SetFixableOnly(repository.FixableOnly).
+		SetConfigProfile(repository.ConfigProfile).
+		SetSkipAutoInstall(repository.SkipAutoInstall).
+		SetAllowPartialResults(repository.AllowPartialResults).
+		SetDisableJas(repository.DisableJas)
+
+	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
+		return
+	}
+
 	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
 	cfp.aggregateFixes = repository.Git.AggregateFixes
 	// Set the outputwriter interface for the relevant vcs git provider
@@ -143,7 +150,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.gitManager, err = utils.NewGitManager().
 		SetAuth(cfp.scanDetails.Username, cfp.scanDetails.Token).
 		SetDryRun(cfp.dryRun, cfp.dryRunRepoPath).
-		SetRemoteGitUrl(cfp.scanDetails.Git.RepositoryCloneUrl)
+		SetRemoteGitUrl(repositoryCloneUrl)
 	if err != nil {
 		return
 	}
@@ -151,8 +158,9 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	return
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) error {
+func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (int, error) {
 	var fixNeeded bool
+	totalFindings := 0
 	// A map that contains the full project paths as a keys
 	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
@@ -162,27 +170,24 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
 			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
-				return err
+				return totalFindings, err
 			}
 			continue
 		}
-		if cfp.analyticsService.ShouldReportEvents() {
-			if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: cfp.scanDetails.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
-				return err
-			} else {
-				totalFindings := summary.GetTotalViolations()
-				if totalFindings == 0 {
-					totalFindings = summary.GetTotalVulnerabilities()
-				}
-				cfp.analyticsService.AddScanFindingsToXscAnalyticsGeneralEventFinalize(totalFindings)
+		if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
+			return totalFindings, err
+		} else {
+			findingCount := summary.GetTotalViolations()
+			if findingCount == 0 {
+				findingCount = summary.GetTotalVulnerabilities()
 			}
+			totalFindings += findingCount
 		}
 
-		if scanResults.EntitledForJas && repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
-			// Currently available on GitHub only and JFrog Advance Security package
-			// Only if Jas entitlement is available
-			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client(), cfp.scanDetails.HasViolationContext()); err != nil {
+			// Currently available on GitHub only
+			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -193,7 +198,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults)
 		if err != nil {
 			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
-				return err
+				return totalFindings, err
 			}
 			continue
 		}
@@ -205,9 +210,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) er
 	if repository.DetectionOnly {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' environment variable to 'false'.", utils.DetectionOnlyEnv))
 	} else if fixNeeded {
-		return cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+		return totalFindings, cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 	}
-	return nil
+	return totalFindings, nil
 }
 
 // Audit the dependencies of the current commit.
@@ -218,13 +223,13 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, len(auditResults.GetJasScansResults(jasutils.Applicability)) > 0)
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
 	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
 
 func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults, cfp.scanDetails.HasViolationContext())
+	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
 	if err != nil {
 		return nil, err
 	}
@@ -556,9 +561,9 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (te
 }
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
-func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults, hasViolationContext bool) (map[string]*utils.VulnerabilityDetails, error) {
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
-	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: hasViolationContext}).ConvertToSimpleJson(scanResults)
+	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSimpleJson(scanResults)
 	if err != nil {
 		return nil, err
 	}

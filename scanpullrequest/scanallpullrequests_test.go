@@ -3,6 +3,11 @@ package scanpullrequest
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/golang/mock/gomock"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/testdata"
@@ -11,9 +16,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 var (
@@ -101,13 +103,18 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&server)
+	assert.NoError(t, err)
+
 	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
 	defer restoreJfrogHomeFunc()
 
 	failOnSecurityIssues := false
 	firstRepoParams := utils.Params{
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
-			FailOnSecurityIssues: &failOnSecurityIssues,
+			AddPrCommentOnSuccess: true,
+			FailOnSecurityIssues:  &failOnSecurityIssues,
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
@@ -118,10 +125,12 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		Git: gitParams.Git,
 	}
 	secondRepoParams := utils.Params{
-		Git: gitParams.Git,
+		Git:           gitParams.Git,
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
-			FailOnSecurityIssues: &failOnSecurityIssues,
-			Projects:             []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
+			AddPrCommentOnSuccess: true,
+			FailOnSecurityIssues:  &failOnSecurityIssues,
+			Projects:              []utils.Project{{WorkingDirs: []string{utils.RootDir}, UseWrapper: &utils.TrueVal}}},
 	}
 
 	configAggregator := utils.RepoAggregator{
@@ -143,7 +152,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, mockParams...)
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
+	err = scanAllPullRequestsCmd.Run(configAggregator, client, utils.MockHasConnection())
 	if assert.NoError(t, err) {
 		assert.Len(t, frogbotMessages, 4)
 		expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_standard.md"))
@@ -161,11 +170,16 @@ func TestScanAllPullRequests(t *testing.T) {
 	// This integration test, requires JFrog platform connection details
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&server)
+	assert.NoError(t, err)
+
 	falseVal := false
 	gitParams.Git.GitProvider = vcsutils.BitbucketServer
 	params := utils.Params{
+		JFrogPlatform: utils.JFrogPlatform{XrayVersion: xrayVersion, XscVersion: xscVersion},
 		Scan: utils.Scan{
-			FailOnSecurityIssues: &falseVal,
+			AddPrCommentOnSuccess: true,
+			FailOnSecurityIssues:  &falseVal,
 			Projects: []utils.Project{{
 				InstallCommandName: "npm",
 				InstallCommandArgs: []string{"i"},
@@ -185,7 +199,7 @@ func TestScanAllPullRequests(t *testing.T) {
 	var frogbotMessages []string
 	client := getMockClient(t, &frogbotMessages, MockParams{repoParams.RepoName, repoParams.RepoOwner, "test-proj-with-vulnerability", "test-proj"})
 	scanAllPullRequestsCmd := &ScanAllPullRequestsCmd{}
-	err := scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
+	err = scanAllPullRequestsCmd.Run(paramsAggregator, client, utils.MockHasConnection())
 	assert.NoError(t, err)
 	assert.Len(t, frogbotMessages, 2)
 	expectedMessage := outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_with_vulnerability_simplified.md"))

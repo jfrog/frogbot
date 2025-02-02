@@ -2,7 +2,7 @@ package packagehandlers
 
 import (
 	"github.com/jfrog/frogbot/v2/utils"
-	golangutils "github.com/jfrog/jfrog-cli-core/v2/artifactory/commands/golang"
+	golangutils "github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/golang"
 )
 
 type GoPackageHandler struct {

@@ -30,7 +30,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Go Cache
@@ -79,7 +79,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Go Cache
@@ -108,6 +108,23 @@ jobs:
         with:
           dotnet-version: "6.x"
 
+      - name: Install NuGet on Linux
+        uses: nuget/setup-nuget@v2
+        with:
+          nuget-version: 6.11.0
+        if: runner.os == 'Linux'
+
+      - name: Install Mono on Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates
+          sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update
+          sudo apt-get install -y mono-complete
+        if: runner.os == 'Linux'
+        shell: 'bash'
+
       - name: Install Pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -119,10 +136,14 @@ jobs:
           distribution: "adopt"
           java-version: "11"
 
+      - name: Install Conan
+        run: |
+          python -m pip install conan
+          conan profile detect
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        if: ${{ matrix.suite.name != 'Unit' }}
 
       - name: Run Tests
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
@@ -145,7 +166,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -173,7 +194,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -201,7 +222,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Run Tests
@@ -223,7 +244,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
           cache: false
 
       - name: Unzip Preconfigured Bitbucket Home

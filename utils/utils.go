@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -165,7 +166,7 @@ func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetail
 	reporter := usage.NewUsageReporter(productId, serverDetails)
 	reports, err := convertToUsageReports(commandName, repositories)
 	if err != nil {
-		log.Debug(usage.ReportUsagePrefix, "Could not create usage data to report", err.Error())
+		log.Debug(usage.ArtifactoryCallHomePrefix, "Could not create usage data to report", err.Error())
 		return func() {}
 	}
 	reporter.Report(reports...)
@@ -222,8 +223,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient, hasViolationContext bool) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, scanResults.HasMultipleTargets(), hasViolationContext, repo.AllowedLicenses)
+func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, err := GenerateFrogbotSarifReport(scanResults, repo.AllowedLicenses)
 	if err != nil {
 		return err
 	}
@@ -235,11 +236,10 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, isMultipleRoots, hasViolationContext bool, allowedLicenses []string) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IncludeVulnerabilities: true,
-		HasViolationContext:    hasViolationContext,
-		IsMultipleRoots:        &isMultipleRoots,
+		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
+		HasViolationContext:    extendedResults.HasViolationContext(),
 		AllowedLicenses:        allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
@@ -336,11 +336,15 @@ func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow
 		len(vulnerability.FixedVersions) > 0)
 }
 
-func ConvertSarifPathsToRelative(issues *IssuesCollection, workingDirs ...string) {
-	convertSarifPathsInCveApplicability(issues.Vulnerabilities, workingDirs...)
-	convertSarifPathsInIacs(issues.Iacs, workingDirs...)
-	convertSarifPathsInSecrets(issues.Secrets, workingDirs...)
-	convertSarifPathsInSast(issues.Sast, workingDirs...)
+func ConvertSarifPathsToRelative(issues *issues.ScansIssuesCollection, workingDirs ...string) {
+	convertSarifPathsInCveApplicability(issues.ScaVulnerabilities, workingDirs...)
+	convertSarifPathsInIacs(issues.IacVulnerabilities, workingDirs...)
+	convertSarifPathsInSecrets(issues.SecretsVulnerabilities, workingDirs...)
+	convertSarifPathsInSast(issues.SastVulnerabilities, workingDirs...)
+	convertSarifPathsInCveApplicability(issues.ScaViolations, workingDirs...)
+	convertSarifPathsInIacs(issues.IacViolations, workingDirs...)
+	convertSarifPathsInSecrets(issues.SecretsViolations, workingDirs...)
+	convertSarifPathsInSast(issues.SastViolations, workingDirs...)
 }
 
 func convertSarifPathsInCveApplicability(vulnerabilities []formats.VulnerabilityOrViolationRow, workingDirs ...string) {

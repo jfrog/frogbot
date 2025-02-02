@@ -18,6 +18,7 @@ import (
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,6 +27,7 @@ const (
 	ValidConfigProfile          = "default-profile"
 	InvalidPathConfigProfile    = "invalid-path-from-root-profile"
 	InvalidModulesConfigProfile = "invalid-modules-profile"
+	NonExistingProfile          = "non-existing-profile"
 )
 
 // Receive an environment variables key-values map, set and assert the environment variables.
@@ -154,8 +156,14 @@ func CreateTempJfrogHomeWithCallback(t *testing.T) (string, func()) {
 	}
 }
 
-func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
+func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
 	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiUrlPart := "api/v1/"
+		var isXrayAfterXscMigration bool
+		if isXrayAfterXscMigration = xscutils.IsXscXrayInnerService(xrayVersion); isXrayAfterXscMigration {
+			apiUrlPart = ""
+		}
+
 		secondModule := services.Module{
 			ModuleId:     999,
 			ModuleName:   "second-module",
@@ -169,18 +177,18 @@ func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Ser
 		}
 
 		switch {
-		case strings.HasPrefix(r.RequestURI, "/xsc/api/v1/profile/"):
+		// Endpoints for Profile by name
+		case strings.Contains(r.RequestURI, "/xsc/"+apiUrlPart+"profile/"): // xsc/api/v1/profile
 			assert.Equal(t, http.MethodGet, r.Method)
-			if r.RequestURI == "/xsc/api/v1/profile/"+ValidConfigProfile {
-				w.WriteHeader(http.StatusOK)
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
+			if strings.Contains(r.RequestURI, NonExistingProfile) {
+				w.WriteHeader(http.StatusNotFound)
+				return
 			}
 
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
 
-			if r.RequestURI == "/xsc/api/v1/profile/"+InvalidModulesConfigProfile {
+			if strings.Contains(r.RequestURI, "/profile/"+InvalidModulesConfigProfile) {
 				// Adding a second module to make the profile invalid, as we currently support ONLY profile with a single module
 				var profile services.ConfigProfile
 				err = json.Unmarshal(content, &profile)
@@ -190,17 +198,26 @@ func CreateXscMockServerForConfigProfile(t *testing.T) (mockServer *httptest.Ser
 				assert.NoError(t, err)
 			}
 
-			if r.RequestURI == "/xsc/api/v1/profile/"+InvalidPathConfigProfile {
+			if strings.Contains(r.RequestURI, "/profile/"+InvalidPathConfigProfile) {
 				// Changing 'path_from_root' to a path different from '.' to make the module invalid, as we currently support ONLY a single module with '.' path
 				updatedContent := string(content)
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
-
+			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
 
-		case r.RequestURI == "/xsc/api/v1/system/version":
+		// Endpoint to profile by URL
+		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
+			assert.Equal(t, http.MethodPost, r.Method)
+			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
+			assert.NoError(t, err)
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write(content)
+			assert.NoError(t, err)
+
+		case r.RequestURI == fmt.Sprintf("/%s/%ssystem/version", apiUrlPart, "xsc"):
 			_, err := w.Write([]byte(fmt.Sprintf(`{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)))
 			assert.NoError(t, err)
 		default:

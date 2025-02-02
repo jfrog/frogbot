@@ -1,18 +1,22 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
+	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/jfrog/jfrog-client-go/utils/tests"
-	"github.com/jfrog/jfrog-client-go/xsc/services"
-
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-client-go/utils/tests"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
@@ -182,7 +186,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -229,7 +233,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator(nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -263,7 +267,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(commandName)
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator(nil, nil, gitParams, server, commandName)
+	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -379,12 +383,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, nil, &gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
 
-	repoAggregator, err = BuildRepoAggregator(nil, nil, &gitParams, &server, ScanPullRequest)
+	repoAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	repo = repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
@@ -397,6 +401,7 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.DisableJas)
+	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
@@ -554,7 +559,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator(nil, fileContent, gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, fileContent, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]
@@ -694,44 +699,124 @@ func TestSetEmailDetails(t *testing.T) {
 
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
+		name            string
+		useProfile      bool
 		profileName     string
+		xrayVersion     string
 		failureExpected bool
+		profileWithRepo bool
 	}{
 		{
+			name:            "Deprecated Server - Valid ConfigProfile",
+			useProfile:      true,
 			profileName:     ValidConfigProfile,
+			xrayVersion:     "3.0.0",
 			failureExpected: false,
 		},
 		{
+			name:       "Profile usage is not required",
+			useProfile: false,
+		},
+		{
+			name:            "Profile by name - Valid ConfigProfile",
+			useProfile:      true,
+			profileName:     ValidConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			failureExpected: false,
+		},
+		{
+			name:            "Profile by name - Invalid Path From Root ConfigProfile",
+			useProfile:      true,
 			profileName:     InvalidPathConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: true,
 		},
 		{
+			name:            "Profile by name - Invalid Modules ConfigProfile",
+			useProfile:      true,
 			profileName:     InvalidModulesConfigProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			failureExpected: true,
+		},
+		{
+			// We are not creating test cases for Profile by URL verifications since they are the same verifications as Profile by name
+			name:            "Profile by URL - Valid ConfigProfile",
+			useProfile:      true,
+			profileName:     "",
+			xrayVersion:     services.ConfigProfileByUrlMinXrayVersion,
+			failureExpected: false,
+			profileWithRepo: true,
+		},
+		{
+			name:            "Profile by Name - Non existing profile name",
+			useProfile:      true,
+			profileName:     NonExistingProfile,
+			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
 			failureExpected: true,
 		},
 	}
 
 	for _, testcase := range testcases {
-		t.Run(testcase.profileName, func(t *testing.T) {
-			envCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
-			defer envCallbackFunc()
+		t.Run(testcase.name, func(t *testing.T) {
+			if testcase.useProfile {
+				useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
+				defer useProfileEnvCallBackFunc()
+			}
 
-			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t)
+			if testcase.profileName != "" {
+				profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
+				defer profileNameEnvCallbackFunc()
+			}
+
+			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
-			configProfile, err := getConfigProfileIfExistsAndValid(serverDetails)
+			var mockVcsClient *testdata.MockVcsClient
+			var mockGitParams *Git
+			if testcase.profileWithRepo {
+				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo")
+				mockGitParams = &Git{
+					RepoOwner: "myUser",
+					RepoName:  "my-repo",
+				}
+			}
+
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
+
+			if !testcase.useProfile {
+				assert.Nil(t, configProfile)
+				assert.Nil(t, err)
+				return
+			}
 			if testcase.failureExpected {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				var configProfileContentForComparison []byte
-				configProfileContentForComparison, err = os.ReadFile(configProfileFile)
-				assert.NoError(t, err)
-				var configProfileFromFile services.ConfigProfile
-				err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
-				assert.NoError(t, err)
-				assert.Equal(t, configProfileFromFile, *configProfile)
+				return
 			}
+
+			require.NotNil(t, configProfile)
+			assert.NoError(t, err)
+			if testcase.profileWithRepo {
+				assert.NotEmpty(t, repoCloneUrl)
+			}
+			configProfileContentForComparison, err := os.ReadFile(configProfileFile)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, configProfileContentForComparison)
+			var configProfileFromFile services.ConfigProfile
+			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
+			assert.NoError(t, err)
+			assert.Equal(t, configProfileFromFile, *configProfile)
 		})
 	}
+}
+
+func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
+	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
+	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
+		CloneInfo: vcsclient.CloneInfo{
+			HTTP: "https://github.com/myUser/my-repo.git",
+			SSH:  "git@github.com:myUser/my-repo.git",
+		},
+		RepositoryVisibility: 0,
+	}, nil)
+	return mockVcsClient
 }

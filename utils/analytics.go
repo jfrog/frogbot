@@ -6,36 +6,19 @@ import (
 
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
-	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
-func AddAnalyticsGeneralEvent(gitInfoContext *services.XscGitInfoContext, serverDetails *config.ServerDetails, scanType string) *xsc.AnalyticsMetricsService {
-	log.Debug("Initiating General Event report to Analytics service")
-	analyticsService := xsc.NewAnalyticsMetricsService(serverDetails)
-	if !analyticsService.ShouldReportEvents() {
-		return analyticsService
-	}
-	analyticsService.AddGeneralEvent(createAnalyticsGeneralEvent(analyticsService, gitInfoContext, scanType))
-	if analyticsService.GetMsi() != "" {
-		analyticsService.SetFinalizeEvent(&xscservices.XscAnalyticsGeneralEventFinalize{MultiScanId: analyticsService.GetMsi()})
-	} else {
-		analyticsService.SetShouldReportEvents(false)
-	}
-	return analyticsService
-}
-
-func createAnalyticsGeneralEvent(analyticsService *xsc.AnalyticsMetricsService, gitInfo *services.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
-	generalEvent := analyticsService.CreateGeneralEvent(xscservices.FrogbotProduct, xscservices.FrogbotType)
-	generalEvent.ProductVersion = FrogbotVersion
-	generalEvent.FrogbotScanType = scanType
-	generalEvent.FrogbotCiProvider = resolveCi()
+func CreateScanEvent(serviceDetails *config.ServerDetails, gitInfo *xscservices.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
+	event := xsc.CreateAnalyticsEvent(xscservices.FrogbotProduct, xscservices.FrogbotType, serviceDetails)
+	event.ProductVersion = FrogbotVersion
+	event.FrogbotScanType = scanType
+	event.FrogbotCiProvider = resolveCi()
 	if gitInfo != nil {
-		generalEvent.GitInfo = gitInfo
-		generalEvent.IsGitInfoFlow = true
+		event.GitInfo = gitInfo
+		event.IsGitInfoFlow = true
 	}
-	return generalEvent
+	return event
 }
 
 // Returns the CI system that is currently running the command.

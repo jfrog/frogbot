@@ -6,6 +6,6 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "un-installable-dep": "2.5.0"
+    "@jfrog/un-installable-dep": "2.5.0"
   }
 }

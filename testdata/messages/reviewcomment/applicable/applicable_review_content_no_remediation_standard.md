@@ -1,25 +1,16 @@
 
-## 📦🔍 Contextual Analysis CVE Vulnerability
+## 📦🔍 Contextual Analysis CVE
 <div align='center'>
 
-| Severity                | Impacted Dependency                  | Finding                  | CVE                  |
+| Severity                | ID                  | Impacted Dependency                  | Finding                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableCriticalSeverity.png)<br>Critical | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called | CVE-2022-29361 |
+| Critical | CVE-2022-29361 | werkzeug:1.0.1 | The vulnerable function flask.Flask.run is called |
 
 </div>
 
-<details>
-<summary> <b>Description</b> </summary>
-<br>
-
+<details><summary><b>Description</b></summary>
 The scanner checks whether the vulnerable `Development Server` of the `werkzeug` library is used by looking for calls to `werkzeug.serving.run_simple()`.
-
-</details>
-
-<details>
-<summary> <b>CVE details</b> </summary>
-<br>
-
+<br></details>
+<details><summary><b>CVE details</b></summary>
 cveDetails
-
-</details>
+<br></details>

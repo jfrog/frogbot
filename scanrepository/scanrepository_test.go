@@ -3,6 +3,14 @@ package scanrepository
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
@@ -13,17 +21,12 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/validations"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http/httptest"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 const rootTestDir = "scanrepository"
@@ -170,6 +173,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
+			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
+			assert.NoError(t, err)
+
 			var port string
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, nil, test.testName))
 			defer server.Close()
@@ -198,10 +204,10 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
-			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
+			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
@@ -299,6 +305,8 @@ pr body
 	defer restoreEnv()
 	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, filepath.Join(rootTestDir, "aggregate-pr-lifecycle"))
 	defer cleanup()
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
+	assert.NoError(t, err)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			var port string
@@ -326,7 +334,7 @@ pr body
 			// Load default configurations
 			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(client, configData, gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -392,6 +400,9 @@ func TestGenerateFixBranchName(t *testing.T) {
 func TestPackageTypeFromScan(t *testing.T) {
 	environmentVars, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&environmentVars)
+	assert.NoError(t, err)
+
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
 	trueVal := true
 	params := utils.Params{
@@ -424,9 +435,10 @@ func TestPackageTypeFromScan(t *testing.T) {
 			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
 			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
-				XrayGraphScanParams: &services.XrayGraphScanParams{},
-				Project:             &frogbotParams.Projects[0],
-				ServerDetails:       &frogbotParams.Server,
+				XrayVersion:   xrayVersion,
+				XscVersion:    xscVersion,
+				Project:       &frogbotParams.Projects[0],
+				ServerDetails: &frogbotParams.Server,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan(tmpDir)
@@ -473,44 +485,47 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		},
 		{
 			name: "Scan results with vulnerabilities and no violations",
-			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
-				ScanTarget: results.ScanTarget{Target: "target1"},
-				ScaResults: &results.ScaScanResults{
-					XrayResults: []services.ScanResponse{
-						{
-							Vulnerabilities: []services.Vulnerability{
-								{
-									Cves: []services.Cve{
-										{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-										{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-									},
-									Severity: "Critical",
-									Components: map[string]services.Component{
-										"vuln1": {
-											FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+			scanResults: &results.SecurityCommandResults{
+				ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						XrayResults: validations.NewMockScaResults(
+							services.ScanResponse{
+								Vulnerabilities: []services.Vulnerability{
+									{
+										Cves: []services.Cve{
+											{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+											{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+										},
+										Severity: "Critical",
+										Components: map[string]services.Component{
+											"vuln1": {
+												FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
+											},
 										},
 									},
-								},
-								{
-									Cves: []services.Cve{
-										{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-										{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-									},
-									Severity: "High",
-									Components: map[string]services.Component{
-										"vuln2": {
-											FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+									{
+										Cves: []services.Cve{
+											{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+											{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+										},
+										Severity: "High",
+										Components: map[string]services.Component{
+											"vuln2": {
+												FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
+											},
 										},
 									},
 								},
 							},
-						},
+						),
 					},
-				},
-				JasResults: &results.JasScansResults{},
-			}}},
+					JasResults: &results.JasScansResults{},
+				}},
+			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"vuln1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -525,46 +540,51 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		},
 		{
 			name: "Scan results with violations and no vulnerabilities",
-			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
-				ScanTarget: results.ScanTarget{Target: "target1"},
-				ScaResults: &results.ScaScanResults{
-					XrayResults: []services.ScanResponse{
-						{
-							Violations: []services.Violation{
-								{
-									ViolationType: "security",
-									Cves: []services.Cve{
-										{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-										{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-									},
-									Severity: "Critical",
-									Components: map[string]services.Component{
-										"viol1": {
-											FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+			scanResults: &results.SecurityCommandResults{
+				ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						XrayResults: validations.NewMockScaResults(
+							services.ScanResponse{
+								Violations: []services.Violation{
+									{
+										ViolationType: "security",
+										WatchName:     "w1",
+										Cves: []services.Cve{
+											{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
+											{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
+										},
+										Severity: "Critical",
+										Components: map[string]services.Component{
+											"viol1": {
+												FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
+												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
+											},
 										},
 									},
-								},
-								{
-									ViolationType: "security",
-									Cves: []services.Cve{
-										{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-										{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-									},
-									Severity: "High",
-									Components: map[string]services.Component{
-										"viol2": {
-											FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-											ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+									{
+										ViolationType: "security",
+										WatchName:     "w1",
+										Cves: []services.Cve{
+											{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
+											{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
+										},
+										Severity: "High",
+										Components: map[string]services.Component{
+											"viol2": {
+												FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
+												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
+											},
 										},
 									},
 								},
 							},
-						},
+						),
 					},
-				},
-				JasResults: &results.JasScansResults{},
-			}}},
+					JasResults: &results.JasScansResults{},
+				}},
+			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
 					SuggestedFixedVersion: "1.9.1",
@@ -581,7 +601,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults, true)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]

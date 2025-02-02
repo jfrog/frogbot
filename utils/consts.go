@@ -24,39 +24,47 @@ const (
 	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
-	JFrogUserEnv           = "JF_USER"
-	JFrogUrlEnv            = "JF_URL"
-	jfrogXrayUrlEnv        = "JF_XRAY_URL"
-	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
-	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
-	JFrogPasswordEnv       = "JF_PASSWORD"
-	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	JfrogConfigProfileEnv  = "JF_CONFIG_PROFILE"
+	JFrogUserEnv             = "JF_USER"
+	JFrogUrlEnv              = "JF_URL"
+	jfrogXrayUrlEnv          = "JF_XRAY_URL"
+	jfrogArtifactoryUrlEnv   = "JF_ARTIFACTORY_URL"
+	jfrogReleasesRepoEnv     = "JF_RELEASES_REPO"
+	JFrogPasswordEnv         = "JF_PASSWORD"
+	JFrogTokenEnv            = "JF_ACCESS_TOKEN"
+	JfrogUseConfigProfileEnv = "JF_USE_CONFIG_PROFILE"
+	JfrogConfigProfileEnv    = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
-	GitProvider              = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv          = "JF_GIT_OWNER"
-	GitRepoEnv               = "JF_GIT_REPO"
-	GitProjectEnv            = "JF_GIT_PROJECT"
-	GitUsernameEnv           = "JF_GIT_USERNAME"
-	GitUseLocalRepositoryEnv = "JF_USE_LOCAL_REPOSITORY"
-
-	// Git naming template environment variables
-	BranchNameTemplateEnv            = "JF_BRANCH_NAME_TEMPLATE"
-	CommitMessageTemplateEnv         = "JF_COMMIT_MESSAGE_TEMPLATE"
-	PullRequestTitleTemplateEnv      = "JF_PULL_REQUEST_TITLE_TEMPLATE"
-	PullRequestCommentTitleEnv       = "JF_PR_COMMENT_TITLE"
+	GitProvider                      = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv                  = "JF_GIT_OWNER"
+	GitRepoEnv                       = "JF_GIT_REPO"
+	GitProjectEnv                    = "JF_GIT_PROJECT"
+	GitUsernameEnv                   = "JF_GIT_USERNAME"
+	GitUseLocalRepositoryEnv         = "JF_USE_LOCAL_REPOSITORY"
 	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
 
+	// Git naming template environment variables
+	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
+	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
+	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
+	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
+	//#nosec G101 -- not a secret
+	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
+
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
-	InstallCommandEnv                  = "JF_INSTALL_DEPS_CMD"
-	RequirementsFileEnv                = "JF_REQUIREMENTS_FILE"
-	WorkingDirectoryEnv                = "JF_WORKING_DIR"
-	PathExclusionsEnv                  = "JF_PATH_EXCLUSIONS"
-	jfrogWatchesEnv                    = "JF_WATCHES"
-	jfrogProjectEnv                    = "JF_PROJECT"
+	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
+	MaxPnpmTreeDepthEnv = "JF_PNPM_MAX_TREE_DEPTH"
+	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
+	WorkingDirectoryEnv = "JF_WORKING_DIR"
+	PathExclusionsEnv   = "JF_PATH_EXCLUSIONS"
+	jfrogWatchesEnv     = "JF_WATCHES"
+	jfrogProjectEnv     = "JF_PROJECT"
+	// To include vulnerabilities and violations
+	IncludeVulnerabilitiesEnv = "JF_INCLUDE_VULNERABILITIES"
+	// To include all the vulnerabilities in the source branch at PR scan
 	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
+	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"
 	UseWrapperEnv                      = "JF_USE_WRAPPER"
 	DepsRepoEnv                        = "JF_DEPS_REPO"

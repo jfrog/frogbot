@@ -9,35 +9,61 @@
 </div>
 
 
-## 📦 Vulnerable Dependencies
 
-### ✍️ Summary
+## 📗 Scan Summary
+- Frogbot scanned for vulnerabilities and found 2 issues
+
+| Scan Category                | Status                  | Security Issues                  |
+| --------------------- | :-----------------------------------: | ----------------------------------- |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>2 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 2 High<br></details> |
+| **Contextual Analysis** | ✅ Done | - |
+| **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
+| **Secrets** | ✅ Done | - |
+| **Infrastructure as Code (IaC)** | ✅ Done | Not Found |
+
+### 📦 Vulnerable Dependencies
+
 <div align='center'>
 
-| SEVERITY                | CONTEXTUAL ANALYSIS                  | DIRECT DEPENDENCIES                  | IMPACTED DEPENDENCY                  | FIXED VERSIONS                  | CVES                  |
+| Severity                | ID                  | Contextual Analysis                  | Direct Dependencies                  | Impacted Dependency                  | Fixed Versions                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] | CVE-2022-3517 |
-| ![](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] | CVE-2022-29217 |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
 
 </div>
 
 
-### 🔬 Research Details
-
-<details>
-<summary> <b>[ CVE-2022-3517 ] minimatch 3.0.4</b> </summary>
-<br>
+### 🔖 Details
 
 
-**Description:**
-A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.
+<details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
 
-</details>
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | minimatch:3.0.4 |
+| **Fixed Versions:** | [3.0.5] |
+| **CVSS V3:** | 7.5 |
 
-<details>
-<summary> <b>[ CVE-2022-29217 ] pyjwt 1.7.1</b> </summary>
-<br>
+A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
+<details><summary><b>[ CVE-2022-29217 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> Medium |
+| **Contextual Analysis:** | Not Covered |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.4.0] |
+| **CVSS V3:** | 7.5 |
+
+Algorithm confusion in PyJWT leads to authentication bypass.
+
+### 🔬 JFrog Research Details
 
 **Description:**
 [PyJWT](https://pypi.org/project/PyJWT) is a Python implementation of the RFC 7519 standard (JSON Web Tokens). [JSON Web Tokens](https://jwt.io/) are an open, industry standard method for representing claims securely between two parties. A JWT comes with an inline signature that is meant to be verified by the receiving application. JWT supports multiple standard algorithms, and the algorithm itself is **specified in the JWT token itself**.
@@ -76,9 +102,7 @@ For example, replace the following call -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=jwt.algorithms.get_default_algorithms())`
 With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
-
-</details>
-
+<br></details>
 
 
 ---

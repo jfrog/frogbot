@@ -4,6 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -11,12 +19,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
@@ -27,6 +29,9 @@ func TestScanAndFixRepos(t *testing.T) {
 	defer restoreEnv()
 	_, restoreJfrogHomeFunc := utils.CreateTempJfrogHomeWithCallback(t)
 	defer restoreJfrogHomeFunc()
+
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
+	assert.NoError(t, err)
 
 	baseWd, err := os.Getwd()
 	assert.NoError(t, err)
@@ -57,7 +62,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	}()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)
-	configAggregator, err := utils.BuildRepoAggregator(client, configData, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
+	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
 	assert.NoError(t, err)
 
 	var cmd = ScanMultipleRepositories{dryRun: true, dryRunRepoPath: testDir}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -105,6 +106,7 @@ type OutputWriter interface {
 	VcsProvider() vcsutils.VcsProvider
 	SetVcsProvider(provider vcsutils.VcsProvider)
 	// Markdown interface
+	SeverityIcon(severity severityutils.Severity) string
 	FormattedSeverity(severity, applicability string) string
 	Separator() string
 	MarkInCenter(content string) string
@@ -217,6 +219,10 @@ func MarkAsQuote(content string) string {
 
 func MarkAsLink(content, link string) string {
 	return fmt.Sprintf("[%s](%s)", content, link)
+}
+
+func MarkAsBullet(content string) string {
+	return fmt.Sprintf("- %s", content)
 }
 
 func SectionDivider() string {

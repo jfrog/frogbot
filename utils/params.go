@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -40,6 +40,8 @@ var (
 )
 
 type FrogbotDetails struct {
+	XrayVersion   string
+	XscVersion    string
 	Repositories  RepoAggregator
 	ServerDetails *coreconfig.ServerDetails
 	GitClient     vcsclient.VcsClient
@@ -87,6 +89,7 @@ type Project struct {
 	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
 	PathExclusions      []string `yaml:"pathExclusions,omitempty"`
 	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
+	MaxPnpmTreeDepth    string   `yaml:"maxPnpmTreeDepth,omitempty"`
 	DepsRepo            string   `yaml:"repository,omitempty"`
 	InstallCommandName  string
 	InstallCommandArgs  []string
@@ -128,6 +131,10 @@ func (p *Project) setDefaultsIfNeeded() error {
 	if p.DepsRepo == "" {
 		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
 	}
+	if p.MaxPnpmTreeDepth == "" {
+		p.MaxPnpmTreeDepth = getTrimmedEnv(MaxPnpmTreeDepthEnv)
+	}
+
 	return nil
 }
 
@@ -154,6 +161,7 @@ type Scan struct {
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	DisableJas                      bool      `yaml:"disableJas,omitempty"`
+	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	EmailDetails                    `yaml:",inline"`
@@ -219,6 +227,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
+	if !s.AddPrCommentOnSuccess {
+		if s.AddPrCommentOnSuccess, err = getBoolEnv(AddPrCommentOnSuccessEnv, true); err != nil {
+			return
+		}
+	}
 	if !s.DetectionOnly {
 		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
@@ -271,8 +284,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 }
 
 type JFrogPlatform struct {
-	Watches         []string `yaml:"watches,omitempty"`
-	JFrogProjectKey string   `yaml:"jfrogProjectKey,omitempty"`
+	XrayVersion            string
+	XscVersion             string
+	Watches                []string `yaml:"watches,omitempty"`
+	IncludeVulnerabilities bool     `yaml:"includeVulnerabilities,omitempty"`
+	JFrogProjectKey        string   `yaml:"jfrogProjectKey,omitempty"`
 }
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
@@ -282,13 +298,17 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-
 	if jp.JFrogProjectKey == "" {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
+	}
+	if !jp.IncludeVulnerabilities {
+		if jp.IncludeVulnerabilities, err = getBoolEnv(IncludeVulnerabilitiesEnv, false); err != nil {
+			return
+		}
 	}
 	return
 }
@@ -304,12 +324,26 @@ type Git struct {
 	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
+	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
 	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails            vcsclient.PullRequestInfo
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
+}
+
+func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
+	if g.RepositoryCloneUrl != "" {
+		return g.RepositoryCloneUrl, nil
+	}
+	// If the repository clone URL is not cached, we fetch it from the VCS provider
+	repositoryInfo, err := gitClient.GetRepositoryInfo(context.Background(), g.RepoOwner, g.RepoName)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch the repository clone URL. %s", err.Error())
+	}
+	g.RepositoryCloneUrl = repositoryInfo.CloneInfo.HTTP
+	return g.RepositoryCloneUrl, nil
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
@@ -348,6 +382,11 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
+	}
+	if !g.PullRequestSecretComments {
+		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
+			return
+		}
 	}
 	if !g.UseMostCommonAncestorAsTarget {
 		if g.UseMostCommonAncestorAsTarget, err = getBoolEnv(UseMostCommonAncestorAsTargetEnv, true); err != nil {
@@ -410,8 +449,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
-
-	configProfile, err := getConfigProfileIfExistsAndValid(jfrogServer)
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(jfrogServer)
 	if err != nil {
 		return
 	}
@@ -438,22 +476,29 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configAggregator, err := getConfigAggregator(client, gitParamsFromEnv, jfrogServer, commandName)
+	configAggregator, err := getConfigAggregator(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
 
-	// We apply the configProfile to all received repositories. This loop must be deleted when we will no longer accept multiple repositories in a single scan
-	for i := range configAggregator {
-		configAggregator[i].Scan.ConfigProfile = configProfile
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, xscVersion, jfrogServer, client, gitParamsFromEnv)
+	if err != nil {
+		return
 	}
 
-	frogbotDetails = &FrogbotDetails{Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	// We apply the configProfile to all received repositories. If no config profile was fetched, a nil value is passed
+	// TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
+	for i := range configAggregator {
+		configAggregator[i].Scan.ConfigProfile = configProfile
+		configAggregator[i].Git.RepositoryCloneUrl = repoCloneUrl
+	}
+
+	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
 	return
 }
 
 // getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
-func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
+func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
 	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, commandName)
 	if err != nil {
 		return nil, err
@@ -461,7 +506,7 @@ func getConfigAggregator(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, j
 	if configFileContent != nil {
 		log.Debug(fmt.Sprintf("The content of %s that will be used is:\n%s", FrogbotConfigFile, string(configFileContent)))
 	}
-	return BuildRepoAggregator(gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
+	return BuildRepoAggregator(xrayVersion, xscVersion, gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
 // getConfigFileContent retrieves the content of the frogbot-config.yml file
@@ -489,7 +534,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 
 // BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
+func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
 	// Unmarshal the frogbot-config.yml file if exists
 	if cleanAggregator, err = unmarshalFrogbotConfigYaml(configFileContent); err != nil {
@@ -497,6 +542,8 @@ func BuildRepoAggregator(gitClient vcsclient.VcsClient, configFileContent []byte
 	}
 	for _, repository := range cleanAggregator {
 		repository.Server = *server
+		repository.Params.XrayVersion = xrayVersion
+		repository.Params.XscVersion = xscVersion
 		if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 			return
 		}
@@ -774,28 +821,50 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 	return
 }
 
-// This function fetches a config profile if JF_CONFIG_PROFILE is provided.
-// If so - it verifies there is only a single module with a '.' path from root. If these conditions doesn't hold we return an error.
-func getConfigProfileIfExistsAndValid(jfrogServer *coreconfig.ServerDetails) (configProfile *services.ConfigProfile, err error) {
+// This function attempts to fetch a config profile if JF_USE_CONFIG_PROFILE is set to true.
+// If we need to use a profile, we first try to get the profile by name that can be provided through JF_CONFIG_PROFILE. If name is provided but profile doesn't exist we return an error.
+// If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
+// When a profile is found we verify several conditions on it.
+// If a profile was requested but not found by url nor by name we return an error.
+func getConfigProfileIfExistsAndValid(xrayVersion, xscVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
+	var useConfigProfile bool
+	if useConfigProfile, err = getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
+		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
+		return
+	}
+	// Attempt to get the config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
-	if profileName == "" {
-		log.Debug(fmt.Sprintf("No %s environment variable was provided. All configurations will be induced from Env vars and files", JfrogConfigProfileEnv))
+	if profileName != "" {
+		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
+		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, xscVersion, jfrogServer, profileName); err != nil || configProfile == nil {
+			return
+		}
+		err = verifyConfigProfileValidity(configProfile)
 		return
 	}
-
-	if configProfile, err = xsc.GetConfigProfile(jfrogServer, profileName); err != nil {
+	// Getting repository's url in order to get repository HTTP url
+	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
 		return
 	}
+	// Attempt to get a config profile associated with the repo URL
+	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
+		return
+	}
+	err = verifyConfigProfileValidity(configProfile)
+	return
+}
 
+func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err error) {
 	// Currently, only a single Module that represents the entire project is supported
 	if len(configProfile.Modules) != 1 {
 		err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
 		return
 	}
 	if configProfile.Modules[0].PathFromRoot != "." {
-		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, profileName, configProfile.Modules[0].PathFromRoot)
+		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, configProfile.ProfileName, configProfile.Modules[0].PathFromRoot)
 		return
 	}
-	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", profileName))
+	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", configProfile.ProfileName))
 	return
 }
