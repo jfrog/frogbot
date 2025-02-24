@@ -34,7 +34,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.5 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cloudflare/circl v1.6.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
@@ -105,7 +105,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
@@ -117,7 +117,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.14.2-0.20250130082759-0d5b0bef7b8e
+replace github.com/jfrog/jfrog-cli-security => github.com/orz25/jfrog-cli-security v0.0.0-20250224130851-8891f6275b6a
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250130104846-27e495de291e
 
@@ -125,6 +125,6 @@ replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-art
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/orz25/jfrog-client-go v0.0.0-20250224104603-04cf756e89c1
+replace github.com/jfrog/jfrog-client-go => github.com/orz25/jfrog-client-go v0.0.0-20250224131031-96404aad78ea
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
