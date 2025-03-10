@@ -6,13 +6,13 @@ require (
 	github.com/go-git/go-git/v5 v5.13.2
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.10.9
+	github.com/jfrog/build-info-go v1.10.10
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.1.12
-	github.com/jfrog/jfrog-cli-core/v2 v2.58.0
+	github.com/jfrog/jfrog-cli-artifactory v0.2.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.58.1
 	github.com/jfrog/jfrog-cli-security v1.15.0
-	github.com/jfrog/jfrog-client-go v1.50.0
+	github.com/jfrog/jfrog-client-go v1.51.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.10.0
@@ -117,7 +117,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/orz25/jfrog-cli-security v0.0.0-20250224130851-8891f6275b6a
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.16.1-0.20250310100832-0036661bd37f
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250130104846-27e495de291e
 
@@ -125,6 +125,6 @@ replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-art
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/orz25/jfrog-client-go v0.0.0-20250224131031-96404aad78ea
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250309113753-9cb691a755b5
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go dev
