@@ -67,7 +67,7 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 }
 
 func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
-	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses)
+	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses, false)
 	return sc
 }
 
