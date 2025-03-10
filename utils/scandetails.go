@@ -67,7 +67,7 @@ func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
 }
 
 func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
-	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses)
+	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses, false)
 	return sc
 }
 
@@ -202,16 +202,17 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 		gitProject = sc.RepoOwner
 	}
 	gitInfo = &xscservices.XscGitInfoContext{
-		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
-		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
-		GitRepoName:          sc.RepoName,
-		GitProvider:          sc.Git.GitProvider.String(),
-		GitProject:           gitProject,
-		BranchName:           scannedBranch,
-		LastCommitUrl:        latestCommit.Url,
-		LastCommitHash:       latestCommit.Hash,
-		LastCommitMessage:    latestCommit.Message,
-		LastCommitAuthor:     latestCommit.AuthorName,
+		Source: xscservices.CommitContext{
+			// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
+			GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
+			GitRepoName:          sc.RepoName,
+			GitProject:           gitProject,
+			BranchName:           scannedBranch,
+			CommitHash:           latestCommit.Hash,
+			CommitMessage:        latestCommit.Message,
+			CommitAuthor:         latestCommit.AuthorName,
+		},
+		GitProvider: sc.Git.GitProvider.String(),
 	}
 	return
 }
