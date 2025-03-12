@@ -139,7 +139,8 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
 		SetConfigProfile(repoConfig.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
-		SetDisableJas(repoConfig.DisableJas)
+		SetDisableJas(repoConfig.DisableJas).
+		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails)
 
 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
 		return
@@ -149,7 +150,7 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		scanDetails.XrayVersion,
 		scanDetails.XscVersion,
 		scanDetails.ServerDetails,
-		utils.CreateScanEvent(scanDetails.ServerDetails, nil, analyticsScanPrScanType),
+		utils.CreateScanEvent(scanDetails.ServerDetails, scanDetails.XscGitInfoContext, analyticsScanPrScanType),
 	)
 
 	defer func() {

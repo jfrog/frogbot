@@ -178,8 +178,20 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 	return audit.RunAudit(auditParams)
 }
 
+// For Repo-Scan
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
 	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client, nil)
+	if err != nil {
+		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
+		return sc
+	}
+	sc.XscGitInfoContext = XscGitInfoContext
+	return sc
+}
+
+// For PR-Scan
+func (sc *ScanDetails) SetXscPRGitInfoContext(gitProject string, client vcsclient.VcsClient, prDetails vcsclient.PullRequestInfo) *ScanDetails {
+	XscGitInfoContext, err := sc.createGitInfoContext(prDetails.Source.Name, gitProject, client, &prDetails)
 	if err != nil {
 		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
 		return sc
@@ -197,6 +209,7 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	if err != nil {
 		return nil, err
 	}
+	// Get Source commit details.
 	gitInfo = &xscservices.XscGitInfoContext{
 		Source:      sourceCommit,
 		GitProvider: sc.Git.GitProvider.String(),
@@ -204,13 +217,17 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	if prDetails == nil {
 		return
 	}
+	// PR context
+	gitInfo.PullRequest = &xscservices.PullRequestContext{
+		PullRequestId:    int(prDetails.ID),
+		PullRequestTitle: prDetails.Title,
+	}
+	// Target details are available, get target commit details.
 	targetInfo, err := sc.getCommitContext(prDetails.Target.Name, gitProject, client)
 	if err != nil {
 		return nil, err
 	}
 	gitInfo.Target = &targetInfo
-	gitInfo.PullRequest.PullRequestId = int(prDetails.ID)
-	gitInfo.PullRequest.PullRequestTitle = prDetails.Title
 	return
 }
 
