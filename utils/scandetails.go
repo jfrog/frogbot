@@ -179,7 +179,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 }
 
 func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) *ScanDetails {
-	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client)
+	XscGitInfoContext, err := sc.createGitInfoContext(scannedBranch, gitProject, client, nil)
 	if err != nil {
 		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
 		return sc
@@ -191,28 +191,47 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 // CreateGitInfoContext Creates GitInfoContext for XSC scans, this is optional.
 // ScannedBranch - name of the branch we are scanning.
 // GitProject - [Optional] relevant for azure repos and Bitbucket server.
-// Client vscClient
-func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (gitInfo *xscservices.XscGitInfoContext, err error) {
+// prDetails - if the scan is for a PR, the details of the PR.
+func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, client vcsclient.VcsClient, prDetails *vcsclient.PullRequestInfo) (gitInfo *xscservices.XscGitInfoContext, err error) {
+	sourceCommit, err := sc.getCommitContext(scannedBranch, gitProject, client)
+	if err != nil {
+		return nil, err
+	}
+	gitInfo = &xscservices.XscGitInfoContext{
+		Source:      sourceCommit,
+		GitProvider: sc.Git.GitProvider.String(),
+	}
+	if prDetails == nil {
+		return
+	}
+	targetInfo, err := sc.getCommitContext(prDetails.Target.Name, gitProject, client)
+	if err != nil {
+		return nil, err
+	}
+	gitInfo.Target = &targetInfo
+	gitInfo.PullRequest.PullRequestId = int(prDetails.ID)
+	gitInfo.PullRequest.PullRequestTitle = prDetails.
+	return
+}
+
+func (sc *ScanDetails) getCommitContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (commitContext xscservices.CommitContext, err error) {
 	latestCommit, err := client.GetLatestCommit(context.Background(), sc.RepoOwner, sc.RepoName, scannedBranch)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
+		return xscservices.CommitContext{}, fmt.Errorf("failed getting latest commit, repository: %s, branch: %s. error: %s ", sc.RepoName, scannedBranch, err.Error())
 	}
 	// In some VCS providers, there are no git projects, fallback to the repository owner.
 	if gitProject == "" {
 		gitProject = sc.RepoOwner
 	}
-	gitInfo = &xscservices.XscGitInfoContext{
-		Source: xscservices.CommitContext{
-			// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
-			GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
-			GitRepoName:          sc.RepoName,
-			GitProject:           gitProject,
-			BranchName:           scannedBranch,
-			CommitHash:           latestCommit.Hash,
-			CommitMessage:        latestCommit.Message,
-			CommitAuthor:         latestCommit.AuthorName,
-		},
-		GitProvider: sc.Git.GitProvider.String(),
+	commitContext = xscservices.CommitContext{
+		// Use Clone URLs as Repo Url, on browsers it will redirect to repository URLS.
+		GitRepoHttpsCloneUrl: sc.Git.RepositoryCloneUrl,
+		GitRepoName:          sc.RepoName,
+		GitProject:           gitProject,
+		BranchName:           scannedBranch,
+		CommitHash:           latestCommit.Hash,
+		CommitMessage:        latestCommit.Message,
+		CommitAuthor:         latestCommit.AuthorName,
 	}
 	return
 }
