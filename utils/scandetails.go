@@ -210,7 +210,7 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	}
 	gitInfo.Target = &targetInfo
 	gitInfo.PullRequest.PullRequestId = int(prDetails.ID)
-	gitInfo.PullRequest.PullRequestTitle = prDetails.
+	gitInfo.PullRequest.PullRequestTitle = prDetails.Title
 	return
 }
 
