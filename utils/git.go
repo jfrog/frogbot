@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
 	// "os/exec"
 	"regexp"
 	"strings"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/format/diff"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -180,6 +182,59 @@ func (gm *GitManager) Fetch() error {
 		return fmt.Errorf("git fetch failed with error: %s", err.Error())
 	}
 	return nil
+}
+
+func (gm *GitManager) Diff(reference string) (changes []diff.FilePatch, err error) {
+	// Get the current branch
+	currentBranch, err := gm.localGitRepository.Head()
+	if err != nil {
+		return
+	}
+	// Get the commit object of the current branch
+	currentCommit, err := gm.localGitRepository.CommitObject(currentBranch.Hash())
+	if err != nil {
+		return
+	}
+	// Get the commit object of the reference
+	referenceCommit, err := gm.localGitRepository.CommitObject(plumbing.NewHash(reference))
+	if err != nil {
+		return
+	}
+	// Get the diff between the current branch and the reference
+	diff, err := currentCommit.Patch(referenceCommit)
+	if err != nil {
+		return
+	}
+	log.Debug(fmt.Sprintf("Diff stats between %s and %s:\n%v", currentBranch.Name().Short(), reference, diff.Stats()))
+	changes = diff.FilePatches()
+	return
+}
+
+func DiffFilePatchesToChangeList(filePatches []diff.FilePatch) (changes []string) {
+	for _, filePatch := range filePatches {
+		changes = append(changes, getFilePathFromFiles(filePatch))
+	}
+	return
+}
+
+func getFilePathFromFiles(filePatch diff.FilePatch) string {
+	from, to := filePatch.Files()
+	fromPath := ""
+	if from != nil {
+		fromPath = from.Path()
+	}
+	toPath := ""
+	if to != nil {
+		toPath = to.Path()
+	}
+	log.Debug(fmt.Sprintf("Checking Diff between: %s (from) and %s (to)", fromPath, toPath))
+	if fromPath == "" {
+		return toPath
+	}
+	if toPath == "" {
+		return fromPath
+	}
+	return fromPath
 }
 
 func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
