@@ -93,7 +93,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	issues, resultContext, err := auditPullRequest(repo, client)
+	issues, resultContext, err := auditPullRequestAndReport(repo, client)
 	if err != nil {
 		return
 	}
@@ -173,6 +173,33 @@ func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) 
 		issuesCollection.Append(projectIssues)
 	}
 	resultContext = scanDetails.ResultContext
+	return
+}
+
+func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
+	return
+}
+
+func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
+	// Download source branch
+	sourcePullRequestInfo := scanDetails.PullRequestDetails.Source
+	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(scanDetails.Client(), sourcePullRequestInfo.Owner, sourcePullRequestInfo.Repository, sourcePullRequestInfo.Name)
+	if err != nil {
+		return
+	}
+	cleanup = cleanupSource
+	if repoConfig.IncludeAllVulnerabilities {
+		// No need to download target branch
+		return
+	}
+	// Download target branch
+	targetBranchWd, cleanupTarget, err := prepareTargetForScan(repoConfig.Git, scanDetails)
+	if err != nil {
+		return
+	}
+	cleanup = func() error {
+		return errors.Join(cleanupSource(), cleanupTarget())
+	}
 	return
 }
 
