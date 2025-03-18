@@ -10,9 +10,9 @@ require (
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.2.0
-	github.com/jfrog/jfrog-cli-core/v2 v2.58.1
+	github.com/jfrog/jfrog-cli-core/v2 v2.58.2
 	github.com/jfrog/jfrog-cli-security v1.15.0
-	github.com/jfrog/jfrog-client-go v1.51.0
+	github.com/jfrog/jfrog-client-go v1.51.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
 	github.com/stretchr/testify v1.10.0
@@ -118,15 +118,15 @@ require (
 )
 
 // attiasas:diff_scan
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250313154510-5b245e3ed2d8
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250318133656-0b8b14102022
 
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250226114135-44220ef93836
+replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250317155445-5ac6d852b177
 
-replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-artifactory v0.2.1-0.20250310124709-1f033a7789c5
+replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-artifactory v0.2.1
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250309113753-9cb691a755b5
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250317144209-d9b18ee92bfe
 
 // attiasas:add_title_attrib_pr
-replace github.com/jfrog/froggit-go => github.com/attiasas/froggit-go v0.0.0-20250312114211-1755d45f58c9
+replace github.com/jfrog/froggit-go => github.com/attiasas/froggit-go v0.0.0-20250318112017-8d485add84a6
