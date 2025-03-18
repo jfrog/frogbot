@@ -34,6 +34,9 @@ type ScanDetails struct {
 	configProfile            *clientservices.ConfigProfile
 	allowPartialResults      bool
 
+	diffScan bool
+	SourceScanResults *results.SecurityCommandResults
+
 	results.ResultContext
 	MultiScanId string
 	XrayVersion string
@@ -48,6 +51,16 @@ func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, gi
 func (sc *ScanDetails) SetJfrogVersions(xrayVersion, xscVersion string) *ScanDetails {
 	sc.XrayVersion = xrayVersion
 	sc.XscVersion = xscVersion
+	return sc
+}
+
+func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
+	sc.diffScan = diffScan
+	return sc
+}
+
+func (sc *ScanDetails) SetSourceScanResults(results *results.SecurityCommandResults) *ScanDetails {
+	sc.SourceScanResults = results
 	return sc
 }
 
@@ -172,6 +185,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetConfigProfile(sc.configProfile).
+		SetDiffMode(sc.diffScan).
+		SetResultsToCompare(sc.SourceScanResults).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 

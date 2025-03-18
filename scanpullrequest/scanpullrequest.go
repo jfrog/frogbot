@@ -225,7 +225,8 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetConfigProfile(repoConfig.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
 		SetDisableJas(repoConfig.DisableJas).
-		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails)
+		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
+		SetDiffScan(true)
 	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
 }
 
@@ -260,8 +261,9 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 	issuesCollection = &issues.ScansIssuesCollection{}
 
 	for i := range repoConfig.Projects {
-		scanDetails.SetProject(&repoConfig.Projects[i])
-		// Scan source branch
+		// Reset scan details for each project
+		scanDetails.SetProject(&repoConfig.Projects[i]).SetSourceScanResults(nil)
+		// Scan source branch of the project
 		sourceScanResults, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd)
 		if e != nil {
 			issuesCollection.AppendStatus(getResultScanStatues(sourceScanResults))
@@ -279,7 +281,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 			continue
 		}
 		// Diff scan, scan target branch and get new issues
-		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails, sourceScanResults, targetBranchWd); e == nil {
+		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), sourceScanResults, targetBranchWd); e == nil {
 			issuesCollection.Append(newIssues)
 		} else {
 			issuesCollection.AppendStatus(newIssues.ScanStatus)
