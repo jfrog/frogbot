@@ -34,7 +34,7 @@ type ScanDetails struct {
 	configProfile            *clientservices.ConfigProfile
 	allowPartialResults      bool
 
-	diffScan bool
+	diffScan          bool
 	SourceScanResults *results.SecurityCommandResults
 
 	results.ResultContext

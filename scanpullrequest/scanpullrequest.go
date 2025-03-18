@@ -125,57 +125,6 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 	return failFlagSet && issues.IssuesExists(repo.PullRequestSecretComments)
 }
 
-// Downloads Pull Requests branches code and audits them
-// func auditPullRequest(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
-// 	repositoryCloneUrl, err := repoConfig.GetRepositoryHttpsCloneUrl(client)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	scanDetails := utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-// 		SetJfrogVersions(repoConfig.XrayVersion, repoConfig.XscVersion).
-// 		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
-// 		SetFixableOnly(repoConfig.FixableOnly).
-// 		SetFailOnInstallationErrors(*repoConfig.FailOnSecurityIssues).
-// 		SetConfigProfile(repoConfig.ConfigProfile).
-// 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
-// 		SetDisableJas(repoConfig.DisableJas).
-// 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails)
-
-// 	if scanDetails, err = scanDetails.SetMinSeverity(repoConfig.MinSeverity); err != nil {
-// 		return
-// 	}
-
-// 	scanDetails.MultiScanId, scanDetails.StartTime = xsc.SendNewScanEvent(
-// 		scanDetails.XrayVersion,
-// 		scanDetails.XscVersion,
-// 		scanDetails.ServerDetails,
-// 		utils.CreateScanEvent(scanDetails.ServerDetails, scanDetails.XscGitInfoContext, analyticsScanPrScanType),
-// 	)
-
-// 	defer func() {
-// 		if issuesCollection != nil {
-// 			xsc.SendScanEndedEvent(scanDetails.XrayVersion, scanDetails.XscVersion, scanDetails.ServerDetails, scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err)
-// 		}
-// 	}()
-
-// 	issuesCollection = &issues.ScansIssuesCollection{}
-// 	for i := range repoConfig.Projects {
-// 		scanDetails.SetProject(&repoConfig.Projects[i])
-// 		var projectIssues *issues.ScansIssuesCollection
-// 		if projectIssues, err = auditPullRequestInProject(repoConfig, scanDetails); err != nil {
-// 			if projectIssues != nil {
-// 				// Make sure status on scans are passed to show in the summary
-// 				issuesCollection.AppendStatus(projectIssues.ScanStatus)
-// 			}
-// 			return
-// 		}
-// 		issuesCollection.Append(projectIssues)
-// 	}
-// 	resultContext = scanDetails.ResultContext
-// 	return
-// }
-
 func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
 	// Prepare
 	scanDetails, err := createBaseScanDetails(repoConfig, client)
@@ -281,7 +230,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 			continue
 		}
 		// Diff scan, scan target branch and get new issues
-		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), sourceScanResults, targetBranchWd); e == nil {
+		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), targetBranchWd); e == nil {
 			issuesCollection.Append(newIssues)
 		} else {
 			issuesCollection.AppendStatus(newIssues.ScanStatus)
@@ -301,7 +250,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	return
 }
 
-func auditTargetCodeAndGetDiffIssues(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *results.SecurityCommandResults, targetBranchWd string) (newIssues *issues.ScansIssuesCollection, err error) {
+func auditTargetCodeAndGetDiffIssues(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, targetBranchWd string) (newIssues *issues.ScansIssuesCollection, err error) {
 	targetScanResults := scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)...)
 	if err = targetScanResults.GetErrors(); err != nil {
 		return
@@ -354,75 +303,6 @@ func getResultScanStatues(cmdResults ...*results.SecurityCommandResults) formats
 	return getScanStatus(converted...)
 }
 
-// func auditPullRequestInProject(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (auditIssues *issues.ScansIssuesCollection, err error) {
-// 	// Download source branch
-// 	sourcePullRequestInfo := scanDetails.PullRequestDetails.Source
-// 	sourceBranchWd, cleanupSource, err := utils.DownloadRepoToTempDir(scanDetails.Client(), sourcePullRequestInfo.Owner, sourcePullRequestInfo.Repository, sourcePullRequestInfo.Name)
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer func() {
-// 		err = errors.Join(err, cleanupSource())
-// 	}()
-
-// 	// Audit source branch
-// 	var sourceResults *results.SecurityCommandResults
-// 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)
-// 	log.Info("Scanning source branch...")
-// 	sourceResults = scanDetails.RunInstallAndAudit(workingDirs...)
-// 	if err = sourceResults.GetErrors(); err != nil {
-// 		// We get the scan status even if the scan failed to report the scan status in the summary
-// 		auditIssues = getResultScanStatues(sourceResults)
-// 		return
-// 	}
-
-// 	// Set JAS output flags
-// 	repoConfig.OutputWriter.SetJasOutputFlags(sourceResults.EntitledForJas, sourceResults.HasJasScansResults(jasutils.Applicability))
-// 	// Get all issues that exist in the source branch
-// 	if repoConfig.IncludeAllVulnerabilities {
-// 		if auditIssues, err = scanResultsToIssuesCollection(sourceResults, repoConfig.AllowedLicenses); err != nil {
-// 			return
-// 		}
-// 		utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd)
-// 		return
-// 	}
-
-// 	var targetBranchWd string
-// 	if auditIssues, targetBranchWd, err = auditTargetBranch(repoConfig, scanDetails, sourceResults); err != nil {
-// 		return
-// 	}
-// 	utils.ConvertSarifPathsToRelative(auditIssues, sourceBranchWd, targetBranchWd)
-// 	return
-// }
-
-// func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceScanResults *results.SecurityCommandResults) (newIssues *issues.ScansIssuesCollection, targetBranchWd string, err error) {
-// 	// Download target branch (if needed)
-// 	cleanupTarget := func() error { return nil }
-// 	if !repoConfig.IncludeAllVulnerabilities {
-// 		if targetBranchWd, cleanupTarget, err = prepareTargetForScan(repoConfig.Git, scanDetails); err != nil {
-// 			return
-// 		}
-// 	}
-// 	defer func() {
-// 		err = errors.Join(err, cleanupTarget())
-// 	}()
-
-// 	// Set target branch scan details
-// 	var targetResults *results.SecurityCommandResults
-// 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
-// 	log.Info("Scanning target branch...")
-// 	targetResults = scanDetails.RunInstallAndAudit(workingDirs...)
-// 	if err = targetResults.GetErrors(); err != nil {
-// 		// We get the scan status even if the scan failed to report the scan status in the summary
-// 		newIssues = getResultScanStatues(sourceScanResults, targetResults)
-// 		return
-// 	}
-
-// 	// Get newly added issues
-// 	newIssues, err = getNewlyAddedIssues(targetResults, sourceScanResults, repoConfig.AllowedLicenses, targetResults.IncludesVulnerabilities(), targetResults.HasViolationContext())
-// 	return
-// }
-
 func prepareTargetForScan(gitDetails utils.Git, scanDetails *utils.ScanDetails) (targetBranchWd string, cleanupTarget func() error, err error) {
 	target := gitDetails.PullRequestDetails.Target
 	// Download target branch
@@ -471,63 +351,6 @@ func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch,
 		return
 	}
 	return gitManager.CheckoutToHash(bestAncestorHash)
-}
-
-// func getAllIssues(cmdResults *results.SecurityCommandResults, allowedLicenses []string) (*issues.ScansIssuesCollection, error) {
-// 	log.Info("Frogbot is configured to show all issues")
-// 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-// 		IncludeVulnerabilities: cmdResults.IncludesVulnerabilities(),
-// 		HasViolationContext:    cmdResults.HasViolationContext(),
-// 		AllowedLicenses:        allowedLicenses,
-// 		IncludeLicenses:        true,
-// 		SimplifiedOutput:       true,
-// 	}).ConvertToSimpleJson(cmdResults)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &issues.ScansIssuesCollection{
-// 		ScanStatus:         simpleJsonResults.Statuses,
-// 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
-// 		ScaViolations:      simpleJsonResults.SecurityViolations,
-// 		LicensesViolations: simpleJsonResults.LicensesViolations,
-
-// 		IacVulnerabilities: simpleJsonResults.IacsVulnerabilities,
-// 		IacViolations:      simpleJsonResults.IacsViolations,
-
-// 		SecretsVulnerabilities: simpleJsonResults.SecretsVulnerabilities,
-// 		SecretsViolations:      simpleJsonResults.SecretsViolations,
-
-// 		SastVulnerabilities: simpleJsonResults.SastVulnerabilities,
-// 		SastViolations:      simpleJsonResults.SastViolations,
-// 	}, nil
-// }
-
-// Returns all the issues found in the source branch that didn't exist in the target branch.
-func getNewlyAddedIssues(targetResults, sourceResults *results.SecurityCommandResults, allowedLicenses []string, includeVulnerabilities, hasViolationContext bool) (newIssues *issues.ScansIssuesCollection, err error) {
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: includeVulnerabilities, HasViolationContext: hasViolationContext, IncludeLicenses: len(allowedLicenses) > 0, AllowedLicenses: allowedLicenses, SimplifiedOutput: true})
-	simpleJsonSource, err := convertor.ConvertToSimpleJson(sourceResults)
-	if err != nil {
-		return
-	}
-	simpleJsonTarget, err := convertor.ConvertToSimpleJson(targetResults)
-	if err != nil {
-		return
-	}
-	// ResultContext is general attribute similar for all results, taking it from the source results
-	newIssues = &issues.ScansIssuesCollection{}
-	newIssues.ScanStatus = getScanStatus(simpleJsonTarget, simpleJsonSource)
-	// Get the unique sca vulnerabilities and violations between the source and target branches
-	newIssues.ScaVulnerabilities = getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.Vulnerabilities, simpleJsonSource.Vulnerabilities)
-	newIssues.ScaViolations = getUniqueVulnerabilityOrViolationRows(simpleJsonTarget.SecurityViolations, simpleJsonSource.SecurityViolations)
-	newIssues.LicensesViolations = getUniqueLicenseRows(simpleJsonTarget.LicensesViolations, simpleJsonSource.LicensesViolations)
-	// Get the unique source code vulnerabilities and violations between the source and target branches
-	newIssues.IacVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.IacsVulnerabilities, simpleJsonSource.IacsVulnerabilities)
-	newIssues.IacViolations = createNewSourceCodeRows(simpleJsonTarget.IacsViolations, simpleJsonSource.IacsViolations)
-	newIssues.SecretsVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.SecretsVulnerabilities, simpleJsonSource.SecretsVulnerabilities)
-	newIssues.SecretsViolations = createNewSourceCodeRows(simpleJsonTarget.SecretsViolations, simpleJsonSource.SecretsViolations)
-	newIssues.SastVulnerabilities = createNewSourceCodeRows(simpleJsonTarget.SastVulnerabilities, simpleJsonSource.SastVulnerabilities)
-	newIssues.SastViolations = createNewSourceCodeRows(simpleJsonTarget.SastViolations, simpleJsonSource.SastViolations)
-	return
 }
 
 func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {
