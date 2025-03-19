@@ -203,6 +203,12 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		return
 	}
 	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }
+	// // Create a new git manager and fetch
+	// gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.GitRepoHttpsCloneUrl)
+	// if err != nil {
+	// 	return
+	// }
+	// gitManager.Diff()
 	return
 }
 
@@ -213,6 +219,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		// Reset scan details for each project
 		scanDetails.SetProject(&repoConfig.Projects[i]).SetSourceScanResults(nil)
 		// Scan source branch of the project
+		log.Debug("Scanning source branch code...")
 		sourceScanResults, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd)
 		if e != nil {
 			issuesCollection.AppendStatus(getResultScanStatues(sourceScanResults))
@@ -229,10 +236,12 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 			}
 			continue
 		}
+		log.Debug("Scanning target branch code...")
 		// Diff scan, scan target branch and get new issues
 		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), targetBranchWd); e == nil {
 			issuesCollection.Append(newIssues)
-		} else {
+			continue
+		} else if newIssues != nil {
 			issuesCollection.AppendStatus(newIssues.ScanStatus)
 			err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
 		}
