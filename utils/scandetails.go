@@ -176,7 +176,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
 		SetIsRecursiveScan(sc.IsRecursiveScan).
-		SetUseJas(!sc.DisableJas()).SetScansToPerform([]utils.SubScanType{utils.SecretsScan})
+		SetUseJas(!sc.DisableJas()).SetScansToPerform([]utils.SubScanType{utils.SastScan, utils.SecretsScan})
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
