@@ -9,7 +9,7 @@ require (
 	github.com/jfrog/build-info-go v1.10.10
 	github.com/jfrog/froggit-go v1.16.2
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.2.0
+	github.com/jfrog/jfrog-cli-artifactory v0.2.1
 	github.com/jfrog/jfrog-cli-core/v2 v2.58.2
 	github.com/jfrog/jfrog-cli-security v1.15.0
 	github.com/jfrog/jfrog-client-go v1.51.1
@@ -118,7 +118,7 @@ require (
 )
 
 // attiasas:diff_scan
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250320091606-5ec7e647fb4a
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250320141330-51271dd40294
 
 replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 v2.31.1-0.20250317155445-5ac6d852b177
 
