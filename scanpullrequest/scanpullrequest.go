@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -228,7 +230,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		}
 		if repoConfig.IncludeAllVulnerabilities {
 			// Get all issues that exist in the source branch
-			if issues, e := scanResultsToIssuesCollection(sourceScanResults, repoConfig.AllowedLicenses, sourceBranchWd); e == nil {
+			if issues, e := scanResultsToIssuesCollection(sourceScanResults, repoConfig.AllowedLicenses, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))); e == nil {
 				issuesCollection.Append(issues)
 			} else {
 				issuesCollection.AppendStatus(getResultScanStatues(sourceScanResults))
@@ -238,7 +240,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		}
 		log.Debug("Scanning target branch code...")
 		// Diff scan, scan target branch and get new issues
-		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), targetBranchWd); e == nil {
+		if newIssues, e := auditTargetCodeAndGetDiffIssues(repoConfig, scanDetails.SetSourceScanResults(sourceScanResults), sourceBranchWd, targetBranchWd); e == nil {
 			issuesCollection.Append(newIssues)
 			continue
 		} else if newIssues != nil {
@@ -259,12 +261,12 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	return
 }
 
-func auditTargetCodeAndGetDiffIssues(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, targetBranchWd string) (newIssues *issues.ScansIssuesCollection, err error) {
+func auditTargetCodeAndGetDiffIssues(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (newIssues *issues.ScansIssuesCollection, err error) {
 	targetScanResults := scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)...)
 	if err = targetScanResults.GetErrors(); err != nil {
 		return
 	}
-	return scanResultsToIssuesCollection(targetScanResults, repoConfig.AllowedLicenses)
+	return scanResultsToIssuesCollection(targetScanResults, repoConfig.AllowedLicenses, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 }
 
 func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, allowedLicenses []string, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
@@ -293,9 +295,10 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 		SastVulnerabilities: simpleJsonResults.SastVulnerabilities,
 		SastViolations:      simpleJsonResults.SastViolations,
 	}
-	if len(workingDirs) > 0 {
-		utils.ConvertSarifPathsToRelative(issuesCollection, workingDirs...)
+	if len(workingDirs) == 0 {
+		workingDirs = scanResults.GetTargetsPaths()
 	}
+	utils.ConvertSarifPathsToRelative(issuesCollection, workingDirs...)
 	return
 }
 
