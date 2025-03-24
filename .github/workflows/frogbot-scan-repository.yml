@@ -30,7 +30,7 @@ jobs:
 
           # [Mandatory]
           # The GitHub token is automatically generated for the job
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_GIT_TOKEN: ${{ secrets.JF_GIT_TOKEN }}
 
           # [Mandatory]
           # The name of the branch on which Frogbot will perform the scan
