@@ -46,7 +46,7 @@ func waitForConnection(t *testing.T) {
 		if err != nil || res.StatusCode != http.StatusOK {
 			body, e := io.ReadAll(res.Body)
 			err = errors.Join(err, e)
-			log.Info(fmt.Sprintf("Status code: %d, Server current state: %s", res.StatusCode, body))
+			log.Info(fmt.Sprintf("Status code: %d, Server current sate: %s", res.StatusCode, body))
 			return true, err
 		}
 		return false, nil
