@@ -10,7 +10,7 @@ permissions:
   security-events: write
 jobs:
   scan-repository:
-    runs-on: readonly-docker-local
+    runs-on: ubuntu-latest
     name: Scan Repository (${{ matrix.branch }} branch)
     strategy:
       matrix:
