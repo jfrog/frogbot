@@ -11,7 +11,7 @@ permissions:
 jobs:
   scan-repository:
     runs-on: ubuntu-latest
-    name: Scan Repository (${{ matrix.branch }} branch)
+   
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
