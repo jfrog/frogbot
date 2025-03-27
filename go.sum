@@ -134,8 +134,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.2.1 h1:3r+dmY3STsb1hrR/cV30QkCUHsw96E+
 github.com/jfrog/jfrog-cli-artifactory v0.2.1/go.mod h1:LX9ukqknKqpW5EHjvoWi3ciHsUD8pqKt3GRL4DHgjnY=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2 h1:+pHoqpTZqpVk+QSbEtt/giyk4cuju3rSfb65SvlBztQ=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2/go.mod h1:SM9QovDEpbbknOKZv077dl8zjDlzhTTDea+La9eGS08=
-github.com/jfrog/jfrog-cli-security v1.16.1 h1:wVyo0cjKWBek0UT+bDWNFIzEKcFFladKGDftE8IlUVg=
-github.com/jfrog/jfrog-cli-security v1.16.1/go.mod h1:9RTl0iYnq/N5KR+htpsx/0T1SkVbUXpSGGdw/AlOAPA=
+github.com/jfrog/jfrog-cli-security v1.16.2 h1:doPlMSJBkLt2Jzk4ZCRbCtK5/P0PuXDLTlNqzaNYQ/Y=
+github.com/jfrog/jfrog-cli-security v1.16.2/go.mod h1:9RTl0iYnq/N5KR+htpsx/0T1SkVbUXpSGGdw/AlOAPA=
 github.com/jfrog/jfrog-client-go v1.51.1 h1:ZHWCb0bna+13DsxVfkvUdYSl4XvRlKVbte/wQfy53zo=
 github.com/jfrog/jfrog-client-go v1.51.1/go.mod h1:2tQPwRhGS/F357BOKFfZrQbjd4XbzHPYUQm/OFNwLHg=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
