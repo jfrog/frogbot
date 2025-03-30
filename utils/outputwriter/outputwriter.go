@@ -265,7 +265,7 @@ func ConvertContentToComments(content []string, writer OutputWriter, commentDeco
 func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string, builder *strings.Builder, writer OutputWriter, commentDecorators ...CommentDecorator) (content string, reached bool) {
 	limit := writer.SizeLimit(commentCount != 0)
 	if limit <= 0 {
-		//  No limit
+		// No limit
 		return
 	}
 	if builder.Len()+decoratorsSize(commentCount, commentDecorators...)+len(newContent) < limit {
