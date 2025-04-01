@@ -56,6 +56,8 @@ github.com/elazarl/goproxy v1.4.0 h1:4GyuSbFa+s26+3rmYNSuUVsx+HgPrV1bk1jXI0l9wjM
 github.com/elazarl/goproxy v1.4.0/go.mod h1:X/5W/t+gzDyLfHW4DrMdpjqYjpXsURlBt9lpBDxZZZQ=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250401080914-e7be8187ba96 h1:V7AY9U+4pHwqmWxOsXoNJEfKH2tL7avV2R9sY5aapHg=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250401080914-e7be8187ba96/go.mod h1:9RTl0iYnq/N5KR+htpsx/0T1SkVbUXpSGGdw/AlOAPA=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/forPelevin/gomoji v1.2.0 h1:9k4WVSSkE1ARO/BWywxgEUBvR/jMnao6EZzrql5nxJ8=
@@ -134,8 +136,6 @@ github.com/jfrog/jfrog-cli-artifactory v0.2.1 h1:3r+dmY3STsb1hrR/cV30QkCUHsw96E+
 github.com/jfrog/jfrog-cli-artifactory v0.2.1/go.mod h1:LX9ukqknKqpW5EHjvoWi3ciHsUD8pqKt3GRL4DHgjnY=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2 h1:+pHoqpTZqpVk+QSbEtt/giyk4cuju3rSfb65SvlBztQ=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2/go.mod h1:SM9QovDEpbbknOKZv077dl8zjDlzhTTDea+La9eGS08=
-github.com/jfrog/jfrog-cli-security v1.16.1 h1:wVyo0cjKWBek0UT+bDWNFIzEKcFFladKGDftE8IlUVg=
-github.com/jfrog/jfrog-cli-security v1.16.1/go.mod h1:9RTl0iYnq/N5KR+htpsx/0T1SkVbUXpSGGdw/AlOAPA=
 github.com/jfrog/jfrog-client-go v1.51.1 h1:ZHWCb0bna+13DsxVfkvUdYSl4XvRlKVbte/wQfy53zo=
 github.com/jfrog/jfrog-client-go v1.51.1/go.mod h1:2tQPwRhGS/F357BOKFfZrQbjd4XbzHPYUQm/OFNwLHg=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
