@@ -126,6 +126,9 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	if err != nil {
 		return
 	}
+	// TODO Walme log
+	log.Debug(fmt.Sprintf("WALKME LOG #2: sr, value of skipAutoInstall before creating scanDetails is: %t", repository.SkipAutoInstall))
+	// TODO Walkme log end
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
@@ -218,6 +221,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 // Audit the dependencies of the current commit.
 func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityCommandResults, error) {
 	// Audit commit code
+	// TODO Walme log
+	log.Debug(fmt.Sprintf("WALKME LOG #3: sr, value of skipAutoInstall passed to Audit in scanDetails: %t", cfp.scanDetails.SkipAutoInstall()))
+	// TODO Walkme log end
 	auditResults := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
 	if err := auditResults.GetErrors(); err != nil {
 		return nil, err

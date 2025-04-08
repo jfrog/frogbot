@@ -93,6 +93,9 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
+	// TODO Walme log
+	log.Debug(fmt.Sprintf("WALKME LOG #2: spr, value of skipAutoInstall before creating scanDetails is: %t", repo.Params.Scan.SkipAutoInstall))
+	// TODO Walkme log end
 	issues, resultContext, err := auditPullRequest(repo, client)
 	if err != nil {
 		return
@@ -232,6 +235,9 @@ func auditTargetBranch(repoConfig *utils.Repository, scanDetails *utils.ScanDeta
 	var targetResults *results.SecurityCommandResults
 	workingDirs := utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)
 	log.Info("Scanning target branch...")
+	// TODO Walkme log
+	log.Debug(fmt.Sprintf("WALKME LOG #3: spr, value of skipAutoInstall passed to Audit in scanDetails: %t", scanDetails.SkipAutoInstall()))
+	// TODO Walkme log end
 	targetResults = scanDetails.RunInstallAndAudit(workingDirs...)
 	if err = targetResults.GetErrors(); err != nil {
 		// We get the scan status even if the scan failed to report the scan status in the summary

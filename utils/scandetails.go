@@ -81,6 +81,11 @@ func (sc *ScanDetails) SetSkipAutoInstall(skipAutoInstall bool) *ScanDetails {
 	return sc
 }
 
+// TODO WALKME debug func - delete
+func (sc *ScanDetails) SkipAutoInstall() bool {
+	return sc.skipAutoInstall
+}
+
 func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) {
 	if minSeverity == "" {
 		return sc, nil
@@ -175,6 +180,9 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 
+	// TODO Walkme log
+	log.Debug(fmt.Sprintf("WALKME LOG #4: value of skipAutoInstall in AuditParams: %t", auditParams.SkipAutoInstall()))
+	// TODO Walkme log end
 	return audit.RunAudit(auditParams)
 }
 

@@ -258,6 +258,14 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		s.MinSeverity = severity.String()
 	}
 	if !s.SkipAutoInstall {
+		// TODO Walkme log
+		var skipAutoInstall bool
+		skipAutoInstall, err = getBoolEnv(SkipAutoInstallEnv, false)
+		if err != nil {
+			return
+		}
+		log.Debug(fmt.Sprintf("WALKME LOG #1: JF_SKIP_AUTO_INSTALL value is %s", strconv.FormatBool(skipAutoInstall)))
+		// TODO Walkme log end
 		if s.SkipAutoInstall, err = getBoolEnv(SkipAutoInstallEnv, false); err != nil {
 			return
 		}
