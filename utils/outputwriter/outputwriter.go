@@ -249,21 +249,23 @@ func WriteNewLine(builder *strings.Builder) {
 func ConvertContentToComments(content []string, writer OutputWriter, commentDecorators ...CommentDecorator) (comments []string) {
 	commentBuilder := strings.Builder{}
 	for _, commentContent := range content {
-		if newContent, limitReached := getContentAndResetBuilderIfLimitReached(len(comments), commentContent, &commentBuilder, writer, commentDecorators...); limitReached {
+		if newContent, limitReached := getContentAndResetBuilderIfLimitReached(len(comments), commentContent, &commentBuilder, writer, commentDecorators...); limitReached && newContent != "" {
 			comments = append(comments, newContent)
 		}
 		WriteContent(&commentBuilder, commentContent)
 	}
 	if commentBuilder.Len() > 0 || len(content) == 0 {
-		comments = append(comments, decorate(len(comments), commentBuilder.String(), commentDecorators...))
+		if comment := decorate(len(comments), commentBuilder.String(), commentDecorators...); comment != "" {
+			comments = append(comments, comment)
+		}
 	}
 	return
 }
 
 func getContentAndResetBuilderIfLimitReached(commentCount int, newContent string, builder *strings.Builder, writer OutputWriter, commentDecorators ...CommentDecorator) (content string, reached bool) {
 	limit := writer.SizeLimit(commentCount != 0)
-	if limit == 0 {
-		//  No limit
+	if limit <= 0 {
+		// No limit
 		return
 	}
 	if builder.Len()+decoratorsSize(commentCount, commentDecorators...)+len(newContent) < limit {
