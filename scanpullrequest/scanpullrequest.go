@@ -182,8 +182,9 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 }
 
 func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
-	var cleanupSource func() error
+	cleanupSource := func() error { return nil }
 	cleanupTarget := func() error { return nil }
+	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }
 
 	log.Info("Downloading source branch code...")
 	if sourceBranchWd, cleanupSource, err = utils.DownloadRepoToTempDir(scanDetails.Client(),
@@ -194,7 +195,6 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		err = fmt.Errorf("failed to download source branch code. Error: %s", err.Error())
 		return
 	}
-	cleanup = cleanupSource
 	if repoConfig.IncludeAllVulnerabilities {
 		// No need to download target branch
 		log.Info("Frogbot is configured to show all issues at source branch")
@@ -204,13 +204,6 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
-	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }
-	// // Create a new git manager and fetch
-	// gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(scanDetails.GitRepoHttpsCloneUrl)
-	// if err != nil {
-	// 	return
-	// }
-	// gitManager.Diff()
 	return
 }
 
