@@ -1,49 +1,81 @@
 {
   "profile_name": "default-profile",
+  "general_config": {
+    "releases_repo": "https://repo.example.com/releases",
+    "analyzer_manager_version": "1.2.3",
+    "report_analytics": true,
+    "exclude_patterns": ["*.log*", "*.tmp*"],
+    "results_output_dir": "/path/to/results",
+    "allow_partial_results": false
+  },
   "frogbot_config": {
     "email_author": "my-user@jfrog.com",
     "aggregate_fixes": true,
     "avoid_previous_pr_comments_deletion": true,
+    "avoid_extra_messages": true,
+    "add_success_comment": true,
     "branch_name_template": "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}",
     "pr_title_template": "[🐸 Frogbot] Upgrade {IMPACTED_PACKAGE} to {FIX_VERSION}",
     "pr_comment_title": "Frogbot notes:",
     "commit_message_template": "Upgrade {IMPACTED_PACKAGE} to {FIX_VERSION}",
-    "show_secrets_as_pr_comment": false
+    "show_secrets_as_pr_comment": false,
+    "skip_auto_fix": false,
+    "include_all_repository_vulnerabilities": true
   },
   "modules": [
     {
       "module_name": "default-module",
       "path_from_root": ".",
-      "releases_repo": "nuget-remote",
-      "analyzer_manager_version": "1.8.1",
-      "additional_paths_for_module": ["lib1", "utils/lib2"],
-      "exclude_paths": ["**/.git/**", "**/*test*/**", "**/*venv*/**", "**/*node_modules*/**", "**/target/**"],
+      "exclude_patterns":  ["**/.git/**", "**/*test*/**", "**/*venv*/**", "**/*node_modules*/**", "**/target/**"],
       "scan_config": {
-        "scan_timeout": 600,
-        "exclude_pattern": "*.md",
-        "enable_sca_scan": true,
-        "enable_contextual_analysis_scan": true,
+        "sca_scanner_config": {
+          "enable_sca_scan": true,
+          "technology": "Java",
+          "package_managers_settings": {
+            "gradle_settings": {
+              "exclude_test_deps": false,
+              "use_wrapper": true
+            },
+            "maven_settings": {
+              "use_wrapper": true
+            },
+            "npm_settings": {
+              "dep_type": "all",
+              "pnpm_max_tree_depth": 9
+            },
+            "python_settings": {
+              "requirements_file": "requirements.txt"
+            }
+          },
+          "skip_auto_install": true,
+          "exclude_patterns": ["**/build/**"]
+        },
+        "contextual_analysis_scanner_config": {
+          "enable_ca_scan": true,
+          "exclude_patterns": ["**/docs/**"]
+        },
         "sast_scanner_config": {
-          "enable_sast_scan": true
+          "enable_sast_scan": true,
+          "language": "Java",
+          "include_patterns": ["*.go"],
+          "exclude_patterns": ["**/_test.go/**"],
+          "exclude_rules": ["xss-injection"]
         },
         "secrets_scanner_config": {
-          "enable_secrets_scan": true
+          "enable_secrets_scan": true,
+          "validate_secrets": true,
+          "include_patterns": ["*.go"],
+          "exclude_patterns": ["**/_test.go/**"]
         },
         "iac_scanner_config": {
-          "enable_iac_scan": true
-        },
-        "applications_scanner_config": {
-          "enable_applications_scan": true
-        },
-        "services_scanner_config": {
-          "enable_services_scan": true
+          "enable_iac_scan": true,
+          "include_patterns": ["*.tf"],
+          "exclude_patterns": ["*.tfstate"]
         }
       },
-      "protected_branches": ["main", "master"],
-      "include_exclude_mode": 0,
-      "include_exclude_pattern": "*test*",
-      "report_analytics": true
+      "deps_repo": "https://deps.example.com"
     }
   ],
-  "is_default": true
+  "is_default": true,
+  "is_basic_profile": false
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/jfrog/frogbot/v2/testdata"
-	xscutils "github.com/jfrog/jfrog-client-go/xsc/services/utils"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
@@ -707,11 +706,11 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		profileWithRepo bool
 	}{
 		{
-			name:            "Deprecated Server - Valid ConfigProfile",
+			name:            "Deprecated Server - Xray version is too low",
 			useProfile:      true,
 			profileName:     ValidConfigProfile,
-			xrayVersion:     "3.0.0",
-			failureExpected: false,
+			xrayVersion:     "3.110.0",
+			failureExpected: true,
 		},
 		{
 			name:       "Profile usage is not required",
@@ -721,21 +720,21 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			name:            "Profile by name - Valid ConfigProfile",
 			useProfile:      true,
 			profileName:     ValidConfigProfile,
-			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
 		},
 		{
 			name:            "Profile by name - Invalid Path From Root ConfigProfile",
 			useProfile:      true,
 			profileName:     InvalidPathConfigProfile,
-			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
 		},
 		{
 			name:            "Profile by name - Invalid Modules ConfigProfile",
 			useProfile:      true,
 			profileName:     InvalidModulesConfigProfile,
-			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
 		},
 		{
@@ -743,7 +742,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			name:            "Profile by URL - Valid ConfigProfile",
 			useProfile:      true,
 			profileName:     "",
-			xrayVersion:     services.ConfigProfileByUrlMinXrayVersion,
+			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
 			profileWithRepo: true,
 		},
@@ -751,7 +750,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			name:            "Profile by Name - Non existing profile name",
 			useProfile:      true,
 			profileName:     NonExistingProfile,
-			xrayVersion:     xscutils.MinXrayVersionXscTransitionToXray,
+			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
 		},
 	}
@@ -781,7 +780,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, services.ConfigProfileMinXscVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
 
 			if !testcase.useProfile {
 				assert.Nil(t, configProfile)

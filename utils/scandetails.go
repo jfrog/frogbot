@@ -176,7 +176,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
 		SetIsRecursiveScan(sc.IsRecursiveScan).
-		SetUseJas(!sc.DisableJas())
+		SetUseJas(!sc.DisableJas()).
+		SetConfigProfile(sc.configProfile)
 
 	auditParams := audit.NewAuditParams().
 		SetWorkingDirs(workDirs).
@@ -184,7 +185,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
-		SetConfigProfile(sc.configProfile).
 		SetDiffMode(sc.diffScan).
 		SetResultsToCompare(sc.SourceScanResults).
 		SetMultiScanId(sc.MultiScanId).

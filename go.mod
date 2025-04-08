@@ -126,7 +126,7 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250402063549-14e8fd119680
 
 // attiasas:add_title_attrib_pr
 replace github.com/jfrog/froggit-go => github.com/attiasas/froggit-go v0.0.0-20250318112017-8d485add84a6

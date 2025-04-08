@@ -165,15 +165,12 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		}
 
 		secondModule := services.Module{
-			ModuleId:     999,
-			ModuleName:   "second-module",
-			PathFromRoot: ".",
-			ScanConfig: services.ScanConfig{
-				ScanTimeout:                  0,
-				ExcludePattern:               "",
-				EnableScaScan:                false,
-				EnableContextualAnalysisScan: false,
-			},
+			ModuleId:        999,
+			ModuleName:      "second-module",
+			PathFromRoot:    ".",
+			ExcludePatterns: nil,
+			ScanConfig:      services.ScanConfig{},
+			DepsRepo:        "",
 		}
 
 		switch {
