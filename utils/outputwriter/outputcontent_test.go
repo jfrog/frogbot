@@ -358,12 +358,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 				{
 					name:           "Standard output",
 					writer:         &StandardOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 			},
 		},
@@ -496,12 +496,12 @@ func TestSecurityViolationsContent(t *testing.T) {
 				{
 					name:           "Standard output",
 					writer:         &StandardOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 				{
 					name:           "Simplified output",
 					writer:         &SimplifiedOutput{},
-					expectedOutput: []string{""},
+					expectedOutput: []string{},
 				},
 			},
 		},
