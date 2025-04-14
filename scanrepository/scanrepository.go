@@ -71,7 +71,9 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 	if err = cfp.setCommandPrerequisites(repository, client); err != nil {
 		return
 	}
+	log.Debug(fmt.Sprintf("All existing detected branches are: %s", repository.Branches)) // TODO eran delete
 	for _, branch := range repository.Branches {
+		log.Debug(fmt.Sprintf("Scanning the folowing branch: %s", branch))
 		cfp.scanDetails.SetBaseBranch(branch)
 		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
 		if err = cfp.scanAndFixBranch(repository); err != nil {
