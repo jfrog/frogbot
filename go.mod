@@ -2,8 +2,6 @@ module github.com/jfrog/frogbot/v2
 
 go 1.23.7
 
-toolchain go1.23.8
-
 require (
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/golang/mock v1.6.0
