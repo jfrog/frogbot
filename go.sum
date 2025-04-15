@@ -22,8 +22,8 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuW
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/attiasas/jfrog-cli-security v0.0.0-20250408103614-aa3aea35778a h1:gkx/3l7zCfH2zqeXoQ5pQPKzRkLgJ7vwcBGgHM90BV8=
-github.com/attiasas/jfrog-cli-security v0.0.0-20250408103614-aa3aea35778a/go.mod h1:EF9I3Y8rB4ZTMIe+AiJvyQnSF7dgJdZwIUY/vCPXrKU=
+github.com/attiasas/jfrog-cli-security v0.0.0-20250415072924-a3155819e54c h1:m/vCgTWFTbPf8KUHBIfb6jWI0y6tlnzel+FCgLA1sXg=
+github.com/attiasas/jfrog-cli-security v0.0.0-20250415072924-a3155819e54c/go.mod h1:EF9I3Y8rB4ZTMIe+AiJvyQnSF7dgJdZwIUY/vCPXrKU=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0/go.mod h1:bm7JXdkRd4BHJk9HpwqAI8BoAY1lps46Enkdqw6aRX0=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
@@ -126,8 +126,8 @@ github.com/jfrog/archiver/v3 v3.6.1 h1:LOxnkw9pOn45DzCbZNFV6K0+6dCsQ0L8mR3ZcujO5
 github.com/jfrog/archiver/v3 v3.6.1/go.mod h1:VgR+3WZS4N+i9FaDwLZbq+jeU4B4zctXL+gL4EMzfLw=
 github.com/jfrog/build-info-go v1.10.10 h1:2nOFjV7SX1uisi2rQK7fb4Evm7YkSOdmssrm6Tf4ipc=
 github.com/jfrog/build-info-go v1.10.10/go.mod h1:JcISnovFXKx3wWf3p1fcMmlPdt6adxScXvoJN4WXqIE=
-github.com/jfrog/froggit-go v1.16.3-0.20250330150017-9f8eebbf1fd3 h1:+NtlVKFj3Q3AiMm7fPP8E6l1bignB8kAEFVQcIsmO0w=
-github.com/jfrog/froggit-go v1.16.3-0.20250330150017-9f8eebbf1fd3/go.mod h1:HvDkfFfJwIdsXFdqaB+utvD2cLDRmaC3kF8otYb6Chw=
+github.com/jfrog/froggit-go v1.17.0 h1:20Ie787WO27SwB2MOHDvsR6yN7fA5WfRnuAbmUqz1Zs=
+github.com/jfrog/froggit-go v1.17.0/go.mod h1:HvDkfFfJwIdsXFdqaB+utvD2cLDRmaC3kF8otYb6Chw=
 github.com/jfrog/gofrog v1.7.6 h1:QmfAiRzVyaI7JYGsB7cxfAJePAZTzFz0gRWZSE27c6s=
 github.com/jfrog/gofrog v1.7.6/go.mod h1:ntr1txqNOZtHplmaNd7rS4f8jpA5Apx8em70oYEe7+4=
 github.com/jfrog/jfrog-apps-config v1.0.1 h1:mtv6k7g8A8BVhlHGlSveapqf4mJfonwvXYLipdsOFMY=
@@ -136,8 +136,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.2.1 h1:3r+dmY3STsb1hrR/cV30QkCUHsw96E+
 github.com/jfrog/jfrog-cli-artifactory v0.2.1/go.mod h1:LX9ukqknKqpW5EHjvoWi3ciHsUD8pqKt3GRL4DHgjnY=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2 h1:+pHoqpTZqpVk+QSbEtt/giyk4cuju3rSfb65SvlBztQ=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.2/go.mod h1:SM9QovDEpbbknOKZv077dl8zjDlzhTTDea+La9eGS08=
-github.com/jfrog/jfrog-client-go v1.28.1-0.20250406105605-ee90d11546f9 h1:pEBTHYeyuDa+w0oJNCYFq1wD2O2NqWdDTAtDRFy7s3w=
-github.com/jfrog/jfrog-client-go v1.28.1-0.20250406105605-ee90d11546f9/go.mod h1:uRmT8Q1SJymIzId01v0W1o8mGqrRfrwUF53CgEMsH0U=
+github.com/jfrog/jfrog-client-go v1.28.1-0.20250410125455-6fb27bd3a394 h1:d69jbCA/CEn/cSPLsaxkdEV4X+ys8b3laFZGvtSbhrQ=
+github.com/jfrog/jfrog-client-go v1.28.1-0.20250410125455-6fb27bd3a394/go.mod h1:uRmT8Q1SJymIzId01v0W1o8mGqrRfrwUF53CgEMsH0U=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible/go.mod h1:1c7szIrayyPPB/987hsnvNzLushdWf4o/79s3P08L8A=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
