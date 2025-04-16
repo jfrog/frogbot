@@ -443,7 +443,7 @@ func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
 	assert.Len(t, licenseViolations, 0)
 }
 
-func TestGetAllIssues(t *testing.T) {
+func TestScanResultsToIssuesCollection(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
 	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -591,7 +591,7 @@ func TestGetAllIssues(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := getAllIssues(auditResults, allowedLicenses)
+	issuesRows, err := scanResultsToIssuesCollection(auditResults, allowedLicenses)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
