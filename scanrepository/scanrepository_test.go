@@ -260,6 +260,7 @@ pr body
 [comment]: <> (Checksum: 01373ac4d2c32e7da9be22f3e4b4e665)
 pr body
  `
+	userLogin := "user"
 	tests := []struct {
 		testName                string
 		expectedUpdate          bool
@@ -278,6 +279,7 @@ pr body
 					Label: &targetLabel,
 					Repo:  &github.Repository{Name: &targetBranchName, Owner: &github.User{}},
 				},
+				User: &github.User{Login: &userLogin},
 				Body: &firstBody,
 			}},
 		},
@@ -294,6 +296,7 @@ pr body
 					Label: &targetLabel,
 					Repo:  &github.Repository{Name: &targetBranchName, Owner: &github.User{}},
 				},
+				User: &github.User{Login: &userLogin},
 				Body: &secondBody,
 			}},
 		},
