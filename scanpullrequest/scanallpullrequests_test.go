@@ -215,7 +215,7 @@ func getMockClient(t *testing.T, frogbotMessages *[]string, mockParams ...MockPa
 		sourceBranchInfo := vcsclient.BranchInfo{Name: params.sourceBranchName, Repository: params.repoName, Owner: params.repoOwner}
 		targetBranchInfo := vcsclient.BranchInfo{Name: params.targetBranchName, Repository: params.repoName, Owner: params.repoOwner}
 		// Return 2 pull requests to scan, the first with issues the second "clean".
-		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 1, Source: sourceBranchInfo, Target: targetBranchInfo}, {ID: 2, Source: targetBranchInfo, Target: targetBranchInfo}}, nil)
+		client.EXPECT().ListOpenPullRequests(context.Background(), params.repoOwner, params.repoName).Return([]vcsclient.PullRequestInfo{{ID: 1, Source: sourceBranchInfo, Target: targetBranchInfo, Author: "a"}, {ID: 2, Source: targetBranchInfo, Target: targetBranchInfo, Author: "a"}}, nil)
 		// Return empty comments slice so expect the code to scan both pull requests.
 		client.EXPECT().ListPullRequestComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
 		client.EXPECT().ListPullRequestReviewComments(context.Background(), params.repoOwner, params.repoName, gomock.Any()).Return([]vcsclient.CommentInfo{}, nil).AnyTimes()
