@@ -314,7 +314,7 @@ func prepareTargetForScan(gitDetails utils.Git, scanDetails *utils.ScanDetails) 
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		return
 	}
-	if !scanDetails.Git.UseMostCommonAncestorAsTarget {
+	if scanDetails.Git.UseMostCommonAncestorAsTarget == nil || !*scanDetails.Git.UseMostCommonAncestorAsTarget {
 		return
 	}
 	log.Debug("Using most common ancestor commit as target branch commit")
