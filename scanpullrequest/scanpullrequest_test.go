@@ -34,7 +34,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
-
 	// securityUtils "github.com/jfrog/jfrog-cli-security/utils"
 	// securityTestUtils "github.com/jfrog/jfrog-cli-security/tests/utils"
 	// xscServices "github.com/jfrog/jfrog-client-go/xsc/services"
@@ -746,7 +745,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath st
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
-	
+
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
 	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
@@ -1170,23 +1169,23 @@ func redirectLogOutputToNil() (previousLog log.Log) {
 }
 
 type TestResult struct {
-	Sca int
-			Iac int
-			Secrets int
-			Sast int
+	Sca     int
+	Iac     int
+	Secrets int
+	Sast    int
 }
 
 func TestAuditDiffInPullRequest(t *testing.T) {
 	tests := []struct {
-		testName             string
-		projectName 		string
-		configPath string
+		testName       string
+		projectName    string
+		configPath     string
 		expectedIssues TestResult
 	}{
 		{
-			testName: "Project with Jas issues (issues added removed and not changed)",
+			testName:    "Project with Jas issues (issues added removed and not changed)",
 			projectName: "jas-diff-proj",
-			configPath: testJasProjConfigPath,
+			configPath:  testJasProjConfigPath,
 			// source: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testSourceBranchName},
 			// target: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testTargetBranchName},
 			expectedIssues: TestResult{
@@ -1214,7 +1213,6 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 	}
 }
 
-
 func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
 
@@ -1224,9 +1222,9 @@ func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils
 	// Create mock GitLab server
 	owner := "jfrog"
 	gitServerParams := GitServerParams{
-		RepoOwner:   owner,
-		RepoName:    projectName,
-		prDetails:  vcsclient.PullRequestInfo{ID: int64(1), 
+		RepoOwner: owner,
+		RepoName:  projectName,
+		prDetails: vcsclient.PullRequestInfo{ID: int64(1),
 			Source: vcsclient.BranchInfo{Name: testSourceBranchName, Repository: projectName, Owner: owner},
 			Target: vcsclient.BranchInfo{Name: testTargetBranchName, Repository: projectName, Owner: owner},
 		},
@@ -1240,7 +1238,7 @@ func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils
 	currentDir := filepath.Join(testDir, projectName)
 	restoreDir, err := utils.Chdir(currentDir)
 	assert.NoError(t, err)
-	
+
 	return configAggregator, client, func() {
 		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
@@ -1252,14 +1250,14 @@ func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils
 
 type GitServerParams struct {
 	RepoOwner string
-	RepoName string
+	RepoName  string
 	prDetails vcsclient.PullRequestInfo
 }
 
 // Create HTTP handler to mock GitLab server
 func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		repoInfo := params.RepoOwner+"%2F"+params.RepoName
+		repoInfo := params.RepoOwner + "%2F" + params.RepoName
 		switch {
 		// Return 200 on ping
 		case r.RequestURI == "/api/v4/":
