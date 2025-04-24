@@ -34,6 +34,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
+
+	// securityUtils "github.com/jfrog/jfrog-cli-security/utils"
+	// securityTestUtils "github.com/jfrog/jfrog-cli-security/tests/utils"
+	// xscServices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
 const (
@@ -43,6 +47,7 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
+	testJasProjConfigPath            = "testdata/config/frogbot-config-jas-diff-proj.yml"
 	testSourceBranchName             = "pr"
 	testTargetBranchName             = "master"
 )
@@ -654,32 +659,12 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
-	params, restoreEnv := utils.VerifyEnv(t)
-	defer restoreEnv()
-
-	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
-	assert.NoError(t, err)
-
-	// Create mock GitLab server
-	server := httptest.NewServer(createGitLabHandler(t, projectName))
-	defer server.Close()
-
-	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params)
-	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
+	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName, configPath)
 	defer cleanUp()
-
-	// Renames test git folder to .git
-	currentDir := filepath.Join(testDir, projectName)
-	restoreDir, err := utils.Chdir(currentDir)
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, restoreDir())
-		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
-	}()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err = scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
+	err := scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {
@@ -747,106 +732,27 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.RepoAggregator, vcsclient.VcsClient) {
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
-		RepoOwner:   "jfrog",
+		RepoOwner:   gitServerParams.RepoOwner,
 		VcsInfo: vcsclient.VcsInfo{
 			Token:       "123456",
 			APIEndpoint: server.URL,
 		},
-		PullRequestDetails: vcsclient.PullRequestInfo{ID: int64(1)},
+		PullRequestDetails: gitServerParams.prDetails,
 	}
-	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
+	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: fmt.Sprintf("%d", gitServerParams.prDetails.ID)})
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
-
+	
 	configData, err := utils.ReadConfigFromFileSystem(configPath)
 	assert.NoError(t, err)
 	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
 	return configAggregator, client
-}
-
-// Create HTTP handler to mock GitLab server
-func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		// Return 200 on ping
-		case r.RequestURI == "/api/v4/":
-			w.WriteHeader(http.StatusOK)
-		// Mimic get pull request by ID
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName):
-			w.WriteHeader(http.StatusOK)
-			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(expectedResponse)
-			assert.NoError(t, err)
-		// Mimic download specific branch to scan
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testSourceBranchName):
-			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "sourceBranch.gz"))
-			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
-			assert.NoError(t, err)
-		// Download repository mock
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testTargetBranchName):
-			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "targetBranch.gz"))
-			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
-			assert.NoError(t, err)
-			return
-		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodPost:
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("{}"))
-			assert.NoError(t, err)
-			return
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(comments)
-			assert.NoError(t, err)
-		// Return 200 when using the REST that creates the comment
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodPost:
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
-			assert.NoError(t, err)
-			assert.NotEmpty(t, buf.String())
-
-			var expectedResponse []byte
-			if strings.Contains(projectName, "multi-dir") {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
-			} else {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
-			}
-			assert.NoError(t, err)
-			assert.JSONEq(t, string(expectedResponse), buf.String())
-
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(comments)
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s", "%2F"+projectName):
-			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
-			_, err := w.Write([]byte(jsonResponse))
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/discussions", "%2F"+projectName):
-			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(discussions)
-			assert.NoError(t, err)
-		}
-	}
 }
 
 func TestCreateNewIacRows(t *testing.T) {
@@ -1261,4 +1167,171 @@ func redirectLogOutputToNil() (previousLog log.Log) {
 	newLog.SetLogsWriter(io.Discard, 0)
 	log.SetLogger(newLog)
 	return previousLog
+}
+
+type TestResult struct {
+	Sca int
+			Iac int
+			Secrets int
+			Sast int
+}
+
+func TestAuditDiffInPullRequest(t *testing.T) {
+	tests := []struct {
+		testName             string
+		projectName 		string
+		configPath string
+		expectedIssues TestResult
+	}{
+		{
+			testName: "Project with Jas issues (issues added removed and not changed)",
+			projectName: "jas-diff-proj",
+			configPath: testJasProjConfigPath,
+			// source: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testSourceBranchName},
+			// target: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testTargetBranchName},
+			expectedIssues: TestResult{
+				Sca:  1,
+				Sast: 1,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, test.configPath)
+			defer cleanUpTest()
+
+			assert.Len(t, repoConfig, 1)
+
+			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
+			assert.NoError(t, err)
+			assert.NotNil(t, issuesCollection)
+			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
+			assert.Len(t, issuesCollection.SecretsVulnerabilities, test.expectedIssues.Secrets)
+			assert.Len(t, issuesCollection.SastVulnerabilities, test.expectedIssues.Sast)
+			assert.Len(t, issuesCollection.ScaVulnerabilities, test.expectedIssues.Sca)
+		})
+	}
+}
+
+
+func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
+	params, restoreEnv := utils.VerifyEnv(t)
+
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
+	assert.NoError(t, err)
+
+	// Create mock GitLab server
+	owner := "jfrog"
+	gitServerParams := GitServerParams{
+		RepoOwner:   owner,
+		RepoName:    projectName,
+		prDetails:  vcsclient.PullRequestInfo{ID: int64(1), 
+			Source: vcsclient.BranchInfo{Name: testSourceBranchName, Repository: projectName, Owner: owner},
+			Target: vcsclient.BranchInfo{Name: testTargetBranchName, Repository: projectName, Owner: owner},
+		},
+	}
+	server := httptest.NewServer(createGitLabHandler(t, gitServerParams))
+
+	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
+	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params, gitServerParams)
+
+	// Renames test git folder to .git
+	currentDir := filepath.Join(testDir, projectName)
+	restoreDir, err := utils.Chdir(currentDir)
+	assert.NoError(t, err)
+	
+	return configAggregator, client, func() {
+		assert.NoError(t, restoreDir())
+		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
+		cleanUp()
+		server.Close()
+		restoreEnv()
+	}
+}
+
+type GitServerParams struct {
+	RepoOwner string
+	RepoName string
+	prDetails vcsclient.PullRequestInfo
+}
+
+// Create HTTP handler to mock GitLab server
+func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		repoInfo := params.RepoOwner+"%2F"+params.RepoName
+		switch {
+		// Return 200 on ping
+		case r.RequestURI == "/api/v4/":
+			w.WriteHeader(http.StatusOK)
+		// Mimic get pull request by ID
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/%d", repoInfo, params.prDetails.ID):
+			w.WriteHeader(http.StatusOK)
+			// expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
+			// assert.NoError(t, err)
+			_, err := w.Write([]byte(fmt.Sprintf(`{ "id": %d, "iid": 133, "project_id": 15513260, "title": "Dummy pull request", "description": "this is pr description", "state": "opened", "target_branch": "%s", "source_branch": "%s", "author": {"username": "testuser"}}`, params.prDetails.ID, params.prDetails.Target.Name, params.prDetails.Source.Name)))
+			assert.NoError(t, err)
+		// Mimic download specific branch to scan
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+		// Download repository mock
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+			return
+		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
+			w.WriteHeader(http.StatusOK)
+			_, err := w.Write([]byte("{}"))
+			assert.NoError(t, err)
+			return
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(comments)
+			assert.NoError(t, err)
+		// Return 200 when using the REST that creates the comment
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
+			buf := new(bytes.Buffer)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, buf.String())
+
+			var expectedResponse []byte
+			if strings.Contains(params.RepoName, "multi-dir") {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
+			} else {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
+			}
+			assert.NoError(t, err)
+			assert.JSONEq(t, string(expectedResponse), buf.String())
+
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(comments)
+			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s", repoInfo):
+			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
+			_, err := w.Write([]byte(jsonResponse))
+			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/discussions", repoInfo):
+			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(discussions)
+			assert.NoError(t, err)
+		}
+	}
 }
