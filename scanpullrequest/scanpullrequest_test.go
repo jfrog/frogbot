@@ -1284,12 +1284,6 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 			return
-		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("{}"))
-			assert.NoError(t, err)
-			return
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
@@ -1298,6 +1292,13 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 		// Return 200 when using the REST that creates the comment
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
+			if params.RepoName == "clean-test-proj" {
+				// clean-test-proj should not include any vulnerabilities so assertion is not needed.
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte("{}"))
+				assert.NoError(t, err)
+				return
+			}
 			buf := new(bytes.Buffer)
 			_, err := buf.ReadFrom(r.Body)
 			assert.NoError(t, err)
@@ -1314,12 +1315,6 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(comments)
 			assert.NoError(t, err)
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s", repoInfo):
 			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
