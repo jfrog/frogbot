@@ -82,13 +82,22 @@ jobs:
           go-version: 1.23.x
           cache: false
 
-      - name: Go Cache
+      - name: Go Cache Dependencies
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      
+      - name: Go Cache Tests
+        uses: actions/cache@v3
+        if: runner.os == 'Linux' || runner.os == 'macos'
+        with:
+          path:  ~/.cache/go-build
+          key: ${{ runner.os }}-go-tests
+          restore-keys: |
+            ${{ runner.os }}-go-tests
 
       - name: Install npm
         uses: actions/setup-node@v3
@@ -119,16 +128,6 @@ jobs:
         with:
           packages: apt-transport-https dirmngr gnupg ca-certificates mono-complete
           version: 1.0
-      # - name: Install Mono on Linux
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates mono-complete
-      #     sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-      #     echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-      #     sudo apt-get update
-      #     sudo apt-get install -y mono-complete
-      #   if: runner.os == 'Linux'
-      #   shell: 'bash'
 
       - name: Install Pnpm
         uses: pnpm/action-setup@v3
