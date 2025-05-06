@@ -113,7 +113,11 @@ jobs:
         with:
           nuget-version: 6.11.0
         if: runner.os == 'Linux'
-      
+      - name: change ownership of apt cache directories
+        run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives /var/lib/apt/lists /usr/bin
+        if: runner.os == 'Linux'
+        shell: 'bash'
+        
       - name: Cache apt packages and lists
         uses: actions/cache@v4
         if: runner.os == 'Linux'
