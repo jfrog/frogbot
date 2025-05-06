@@ -115,19 +115,19 @@ jobs:
         if: runner.os == 'Linux'
       
       - name: Cache apt packages and lists
-      uses: actions/cache@v4
-      if: runner.os == 'Linux'
-      with:
-        # Cache directories for downloaded .deb files and package lists
-        path: |
-          /var/cache/apt/archives
-          /var/lib/apt/lists
-        # Key for the cache. Change 'v1' to 'v2' to invalidate the cache manually.
-        # Using 'ubuntu-focal' ensures this cache is only used on matching runners.
-        key: ${{ runner.os }}-apt-mono-focal-v1
-        # Fallback key if the exact key is not found (e.g., after changing the version)
-        restore-keys: |
-          ${{ runner.os }}-apt-mono-focal-
+        uses: actions/cache@v4
+        if: runner.os == 'Linux'
+        with:
+          # Cache directories for downloaded .deb files and package lists
+          path: |
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+          # Key for the cache. Change 'v1' to 'v2' to invalidate the cache manually.
+          # Using 'ubuntu-focal' ensures this cache is only used on matching runners.
+          key: ${{ runner.os }}-apt-mono-focal-v1
+          # Fallback key if the exact key is not found (e.g., after changing the version)
+          restore-keys: |
+            ${{ runner.os }}-apt-mono-focal-
       
       - name: Install Mono on Linux
         run: |
