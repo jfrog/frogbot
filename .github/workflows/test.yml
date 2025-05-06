@@ -131,6 +131,8 @@ jobs:
       
 
       - name: Install Mono on Linux
+        if: runner.os == 'Linux'
+        shell: 'bash'
         run: |
           set -e # Exit immediately if a command exits with a non-zero status.
 
@@ -161,26 +163,22 @@ jobs:
           echo "Dir::Cache::Lock \"$WS_CACHE_DIR_ARCHIVES/lock\";" | sudo tee -a "$WS_APT_LOCKS_CONF" # Append to the same lock config file
           
           sudo chmod 644 "$WS_APT_ARCHIVES_CONF" "$WS_APT_LISTS_CONF" "$WS_APT_LOCKS_CONF"
-
-          # To prevent interference from default locations or old state, optionally clean them.
-          # Use with caution if other steps might rely on the default apt cache before this.
-          # echo "Cleaning default apt system cache locations..."
-          # sudo rm -rf /var/lib/apt/lists/*
-          # sudo rm -rf /var/cache/apt/archives/*
-          # sudo mkdir -p /var/lib/apt/lists/partial /var/cache/apt/archives/partial
-          # sudo chown _apt:_apt /var/lib/apt/lists -R # Ensure _apt can work if it ever falls back
           
-          echo "Setting ownership of workspace cache directories to _apt user for apt operations..."
-          # The _apt user needs full control over these directories during apt updates/installs.
-          sudo chown -R _apt:_apt "$WS_CACHE_DIR_LISTS"
-          sudo chown -R _apt:_apt "$WS_CACHE_DIR_ARCHIVES" # Also for archives in case _apt touches them
-          # Ensure permissions allow _apt to read/write/execute(for dirs)
+          echo "Setting ownership of workspace cache directories for apt operations..."
+          echo "Verifying _apt user:"
+          id _apt || (echo "ERROR: User _apt not found. This is unexpected for an Ubuntu runner." && exit 1)
+          
+          # Assign ownership to user _apt and its primary group.
+          # This user needs full control over these directories during apt updates/installs.
+          echo "Assigning ownership to user '_apt' (and its primary group)..."
+          sudo chown -R _apt "$WS_CACHE_DIR_LISTS"
+          sudo chown -R _apt "$WS_CACHE_DIR_ARCHIVES"
+
+          # Ensure permissions allow _apt (as the new owner) to read/write/execute(for dirs)
           sudo chmod -R u+rwX "$WS_CACHE_DIR_LISTS"
           sudo chmod -R u+rwX "$WS_CACHE_DIR_ARCHIVES"
 
           echo "Running apt-get update..."
-          # Using -o APT::Sandbox::User=_apt to emphasize the desired user for sandboxing.
-          # Add Acquire::Retries for network flakiness.
           sudo apt-get update -o APT::Sandbox::User=_apt -o Acquire::Retries=3
 
           echo "Installing prerequisites: apt-transport-https, dirmngr, gnupg, ca-certificates..."
@@ -197,7 +195,6 @@ jobs:
           sudo apt-get install -y mono-complete --fix-missing
 
           echo "Reverting ownership of workspace cache directories to $RUNNER_USER for caching..."
-          # This is crucial for the actions/cache step to be able to read the files.
           if [ -d "$WS_CACHE_DIR_ARCHIVES" ]; then
             sudo chown -R $RUNNER_USER:$RUNNER_USER "$WS_CACHE_DIR_ARCHIVES"
           fi
