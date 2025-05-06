@@ -214,9 +214,6 @@ jobs:
           echo "--- Apt configuration files ---"
           sudo grep -r Dir /etc/apt/apt.conf.d/
           
-        if: runner.os == 'Linux'
-        shell: 'bash'
-
       - name: Install Pnpm
         uses: pnpm/action-setup@v3
         with:
