@@ -113,19 +113,15 @@ jobs:
         with:
           nuget-version: 6.11.0
         if: runner.os == 'Linux'
-      - name: change ownership of apt cache directories
-        run: sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives /var/lib/apt/lists /usr/bin
-        if: runner.os == 'Linux'
-        shell: 'bash'
-        
+      
       - name: Cache apt packages and lists
         uses: actions/cache@v4
         if: runner.os == 'Linux'
         with:
           # Cache directories for downloaded .deb files and package lists
           path: |
-            /var/cache/apt/archives
-            /var/lib/apt/lists
+            ${{ github.workspace }}/.cache/apt/archives
+            ${{ github.workspace }}/.cache/apt/lists
           # Key for the cache. Change 'v1' to 'v2' to invalidate the cache manually.
           # Using 'ubuntu-focal' ensures this cache is only used on matching runners.
           key: ${{ runner.os }}-apt-mono-focal-v1
@@ -133,9 +129,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-apt-mono-focal-
       
-      
       - name: Install Mono on Linux
         run: |
+         # Create directories within the workspace for apt archives and lists
+          # The runner user owns github.workspace, so no permission issues later.
+          mkdir -p ${{ github.workspace }}/.cache/apt/archives/partial
+          mkdir -p ${{ github.workspace }}/.cache/apt/lists/partial
+          # Configure apt to use these directories
+          sudo mkdir -p /etc/apt/apt.conf.d
+          echo 'Dir::Cache::Archives "${{ github.workspace }}/.cache/apt/archives";' | sudo tee /etc/apt/apt.conf.d/99github_cache_archives
+          echo 'Dir::State::Lists "${{ github.workspace }}/.cache/apt/lists";' | sudo tee /etc/apt/apt.conf.d/99github_cache_lists
+
           sudo apt-get update
           sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates
           sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -143,8 +147,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mono-complete
 
-          echo "Updating ownership of apt cache directories for GitHub Actions cache..."
-          sudo chown -R $(whoami):$(whoami) /var/cache/apt/archives /var/lib/apt/lists /usr/bin
+          sudo chown -R $(whoami):$(whoami) ${{ github.workspace }}/.cache/apt/archives ${{ github.workspace }}/.cache/apt/lists /usr/bin
+
+          
         if: runner.os == 'Linux'
         shell: 'bash'
 
