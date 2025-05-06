@@ -92,9 +92,11 @@ jobs:
       
       - name: Go Cache Tests
         uses: actions/cache@v3
-        if: runner.os == 'Linux' || runner.os == 'macos'
         with:
-          path:  ~/.cache/go-build
+          path: |
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+            ~/Library/Caches/go-build
           key: ${{ runner.os }}-go-tests
           restore-keys: |
             ${{ runner.os }}-go-tests
@@ -172,9 +174,19 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+      - name: Go Cache Tests
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+            ~/Library/Caches/go-build
+          key: ${{ runner.os }}-go-tests
+          restore-keys: |
+            ${{ runner.os }}-go-tests
 
       - name: Run Tests
-        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: GODEBUG=gocachehash=1 go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
