@@ -113,107 +113,22 @@ jobs:
         with:
           nuget-version: 6.11.0
         if: runner.os == 'Linux'
-      
-      - name: Cache apt packages and lists
-        uses: actions/cache@v4
-        if: runner.os == 'Linux'
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          # Cache directories for downloaded .deb files and package lists
-          path: |
-            ${{ github.workspace }}/.cache/apt/archives
-            ${{ github.workspace }}/.cache/apt/lists
-          # Key for the cache. Change 'v1' to 'v2' to invalidate the cache manually.
-          # Using 'ubuntu-focal' ensures this cache is only used on matching runners.
-          key: ${{ runner.os }}-apt-mono-focal-v1
-          # Fallback key if the exact key is not found (e.g., after changing the version)
-          restore-keys: |
-            ${{ runner.os }}-apt-mono-focal-
-      
+          packages: apt-transport-https dirmngr gnupg ca-certificates mono-complete
+          version: 1.0
+      # - name: Install Mono on Linux
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates mono-complete
+      #     sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+      #     echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+      #     sudo apt-get update
+      #     sudo apt-get install -y mono-complete
+      #   if: runner.os == 'Linux'
+      #   shell: 'bash'
 
-      - name: Install Mono on Linux
-        if: runner.os == 'Linux'
-        shell: 'bash'
-        run: |
-          set -e # Exit immediately if a command exits with a non-zero status.
-
-          WS_CACHE_DIR_ARCHIVES="${{ github.workspace }}/.cache/apt/archives"
-          WS_CACHE_DIR_LISTS="${{ github.workspace }}/.cache/apt/lists"
-          RUNNER_USER=$(whoami)
-
-          echo "Runner user: $RUNNER_USER"
-          echo "Workspace Cache Archives: $WS_CACHE_DIR_ARCHIVES"
-          echo "Workspace Cache Lists: $WS_CACHE_DIR_LISTS"
-
-          echo "Creating workspace cache directories..."
-          mkdir -p "$WS_CACHE_DIR_ARCHIVES/partial"
-          mkdir -p "$WS_CACHE_DIR_LISTS/partial"
-          # Initially owned by runner:runner
-
-          echo "Configuring apt to use workspace cache directories..."
-          sudo mkdir -p /etc/apt/apt.conf.d
-          APT_CONF_DIR="/etc/apt/apt.conf.d"
-          WS_APT_ARCHIVES_CONF="$APT_CONF_DIR/90github_ws_cache_archives"
-          WS_APT_LISTS_CONF="$APT_CONF_DIR/91github_ws_cache_lists"
-          WS_APT_LOCKS_CONF="$APT_CONF_DIR/92github_ws_cache_locks"
-
-          echo "Dir::Cache::Archives \"$WS_CACHE_DIR_ARCHIVES\";" | sudo tee "$WS_APT_ARCHIVES_CONF"
-          echo "Dir::State::Lists \"$WS_CACHE_DIR_LISTS\";" | sudo tee "$WS_APT_LISTS_CONF"
-          # Explicitly set lock file locations within the workspace cache
-          echo "Dir::State::Lock \"$WS_CACHE_DIR_LISTS/lock\";" | sudo tee "$WS_APT_LOCKS_CONF"
-          echo "Dir::Cache::Lock \"$WS_CACHE_DIR_ARCHIVES/lock\";" | sudo tee -a "$WS_APT_LOCKS_CONF" # Append to the same lock config file
-          
-          sudo chmod 644 "$WS_APT_ARCHIVES_CONF" "$WS_APT_LISTS_CONF" "$WS_APT_LOCKS_CONF"
-          
-          echo "Setting ownership of workspace cache directories for apt operations..."
-          echo "Verifying _apt user:"
-          id _apt || (echo "ERROR: User _apt not found. This is unexpected for an Ubuntu runner." && exit 1)
-          
-          # Assign ownership to user _apt and its primary group.
-          # This user needs full control over these directories during apt updates/installs.
-          echo "Assigning ownership to user '_apt' (and its primary group)..."
-          sudo chown -R _apt "$WS_CACHE_DIR_LISTS"
-          sudo chown -R _apt "$WS_CACHE_DIR_ARCHIVES"
-
-          # Ensure permissions allow _apt (as the new owner) to read/write/execute(for dirs)
-          sudo chmod -R u+rwX "$WS_CACHE_DIR_LISTS"
-          sudo chmod -R u+rwX "$WS_CACHE_DIR_ARCHIVES"
-
-          echo "Running apt-get update..."
-          sudo apt-get update -o APT::Sandbox::User=_apt -o Acquire::Retries=3
-
-          echo "Installing prerequisites: apt-transport-https, dirmngr, gnupg, ca-certificates..."
-          sudo apt-get install -y apt-transport-https dirmngr gnupg ca-certificates
-
-          echo "Adding Mono repository key..."
-          sudo apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-          
-          echo "Running apt-get update for Mono repository..."
-          sudo apt-get update -o APT::Sandbox::User=_apt -o Acquire::Retries=3
-
-          echo "Installing mono-complete..."
-          sudo apt-get install -y mono-complete --fix-missing
-
-          echo "Reverting ownership of workspace cache directories to $RUNNER_USER for caching..."
-          if [ -d "$WS_CACHE_DIR_ARCHIVES" ]; then
-            sudo chown -R $RUNNER_USER:$RUNNER_USER "$WS_CACHE_DIR_ARCHIVES"
-          fi
-          if [ -d "$WS_CACHE_DIR_LISTS" ]; then
-            sudo chown -R $RUNNER_USER:$RUNNER_USER "$WS_CACHE_DIR_LISTS"
-          fi
-
-          # Diagnostic: List contents to check for unexpected symlinks to /var/...
-          echo "--- Contents of $WS_CACHE_DIR_LISTS ---"
-          ls -lAR "$WS_CACHE_DIR_LISTS" || echo "Could not list $WS_CACHE_DIR_LISTS"
-          echo "--- Contents of $WS_CACHE_DIR_ARCHIVES ---"
-          ls -lAR "$WS_CACHE_DIR_ARCHIVES" || echo "Could not list $WS_CACHE_DIR_ARCHIVES"
-          echo "--- Symlinks in $WS_CACHE_DIR_LISTS ---"
-          find "$WS_CACHE_DIR_LISTS" -type l -ls || echo "No symlinks found or error listing symlinks in lists."
-          echo "--- Symlinks in $WS_CACHE_DIR_ARCHIVES ---"
-          find "$WS_CACHE_DIR_ARCHIVES" -type l -ls || echo "No symlinks found or error listing symlinks in archives."
-          echo "--- Apt configuration files ---"
-          sudo grep -r Dir /etc/apt/apt.conf.d/
-          
       - name: Install Pnpm
         uses: pnpm/action-setup@v3
         with:
