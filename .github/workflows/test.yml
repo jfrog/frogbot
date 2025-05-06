@@ -34,7 +34,7 @@ jobs:
           cache: false
 
       - name: Go Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -83,7 +83,7 @@ jobs:
           cache: false
 
       - name: Go Cache Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -91,7 +91,7 @@ jobs:
             ${{ runner.os }}-go-
       
       - name: Go Cache Tests
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -99,7 +99,7 @@ jobs:
             ~/Library/Caches/go-build
           key: ${{ runner.os }}-go-tests
           restore-keys: |
-            ${{ runner.os }}-go-tests
+            ${{ runner.os }}-go-
 
       - name: Install npm
         uses: actions/setup-node@v3
@@ -183,7 +183,7 @@ jobs:
             ~/Library/Caches/go-build
           key: ${{ runner.os }}-go-tests
           restore-keys: |
-            ${{ runner.os }}-go-tests
+            ${{ runner.os }}-go-
 
       - name: Run Tests
         run: GODEBUG=gocachehash=1 go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
