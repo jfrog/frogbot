@@ -188,7 +188,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: GODEBUG=gocachehash=1 go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
