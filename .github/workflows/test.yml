@@ -16,6 +16,11 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
         if: ${{ github.event_name != 'push' }}
@@ -71,6 +76,11 @@ jobs:
 
         os: [ ubuntu, windows, macos ]
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       # Configure prerequisites
       - uses: actions/checkout@v4
         with:
@@ -166,6 +176,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -205,6 +220,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -244,6 +264,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -277,6 +302,11 @@ jobs:
     needs: Pretest
     runs-on: macos-latest
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
