@@ -17,6 +17,11 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
         if: ${{ github.event_name != 'push' }}
@@ -35,7 +40,7 @@ jobs:
           cache: false
 
       - name: Go Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -72,6 +77,11 @@ jobs:
 
         os: [ ubuntu, windows, macos ]
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       # Configure prerequisites
       - uses: actions/checkout@v4
         with:
@@ -84,23 +94,24 @@ jobs:
           cache: false
 
       - name: Go Cache Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
       
-      - name: Go Cache Tests
-        uses: actions/cache@v3
+      - name: Go Cache Build & Tests
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~\AppData\Local\go-build
             ~/Library/Caches/go-build
-          key: ${{ runner.os }}-go-tests
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
           restore-keys: |
-            ${{ runner.os }}-go-tests
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
+            ${{ runner.os }}-go-
 
       - name: Install npm
         uses: actions/setup-node@v3
@@ -166,6 +177,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -175,19 +191,20 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
-      - name: Go Cache Tests
+      - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~\AppData\Local\go-build
             ~/Library/Caches/go-build
-          key: ${{ runner.os }}-go-tests
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
           restore-keys: |
-            ${{ runner.os }}-go-tests
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
+            ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: GODEBUG=gocachehash=1 go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
@@ -204,6 +221,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -213,6 +235,17 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+      - name: Go Cache Build & Tests
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+            ~/Library/Caches/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
+            ${{ runner.os }}-go-
 
       - name: Run Tests
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -232,6 +265,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -241,6 +279,17 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+      - name: Go Cache Build & Tests
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+            ~/Library/Caches/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
+            ${{ runner.os }}-go-
 
       - name: Run Tests
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -254,6 +303,11 @@ jobs:
     needs: Pretest
     runs-on: macos-latest
     steps:
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -272,6 +326,18 @@ jobs:
           bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
           chmod +x $bb_script_path
           sh $bb_script_path
+
+      - name: Go Cache Build & Tests
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~\AppData\Local\go-build
+            ~/Library/Caches/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
+            ${{ runner.os }}-go-
 
       - name: Run Tests
         env:
