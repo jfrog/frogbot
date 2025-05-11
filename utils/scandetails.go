@@ -35,7 +35,7 @@ type ScanDetails struct {
 	allowPartialResults      bool
 
 	diffScan          bool
-	SourceScanResults *results.SecurityCommandResults
+	TargetScanResults *results.SecurityCommandResults
 
 	results.ResultContext
 	MultiScanId string
@@ -59,8 +59,8 @@ func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetSourceScanResults(results *results.SecurityCommandResults) *ScanDetails {
-	sc.SourceScanResults = results
+func (sc *ScanDetails) SetTargetScanResults(results *results.SecurityCommandResults) *ScanDetails {
+	sc.TargetScanResults = results
 	return sc
 }
 
@@ -186,7 +186,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
-		SetResultsToCompare(sc.SourceScanResults).
+		SetResultsToCompare(sc.TargetScanResults).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 

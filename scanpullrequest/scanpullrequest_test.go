@@ -1207,8 +1207,8 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
 			assert.Len(t, issuesCollection.SecretsVulnerabilities, test.expectedIssues.Secrets)
-			assert.Len(t, issuesCollection.SastVulnerabilities, test.expectedIssues.Sast)
 			assert.Len(t, issuesCollection.ScaVulnerabilities, test.expectedIssues.Sca)
+			assert.Len(t, issuesCollection.SastVulnerabilities, test.expectedIssues.Sast)
 		})
 	}
 }
