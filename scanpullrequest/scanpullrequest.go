@@ -212,7 +212,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 
 	for i := range repoConfig.Projects {
 		// Reset scan details for each project
-		scanDetails.SetProject(&repoConfig.Projects[i]).SetTargetScanResults(nil)
+		scanDetails.SetProject(&repoConfig.Projects[i]).SetResultsToCompare(nil)
 		// Scan target branch of the project
 		if !repoConfig.IncludeAllVulnerabilities {
 			log.Debug("Scanning target branch code...")
@@ -221,7 +221,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 				err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
 				continue
 			} else {
-				scanDetails.SetTargetScanResults(targetScanResults)
+				scanDetails.SetResultsToCompare(targetScanResults)
 			}
 		}
 		// Scan source branch of the project
@@ -229,9 +229,12 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		if issues, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd); e == nil {
 			issuesCollection.Append(issues)
 			continue
-		} else if issues != nil {
-			issuesCollection.AppendStatus(issues.ScanStatus)
-			err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
+		} else {
+			if issues != nil {
+				// Scan error, report the scan status
+				issuesCollection.AppendStatus(issues.ScanStatus)
+			}
+			err = errors.Join(err, fmt.Errorf("failed to audit source branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
 		}
 	}
 
@@ -247,16 +250,16 @@ func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd s
 func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
 	scanResults := scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
 	if err = scanResults.GetErrors(); err != nil {
+		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
 	}
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
 	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
-	if !repoConfig.IncludeAllVulnerabilities && targetBranchWd != "" && scanDetails.TargetScanResults != nil {
+	if !repoConfig.IncludeAllVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
 		// Diff scan - calculated at audit source scan, make sure to include target branch working dir when converting to issues
 		log.Debug("Diff scan - converting to new issues...")
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
-		return
 	}
 	// Convert to issues
 	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.AllowedLicenses, workingDirs...); e == nil {

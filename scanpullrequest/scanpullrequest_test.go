@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -1189,7 +1190,7 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			// source: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testSourceBranchName},
 			// target: vcsclient.BranchInfo{Owner: "jfrog", Repository:"jas-diff-proj", Name: testTargetBranchName},
 			expectedIssues: TestResult{
-				Sca:  1,
+				Sca:  4,
 				Sast: 1,
 			},
 		},
@@ -1201,7 +1202,6 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			defer cleanUpTest()
 
 			assert.Len(t, repoConfig, 1)
-
 			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
 			assert.NoError(t, err)
 			assert.NotNil(t, issuesCollection)

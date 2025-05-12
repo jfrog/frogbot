@@ -34,8 +34,8 @@ type ScanDetails struct {
 	configProfile            *clientservices.ConfigProfile
 	allowPartialResults      bool
 
-	diffScan          bool
-	TargetScanResults *results.SecurityCommandResults
+	diffScan         bool
+	ResultsToCompare *results.SecurityCommandResults
 
 	results.ResultContext
 	MultiScanId string
@@ -59,8 +59,8 @@ func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetTargetScanResults(results *results.SecurityCommandResults) *ScanDetails {
-	sc.TargetScanResults = results
+func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResults) *ScanDetails {
+	sc.ResultsToCompare = results
 	return sc
 }
 
@@ -186,7 +186,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
-		SetResultsToCompare(sc.TargetScanResults).
+		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime)
 
