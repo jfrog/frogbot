@@ -11,7 +11,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.3.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.58.6
-	github.com/jfrog/jfrog-cli-security v1.17.0
+	github.com/jfrog/jfrog-cli-security v1.17.2
 	github.com/jfrog/jfrog-client-go v1.53.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v2 v2.3.1
@@ -117,8 +117,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// attiasas:fix_conan_req_file
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250515120053-f2ba6e8ed401
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
