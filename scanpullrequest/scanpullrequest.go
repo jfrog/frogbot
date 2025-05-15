@@ -12,14 +12,12 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 )
 
 const (
@@ -400,68 +398,4 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 		return targetStatus
 	}
 	return sourceStatus
-}
-
-func createNewSourceCodeRows(targetResults, sourceResults []formats.SourceCodeRow) []formats.SourceCodeRow {
-	targetSourceCodeVulnerabilitiesKeys := datastructures.MakeSet[string]()
-	for _, row := range targetResults {
-		if row.Fingerprint != "" {
-			targetSourceCodeVulnerabilitiesKeys.Add(row.Fingerprint)
-		} else {
-			targetSourceCodeVulnerabilitiesKeys.Add(row.File + row.Snippet)
-		}
-	}
-	var addedSourceCodeVulnerabilities []formats.SourceCodeRow
-	for _, row := range sourceResults {
-		if !targetSourceCodeVulnerabilitiesKeys.Exists(row.File+row.Snippet) && !targetSourceCodeVulnerabilitiesKeys.Exists(row.Fingerprint) {
-			addedSourceCodeVulnerabilities = append(addedSourceCodeVulnerabilities, row)
-		}
-	}
-	return addedSourceCodeVulnerabilities
-}
-
-func getUniqueVulnerabilityOrViolationRows(targetRows, sourceRows []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
-	existingRows := make(map[string]formats.VulnerabilityOrViolationRow)
-	var newRows []formats.VulnerabilityOrViolationRow
-	for _, row := range targetRows {
-		existingRows[utils.GetVulnerabiltiesUniqueID(row)] = row
-	}
-	for _, row := range sourceRows {
-		if _, exists := existingRows[utils.GetVulnerabiltiesUniqueID(row)]; !exists {
-			newRows = append(newRows, row)
-		}
-	}
-	return newRows
-}
-
-func getUniqueLicenseRows(targetRows, sourceRows []formats.LicenseViolationRow) []formats.LicenseViolationRow {
-	existingLicenses := make(map[string]formats.LicenseViolationRow)
-	var newLicenses []formats.LicenseViolationRow
-	for _, row := range targetRows {
-		existingLicenses[getUniqueLicenseKey(row.LicenseRow)] = row
-	}
-	for _, row := range sourceRows {
-		if _, exists := existingLicenses[getUniqueLicenseKey(row.LicenseRow)]; !exists {
-			newLicenses = append(newLicenses, row)
-		}
-	}
-	return newLicenses
-}
-
-func getUniqueLicenseKey(license formats.LicenseRow) string {
-	return license.LicenseKey + license.ImpactedDependencyName + license.ImpactedDependencyType
-}
-
-func aggregateScanResults(scanResults []services.ScanResponse) services.ScanResponse {
-	aggregateResults := services.ScanResponse{
-		Violations:      []services.Violation{},
-		Vulnerabilities: []services.Vulnerability{},
-		Licenses:        []services.License{},
-	}
-	for _, scanResult := range scanResults {
-		aggregateResults.Violations = append(aggregateResults.Violations, scanResult.Violations...)
-		aggregateResults.Vulnerabilities = append(aggregateResults.Vulnerabilities, scanResult.Vulnerabilities...)
-		aggregateResults.Licenses = append(aggregateResults.Licenses, scanResult.Licenses...)
-	}
-	return aggregateResults
 }
