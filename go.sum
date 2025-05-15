@@ -122,8 +122,8 @@ github.com/jedib0t/go-pretty/v6 v6.6.5 h1:9PgMJOVBedpgYLI56jQRJYqngxYAAzfEUua+3N
 github.com/jedib0t/go-pretty/v6 v6.6.5/go.mod h1:Uq/HrbhuFty5WSVNfjpQQe47x16RwVGXIveNGEyGtHs=
 github.com/jfrog/archiver/v3 v3.6.1 h1:LOxnkw9pOn45DzCbZNFV6K0+6dCsQ0L8mR3ZcujO5eI=
 github.com/jfrog/archiver/v3 v3.6.1/go.mod h1:VgR+3WZS4N+i9FaDwLZbq+jeU4B4zctXL+gL4EMzfLw=
-github.com/jfrog/build-info-go v1.10.11 h1:wAMGCAHa49+ec01HqzSidLAHNIub+glh4ksFp3pYy7o=
-github.com/jfrog/build-info-go v1.10.11/go.mod h1:JcISnovFXKx3wWf3p1fcMmlPdt6adxScXvoJN4WXqIE=
+github.com/jfrog/build-info-go v1.10.12 h1:KO/YUeKYtDrnpcmsXmwqr6akjzrwA0hSTUB+Op/HF88=
+github.com/jfrog/build-info-go v1.10.12/go.mod h1:JcISnovFXKx3wWf3p1fcMmlPdt6adxScXvoJN4WXqIE=
 github.com/jfrog/froggit-go v1.17.0 h1:20Ie787WO27SwB2MOHDvsR6yN7fA5WfRnuAbmUqz1Zs=
 github.com/jfrog/froggit-go v1.17.0/go.mod h1:HvDkfFfJwIdsXFdqaB+utvD2cLDRmaC3kF8otYb6Chw=
 github.com/jfrog/gofrog v1.7.6 h1:QmfAiRzVyaI7JYGsB7cxfAJePAZTzFz0gRWZSE27c6s=
@@ -134,8 +134,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.3.0 h1:nodmuOauNSx2OKwQChQ1fLcnhNs+tgW
 github.com/jfrog/jfrog-cli-artifactory v0.3.0/go.mod h1:BliRZeMdqVEKHOtREuowYBgNqwVAFcKY0/veOxQDjwo=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.6 h1:cCg9o0M2p52qCnO0Y+Ry8lxbVIJDJy4s948li2UIYaM=
 github.com/jfrog/jfrog-cli-core/v2 v2.58.6/go.mod h1:VjXJpjapnKA0eBoCH9+5+nWQOxQJ+uzADMY2DQPkCzE=
-github.com/jfrog/jfrog-cli-security v1.17.0 h1:K+jtXmT/tNyCYfcbiJUfSgKpHXGrpM1J507Pbi2DXGE=
-github.com/jfrog/jfrog-cli-security v1.17.0/go.mod h1:655eM28gQHUdT6IC6uQf677tqrN1wEcPRzc+8vcM/vA=
+github.com/jfrog/jfrog-cli-security v1.17.2-0.20250515112026-0999d71f126a h1:sccoUbHNW25OIQ30jrLsJwycCbLlHWG6kOxxzGDL6FM=
+github.com/jfrog/jfrog-cli-security v1.17.2-0.20250515112026-0999d71f126a/go.mod h1:IkjG18ZIe9oHnZIHRlSs6L7Ddlbreiiwtq1BqQiEe70=
 github.com/jfrog/jfrog-client-go v1.53.0 h1:oCNuxEtN2VWcbqGdIp1tdYupm7PJZP53etX1Pr24kxY=
 github.com/jfrog/jfrog-client-go v1.53.0/go.mod h1:IKmGx4sYeaiSKBnVzp/j6lVrmyRAXTABfo3B02SPxXI=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
