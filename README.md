@@ -4,7 +4,7 @@
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
-[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/developers/frogbot)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
 
 | Branch |                                                                                                                                                                                    Status                                                                                                                                                                                    |
@@ -32,7 +32,7 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
 ## 🏁 Getting started
-Read the [Frogbot Documentation](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot) to get started.  
+Read the [Frogbot Documentation](https://jfrog.com/help/r/jfrog-security-user-guide/developers/frogbot) to get started.  
 
 ## 📛 Adding the Frogbot badge
 
@@ -42,7 +42,7 @@ You can show people that your repository is scanned by Frogbot by adding a badge
 
 You can add this badge by copying the following markdown snippet and pasting it into your repository's README.md file.
 ```
-[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/developers/frogbot)
 ```
 
 ## 🔥 Reporting issues
