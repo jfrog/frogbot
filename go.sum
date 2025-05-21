@@ -22,8 +22,8 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuW
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/attiasas/jfrog-cli-security v0.0.0-20250518122439-14783fe26f7c h1:xkI98j7qVWirDcrWF83ixgD9WcGKTHJ/R/lWp0F/HD8=
-github.com/attiasas/jfrog-cli-security v0.0.0-20250518122439-14783fe26f7c/go.mod h1:IkjG18ZIe9oHnZIHRlSs6L7Ddlbreiiwtq1BqQiEe70=
+github.com/attiasas/jfrog-cli-security v0.0.0-20250521120336-310c4256d9ba h1:FT3DMFuR5nSB3I9AOFUUSkxO3nQOc0DIRHX8hNtgq8s=
+github.com/attiasas/jfrog-cli-security v0.0.0-20250521120336-310c4256d9ba/go.mod h1:IkjG18ZIe9oHnZIHRlSs6L7Ddlbreiiwtq1BqQiEe70=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0/go.mod h1:bm7JXdkRd4BHJk9HpwqAI8BoAY1lps46Enkdqw6aRX0=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
