@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -24,15 +25,11 @@ import (
 	"github.com/jfrog/jfrog-cli-security/tests/validations"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
-	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
-	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
-	"github.com/owenrumney/go-sarif/v2/sarif"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,407 +40,12 @@ const (
 	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
 	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
 	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
+	testJasProjConfigPath            = "testdata/config/frogbot-config-jas-diff-proj.yml"
 	testSourceBranchName             = "pr"
 	testTargetBranchName             = "master"
 )
 
-func createScaDiff(t *testing.T, previousScan, currentScan services.ScanResponse, applicable bool, allowedLicenses ...string) (securityViolationsRows []formats.VulnerabilityOrViolationRow, licenseViolations []formats.LicenseViolationRow) {
-	sourceResults, err := scaToDummySimpleJsonResults(currentScan, applicable, allowedLicenses...)
-	assert.NoError(t, err)
-	targetResults, err := scaToDummySimpleJsonResults(previousScan, applicable, allowedLicenses...)
-	assert.NoError(t, err)
-	securityViolationsRows = getUniqueVulnerabilityOrViolationRows(
-		append(targetResults.Vulnerabilities, targetResults.SecurityViolations...),
-		append(sourceResults.Vulnerabilities, sourceResults.SecurityViolations...),
-	)
-	licenseViolations = getUniqueLicenseRows(targetResults.LicensesViolations, sourceResults.LicensesViolations)
-	return
-}
-
-func scaToDummySimpleJsonResults(response services.ScanResponse, applicable bool, allowedLicenses ...string) (formats.SimpleJsonResults, error) {
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true, AllowedLicenses: allowedLicenses})
-	jasResults := &results.JasScansResults{}
-	if applicable {
-		jasResults.ApplicabilityScanResults = append(jasResults.ApplicabilityScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2023-4321", "")))...)
-	}
-	cmdResults := &results.SecurityCommandResults{EntitledForJas: applicable, Targets: []*results.TargetResults{{
-		ScanTarget: results.ScanTarget{Target: "dummy"},
-		JasResults: jasResults,
-		ScaResults: &results.ScaScanResults{XrayResults: validations.NewMockScaResults(response)},
-	}}}
-	return convertor.ConvertToSimpleJson(cmdResults)
-}
-
-func createJasDiff(t *testing.T, scanType jasutils.JasScanType, source, target []*sarif.Result) (jasViolationsRows []formats.SourceCodeRow) {
-	sourceResults, err := jasToDummySimpleJsonResults(scanType, source)
-	assert.NoError(t, err)
-	targetResults, err := jasToDummySimpleJsonResults(scanType, target)
-	assert.NoError(t, err)
-
-	var targetJasResults, sourceJasResults []formats.SourceCodeRow
-	switch scanType {
-	case jasutils.Sast:
-		targetJasResults = targetResults.SastVulnerabilities
-		sourceJasResults = sourceResults.SastVulnerabilities
-	case jasutils.Secrets:
-		targetJasResults = targetResults.SecretsVulnerabilities
-		sourceJasResults = sourceResults.SecretsVulnerabilities
-	case jasutils.IaC:
-		targetJasResults = targetResults.IacsVulnerabilities
-		sourceJasResults = sourceResults.IacsVulnerabilities
-	}
-
-	return createNewSourceCodeRows(targetJasResults, sourceJasResults)
-}
-
-func jasToDummySimpleJsonResults(scanType jasutils.JasScanType, jasScanResults []*sarif.Result) (formats.SimpleJsonResults, error) {
-	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: true, HasViolationContext: true})
-
-	jasResults := &results.JasScansResults{JasVulnerabilities: results.JasScanResults{}}
-	switch scanType {
-	case jasutils.Sast:
-		jasResults.JasVulnerabilities.SastScanResults = append(jasResults.JasVulnerabilities.SastScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
-	case jasutils.Secrets:
-		jasResults.JasVulnerabilities.SecretsScanResults = append(jasResults.JasVulnerabilities.SecretsScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
-	case jasutils.IaC:
-		jasResults.JasVulnerabilities.IacScanResults = append(jasResults.JasVulnerabilities.IacScanResults, validations.NewMockJasRuns(sarifutils.CreateRunWithDummyResults(jasScanResults...))...)
-	}
-	cmdResults := &results.SecurityCommandResults{EntitledForJas: true, Targets: []*results.TargetResults{{
-		ScanTarget: results.ScanTarget{Target: "dummy"},
-		JasResults: jasResults,
-	}}}
-	return convertor.ConvertToSimpleJson(cmdResults)
-}
-
-func TestCreateVulnerabilitiesRows(t *testing.T) {
-	// Previous scan with only one violation - XRAY-1
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{
-			{
-				IssueId:       "XRAY-1",
-				Summary:       "summary-1",
-				Severity:      "high",
-				Cves:          []services.Cve{},
-				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}, "component-B": {}},
-			},
-			{
-				IssueId:       "XRAY-4",
-				ViolationType: "license",
-				Severity:      "low",
-				LicenseKey:    "Apache-2.0",
-				Components:    map[string]services.Component{"Dep-2": {}},
-			},
-		},
-	}
-
-	// Current scan with 2 violations - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{
-			{
-				IssueId:       "XRAY-1",
-				Summary:       "summary-1",
-				Severity:      "high",
-				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}, "component-B": {}},
-			},
-			{
-				IssueId:       "XRAY-2",
-				Summary:       "summary-2",
-				ViolationType: "security",
-				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}, "component-D": {}},
-			},
-			{
-				IssueId:       "XRAY-3",
-				ViolationType: "license",
-				Severity:      "low",
-				LicenseKey:    "MIT",
-				Components:    map[string]services.Component{"Dep-1": {}},
-			},
-		},
-	}
-
-	// Run createNewIssuesRows and make sure that only the XRAY-2 violation exists in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
-
-	assert.Len(t, licenseViolations, 1)
-	assert.Len(t, securityViolationsRows, 2)
-	assert.Equal(t, "XRAY-2", securityViolationsRows[0].IssueId)
-	assert.Equal(t, "Low", securityViolationsRows[0].Severity)
-	assert.Equal(t, "XRAY-2", securityViolationsRows[1].IssueId)
-	assert.Equal(t, "Low", securityViolationsRows[1].Severity)
-	assert.Equal(t, "MIT", licenseViolations[0].LicenseKey)
-	assert.Equal(t, "Dep-1", licenseViolations[0].ImpactedDependencyName)
-
-	impactedPackageOne := securityViolationsRows[0].ImpactedDependencyName
-	impactedPackageTwo := securityViolationsRows[1].ImpactedDependencyName
-	assert.ElementsMatch(t, []string{"component-C", "component-D"}, []string{impactedPackageOne, impactedPackageTwo})
-}
-
-func TestCreateVulnerabilitiesRowsCaseNoPrevViolations(t *testing.T) {
-	// Previous scan with no violation
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{},
-	}
-
-	// Current scan with 2 violations - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{
-			{
-				IssueId:       "XRAY-1",
-				Summary:       "summary-1",
-				Severity:      "high",
-				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}},
-			},
-			{
-				IssueId:       "XRAY-2",
-				Summary:       "summary-2",
-				ViolationType: "security",
-				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}},
-			},
-			{
-				IssueId:       "XRAY-3",
-				ViolationType: "license",
-				LicenseKey:    "MIT",
-				Severity:      "low",
-				Components:    map[string]services.Component{"Dep-1": {}},
-			},
-		},
-	}
-
-	expectedVulns := []formats.VulnerabilityOrViolationRow{
-		{
-			IssueId: "XRAY-1",
-			Summary: "summary-1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 18},
-				ImpactedDependencyName: "component-A",
-			},
-		},
-		{
-			IssueId: "XRAY-2",
-			Summary: "summary-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 10},
-				ImpactedDependencyName: "component-C",
-			},
-		},
-	}
-
-	expectedLicenses := []formats.LicenseRow{
-		{
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Dep-1"},
-			LicenseKey:                "MIT",
-		},
-	}
-
-	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 violation in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
-
-	assert.Len(t, licenseViolations, 1)
-	assert.Len(t, securityViolationsRows, 2)
-	assert.ElementsMatch(t, expectedVulns, securityViolationsRows)
-	assert.Equal(t, expectedLicenses[0].ImpactedDependencyName, licenseViolations[0].ImpactedDependencyName)
-	assert.Equal(t, expectedLicenses[0].LicenseKey, licenseViolations[0].LicenseKey)
-}
-
-func TestGetNewViolationsCaseNoNewViolations(t *testing.T) {
-	// Previous scan with 2 security violations and 1 license violation - XRAY-1 and XRAY-2
-	previousScan := services.ScanResponse{
-		Violations: []services.Violation{
-			{
-				IssueId:       "XRAY-1",
-				Severity:      "high",
-				ViolationType: "security",
-				Components:    map[string]services.Component{"component-A": {}},
-			},
-			{
-				IssueId:       "XRAY-2",
-				Summary:       "summary-2",
-				ViolationType: "security",
-				Severity:      "low",
-				Components:    map[string]services.Component{"component-C": {}},
-			},
-			{
-				IssueId:       "XRAY-3",
-				LicenseKey:    "MIT",
-				Severity:      "medium",
-				ViolationType: "license",
-				Components:    map[string]services.Component{"component-B": {}},
-			},
-		},
-	}
-
-	// Current scan with no violation
-	currentScan := services.ScanResponse{
-		Violations: []services.Violation{},
-	}
-
-	// Run createNewIssuesRows and expect no violations in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false, "MIT")
-
-	assert.Len(t, securityViolationsRows, 0)
-	assert.Len(t, licenseViolations, 0)
-}
-
-func TestGetNewVulnerabilities(t *testing.T) {
-	// Previous scan with only one vulnerability - XRAY-1
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{{
-			IssueId:    "XRAY-1",
-			Summary:    "summary-1",
-			Severity:   "high",
-			Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
-			Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-			Technology: techutils.Maven.String(),
-		}},
-	}
-
-	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
-			{
-				IssueId:    "XRAY-1",
-				Summary:    "summary-1",
-				Severity:   "high",
-				Cves:       []services.Cve{{Id: "CVE-2023-1234"}},
-				Components: map[string]services.Component{"component-A": {}, "component-B": {}},
-				Technology: techutils.Maven.String(),
-			},
-			{
-				IssueId:    "XRAY-2",
-				Summary:    "summary-2",
-				Severity:   "low",
-				Cves:       []services.Cve{{Id: "CVE-2023-4321"}},
-				Components: map[string]services.Component{"component-C": {}, "component-D": {}},
-				Technology: techutils.Yarn.String(),
-			},
-		},
-	}
-
-	expected := []formats.VulnerabilityOrViolationRow{
-		{
-			Summary:    "summary-2",
-			Applicable: "Applicable",
-			IssueId:    "XRAY-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
-				ImpactedDependencyName: "component-C",
-			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
-			Technology: techutils.Yarn,
-		},
-		{
-			Summary:    "summary-2",
-			Applicable: "Applicable",
-			IssueId:    "XRAY-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 13},
-				ImpactedDependencyName: "component-D",
-			},
-			Cves:       []formats.CveRow{{Id: "CVE-2023-4321", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
-			Technology: techutils.Yarn,
-		},
-	}
-
-	// Run createNewIssuesRows and make sure that only the XRAY-2 vulnerability exists in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, true)
-
-	assert.Len(t, securityViolationsRows, 2)
-	assert.Len(t, licenseViolations, 0)
-	assert.ElementsMatch(t, expected, securityViolationsRows)
-}
-
-func TestGetNewVulnerabilitiesCaseNoPrevVulnerabilities(t *testing.T) {
-	// Previous scan with no vulnerabilities
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{},
-	}
-
-	// Current scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
-			{
-				IssueId:             "XRAY-1",
-				Summary:             "summary-1",
-				Severity:            "high",
-				ExtendedInformation: &services.ExtendedInformation{FullDescription: "description-1"},
-				Components:          map[string]services.Component{"component-A": {}},
-			},
-			{
-				IssueId:             "XRAY-2",
-				Summary:             "summary-2",
-				Severity:            "low",
-				ExtendedInformation: &services.ExtendedInformation{FullDescription: "description-2"},
-				Components:          map[string]services.Component{"component-B": {}},
-			},
-		},
-	}
-
-	expected := []formats.VulnerabilityOrViolationRow{
-		{
-			Summary: "summary-2",
-			IssueId: "XRAY-2",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 10},
-				ImpactedDependencyName: "component-B",
-			},
-			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-2"},
-		},
-		{
-			Summary: "summary-1",
-			IssueId: "XRAY-1",
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 18},
-				ImpactedDependencyName: "component-A",
-			},
-			JfrogResearchInformation: &formats.JfrogResearchInformation{Details: "description-1"},
-		},
-	}
-
-	// Run createNewIssuesRows and expect both XRAY-1 and XRAY-2 vulnerability in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
-
-	assert.Len(t, securityViolationsRows, 2)
-	assert.Len(t, licenseViolations, 0)
-	assert.ElementsMatch(t, expected, securityViolationsRows)
-}
-
-func TestGetNewVulnerabilitiesCaseNoNewVulnerabilities(t *testing.T) {
-	// Previous scan with 2 vulnerabilities - XRAY-1 and XRAY-2
-	previousScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{
-			{
-				IssueId:    "XRAY-1",
-				Summary:    "summary-1",
-				Severity:   "high",
-				Components: map[string]services.Component{"component-A": {}},
-			},
-			{
-				IssueId:    "XRAY-2",
-				Summary:    "summary-2",
-				Severity:   "low",
-				Components: map[string]services.Component{"component-B": {}},
-			},
-		},
-	}
-
-	// Current scan with no vulnerabilities
-	currentScan := services.ScanResponse{
-		Vulnerabilities: []services.Vulnerability{},
-	}
-
-	// Run createNewIssuesRows and expect no vulnerability in the results
-	securityViolationsRows, licenseViolations := createScaDiff(t, previousScan, currentScan, false)
-
-	assert.Len(t, securityViolationsRows, 0)
-	assert.Len(t, licenseViolations, 0)
-}
-
-func TestGetAllIssues(t *testing.T) {
+func TestScanResultsToIssuesCollection(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
 	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -591,7 +193,7 @@ func TestGetAllIssues(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := getAllIssues(auditResults, allowedLicenses)
+	issuesRows, err := scanResultsToIssuesCollection(auditResults, allowedLicenses)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
@@ -654,32 +256,12 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
-	params, restoreEnv := utils.VerifyEnv(t)
-	defer restoreEnv()
-
-	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
-	assert.NoError(t, err)
-
-	// Create mock GitLab server
-	server := httptest.NewServer(createGitLabHandler(t, projectName))
-	defer server.Close()
-
-	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params)
-	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
+	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName, configPath)
 	defer cleanUp()
-
-	// Renames test git folder to .git
-	currentDir := filepath.Join(testDir, projectName)
-	restoreDir, err := utils.Chdir(currentDir)
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, restoreDir())
-		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
-	}()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err = scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
+	err := scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {
@@ -747,17 +329,17 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails) (utils.RepoAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.RepoAggregator, vcsclient.VcsClient) {
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
-		RepoOwner:   "jfrog",
+		RepoOwner:   gitServerParams.RepoOwner,
 		VcsInfo: vcsclient.VcsInfo{
 			Token:       "123456",
 			APIEndpoint: server.URL,
 		},
-		PullRequestDetails: vcsclient.PullRequestInfo{ID: int64(1)},
+		PullRequestDetails: gitServerParams.prDetails,
 	}
-	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: "1"})
+	utils.SetEnvAndAssert(t, map[string]string{utils.GitPullRequestIDEnv: fmt.Sprintf("%d", gitServerParams.prDetails.ID)})
 
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
@@ -768,358 +350,6 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath st
 	assert.NoError(t, err)
 
 	return configAggregator, client
-}
-
-// Create HTTP handler to mock GitLab server
-func createGitLabHandler(t *testing.T, projectName string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		// Return 200 on ping
-		case r.RequestURI == "/api/v4/":
-			w.WriteHeader(http.StatusOK)
-		// Mimic get pull request by ID
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/1", "%2F"+projectName):
-			w.WriteHeader(http.StatusOK)
-			expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(expectedResponse)
-			assert.NoError(t, err)
-		// Mimic download specific branch to scan
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testSourceBranchName):
-			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "sourceBranch.gz"))
-			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
-			assert.NoError(t, err)
-		// Download repository mock
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/repository/archive.tar.gz?sha=%s", "%2F"+projectName, testTargetBranchName):
-			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", projectName, "targetBranch.gz"))
-			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
-			assert.NoError(t, err)
-			return
-		// clean-test-proj should not include any vulnerabilities so assertion is not needed.
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodPost:
-			w.WriteHeader(http.StatusOK)
-			_, err := w.Write([]byte("{}"))
-			assert.NoError(t, err)
-			return
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2Fclean-test-proj") && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(comments)
-			assert.NoError(t, err)
-		// Return 200 when using the REST that creates the comment
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodPost:
-			buf := new(bytes.Buffer)
-			_, err := buf.ReadFrom(r.Body)
-			assert.NoError(t, err)
-			assert.NotEmpty(t, buf.String())
-
-			var expectedResponse []byte
-			if strings.Contains(projectName, "multi-dir") {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
-			} else {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
-			}
-			assert.NoError(t, err)
-			assert.JSONEq(t, string(expectedResponse), buf.String())
-
-			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("{}"))
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/notes", "%2F"+projectName) && r.Method == http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(comments)
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s", "%2F"+projectName):
-			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
-			_, err := w.Write([]byte(jsonResponse))
-			assert.NoError(t, err)
-		case r.RequestURI == fmt.Sprintf("/api/v4/projects/jfrog%s/merge_requests/133/discussions", "%2F"+projectName):
-			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
-			assert.NoError(t, err)
-			_, err = w.Write(discussions)
-			assert.NoError(t, err)
-		}
-	}
-}
-
-func TestCreateNewIacRows(t *testing.T) {
-	testCases := []struct {
-		name                            string
-		targetIacResults                []*sarif.Result
-		sourceIacResults                []*sarif.Result
-		expectedAddedIacVulnerabilities []formats.SourceCodeRow
-	}{
-		{
-			name: "No vulnerabilities in source IaC results",
-			targetIacResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
-				),
-			},
-			sourceIacResults:                []*sarif.Result{},
-			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{},
-		},
-		{
-			name:             "No vulnerabilities in target IaC results",
-			targetIacResults: []*sarif.Result{},
-			sourceIacResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
-				),
-			},
-			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "High",
-						SeverityNumValue: 21,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "Missing auto upgrade was detected",
-					Location: formats.Location{
-						File:        "file1",
-						StartLine:   1,
-						StartColumn: 10,
-						EndLine:     2,
-						EndColumn:   11,
-						Snippet:     "aws-violation",
-					},
-				},
-			},
-		},
-		{
-			name: "Some new vulnerabilities in source IaC results",
-			targetIacResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
-				),
-			},
-			sourceIacResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("enable_private_endpoint=false was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.Medium).String(),
-					sarifutils.CreateLocation("file2", 2, 5, 3, 6, "gcp-violation"),
-				),
-			},
-			expectedAddedIacVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "Medium",
-						SeverityNumValue: 17,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "enable_private_endpoint=false was detected",
-					Location: formats.Location{
-						File:        "file2",
-						StartLine:   2,
-						StartColumn: 5,
-						EndLine:     3,
-						EndColumn:   6,
-						Snippet:     "gcp-violation",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			addedIacVulnerabilities := createJasDiff(t, jasutils.IaC, tc.sourceIacResults, tc.targetIacResults)
-			assert.ElementsMatch(t, tc.expectedAddedIacVulnerabilities, addedIacVulnerabilities)
-		})
-	}
-}
-
-func TestCreateNewSecretRows(t *testing.T) {
-	testCases := []struct {
-		name                                string
-		targetSecretsResults                []*sarif.Result
-		sourceSecretsResults                []*sarif.Result
-		expectedAddedSecretsVulnerabilities []formats.SourceCodeRow
-	}{
-		{
-			name: "No vulnerabilities in source secrets results",
-			targetSecretsResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
-				),
-			},
-			sourceSecretsResults:                []*sarif.Result{},
-			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{},
-		},
-		{
-			name:                 "No vulnerabilities in target secrets results",
-			targetSecretsResults: []*sarif.Result{},
-			sourceSecretsResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
-				),
-			},
-			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "High",
-						SeverityNumValue: 21,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "Secret",
-					Location: formats.Location{
-						File:        "file1",
-						StartLine:   1,
-						StartColumn: 10,
-						EndLine:     2,
-						EndColumn:   11,
-						Snippet:     "Sensitive information",
-					},
-				},
-			},
-		},
-		{
-			name: "Some new vulnerabilities in source secrets results",
-			targetSecretsResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "Sensitive information"),
-				),
-			},
-			sourceSecretsResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.Medium).String(),
-					sarifutils.CreateLocation("file2", 2, 5, 3, 6, "Confidential data"),
-				),
-			},
-			expectedAddedSecretsVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "Medium",
-						SeverityNumValue: 17,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "Secret",
-					Location: formats.Location{
-						File:        "file2",
-						StartLine:   2,
-						StartColumn: 5,
-						EndLine:     3,
-						EndColumn:   6,
-						Snippet:     "Confidential data",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			addedSecretsVulnerabilities := createJasDiff(t, jasutils.Secrets, tc.sourceSecretsResults, tc.targetSecretsResults)
-			assert.ElementsMatch(t, tc.expectedAddedSecretsVulnerabilities, addedSecretsVulnerabilities)
-		})
-	}
-}
-
-func TestCreateNewSastRows(t *testing.T) {
-	testCases := []struct {
-		name                             string
-		targetSastResults                []*sarif.Result
-		sourceSastResults                []*sarif.Result
-		expectedAddedSastVulnerabilities []formats.SourceCodeRow
-	}{
-		{
-			name: "No vulnerabilities in source Sast results",
-			targetSastResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
-				),
-			},
-			sourceSastResults:                []*sarif.Result{},
-			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{},
-		},
-		{
-			name:              "No vulnerabilities in target Sast results",
-			targetSastResults: []*sarif.Result{},
-			sourceSastResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
-				),
-			},
-			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "High",
-						SeverityNumValue: 21,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "XSS Vulnerability",
-					Location: formats.Location{
-						File:        "file1",
-						StartLine:   1,
-						StartColumn: 10,
-						EndLine:     2,
-						EndColumn:   11,
-						Snippet:     "snippet",
-					},
-				},
-			},
-		},
-		{
-			name: "Some new vulnerabilities in source Sast results",
-			targetSastResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
-					sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
-				),
-			},
-			sourceSastResults: []*sarif.Result{
-				sarifutils.CreateResultWithLocations("Stack Trace Exposure", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.Medium).String(),
-					sarifutils.CreateLocation("file2", 2, 5, 3, 6, "other-snippet"),
-				),
-			},
-			expectedAddedSastVulnerabilities: []formats.SourceCodeRow{
-				{
-					SeverityDetails: formats.SeverityDetails{
-						Severity:         "Medium",
-						SeverityNumValue: 17,
-					},
-					ScannerInfo: formats.ScannerInfo{
-						RuleId:             "rule",
-						ScannerDescription: "rule-msg",
-					},
-					Finding: "Stack Trace Exposure",
-					Location: formats.Location{
-						File:        "file2",
-						StartLine:   2,
-						StartColumn: 5,
-						EndLine:     3,
-						EndColumn:   6,
-						Snippet:     "other-snippet",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			addedSastVulnerabilities := createJasDiff(t, jasutils.Sast, tc.sourceSastResults, tc.targetSastResults)
-			assert.ElementsMatch(t, tc.expectedAddedSastVulnerabilities, addedSastVulnerabilities)
-		})
-	}
 }
 
 func TestDeletePreviousPullRequestMessages(t *testing.T) {
@@ -1220,38 +450,6 @@ func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
 	}
 }
 
-func TestAggregateScanResults(t *testing.T) {
-	scanResult1 := services.ScanResponse{
-		Violations:      []services.Violation{{IssueId: "Violation 1"}},
-		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 1"}},
-		Licenses:        []services.License{{Name: "License 1"}},
-	}
-
-	scanResult2 := services.ScanResponse{
-		Violations:      []services.Violation{{IssueId: "Violation 2"}},
-		Vulnerabilities: []services.Vulnerability{{IssueId: "Vulnerability 2"}},
-		Licenses:        []services.License{{Name: "License 2"}},
-	}
-
-	aggregateResult := aggregateScanResults([]services.ScanResponse{scanResult1, scanResult2})
-	expectedResult := services.ScanResponse{
-		Violations: []services.Violation{
-			{IssueId: "Violation 1"},
-			{IssueId: "Violation 2"},
-		},
-		Vulnerabilities: []services.Vulnerability{
-			{IssueId: "Vulnerability 1"},
-			{IssueId: "Vulnerability 2"},
-		},
-		Licenses: []services.License{
-			{Name: "License 1"},
-			{Name: "License 2"},
-		},
-	}
-
-	assert.Equal(t, expectedResult, aggregateResult)
-}
-
 // Set new logger with output redirection to a null logger. This is useful for negative tests.
 // Caller is responsible to set the old log back.
 func redirectLogOutputToNil() (previousLog log.Log) {
@@ -1261,4 +459,162 @@ func redirectLogOutputToNil() (previousLog log.Log) {
 	newLog.SetLogsWriter(io.Discard, 0)
 	log.SetLogger(newLog)
 	return previousLog
+}
+
+type TestResult struct {
+	Sca     int
+	Iac     int
+	Secrets int
+	Sast    int
+}
+
+func TestAuditDiffInPullRequest(t *testing.T) {
+	tests := []struct {
+		testName       string
+		projectName    string
+		configPath     string
+		expectedIssues TestResult
+	}{
+		{
+			testName:    "Project with Jas issues (issues added removed and not changed)",
+			projectName: "jas-diff-proj",
+			configPath:  testJasProjConfigPath,
+			expectedIssues: TestResult{
+				Sca:  4,
+				Sast: 1,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, test.configPath)
+			defer cleanUpTest()
+
+			assert.Len(t, repoConfig, 1)
+			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
+			assert.NoError(t, err)
+			assert.NotNil(t, issuesCollection)
+			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
+			assert.Len(t, issuesCollection.SecretsVulnerabilities, test.expectedIssues.Secrets)
+			assert.Len(t, issuesCollection.ScaVulnerabilities, test.expectedIssues.Sca)
+			assert.Len(t, issuesCollection.SastVulnerabilities, test.expectedIssues.Sast)
+		})
+	}
+}
+
+func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
+	params, restoreEnv := utils.VerifyEnv(t)
+
+	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
+	assert.NoError(t, err)
+
+	// Create mock GitLab server
+	owner := "jfrog"
+	gitServerParams := GitServerParams{
+		RepoOwner: owner,
+		RepoName:  projectName,
+		prDetails: vcsclient.PullRequestInfo{ID: int64(1),
+			Source: vcsclient.BranchInfo{Name: testSourceBranchName, Repository: projectName, Owner: owner},
+			Target: vcsclient.BranchInfo{Name: testTargetBranchName, Repository: projectName, Owner: owner},
+		},
+	}
+	server := httptest.NewServer(createGitLabHandler(t, gitServerParams))
+
+	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
+	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params, gitServerParams)
+
+	// Renames test git folder to .git
+	currentDir := filepath.Join(testDir, projectName)
+	restoreDir, err := utils.Chdir(currentDir)
+	assert.NoError(t, err)
+
+	return configAggregator, client, func() {
+		assert.NoError(t, restoreDir())
+		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
+		cleanUp()
+		server.Close()
+		restoreEnv()
+	}
+}
+
+type GitServerParams struct {
+	RepoOwner string
+	RepoName  string
+	prDetails vcsclient.PullRequestInfo
+}
+
+// Create HTTP handler to mock GitLab server
+func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		repoInfo := params.RepoOwner + "%2F" + params.RepoName
+		switch {
+		// Return 200 on ping
+		case r.RequestURI == "/api/v4/":
+			w.WriteHeader(http.StatusOK)
+		// Mimic get pull request by ID
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/%d", repoInfo, params.prDetails.ID):
+			w.WriteHeader(http.StatusOK)
+			// expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
+			// assert.NoError(t, err)
+			_, err := w.Write([]byte(fmt.Sprintf(`{ "id": %d, "iid": 133, "project_id": 15513260, "title": "Dummy pull request", "description": "this is pr description", "state": "opened", "target_branch": "%s", "source_branch": "%s", "author": {"username": "testuser"}}`, params.prDetails.ID, params.prDetails.Target.Name, params.prDetails.Source.Name)))
+			assert.NoError(t, err)
+		// Mimic download specific branch to scan
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+		// Download repository mock
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
+			w.WriteHeader(http.StatusOK)
+			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
+			assert.NoError(t, err)
+			_, err = w.Write(repoFile)
+			assert.NoError(t, err)
+			return
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(comments)
+			assert.NoError(t, err)
+		// Return 200 when using the REST that creates the comment
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
+			if params.RepoName == "clean-test-proj" {
+				// clean-test-proj should not include any vulnerabilities so assertion is not needed.
+				w.WriteHeader(http.StatusOK)
+				_, err := w.Write([]byte("{}"))
+				assert.NoError(t, err)
+				return
+			}
+			buf := new(bytes.Buffer)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, buf.String())
+
+			var expectedResponse []byte
+			if strings.Contains(params.RepoName, "multi-dir") {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
+			} else {
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
+			}
+			assert.NoError(t, err)
+			assert.JSONEq(t, string(expectedResponse), buf.String())
+
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("{}"))
+			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s", repoInfo):
+			jsonResponse := `{"id": 3,"visibility": "private","ssh_url_to_repo": "git@example.com:diaspora/diaspora-project-site.git","http_url_to_repo": "https://example.com/diaspora/diaspora-project-site.git"}`
+			_, err := w.Write([]byte(jsonResponse))
+			assert.NoError(t, err)
+		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/discussions", repoInfo):
+			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
+			assert.NoError(t, err)
+			_, err = w.Write(discussions)
+			assert.NoError(t, err)
+		}
+	}
 }
