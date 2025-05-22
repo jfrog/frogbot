@@ -117,8 +117,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// attiasas:diff_scan
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250522112550-020c4e6b7a03
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.17.3-0.20250522123706-aaab4d3faedc
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
