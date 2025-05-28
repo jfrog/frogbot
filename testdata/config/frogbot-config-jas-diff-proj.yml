@@ -1,0 +1,5 @@
+- params:
+    git:
+      repoName: jas-diff-proj
+      branches:
+        - master
