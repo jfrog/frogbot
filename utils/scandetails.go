@@ -24,15 +24,14 @@ type ScanDetails struct {
 
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
-	client                   vcsclient.VcsClient
-	failOnInstallationErrors bool
-	fixableOnly              bool
-	disableJas               bool
-	skipAutoInstall          bool
-	minSeverityFilter        severityutils.Severity
-	baseBranch               string
-	configProfile            *clientservices.ConfigProfile
-	allowPartialResults      bool
+	client              vcsclient.VcsClient
+	fixableOnly         bool
+	disableJas          bool
+	skipAutoInstall     bool
+	minSeverityFilter   severityutils.Severity
+	baseBranch          string
+	configProfile       *clientservices.ConfigProfile
+	allowPartialResults bool
 
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
@@ -66,11 +65,6 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 
 func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
 	sc.disableJas = disable
-	return sc
-}
-
-func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
-	sc.failOnInstallationErrors = toFail
 	return sc
 }
 
@@ -127,10 +121,6 @@ func (sc *ScanDetails) Client() vcsclient.VcsClient {
 
 func (sc *ScanDetails) BaseBranch() string {
 	return sc.baseBranch
-}
-
-func (sc *ScanDetails) FailOnInstallationErrors() bool {
-	return sc.failOnInstallationErrors
 }
 
 func (sc *ScanDetails) FixableOnly() bool {
