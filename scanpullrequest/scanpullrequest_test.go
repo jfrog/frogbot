@@ -497,8 +497,8 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
 			assert.Len(t, issuesCollection.SecretsVulnerabilities, test.expectedIssues.Secrets)
-			assert.GreaterOrEqual(t, issuesCollection.ScaVulnerabilities, test.expectedIssues.Sca)
-			assert.GreaterOrEqual(t, issuesCollection.SastVulnerabilities, test.expectedIssues.Sast)
+			assert.GreaterOrEqual(t, len(issuesCollection.ScaVulnerabilities), test.expectedIssues.Sca)
+			assert.GreaterOrEqual(t, len(issuesCollection.SastVulnerabilities), test.expectedIssues.Sast)
 		})
 	}
 }
