@@ -732,6 +732,16 @@ func SanitizeEnv() error {
 		if err := os.Unsetenv(envSplit[0]); err != nil {
 			return err
 		}
+		if env == FrogbotCustomScannerEnv {
+			// JF_ENABLE_CUSTOM_SCANNERS is a special case
+			// CLI expects the environment variable 'ENABLE_CUSTOM_SCANNERS' to be set to true or false.
+			if err := os.Setenv(CliCustomScannerEnv, os.Getenv(FrogbotCustomScannerEnv)); err != nil {
+				return fmt.Errorf("failed to set the %s environment variable: %w", CliCustomScannerEnv, err)
+			}
+			if err := os.Unsetenv(FrogbotCustomScannerEnv); err != nil {
+				return fmt.Errorf("failed to unset the %s environment variable: %w", FrogbotCustomScannerEnv, err)
+			}
+		}
 	}
 	return nil
 }

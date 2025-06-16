@@ -48,8 +48,12 @@ const (
 	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
 	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
 	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
+
 	//#nosec G101 -- not a secret
 	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
+
+	CliCustomScannerEnv     = "ENABLE_CUSTOM_SCANNERS"
+	FrogbotCustomScannerEnv = "JF_ENABLE_CUSTOM_SCANNERS"
 
 	// Repository environment variables - Ignored if the frogbot-config.yml file is used
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
