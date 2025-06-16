@@ -132,7 +132,6 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
 		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
-		SetFailOnInstallationErrors(*repository.FailOnSecurityIssues).
 		SetFixableOnly(repository.FixableOnly).
 		SetConfigProfile(repository.ConfigProfile).
 		SetSkipAutoInstall(repository.SkipAutoInstall).

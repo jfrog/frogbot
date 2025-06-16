@@ -106,8 +106,11 @@ func (p *Project) setDefaultsIfNeeded() error {
 			// We then execute a recursive scan across the entire project, commencing from the root.
 			workingDir = RootDir
 			p.IsRecursiveScan = true
+			p.WorkingDirs = append(p.WorkingDirs, workingDir)
+		} else {
+			workingDirs := strings.Split(workingDir, ",")
+			p.WorkingDirs = append(p.WorkingDirs, workingDirs...)
 		}
-		p.WorkingDirs = append(p.WorkingDirs, workingDir)
 	}
 	if len(p.PathExclusions) == 0 {
 		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
