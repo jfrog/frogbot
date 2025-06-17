@@ -55,10 +55,10 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250616145411-c4f055062c14 h1:L5H8bJS7c1/vNPvD9mwshMDSRvpmWCdwhzeu7eRx4Us=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250616145411-c4f055062c14/go.mod h1:51nxEy0iumkyPdA8RT52wOOaGnnRt6lgLMuAYsFzSFY=
-github.com/eranturgeman/jfrog-client-go v0.0.0-20250616142604-c8b25569e8b8 h1:5P03JYrdBsu/w46FrPwkat3ygZtvji6NnDSxkzmTQX0=
-github.com/eranturgeman/jfrog-client-go v0.0.0-20250616142604-c8b25569e8b8/go.mod h1:1v0eih4thdPA4clBo9TuvAMT25sGDr1IQJ81DXQ/lBY=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250617092938-bfac2ceebd05 h1:QwFj6wH6jI1libjdcYMJzsdMmA8TuQsZZQnKkBr/+Mw=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250617092938-bfac2ceebd05/go.mod h1:51nxEy0iumkyPdA8RT52wOOaGnnRt6lgLMuAYsFzSFY=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20250617092144-796e1dcbd97f h1:4WRu2r4VCghN53/jWvdIJfdBhn9u5/iosXu3GfgsOtU=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20250617092144-796e1dcbd97f/go.mod h1:1v0eih4thdPA4clBo9TuvAMT25sGDr1IQJ81DXQ/lBY=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/forPelevin/gomoji v1.3.0 h1:WPIOLWB1bvRYlKZnSSEevLt3IfKlLs+tK+YA9fFYlkE=
