@@ -10,7 +10,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-const FailPrRuleMessage = "one or more violations incurred by '%s' watch, which has the 'fail_pr' rule set upon one of its policies"
+const FailPrRuleMessage = "one or more violations incurred by '%s' watch, which has the 'fail_pull_request' rule action set upon one of its policies"
 
 // Group issues by scan type
 type ScansIssuesCollection struct {

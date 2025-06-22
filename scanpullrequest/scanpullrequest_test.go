@@ -508,7 +508,7 @@ func TestToFailTaskStatus(t *testing.T) {
 		name             string
 		setFailFlag      bool
 		issuesCollection issues.ScansIssuesCollection
-		expected         bool
+		failureExpected  bool
 	}{
 		{
 			name:        "fail flag set to false and no violations with fail_pr",
@@ -535,7 +535,7 @@ func TestToFailTaskStatus(t *testing.T) {
 					},
 				}},
 			},
-			expected: false,
+			failureExpected: false,
 		},
 		{
 			name:        "fail flag set to true, sca vulnerability",
@@ -602,7 +602,7 @@ func TestToFailTaskStatus(t *testing.T) {
 					},
 				},
 			},
-			expected: true,
+			failureExpected: true,
 		},
 		{
 			name:        "fail flag is set to false, fail_pr in licenses violation",
@@ -629,7 +629,7 @@ func TestToFailTaskStatus(t *testing.T) {
 					},
 				}},
 			},
-			expected: true,
+			failureExpected: true,
 		},
 	}
 
@@ -647,7 +647,7 @@ func TestToFailTaskStatus(t *testing.T) {
 				},
 			}
 
-			assert.Equal(t, test.expected, toFailTaskStatus(repo, &test.issuesCollection))
+			assert.Equal(t, test.failureExpected, toFailTaskStatus(repo, &test.issuesCollection))
 		})
 	}
 }
