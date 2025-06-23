@@ -75,6 +75,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/owenrumney/go-sarif/v3 v3.1.4 // indirect
+	github.com/package-url/packageurl-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
@@ -117,7 +118,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20250619080119-932391f10fe6
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.19.1-0.20250623064811-1149a8d43747
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -125,6 +126,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go v1.28.1-0.20250619121353-6ff3439c999d
+// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
