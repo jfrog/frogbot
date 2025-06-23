@@ -38,15 +38,15 @@ jobs:
         run: |
           # Check if PLATFORM_URL has a trailing slash
           if [[ "${{ secrets.PLATFORM_URL }}" == */ ]]; then
-            echo "PLATFORM_VALID_URL=${{ secrets.PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
+            echo "OIDC_INTEGRATION_ENDPOINT=${{ secrets.PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
           else
-            echo "PLATFORM_VALID_URL=${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
+            echo "OIDC_INTEGRATION_ENDPOINT=${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
           fi
 
       - name: Create OpenID Connect integration
         shell: bash
         run: |
-          curl -X POST "${{ env.PLATFORM_VALID_URL }}/access/api/v1/oidc" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
+          curl -X POST "${{ env.OIDC_INTEGRATION_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
           "issuer_url": "https://token.actions.githubusercontent.com",
           "provider_type": "GitHub",
