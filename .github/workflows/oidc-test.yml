@@ -27,7 +27,7 @@ jobs:
           go-version: 1.23.x
           cache: false
 
-      # Generating a unique name for the Integration Configuration that will be created in the following step
+      # Generating a unique name for the Integration Configuration that will be created in the following step #
       - name: Generate unique OIDC config name
         shell: bash
         run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
