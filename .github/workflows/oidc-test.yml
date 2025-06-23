@@ -33,7 +33,7 @@ jobs:
         run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
 
       # Ths PLATFORM_URL may contain a trailing slash, and in this case we need to ensure we don't have a double slash in the URL
-      - name: Construct valid integration endpoint
+      - name: Construct valid OIDC endpoint
         shell: bash
         run: |
           if [[ "${{ secrets.PLATFORM_URL }}" == */ ]]; then
