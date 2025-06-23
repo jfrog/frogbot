@@ -36,17 +36,16 @@ jobs:
       - name: Construct valid integration endpoint
         shell: bash
         run: |
-          # Check if PLATFORM_URL has a trailing slash
           if [[ "${{ secrets.PLATFORM_URL }}" == */ ]]; then
-            echo "OIDC_INTEGRATION_ENDPOINT=${{ secrets.PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
+            echo "OIDC_ENDPOINT=${{ secrets.PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
           else
-            echo "OIDC_INTEGRATION_ENDPOINT=${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
+            echo "OIDC_ENDPOINT=${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
           fi
 
       - name: Create OpenID Connect integration
         shell: bash
         run: |
-          curl -X POST "${{ env.OIDC_INTEGRATION_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
+          curl -X POST "${{ env.OIDC_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
           "issuer_url": "https://token.actions.githubusercontent.com",
           "provider_type": "GitHub",
@@ -56,7 +55,7 @@ jobs:
       - name: Create OIDC integration Identity Mapping
         shell: bash
         run: |
-          curl -X POST ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
+          curl -X POST ${{ env.OIDC_ENDPOINT }}/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
           -H 'Content-Type: application/json' \
           -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}' \
           -d '{
