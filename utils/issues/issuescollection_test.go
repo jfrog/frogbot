@@ -386,6 +386,80 @@ func TestIssuesExists(t *testing.T) {
 	}
 }
 
+func TestIsFailPrRuleApplied(t *testing.T) {
+	testCases := []struct {
+		name                   string
+		issues                 ScansIssuesCollection
+		scannerToAddFailPrRule string
+		expected               bool
+	}{
+		{
+			name:     "No violations with fail PR rule",
+			issues:   getTestData(),
+			expected: false,
+		},
+		{
+			name:                   "Sca violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "sca",
+			expected:               true,
+		},
+		{
+			name:                   "Licenses violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "licenses",
+			expected:               true,
+		},
+		{
+			name:                   "Secrets violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "secrets",
+			expected:               true,
+		},
+		{
+			name:                   "Sast violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "sast",
+			expected:               true,
+		},
+		{
+			name:                   "Iac violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "iac",
+			expected:               true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// We add fail PR rule only to a specific scanner each time to test we get 'true' when the rule applies to any scanner
+			switch tc.scannerToAddFailPrRule {
+			case "sca":
+				tc.issues.ScaViolations[0].FailPr = true
+			case "licenses":
+				tc.issues.LicensesViolations[0].FailPr = true
+			case "secrets":
+				tc.issues.SecretsViolations[0].FailPr = true
+			case "sast":
+				tc.issues.SastViolations = append(tc.issues.SastViolations, formats.SourceCodeRow{
+					ViolationContext: formats.ViolationContext{
+						Watch:  "sast-watch",
+						FailPr: true,
+					},
+				})
+			case "iac":
+				tc.issues.IacViolations = append(tc.issues.IacViolations, formats.SourceCodeRow{
+					ViolationContext: formats.ViolationContext{
+						Watch:  "iac-watch",
+						FailPr: true,
+					},
+				})
+			}
+
+			assert.Equal(t, tc.expected, tc.issues.IsFailPrRuleApplied())
+		})
+	}
+}
+
 func TestHasErrors(t *testing.T) {
 	testCases := []struct {
 		name     string

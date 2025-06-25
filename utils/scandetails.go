@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
 	"path/filepath"
 	"time"
 
@@ -170,6 +171,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetConfigProfile(sc.configProfile)
 
 	auditParams := audit.NewAuditParams().
+		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
