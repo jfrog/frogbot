@@ -28,7 +28,7 @@
 | Severity                | ID                  | Contextual Analysis                  | Direct Dependencies                  | Impacted Dependency                  | Fixed Versions                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pip-example:1.2.3 | pyjwt 1.7.1 | [2.4.0] |
 
 </div>
 
@@ -56,7 +56,7 @@ A vulnerability was found in the minimatch package. This flaw allows a Regular E
 | --------------------- | :-----------------------------------: |
 | **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> Medium |
 | **Contextual Analysis:** | Not Covered |
-| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Direct Dependencies:** | pip-example:1.2.3 |
 | **Impacted Dependency:** | pyjwt:1.7.1 |
 | **Fixed Versions:** | [2.4.0] |
 | **CVSS V3:** | 7.5 |
