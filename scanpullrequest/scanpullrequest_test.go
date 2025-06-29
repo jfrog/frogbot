@@ -50,7 +50,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
-			XrayResults: validations.NewMockScaResults(services.ScanResponse{
+			DeprecatedXrayResults: validations.NewMockScaResults(services.ScanResponse{
 				Vulnerabilities: []services.Vulnerability{
 					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
 					{Cves: []services.Cve{{Id: "CVE-2023-3122"}}, Severity: "Low", Components: map[string]services.Component{"Dep-2": {FixedVersions: []string{"1.2.2"}}}},
