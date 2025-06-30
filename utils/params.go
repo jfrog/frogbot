@@ -294,6 +294,7 @@ type JFrogPlatform struct {
 	Watches                []string `yaml:"watches,omitempty"`
 	IncludeVulnerabilities bool     `yaml:"includeVulnerabilities,omitempty"`
 	JFrogProjectKey        string   `yaml:"jfrogProjectKey,omitempty"`
+	JfrogApplicationKey    string   `yaml:"jfrogApplicationKey,omitempty"` // TODO eran verify required json name
 }
 
 func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
@@ -302,9 +303,18 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 		if jp.Watches, err = readArrayParamFromEnv(jfrogWatchesEnv, WatchesDelimiter); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
+		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
+		err = nil
 	}
 	if jp.JFrogProjectKey == "" {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
+			return
+		}
+		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
+		err = nil
+	}
+	if jp.JfrogApplicationKey == "" {
+		if err = readParamFromEnv(JfrogApplicationKey, &jp.JfrogApplicationKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
@@ -543,7 +553,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 	return configFileContent, err
 }
 
-// BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
+// Receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
 func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
@@ -566,7 +576,7 @@ func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.Vcs
 	return
 }
 
-// unmarshalFrogbotConfigYaml uses the yaml.Unmarshaler interface to parse the yamlContent.
+// Uses the yaml.Unmarshaler interface to parse the yamlContent.
 // If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
