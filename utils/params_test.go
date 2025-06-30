@@ -502,6 +502,7 @@ func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
 	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
 	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
 	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
+	assert.Equal(t, "app-key", thirdRepo.JfrogApplicationKey)
 }
 
 func TestVerifyValidApiEndpoint(t *testing.T) {

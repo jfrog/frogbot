@@ -176,7 +176,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 	}
 	scanDetails = utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
 		SetJfrogVersions(repoConfig.XrayVersion, repoConfig.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
+		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.JfrogApplicationKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetConfigProfile(repoConfig.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
