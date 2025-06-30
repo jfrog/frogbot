@@ -131,7 +131,8 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	// Set the scan details
 	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
 		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
+		// AppTrust is currently not supported in ScanRepository command, therefore we pass an empty applicationKey
+		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, "", repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
 		SetFixableOnly(repository.FixableOnly).
 		SetConfigProfile(repository.ConfigProfile).
 		SetSkipAutoInstall(repository.SkipAutoInstall).
