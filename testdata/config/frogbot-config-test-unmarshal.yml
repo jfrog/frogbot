@@ -35,3 +35,4 @@
         - watch-1
         - watch-2
       jfrogProjectKey: proj
+      jfrogApplicationKey: app-key
