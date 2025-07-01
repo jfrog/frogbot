@@ -19,8 +19,8 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
-	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
@@ -353,7 +353,7 @@ func convertSarifPathsInCveApplicability(vulnerabilities []formats.Vulnerability
 			if cve.Applicability != nil {
 				for i := range cve.Applicability.Evidence {
 					for _, wd := range workingDirs {
-						cve.Applicability.Evidence[i].File = sarifutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, wd)
+						cve.Applicability.Evidence[i].File = utils.GetRelativePath(cve.Applicability.Evidence[i].File, wd)
 					}
 				}
 			}
@@ -365,7 +365,7 @@ func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string
 	for i := range iacs {
 		iac := &iacs[i]
 		for _, wd := range workingDirs {
-			iac.Location.File = sarifutils.ExtractRelativePath(iac.Location.File, wd)
+			iac.Location.File = utils.GetRelativePath(iac.Location.File, wd)
 		}
 	}
 }
@@ -374,7 +374,7 @@ func convertSarifPathsInSecrets(secrets []formats.SourceCodeRow, workingDirs ...
 	for i := range secrets {
 		secret := &secrets[i]
 		for _, wd := range workingDirs {
-			secret.Location.File = sarifutils.ExtractRelativePath(secret.Location.File, wd)
+			secret.Location.File = utils.GetRelativePath(secret.Location.File, wd)
 		}
 	}
 }
@@ -383,10 +383,10 @@ func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string
 	for i := range sast {
 		sastIssue := &sast[i]
 		for _, wd := range workingDirs {
-			sastIssue.Location.File = sarifutils.ExtractRelativePath(sastIssue.Location.File, wd)
+			sastIssue.Location.File = utils.GetRelativePath(sastIssue.Location.File, wd)
 			for f := range sastIssue.CodeFlow {
 				for l := range sastIssue.CodeFlow[f] {
-					sastIssue.CodeFlow[f][l].File = sarifutils.ExtractRelativePath(sastIssue.CodeFlow[f][l].File, wd)
+					sastIssue.CodeFlow[f][l].File = utils.GetRelativePath(sastIssue.CodeFlow[f][l].File, wd)
 				}
 			}
 		}
