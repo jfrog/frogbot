@@ -312,11 +312,18 @@ func getCurrentBranch(repository *git.Repository) (string, error) {
 	return head.Name().Short(), nil
 }
 
-func (gm *GitManager) AddAllAndCommit(commitMessage string) error {
+func (gm *GitManager) AddAllAndCommit(commitMessage string, impactedDependencyName string) error {
 	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
 	if err != nil {
 		return err
+	}
+	isClean, err := gm.IsClean()
+	if err != nil {
+		return &ErrNothingToCommit{PackageName: impactedDependencyName}
+	}
+	if isClean {
+		return &ErrNothingToCommit{PackageName: impactedDependencyName}
 	}
 	return gm.commit(commitMessage)
 }
