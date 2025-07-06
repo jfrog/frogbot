@@ -312,6 +312,7 @@ func getCurrentBranch(repository *git.Repository) (string, error) {
 	return head.Name().Short(), nil
 }
 
+// AddAllAndCommit impactedDependencyName is being passed as a parameter to the function to provide a more meaningful error message.
 func (gm *GitManager) AddAllAndCommit(commitMessage string, impactedDependencyName string) error {
 	log.Debug("Running git add all and commit...")
 	err := gm.addAll()
