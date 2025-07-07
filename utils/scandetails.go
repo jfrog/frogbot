@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
 	"path/filepath"
 	"time"
 
@@ -24,15 +25,14 @@ type ScanDetails struct {
 
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
-	client                   vcsclient.VcsClient
-	failOnInstallationErrors bool
-	fixableOnly              bool
-	disableJas               bool
-	skipAutoInstall          bool
-	minSeverityFilter        severityutils.Severity
-	baseBranch               string
-	configProfile            *clientservices.ConfigProfile
-	allowPartialResults      bool
+	client              vcsclient.VcsClient
+	fixableOnly         bool
+	disableJas          bool
+	skipAutoInstall     bool
+	minSeverityFilter   severityutils.Severity
+	baseBranch          string
+	configProfile       *clientservices.ConfigProfile
+	allowPartialResults bool
 
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
@@ -66,11 +66,6 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 
 func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
 	sc.disableJas = disable
-	return sc
-}
-
-func (sc *ScanDetails) SetFailOnInstallationErrors(toFail bool) *ScanDetails {
-	sc.failOnInstallationErrors = toFail
 	return sc
 }
 
@@ -129,10 +124,6 @@ func (sc *ScanDetails) BaseBranch() string {
 	return sc.baseBranch
 }
 
-func (sc *ScanDetails) FailOnInstallationErrors() bool {
-	return sc.failOnInstallationErrors
-}
-
 func (sc *ScanDetails) FixableOnly() bool {
 	return sc.fixableOnly
 }
@@ -180,6 +171,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetConfigProfile(sc.configProfile)
 
 	auditParams := audit.NewAuditParams().
+		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
