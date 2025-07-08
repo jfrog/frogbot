@@ -321,7 +321,7 @@ func (gm *GitManager) AddAllAndCommit(commitMessage string, impactedDependencyNa
 	}
 	isClean, err := gm.IsClean()
 	if err != nil {
-		return &ErrNothingToCommit{PackageName: impactedDependencyName}
+		return err
 	}
 	if isClean {
 		return &ErrNothingToCommit{PackageName: impactedDependencyName}

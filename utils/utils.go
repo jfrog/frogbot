@@ -81,6 +81,10 @@ func (err *ErrUnsupportedFix) Error() string {
 }
 
 func (err *ErrNothingToCommit) Error() string {
+	if err.PackageName == "" {
+		return "there were no changes to commit after attempting to fix vulnerable packages.\n" +
+			"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes"
+	}
 	return fmt.Sprintf("there were no changes to commit after fixing the package '%s'.\n"+
 		"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes", err.PackageName)
 }

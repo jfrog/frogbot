@@ -111,7 +111,7 @@ func createAndCheckoutIssueBranch(t *testing.T, testDetails *IntegrationTestDeta
 	// This step is necessary because GitHub limits the number of pull requests from the same commit of the source branch
 	_, err = os.Create("emptyfile.txt")
 	assert.NoError(t, err)
-	err = gitManager.AddAllAndCommit("emptyfile added", "impactedDependencyName")
+	err = gitManager.AddAllAndCommit("emptyfile added", "")
 	assert.NoError(t, err)
 
 	err = gitManager.Push(false, currentIssuesBranch)
