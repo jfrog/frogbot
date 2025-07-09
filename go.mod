@@ -10,9 +10,9 @@ require (
 	github.com/jfrog/froggit-go v1.17.0
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.3.2
-	github.com/jfrog/jfrog-cli-core/v2 v2.59.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.59.2
 	github.com/jfrog/jfrog-cli-security v1.19.0
-	github.com/jfrog/jfrog-client-go v1.54.1
+	github.com/jfrog/jfrog-client-go v1.54.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.4
@@ -127,17 +127,14 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-//attiasas:scang_bom_generator
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20250704063440-ab99fb78ac76
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.19.1-0.20250709121030-6737e062c2b4
 
-// attiasas:add_catalog
-replace github.com/jfrog/jfrog-cli-core/v2 => github.com/attiasas/jfrog-cli-core/v2 v2.0.0-20250703051645-73ed64af127e
+// replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-artifactory main
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// attiasas:add_catalog
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20250702063018-f37283b624cd
+// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
