@@ -493,7 +493,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
 					ScaResults: &results.ScaScanResults{
-						XrayResults: validations.NewMockScaResults(
+						DeprecatedXrayResults: validations.NewMockScaResults(
 							services.ScanResponse{
 								Vulnerabilities: []services.Vulnerability{
 									{
@@ -548,7 +548,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
 					ScaResults: &results.ScaScanResults{
-						XrayResults: validations.NewMockScaResults(
+						DeprecatedXrayResults: validations.NewMockScaResults(
 							services.ScanResponse{
 								Violations: []services.Violation{
 									{

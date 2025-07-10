@@ -11,7 +11,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.4.0
 	github.com/jfrog/jfrog-cli-core/v2 v2.59.2
-	github.com/jfrog/jfrog-cli-security v1.20.0
+	github.com/jfrog/jfrog-cli-security v1.19.0
 	github.com/jfrog/jfrog-client-go v1.54.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/stretchr/testify v1.10.0
@@ -127,7 +127,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20250710073411-edf036e95eea
+replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.19.1-0.20250710073051-2c8823292f71
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

@@ -3,9 +3,11 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
 	"path/filepath"
 	"time"
+
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
+	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
 
 	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
@@ -172,6 +174,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
+		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).

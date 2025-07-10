@@ -57,8 +57,6 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250710073411-edf036e95eea h1:/OqW7c2o/m1dZLqmnIKotGIv/nUcOGTuK548cX2Hxp0=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250710073411-edf036e95eea/go.mod h1:hqnnxuPTeUFDWp8W7ESmL8odhTAFoF9jyb9niLumAMo=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
@@ -141,6 +139,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.4.0 h1:sfTKFx0e2UokEVySXdote+3jxzMMCGo
 github.com/jfrog/jfrog-cli-artifactory v0.4.0/go.mod h1:+SvA0fhYLQz6TftKt3aCgcaxmECqrbrdgCGpcBSlWnA=
 github.com/jfrog/jfrog-cli-core/v2 v2.59.2 h1:4ES0emTZZjfUHSCTBTK939GtKYWsrclm7bHk2ig/dkk=
 github.com/jfrog/jfrog-cli-core/v2 v2.59.2/go.mod h1:pcAx7PFOLiw82c6fBDJw3BfIfUQdoHsxWd5u/XH9XEM=
+github.com/jfrog/jfrog-cli-security v1.19.1-0.20250710073051-2c8823292f71 h1:ODZVzim/bvh01agUoDv8YemTejLnK9WUoCq+9OY8tGI=
+github.com/jfrog/jfrog-cli-security v1.19.1-0.20250710073051-2c8823292f71/go.mod h1:WzEcQFBk3Wxz5mWg//Mzz5GqOmEpVLqmC0lfuHItnE4=
 github.com/jfrog/jfrog-client-go v1.54.2 h1:z7GjCyIbV5Wx35USVDCF/0vf/fCWki++pZ7lcKt0gj0=
 github.com/jfrog/jfrog-client-go v1.54.2/go.mod h1:1v0eih4thdPA4clBo9TuvAMT25sGDr1IQJ81DXQ/lBY=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
