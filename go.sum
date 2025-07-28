@@ -57,8 +57,8 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250728115352-f9f688fd5190 h1:7VeqVxExWUeTKIXFVZzP/07UmaJm6JXzOMgaQrPL0Cs=
-github.com/eranturgeman/jfrog-cli-security v0.0.0-20250728115352-f9f688fd5190/go.mod h1:3sDIo2prTKwB2IeiWk7Hqxxags8obqRi5uNnh9i9XIc=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250728133615-5fd7d4a3fab8 h1:V9iuxniaSlzIeIrPTArPyUeyGZ+jq6yN18U+43hjoAw=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20250728133615-5fd7d4a3fab8/go.mod h1:3sDIo2prTKwB2IeiWk7Hqxxags8obqRi5uNnh9i9XIc=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
