@@ -4,14 +4,17 @@ import (
 	"context"
 	"crypto"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/snapshotconvertor"
 	"net/http"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -32,12 +35,14 @@ import (
 )
 
 const (
-	ScanPullRequest          = "scan-pull-request"
-	ScanAllPullRequests      = "scan-all-pull-requests"
-	ScanRepository           = "scan-repository"
-	ScanMultipleRepositories = "scan-multiple-repositories"
-	RootDir                  = "."
-	branchNameRegex          = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest                     = "scan-pull-request"
+	ScanAllPullRequests                 = "scan-all-pull-requests"
+	ScanRepository                      = "scan-repository"
+	ScanMultipleRepositories            = "scan-multiple-repositories"
+	RootDir                             = "."
+	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
+	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
+	frogbotUrl                          = "https://github.com/jfrog/frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -234,6 +239,108 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
 	return nil
+}
+
+func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
+	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
+	if err != nil {
+		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
+	}
+	// TODO eran verify provided: version
+	// TODO eran extract: GITHUB_JOB, GITHUB_WORKFLOW, GITHUB_SHA
+	var jobId, jobCorrelator, commitSha string
+	if jobId = getTrimmedEnv(snapshotconvertor.GithubJobEnvVar); jobId == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubJobEnvVar)
+	}
+	log.Debug(fmt.Sprintf("Dependency submission - GITHUB_JOB: %s", jobId)) // TODO eran delete
+	if jobCorrelator = fmt.Sprintf("%s_%s", getTrimmedEnv(snapshotconvertor.GithubWorkflowEnvVar), jobId); jobCorrelator == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubWorkflowEnvVar)
+	}
+	log.Debug(fmt.Sprintf("Dependency submission - GITHUB_WORKFLOW_GITHUB_JOB: %s", jobCorrelator)) // TODO eran delete
+	if commitSha = getTrimmedEnv(snapshotconvertor.GithubShaEnvVar); commitSha == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubShaEnvVar)
+	}
+	log.Debug(fmt.Sprintf("Dependency submission - GITHUB_SHA: %s", commitSha))           // TODO eran delete
+	log.Debug(fmt.Sprintf("Dependency submission - Frogbot version: %s", FrogbotVersion)) // TODO eran delete
+
+	// TODO eran make sure branch is correct and Frogbot version is correct
+	snapshot, err := snapshotconvertor.CreateGithubSnapshotFromSbom(cyclonedxWithSbom, 0, scanResults.StartTime, jobId, jobCorrelator, commitSha, branch, dependencySubmissionFrogbotDetector, FrogbotVersion, frogbotUrl)
+	if err != nil || snapshot == nil {
+		return fmt.Errorf("failed to convert CycloneDX to SBOM snapshot: %w", err)
+	}
+
+	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
+		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
+	}
+	return nil
+}
+
+// TODO eran delete
+// GenerateTestSnapshotForTest creates a test SBOM snapshot with current timestamp for manual testing
+// This function generates a snapshot that can be uploaded to GitHub Dependency Graph
+// Each call creates a unique snapshot with different correlator and detector to avoid "superseded" errors
+func GenerateTestSnapshotForTest() *vcsclient.SbomSnapshot {
+	// Generate current timestamp
+	currentTime := time.Now().UTC()
+
+	// Generate unique correlator with timestamp
+	timestamp := time.Now().Format("2006-01-02-15-04-05")
+	correlator := fmt.Sprintf("eran-test-correlator-%s", timestamp)
+	jobID := fmt.Sprintf("eran-test-job-%s", timestamp)
+
+	// Generate unique detector name with timestamp
+	detectorName := fmt.Sprintf("eran-test-detector-%s", timestamp)
+	latestSha := "dcb7dd64aac2051977d097729c29a5337bfdda42"
+
+	// Create a test snapshot with current timestamp
+	snapshot := &vcsclient.SbomSnapshot{
+		Version: 0,
+		Sha:     latestSha,
+		Ref:     "refs/heads/master",
+		Job: &vcsclient.JobInfo{
+			Correlator: correlator,
+			ID:         jobID,
+		},
+		Detector: &vcsclient.DetectorInfo{
+			Name:    detectorName,
+			Version: "0.0.1",
+			Url:     "https://github.com/eranturgeman/test-detector",
+		},
+		Scanned: currentTime,
+		Manifests: map[string]*vcsclient.Manifest{
+			"package-lock.json": {
+				Name: "package-lock.json",
+				File: &vcsclient.FileInfo{
+					SourceLocation: "src/package-lock.json",
+				},
+				Resolved: map[string]*vcsclient.ResolvedDependency{
+					"@actions/core": {
+						PackageURL:   "pkg:/npm/%40actions/core@1.2.0",
+						Relationship: "direct",
+						Dependencies: []string{},
+					},
+					"@actions/github": {
+						PackageURL:   "pkg:/npm/%40actions/github@4.0.0",
+						Relationship: "direct",
+						Dependencies: []string{},
+					},
+					"bson": {
+						PackageURL:   "pkg:npm/bson@0.4.23",
+						Relationship: "direct",
+						Dependencies: []string{},
+					},
+				},
+			},
+		},
+	}
+
+	content, err := json.Marshal(snapshot)
+	if err != nil {
+		return nil
+	}
+	print(content)
+
+	return snapshot
 }
 
 func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
