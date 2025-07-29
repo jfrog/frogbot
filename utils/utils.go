@@ -239,6 +239,10 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 }
 
 func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
+	if scanResults == nil {
+		return fmt.Errorf("got an empty scan results")
+	}
+
 	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
 	if err != nil {
 		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
