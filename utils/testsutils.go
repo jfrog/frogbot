@@ -309,9 +309,6 @@ func CreateMockServerForDependencySubmission(t *testing.T, owner, repo string) *
 
 		// Return success response
 		w.WriteHeader(http.StatusCreated)
-		response := map[string]string{"message": "Snapshot uploaded successfully"}
-		responseBody, _ := json.Marshal(response)
-		w.Write(responseBody)
 	}))
 }
 
@@ -328,8 +325,5 @@ func CreateMockServerForDependencySubmissionError(t *testing.T, owner, repo stri
 
 		// Return error response
 		w.WriteHeader(http.StatusBadRequest)
-		response := map[string]string{"message": "Invalid request"}
-		responseBody, _ := json.Marshal(response)
-		w.Write(responseBody)
 	}))
 }

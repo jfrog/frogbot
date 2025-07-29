@@ -427,9 +427,9 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 	defer func() {
 		for key, value := range originalEnvVars {
 			if value == "" {
-				os.Unsetenv(key)
+				assert.NoError(t, os.Unsetenv(key))
 			} else {
-				os.Setenv(key, value)
+				assert.NoError(t, os.Setenv(key, value))
 			}
 		}
 	}()
