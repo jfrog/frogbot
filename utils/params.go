@@ -394,15 +394,13 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 		}
 	}
 	if g.UseMostCommonAncestorAsTarget == nil || !*g.UseMostCommonAncestorAsTarget {
-		defaultValue := true
-		if g.UseMostCommonAncestorAsTarget != nil {
-			defaultValue = *g.UseMostCommonAncestorAsTarget
+		if g.UseMostCommonAncestorAsTarget == nil {
+			envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
+			if err != nil {
+				return err
+			}
+			g.UseMostCommonAncestorAsTarget = &envValue
 		}
-		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, defaultValue)
-		if err != nil {
-			return err
-		}
-		g.UseMostCommonAncestorAsTarget = &envValue
 	}
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
