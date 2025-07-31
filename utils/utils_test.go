@@ -1,24 +1,22 @@
 package utils
 
 import (
+	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/jfrog/jfrog-cli-security/sca/bom/snapshotconvertor"
-
-	"github.com/CycloneDX/cyclonedx-go"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/utils/formats"
-	"github.com/jfrog/jfrog-cli-security/utils/results"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -420,9 +418,9 @@ func TestIsUrlAccessible(t *testing.T) {
 func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 	// Capture original environment variable values to ensure proper restoration in case of a failure mid-test
 	originalEnvVars := map[string]string{
-		snapshotconvertor.GithubJobEnvVar:      os.Getenv(snapshotconvertor.GithubJobEnvVar),
-		snapshotconvertor.GithubWorkflowEnvVar: os.Getenv(snapshotconvertor.GithubWorkflowEnvVar),
-		snapshotconvertor.GithubShaEnvVar:      os.Getenv(snapshotconvertor.GithubShaEnvVar),
+		utils.CurrentGithubWorkflowJobEnvVar:  os.Getenv(utils.CurrentGithubWorkflowJobEnvVar),
+		utils.CurrentGithubWorkflowNameEnvVar: os.Getenv(utils.CurrentGithubWorkflowNameEnvVar),
+		utils.CurrentGithubShaEnvVar:          os.Getenv(utils.CurrentGithubShaEnvVar),
 	}
 	defer func() {
 		for key, value := range originalEnvVars {
@@ -444,9 +442,9 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 		{
 			name: "Successful Dependency Submission",
 			envVars: map[string]string{
-				snapshotconvertor.GithubJobEnvVar:      dependencySubmissionTestJob,
-				snapshotconvertor.GithubWorkflowEnvVar: dependencySubmissionTestWorkflow,
-				snapshotconvertor.GithubShaEnvVar:      dependencySubmissionTestSha,
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
 			},
 			scanResults:       createTestSecurityCommandResults(),
 			errorExpected:     false,
@@ -455,8 +453,8 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 		{
 			name: "Missing env vars",
 			envVars: map[string]string{
-				snapshotconvertor.GithubWorkflowEnvVar: dependencySubmissionTestWorkflow,
-				snapshotconvertor.GithubShaEnvVar:      dependencySubmissionTestSha,
+				utils.CurrentGithubWorkflowJobEnvVar: dependencySubmissionTestJob,
+				utils.CurrentGithubShaEnvVar:         dependencySubmissionTestSha,
 			},
 			scanResults:       createTestSecurityCommandResults(),
 			errorExpected:     true,
@@ -465,9 +463,9 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 		{
 			name: "Empty scan results",
 			envVars: map[string]string{
-				snapshotconvertor.GithubJobEnvVar:      dependencySubmissionTestJob,
-				snapshotconvertor.GithubWorkflowEnvVar: dependencySubmissionTestWorkflow,
-				snapshotconvertor.GithubShaEnvVar:      dependencySubmissionTestSha,
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
 			},
 			scanResults:       nil,
 			errorExpected:     true,
@@ -476,9 +474,9 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 		{
 			name: "API Error",
 			envVars: map[string]string{
-				snapshotconvertor.GithubJobEnvVar:      dependencySubmissionTestJob,
-				snapshotconvertor.GithubWorkflowEnvVar: dependencySubmissionTestWorkflow,
-				snapshotconvertor.GithubShaEnvVar:      dependencySubmissionTestSha,
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
 			},
 			scanResults:       createTestSecurityCommandResults(),
 			errorExpected:     true,

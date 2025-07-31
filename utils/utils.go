@@ -12,9 +12,9 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	"github.com/jfrog/jfrog-cli-security/sca/bom/snapshotconvertor"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/snapshotconvertor"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
@@ -248,14 +248,14 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
 	}
 	var jobId, jobCorrelator, commitSha string
-	if jobId = getTrimmedEnv(snapshotconvertor.GithubJobEnvVar); jobId == "" {
-		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubJobEnvVar)
+	if jobId = getTrimmedEnv(utils.CurrentGithubWorkflowJobEnvVar); jobId == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowJobEnvVar)
 	}
-	if jobCorrelator = fmt.Sprintf("%s_%s", getTrimmedEnv(snapshotconvertor.GithubWorkflowEnvVar), jobId); jobCorrelator == "" {
-		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubWorkflowEnvVar)
+	if jobCorrelator = fmt.Sprintf("%s_%s", getTrimmedEnv(utils.CurrentGithubWorkflowRunNumberEnvVar), jobId); jobCorrelator == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowRunNumberEnvVar)
 	}
-	if commitSha = getTrimmedEnv(snapshotconvertor.GithubShaEnvVar); commitSha == "" {
-		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", snapshotconvertor.GithubShaEnvVar)
+	if commitSha = getTrimmedEnv(utils.CurrentGithubShaEnvVar); commitSha == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubShaEnvVar)
 	}
 
 	snapshot, err := snapshotconvertor.CreateGithubSnapshotFromSbom(cyclonedxWithSbom, 0, scanResults.StartTime, jobId, jobCorrelator, commitSha, branch, dependencySubmissionFrogbotDetector, FrogbotVersion, frogbotUrl)
@@ -264,7 +264,10 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	}
 
 	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
-		snapshotJson := snapshotconvertor.GetSnapshotJson(snapshot)
+		snapshotJson, e := utils.GetAsJsonString(snapshot, false, true)
+		if e != nil {
+			return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
+		}
 		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w\nSent Snapshot:\n%s", err, snapshotJson)
 	}
 	return nil
