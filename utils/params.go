@@ -405,7 +405,6 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 			return
 		}
 	}
-	// TODO eran fix the issue here as well it the problematic usecase and show Assafa - see similar above
 	if g.UseMostCommonAncestorAsTarget == nil || !*g.UseMostCommonAncestorAsTarget {
 		defaultValue := true
 		if g.UseMostCommonAncestorAsTarget != nil {
