@@ -415,7 +415,7 @@ func TestIsUrlAccessible(t *testing.T) {
 	}
 }
 
-func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
+func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
 	// Capture original environment variable values to ensure proper restoration in case of a failure mid-test
 	originalEnvVars := map[string]string{
 		utils.CurrentGithubWorkflowJobEnvVar:  os.Getenv(utils.CurrentGithubWorkflowJobEnvVar),
@@ -453,8 +453,9 @@ func TestUploadSbomSnapshotToGithubDependencyGraphNew(t *testing.T) {
 		{
 			name: "Missing env vars",
 			envVars: map[string]string{
-				utils.CurrentGithubWorkflowJobEnvVar: dependencySubmissionTestJob,
-				utils.CurrentGithubShaEnvVar:         dependencySubmissionTestSha,
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: "",
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
 			},
 			scanResults:       createTestSecurityCommandResults(),
 			errorExpected:     true,

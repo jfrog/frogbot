@@ -6,6 +6,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
@@ -23,12 +30,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"net/http"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
-	"sync"
 )
 
 const (
@@ -251,9 +252,11 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	if jobId = getTrimmedEnv(utils.CurrentGithubWorkflowJobEnvVar); jobId == "" {
 		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowJobEnvVar)
 	}
-	if jobCorrelator = fmt.Sprintf("%s_%s", getTrimmedEnv(utils.CurrentGithubWorkflowRunNumberEnvVar), jobId); jobCorrelator == "" {
-		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowRunNumberEnvVar)
+	workflowName := getTrimmedEnv(utils.CurrentGithubWorkflowNameEnvVar)
+	if workflowName == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowNameEnvVar)
 	}
+	jobCorrelator = fmt.Sprintf("%s_%s", workflowName, jobId)
 	if commitSha = getTrimmedEnv(utils.CurrentGithubShaEnvVar); commitSha == "" {
 		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubShaEnvVar)
 	}
