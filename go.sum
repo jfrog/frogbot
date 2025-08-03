@@ -139,8 +139,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.5.1 h1:C1H8x6ldg7VmKIb4F8OZKm0PJbBrlA7
 github.com/jfrog/jfrog-cli-artifactory v0.5.1/go.mod h1:RXz0AZ5qVEOhanXRGmC4+atqr29ZtIeV5kUCbNGtVj4=
 github.com/jfrog/jfrog-cli-core/v2 v2.59.3 h1:AlFC9l3Cwvx2FzuAP0txxEjZPDjv5bpO7YPTOjHp7HA=
 github.com/jfrog/jfrog-cli-core/v2 v2.59.3/go.mod h1:Itfva9wqPMkUVBuNpKw0Oe4qoPlt0PdXfmWqf7fBebU=
-github.com/jfrog/jfrog-cli-security v1.20.2 h1:GGpSdEnxcmUbK5Iinm8LN0EUG9KAm1+K958yYtcqxeQ=
-github.com/jfrog/jfrog-cli-security v1.20.2/go.mod h1:3sDIo2prTKwB2IeiWk7Hqxxags8obqRi5uNnh9i9XIc=
+github.com/jfrog/jfrog-cli-security v1.20.3-0.20250803110644-e1c158a10a1e h1:37Wxxr9qbt2dSuvYCcMN3YNsTWVVhfnSBf3SI+l5vas=
+github.com/jfrog/jfrog-cli-security v1.20.3-0.20250803110644-e1c158a10a1e/go.mod h1:3sDIo2prTKwB2IeiWk7Hqxxags8obqRi5uNnh9i9XIc=
 github.com/jfrog/jfrog-client-go v1.54.3 h1:tIhhDhM7rDMT1lzgeQy4nr6H2ihlqnumhiFybIWlLz0=
 github.com/jfrog/jfrog-client-go v1.54.3/go.mod h1:1v0eih4thdPA4clBo9TuvAMT25sGDr1IQJ81DXQ/lBY=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=

@@ -1,16 +1,30 @@
 package utils
 
 import (
+	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
+	"github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/stretchr/testify/assert"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
+)
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/utils/formats"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
-	"github.com/stretchr/testify/assert"
+const (
+	dependencySubmissionTestOwner    = "dep-submission-test-owner"
+	dependencySubmissionTestRepo     = "dep-submission-test-repo"
+	dependencySubmissionTestJob      = "test-job-123"
+	dependencySubmissionTestWorkflow = "test-workflow"
+	dependencySubmissionTestSha      = "abc123def456"
 )
 
 func TestChdir(t *testing.T) {
@@ -399,4 +413,156 @@ func TestIsUrlAccessible(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, output)
 		})
 	}
+}
+
+func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
+	// Capture original environment variable values to ensure proper restoration in case of a failure mid-test
+	originalEnvVars := map[string]string{
+		utils.CurrentGithubWorkflowJobEnvVar:  os.Getenv(utils.CurrentGithubWorkflowJobEnvVar),
+		utils.CurrentGithubWorkflowNameEnvVar: os.Getenv(utils.CurrentGithubWorkflowNameEnvVar),
+		utils.CurrentGithubShaEnvVar:          os.Getenv(utils.CurrentGithubShaEnvVar),
+	}
+	defer func() {
+		for key, value := range originalEnvVars {
+			if value == "" {
+				assert.NoError(t, os.Unsetenv(key))
+			} else {
+				assert.NoError(t, os.Setenv(key, value))
+			}
+		}
+	}()
+
+	testcases := []struct {
+		name              string
+		envVars           map[string]string
+		scanResults       *results.SecurityCommandResults
+		errorExpected     bool
+		mockServerFactory func(t *testing.T, owner, repo string) *httptest.Server
+	}{
+		{
+			name: "Successful Dependency Submission",
+			envVars: map[string]string{
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
+			},
+			scanResults:       createTestSecurityCommandResults(),
+			errorExpected:     false,
+			mockServerFactory: CreateMockServerForDependencySubmission,
+		},
+		{
+			name: "Missing env vars",
+			envVars: map[string]string{
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: "",
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
+			},
+			scanResults:       createTestSecurityCommandResults(),
+			errorExpected:     true,
+			mockServerFactory: CreateMockServerForDependencySubmission,
+		},
+		{
+			name: "Empty scan results",
+			envVars: map[string]string{
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
+			},
+			scanResults:       nil,
+			errorExpected:     true,
+			mockServerFactory: CreateMockServerForDependencySubmission,
+		},
+		{
+			name: "API Error",
+			envVars: map[string]string{
+				utils.CurrentGithubWorkflowJobEnvVar:  dependencySubmissionTestJob,
+				utils.CurrentGithubWorkflowNameEnvVar: dependencySubmissionTestWorkflow,
+				utils.CurrentGithubShaEnvVar:          dependencySubmissionTestSha,
+			},
+			scanResults:       createTestSecurityCommandResults(),
+			errorExpected:     true,
+			mockServerFactory: CreateMockServerForDependencySubmissionError,
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			// Create mock server for this test case
+			mockServer := test.mockServerFactory(t, dependencySubmissionTestOwner, dependencySubmissionTestRepo)
+			defer mockServer.Close()
+
+			// Create a mock VCS client that points to our mock server
+			client, err := vcsclient.NewGitHubClient(vcsclient.VcsInfo{
+				APIEndpoint: mockServer.URL,
+				Token:       "test-token",
+			}, &vcsutils.EmptyLogger{})
+			assert.NoError(t, err)
+
+			restoreEnv := SetEnvsAndAssertWithCallback(t, test.envVars)
+			err = UploadSbomSnapshotToGithubDependencyGraph(dependencySubmissionTestOwner, dependencySubmissionTestRepo, test.scanResults, client, "main")
+			if test.errorExpected {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			// Restore environment at the end of each iteration for immediate cleanup
+			restoreEnv()
+		})
+	}
+}
+
+func createTestSecurityCommandResults() *results.SecurityCommandResults {
+	// Create a simple BOM with components
+	components := []cyclonedx.Component{
+		{
+			BOMRef:     "comp1",
+			Type:       cyclonedx.ComponentTypeLibrary,
+			Name:       "express",
+			Version:    "4.18.2",
+			PackageURL: "pkg:npm/express@4.18.2",
+			Evidence: &cyclonedx.Evidence{
+				Occurrences: &[]cyclonedx.EvidenceOccurrence{
+					{Location: "package.json"},
+				},
+			},
+		},
+		{
+			BOMRef:     "comp2",
+			Type:       cyclonedx.ComponentTypeLibrary,
+			Name:       "lodash",
+			Version:    "4.17.21",
+			PackageURL: "pkg:npm/lodash@4.17.21",
+			Evidence: &cyclonedx.Evidence{
+				Occurrences: &[]cyclonedx.EvidenceOccurrence{
+					{Location: "package.json"},
+				},
+			},
+		},
+	}
+
+	dependencies := []cyclonedx.Dependency{
+		{Ref: "comp1", Dependencies: &[]string{"comp2"}},
+		{Ref: "comp2", Dependencies: &[]string{}},
+	}
+
+	bom := cyclonedx.NewBOM()
+	bom.Components = &components
+	bom.Dependencies = &dependencies
+
+	// Create SecurityCommandResults with the BOM
+	scanResults := &results.SecurityCommandResults{
+		StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
+		Targets: []*results.TargetResults{
+			{
+				ScanTarget: results.ScanTarget{
+					Target: "test-target",
+				},
+				ScaResults: &results.ScaScanResults{
+					Sbom: bom,
+				},
+			},
+		},
+	}
+
+	return scanResults
 }
