@@ -51,7 +51,7 @@ type FrogbotDetails struct {
 
 type RepoAggregator []Repository
 
-// NewRepoAggregator returns an initialized RepoAggregator with an empty repository
+// Returns an initialized RepoAggregator with an empty repository
 func newRepoAggregator() RepoAggregator {
 	return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}
 }
@@ -336,6 +336,7 @@ type Git struct {
 	PullRequestDetails            vcsclient.PullRequestInfo
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
+	UploadSbomToVcs               *bool `yaml:"uploadSbomToVcs,omitempty"`
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -375,6 +376,17 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
 		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
 			return
+		}
+	}
+
+	// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
+	if g.UploadSbomToVcs == nil || !*g.UploadSbomToVcs {
+		if g.UploadSbomToVcs == nil {
+			envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+			if err != nil {
+				return err
+			}
+			g.UploadSbomToVcs = &envValue
 		}
 	}
 	return
@@ -506,7 +518,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	return
 }
 
-// getConfigAggregator returns a RepoAggregator based on frogbot-config.yml and environment variables.
+// Returns a RepoAggregator based on frogbot-config.yml and environment variables.
 func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
 	configFileContent, err := getConfigFileContent(gitClient, gitParamsFromEnv, commandName)
 	if err != nil {
@@ -518,7 +530,7 @@ func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.Vcs
 	return BuildRepoAggregator(xrayVersion, xscVersion, gitClient, configFileContent, gitParamsFromEnv, jfrogServer, commandName)
 }
 
-// getConfigFileContent retrieves the content of the frogbot-config.yml file
+// Retrieves the content of the frogbot-config.yml file
 func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) ([]byte, error) {
 	var errMissingConfig *ErrMissingConfig
 
@@ -541,7 +553,7 @@ func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, 
 	return configFileContent, err
 }
 
-// BuildRepoAggregator receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
+// Receives the content of a frogbot-config.yml file, along with the Git (built from environment variables) and ServerDetails parameters.
 // Returns a RepoAggregator instance with all the defaults and necessary fields.
 func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, configFileContent []byte, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
 	var cleanAggregator RepoAggregator
@@ -564,7 +576,7 @@ func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.Vcs
 	return
 }
 
-// unmarshalFrogbotConfigYaml uses the yaml.Unmarshaler interface to parse the yamlContent.
+// Uses the yaml.Unmarshaler interface to parse the yamlContent.
 // If there is no config file, the function returns a RepoAggregator with an empty repository.
 func unmarshalFrogbotConfigYaml(yamlContent []byte) (result RepoAggregator, err error) {
 	if len(yamlContent) == 0 {
@@ -737,7 +749,7 @@ func SanitizeEnv() error {
 	return nil
 }
 
-// ReadConfigFromFileSystem looks for .frogbot/frogbot-config.yml from the given path and return its content. The path is relative and starts from the root of the project.
+// Looks for .frogbot/frogbot-config.yml from the given path and return its content. The path is relative and starts from the root of the project.
 // If the config file is not found in the relative path, it will search in parent dirs.
 func ReadConfigFromFileSystem(configRelativePath string) (configFileContent []byte, err error) {
 	log.Debug("Reading config from file system. Looking for", osFrogbotConfigPath)
