@@ -262,7 +262,7 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	}
 
 	snapshot, err := snapshotconvertor.CreateGithubSnapshotFromSbom(cyclonedxWithSbom, 0, scanResults.StartTime, jobId, jobCorrelator, commitSha, branch, dependencySubmissionFrogbotDetector, FrogbotVersion, frogbotUrl)
-	if err != nil || snapshot == nil {
+	if err != nil {
 		return fmt.Errorf("failed to convert CycloneDX to SBOM snapshot: %w", err)
 	}
 
