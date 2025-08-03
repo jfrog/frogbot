@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -78,7 +78,7 @@ jobs:
         os: [ ubuntu, windows, macos ]
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -178,7 +178,7 @@ jobs:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -222,7 +222,7 @@ jobs:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -266,7 +266,7 @@ jobs:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -304,7 +304,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@milestone-fix-181-fash-fails-to-run-when-running-sh-script-on-fastci-ci-6580b3d-1938
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
