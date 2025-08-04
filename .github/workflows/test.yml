@@ -17,11 +17,6 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
         if: ${{ github.event_name != 'push' }}
@@ -32,7 +27,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
+     
+      - name: Start FastCI Optimization
+        uses: jfrog-fastci/fastci@main
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -77,16 +78,17 @@ jobs:
 
         os: [ ubuntu, windows, macos ]
     steps:
+      # Configure prerequisites
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-      # Configure prerequisites
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -177,15 +179,16 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -221,15 +224,16 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -265,15 +269,16 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+          
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -303,15 +308,16 @@ jobs:
     needs: Pretest
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+     
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
+     
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
