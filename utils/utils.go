@@ -21,6 +21,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/snapshotconvertor"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
@@ -32,12 +33,14 @@ import (
 )
 
 const (
-	ScanPullRequest          = "scan-pull-request"
-	ScanAllPullRequests      = "scan-all-pull-requests"
-	ScanRepository           = "scan-repository"
-	ScanMultipleRepositories = "scan-multiple-repositories"
-	RootDir                  = "."
-	branchNameRegex          = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest                     = "scan-pull-request"
+	ScanAllPullRequests                 = "scan-all-pull-requests"
+	ScanRepository                      = "scan-repository"
+	ScanMultipleRepositories            = "scan-multiple-repositories"
+	RootDir                             = "."
+	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
+	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
+	frogbotUrl                          = "https://github.com/jfrog/frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -233,6 +236,43 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
+	return nil
+}
+
+func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
+	if scanResults == nil {
+		return fmt.Errorf("got an empty scan results")
+	}
+
+	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
+	if err != nil {
+		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
+	}
+	var jobId, jobCorrelator, commitSha string
+	if jobId = getTrimmedEnv(utils.CurrentGithubWorkflowJobEnvVar); jobId == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowJobEnvVar)
+	}
+	workflowName := getTrimmedEnv(utils.CurrentGithubWorkflowNameEnvVar)
+	if workflowName == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowNameEnvVar)
+	}
+	jobCorrelator = fmt.Sprintf("%s_%s", workflowName, jobId)
+	if commitSha = getTrimmedEnv(utils.CurrentGithubShaEnvVar); commitSha == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubShaEnvVar)
+	}
+
+	snapshot, err := snapshotconvertor.CreateGithubSnapshotFromSbom(cyclonedxWithSbom, 0, scanResults.StartTime, jobId, jobCorrelator, commitSha, branch, dependencySubmissionFrogbotDetector, FrogbotVersion, frogbotUrl)
+	if err != nil {
+		return fmt.Errorf("failed to convert CycloneDX to SBOM snapshot: %w", err)
+	}
+
+	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
+		snapshotJson, e := utils.GetAsJsonString(snapshot, false, true)
+		if e != nil {
+			return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
+		}
+		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w\nSent Snapshot:\n%s", err, snapshotJson)
+	}
 	return nil
 }
 
