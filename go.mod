@@ -1,19 +1,19 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.24.2
+go 1.24.5
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.2
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.10.14
-	github.com/jfrog/froggit-go v1.20.0
+	github.com/jfrog/build-info-go v1.10.15
+	github.com/jfrog/froggit-go v1.20.1
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.5.1
-	github.com/jfrog/jfrog-cli-core/v2 v2.59.3
-	github.com/jfrog/jfrog-cli-security v1.20.2
-	github.com/jfrog/jfrog-client-go v1.54.3
+	github.com/jfrog/jfrog-cli-artifactory v0.6.0
+	github.com/jfrog/jfrog-cli-core/v2 v2.59.4
+	github.com/jfrog/jfrog-cli-security v1.21.0
+	github.com/jfrog/jfrog-client-go v1.54.4
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.4
@@ -49,7 +49,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-github/v62 v62.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/ktrysmt/go-bitbucket v0.9.80 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
@@ -125,7 +125,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.20.3-0.20250803110644-e1c158a10a1e
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
