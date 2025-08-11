@@ -54,3 +54,4 @@ Please help us improve Frogbot by [reporting issues](https://github.com/jfrog/fr
 ## 💻 Contributions
 
 We welcome pull requests from the community. To help us improve this project, please read our [Contribution](./CONTRIBUTING.md#-guidelines) guide.
+test
