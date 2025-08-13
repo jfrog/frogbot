@@ -147,8 +147,8 @@ github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible/go.mod h1:1c7szIrayyPPB/987hsnvNzLushdWf4o/79s3P08L8A=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
 github.com/k0kubun/pp v3.0.1+incompatible/go.mod h1:GWse8YhT0p8pT4ir3ZgBbfZild3tgzSScAn6HmfYukg=
-github.com/kerenr-jfrog/froggit-go v0.0.0-20250811075008-1eeb99f29c48 h1:n1DZYAkOHp3ezh04ln+RUJh17r9/4htnzpi8Y8Jp0t8=
-github.com/kerenr-jfrog/froggit-go v0.0.0-20250811075008-1eeb99f29c48/go.mod h1:obSG1SlsWjktkuqmKtpq7MNTTL63e0ot+ucTnlOMV88=
+github.com/kerenr-jfrog/froggit-go v0.0.0-20250813105723-a31c5b5b33cd h1:tyjcd3DEBSkHHybFrhX094YtNbs1N8tlT1afyMS5IvA=
+github.com/kerenr-jfrog/froggit-go v0.0.0-20250813105723-a31c5b5b33cd/go.mod h1:obSG1SlsWjktkuqmKtpq7MNTTL63e0ot+ucTnlOMV88=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/klauspost/compress v1.4.1/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=

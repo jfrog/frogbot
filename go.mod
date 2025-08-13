@@ -135,4 +135,4 @@ require (
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
 
-replace github.com/jfrog/froggit-go => github.com/kerenr-jfrog/froggit-go v0.0.0-20250811075008-1eeb99f29c48
+replace github.com/jfrog/froggit-go => github.com/kerenr-jfrog/froggit-go v0.0.0-20250813105723-a31c5b5b33cd
