@@ -1,6 +1,7 @@
 name: "Go Tests"
 
 on:
+  workflow_dispatch:
   push:
   # Triggers the workflow on labeled PRs only.
   pull_request_target:
@@ -183,11 +184,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+      # - name: Start FastCI Optimization
+      #   uses: jfrog-fastci/fastci@main
+      #   with:
+      #     github_token: ${{secrets.GITHUB_TOKEN}}
+      #     fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
           
       - name: Setup Go
         uses: actions/setup-go@v5
