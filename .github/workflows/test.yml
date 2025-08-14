@@ -34,6 +34,7 @@ jobs:
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          bashi_log_level: debug
           
       - name: Install Go
         uses: actions/setup-go@v5
