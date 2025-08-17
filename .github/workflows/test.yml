@@ -30,7 +30,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
      
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@dev
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@dev
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -231,7 +231,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@dev
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -276,7 +276,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@dev
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
@@ -315,7 +315,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
      
       - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+        uses: jfrog-fastci/fastci@dev
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
