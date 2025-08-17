@@ -42,13 +42,6 @@ jobs:
           go-version: 1.23.x
           cache: false
 
-      - name: Go Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
@@ -96,26 +89,6 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
-
-      - name: Go Cache Dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      
-      # - name: Go Cache Build & Tests
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~\AppData\Local\go-build
-      #       ~/Library/Caches/go-build
-      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
-      #       ${{ runner.os }}-go-
 
       - name: Install npm
         uses: actions/setup-node@v3
@@ -196,17 +169,6 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
-      # - name: Go Cache Build & Tests
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~\AppData\Local\go-build
-      #       ~/Library/Caches/go-build
-      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
-      #       ${{ runner.os }}-go-
 
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -241,17 +203,6 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
-      # - name: Go Cache Build & Tests
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~\AppData\Local\go-build
-      #       ~/Library/Caches/go-build
-      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
-      #       ${{ runner.os }}-go-
 
       - name: Run Tests
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -286,17 +237,6 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
-      # - name: Go Cache Build & Tests
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~\AppData\Local\go-build
-      #       ~/Library/Caches/go-build
-      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
-      #       ${{ runner.os }}-go-
 
       - name: Run Tests
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -335,17 +275,6 @@ jobs:
           chmod +x $bb_script_path
           sh $bb_script_path
 
-      # - name: Go Cache Build & Tests
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       ~/.cache/go-build
-      #       ~\AppData\Local\go-build
-      #       ~/Library/Caches/go-build
-      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-
-      #       ${{ runner.os }}-go-
 
       - name: Run Tests
         env:
