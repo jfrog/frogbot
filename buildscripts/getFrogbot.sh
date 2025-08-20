@@ -31,7 +31,19 @@ setWindowsProperties() {
 
 setMacProperties() {
   FROGBOT_OS="mac"
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-mac-386/frogbot"
+  MACHINE_TYPE="$(uname -m)"
+  case $MACHINE_TYPE in
+      arm | armv7l)
+          ARCH="arm"
+          ;;
+      arm64 | aarch64)
+          ARCH="arm64"
+          ;;
+      *)
+          ARCH="386"
+          ;;
+  esac
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
   FILE_NAME="frogbot"
 }
 

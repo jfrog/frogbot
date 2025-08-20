@@ -152,6 +152,9 @@ export class Utils {
             return 'windows-amd64';
         }
         if (platform().includes('darwin')) {
+            if (arch().includes('arm')) {
+                return arch().includes('64') ? 'mac-arm64' : 'mac-arm';
+            }
             return 'mac-386';
         }
         if (arch().includes('arm')) {
