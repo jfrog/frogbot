@@ -7,5 +7,3 @@ coverage
 *.iml
 .DS_Store
 /testdata/vcsclientmock.go
-action/src/*
-action/test/*
