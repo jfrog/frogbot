@@ -36,7 +36,7 @@ setMacProperties() {
       arm | armv7l)
           ARCH="arm"
           ;;
-      aarch64)
+      arm64 | aarch64)
           ARCH="arm64"
           ;;
       *)
