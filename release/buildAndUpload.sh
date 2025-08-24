@@ -68,7 +68,6 @@ buildAndUpload 'frogbot-linux-ppc64' 'linux' 'ppc64' ''
 buildAndUpload 'frogbot-linux-ppc64le' 'linux' 'ppc64le' ''
 buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
 buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' ''
-buildAndUpload 'frogbot-mac-arm' 'darwin' 'arm' ''
 buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat
