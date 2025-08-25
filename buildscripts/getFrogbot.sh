@@ -33,10 +33,7 @@ setMacProperties() {
   FROGBOT_OS="mac"
   MACHINE_TYPE="$(uname -m)"
   case $MACHINE_TYPE in
-      arm | armv7l)
-          ARCH="arm"
-          ;;
-      arm64 | aarch64)
+      arm | armv7l | arm64 | aarch64)
           ARCH="arm64"
           ;;
       *)

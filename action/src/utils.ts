@@ -153,7 +153,7 @@ export class Utils {
         }
         if (platform().includes('darwin')) {
             if (arch().includes('arm')) {
-                return arch().includes('64') ? 'mac-arm64' : 'mac-arm';
+                return 'mac-arm64';
             }
             return 'mac-386';
         }

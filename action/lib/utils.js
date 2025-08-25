@@ -183,7 +183,7 @@ class Utils {
         }
         if ((0, os_1.platform)().includes('darwin')) {
             if ((0, os_1.arch)().includes('arm')) {
-                return (0, os_1.arch)().includes('64') ? 'mac-arm64' : 'mac-arm';
+                return 'mac-arm64';
             }
             return 'mac-386';
         }
