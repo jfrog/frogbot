@@ -27,13 +27,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-     
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -82,13 +82,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -102,7 +102,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -128,21 +128,31 @@ jobs:
       - name: Install python components
         run: python -m pip install pipenv poetry
 
+      - name: Install Mono on macOS
+        run: brew install mono
+        if: runner.os == 'macOS'
+
       - name: Install dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "6.x"
+
+      - name: Install Mono on linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
 
       - name: Install NuGet on Linux
         uses: nuget/setup-nuget@v2
         with:
           nuget-version: 6.11.0
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' || runner.os == 'macOS'
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         if: runner.os == 'Linux'
         with:
-          packages: apt-transport-https dirmngr gnupg ca-certificates mono-complete
+          packages: apt-transport-https dirmngr gnupg ca-certificates
           version: 1.0
 
       - name: Install Pnpm
@@ -182,13 +192,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -227,13 +237,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -272,13 +282,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -311,13 +321,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-     
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-     
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
