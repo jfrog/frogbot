@@ -191,6 +191,12 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
+
+			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
+				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
+					log.Warn(err)
+				}
+			}
 		}
 		if repository.DetectionOnly {
 			continue

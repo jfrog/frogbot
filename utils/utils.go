@@ -19,8 +19,9 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
-	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/snapshotconvertor"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
@@ -32,12 +33,14 @@ import (
 )
 
 const (
-	ScanPullRequest          = "scan-pull-request"
-	ScanAllPullRequests      = "scan-all-pull-requests"
-	ScanRepository           = "scan-repository"
-	ScanMultipleRepositories = "scan-multiple-repositories"
-	RootDir                  = "."
-	branchNameRegex          = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest                     = "scan-pull-request"
+	ScanAllPullRequests                 = "scan-all-pull-requests"
+	ScanRepository                      = "scan-repository"
+	ScanMultipleRepositories            = "scan-multiple-repositories"
+	RootDir                             = "."
+	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
+	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
+	frogbotUrl                          = "https://github.com/jfrog/frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -240,6 +243,43 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
+func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
+	if scanResults == nil {
+		return fmt.Errorf("got an empty scan results")
+	}
+
+	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
+	if err != nil {
+		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
+	}
+	var jobId, jobCorrelator, commitSha string
+	if jobId = getTrimmedEnv(utils.CurrentGithubWorkflowJobEnvVar); jobId == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowJobEnvVar)
+	}
+	workflowName := getTrimmedEnv(utils.CurrentGithubWorkflowNameEnvVar)
+	if workflowName == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubWorkflowNameEnvVar)
+	}
+	jobCorrelator = fmt.Sprintf("%s_%s", workflowName, jobId)
+	if commitSha = getTrimmedEnv(utils.CurrentGithubShaEnvVar); commitSha == "" {
+		return fmt.Errorf("%s env var is empty and required for Github Dependency submission", utils.CurrentGithubShaEnvVar)
+	}
+
+	snapshot, err := snapshotconvertor.CreateGithubSnapshotFromSbom(cyclonedxWithSbom, 0, scanResults.StartTime, jobId, jobCorrelator, commitSha, branch, dependencySubmissionFrogbotDetector, FrogbotVersion, frogbotUrl)
+	if err != nil {
+		return fmt.Errorf("failed to convert CycloneDX to SBOM snapshot: %w", err)
+	}
+
+	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
+		snapshotJson, e := utils.GetAsJsonString(snapshot, false, true)
+		if e != nil {
+			return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
+		}
+		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w\nSent Snapshot:\n%s", err, snapshotJson)
+	}
+	return nil
+}
+
 func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
@@ -357,7 +397,7 @@ func convertSarifPathsInCveApplicability(vulnerabilities []formats.Vulnerability
 			if cve.Applicability != nil {
 				for i := range cve.Applicability.Evidence {
 					for _, wd := range workingDirs {
-						cve.Applicability.Evidence[i].File = sarifutils.ExtractRelativePath(cve.Applicability.Evidence[i].File, wd)
+						cve.Applicability.Evidence[i].File = utils.GetRelativePath(cve.Applicability.Evidence[i].File, wd)
 					}
 				}
 			}
@@ -369,7 +409,7 @@ func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string
 	for i := range iacs {
 		iac := &iacs[i]
 		for _, wd := range workingDirs {
-			iac.Location.File = sarifutils.ExtractRelativePath(iac.Location.File, wd)
+			iac.Location.File = utils.GetRelativePath(iac.Location.File, wd)
 		}
 	}
 }
@@ -378,7 +418,7 @@ func convertSarifPathsInSecrets(secrets []formats.SourceCodeRow, workingDirs ...
 	for i := range secrets {
 		secret := &secrets[i]
 		for _, wd := range workingDirs {
-			secret.Location.File = sarifutils.ExtractRelativePath(secret.Location.File, wd)
+			secret.Location.File = utils.GetRelativePath(secret.Location.File, wd)
 		}
 	}
 }
@@ -387,10 +427,10 @@ func convertSarifPathsInSast(sast []formats.SourceCodeRow, workingDirs ...string
 	for i := range sast {
 		sastIssue := &sast[i]
 		for _, wd := range workingDirs {
-			sastIssue.Location.File = sarifutils.ExtractRelativePath(sastIssue.Location.File, wd)
+			sastIssue.Location.File = utils.GetRelativePath(sastIssue.Location.File, wd)
 			for f := range sastIssue.CodeFlow {
 				for l := range sastIssue.CodeFlow[f] {
-					sastIssue.CodeFlow[f][l].File = sarifutils.ExtractRelativePath(sastIssue.CodeFlow[f][l].File, wd)
+					sastIssue.CodeFlow[f][l].File = utils.GetRelativePath(sastIssue.CodeFlow[f][l].File, wd)
 				}
 			}
 		}

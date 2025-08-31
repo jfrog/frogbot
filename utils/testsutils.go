@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/xsc/services"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/go-git/go-git/v5"
 	goGitConfig "github.com/go-git/go-git/v5/config"
@@ -229,4 +231,99 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		XscUrl:  url + "/xsc/",
 	}
 	return
+}
+
+// CreateMockServerForDependencySubmission creates a mock GitHub server for testing dependency submission
+func CreateMockServerForDependencySubmission(t *testing.T, owner, repo string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify correct URL construction
+		expectedPath := fmt.Sprintf("/repos/%s/%s/dependency-graph/snapshots", owner, repo)
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path is '%s', got '%s'", expectedPath, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		// Verify correct method
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST method, got %s", r.Method)
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Read request body and parse it to ensure all mandatory fields exist
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Failed to read request body: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var snapshot map[string]interface{}
+		if err := json.Unmarshal(body, &snapshot); err != nil {
+			t.Errorf("Failed to parse request body as JSON: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Verify required fields are present
+		requiredFields := []string{"version", "sha", "ref", "scanned", "job", "detector"}
+		for _, field := range requiredFields {
+			if _, exists := snapshot[field]; !exists {
+				t.Errorf("Missing required field: %s", field)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		// Verify required job fields
+		if job, ok := snapshot["job"].(map[string]interface{}); ok {
+			if _, exists := job["id"]; !exists {
+				t.Errorf("Missing job.id field")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if _, exists := job["correlator"]; !exists {
+				t.Errorf("Missing job.correlator field")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		// Verify required detector fields
+		if detector, ok := snapshot["detector"].(map[string]interface{}); ok {
+			if _, exists := detector["name"]; !exists {
+				t.Errorf("Missing detector.name field")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if _, exists := detector["version"]; !exists {
+				t.Errorf("Missing detector.version field")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if _, exists := detector["url"]; !exists {
+				t.Errorf("Missing detector.url field")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		// Return success response
+		w.WriteHeader(http.StatusCreated)
+	}))
+}
+
+// CreateMockServerForDependencySubmissionError creates a mock GitHub server that returns an error
+func CreateMockServerForDependencySubmissionError(t *testing.T, owner, repo string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify correct URL construction
+		expectedPath := fmt.Sprintf("/repos/%s/%s/dependency-graph/snapshots", owner, repo)
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path is '%s', got '%s'", expectedPath, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// Return error response
+		w.WriteHeader(http.StatusBadRequest)
+	}))
 }

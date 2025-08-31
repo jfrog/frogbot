@@ -182,6 +182,9 @@ class Utils {
             return 'windows-amd64';
         }
         if ((0, os_1.platform)().includes('darwin')) {
+            if ((0, os_1.arch)().includes('arm')) {
+                return 'mac-arm64';
+            }
             return 'mac-386';
         }
         if ((0, os_1.arch)().includes('arm')) {
