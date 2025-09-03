@@ -379,20 +379,16 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 	}
 
-	// TODO remove this line and uncomment the code block when Dependency Submission is finished with all fixes. Until then the new ability is disabled
-	g.UploadSbomToVcs = securityutils.NewBoolPtr(false)
-	/*
-		// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
-		if g.UploadSbomToVcs == nil || !*g.UploadSbomToVcs {
-			if g.UploadSbomToVcs == nil {
-				envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
-				if err != nil {
-					return err
-				}
-				g.UploadSbomToVcs = &envValue
+	// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
+	if g.UploadSbomToVcs == nil || !*g.UploadSbomToVcs {
+		if g.UploadSbomToVcs == nil {
+			envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+			if err != nil {
+				return err
 			}
+			g.UploadSbomToVcs = &envValue
 		}
-	*/
+	}
 
 	return
 }
