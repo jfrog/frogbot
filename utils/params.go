@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
-	"gopkg.in/yaml.v2"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"gopkg.in/yaml.v2"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
@@ -383,15 +384,14 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.UploadSbomToVcs = securityutils.NewBoolPtr(false)
 	/*
 		// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
-		if g.UploadSbomToVcs == nil || !*g.UploadSbomToVcs {
-			if g.UploadSbomToVcs == nil {
-				envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
-				if err != nil {
-					return err
-				}
-				g.UploadSbomToVcs = &envValue
+		if g.UploadSbomToVcs == nil {
+			envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+			if err != nil {
+				return err
 			}
+			g.UploadSbomToVcs = &envValue
 		}
+
 	*/
 
 	return
@@ -410,15 +410,14 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 			return
 		}
 	}
-	if g.UseMostCommonAncestorAsTarget == nil || !*g.UseMostCommonAncestorAsTarget {
-		if g.UseMostCommonAncestorAsTarget == nil {
-			envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
-			if err != nil {
-				return err
-			}
-			g.UseMostCommonAncestorAsTarget = &envValue
+	if g.UseMostCommonAncestorAsTarget == nil {
+		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
+		if err != nil {
+			return err
 		}
+		g.UseMostCommonAncestorAsTarget = &envValue
 	}
+
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
 }
