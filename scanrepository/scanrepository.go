@@ -415,7 +415,7 @@ func (cfp *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository
 	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
 		log.Warn(fmt.Sprintf("failed fo clean untracked files from '%s' due to the following errors: %s", cfp.baseWd, err.Error()))
 	}
-	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
+	if err = cfp.gitManager.AddAllAndCommit(commitMessage, vulnDetails.ImpactedDependencyName); err != nil {
 		return
 	}
 	if err = cfp.gitManager.Push(false, fixBranchName); err != nil {
@@ -467,7 +467,7 @@ func (cfp *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposi
 	if err = cfp.cleanNewFilesMissingInRemote(); err != nil {
 		return
 	}
-	if err = cfp.gitManager.AddAllAndCommit(commitMessage); err != nil {
+	if err = cfp.gitManager.AddAllAndCommit(commitMessage, ""); err != nil {
 		return
 	}
 	if err = cfp.gitManager.Push(true, fixBranchName); err != nil {
