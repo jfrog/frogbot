@@ -182,7 +182,8 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
 		SetDisableJas(repoConfig.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
-		SetDiffScan(!repoConfig.IncludeAllVulnerabilities)
+		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
+		SetAllowPartialResults(repoConfig.AllowPartialResults)
 	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
 }
 
