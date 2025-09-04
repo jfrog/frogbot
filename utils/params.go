@@ -835,6 +835,10 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 		// If .frogbot/frogbot-config.yml isn't found, return an ErrMissingConfig
 		configContent = nil
 		err = &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
+	case http.StatusNotAcceptable:
+		log.Debug(fmt.Sprintf("The %s file couldn't be retrieved due to content negotiation issues (HTTP 406) in <%s/%s>. Falling back to environment variable configuration.", gitFrogbotConfigPath, repoOwner, repoName))
+		configContent = nil
+		err = nil
 	case http.StatusUnauthorized:
 		log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
 	}
