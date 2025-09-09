@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
-	"gopkg.in/yaml.v2"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"gopkg.in/yaml.v2"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
@@ -379,20 +380,14 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 	}
 
-	// TODO remove this line and uncomment the code block when Dependency Submission is finished with all fixes. Until then the new ability is disabled
-	g.UploadSbomToVcs = securityutils.NewBoolPtr(false)
-	/*
-		// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
-		if g.UploadSbomToVcs == nil || !*g.UploadSbomToVcs {
-			if g.UploadSbomToVcs == nil {
-				envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
-				if err != nil {
-					return err
-				}
-				g.UploadSbomToVcs = &envValue
-			}
+	// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
+	if g.UploadSbomToVcs == nil {
+		envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+		if err != nil {
+			return err
 		}
-	*/
+		g.UploadSbomToVcs = &envValue
+	}
 
 	return
 }
@@ -410,15 +405,14 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 			return
 		}
 	}
-	if g.UseMostCommonAncestorAsTarget == nil || !*g.UseMostCommonAncestorAsTarget {
-		if g.UseMostCommonAncestorAsTarget == nil {
-			envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
-			if err != nil {
-				return err
-			}
-			g.UseMostCommonAncestorAsTarget = &envValue
+	if g.UseMostCommonAncestorAsTarget == nil {
+		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
+		if err != nil {
+			return err
 		}
+		g.UseMostCommonAncestorAsTarget = &envValue
 	}
+
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
 }
@@ -841,6 +835,10 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 		// If .frogbot/frogbot-config.yml isn't found, return an ErrMissingConfig
 		configContent = nil
 		err = &ErrMissingConfig{errFrogbotConfigNotFound.Error()}
+	case http.StatusNotAcceptable:
+		log.Debug(fmt.Sprintf("The %s file couldn't be retrieved due to content negotiation issues (HTTP 406) in <%s/%s>. Falling back to environment variable configuration.", gitFrogbotConfigPath, repoOwner, repoName))
+		configContent = nil
+		err = nil
 	case http.StatusUnauthorized:
 		log.Warn("Your credentials seem to be invalid. If you are using an on-premises Git provider, please set the API endpoint of your Git provider using the 'JF_GIT_API_ENDPOINT' environment variable (example: 'https://gitlab.example.com'). Additionally, make sure that the provided credentials have the required Git permissions.")
 	}

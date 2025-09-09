@@ -7,15 +7,15 @@ require (
 	github.com/go-git/go-git/v5 v5.16.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.10.16
-	github.com/jfrog/froggit-go v1.20.2
+	github.com/jfrog/build-info-go v1.10.17
+	github.com/jfrog/froggit-go v1.20.3
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.6.2
-	github.com/jfrog/jfrog-cli-core/v2 v2.59.5
-	github.com/jfrog/jfrog-cli-security v1.21.2
-	github.com/jfrog/jfrog-client-go v1.54.5
+	github.com/jfrog/jfrog-cli-artifactory v0.7.1
+	github.com/jfrog/jfrog-cli-core/v2 v2.59.7
+	github.com/jfrog/jfrog-cli-security v1.21.6
+	github.com/jfrog/jfrog-client-go v1.54.7
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
@@ -79,7 +79,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/oklog/run v1.0.0 // indirect
-	github.com/owenrumney/go-sarif/v3 v3.2.1 // indirect
+	github.com/owenrumney/go-sarif/v3 v3.2.3 // indirect
 	github.com/package-url/packageurl-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.20.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/ulikunitz/xz v0.5.12 // indirect
+	github.com/ulikunitz/xz v0.5.14 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.110.0 // indirect
@@ -126,6 +126,8 @@ require (
 )
 
 // replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+
+replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
