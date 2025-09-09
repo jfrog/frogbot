@@ -27,13 +27,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-     
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -82,13 +82,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -102,7 +102,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -175,20 +175,20 @@ jobs:
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
-    runs-on: ubuntu-latest
+    runs-on: shift-left-runner
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -227,13 +227,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -272,13 +272,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-          
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -311,13 +311,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-     
+
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
-     
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
