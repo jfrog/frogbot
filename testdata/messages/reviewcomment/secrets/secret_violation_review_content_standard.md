@@ -2,10 +2,10 @@
 ## 🤫 Secret Violation
 <div align='center'>
 
-| Severity                | ID                  | Status                  | Finding                  | Watch Name                  | Policies                  |
-| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | secret-violation-id | Active | Secret keys were found | jas-watch | policy1 |
-| ![critical (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical | secret-violation-id-2 | Inactive | Secret keys were found | jas-watch2 | policy1<br>policy2 |
+| Severity                | ID                  | Status                  | Finding                  | Watch Name                  | Policies                  | Origin                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | secret-violation-id | Active | Secret keys were found | jas-watch | policy1 | JFrog |
+| ![critical (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical | secret-violation-id-2 | Inactive | Secret keys were found | jas-watch2 | policy1<br>policy2 | JFrog |
 
 </div>
 

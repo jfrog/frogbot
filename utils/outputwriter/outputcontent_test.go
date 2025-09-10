@@ -887,6 +887,7 @@ func TestSecretsReviewContent(t *testing.T) {
 					Cwe:                     []string{"CWE-798", "CWE-799"},
 					ScannerDescription:      "Scanner Description....",
 					ScannerShortDescription: "Scanner Short Description",
+					Origin:                  "JFrog",
 				},
 			}},
 			cases: []OutputTestCase{
@@ -913,6 +914,7 @@ func TestSecretsReviewContent(t *testing.T) {
 					Cwe:                     []string{"CWE-798", "CWE-799"},
 					ScannerDescription:      "Scanner Description....",
 					ScannerShortDescription: "Scanner Short Description",
+					Origin:                  "JFrog",
 				},
 			}},
 			cases: []OutputTestCase{
@@ -940,6 +942,7 @@ func TestSecretsReviewContent(t *testing.T) {
 						Cwe:                     []string{"CWE-798", "CWE-799"},
 						ScannerDescription:      "Scanner Description....",
 						ScannerShortDescription: "Scanner Short Description",
+						Origin:                  "JFrog",
 					},
 					ViolationContext: formats.ViolationContext{
 						Watch:    "jas-watch",
@@ -956,6 +959,7 @@ func TestSecretsReviewContent(t *testing.T) {
 						Cwe:                     []string{"CWE-798", "CWE-799"},
 						ScannerDescription:      "Scanner Description....",
 						ScannerShortDescription: "Scanner Short Description",
+						Origin:                  "JFrog",
 					},
 					ViolationContext: formats.ViolationContext{
 						Watch:    "jas-watch2",

@@ -4,9 +4,9 @@
 ## 🤫 Secret Vulnerability
 
 ---
-| Severity                | Status                  | Finding                  |
-| :---------------------: | :-----------------------------------: | :-----------------------------------: |
-| High | Active | Secret keys were found |
+| Severity                | Status                  | Finding                  | Origin                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| High | Active | Secret keys were found | JFrog |
 
 
 ---
