@@ -788,12 +788,56 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
 						{StatusCode: 0},
 					},
+					JasVulnerabilities: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
 						{StatusCode: 0},
+					},
+					JasVulnerabilities: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
 					},
 				},
 			},
@@ -809,10 +853,13 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			// Validate the results based on scan type and test case
 			if !test.hasFailure {
 				// For success cases, results should NOT be removed
-				switch test.scanType {
-				case jasutils.Applicability:
-					assert.NotNil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when scan succeeds")
-				}
+				assert.NotNil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasViolations.SecretsScanResults, "Secrets violation scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasViolations.IacScanResults, "IaC violation scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should NOT be removed when scan succeeds")
+				assert.NotNil(t, test.sourceResult.JasResults.JasViolations.SastScanResults, "SAST violation scan results should NOT be removed when scan succeeds")
 			} else {
 				// For failure cases, results should be removed
 				switch test.scanType {
