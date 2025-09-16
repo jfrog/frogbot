@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -18,15 +20,18 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 )
 
 const (
 	SecurityIssueFoundErr = "issues were detected by Frogbot\n" +
 		"You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file or by setting the " + utils.FailOnSecurityIssuesEnv + " environment variable to false\n" +
 		"Note that even if failOnSecurityIssues/" + utils.FailOnSecurityIssuesEnv + " are set to false, but a security violation with 'fail-pull-request' rule is found, Frogbot scan will fail as well"
-	noGitHubEnvErr          = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	noGitHubEnvReviewersErr = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	analyticsScanPrScanType = "PR"
+	noGitHubEnvErr                       = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvReviewersErr              = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	analyticsScanPrScanType              = "PR"
+	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
+	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
 )
 
 type ScanPullRequestCmd struct{}
@@ -182,7 +187,8 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
 		SetDisableJas(repoConfig.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
-		SetDiffScan(!repoConfig.IncludeAllVulnerabilities)
+		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
+		SetAllowPartialResults(repoConfig.AllowPartialResults)
 	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
 }
 
@@ -266,6 +272,11 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		log.Debug("Diff scan - converting to new issues...")
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
+
+	if err = filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.AllowPartialResults); err != nil {
+		return
+	}
+
 	// Convert to issues
 	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.AllowedLicenses, workingDirs...); e == nil {
 		issuesCollection = issues
@@ -274,6 +285,145 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		err = errors.Join(err, fmt.Errorf("failed to get all issues for %v project. Error: %s", scanDetails.Project.WorkingDirs, e.Error()))
 	}
 	return
+}
+
+// When allowPartialResults is enabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
+// if we found any error in any of its results (non-zero status code) in either source or target results.
+// This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
+func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResults *results.SecurityCommandResults, allowPartialResults bool) error {
+	if !allowPartialResults {
+		return nil
+	}
+	if targetResults == nil {
+		// If IncludeAllVulnerabilities is applied, only sourceResults exists and we don't need to filter anything - we present results we have
+		return nil
+	}
+
+	// If both source & target results exists, we need to filter out results of scans that failed in either source or target results, to avoid presenting incorrect diff results
+	if err := sortTargetsByPhysicalLocation(targetResults, sourceResults); err != nil {
+		return err
+	}
+
+	for idx := 0; idx < len(sourceResults.Targets); idx++ {
+		targetResult := targetResults.Targets[idx]
+		sourceResult := sourceResults.Targets[idx]
+
+		filterOutScaResultsIfScanFailed(targetResult, sourceResult)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Applicability)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Secrets)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.IaC)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Sast)
+	}
+	return nil
+}
+
+func filterJasResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, scanType jasutils.JasScanType) {
+	switch scanType {
+	case jasutils.Applicability:
+		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.ApplicabilityScanResults, targetResult.JasResults.ApplicabilityScanResults) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.ApplicabilityScanResults = nil
+		}
+	case jasutils.Secrets:
+		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, targetResult.JasResults.JasVulnerabilities.SecretsScanResults) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasVulnerabilities.SecretsScanResults = nil
+		}
+
+		if (sourceResult.JasResults.JasViolations.SecretsScanResults != nil || targetResult.JasResults.JasViolations.SecretsScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.SecretsScanResults, targetResult.JasResults.JasViolations.SecretsScanResults) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasViolations.SecretsScanResults = nil
+		}
+	case jasutils.IaC:
+		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.IacScanResults, targetResult.JasResults.JasVulnerabilities.IacScanResults) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasVulnerabilities.IacScanResults = nil
+		}
+
+		if (sourceResult.JasResults.JasViolations.IacScanResults != nil || targetResult.JasResults.JasViolations.IacScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.IacScanResults, targetResult.JasResults.JasViolations.IacScanResults) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasViolations.IacScanResults = nil
+		}
+	case jasutils.Sast:
+		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.SastScanResults, targetResult.JasResults.JasVulnerabilities.SastScanResults) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasVulnerabilities.SastScanResults = nil
+		}
+
+		if (sourceResult.JasResults.JasViolations.SastScanResults != nil || targetResult.JasResults.JasViolations.SastScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.SastScanResults, targetResult.JasResults.JasViolations.SastScanResults) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+			sourceResult.JasResults.JasViolations.SastScanResults = nil
+		}
+	}
+}
+
+func isJasScanFailedInSourceOrTarget(sourceResults, targetResults []results.ScanResult[[]*sarif.Run]) bool {
+	for _, scanResult := range sourceResults {
+		if scanResult.StatusCode != 0 {
+			return true
+		}
+	}
+
+	for _, scanResult := range targetResults {
+		if scanResult.StatusCode != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults) {
+	// Filter out new Sca results
+	if sourceResult.ScaResults.ScanStatusCode != 0 || targetResult.ScaResults.ScanStatusCode != 0 {
+		statusCode := int(math.Max(float64(sourceResult.ScaResults.ScanStatusCode), float64(targetResult.ScaResults.ScanStatusCode)))
+		log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca vulnerability results will be removed from final report", statusCode))
+		sourceResult.ScaResults.Sbom = nil
+		if sourceResult.ScaResults.Violations != nil {
+			log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca violations results will be removed from final report", statusCode))
+			sourceResult.ScaResults.Violations = nil
+		}
+	}
+
+	// Note: Although we have a slice on ScanResults in DeprecatedXrayResults, in fact there is only a single entry
+	hasScaFailure := false
+	for _, deprecatedScaResult := range targetResult.ScaResults.DeprecatedXrayResults {
+		if deprecatedScaResult.StatusCode != 0 {
+			hasScaFailure = true
+			break
+		}
+	}
+	for _, deprecatedScaResult := range sourceResult.ScaResults.DeprecatedXrayResults {
+		if deprecatedScaResult.StatusCode != 0 {
+			hasScaFailure = true
+			break
+		}
+	}
+	if hasScaFailure {
+		log.Debug("Sca scan has completed with errors. Sca vulnerabilities and violations results will be removed from final report")
+		// Violations are being filtered as well as they are included in the DeprecatedXrayResults
+		sourceResult.ScaResults.DeprecatedXrayResults = nil
+	}
+}
+
+// Sorts the Targets slice in both targetResults and sourceResults
+// by the physical location (Target field) of each scan target in ascending order.
+func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.SecurityCommandResults) error {
+	// If !IncludeAllVulnerabilities we expect targetResults and sourceResults to be non-empty and to have the same amount of targets.
+	if targetResults != nil && len(targetResults.Targets) != len(sourceResults.Targets) {
+		return fmt.Errorf("amount of targets in target results is different than source results: %d vs %d", len(targetResults.Targets), len(sourceResults.Targets))
+	}
+	if targetResults != nil && len(targetResults.Targets) > 0 {
+		sort.Slice(targetResults.Targets, func(i, j int) bool {
+			return targetResults.Targets[i].Target < targetResults.Targets[j].Target
+		})
+	}
+
+	if sourceResults != nil && len(sourceResults.Targets) > 0 {
+		sort.Slice(sourceResults.Targets, func(i, j int) bool {
+			return sourceResults.Targets[i].Target < sourceResults.Targets[j].Target
+		})
+	}
+	return nil
 }
 
 func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, allowedLicenses []string, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
