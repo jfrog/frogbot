@@ -14,7 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
@@ -648,6 +650,442 @@ func TestToFailTaskStatus(t *testing.T) {
 			}
 
 			assert.Equal(t, test.failureExpected, toFailTaskStatus(repo, &test.issuesCollection))
+		})
+	}
+}
+
+func TestFilterJasResultsIfScanFailed(t *testing.T) {
+	tests := []struct {
+		name         string
+		scanType     jasutils.JasScanType
+		targetResult *results.TargetResults
+		sourceResult *results.TargetResults
+		hasFailure   bool
+	}{
+		{
+			name:     "Applicability scanner failed - should remove applicability results",
+			scanType: jasutils.Applicability,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+						{StatusCode: 0},
+					},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+						{StatusCode: -1},
+					},
+				},
+			},
+			hasFailure: true,
+		},
+		{
+			name:     "Secrets scanner failed in target - should remove secrets vulnerabilities and violations",
+			scanType: jasutils.Secrets,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+				},
+			},
+			hasFailure: true,
+		},
+		{
+			name:     "IaC scanner failed in both source and target - should remove IaC vulnerabilities and violations",
+			scanType: jasutils.IaC,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						IacScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+				},
+			},
+			hasFailure: true,
+		},
+		{
+			name:     "SAST scanner failed - should remove SAST vulnerabilities and violations",
+			scanType: jasutils.Sast,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: 0},
+						},
+					},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+					JasViolations: results.JasScanResults{
+						SastScanResults: []results.ScanResult[[]*sarif.Run]{
+							{StatusCode: -1},
+						},
+					},
+				},
+			},
+			hasFailure: true,
+		},
+		{
+			name:     "All scanners succeed - should not remove any results",
+			scanType: jasutils.Applicability,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+						{StatusCode: 0},
+					},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+						{StatusCode: 0},
+					},
+				},
+			},
+			hasFailure: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Call the function under test
+			filterJasResultsIfScanFailed(test.targetResult, test.sourceResult, test.scanType)
+
+			// Validate the results based on scan type and test case
+			if !test.hasFailure {
+				// For success cases, results should NOT be removed
+				switch test.scanType {
+				case jasutils.Applicability:
+					assert.NotNil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when scan succeeds")
+				}
+			} else {
+				// For failure cases, results should be removed
+				switch test.scanType {
+				case jasutils.Applicability:
+					assert.Nil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should be removed when scan failed")
+				case jasutils.Secrets:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should be removed when scan failed")
+					assert.Nil(t, test.sourceResult.JasResults.JasViolations.SecretsScanResults, "Secrets violation scan results should be removed when scan failed")
+				case jasutils.IaC:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should be removed when scan failed")
+					assert.Nil(t, test.sourceResult.JasResults.JasViolations.IacScanResults, "IaC violation scan results should be removed when scan failed")
+				case jasutils.Sast:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should be removed when scan failed")
+					assert.Nil(t, test.sourceResult.JasResults.JasViolations.SastScanResults, "SAST violation scan results should be removed when scan failed")
+				}
+			}
+		})
+	}
+}
+
+func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
+	tests := []struct {
+		name         string
+		targetResult *results.TargetResults
+		sourceResult *results.TargetResults
+		hasFailure   bool
+	}{
+		{
+			name: "SCA scan failed - should remove SCA results",
+			targetResult: &results.TargetResults{
+				ScaResults: &results.ScaScanResults{
+					ScanStatusCode: -1,
+					Sbom:           nil,
+					Violations:     []services.Violation{{IssueId: "test-violation"}},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				ScaResults: &results.ScaScanResults{
+					ScanStatusCode: 0,
+					Sbom:           nil,
+					Violations:     []services.Violation{{IssueId: "source-violation"}},
+				},
+			},
+			hasFailure: true,
+		},
+		{
+			name: "SCA scan succeeded - should not remove SCA results",
+			targetResult: &results.TargetResults{
+				ScaResults: &results.ScaScanResults{
+					ScanStatusCode: 0,
+					Sbom:           nil,
+					Violations:     []services.Violation{{IssueId: "target-violation"}},
+				},
+			},
+			sourceResult: &results.TargetResults{
+				ScaResults: &results.ScaScanResults{
+					ScanStatusCode: 0,
+					Sbom:           nil,
+					Violations:     []services.Violation{{IssueId: "source-violation"}},
+				},
+			},
+			hasFailure: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			filterOutScaResultsIfScanFailed(test.targetResult, test.sourceResult)
+
+			if test.hasFailure {
+				assert.Nil(t, test.sourceResult.ScaResults.Sbom, "SBOM should be removed when SCA scan failed")
+				assert.Nil(t, test.sourceResult.ScaResults.Violations, "Violations should be removed when SCA scan failed")
+			} else {
+				assert.Equal(t, []services.Violation{{IssueId: "source-violation"}}, test.sourceResult.ScaResults.Violations, "Violations should NOT be removed when SCA scan succeeds")
+			}
+		})
+	}
+}
+
+func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
+	tests := []struct {
+		name          string
+		targetResults *results.SecurityCommandResults
+		sourceResults *results.SecurityCommandResults
+		hasFailure    bool
+	}{
+		{
+			name: "All scans succeed - should not filter anything",
+			targetResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{
+						ScanTarget: results.ScanTarget{Target: "test-target"},
+						ScaResults: &results.ScaScanResults{
+							ScanStatusCode: 0,
+							Violations:     []services.Violation{{IssueId: "target-violation"}},
+						},
+						JasResults: &results.JasScansResults{
+							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+								{StatusCode: 0},
+							},
+							JasVulnerabilities: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+							JasViolations: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+						},
+					},
+				},
+			},
+			sourceResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{
+						ScanTarget: results.ScanTarget{Target: "test-target"},
+						ScaResults: &results.ScaScanResults{
+							ScanStatusCode: 0,
+							Violations:     []services.Violation{{IssueId: "source-violation"}},
+						},
+						JasResults: &results.JasScansResults{
+							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+								{StatusCode: 0},
+							},
+							JasVulnerabilities: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+							JasViolations: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+						},
+					},
+				},
+			},
+			hasFailure: false,
+		},
+		{
+			name: "SCA and 2 JAS scanners failed - should filter SCA, Secrets, and IaC results",
+			targetResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{
+						ScanTarget: results.ScanTarget{Target: "test-target"},
+						ScaResults: &results.ScaScanResults{
+							ScanStatusCode: -1,
+							Violations:     []services.Violation{{IssueId: "target-violation"}},
+						},
+						JasResults: &results.JasScansResults{
+							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+								{StatusCode: 0},
+							},
+							JasVulnerabilities: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: -1},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: -1},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+							JasViolations: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: -1},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: -1},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+						},
+					},
+				},
+			},
+			sourceResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{
+						ScanTarget: results.ScanTarget{Target: "test-target"},
+						ScaResults: &results.ScaScanResults{
+							ScanStatusCode: 0,
+							Violations:     []services.Violation{{IssueId: "source-violation"}},
+						},
+						JasResults: &results.JasScansResults{
+							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
+								{StatusCode: 0},
+							},
+							JasVulnerabilities: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+							JasViolations: results.JasScanResults{
+								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								IacScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+								SastScanResults: []results.ScanResult[[]*sarif.Run]{
+									{StatusCode: 0},
+								},
+							},
+						},
+					},
+				},
+			},
+			hasFailure: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := filterOutFailedScansIfAllowPartialResultsEnabled(test.targetResults, test.sourceResults, true)
+			assert.NoError(t, err)
+
+			sourceTarget := test.sourceResults.Targets[0]
+			if test.hasFailure {
+				assert.Nil(t, sourceTarget.ScaResults.Violations, "SCA violations should be removed when SCA scan failed")
+				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should be removed when Secrets scan failed")
+				assert.Nil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should be removed when Secrets scan failed")
+				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should be removed when IaC scan failed")
+				assert.Nil(t, sourceTarget.JasResults.JasViolations.IacScanResults, "IaC violation results should be removed when IaC scan failed")
+				assert.NotNil(t, sourceTarget.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when Applicability scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SastScanResults, "SAST scan results should NOT be removed when SAST scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SastScanResults, "SAST violation results should NOT be removed when SAST scan succeeds")
+			} else {
+				assert.NotNil(t, sourceTarget.ScaResults.Violations, "SCA violations should NOT be removed when SCA scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should NOT be removed when Secrets scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should NOT be removed when Secrets scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should NOT be removed when IaC scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasViolations.IacScanResults, "IaC violation results should NOT be removed when IaC scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when Applicability scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SastScanResults, "SAST scan results should NOT be removed when SAST scan succeeds")
+				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SastScanResults, "SAST violation results should NOT be removed when SAST scan succeeds")
+			}
 		})
 	}
 }
