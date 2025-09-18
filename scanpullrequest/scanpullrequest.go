@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -375,11 +374,19 @@ func isJasScanFailedInSourceOrTarget(sourceResults, targetResults []results.Scan
 func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults) {
 	// Filter out new Sca results
 	if sourceResult.ScaResults.ScanStatusCode != 0 || targetResult.ScaResults.ScanStatusCode != 0 {
-		statusCode := int(math.Max(float64(sourceResult.ScaResults.ScanStatusCode), float64(targetResult.ScaResults.ScanStatusCode)))
-		log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca vulnerability results will be removed from final report", statusCode))
+		var statusCode int
+		var errorSource string
+		if sourceResult.ScaResults.ScanStatusCode != 0 {
+			statusCode = sourceResult.ScaResults.ScanStatusCode
+			errorSource = "source"
+		} else {
+			statusCode = targetResult.ScaResults.ScanStatusCode
+			errorSource = "target"
+		}
+		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
 		if sourceResult.ScaResults.Violations != nil {
-			log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca violations results will be removed from final report", statusCode))
+			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
 			sourceResult.ScaResults.Violations = nil
 		}
 	}
