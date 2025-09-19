@@ -416,16 +416,16 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 // by the physical location (Target field) of each scan target in ascending order.
 func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.SecurityCommandResults) error {
 	// If !IncludeAllVulnerabilities we expect targetResults and sourceResults to be non-empty and to have the same amount of targets.
-	if targetResults != nil && len(targetResults.Targets) != len(sourceResults.Targets) {
+	if len(targetResults.Targets) != len(sourceResults.Targets) {
 		return fmt.Errorf("amount of targets in target results is different than source results: %d vs %d", len(targetResults.Targets), len(sourceResults.Targets))
 	}
-	if targetResults != nil && len(targetResults.Targets) > 0 {
+	if len(targetResults.Targets) > 0 {
 		sort.Slice(targetResults.Targets, func(i, j int) bool {
 			return targetResults.Targets[i].Target < targetResults.Targets[j].Target
 		})
 	}
 
-	if sourceResults != nil && len(sourceResults.Targets) > 0 {
+	if len(sourceResults.Targets) > 0 {
 		sort.Slice(sourceResults.Targets, func(i, j int) bool {
 			return sourceResults.Targets[i].Target < sourceResults.Targets[j].Target
 		})
