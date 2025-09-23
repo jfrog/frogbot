@@ -4,10 +4,10 @@
 ## 🤫 Secret Violation
 
 ---
-| Severity                | ID                  | Status                  | Finding                  | Watch Name                  | Policies                  | Origin                  |
+| Severity                | ID                  | Status                  | Origin                  | Finding                  | Watch Name                  | Policies                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| High | secret-violation-id | Active | Secret keys were found | jas-watch | policy1 | JFrog |
-| Critical | secret-violation-id-2 | Inactive | Secret keys were found | jas-watch2 | policy1, policy2 | JFrog |
+| High | secret-violation-id | Active | JFrog | Secret keys were found | jas-watch | policy1 |
+| Critical | secret-violation-id-2 | Inactive | JFrog | Secret keys were found | jas-watch2 | policy1, policy2 |
 
 
 ---
