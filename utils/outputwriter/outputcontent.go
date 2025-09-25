@@ -539,7 +539,7 @@ func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.
 
 func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	// Construct table
-	table := NewMarkdownTable("Severity", "ID", "Status", "Finding", "Watch Name", "Policies", "Origin").SetDelimiter(writer.Separator())
+	table := NewMarkdownTable("Severity", "ID", "Status", "Origin", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
 	// Hide optional columns if all empty (violations/no status)
 	table.GetColumnInfo("ID").OmitEmpty = true
 	table.GetColumnInfo("Status").OmitEmpty = true
@@ -561,10 +561,10 @@ func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCod
 			NewCellData(writer.FormattedSeverity(issue.Severity, applicability)),
 			NewCellData(issue.IssueId),
 			NewCellData(status),
+			NewCellData(issue.ScannerInfo.Origin),
 			NewCellData(issue.Finding),
 			NewCellData(issue.Watch),
 			NewCellData(issue.Policies...),
-			NewCellData(issue.ScannerInfo.Origin),
 		)
 	}
 	return table.Build()

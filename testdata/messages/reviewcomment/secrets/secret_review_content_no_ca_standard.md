@@ -2,9 +2,9 @@
 ## 🤫 Secret Vulnerability
 <div align='center'>
 
-| Severity                | Finding                  | Origin                  |
+| Severity                | Origin                  | Finding                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Secret keys were found | JFrog |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | JFrog | Secret keys were found |
 
 </div>
 
