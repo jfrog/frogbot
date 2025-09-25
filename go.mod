@@ -12,7 +12,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.7.2
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.0
-	github.com/jfrog/jfrog-cli-security v1.21.6
+	github.com/jfrog/jfrog-cli-security v1.21.8
 	github.com/jfrog/jfrog-client-go v1.55.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
@@ -125,9 +125,9 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.21.8-0.20250925084930-fcfaa165a732
-
 replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
+
+//replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
