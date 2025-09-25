@@ -185,7 +185,7 @@ jobs:
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
-    runs-on: ubuntu-latest
+    runs-on: shift-left-runner
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
