@@ -675,7 +675,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-						{StatusCode: -1},
+						{StatusCode: 1},
 					},
 				},
 			},
@@ -688,12 +688,12 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 					JasViolations: results.JasScanResults{
 						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 				},
@@ -721,12 +721,12 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 					JasViolations: results.JasScanResults{
 						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 				},
@@ -735,12 +735,12 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 					JasViolations: results.JasScanResults{
 						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 				},
@@ -768,12 +768,12 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 					JasViolations: results.JasScanResults{
 						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: -1},
+							{StatusCode: 1},
 						},
 					},
 				},
@@ -1042,10 +1042,10 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 							},
 							JasVulnerabilities: results.JasScanResults{
 								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: -1},
+									{StatusCode: 1},
 								},
 								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: -1},
+									{StatusCode: 1},
 								},
 								SastScanResults: []results.ScanResult[[]*sarif.Run]{
 									{StatusCode: 0},
@@ -1053,10 +1053,10 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 							},
 							JasViolations: results.JasScanResults{
 								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: -1},
+									{StatusCode: 1},
 								},
 								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: -1},
+									{StatusCode: 1},
 								},
 								SastScanResults: []results.ScanResult[[]*sarif.Run]{
 									{StatusCode: 0},
