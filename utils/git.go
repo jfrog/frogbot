@@ -161,14 +161,6 @@ func (gm *GitManager) Checkout(branchName string) error {
 	return nil
 }
 
-func (gm *GitManager) CheckoutToHash(hash string) error {
-	log.Debug("Running git checkout to hash:", hash)
-	if err := gm.createBranchAndCheckoutToHash(hash, false); err != nil {
-		return fmt.Errorf("'git checkout %s' failed with error: %s", hash, err.Error())
-	}
-	return nil
-}
-
 func (gm *GitManager) Fetch() error {
 	log.Debug("Running git fetch...")
 	err := gm.localGitRepository.Fetch(&git.FetchOptions{
@@ -180,39 +172,6 @@ func (gm *GitManager) Fetch() error {
 		return fmt.Errorf("git fetch failed with error: %s", err.Error())
 	}
 	return nil
-}
-
-func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
-	// Get the commit of the base branch
-	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, baseBranch)))
-	if err != nil {
-		return "", err
-	}
-	baseCommit, err := gm.localGitRepository.CommitObject(*baseCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the HEAD commit of the target branch
-	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, targetBranch)))
-	if err != nil {
-		return "", err
-	}
-	headCommit, err := gm.localGitRepository.CommitObject(*headCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the most common ancestor
-	log.Debug(fmt.Sprintf("Finding common ancestor between %s and %s...", baseBranch, targetBranch))
-	ancestorCommit, err := baseCommit.MergeBase(headCommit)
-	if err != nil {
-		return "", err
-	}
-	if len(ancestorCommit) == 0 {
-		return "", fmt.Errorf("no common ancestor found for %s and %s", baseBranch, targetBranch)
-	} else if len(ancestorCommit) > 1 {
-		return "", fmt.Errorf("more than one common ancestor found for %s and %s", baseBranch, targetBranch)
-	}
-	return ancestorCommit[0].Hash.String(), nil
 }
 
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
@@ -260,26 +219,6 @@ func (gm *GitManager) CreateBranchAndCheckout(branchName string, keepLocalChange
 		err = fmt.Errorf("failed upon creating/checkout branch '%s' with error: %s", branchName, err.Error())
 	}
 	return err
-}
-
-func (gm *GitManager) createBranchAndCheckoutToHash(hash string, keepLocalChanges bool) error {
-	var checkoutConfig *git.CheckoutOptions
-	if keepLocalChanges {
-		checkoutConfig = &git.CheckoutOptions{
-			Hash: plumbing.NewHash(hash),
-			Keep: true,
-		}
-	} else {
-		checkoutConfig = &git.CheckoutOptions{
-			Hash:  plumbing.NewHash(hash),
-			Force: true,
-		}
-	}
-	worktree, err := gm.localGitRepository.Worktree()
-	if err != nil {
-		return err
-	}
-	return worktree.Checkout(checkoutConfig)
 }
 
 func (gm *GitManager) createBranchAndCheckout(branchName string, create bool, keepLocalChanges bool) error {

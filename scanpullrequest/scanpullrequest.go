@@ -328,48 +328,7 @@ func prepareTargetForScan(gitDetails utils.Git, scanDetails *utils.ScanDetails) 
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		return
 	}
-	if scanDetails.Git.UseMostCommonAncestorAsTarget == nil || !*scanDetails.Git.UseMostCommonAncestorAsTarget {
-		return
-	}
-	log.Debug("Using most common ancestor commit as target branch commit")
-
-	// Get common parent commit between source and target and use it (checkout) to the target branch commit
-	repoCloneUrl, err := scanDetails.GetRepositoryHttpsCloneUrl(scanDetails.Client())
-	if err != nil {
-		return
-	}
-	if e := tryCheckoutToMostCommonAncestor(scanDetails, gitDetails.PullRequestDetails.Source.Name, target.Name, targetBranchWd, repoCloneUrl); e != nil {
-		log.Warn(fmt.Sprintf("Failed to get best common ancestor commit between source branch: %s and target branch: %s, defaulting to target branch commit. Error: %s", gitDetails.PullRequestDetails.Source.Name, target.Name, e.Error()))
-	}
 	return
-}
-
-func tryCheckoutToMostCommonAncestor(scanDetails *utils.ScanDetails, baseBranch, headBranch, targetBranchWd, cloneRepoUrl string) (err error) {
-	// Change working directory to the temp target branch directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-	if err = os.Chdir(targetBranchWd); err != nil {
-		return
-	}
-	defer func() {
-		err = errors.Join(err, os.Chdir(cwd))
-	}()
-	// Create a new git manager and fetch
-	gitManager, err := utils.NewGitManager().SetAuth(scanDetails.Username, scanDetails.Token).SetRemoteGitUrl(cloneRepoUrl)
-	if err != nil {
-		return
-	}
-	if err = gitManager.Fetch(); err != nil {
-		return
-	}
-	// Get the most common ancestor commit hash
-	bestAncestorHash, err := gitManager.GetMostCommonAncestorHash(baseBranch, headBranch)
-	if err != nil {
-		return
-	}
-	return gitManager.CheckoutToHash(bestAncestorHash)
 }
 
 func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {

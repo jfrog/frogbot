@@ -322,21 +322,20 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	UseMostCommonAncestorAsTarget *bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
-	RepoOwner                     string
-	RepoName                      string   `yaml:"repoName,omitempty"`
-	Branches                      []string `yaml:"branches,omitempty"`
-	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
-	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
-	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
-	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
-	PullRequestDetails            vcsclient.PullRequestInfo
-	RepositoryCloneUrl            string
-	UseLocalRepository            bool
+	RepoOwner                 string
+	RepoName                  string   `yaml:"repoName,omitempty"`
+	Branches                  []string `yaml:"branches,omitempty"`
+	BranchNameTemplate        string   `yaml:"branchNameTemplate,omitempty"`
+	CommitMessageTemplate     string   `yaml:"commitMessageTemplate,omitempty"`
+	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`
+	PullRequestCommentTitle   string   `yaml:"pullRequestCommentTitle,omitempty"`
+	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"`
+	AvoidExtraMessages        bool     `yaml:"avoidExtraMessages,omitempty"`
+	EmailAuthor               string   `yaml:"emailAuthor,omitempty"`
+	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"`
+	PullRequestDetails        vcsclient.PullRequestInfo
+	RepositoryCloneUrl        string
+	UseLocalRepository        bool
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -393,17 +392,6 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
 			return
 		}
-	}
-	if g.UseMostCommonAncestorAsTarget == nil || !*g.UseMostCommonAncestorAsTarget {
-		defaultValue := true
-		if g.UseMostCommonAncestorAsTarget != nil {
-			defaultValue = *g.UseMostCommonAncestorAsTarget
-		}
-		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, defaultValue)
-		if err != nil {
-			return err
-		}
-		g.UseMostCommonAncestorAsTarget = &envValue
 	}
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
