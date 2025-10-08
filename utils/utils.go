@@ -32,12 +32,10 @@ import (
 )
 
 const (
-	ScanPullRequest          = "scan-pull-request"
-	ScanAllPullRequests      = "scan-all-pull-requests"
-	ScanRepository           = "scan-repository"
-	ScanMultipleRepositories = "scan-multiple-repositories"
-	RootDir                  = "."
-	branchNameRegex          = `[~^:?\\\[\]@{}*]`
+	ScanPullRequest = "scan-pull-request"
+	ScanRepository  = "scan-repository"
+	RootDir         = "."
+	branchNameRegex = `[~^:?\\\[\]@{}*]`
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -267,7 +265,7 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 }
 
 func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
-	// Multi repository configuration is supported only in the scanallpullrequests and scanmultiplerepositories commands.
+	// Multi repository configuration is not supported
 	if len(*configAggregator) > 1 {
 		return errors.New(errUnsupportedMultiRepo)
 	}
