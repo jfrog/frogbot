@@ -171,7 +171,6 @@ type Scan struct {
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
 	ConfigProfile                   *services.ConfigProfile
-	SkipAutoInstall                 bool
 	AllowPartialResults             bool
 }
 
@@ -225,11 +224,6 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 		s.MinSeverity = severity.String()
-	}
-	if !s.SkipAutoInstall {
-		if s.SkipAutoInstall, err = getBoolEnv(SkipAutoInstallEnv, false); err != nil {
-			return
-		}
 	}
 	if len(s.Projects) == 0 {
 		s.Projects = append(s.Projects, Project{})

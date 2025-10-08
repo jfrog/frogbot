@@ -72,7 +72,6 @@ const (
 	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
-	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
 	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
 

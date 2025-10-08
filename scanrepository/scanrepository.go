@@ -134,7 +134,6 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
 		SetFixableOnly(repository.FixableOnly).
 		SetConfigProfile(repository.ConfigProfile).
-		SetSkipAutoInstall(repository.SkipAutoInstall).
 		SetAllowPartialResults(repository.AllowPartialResults).
 		SetDisableJas(repository.DisableJas)
 
