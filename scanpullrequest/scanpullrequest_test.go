@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
@@ -35,6 +37,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var gitParams = &utils.Repository{
+	OutputWriter: &outputwriter.SimplifiedOutput{},
+	Params: utils.Params{
+		Git: utils.Git{
+			RepoOwner: "repo-owner",
+			Branches:  []string{"master"},
+			RepoName:  "repo-name",
+		},
+	},
+}
+
 const (
 	testMultiDirProjConfigPath       = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
 	testMultiDirProjConfigPathNoFail = "testdata/config/frogbot-config-multi-dir-test-proj-no-fail.yml"
@@ -46,6 +59,10 @@ const (
 	testSourceBranchName             = "pr"
 	testTargetBranchName             = "master"
 )
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	return testdata.NewMockVcsClient(gomock.NewController(t))
+}
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
 	allowedLicenses := []string{"MIT"}

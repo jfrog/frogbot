@@ -374,7 +374,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 			return
 		}
 	}
-	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
+	if commandName == ScanRepository {
 		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
 			return
 		}
@@ -534,7 +534,7 @@ func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.Vcs
 func getConfigFileContent(gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, commandName string) ([]byte, error) {
 	var errMissingConfig *ErrMissingConfig
 
-	if commandName == ScanRepository || commandName == ScanMultipleRepositories {
+	if commandName == ScanRepository {
 		configFileContent, err := ReadConfigFromFileSystem(osFrogbotConfigPath)
 		if err != nil && !errors.As(err, &errMissingConfig) {
 			return nil, err
@@ -653,7 +653,7 @@ func extractGitParamsFromEnvs(commandName string) (*Git, error) {
 	}
 
 	// [Mandatory] Set the repository name, except for multi repository.
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil && commandName != ScanMultipleRepositories {
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
 		return nil, err
 	}
 

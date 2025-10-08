@@ -210,8 +210,8 @@ pipelines:
               getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
               curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
               restore_cache_files npm_cache ~/.npm
-              ./frogbot scan-all-pull-requests
-              ./frogbot scan-multiple-repositories
+              ./frogbot scan-pull-request
+              ./frogbot scan-repository
               add_cache_files ~/.npm npm_cache || true  
 
             # For Windows runner:
@@ -225,6 +225,6 @@ pipelines:
             #   $scriptUrl = "$($getFrogbotScriptPath)/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh"
             #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
             #   add_cache_files "%AppData%/npm-cache" npm_cache || true
-            #   .\frogbot.exe scan-all-pull-requests
-            #   .\frogbot.exe scan-multiple-repositories
+            #   .\frogbot.exe scan-pull-request
+            #   .\frogbot.exe scan-repository
 
