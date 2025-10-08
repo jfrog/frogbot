@@ -13,7 +13,6 @@ require (
 	github.com/jfrog/jfrog-cli-core/v2 v2.59.3
 	github.com/jfrog/jfrog-cli-security v1.20.2
 	github.com/jfrog/jfrog-client-go v1.54.3
-	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.4
 	github.com/xeipuuv/gojsonschema v1.2.0

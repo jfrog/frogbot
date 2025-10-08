@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
@@ -13,11 +19,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -57,7 +58,6 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
 	gitManager, err := utils.NewGitManager().
 		SetAuth(testDetails.GitUsername, testDetails.GitToken).
-		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
 	return gitManager
