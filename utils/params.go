@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
-	"gopkg.in/yaml.v2"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	clientutils "github.com/jfrog/jfrog-client-go/utils"
+	"gopkg.in/yaml.v2"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
