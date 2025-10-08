@@ -16,6 +16,8 @@ import (
 
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
@@ -32,6 +34,17 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 )
+
+var gitParams = &utils.Repository{
+	OutputWriter: &outputwriter.SimplifiedOutput{},
+	Params: utils.Params{
+		Git: utils.Git{
+			RepoOwner: "repo-owner",
+			Branches:  []string{"master"},
+			RepoName:  "repo-name",
+		},
+	},
+}
 
 const (
 	testMultiDirProjConfigPath       = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
@@ -766,4 +779,8 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 		}
 	}
+}
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	return testdata.NewMockVcsClient(gomock.NewController(t))
 }
