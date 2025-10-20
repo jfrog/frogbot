@@ -102,6 +102,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		cfp.scanDetails.XscVersion,
 		cfp.scanDetails.ServerDetails,
 		utils.CreateScanEvent(cfp.scanDetails.ServerDetails, cfp.scanDetails.XscGitInfoContext, analyticsScanRepositoryScanType),
+		repository.JFrogProjectKey,
 	)
 
 	totalFindings := 0

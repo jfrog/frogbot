@@ -157,6 +157,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		scanDetails.XscVersion,
 		scanDetails.ServerDetails,
 		utils.CreateScanEvent(scanDetails.ServerDetails, scanDetails.XscGitInfoContext, analyticsScanPrScanType),
+		repoConfig.JFrogProjectKey,
 	)
 	defer func() {
 		if issuesCollection != nil {

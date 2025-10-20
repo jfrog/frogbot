@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/v2/testdata"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -780,7 +781,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams, "")
 
 			if !testcase.useProfile {
 				assert.Nil(t, configProfile)
