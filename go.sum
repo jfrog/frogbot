@@ -140,8 +140,8 @@ github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251021143342-49bab7f38cec h1:i
 github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251021143342-49bab7f38cec/go.mod h1:JE/35+kU8cBET4I4iuNcVBvhm8SF64DAmGgtHRzf5Do=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451 h1:Q0PY8VSOVsfvXzKiUnn+Rv7Ynf901QW6Wn1CbWpHBD0=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451/go.mod h1:UOeOwEEmRIi57cRwghN5OBVoqkJieYQQfLpeqw8Yv38=
-github.com/jfrog/jfrog-cli-security v1.21.9-0.20251023133040-b8fc35f15568 h1:r8oS2zGmf4h7zNCEv0SY5stdSHzBq5S9k0s52JqBubg=
-github.com/jfrog/jfrog-cli-security v1.21.9-0.20251023133040-b8fc35f15568/go.mod h1:XoJ6YBf/TrwkqC/r9+x/WKDIwnZogTF6+2wos1PJBUs=
+github.com/jfrog/jfrog-cli-security v1.21.9 h1:QSWADhVE0OYa0SPIc2YhV6QVtuhO6Y+K8rjGHE3MgeY=
+github.com/jfrog/jfrog-cli-security v1.21.9/go.mod h1:XoJ6YBf/TrwkqC/r9+x/WKDIwnZogTF6+2wos1PJBUs=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20251023073119-78f187c9afbf h1:Ld+lGdCauixqWbkwK+wJn3QbPPBRgY35KgY+MxgrgCg=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20251023073119-78f187c9afbf/go.mod h1:jrODQbAbCt97F24d/0bYpqpdc0PFMuBxNJOTfTdW+Fk=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
