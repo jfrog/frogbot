@@ -106,7 +106,7 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	waitForUsageResponse()
 
 	if err != nil && usage.ShouldReportUsage() {
-		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot"); reportError != nil {
+		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repositories[0].JFrogProjectKey); reportError != nil {
 			log.Debug(reportError)
 		}
 	} else {

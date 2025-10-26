@@ -501,7 +501,8 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv)
+	// TODO when deprecating multiple repositories support, pass the correct projectKey from the single repo we have to getConfigProfileIfExistsAndValid
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv, configAggregator[0].JFrogProjectKey)
 	if err != nil {
 		return
 	}
@@ -850,7 +851,7 @@ func readConfigFromTarget(client vcsclient.VcsClient, gitParamsFromEnv *Git) (co
 // If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
 // When a profile is found we verify several conditions on it.
 // If a profile was requested but not found by url nor by name we return an error.
-func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
+func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git, projectKey string) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	var useConfigProfile bool
 	if useConfigProfile, err = getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
 		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
@@ -866,7 +867,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
 		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
-		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, jfrogServer, profileName); err != nil || configProfile == nil {
+		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, jfrogServer, profileName, projectKey); err != nil || configProfile == nil {
 			return
 		}
 		err = verifyConfigProfileValidity(configProfile)
