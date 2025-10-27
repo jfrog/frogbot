@@ -188,7 +188,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetDisableJas(repoConfig.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
 		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
-		SetAllowPartialResults(repoConfig.AllowPartialResults)
+		SetAllowedLicenses(repoConfig.AllowedLicenses)
 	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
 }
 
@@ -278,7 +278,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 
 	// Convert to issues
-	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.AllowedLicenses, workingDirs...); e == nil {
+	if issues, e := scanResultsToIssuesCollection(scanResults, scanDetails.AllowedLicenses, workingDirs...); e == nil {
 		issuesCollection = issues
 		return
 	} else {
@@ -303,7 +303,7 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	if err := sortTargetsByPhysicalLocation(targetResults, sourceResults); err != nil {
 		return err
 	}
-
+	// TODO: implement logic for filtering violations under ScanResults instead of under targetResults/SourceResults
 	for idx := 0; idx < len(sourceResults.Targets); idx++ {
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
@@ -386,7 +386,7 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 		}
 		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
-		if sourceResult.ScaResults.Violations != nil {
+		if sourceResult.Violations != nil {
 			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
 			sourceResult.ScaResults.Violations = nil
 		}
@@ -438,7 +438,6 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
 		HasViolationContext:    scanResults.HasViolationContext(),
-		AllowedLicenses:        allowedLicenses,
 		IncludeLicenses:        true,
 		SimplifiedOutput:       true,
 	}).ConvertToSimpleJson(scanResults)
