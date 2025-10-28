@@ -1,0 +1,171 @@
+name: Release Frogbot
+
+on:
+  release:
+    types: [published]
+
+# Required permissions
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: Release Frogbot v3
+    runs-on: frogbot-release
+
+    # Only run for v3.x.x releases
+    if: startsWith(github.event.release.tag_name, 'v3.')
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Download JFrog CLI
+        run: |
+          curl -fL https://install-cli.jfrog.io | sh
+          chmod +x jf
+          sudo mv jf /usr/local/bin/
+
+      - name: Configure JFrog CLI
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_USER: ${{ secrets.JF_USER }}
+          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+        run: |
+          jf c rm --quiet || true
+          jf c add internal --url="$JF_URL" --user="$JF_USER" --password="$JF_PASSWORD"
+          jf goc --repo-resolve ecosys-go-virtual
+
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Run JFrog Audit (blocking)
+        run: jf audit --fail=true
+
+      - name: Set up Node.js for Action
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: action/package-lock.json
+
+      - name: Build GitHub Action
+        working-directory: action
+        run: |
+          npm ci --ignore-scripts
+          npm run compile
+          npm run format-check
+          npm test
+
+      - name: Commit and update tag with compiled action
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add action/lib/
+          
+          # Only commit and update tag if there are changes
+          if ! git diff --staged --quiet; then
+            echo "Action files changed, updating tag..."
+            git commit -m "Build action for ${{ steps.version.outputs.tag }}"
+            
+            # Update the release tag to point to the new commit
+            git tag -f ${{ steps.version.outputs.tag }}
+            git push origin ${{ steps.version.outputs.tag }} --force
+            
+            echo "Tag updated with compiled action"
+          else
+            echo "No changes to action files"
+          fi
+
+      - name: Update GitHub Action major version tag (v3)
+        run: |
+          # Update v3 tag to point to the latest v3.x.x release
+          git tag -f v3
+          git push origin v3 --force
+          echo "Updated v3 tag to ${{ steps.version.outputs.tag }}"
+
+      - name: Build and upload binaries
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+          JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
+          JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
+          JFROG_CLI_BUILD_PROJECT: ecosys
+        run: |
+          env -i PATH=$PATH HOME=$HOME \
+            JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
+            JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
+            JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
+            release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
+
+      - name: Publish build info
+        env:
+          JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
+          JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
+          JFROG_CLI_BUILD_PROJECT: ecosys
+        run: |
+          jf rt bag
+          jf rt bce
+          jf rt bp
+
+      - name: Create and distribute release bundle
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          jf ds rbc ecosystem-frogbot $VERSION \
+            --spec="release/specs/frogbot-rbc-spec.json" \
+            --spec-vars="VERSION=$VERSION" \
+            --sign
+          jf ds rbd ecosystem-frogbot $VERSION \
+            --site="releases.jfrog.io" \
+            --sync
+
+      - name: Cleanup JFrog config
+        if: always()
+        run: jf c rm --quiet || true
+
+      # On failure: delete release and tag
+      - name: Delete release on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release_id = context.payload.release.id;
+            const tag = context.payload.release.tag_name;
+            
+            console.log(`Deleting release ${release_id} and tag ${tag}`);
+            
+            // Delete the release
+            await github.rest.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release_id
+            });
+            
+            // Delete the tag
+            await github.rest.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `tags/${tag}`
+            });
+            
+            console.log('Release and tag deleted successfully');
+
