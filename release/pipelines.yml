@@ -1,0 +1,89 @@
+resources:
+  - name: frogbotGit
+    type: GitRepo
+    configuration:
+      path: jfrog/frogbot
+      branches:
+        include: dev
+      gitProvider: il_automation
+
+pipelines:
+  - name: release_frogbot
+    configuration:
+      runtime:
+        type: image
+        image:
+          custom:
+            name: releases-docker.jfrog.io/jfrog-ecosystem-integration-env
+            tag: latest
+      environmentVariables:
+        readOnly:
+          NEXT_VERSION: 0.0.0
+
+    steps:
+      - name: Release
+        type: Bash
+        configuration:
+          inputResources:
+            - name: frogbotGit
+              trigger: false
+          integrations:
+            - name: il_automation
+            - name: ecosys_entplus_deployer
+        execution:
+          onExecute:
+            - cd $res_frogbotGit_resourcePath
+
+            # Set env
+            - export CI=true
+            - export JFROG_CLI_BUILD_NAME=ecosystem-frogbotGit-release
+            - export JFROG_CLI_BUILD_NUMBER=$run_number
+            - export JFROG_CLI_BUILD_PROJECT=ecosys
+
+            # Make sure version provided
+            - echo "Checking variables"
+            - test -n "$NEXT_VERSION" -a "$NEXT_VERSION" != "0.0.0"
+
+            # Configure Git and merge from the dev
+            - git checkout master
+            - git remote set-url origin https://$int_il_automation_token@github.com/jfrog/frogbot.git
+            - git merge origin/dev
+            - git tag v${NEXT_VERSION}
+
+            # Download JFrog CLI
+            - curl -fL https://install-cli.jfrog.io | sh
+            - jf c rm --quiet
+            - jf c add internal --url=$int_ecosys_entplus_deployer_url --user=$int_ecosys_entplus_deployer_user --password=$int_ecosys_entplus_deployer_apikey
+            - jf goc --repo-resolve ecosys-go-virtual
+
+            # Generate mocks
+            - go generate ./...
+
+            # Audit
+            - jf audit --fail=false
+
+            # Build and upload
+            - >
+              env -i PATH=$PATH HOME=$HOME 
+              JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME 
+              JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER 
+              JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT 
+              release/buildAndUpload.sh "$NEXT_VERSION"
+            - jf rt bag && jf rt bce
+            - jf rt bp
+
+            # Distribute release bundle
+            - jf ds rbc ecosystem-frogbot $NEXT_VERSION --spec="release/specs/frogbot-rbc-spec.json" --spec-vars="VERSION=$NEXT_VERSION" --sign
+            - jf ds rbd ecosystem-frogbot $NEXT_VERSION --site="releases.jfrog.io" --sync
+
+            # Push to master
+            - git clean -fd
+            - git push
+            - git push --tags
+
+            # Merge changes to dev
+            - git checkout dev
+            - git merge origin/master
+            - git push
+          onComplete:
+            - jf c rm --quiet
