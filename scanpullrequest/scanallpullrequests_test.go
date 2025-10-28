@@ -101,7 +101,6 @@ func TestShouldNotScanPullRequestError(t *testing.T) {
 	assert.False(t, shouldScan)
 }
 
-// TODO eran this test is failing
 func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 	server, restoreEnv := utils.VerifyEnv(t)
 	defer restoreEnv()
@@ -162,7 +161,7 @@ func TestScanAllPullRequestsMultiRepo(t *testing.T) {
 		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, outputwriter.TestSummaryCommentDir, true, false)
 		assert.Equal(t, expectedMessage, frogbotMessages[1])
 		expectedMessage = outputwriter.GetOutputFromFile(t, filepath.Join(allPrIntegrationPath, "test_proj_pip_with_vulnerability.md"))
-		assert.Equal(t, expectedMessage, frogbotMessages[2]) // TODO eran: the test fails here - edit the comparison md file
+		assert.Equal(t, expectedMessage, frogbotMessages[2])
 		expectedMessage = outputwriter.GetPRSummaryContentNoIssues(t, outputwriter.TestSummaryCommentDir, true, false)
 		assert.Equal(t, expectedMessage, frogbotMessages[3])
 	}
