@@ -182,6 +182,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetDiffMode(sc.diffScan).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
+		SetThreads(MaxConcurrentScanners).
 		SetStartTime(sc.StartTime)
 
 	return audit.RunAudit(auditParams)
