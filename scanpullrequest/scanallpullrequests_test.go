@@ -3,10 +3,11 @@ package scanpullrequest
 import (
 	"context"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 
 	"github.com/golang/mock/gomock"
 	biutils "github.com/jfrog/build-info-go/utils"
