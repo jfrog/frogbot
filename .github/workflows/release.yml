@@ -57,6 +57,9 @@ jobs:
         run: go generate ./...
 
       - name: Run JFrog Audit (blocking)
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
         run: jf audit --fail=true
 
       - name: Set up Node.js for Action
@@ -112,6 +115,7 @@ jobs:
             JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
             JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
             JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
+            CI=true \
             release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
 
       - name: Publish build info
