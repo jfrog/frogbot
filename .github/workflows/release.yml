@@ -42,8 +42,7 @@ jobs:
       - name: Download JFrog CLI
         run: |
           curl -fL https://install-cli.jfrog.io | sh
-          chmod +x jf
-          sudo mv jf /usr/local/bin/
+          # The install script already moves jf to /usr/local/bin/
 
       - name: Configure JFrog CLI
         env:
