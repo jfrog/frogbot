@@ -12,7 +12,7 @@ permissions:
 jobs:
   release:
     name: Release Frogbot v3
-    runs-on: frogbot-release
+    runs-on: ubuntu-latest
 
     # Only run for v3.x.x releases
     if: startsWith(github.event.release.tag_name, 'v3.')
