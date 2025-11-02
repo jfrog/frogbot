@@ -47,11 +47,10 @@ jobs:
       - name: Configure JFrog CLI
         env:
           JF_URL: ${{ secrets.JF_URL }}
-          JF_USER: ${{ secrets.JF_USER }}
-          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
         run: |
           jf c rm --quiet || true
-          jf c add internal --url="$JF_URL" --user="$JF_USER" --password="$JF_PASSWORD"
+          jf c add internal --url="$JF_URL" --access-token="$JF_ACCESS_TOKEN"
           jf goc --repo-resolve ecosys-go-virtual
 
       - name: Generate mocks
