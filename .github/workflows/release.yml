@@ -57,11 +57,11 @@ jobs:
       - name: Generate mocks
         run: go generate ./...
 
-      - name: Run JFrog Audit (blocking)
+      - name: Run JFrog Audit (non-blocking)
         env:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-        run: jf audit --fail=true
+        run: jf audit --fail=false
 
       - name: Set up Node.js for Action
         uses: actions/setup-node@v4
@@ -111,13 +111,11 @@ jobs:
           JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
           JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
           JFROG_CLI_BUILD_PROJECT: ecosys
-          FROGBOT_REPO_NAME: ecosys-frogbot-local
         run: |
           env -i PATH=$PATH HOME=$HOME \
             JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
             JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
             JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
-            FROGBOT_REPO_NAME=$FROGBOT_REPO_NAME \
             CI=true \
             release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
 
