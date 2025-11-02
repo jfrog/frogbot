@@ -51,7 +51,8 @@ jobs:
         run: |
           jf c rm --quiet || true
           jf c add internal --url="$JF_URL" --access-token="$JF_ACCESS_TOKEN"
-          jf goc --repo-resolve ecosys-go-virtual
+          # Skip Go config - not needed for fork testing
+          # jf goc --repo-resolve ecosys-go-virtual
 
       - name: Generate mocks
         run: go generate ./...
@@ -110,11 +111,13 @@ jobs:
           JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
           JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
           JFROG_CLI_BUILD_PROJECT: ecosys
+          FROGBOT_REPO_NAME: ecosys-frogbot-local
         run: |
           env -i PATH=$PATH HOME=$HOME \
             JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
             JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
             JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
+            FROGBOT_REPO_NAME=$FROGBOT_REPO_NAME \
             CI=true \
             release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
 
