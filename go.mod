@@ -129,7 +129,7 @@ require (
 replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
 
 // attiasas:static_sca_violations_remediations
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251026135935-b4e081d94d08
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251028152357-285467224e44
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -138,6 +138,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:xray_get_violations_api
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20251027090931-b9b0c925413b
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20251028133353-95637c9fb471
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master

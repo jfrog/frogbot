@@ -14,6 +14,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
@@ -305,10 +306,12 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	}
 	// TODO: implement logic for filtering violations under ScanResults instead of under targetResults/SourceResults
 	for idx := 0; idx < len(sourceResults.Targets); idx++ {
+		//targetViolations := targetResults.Violations TOdo: do we need it?
+		sourceViolations := sourceResults.Violations
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
 
-		filterOutScaResultsIfScanFailed(targetResult, sourceResult)
+		filterOutScaResultsIfScanFailed(targetResult, sourceResult, &sourceViolations)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Applicability)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Secrets)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.IaC)
@@ -372,7 +375,7 @@ func isJasScanFailedInSourceOrTarget(sourceResults, targetResults []results.Scan
 	return false
 }
 
-func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults) {
+func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, sourceViolations *results.ScanResult[violationutils.Violations]) {
 	// Filter out new Sca results
 	if sourceResult.ScaResults.ScanStatusCode != 0 || targetResult.ScaResults.ScanStatusCode != 0 {
 		var statusCode int
@@ -386,9 +389,9 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 		}
 		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
-		if sourceResult.Violations != nil {
+		if sourceViolations != nil {
 			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
-			sourceResult.ScaResults.Violations = nil
+			sourceViolations = nil
 		}
 	}
 
