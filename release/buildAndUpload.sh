@@ -55,7 +55,11 @@ verifyVersionMatching () {
 }
 
 version="$1"
-pkgPath="ecosys-frogbot/v2"
+# Extract major version (e.g., "3.1.1" -> "3")
+majorVersion="${version%%.*}"
+# Allow overriding repository name via environment variable
+repoName="${FROGBOT_REPO_NAME:-ecosys-frogbot}"
+pkgPath="${repoName}/v${majorVersion}"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
