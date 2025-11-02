@@ -51,8 +51,7 @@ jobs:
         run: |
           jf c rm --quiet || true
           jf c add internal --url="$JF_URL" --access-token="$JF_ACCESS_TOKEN"
-          # Use a generic virtual repo for Go dependencies (or skip if not available)
-          jf goc --repo-resolve=jfrog-go || echo "Warning: Could not configure Go resolver, continuing anyway"
+          jf goc --repo-resolve ecosys-go-virtual
 
       - name: Generate mocks
         run: go generate ./...
