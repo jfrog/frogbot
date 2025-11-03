@@ -52,7 +52,6 @@ const (
 )
 
 var (
-	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )

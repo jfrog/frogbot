@@ -188,14 +188,6 @@ func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
 	mo.descriptionSizeLimit = client.GetPullRequestDetailsSizeLimit()
 }
 
-func GetMarkdownSizeLimit(client vcsclient.VcsClient) int {
-	limit := client.GetPullRequestCommentSizeLimit()
-	if client.GetPullRequestDetailsSizeLimit() < limit {
-		limit = client.GetPullRequestDetailsSizeLimit()
-	}
-	return limit
-}
-
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
