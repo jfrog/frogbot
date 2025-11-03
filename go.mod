@@ -2,18 +2,20 @@ module github.com/jfrog/frogbot/v2
 
 go 1.24.6
 
+replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v0.9.2
+
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.12.0
+	github.com/jfrog/build-info-go v1.12.1
 	github.com/jfrog/froggit-go v1.20.4
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251021143342-49bab7f38cec
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
 	github.com/jfrog/jfrog-cli-security v1.21.9
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251023073119-78f187c9afbf
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251030113529-d87ecf28ffb6
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -129,7 +131,7 @@ require (
 replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
 
 // attiasas:static_sca_violations_remediations
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251028152357-285467224e44
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251103075823-6b36e2e68466
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

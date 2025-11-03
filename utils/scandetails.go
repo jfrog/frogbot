@@ -181,7 +181,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
-		SetUploadCdxResults(true).
+		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
 		SetRtResultRepository(docs.UploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
@@ -193,7 +193,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetMultiScanId(sc.MultiScanId).
 		SetStartTime(sc.StartTime).
 		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).
-		SetAllowedLicenses(sc.AllowedLicenses)
+		SetAllowedLicenses(sc.AllowedLicenses).
+		SetCustomAnalyzerManagerBinaryPath("C:\\Users\\Keren Reshef\\.jfrog\\dependencies\\analyzerManager\\analyzerManager.exe") //TODO: remove after testing
 
 	return audit.RunAudit(auditParams)
 }
