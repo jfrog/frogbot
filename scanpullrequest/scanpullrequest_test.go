@@ -346,9 +346,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath st
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	configData, err := utils.ReadConfigFromFileSystem(configPath)
-	assert.NoError(t, err)
-	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
+	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
 	return configAggregator, client

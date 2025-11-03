@@ -95,8 +95,7 @@ pipelines:
             # JF_AVOID_EXTRA_MESSAGES: "TRUE"
 
             ###########################################################################
-            ##   If your project uses a 'frogbot-config.yml' file, you should define ##
-            ##   the following variables inside the file, instead of here.           ##
+            ##   All configuration is now done via environment variables             ##
             ###########################################################################
 
             # [Mandatory]
@@ -113,8 +112,7 @@ pipelines:
 
             # [Optional]
             # Frogbot will download the project dependencies if they're not cached locally. To download the
-            # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
-            # need to set this value, if it is set in the frogbot-config.yml file.
+            # dependencies from a virtual repository in Artifactory, set the name of the repository.
             # JF_DEPS_REPO: ""
 
             # [Optional, default: "."]

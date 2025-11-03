@@ -24,8 +24,8 @@ import (
 
 const (
 	SecurityIssueFoundErr = "issues were detected by Frogbot\n" +
-		"You can avoid marking the Frogbot scan as failed by setting failOnSecurityIssues to false in the " + utils.FrogbotConfigFile + " file or by setting the " + utils.FailOnSecurityIssuesEnv + " environment variable to false\n" +
-		"Note that even if failOnSecurityIssues/" + utils.FailOnSecurityIssuesEnv + " are set to false, but a security violation with 'fail-pull-request' rule is found, Frogbot scan will fail as well"
+		"You can avoid marking the Frogbot scan as failed by setting the " + utils.FailOnSecurityIssuesEnv + " environment variable to false\n" +
+		"Note that even if " + utils.FailOnSecurityIssuesEnv + " is set to false, but a security violation with 'fail-pull-request' rule is found, Frogbot scan will fail as well"
 	noGitHubEnvErr                       = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr              = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	analyticsScanPrScanType              = "PR"

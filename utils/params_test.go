@@ -184,9 +184,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
 	assert.NoError(t, err)
-	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
-	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	for _, repo := range configAggregator {
 		for projectI, project := range repo.Projects {
@@ -231,9 +229,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
 	assert.NoError(t, err)
-	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
-	assert.NoError(t, err)
-	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configFileContent, gitParams, server, ScanRepository)
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, gitParams, server, ScanRepository)
 	assert.NoError(t, err)
 	assert.Len(t, configAggregator, 1)
 	assert.Equal(t, frogbotAuthorEmail, configAggregator[0].EmailAuthor)
@@ -267,7 +263,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs(commandName)
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, gitParams, server, commandName)
+	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -383,12 +379,12 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	repo := repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
 
-	repoAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, &gitParams, &server, ScanPullRequest)
+	repoAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	repo = repoAggregator[0]
 	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
@@ -473,38 +469,6 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.False(t, project.IsRecursiveScan)
 }
 
-func TestFrogbotConfigAggregator_unmarshalFrogbotConfigYaml(t *testing.T) {
-	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-unmarshal.yml")
-	fileContent, err := os.ReadFile(testFilePath)
-	assert.NoError(t, err)
-	configAggregator, err := unmarshalFrogbotConfigYaml(fileContent)
-	assert.NoError(t, err)
-	firstRepo := configAggregator[0]
-	assert.Equal(t, "npm-repo", firstRepo.RepoName)
-	assert.Equal(t, "myemail@jfrog.com", firstRepo.EmailAuthor)
-	assert.ElementsMatch(t, []string{"master", "main"}, firstRepo.Branches)
-	assert.False(t, *firstRepo.FailOnSecurityIssues)
-	firstRepoProject := firstRepo.Projects[0]
-	assert.Equal(t, "nuget restore", firstRepoProject.InstallCommand)
-	assert.False(t, *firstRepoProject.UseWrapper)
-	assert.Equal(t, "test-repo", firstRepoProject.DepsRepo)
-	secondRepo := configAggregator[1]
-	assert.Equal(t, "mvn-repo", secondRepo.RepoName)
-	assert.Equal(t, []string{"dev"}, secondRepo.Branches)
-	assert.False(t, secondRepo.AvoidPreviousPrCommentsDeletion)
-	thirdRepo := configAggregator[2]
-	assert.Equal(t, "pip-repo", thirdRepo.RepoName)
-	assert.Equal(t, []string{"test"}, thirdRepo.Branches)
-	assert.True(t, *thirdRepo.FailOnSecurityIssues)
-	assert.False(t, thirdRepo.IncludeAllVulnerabilities)
-	assert.True(t, thirdRepo.AvoidPreviousPrCommentsDeletion)
-	thirdRepoProject := thirdRepo.Projects[0]
-	assert.Equal(t, "requirements.txt", thirdRepoProject.PipRequirementsFile)
-	assert.ElementsMatch(t, []string{"a/b", "b/c"}, thirdRepoProject.WorkingDirs)
-	assert.ElementsMatch(t, []string{"watch-1", "watch-2"}, thirdRepo.Watches)
-	assert.Equal(t, "proj", thirdRepo.JFrogProjectKey)
-}
-
 func TestVerifyValidApiEndpoint(t *testing.T) {
 	testsCases := []struct {
 		endpointUrl   string
@@ -540,9 +504,6 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		jfrogWatchesEnv:              "watch-1,watch-2",
 		GitPullRequestIDEnv:          "0",
 	})
-	testFilePath := filepath.Join("..", "testdata", "config", "frogbot-config-test-params-merge.yml")
-	fileContent, err := os.ReadFile(testFilePath)
-	assert.NoError(t, err)
 	gitParams := &Git{
 		GitProvider: vcsutils.GitHub,
 		VcsInfo: vcsclient.VcsInfo{
@@ -559,7 +520,7 @@ func TestBuildMergedRepoAggregator(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, fileContent, gitParams, &server, ScanRepository)
+	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 
 	repo := repoAggregator[0]

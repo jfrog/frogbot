@@ -95,8 +95,7 @@ pipelines:
             # JF_AVOID_EXTRA_MESSAGES: "TRUE"
 
             ###########################################################################
-            ##   If your project uses a 'frogbot-config.yml' file, you should define ##
-            ##   the following variables inside the file, instead of here.           ##
+            ##   All configuration is now done via environment variables             ##
             ###########################################################################
 
             # [Mandatory]
@@ -109,7 +108,7 @@ pipelines:
 
             # [Mandatory if the two conditions below are met]
             # 1. The project uses yarn 2, NuGet or .NET Core to download its dependencies
-            # 2. The `installCommand` variable isn't set in your frogbot-config.yml file.
+            # 2. The `installCommand` variable isn't set via the JF_INSTALL_DEPS_CMD environment variable.
             #
             # The command that installs the project dependencies (e.g "nuget restore")
             # JF_INSTALL_DEPS_CMD: ""
@@ -144,8 +143,7 @@ pipelines:
 
             # [Optional]
             # Frogbot will download the project dependencies if they're not cached locally. To download the
-            # dependencies from a virtual repository in Artifactory, set the name of the repository. There's no
-            # need to set this value, if it is set in the frogbot-config.yml file.
+            # dependencies from a virtual repository in Artifactory, set the name of the repository.
             # JF_DEPS_REPO: ""
 
             # [Optional, default: "."]
