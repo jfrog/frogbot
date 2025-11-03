@@ -37,6 +37,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
+
 var gitParams = &utils.Repository{
 	OutputWriter: &outputwriter.SimplifiedOutput{},
 	Params: utils.Params{
