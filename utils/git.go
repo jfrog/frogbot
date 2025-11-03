@@ -182,39 +182,6 @@ func (gm *GitManager) Fetch() error {
 	return nil
 }
 
-func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
-	// Get the commit of the base branch
-	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, baseBranch)))
-	if err != nil {
-		return "", err
-	}
-	baseCommit, err := gm.localGitRepository.CommitObject(*baseCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the HEAD commit of the target branch
-	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, targetBranch)))
-	if err != nil {
-		return "", err
-	}
-	headCommit, err := gm.localGitRepository.CommitObject(*headCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the most common ancestor
-	log.Debug(fmt.Sprintf("Finding common ancestor between %s and %s...", baseBranch, targetBranch))
-	ancestorCommit, err := baseCommit.MergeBase(headCommit)
-	if err != nil {
-		return "", err
-	}
-	if len(ancestorCommit) == 0 {
-		return "", fmt.Errorf("no common ancestor found for %s and %s", baseBranch, targetBranch)
-	} else if len(ancestorCommit) > 1 {
-		return "", fmt.Errorf("more than one common ancestor found for %s and %s", baseBranch, targetBranch)
-	}
-	return ancestorCommit[0].Hash.String(), nil
-}
-
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	if gm.dryRun {
 		// "Clone" the repository from the testdata folder
