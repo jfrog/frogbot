@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check Target Branch
         run: |
-          if [ "${{ github.base_ref }}" != "dev" ]; then
+          if [ "${{ github.base_ref }}" != "dev" || "${{ github.base_ref }}" != "v3_er" ]; then
             echo "Pull requests must target the 'dev' branch."
             exit 1
           fi
