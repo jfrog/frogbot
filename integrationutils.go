@@ -76,18 +76,19 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv:      "requirements.txt",
-		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
-		utils.GitProvider:              testDetails.GitProvider,
-		utils.GitTokenEnv:              testDetails.GitToken,
-		utils.GitRepoEnv:               testDetails.RepoName,
-		utils.GitRepoOwnerEnv:          testDetails.RepoOwner,
-		utils.BranchNameTemplateEnv:    testDetails.CustomBranchName,
-		utils.GitApiEndpointEnv:        testDetails.ApiEndpoint,
-		utils.GitProjectEnv:            testDetails.GitProject,
-		utils.GitUsernameEnv:           testDetails.GitUsername,
-		utils.GitBaseBranchEnv:         mainBranch,
-		utils.GitUseLocalRepositoryEnv: fmt.Sprintf("%t", testDetails.UseLocalRepo),
+		utils.RequirementsFileEnv:       "requirements.txt",
+		utils.GitPullRequestIDEnv:       testDetails.PullRequestID,
+		utils.GitProvider:               testDetails.GitProvider,
+		utils.GitTokenEnv:               testDetails.GitToken,
+		utils.GitRepoEnv:                testDetails.RepoName,
+		utils.GitRepoOwnerEnv:           testDetails.RepoOwner,
+		utils.BranchNameTemplateEnv:     testDetails.CustomBranchName,
+		utils.GitApiEndpointEnv:         testDetails.ApiEndpoint,
+		utils.GitProjectEnv:             testDetails.GitProject,
+		utils.GitUsernameEnv:            testDetails.GitUsername,
+		utils.GitBaseBranchEnv:          mainBranch,
+		utils.GitUseLocalRepositoryEnv:  fmt.Sprintf("%t", testDetails.UseLocalRepo),
+		utils.IncludeVulnerabilitiesEnv: "TRUE",
 	})
 	return func() {
 		envRestoreFunc()
