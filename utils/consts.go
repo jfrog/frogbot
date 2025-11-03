@@ -42,10 +42,9 @@ const (
 	GitRepoOwnerEnv                  = "JF_GIT_OWNER"
 	GitRepoEnv                       = "JF_GIT_REPO"
 	GitProjectEnv                    = "JF_GIT_PROJECT"
-	GitUsernameEnv                   = "JF_GIT_USERNAME"
-	GitUseLocalRepositoryEnv         = "JF_USE_LOCAL_REPOSITORY"
-	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
-	GitDependencyGraphSubmissionEnv  = "JF_UPLOAD_SBOM_TO_VCS"
+	GitUsernameEnv                  = "JF_GIT_USERNAME"
+	GitUseLocalRepositoryEnv        = "JF_USE_LOCAL_REPOSITORY"
+	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
 
 	// Git naming template environment variables
 	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
