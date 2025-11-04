@@ -445,14 +445,8 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 	if writer.IsShowingCaColumn() {
 		columns = append(columns, "Contextual Analysis")
 	}
-	columns = append(columns, "Direct Dependencies", "Impacted Dependency", "Fixed Versions")
+	columns = append(columns, "Dependency Path")
 	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
-	if _, ok := writer.(*SimplifiedOutput); ok {
-		// The values in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
-		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
-		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
-		table.GetColumnInfo("Direct Dependencies").ColumnType = MultiRowColumn
-	}
 	// Construct rows
 	for _, vulnerability := range vulnerabilities {
 		row := []CellData{{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable)}, getCveIdsCellData(vulnerability.Cves, vulnerability.IssueId)}
@@ -460,9 +454,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 			row = append(row, NewCellData(vulnerability.Applicable))
 		}
 		row = append(row,
-			getDirectDependenciesCellData(vulnerability.Components),
-			NewCellData(fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)),
-			NewCellData(vulnerability.FixedVersions...),
+			getDependencyPathCellData(vulnerability.ImpactPaths, writer),
 		)
 		table.AddRowWithCellData(row...)
 	}
@@ -596,6 +588,81 @@ func getCveIdsCellData(cveRows []formats.CveRow, issueId string) (ids CellData) 
 	return
 }
 
+// getDependencyPathCellData extracts and formats direct and transitive dependencies from ImpactPaths as collapsible sections
+func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer OutputWriter) CellData {
+	if len(impactPaths) == 0 {
+		return NewCellData()
+	}
+
+	// Use maps with string keys to track unique dependencies
+	directDeps := make(map[string]formats.ComponentRow)     // key: "name:version"
+	transitiveDeps := make(map[string]formats.ComponentRow) // key: "name:version"
+
+	// Extract dependencies from all impact paths
+	for _, path := range impactPaths {
+		if len(path) < 2 {
+			continue
+		}
+		// First element is always a direct dependency
+		first := path[0]
+		key := fmt.Sprintf("%s:%s", first.Name, first.Version)
+		directDeps[key] = first
+
+		// Elements between first and last are transitive dependencies
+		// Last element is the impacted dependency, which we don't include
+		for i := 1; i < len(path)-1; i++ {
+			component := path[i]
+			key := fmt.Sprintf("%s:%s", component.Name, component.Version)
+			transitiveDeps[key] = component
+		}
+	}
+
+	// Build the formatted string with collapsible sections for direct and transitive dependencies
+	var parts []string
+
+	// Add direct dependencies section as collapsible (closed by default)
+	if len(directDeps) > 0 {
+		directList := make([]string, 0, len(directDeps))
+		for _, dep := range directDeps {
+			directList = append(directList, results.GetDependencyId(dep.Name, dep.Version))
+		}
+		// Sort for consistent output
+		sort.Strings(directList)
+		directCount := len(directList)
+		directContent := strings.Join(directList, "<br>  • ")
+		// No symbol in summary - just the count
+		// Add non-breaking space to maintain minimum width when collapsed
+		directSummary := fmt.Sprintf("%d Direct&nbsp;", directCount)
+		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf("<br>  • %s<br>", directContent))
+		parts = append(parts, directSection)
+	}
+
+	// Add transitive dependencies section as collapsible (closed by default)
+	if len(transitiveDeps) > 0 {
+		transitiveList := make([]string, 0, len(transitiveDeps))
+		for _, dep := range transitiveDeps {
+			transitiveList = append(transitiveList, results.GetDependencyId(dep.Name, dep.Version))
+		}
+		// Sort for consistent output
+		sort.Strings(transitiveList)
+		transitiveCount := len(transitiveList)
+		transitiveContent := strings.Join(transitiveList, "<br>  • ")
+		// No symbol in summary - just the count
+		// Add non-breaking space to maintain minimum width when collapsed
+		transitiveSummary := fmt.Sprintf("%d Transitive&nbsp;", transitiveCount)
+		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, fmt.Sprintf("<br>  • %s<br>", transitiveContent))
+		parts = append(parts, transitiveSection)
+	}
+
+	if len(parts) == 0 {
+		return NewCellData()
+	}
+
+	// Join with double line breaks for better readability in table cells
+	content := strings.Join(parts, "<br><br>")
+	return NewCellData(content)
+}
+
 func getScaSecurityIssueDetailsContent(issues []formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content []string) {
 	issuesWithDetails := getIssuesWithDetails(issues)
 	if len(issuesWithDetails) == 0 {
@@ -643,16 +710,82 @@ func getComponentIssueIdentifier(key, compName, version, watch string) (id strin
 	return strings.Join(parts, " ")
 }
 
+// getPackageDetailsContent formats package details showing each dependency with (D) or (T), Fix Version, and Dependency Path
+func getPackageDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersions []string, writer OutputWriter) string {
+	if len(impactPaths) == 0 {
+		return ""
+	}
+
+	// Use maps with string keys to track unique dependencies and their types
+	type packageInfo struct {
+		component formats.ComponentRow
+		isDirect  bool
+	}
+	packages := make(map[string]packageInfo) // key: "name:version"
+
+	// Extract dependencies from all impact paths
+	for _, path := range impactPaths {
+		if len(path) < 2 {
+			continue
+		}
+		// First element is always a direct dependency
+		first := path[0]
+		key := fmt.Sprintf("%s:%s", first.Name, first.Version)
+		packages[key] = packageInfo{component: first, isDirect: true}
+
+		// Elements between first and last are transitive dependencies
+		// Last element is the impacted dependency, which we don't include
+		for i := 1; i < len(path)-1; i++ {
+			component := path[i]
+			key := fmt.Sprintf("%s:%s", component.Name, component.Version)
+			packages[key] = packageInfo{component: component, isDirect: false}
+		}
+	}
+
+	if len(packages) == 0 {
+		return ""
+	}
+
+	// Build package details list as collapsible sections (closed by default)
+	var packageEntries []string
+	for _, pkgInfo := range packages {
+		depType := "(T)" // Transitive
+		pathType := "Transitive"
+		if pkgInfo.isDirect {
+			depType = "(D)" // Direct
+			pathType = "Direct"
+		}
+
+		// Format: "packageName: version (D)" or "packageName: version (T)" - no symbol in summary
+		packageSummary := fmt.Sprintf("%s: %s %s", pkgInfo.component.Name, pkgInfo.component.Version, depType)
+
+		// Build content for the collapsible section - Fix Version and Dependency Path inside
+		var packageContentParts []string
+		// Add Fix Version if available
+		if len(fixedVersions) > 0 {
+			packageContentParts = append(packageContentParts, fmt.Sprintf("Fix Version: %s", fixedVersions[0]))
+		}
+		// Add Dependency Path
+		packageContentParts = append(packageContentParts, fmt.Sprintf("Dependency Path: %s", pathType))
+
+		// Join with <br> for proper HTML formatting
+		packageContent := strings.Join(packageContentParts, "<br>")
+
+		// Create collapsible section (closed by default) - content will appear when expanded
+		packageEntry := writer.MarkAsDetails(packageSummary, 0, packageContent)
+		packageEntries = append(packageEntries, packageEntry)
+	}
+
+	// Sort for consistent output
+	sort.Strings(packageEntries)
+	return strings.Join(packageEntries, "<br><br>")
+}
+
 func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content string) {
 	var contentBuilder strings.Builder
 	// Title
-	WriteNewLine(&contentBuilder)
-	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
+	contentBuilder.WriteString(writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
 	// Details Table
-	directComponent := []string{}
-	for _, component := range issue.ImpactedDependencyDetails.Components {
-		directComponent = append(directComponent, results.GetDependencyId(component.Name, component.Version))
-	}
 	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(issue.Policies...))
@@ -667,16 +800,20 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	if issue.Applicable != "" {
 		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), issue.Applicable)
 	}
-	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
-	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion))
-	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Fixed Versions:")), NewCellData(issue.FixedVersions...))
 
 	cvss := []string{}
 	for _, cve := range issue.Cves {
 		cvss = append(cvss, cve.CvssV3)
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CVSS V3:")), NewCellData(cvss...))
-	WriteContent(&contentBuilder, noHeaderTable.Build())
+
+	// Add Package Details row
+	packageDetails := getPackageDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer)
+	if packageDetails != "" {
+		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Package Details:")), NewCellData(packageDetails))
+	}
+
+	contentBuilder.WriteString(noHeaderTable.Build())
 
 	// Summary
 	summary := issue.Summary
