@@ -17,7 +17,12 @@ describe('Frogbot Action Tests', () => {
     describe('Frogbot URL Tests', () => {
         const myOs: jest.Mocked<typeof os> = os as any;
         let cases: string[][] = [
-            ['win32' as NodeJS.Platform, 'amd64', 'jfrog.exe', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-windows-amd64/jfrog.exe',],
+            [
+                'win32' as NodeJS.Platform,
+                'amd64',
+                'jfrog.exe',
+                'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-windows-amd64/jfrog.exe',
+            ],
             ['darwin' as NodeJS.Platform, 'amd64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-mac-386/jfrog'],
             ['darwin' as NodeJS.Platform, 'arm64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-mac-arm64/jfrog'],
             ['linux' as NodeJS.Platform, 'amd64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-amd64/jfrog'],
