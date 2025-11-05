@@ -629,11 +629,11 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		// Sort for consistent output
 		sort.Strings(directList)
 		directCount := len(directList)
-		directContent := strings.Join(directList, "<br>  • ")
+		directContent := strings.Join(directList, "<br> ")
 		// No symbol in summary - just the count
 		// Add non-breaking space to maintain minimum width when collapsed
 		directSummary := fmt.Sprintf("%d Direct&nbsp;", directCount)
-		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf("<br>  • %s<br>", directContent))
+		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf("<br> %s<br>", directContent))
 		parts = append(parts, directSection)
 	}
 
@@ -658,8 +658,7 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		return NewCellData()
 	}
 
-	// Join with double line breaks for better readability in table cells
-	content := strings.Join(parts, "<br><br>")
+	content := strings.Join(parts, "<br>")
 	return NewCellData(content)
 }
 
@@ -710,8 +709,7 @@ func getComponentIssueIdentifier(key, compName, version, watch string) (id strin
 	return strings.Join(parts, " ")
 }
 
-// getPackageDetailsContent formats package details showing each dependency with (D) or (T), Fix Version, and Dependency Path
-func getPackageDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersions []string, writer OutputWriter) string {
+func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersions []string, writer OutputWriter) string {
 	if len(impactPaths) == 0 {
 		return ""
 	}
@@ -750,10 +748,8 @@ func getPackageDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersion
 	var packageEntries []string
 	for _, pkgInfo := range packages {
 		depType := "(T)" // Transitive
-		pathType := "Transitive"
 		if pkgInfo.isDirect {
 			depType = "(D)" // Direct
-			pathType = "Direct"
 		}
 
 		// Format: "packageName: version (D)" or "packageName: version (T)" - no symbol in summary
@@ -765,9 +761,6 @@ func getPackageDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersion
 		if len(fixedVersions) > 0 {
 			packageContentParts = append(packageContentParts, fmt.Sprintf("Fix Version: %s", fixedVersions[0]))
 		}
-		// Add Dependency Path
-		packageContentParts = append(packageContentParts, fmt.Sprintf("Dependency Path: %s", pathType))
-
 		// Join with <br> for proper HTML formatting
 		packageContent := strings.Join(packageContentParts, "<br>")
 
@@ -784,7 +777,8 @@ func getPackageDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersion
 func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content string) {
 	var contentBuilder strings.Builder
 	// Title
-	contentBuilder.WriteString(writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
+	WriteNewLine(&contentBuilder)
+	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
 	// Details Table
 	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
@@ -807,13 +801,13 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CVSS V3:")), NewCellData(cvss...))
 
-	// Add Package Details row
-	packageDetails := getPackageDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer)
-	if packageDetails != "" {
-		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Package Details:")), NewCellData(packageDetails))
+	// Add Dependency Path row
+	dependencyPathDetails := getDependencyPathDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer)
+	if dependencyPathDetails != "" {
+		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Dependency Path:")), NewCellData(dependencyPathDetails))
 	}
 
-	contentBuilder.WriteString(noHeaderTable.Build())
+	WriteContent(&contentBuilder, noHeaderTable.Build())
 
 	// Summary
 	summary := issue.Summary
