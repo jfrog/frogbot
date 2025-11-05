@@ -745,7 +745,7 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		// No symbol in summary - just the count
 		// Add non-breaking space to maintain minimum width when collapsed
 		directSummary := fmt.Sprintf("%d Direct&nbsp;", directCount)
-		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf("<br> %s<br>", directContent))
+		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf(" %s<br>", directContent))
 		parts = append(parts, directSection)
 	}
 
@@ -762,7 +762,7 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		// No symbol in summary - just the count
 		// Add non-breaking space to maintain minimum width when collapsed
 		transitiveSummary := fmt.Sprintf("%d Transitive&nbsp;", transitiveCount)
-		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, fmt.Sprintf("<br>  • %s<br>", transitiveContent))
+		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, fmt.Sprintf("  • %s<br>", transitiveContent))
 		parts = append(parts, transitiveSection)
 	}
 
