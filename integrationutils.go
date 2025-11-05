@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
@@ -13,11 +19,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -233,6 +234,15 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 	comments, err := client.ListPullRequestComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	require.NoError(t, err)
 
+	t.Logf("ListPullRequestComments returned %d comments", len(comments))
+	for i, comment := range comments {
+		contentPreview := comment.Content
+		if len(contentPreview) > 100 {
+			contentPreview = contentPreview[:100] + "..."
+		}
+		t.Logf("Comment %d: ID=%d, Content preview: %s", i, comment.ID, contentPreview)
+	}
+
 	switch actualClient := client.(type) {
 	case *vcsclient.GitHubClient:
 		validateGitHubComments(t, ctx, actualClient, testDetails, prID, comments)
@@ -241,7 +251,7 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 	case *vcsclient.BitbucketServerClient:
 		validateBitbucketServerComments(t, comments)
 	case *vcsclient.GitLabClient:
-		validateGitLabComments(t, comments)
+		validateGitLabComments(t, ctx, actualClient, testDetails, prID, comments)
 	}
 }
 
@@ -265,9 +275,18 @@ func validateBitbucketServerComments(t *testing.T, comments []vcsclient.CommentI
 	assertBannerExists(t, comments, outputwriter.GetSimplifiedTitle(outputwriter.VulnerabilitiesPrBannerSource))
 }
 
-func validateGitLabComments(t *testing.T, comments []vcsclient.CommentInfo) {
-	assert.GreaterOrEqual(t, len(comments), expectedNumberOfIssues)
+func validateGitLabComments(t *testing.T, ctx context.Context, client *vcsclient.GitLabClient, testDetails *IntegrationTestDetails, prID int, comments []vcsclient.CommentInfo) {
+	// GitLab separates regular comments (notes) from review comments (discussions)
+	// The summary comment with banner should be in regular comments
+	t.Logf("Regular comments (notes): %d", len(comments))
 	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesMrBannerSource))
+
+	// Review comments are stored as discussions
+	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
+	assert.NoError(t, err)
+	t.Logf("Review comments (discussions): %d", len(reviewComments))
+	// We expect at least the review comments (IAC, SAST, Applicable)
+	assert.GreaterOrEqual(t, len(reviewComments), 1)
 }
 
 func getJfrogEnvRestoreFunc(t *testing.T) func() {

@@ -48,8 +48,8 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 	}
 
 	// Add summary (SCA, license) scan comment
-	if issues.IssuesExists(repo.PullRequestSecretComments) || repo.AddPrCommentOnSuccess {
-		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.PullRequestSecretComments, repo.OutputWriter) {
+	if issues.IssuesExists(repo.Params.PullRequestSecretComments) || repo.AddPrCommentOnSuccess {
+		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.Params.PullRequestSecretComments, repo.OutputWriter) {
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request comment: " + err.Error())
 				return
