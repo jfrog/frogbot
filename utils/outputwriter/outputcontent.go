@@ -588,6 +588,118 @@ func getCveIdsCellData(cveRows []formats.CveRow, issueId string) (ids CellData) 
 	return
 }
 
+// getFinalApplicabilityStatus extracts all CVE applicability statuses and returns the final status using GetFinalApplicabilityStatus
+func getFinalApplicabilityStatus(cves []formats.CveRow) string {
+	if len(cves) == 0 {
+		return ""
+	}
+
+	// Collect all applicability statuses from CVEs and convert to jasutils.ApplicabilityStatus
+	statuses := []jasutils.ApplicabilityStatus{}
+	for _, cve := range cves {
+		if cve.Applicability != nil && cve.Applicability.Status != "" {
+			// Convert string status to jasutils.ApplicabilityStatus enum
+			status := stringToApplicabilityStatus(cve.Applicability.Status)
+			if status != nil {
+				statuses = append(statuses, *status)
+			}
+		}
+	}
+
+	if len(statuses) == 0 {
+		return ""
+	}
+
+	return results.GetFinalApplicabilityStatus(statuses).String()
+}
+
+// stringToApplicabilityStatus converts a string status to jasutils.ApplicabilityStatus
+func stringToApplicabilityStatus(status string) *jasutils.ApplicabilityStatus {
+	switch status {
+	case jasutils.Applicable.String():
+		status := jasutils.Applicable
+		return &status
+	case jasutils.NotApplicable.String():
+		status := jasutils.NotApplicable
+		return &status
+	case jasutils.ApplicabilityUndetermined.String():
+		status := jasutils.ApplicabilityUndetermined
+		return &status
+	case jasutils.MissingContext.String():
+		status := jasutils.MissingContext
+		return &status
+	case jasutils.NotCovered.String():
+		status := jasutils.NotCovered
+		return &status
+	default:
+		return nil
+	}
+}
+
+// formatComponentWithApplicability formats a component with its applicability status
+// Format: "component-id (Status)"
+func formatComponentWithApplicability(component formats.ComponentRow, status string) string {
+	componentId := results.GetDependencyId(component.Name, component.Version)
+	if status == "" {
+		return componentId
+	}
+	// Format status as (Status)
+	return fmt.Sprintf("%s (%s)", componentId, status)
+}
+
+// buildComponentApplicabilityMap builds a mapping of component keys (name:version) to their applicability statuses
+// from the impact paths and CVEs
+func buildComponentApplicabilityMap(impactPaths [][]formats.ComponentRow, cves []formats.CveRow) map[string]string {
+	componentStatusMap := make(map[string]string)
+
+	// Collect all component statuses from CVEs
+	// For each CVE, check if it has applicability status
+	for _, cve := range cves {
+		if cve.Applicability != nil && cve.Applicability.Status != "" {
+			// Map all components in impact paths to this CVE's applicability status
+			for _, path := range impactPaths {
+				for _, component := range path {
+					componentKey := fmt.Sprintf("%s:%s", component.Name, component.Version)
+					// Use the first status we find for each component
+					// If multiple CVEs have different statuses, we'll use GetFinalApplicabilityStatus
+					if _, exists := componentStatusMap[componentKey]; !exists {
+						componentStatusMap[componentKey] = cve.Applicability.Status
+					}
+				}
+			}
+		}
+	}
+
+	// For components with multiple statuses, use GetFinalApplicabilityStatus
+	// Group components by their statuses
+	componentStatuses := make(map[string][]jasutils.ApplicabilityStatus)
+	for componentKey, status := range componentStatusMap {
+		statusEnum := stringToApplicabilityStatus(status)
+		if statusEnum != nil {
+			componentStatuses[componentKey] = append(componentStatuses[componentKey], *statusEnum)
+		}
+	}
+
+	// Use GetFinalApplicabilityStatus for components with multiple statuses
+	finalMap := make(map[string]string)
+	for componentKey, statuses := range componentStatuses {
+		if len(statuses) > 0 {
+			finalMap[componentKey] = results.GetFinalApplicabilityStatus(statuses).String()
+		}
+	}
+
+	return finalMap
+}
+
+// getComponentApplicabilityStatus gets the applicability status for a component from the provided map
+func getComponentApplicabilityStatus(component formats.ComponentRow, componentStatusMap map[string]string) string {
+	componentKey := fmt.Sprintf("%s:%s", component.Name, component.Version)
+	if status, exists := componentStatusMap[componentKey]; exists {
+		return status
+	}
+	return ""
+}
+
 // getDependencyPathCellData extracts and formats direct and transitive dependencies from ImpactPaths as collapsible sections
 func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer OutputWriter) CellData {
 	if len(impactPaths) == 0 {
@@ -791,8 +903,9 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		severity := severityutils.Severity(issue.JfrogResearchInformation.Severity)
 		noHeaderTable.AddRow(MarkAsBold("Jfrog Research Severity:"), fmt.Sprintf("%s %s", writer.SeverityIcon(severity), severity.String()))
 	}
-	if issue.Applicable != "" {
-		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), issue.Applicable)
+	applicableStatus := getFinalApplicabilityStatus(issue.Cves)
+	if applicableStatus != "" {
+		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), applicableStatus)
 	}
 
 	cvss := []string{}
