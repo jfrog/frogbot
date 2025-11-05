@@ -131,7 +131,7 @@ require (
 replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
 
 // attiasas:static_sca_violations_remediations
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251103075823-6b36e2e68466
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251105100016-f281ccb9ca88
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
