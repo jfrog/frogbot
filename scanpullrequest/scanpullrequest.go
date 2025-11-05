@@ -189,6 +189,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetDisableJas(repoConfig.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
 		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
+		SetAllowPartialResults(repoConfig.AllowPartialResults).
 		SetAllowedLicenses(repoConfig.AllowedLicenses)
 	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
 }

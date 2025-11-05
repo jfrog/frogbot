@@ -182,6 +182,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
 		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
+		SetGitContext(sc.XscGitInfoContext).
 		SetRtResultRepository(docs.UploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
