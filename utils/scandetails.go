@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jfrog/jfrog-cli-security/cli/docs"
 	"github.com/jfrog/jfrog-cli-security/policy/enforcer"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
@@ -183,7 +182,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
 		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
 		SetGitContext(sc.XscGitInfoContext).
-		SetRtResultRepository(docs.UploadRtRepoPath).
+		SetRtResultRepository(FrogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
@@ -196,8 +195,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetStartTime(sc.StartTime)
 		SetStartTime(sc.StartTime).
 		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).
-		SetAllowedLicenses(sc.AllowedLicenses).
-		SetCustomAnalyzerManagerBinaryPath("C:\\Users\\Keren Reshef\\.jfrog\\dependencies\\analyzerManager\\analyzerManager.exe") //TODO: remove after testing
+		SetAllowedLicenses(sc.AllowedLicenses)
 
 	return audit.RunAudit(auditParams)
 }

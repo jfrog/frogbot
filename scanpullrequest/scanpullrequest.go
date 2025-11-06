@@ -305,9 +305,8 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	if err := sortTargetsByPhysicalLocation(targetResults, sourceResults); err != nil {
 		return err
 	}
-	// TODO: implement logic for filtering violations under ScanResults instead of under targetResults/SourceResults
+	sourceViolations := sourceResults.Violations
 	for idx := 0; idx < len(sourceResults.Targets); idx++ {
-		sourceViolations := sourceResults.Violations
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
 
@@ -389,9 +388,9 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 		}
 		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
-		if sourceViolations != nil {
+		if sourceViolations.Scan.Sca != nil {
 			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
-			sourceViolations = nil
+			sourceViolations.Scan.Sca = nil
 		}
 	}
 
