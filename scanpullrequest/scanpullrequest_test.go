@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
@@ -48,7 +49,6 @@ const (
 )
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
-	allowedLicenses := []string{"MIT"}
 	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
@@ -195,7 +195,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := scanResultsToIssuesCollection(auditResults, allowedLicenses)
+	issuesRows, err := scanResultsToIssuesCollection(auditResults)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
@@ -885,6 +885,7 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 		name         string
 		targetResult *results.TargetResults
 		sourceResult *results.TargetResults
+		violations   *results.ScanResult[violationutils.Violations]
 		hasFailure   bool
 	}{
 		{
@@ -893,16 +894,15 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 				ScaResults: &results.ScaScanResults{
 					ScanStatusCode: -1,
 					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "test-violation"}},
 				},
 			},
 			sourceResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
 					ScanStatusCode: 0,
 					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "source-violation"}},
 				},
 			},
+			violations: &results.ScanResult[violationutils.Violations]{},
 			hasFailure: true,
 		},
 		{
@@ -911,14 +911,12 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 				ScaResults: &results.ScaScanResults{
 					ScanStatusCode: 0,
 					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "target-violation"}},
 				},
 			},
 			sourceResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
 					ScanStatusCode: 0,
 					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "source-violation"}},
 				},
 			},
 			hasFailure: false,
@@ -927,13 +925,10 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			filterOutScaResultsIfScanFailed(test.targetResult, test.sourceResult)
+			filterOutScaResultsIfScanFailed(test.targetResult, test.sourceResult, test.violations)
 
 			if test.hasFailure {
 				assert.Nil(t, test.sourceResult.ScaResults.Sbom, "SBOM should be removed when SCA scan failed")
-				assert.Nil(t, test.sourceResult.ScaResults.Violations, "Violations should be removed when SCA scan failed")
-			} else {
-				assert.Equal(t, []services.Violation{{IssueId: "source-violation"}}, test.sourceResult.ScaResults.Violations, "Violations should NOT be removed when SCA scan succeeds")
 			}
 		})
 	}
@@ -954,7 +949,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 						ScanTarget: results.ScanTarget{Target: "test-target"},
 						ScaResults: &results.ScaScanResults{
 							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "target-violation"}},
 						},
 						JasResults: &results.JasScansResults{
 							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
@@ -992,7 +986,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 						ScanTarget: results.ScanTarget{Target: "test-target"},
 						ScaResults: &results.ScaScanResults{
 							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "source-violation"}},
 						},
 						JasResults: &results.JasScansResults{
 							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
@@ -1034,7 +1027,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 						ScanTarget: results.ScanTarget{Target: "test-target"},
 						ScaResults: &results.ScaScanResults{
 							ScanStatusCode: -1,
-							Violations:     []services.Violation{{IssueId: "target-violation"}},
 						},
 						JasResults: &results.JasScansResults{
 							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
@@ -1072,7 +1064,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 						ScanTarget: results.ScanTarget{Target: "test-target"},
 						ScaResults: &results.ScaScanResults{
 							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "source-violation"}},
 						},
 						JasResults: &results.JasScansResults{
 							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
@@ -1115,7 +1106,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 
 			sourceTarget := test.sourceResults.Targets[0]
 			if test.hasFailure {
-				assert.Nil(t, sourceTarget.ScaResults.Violations, "SCA violations should be removed when SCA scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should be removed when Secrets scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should be removed when Secrets scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should be removed when IaC scan failed")
@@ -1124,7 +1114,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SastScanResults, "SAST scan results should NOT be removed when SAST scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SastScanResults, "SAST violation results should NOT be removed when SAST scan succeeds")
 			} else {
-				assert.NotNil(t, sourceTarget.ScaResults.Violations, "SCA violations should NOT be removed when SCA scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should NOT be removed when Secrets scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should NOT be removed when Secrets scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should NOT be removed when IaC scan succeeds")

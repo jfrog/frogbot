@@ -280,7 +280,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 
 	// Convert to issues
-	if issues, e := scanResultsToIssuesCollection(scanResults, scanDetails.AllowedLicenses, workingDirs...); e == nil {
+	if issues, e := scanResultsToIssuesCollection(scanResults, workingDirs...); e == nil {
 		issuesCollection = issues
 		return
 	} else {
@@ -307,7 +307,6 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	}
 	// TODO: implement logic for filtering violations under ScanResults instead of under targetResults/SourceResults
 	for idx := 0; idx < len(sourceResults.Targets); idx++ {
-		//targetViolations := targetResults.Violations TOdo: do we need it?
 		sourceViolations := sourceResults.Violations
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
@@ -438,7 +437,7 @@ func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.Securit
 	return nil
 }
 
-func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, allowedLicenses []string, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
+func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
 		HasViolationContext:    scanResults.HasViolationContext(),

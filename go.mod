@@ -15,7 +15,7 @@ require (
 	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251021143342-49bab7f38cec
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
 	github.com/jfrog/jfrog-cli-security v1.21.9
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251030113529-d87ecf28ffb6
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251103081126-15edfe03d6e5
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -131,7 +131,7 @@ require (
 replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
 
 // attiasas:static_sca_violations_remediations
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251105100016-f281ccb9ca88
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251105133440-94de8540b594
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -140,6 +140,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:xray_get_violations_api
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20251028133353-95637c9fb471
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20251105100530-1b53c57f42c6
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
