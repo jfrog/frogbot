@@ -211,7 +211,8 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		log.Info("Frogbot is configured to show all issues at source branch")
 		return
 	}
-	if targetBranchWd, cleanupTarget, err = prepareTargetForScan(repoConfig.Git, scanDetails); err != nil {
+	target := repoConfig.Git.PullRequestDetails.Target
+	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
@@ -478,13 +479,6 @@ func getResultScanStatues(cmdResults ...*results.SecurityCommandResults) formats
 		}
 	}
 	return getScanStatus(converted...)
-}
-
-func prepareTargetForScan(gitDetails utils.Git, scanDetails *utils.ScanDetails) (targetBranchWd string, cleanupTarget func() error, err error) {
-	target := gitDetails.PullRequestDetails.Target
-	// Download latest target branch (no common ancestor logic)
-	targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name)
-	return
 }
 
 func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {
