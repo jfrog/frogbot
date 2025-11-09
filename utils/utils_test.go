@@ -42,19 +42,6 @@ func TestChdirErr(t *testing.T) {
 	assert.Equal(t, originCwd, cwd)
 }
 
-func getDummyRepoNames() []string {
-	return []string{"repository1", "repository2"}
-}
-
-func getDummyRepo() RepoAggregator {
-	repos := RepoAggregator{}
-	names := getDummyRepoNames()
-	for _, name := range names {
-		repos = append(repos, Repository{Params: Params{Git: Git{RepoName: name}}})
-	}
-	return repos
-}
-
 func TestMd5Hash(t *testing.T) {
 	tests := []struct {
 		values       []string
