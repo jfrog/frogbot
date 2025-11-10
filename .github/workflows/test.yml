@@ -57,7 +57,7 @@ jobs:
   tests:
     needs: Pretest
     name: ${{ matrix.suite.name }} Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || format('{0}-latest', matrix.os) }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
       GRADLE_OPTS: -Dorg.gradle.daemon=false
@@ -76,7 +76,7 @@ jobs:
           - name: 'Package Handlers'
             package: 'packagehandlers'
 
-        os: [ ubuntu, windows, macos ]
+        os: ${{ secrets.RELEASE_GATE_RUNNER && fromJSON('["ubuntu"]') || fromJSON('["ubuntu", "windows", "macos"]') }}
     steps:
       # Configure prerequisites
       - uses: actions/checkout@v4
@@ -226,11 +226,11 @@ jobs:
   azure-integration:
     name: Azure Integration Tests
     needs: Pretest
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu, windows, macos ]
+        os: ${{ secrets.RELEASE_GATE_RUNNER && fromJSON('["ubuntu"]') || fromJSON('["ubuntu", "windows", "macos"]') }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -271,11 +271,11 @@ jobs:
   gitlab-integration:
     name: GitLab Integration Tests
     needs: Pretest
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu, windows, macos ]
+        os: ${{ secrets.RELEASE_GATE_RUNNER && fromJSON('["ubuntu"]') || fromJSON('["ubuntu", "windows", "macos"]') }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
