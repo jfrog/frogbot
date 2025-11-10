@@ -16,7 +16,7 @@ concurrency:
 jobs:
   Pretest:
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || 'ubuntu-latest' }}
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
@@ -186,7 +186,7 @@ jobs:
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
-    runs-on: ubuntu-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || 'ubuntu-latest' }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -317,7 +317,7 @@ jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
     needs: Pretest
-    runs-on: macos-latest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER || 'macos-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
