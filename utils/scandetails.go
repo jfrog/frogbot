@@ -174,7 +174,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetSkipAutoInstall(sc.skipAutoInstall).
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
-		SetIsRecursiveScan(sc.IsRecursiveScan).
 		SetUseJas(!sc.DisableJas()).
 		SetConfigProfile(sc.configProfile)
 
