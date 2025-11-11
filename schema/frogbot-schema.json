@@ -32,6 +32,12 @@
         "description": "The name of the git repository to scan.",
         "examples": ["repo-name"]
       },
+      "lfsCheckout": {
+        "type": "boolean",
+        "title": "lfsCheckout",
+        "description": "Use `git lfs pull` after cloning the repository.",
+        "default": false
+      },
       "branches": {
         "type": "array",
         "title": "Repository Branches",
