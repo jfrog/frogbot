@@ -125,8 +125,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.15
-
 // attiasas:static_sca_violations_remediations
 replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20251112095222-71e5b839c7ee
 
