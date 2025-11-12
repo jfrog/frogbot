@@ -424,7 +424,7 @@ func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolatio
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
-	content = append(content, writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)))
+	content = append(content, getVulnerabilitiesSummaryTable(vulnerabilities, writer))
 	content = append(content, getScaSecurityIssueDetailsContent(vulnerabilities, false, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
 }
