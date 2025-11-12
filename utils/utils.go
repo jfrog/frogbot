@@ -41,7 +41,7 @@ const (
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
 	frogbotUrl                          = "https://github.com/jfrog/frogbot"
-	FrogbotUploadRtRepoPath             = "frogbot" //TODO: determine a repository path for Frogbot scan results
+	FrogbotUploadRtRepoPath             = "frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"

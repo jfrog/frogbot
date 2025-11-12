@@ -304,12 +304,12 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	if err := sortTargetsByPhysicalLocation(targetResults, sourceResults); err != nil {
 		return err
 	}
-	sourceViolations := sourceResults.Violations
+
 	for idx := 0; idx < len(sourceResults.Targets); idx++ {
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
 
-		filterOutScaResultsIfScanFailed(targetResult, sourceResult, sourceViolations)
+		filterOutScaResultsIfScanFailed(targetResult, sourceResult, sourceResults.Violations)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepContextualAnalysis)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepSecrets)
 		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepIaC)
