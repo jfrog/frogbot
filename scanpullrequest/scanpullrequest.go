@@ -20,7 +20,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 )
 
 const (
@@ -310,109 +309,112 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 		targetResult := targetResults.Targets[idx]
 		sourceResult := sourceResults.Targets[idx]
 
-		filterOutScaResultsIfScanFailed(targetResult, sourceResult, &sourceViolations)
-		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Applicability)
-		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Secrets)
-		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.IaC)
-		filterJasResultsIfScanFailed(targetResult, sourceResult, jasutils.Sast)
+		filterOutScaResultsIfScanFailed(targetResult, sourceResult, sourceViolations)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepContextualAnalysis)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepSecrets)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepIaC)
+		filterJasResultsIfScanFailed(targetResult, sourceResult, results.CmdStepSast)
 	}
 	return nil
 }
 
-func filterJasResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, scanType jasutils.JasScanType) {
-	switch scanType {
-	case jasutils.Applicability:
-		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.ApplicabilityScanResults, targetResult.JasResults.ApplicabilityScanResults) {
-			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+func filterJasResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, cmdStep results.SecurityCommandStep) {
+	sourceResults := []*results.TargetResults{sourceResult}
+	targetResults := []*results.TargetResults{targetResult}
+	switch cmdStep {
+	case results.CmdStepContextualAnalysis:
+		if isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.ApplicabilityScanResults = nil
 		}
-	case jasutils.Secrets:
-		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, targetResult.JasResults.JasVulnerabilities.SecretsScanResults) {
-			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+	case results.CmdStepSecrets:
+		if isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasVulnerabilities.SecretsScanResults = nil
 		}
 
-		if (sourceResult.JasResults.JasViolations.SecretsScanResults != nil || targetResult.JasResults.JasViolations.SecretsScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.SecretsScanResults, targetResult.JasResults.JasViolations.SecretsScanResults) {
-			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+		if (sourceResult.JasResults.JasViolations.SecretsScanResults != nil || targetResult.JasResults.JasViolations.SecretsScanResults != nil) && isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasViolations.SecretsScanResults = nil
 		}
-	case jasutils.IaC:
-		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.IacScanResults, targetResult.JasResults.JasVulnerabilities.IacScanResults) {
-			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+	case results.CmdStepIaC:
+		if isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasVulnerabilities.IacScanResults = nil
 		}
 
-		if (sourceResult.JasResults.JasViolations.IacScanResults != nil || targetResult.JasResults.JasViolations.IacScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.IacScanResults, targetResult.JasResults.JasViolations.IacScanResults) {
-			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+		if (sourceResult.JasResults.JasViolations.IacScanResults != nil || targetResult.JasResults.JasViolations.IacScanResults != nil) && isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasViolations.IacScanResults = nil
 		}
-	case jasutils.Sast:
-		if isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasVulnerabilities.SastScanResults, targetResult.JasResults.JasVulnerabilities.SastScanResults) {
-			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, scanType.String()))
+	case results.CmdStepSast:
+		if isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(vulnerabilitiesFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasVulnerabilities.SastScanResults = nil
 		}
 
-		if (sourceResult.JasResults.JasViolations.SastScanResults != nil || targetResult.JasResults.JasViolations.SastScanResults != nil) && isJasScanFailedInSourceOrTarget(sourceResult.JasResults.JasViolations.SastScanResults, targetResult.JasResults.JasViolations.SastScanResults) {
-			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, scanType.String()))
+		if (sourceResult.JasResults.JasViolations.SastScanResults != nil || targetResult.JasResults.JasViolations.SastScanResults != nil) && isScanFailedInSourceOrTarget(sourceResults, targetResults, cmdStep) {
+			log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, cmdStep))
 			sourceResult.JasResults.JasViolations.SastScanResults = nil
 		}
 	}
 }
 
-func isJasScanFailedInSourceOrTarget(sourceResults, targetResults []results.ScanResult[[]*sarif.Run]) bool {
+func isScanFailedInSourceOrTarget(sourceResults, targetResults []*results.TargetResults, step results.SecurityCommandStep) bool {
 	for _, scanResult := range sourceResults {
-		if scanResult.StatusCode != 0 {
+		if scanResult.ResultsStatus.IsScanFailed(step) {
 			return true
 		}
 	}
 
 	for _, scanResult := range targetResults {
-		if scanResult.StatusCode != 0 {
+		if scanResult.ResultsStatus.IsScanFailed(step) {
 			return true
 		}
 	}
 	return false
 }
 
-func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, sourceViolations *results.ScanResult[violationutils.Violations]) {
+func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults, sourceViolations *violationutils.Violations) {
 	// Filter out new Sca results
-	if sourceResult.ScaResults.ScanStatusCode != 0 || targetResult.ScaResults.ScanStatusCode != 0 {
-		var statusCode int
+	if sourceResult.ResultsStatus.IsScanFailed(results.CmdStepSca) || targetResult.ResultsStatus.IsScanFailed(results.CmdStepSca) {
+		var statusCode *int
 		var errorSource string
-		if sourceResult.ScaResults.ScanStatusCode != 0 {
-			statusCode = sourceResult.ScaResults.ScanStatusCode
+		if sourceResult.ResultsStatus.IsScanFailed(results.CmdStepSca) {
+			statusCode = sourceResult.ResultsStatus.ScaScanStatusCode
 			errorSource = "source"
 		} else {
-			statusCode = targetResult.ScaResults.ScanStatusCode
+			statusCode = targetResult.ResultsStatus.ScaScanStatusCode
 			errorSource = "target"
 		}
 		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
-		if sourceViolations.Scan.Sca != nil {
+		if sourceViolations.Sca != nil {
 			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
-			sourceViolations.Scan.Sca = nil
+			sourceViolations.Sca = nil
 		}
 	}
 
+	// TODO: if works remove this code
 	// Note: Although we have a slice on ScanResults in DeprecatedXrayResults, in fact there is only a single entry
-	hasScaFailure := false
-	for _, deprecatedScaResult := range targetResult.ScaResults.DeprecatedXrayResults {
-		if deprecatedScaResult.StatusCode != 0 {
-			hasScaFailure = true
-			break
-		}
-	}
-	for _, deprecatedScaResult := range sourceResult.ScaResults.DeprecatedXrayResults {
-		if deprecatedScaResult.StatusCode != 0 {
-			hasScaFailure = true
-			break
-		}
-	}
-	if hasScaFailure {
-		log.Debug("Sca scan has completed with errors. Sca vulnerabilities and violations results will be removed from final report")
-		// Violations are being filtered as well as they are included in the DeprecatedXrayResults
-		sourceResult.ScaResults.DeprecatedXrayResults = nil
-	}
+	//hasScaFailure := false
+	//for _, deprecatedScaResult := range targetResult.ScaResults.DeprecatedXrayResults {
+	//	if deprecatedScaResult.StatusCode != 0 {
+	//		hasScaFailure = true
+	//		break
+	//	}
+	//}
+	//for _, deprecatedScaResult := range sourceResult.ScaResults.DeprecatedXrayResults {
+	//	if deprecatedScaResult.StatusCode != 0 {
+	//		hasScaFailure = true
+	//		break
+	//	}
+	//}
+	//if hasScaFailure {
+	//	log.Debug("Sca scan has completed with errors. Sca vulnerabilities and violations results will be removed from final report")
+	//	// Violations are being filtered as well as they are included in the DeprecatedXrayResults
+	//	sourceResult.ScaResults.DeprecatedXrayResults = nil
+	//}
 }
 
 // Sorts the Targets slice in both targetResults and sourceResults
