@@ -394,27 +394,6 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 			sourceViolations.Sca = nil
 		}
 	}
-
-	// TODO: if works remove this code
-	// Note: Although we have a slice on ScanResults in DeprecatedXrayResults, in fact there is only a single entry
-	//hasScaFailure := false
-	//for _, deprecatedScaResult := range targetResult.ScaResults.DeprecatedXrayResults {
-	//	if deprecatedScaResult.StatusCode != 0 {
-	//		hasScaFailure = true
-	//		break
-	//	}
-	//}
-	//for _, deprecatedScaResult := range sourceResult.ScaResults.DeprecatedXrayResults {
-	//	if deprecatedScaResult.StatusCode != 0 {
-	//		hasScaFailure = true
-	//		break
-	//	}
-	//}
-	//if hasScaFailure {
-	//	log.Debug("Sca scan has completed with errors. Sca vulnerabilities and violations results will be removed from final report")
-	//	// Violations are being filtered as well as they are included in the DeprecatedXrayResults
-	//	sourceResult.ScaResults.DeprecatedXrayResults = nil
-	//}
 }
 
 // Sorts the Targets slice in both targetResults and sourceResults
