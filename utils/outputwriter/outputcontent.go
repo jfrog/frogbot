@@ -795,12 +795,11 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	// Build package details list as collapsible sections (closed by default)
 	var packageEntries []string
 	for _, pkgInfo := range packages {
-		depType := "(T)" // Transitive
+		depType := "(Transitive)" // Transitive
 		if pkgInfo.isDirect {
-			depType = "(D)" // Direct
+			depType = "(Direct)" // Direct
 		}
 
-		// Format: "packageName: version (D)" or "packageName: version (T)" - no symbol in summary
 		packageSummary := fmt.Sprintf("%s: %s %s", pkgInfo.component.Name, pkgInfo.component.Version, depType)
 
 		// Build content for the collapsible section - Fix Version and Dependency Path inside
