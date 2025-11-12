@@ -192,10 +192,9 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
-		SetStartTime(sc.StartTime)
 		SetStartTime(sc.StartTime).
-		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).
-		SetAllowedLicenses(sc.AllowedLicenses)
+		SetStartTime(sc.StartTime).
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
 
 	return audit.RunAudit(auditParams)
 }
