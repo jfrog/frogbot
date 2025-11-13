@@ -447,6 +447,8 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 	}
 	columns = append(columns, "Dependency Path")
 	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
+	// Make Dependency Path column left-aligned
+	table.GetColumnInfo("Dependency Path").Centered = false
 	// Construct rows
 	for _, vulnerability := range vulnerabilities {
 		row := []CellData{{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable)}, getCveIdsCellData(vulnerability.Cves, vulnerability.IssueId)}
@@ -681,7 +683,7 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		// No symbol in summary - just the count
 		// Add non-breaking space to maintain minimum width when collapsed
 		directSummary := fmt.Sprintf("%d Direct&nbsp;", directCount)
-		directSection := writer.MarkAsDetails(directSummary, 0, fmt.Sprintf(" %s<br>", directContent))
+		directSection := writer.MarkAsDetails(directSummary, 0, directContent)
 		parts = append(parts, directSection)
 	}
 
@@ -694,11 +696,11 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		// Sort for consistent output
 		sort.Strings(transitiveList)
 		transitiveCount := len(transitiveList)
-		transitiveContent := strings.Join(transitiveList, "<br>  • ")
+		transitiveContent := strings.Join(transitiveList, "<br> ")
 		// No symbol in summary - just the count
 		// Add non-breaking space to maintain minimum width when collapsed
 		transitiveSummary := fmt.Sprintf("%d Transitive&nbsp;", transitiveCount)
-		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, fmt.Sprintf("  • %s<br>", transitiveContent))
+		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, transitiveContent)
 		parts = append(parts, transitiveSection)
 	}
 
@@ -706,7 +708,15 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		return NewCellData()
 	}
 
-	content := strings.Join(parts, "<br>")
+	// Remove <br> before </details> in each part to avoid empty lines between sections
+	// Also remove bold formatting from summary
+	for i := range parts {
+		parts[i] = strings.Replace(parts[i], "<br></details>", "</details>", 1)
+		// Remove bold tags from summary
+		parts[i] = strings.Replace(parts[i], "<summary><b>", "<summary>", 1)
+		parts[i] = strings.Replace(parts[i], "</b></summary>", "</summary>", 1)
+	}
+	content := strings.Join(parts, "")
 	return NewCellData(content)
 }
 
@@ -793,7 +803,10 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	}
 
 	// Build package details list as collapsible sections (closed by default)
-	var packageEntries []string
+	// Separate direct and transitive dependencies
+	var directEntries []string
+	var transitiveEntries []string
+
 	for _, pkgInfo := range packages {
 		depType := "(Transitive)" // Transitive
 		if pkgInfo.isDirect {
@@ -813,12 +826,49 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 
 		// Create collapsible section (closed by default) - content will appear when expanded
 		packageEntry := writer.MarkAsDetails(packageSummary, 0, packageContent)
-		packageEntries = append(packageEntries, packageEntry)
+
+		if pkgInfo.isDirect {
+			directEntries = append(directEntries, packageEntry)
+		} else {
+			transitiveEntries = append(transitiveEntries, packageEntry)
+		}
 	}
 
-	// Sort for consistent output
-	sort.Strings(packageEntries)
-	return strings.Join(packageEntries, "<br><br>")
+	// Sort for consistent output - direct first, then transitive
+	sort.Strings(directEntries)
+	sort.Strings(transitiveEntries)
+
+	// Combine: all directs first, then all transitives
+	allEntries := append(directEntries, transitiveEntries...)
+
+	// Remove <br> before </details> to avoid line separators
+	// Also remove bold formatting from summary
+	// Ensure each details section is properly closed and self-contained
+	for i := range allEntries {
+		allEntries[i] = strings.Replace(allEntries[i], "<br></details>", "</details>", 1)
+		// Remove bold tags from summary
+		allEntries[i] = strings.Replace(allEntries[i], "<summary><b>", "<summary>", 1)
+		allEntries[i] = strings.Replace(allEntries[i], "</b></summary>", "</summary>", 1)
+		// Ensure the entry starts with <details> and ends with </details>
+		// Count opening and closing tags to ensure proper structure
+		openingCount := strings.Count(allEntries[i], "<details>")
+		closingCount := strings.Count(allEntries[i], "</details>")
+		// If there's a mismatch, fix it
+		if openingCount > closingCount {
+			// Add missing closing tags
+			for j := 0; j < openingCount-closingCount; j++ {
+				allEntries[i] = allEntries[i] + "</details>"
+			}
+		} else if closingCount > openingCount {
+			// Remove extra closing tags (shouldn't happen, but be safe)
+			for j := 0; j < closingCount-openingCount; j++ {
+				allEntries[i] = strings.TrimSuffix(allEntries[i], "</details>")
+			}
+		}
+	}
+
+	// Join with empty string - each entry should be a complete <details>...</details> block
+	return strings.Join(allEntries, "")
 }
 
 func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content string) {
@@ -826,8 +876,11 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	// Title
 	WriteNewLine(&contentBuilder)
 	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
-	// Details Table
-	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
+	// Details Table - second column (content) should be left-aligned
+	noHeaderTable := NewMarkdownTableWithColumns(
+		NewMarkdownTableSingleValueColumn("", cellDefaultValue, false), // First column (labels) - not centered
+		NewMarkdownTableSingleValueColumn("", cellDefaultValue, false), // Second column (content) - not centered
+	)
 	if len(issue.Policies) > 0 {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(issue.Policies...))
 	}
