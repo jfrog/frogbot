@@ -629,18 +629,15 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 
 	// Extract dependencies from all impact paths
 	for _, path := range impactPaths {
-		if len(path) < 2 {
-			continue
-		}
-		// First element is always a direct dependency
-		first := path[0]
-		key := fmt.Sprintf("%s:%s", first.Name, first.Version)
-		directDeps[key] = first
+		if len(path) == 2 {
+			direct := path[1]
+			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
+			directDeps[key] = direct
 
-		for i := 1; i < len(path)-1; i++ {
-			component := path[i]
-			key := fmt.Sprintf("%s:%s", component.Name, component.Version)
-			transitiveDeps[key] = component
+		} else if len(path) > 2 {
+			transitive := path[len(path)-1]
+			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
+			transitiveDeps[key] = transitive
 		}
 	}
 
@@ -737,16 +734,14 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	packages := make(map[string]packageInfo) // key: "name:version"
 
 	for _, path := range impactPaths {
-		if len(path) < 2 {
-			continue
-		}
-		first := path[0]
-		key := fmt.Sprintf("%s:%s", first.Name, first.Version)
-		packages[key] = packageInfo{component: first, isDirect: true}
-		for i := 1; i < len(path)-1; i++ {
-			component := path[i]
-			key := fmt.Sprintf("%s:%s", component.Name, component.Version)
-			packages[key] = packageInfo{component: component, isDirect: false}
+		if len(path) == 2 {
+			direct := path[1]
+			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
+			packages[key] = packageInfo{component: direct, isDirect: true}
+		} else if len(path) > 2 {
+			transitive := path[len(path)-1]
+			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
+			packages[key] = packageInfo{component: transitive, isDirect: true}
 		}
 	}
 
