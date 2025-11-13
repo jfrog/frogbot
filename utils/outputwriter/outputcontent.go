@@ -768,19 +768,6 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	sort.Strings(transitiveEntries)
 	allEntries := append(directEntries, transitiveEntries...)
 
-	for i := range allEntries {
-		openingCount := strings.Count(allEntries[i], "<details>")
-		closingCount := strings.Count(allEntries[i], "</details>")
-		if openingCount > closingCount {
-			for j := 0; j < openingCount-closingCount; j++ {
-				allEntries[i] = allEntries[i] + "</details>"
-			}
-		} else if closingCount > openingCount {
-			for j := 0; j < closingCount-openingCount; j++ {
-				allEntries[i] = strings.TrimSuffix(allEntries[i], "</details>")
-			}
-		}
-	}
 	return strings.Join(allEntries, "")
 }
 
