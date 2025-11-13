@@ -606,9 +606,9 @@ func getFinalApplicabilityStatus(cves []formats.CveRow) string {
 	statuses := []jasutils.ApplicabilityStatus{}
 	for _, cve := range cves {
 		if cve.Applicability != nil && cve.Applicability.Status != "" {
-			status := stringToApplicabilityStatus(cve.Applicability.Status)
-			if status != nil {
-				statuses = append(statuses, *status)
+			status := jasutils.ConvertToApplicabilityStatus(cve.Applicability.Status)
+			if status != "" {
+				statuses = append(statuses, status)
 			}
 		}
 	}
@@ -616,28 +616,6 @@ func getFinalApplicabilityStatus(cves []formats.CveRow) string {
 		return ""
 	}
 	return results.GetFinalApplicabilityStatus(statuses).String()
-}
-
-func stringToApplicabilityStatus(status string) *jasutils.ApplicabilityStatus {
-	switch status {
-	case jasutils.Applicable.String():
-		status := jasutils.Applicable
-		return &status
-	case jasutils.NotApplicable.String():
-		status := jasutils.NotApplicable
-		return &status
-	case jasutils.ApplicabilityUndetermined.String():
-		status := jasutils.ApplicabilityUndetermined
-		return &status
-	case jasutils.MissingContext.String():
-		status := jasutils.MissingContext
-		return &status
-	case jasutils.NotCovered.String():
-		status := jasutils.NotCovered
-		return &status
-	default:
-		return nil
-	}
 }
 
 func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer OutputWriter) CellData {
@@ -674,8 +652,8 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		}
 		sort.Strings(directList)
 		directCount := len(directList)
-		directContent := strings.Join(directList, "<br> ")
-		directSummary := fmt.Sprintf("%d Direct&nbsp;", directCount)
+		directContent := strings.Join(directList, writer.Separator())
+		directSummary := fmt.Sprintf("%d Direct", directCount)
 		directSection := writer.MarkAsDetails(directSummary, 0, directContent)
 		parts = append(parts, directSection)
 	}
@@ -687,21 +665,14 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 		}
 		sort.Strings(transitiveList)
 		transitiveCount := len(transitiveList)
-		transitiveContent := strings.Join(transitiveList, "<br> ")
-		transitiveSummary := fmt.Sprintf("%d Transitive&nbsp;", transitiveCount)
+		transitiveContent := strings.Join(transitiveList, writer.Separator())
+		transitiveSummary := fmt.Sprintf("%d Transitive", transitiveCount)
 		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, transitiveContent)
 		parts = append(parts, transitiveSection)
 	}
 
 	if len(parts) == 0 {
 		return NewCellData()
-	}
-
-	for i := range parts {
-		parts[i] = strings.Replace(parts[i], "<br></details>", "</details>", 1)
-		// Remove bold tags from summary
-		parts[i] = strings.Replace(parts[i], "<summary><b>", "<summary>", 1)
-		parts[i] = strings.Replace(parts[i], "</b></summary>", "</summary>", 1)
 	}
 	content := strings.Join(parts, "")
 	return NewCellData(content)
@@ -798,7 +769,7 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 		if len(fixedVersions) > 0 {
 			packageContentParts = append(packageContentParts, fmt.Sprintf("Fix Version: %s", fixedVersions[0]))
 		}
-		packageContent := strings.Join(packageContentParts, "<br>")
+		packageContent := strings.Join(packageContentParts, writer.Separator())
 		packageEntry := writer.MarkAsDetails(packageSummary, 0, packageContent)
 
 		if pkgInfo.isDirect {
@@ -812,9 +783,6 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	allEntries := append(directEntries, transitiveEntries...)
 
 	for i := range allEntries {
-		allEntries[i] = strings.Replace(allEntries[i], "<br></details>", "</details>", 1)
-		allEntries[i] = strings.Replace(allEntries[i], "<summary><b>", "<summary>", 1)
-		allEntries[i] = strings.Replace(allEntries[i], "</b></summary>", "</summary>", 1)
 		openingCount := strings.Count(allEntries[i], "<details>")
 		closingCount := strings.Count(allEntries[i], "</details>")
 		if openingCount > closingCount {
@@ -834,10 +802,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	var contentBuilder strings.Builder
 	WriteNewLine(&contentBuilder)
 	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
-	noHeaderTable := NewMarkdownTableWithColumns(
-		NewMarkdownTableSingleValueColumn("", cellDefaultValue, false),
-		NewMarkdownTableSingleValueColumn("", cellDefaultValue, false),
-	)
+	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(issue.Policies...))
 	}
