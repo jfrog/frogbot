@@ -133,8 +133,7 @@ func (gph *GradlePackageHandler) fixVulnerabilityIfExists(descriptorFilePath str
 
 // Returns separated 'group' and 'name' for a given vulnerability name. In addition replaces every '.' char into '\\.' since the output will be used for a regexp
 func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup string, depName string, err error) {
-	// Xray returns dependency names with '/' separator (e.g., "group/name"), convert to Gradle format with ':'
-	seperatedImpactedDepName := strings.Split(strings.ReplaceAll(impactedDependencyName, "/", ":"), ":")
+	seperatedImpactedDepName := strings.Split(impactedDependencyName, ":")
 	if len(seperatedImpactedDepName) != 2 {
 		err = fmt.Errorf("unable to parse impacted dependency name '%s'", impactedDependencyName)
 		return

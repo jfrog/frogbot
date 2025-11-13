@@ -91,7 +91,7 @@ func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
 		if dependency.Version == "" {
 			continue
 		}
-		depName := fmt.Sprintf("%s/%s", dependency.GroupId, dependency.ArtifactId)
+		depName := fmt.Sprintf("%s:%s", dependency.GroupId, dependency.ArtifactId)
 		if _, exist := mph.pomDependencies[depName]; !exist {
 			mph.pomDependencies[depName] = pomDependencyDetails{foundInDependencyManagement: dependency.foundInDependencyManagement, currentVersion: dependency.Version}
 		}
