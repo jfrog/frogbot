@@ -41,6 +41,7 @@ const (
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
 	frogbotUrl                          = "https://github.com/jfrog/frogbot"
+	FrogbotUploadRtRepoPath             = "frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -284,7 +285,6 @@ func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults,
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),
-		AllowedLicenses:        allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {

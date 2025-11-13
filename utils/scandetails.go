@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
-	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
-
+	"github.com/jfrog/jfrog-cli-security/policy/enforcer"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
+	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
 	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -34,6 +34,7 @@ type ScanDetails struct {
 	baseBranch          string
 	configProfile       *clientservices.ConfigProfile
 	allowPartialResults bool
+	AllowedLicenses     []string
 
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
@@ -47,6 +48,11 @@ type ScanDetails struct {
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
 	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+}
+
+func (sc *ScanDetails) SetAllowedLicenses(allowedLicenses []string) *ScanDetails {
+	sc.AllowedLicenses = allowedLicenses
+	return sc
 }
 
 func (sc *ScanDetails) SetJfrogVersions(xrayVersion, xscVersion string) *ScanDetails {
@@ -172,8 +178,11 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetConfigProfile(sc.configProfile)
 
 	auditParams := audit.NewAuditParams().
-		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
-		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
+		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
+		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
+		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
+		SetGitContext(sc.XscGitInfoContext).
+		SetRtResultRepository(FrogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
@@ -183,7 +192,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
-		SetStartTime(sc.StartTime)
+		SetStartTime(sc.StartTime).
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
 
 	return audit.RunAudit(auditParams)
 }
