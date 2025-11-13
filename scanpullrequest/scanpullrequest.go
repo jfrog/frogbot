@@ -104,15 +104,6 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	// Output results
-	shouldSendExposedSecretsEmail := issues.SecretsIssuesExists() && repo.SmtpServer != ""
-	if shouldSendExposedSecretsEmail {
-		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, append(issues.SecretsVulnerabilities, issues.SecretsViolations...))
-		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
-			return
-		}
-	}
-
 	// Handle PR comments for scan output
 	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
@@ -184,7 +175,6 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.FixableOnly).
 		SetConfigProfile(repoConfig.ConfigProfile).
-		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
 		SetDisableJas(repoConfig.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
 		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
