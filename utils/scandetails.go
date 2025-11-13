@@ -173,7 +173,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetSkipAutoInstall(sc.skipAutoInstall).
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
-		SetIsRecursiveScan(sc.IsRecursiveScan).
 		SetUseJas(!sc.DisableJas()).
 		SetConfigProfile(sc.configProfile)
 
@@ -193,7 +192,8 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
 		SetStartTime(sc.StartTime).
-		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).
+		SetAllowedLicenses(sc.AllowedLicenses)
 
 	return audit.RunAudit(auditParams)
 }
