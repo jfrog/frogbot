@@ -489,7 +489,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with vulnerabilities and no violations",
 			scanResults: &results.SecurityCommandResults{
-				ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+				ResultsMetaData: results.ResultsMetaData{ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
 					ScaResults: &results.ScaScanResults{
@@ -544,7 +544,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &results.SecurityCommandResults{
-				ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}},
+				ResultsMetaData: results.ResultsMetaData{ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
 					ScaResults: &results.ScaScanResults{
