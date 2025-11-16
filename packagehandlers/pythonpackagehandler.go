@@ -64,23 +64,10 @@ func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetail
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.SuggestedFixedVersion
-	if py.pipRequirementsFile == "" {
-		py.pipRequirementsFile = "setup.py"
-	}
-	wd, err := os.Getwd()
+	currentFile, err := py.tryGetRequirementFile()
 	if err != nil {
-		return
+		return errors.New("failed to read requirements file: " + err.Error())
 	}
-	fullPath := filepath.Join(wd, py.pipRequirementsFile)
-	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
-		return errors.New("wrong requirements file input")
-	}
-	data, err := os.ReadFile(filepath.Clean(py.pipRequirementsFile))
-	if err != nil {
-		return errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
-	}
-	currentFile := string(data)
-
 	// Check both original and lowered package name and replace to only one lowered result
 	// This regex will match the impactedPackage with it's pinned version e.py. PyJWT==1.7.1
 	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + vulnDetails.ImpactedDependencyName + "|" + strings.ToLower(vulnDetails.ImpactedDependencyName) + ")" + PythonPackageRegexSuffix)
@@ -94,4 +81,42 @@ func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetail
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}
 	return
+}
+
+func (py *PythonPackageHandler) tryGetRequirementFile() (string, error) {
+	if py.pipRequirementsFile != "" {
+		fileContent, err := py.tryReadRequirementFile(py.pipRequirementsFile)
+		if err != nil {
+			return "", err
+		}
+		return fileContent, nil
+	} else {
+		py.pipRequirementsFile = "setup.py"
+		fileContent, err := py.tryReadRequirementFile(py.pipRequirementsFile)
+		if err != nil {
+			py.pipRequirementsFile = "requirements.txt"
+			fileContent, err = py.tryReadRequirementFile(py.pipRequirementsFile)
+			if err != nil {
+				return "", err
+			}
+			return fileContent, nil
+		}
+		return fileContent, nil
+	}
+}
+
+func (py *PythonPackageHandler) tryReadRequirementFile(file string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	fullPath := filepath.Join(wd, file)
+	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
+		return "", errors.New("wrong requirements file input: " + fullPath)
+	}
+	data, err := os.ReadFile(filepath.Clean(file))
+	if err != nil {
+		return "", errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
+	}
+	return string(data), nil
 }
