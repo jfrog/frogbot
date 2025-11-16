@@ -91,6 +91,7 @@ func (py *PythonPackageHandler) tryGetRequirementFile() (string, error) {
 		}
 		return fileContent, nil
 	} else {
+		// if we don't have a value in py.pipRequirementsFile - we try first setup.py and then requirements.txt
 		py.pipRequirementsFile = "setup.py"
 		fileContent, err := py.tryReadRequirementFile(py.pipRequirementsFile)
 		if err != nil {
