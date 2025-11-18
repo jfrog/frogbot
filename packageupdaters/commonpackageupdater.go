@@ -141,9 +141,13 @@ func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineF
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
-		if component.Location != nil && component.Location.File != "" {
-			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
-				pathsSet.Add(component.Location.File)
+		if len(component.Evidences) == 0 {
+			continue
+		}
+		evidence := component.Evidences[0]
+		if evidence.File != "" {
+			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
+				pathsSet.Add(evidence.File)
 			}
 		}
 	}

@@ -28,6 +28,7 @@ const (
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
 	SecretComment     ReviewCommentType = "Secrets"
+	SnippetComment    ReviewCommentType = "Snippet"
 
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
@@ -186,6 +187,9 @@ func getFrogbotComments(existingComments []vcsclient.CommentInfo) (reviewComment
 
 func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
+
+	commentsToAdd = append(commentsToAdd, generateSnippetReviewComment(issues, writer)...)
+
 	// CVE Applicable Evidence review comments
 	for _, applicableEvidences := range issues.GetApplicableEvidences() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, applicableEvidences.Evidence.Location, generateApplicabilityReviewContent(applicableEvidences, writer)))
@@ -206,6 +210,7 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 			commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, similarSastIssues.Location, generateSourceCodeReviewContent(SastComment, true, writer, similarSastIssues.issues...)))
 		}
 	}
+
 	// Secrets review comments
 	if !repo.FrogbotConfig.ShowSecretsAsPrComment {
 		return
@@ -217,6 +222,70 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 		for _, similarSecretsIssues := range groupSimilarJasIssues(issues.SecretsViolations) {
 			commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, similarSecretsIssues.Location, generateSourceCodeReviewContent(SecretComment, true, writer, similarSecretsIssues.issues...)))
 		}
+	}
+
+	return
+}
+
+func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer outputwriter.OutputWriter) (commentsToAdd []ReviewComment) {
+	type key struct {
+		File string
+		Line int
+	}
+
+	locToComp := make(map[key]formats.ComponentRow)
+	locToOrigin := make(map[key]string)
+	licensesBySnippet := make(map[key][]formats.LicenseViolationRow, len(issues.LicensesViolations))
+	for _, lic := range issues.LicensesViolations {
+		if lic.ImpactedDependencyVersion != "snippet" {
+			continue
+		}
+
+		for _, ipath := range lic.ImpactPaths {
+			if len(ipath) == 0 {
+				continue
+			}
+
+			snippet := ipath[0]
+
+			if len(snippet.Evidences) == 0 {
+				continue
+			}
+
+			evidence := snippet.Evidences[0]
+
+			k := key{File: evidence.File, Line: evidence.StartLine}
+
+			if _, exists := locToComp[k]; !exists {
+				locToComp[k] = snippet
+			}
+			if _, exists := licensesBySnippet[k]; !exists {
+				licensesBySnippet[k] = []formats.LicenseViolationRow{}
+			}
+			licensesBySnippet[k] = append(licensesBySnippet[k], lic)
+
+			locToOrigin[k] = evidence.ExternalReference
+
+		}
+	}
+
+	for loc, snippet := range locToComp {
+		licenses := licensesBySnippet[loc]
+		commentsToAdd = append(commentsToAdd, generateReviewComment(
+			SnippetComment,
+			formats.Location{
+				File:      loc.File,
+				StartLine: loc.Line,
+				EndLine:   loc.Line + 20,
+			},
+			generateComponentReviewContent(
+				SnippetComment,
+				true,
+				writer,
+				snippet,
+				licenses,
+				locToOrigin[loc]),
+		))
 	}
 	return
 }
@@ -280,6 +349,27 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bo
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
+	}
+	return
+}
+
+func generateComponentReviewContent(
+	commentType ReviewCommentType,
+	violation bool,
+	writer outputwriter.OutputWriter,
+	component formats.ComponentRow,
+	licenses []formats.LicenseViolationRow,
+	externalReference string,
+) (content string) {
+	switch commentType {
+	case SnippetComment:
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+			violation,
+			writer,
+			component,
+			licenses,
+			externalReference,
+		), writer)
 	}
 	return
 }
