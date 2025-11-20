@@ -325,6 +325,7 @@ type Git struct {
 	UseMostCommonAncestorAsTarget *bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
 	RepoOwner                     string
 	RepoName                      string   `yaml:"repoName,omitempty"`
+	LfsCheckout                   bool     `yaml:"lfsCheckout"`
 	Branches                      []string `yaml:"branches,omitempty"`
 	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
 	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`

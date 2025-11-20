@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os/exec"
 
 	"regexp"
 	"strings"
@@ -241,6 +242,27 @@ func (gm *GitManager) Clone(destinationPath, branchName string) error {
 	}
 	gm.localGitRepository = repo
 	log.Debug(fmt.Sprintf("Project cloned from %s to %s", credentialsFreeRemoteGitUrl, destinationPath))
+
+	if gm.git != nil && gm.git.LfsCheckout {
+		if err := gm.lfsCheckout(destinationPath); err != nil {
+			return fmt.Errorf("git lfs pull failed with error: %s", err.Error())
+		}
+	}
+
+	return nil
+}
+
+// lfsCheckout performs git lfs pull to fetch LFS objects after cloning
+func (gm *GitManager) lfsCheckout(workingDir string) error {
+	log.Debug("Running git lfs pull...")
+	// Use exec.Command to run git lfs pull since go-git doesn't support LFS natively
+	cmd := exec.Command("git", "lfs", "pull")
+	cmd.Dir = workingDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to run git lfs pull: %s, output: %s", err.Error(), string(output))
+	}
+	log.Debug("Git LFS pull completed successfully")
 	return nil
 }
 

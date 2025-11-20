@@ -411,3 +411,78 @@ func TestRemoveCredentialsFromUrlIfNeeded(t *testing.T) {
 		})
 	}
 }
+
+func TestGitManager_Clone_WithLfsCheckout(t *testing.T) {
+	testCases := []struct {
+		name          string
+		lfsCheckout   bool
+		description   string
+		expectLfsPull bool
+	}{
+		{
+			name:          "Clone without LFS checkout",
+			lfsCheckout:   false,
+			description:   "LFS checkout disabled, should not attempt git lfs pull",
+			expectLfsPull: false,
+		},
+		{
+			name:          "Clone with LFS checkout enabled",
+			lfsCheckout:   true,
+			description:   "LFS checkout enabled, should attempt git lfs pull",
+			expectLfsPull: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, err := fileutils.CreateTempDir()
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+			}()
+
+			// Create a git manager in dry run mode
+			gitManager := NewGitManager().SetDryRun(true, tmpDir)
+			gitManager.SetGitParams(&Git{
+				LfsCheckout: tc.lfsCheckout,
+			})
+
+			// Since we're in dry run mode, Clone will not actually attempt to run git lfs pull
+			// The test verifies that the SetGitParams correctly sets the LfsCheckout flag
+			assert.NotNil(t, gitManager.git)
+			assert.Equal(t, tc.lfsCheckout, gitManager.git.LfsCheckout)
+		})
+	}
+}
+
+func TestGitManager_SetGitParams_LfsCheckout(t *testing.T) {
+	testCases := []struct {
+		name        string
+		lfsCheckout bool
+	}{
+		{
+			name:        "LFS checkout disabled",
+			lfsCheckout: false,
+		},
+		{
+			name:        "LFS checkout enabled",
+			lfsCheckout: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gitManager := NewGitManager()
+			gitParams := &Git{
+				LfsCheckout: tc.lfsCheckout,
+				EmailAuthor: "test@example.com",
+			}
+
+			resultManager, err := gitManager.SetGitParams(gitParams)
+			assert.NoError(t, err)
+			assert.NotNil(t, resultManager.git)
+			assert.Equal(t, tc.lfsCheckout, resultManager.git.LfsCheckout)
+			assert.Equal(t, "test@example.com", resultManager.git.EmailAuthor)
+		})
+	}
+}

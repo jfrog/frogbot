@@ -820,3 +820,96 @@ func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.Moc
 	}, nil)
 	return mockVcsClient
 }
+
+func TestGitParams_LfsCheckout(t *testing.T) {
+	testCases := []struct {
+		name                string
+		lfsCheckout         bool
+		expectedLfsCheckout bool
+	}{
+		{
+			name:                "LFS checkout enabled",
+			lfsCheckout:         true,
+			expectedLfsCheckout: true,
+		},
+		{
+			name:                "LFS checkout disabled",
+			lfsCheckout:         false,
+			expectedLfsCheckout: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gitParams := &Git{
+				LfsCheckout: tc.lfsCheckout,
+			}
+
+			assert.Equal(t, tc.expectedLfsCheckout, gitParams.LfsCheckout)
+		})
+	}
+}
+
+func TestBuildRepoAggregator_LfsCheckout(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogTokenEnv:    "token",
+		GitProvider:      string(GitHub),
+		GitRepoOwnerEnv:  "jfrog",
+		GitRepoEnv:       "frogbot",
+		GitTokenEnv:      "123456789",
+		GitBaseBranchEnv: "main",
+	})
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
+	assert.NoError(t, err)
+
+	// Test with LfsCheckout = true in config file
+	configWithLfs := []byte(`
+- params:
+    git:
+      repoName: test-repo
+      lfsCheckout: true
+      branches:
+        - main
+`)
+
+	configAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, configWithLfs, gitParams, server, ScanRepository)
+	assert.NoError(t, err)
+	assert.Len(t, configAggregator, 1)
+	assert.True(t, configAggregator[0].LfsCheckout, "LfsCheckout should be true when set in config")
+
+	// Test with LfsCheckout = false in config file
+	configWithoutLfs := []byte(`
+- params:
+    git:
+      repoName: test-repo
+      lfsCheckout: false
+      branches:
+        - main
+`)
+
+	configAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, configWithoutLfs, gitParams, server, ScanRepository)
+	assert.NoError(t, err)
+	assert.Len(t, configAggregator, 1)
+	assert.False(t, configAggregator[0].LfsCheckout, "LfsCheckout should be false when set to false in config")
+
+	// Test with no LfsCheckout field in config (should default to false)
+	configDefault := []byte(`
+- params:
+    git:
+      repoName: test-repo
+      branches:
+        - main
+`)
+
+	configAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, configDefault, gitParams, server, ScanRepository)
+	assert.NoError(t, err)
+	assert.Len(t, configAggregator, 1)
+	assert.False(t, configAggregator[0].LfsCheckout, "LfsCheckout should default to false when not specified")
+}
