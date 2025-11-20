@@ -1,7 +1,0 @@
-{
-  "name": "test-proj",
-  "version": "1.0.0",
-  "dependencies": {
-    "minimatch": "0.2.14"
-  }
-}

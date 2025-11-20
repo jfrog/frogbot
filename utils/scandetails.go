@@ -6,14 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
-	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
-
-	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
-
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
+	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -32,7 +29,7 @@ type ScanDetails struct {
 	skipAutoInstall     bool
 	minSeverityFilter   severityutils.Severity
 	baseBranch          string
-	configProfile       *clientservices.ConfigProfile
+	configProfile       *xscservices.ConfigProfile
 	allowPartialResults bool
 
 	diffScan         bool
@@ -112,7 +109,7 @@ func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetConfigProfile(configProfile *clientservices.ConfigProfile) *ScanDetails {
+func (sc *ScanDetails) SetConfigProfile(configProfile *xscservices.ConfigProfile) *ScanDetails {
 	sc.configProfile = configProfile
 	return sc
 }
