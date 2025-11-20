@@ -1,0 +1,216 @@
+name: "Release Gate Tests"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  Pretest:
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Lint
+        run: go vet -v ./...
+
+  tests:
+    needs: Pretest
+    name: ${{ matrix.suite.name }} Tests
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: 'Unit'
+
+          - name: 'Scan Repository'
+            package: 'scanrepository'
+
+          - name: 'Scan Pull Request'
+            package: 'scanpullrequest'
+
+          - name: 'Package Handlers'
+            package: 'packagehandlers'
+
+    steps:
+      # Configure prerequisites
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Setup Python3
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install python components
+        run: python -m pip install pipenv poetry
+
+      - name: Install dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.x"
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: apt-transport-https dirmngr gnupg ca-certificates
+          version: 1.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+
+      - name: Install Conan
+        run: |
+          python -m pip install conan
+          conan profile detect
+
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Run Tests
+        run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 50m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+
+  github-integration:
+    name: GitHub Integration Tests
+    needs: Pretest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      - name: Run Tests
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+
+  azure-integration:
+    name: Azure Integration Tests
+    needs: Pretest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      - name: Run Tests
+        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+
+  gitlab-integration:
+    name: GitLab Integration Tests
+    needs: Pretest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      - name: Run Tests
+        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+
+  bitbucket-server-integration:
+    name: Bitbucket Server Integration Tests
+    needs: Pretest
+    runs-on: ${{ secrets.RELEASE_GATE_RUNNER }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+          cache: false
+
+      - name: Unzip Preconfigured Bitbucket Home
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+
+      - name: Download Bitbucket Server and Run
+        run: |
+          bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
+          chmod +x $bb_script_path
+          sh $bb_script_path
+
+      - name: Run Tests
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
+        run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+
