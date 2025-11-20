@@ -192,19 +192,11 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 
-			// Read config or resolve to default
-			var configData []byte
-			if test.configPath != "" {
-				configData, err = utils.ReadConfigFromFileSystem(test.configPath)
-				assert.NoError(t, err)
-			} else {
-				configData = []byte{}
-				// Manual set of "JF_GIT_BASE_BRANCH"
-				gitTestParams.Branches = []string{"master"}
-			}
+			// Manual set of "JF_GIT_BASE_BRANCH"
+			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
@@ -335,9 +327,8 @@ pr body
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 			// Load default configurations
-			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanRepository)
+			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}

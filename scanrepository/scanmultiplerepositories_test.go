@@ -52,9 +52,6 @@ func TestScanAndFixRepos(t *testing.T) {
 		},
 	}
 
-	configData, err := utils.ReadConfigFromFileSystem(testScanMultipleRepositoriesConfigPath)
-	assert.NoError(t, err)
-
 	testDir, cleanup := utils.CopyTestdataProjectsToTemp(t, "scanmultiplerepositories")
 	defer func() {
 		assert.NoError(t, os.Chdir(baseWd))
@@ -62,7 +59,7 @@ func TestScanAndFixRepos(t *testing.T) {
 	}()
 
 	utils.CreateDotGitWithCommit(t, testDir, port, testRepositories...)
-	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
+	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanMultipleRepositories)
 	assert.NoError(t, err)
 
 	var cmd = ScanMultipleRepositories{dryRun: true, dryRunRepoPath: testDir}

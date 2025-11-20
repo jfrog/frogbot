@@ -27,8 +27,7 @@ func TestFrogbotSchema(t *testing.T) {
 	assert.NoError(t, err)
 	schemaLoader := gojsonschema.NewBytesLoader(schema)
 
-	// Validate config in this repository
-	validateYamlSchema(t, schemaLoader, filepath.Join("..", ".frogbot", "frogbot-config.yml"), "")
+	// Config files are no longer used - skip repository config validation
 
 	// Validate all frogbot configs in commands/testdata/config
 	validateYamlsInDirectory(t, filepath.Join("..", "testdata", "config"), schemaLoader)
