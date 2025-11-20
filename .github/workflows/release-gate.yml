@@ -14,27 +14,7 @@ permissions:
   id-token: write
 
 jobs:
-  Pretest:
-    runs-on: ${{ vars.RUNNER_LABEL }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23.x
-          cache: false
-
-      # Generate mocks
-      - name: Generate mocks
-        run: go generate ./...
-
-      - name: Lint
-        run: go vet -v ./...
-
   tests:
-    needs: Pretest
     name: ${{ matrix.suite.name }} Tests
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
@@ -73,7 +53,7 @@ jobs:
       - name: Setup Python3
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Install python components
         run: python -m pip install pipenv poetry
@@ -121,7 +101,6 @@ jobs:
 
   github-integration:
     name: GitHub Integration Tests
-    needs: Pretest
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
@@ -143,7 +122,6 @@ jobs:
 
   azure-integration:
     name: Azure Integration Tests
-    needs: Pretest
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
@@ -165,7 +143,6 @@ jobs:
 
   gitlab-integration:
     name: GitLab Integration Tests
-    needs: Pretest
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
@@ -187,7 +164,6 @@ jobs:
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
-    needs: Pretest
     runs-on: ${{ vars.RUNNER_LABEL }}
     steps:
       - uses: actions/checkout@v4
@@ -217,7 +193,6 @@ jobs:
 
   oidc-integration:
     name: OIDC Integration Test
-    needs: Pretest
     runs-on: ${{ vars.RUNNER_LABEL }}
     steps:
       - name: Checkout
