@@ -11,7 +11,6 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
@@ -95,17 +94,11 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 		}()
 	}
 
-	// Send a usage report
-	waitForUsageResponse := utils.ReportUsageOnCommand(commandName, frogbotDetails.ServerDetails, frogbotDetails.Repositories)
-
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
 	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient, frogbotRepoConnection)
 
-	// Wait for usage reporting to finish.
-	waitForUsageResponse()
-
-	if err != nil && usage.ShouldReportUsage() {
+	if err != nil {
 		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repositories[0].JFrogProjectKey); reportError != nil {
 			log.Debug(reportError)
 		}
