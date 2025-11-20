@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   Pretest:
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
   tests:
     needs: Pretest
     name: ${{ matrix.suite.name }} Tests
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
       GRADLE_OPTS: -Dorg.gradle.daemon=false
@@ -122,7 +122,7 @@ jobs:
   github-integration:
     name: GitHub Integration Tests
     needs: Pretest
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -144,7 +144,7 @@ jobs:
   azure-integration:
     name: Azure Integration Tests
     needs: Pretest
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -166,7 +166,7 @@ jobs:
   gitlab-integration:
     name: GitLab Integration Tests
     needs: Pretest
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -188,7 +188,7 @@ jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
     needs: Pretest
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -218,7 +218,7 @@ jobs:
   oidc-integration:
     name: OIDC Integration Test
     needs: Pretest
-    runs-on: ${{ vars.RELEASE_GATE_RUNNER }}
+    runs-on: ${{ vars.RUNNER_LABEL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
