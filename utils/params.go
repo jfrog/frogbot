@@ -170,45 +170,9 @@ type Scan struct {
 	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
-	EmailDetails                    `yaml:",inline"`
 	ConfigProfile                   *services.ConfigProfile
 	SkipAutoInstall                 bool
 	AllowPartialResults             bool
-}
-
-type EmailDetails struct {
-	SmtpServer     string
-	SmtpPort       string
-	SmtpUser       string
-	SmtpPassword   string
-	EmailReceivers []string `yaml:"emailReceivers,omitempty"`
-}
-
-func (s *Scan) SetEmailDetails() error {
-	smtpServerAndPort := getTrimmedEnv(SmtpServerEnv)
-	if smtpServerAndPort == "" {
-		return nil
-	}
-	splittedServerAndPort := strings.Split(smtpServerAndPort, ":")
-	if len(splittedServerAndPort) < 2 {
-		return fmt.Errorf("failed while setting your email details. Could not extract the smtp server and its port from the %s environment variable. Expected format: `smtp.server.com:port`, received: %s", SmtpServerEnv, smtpServerAndPort)
-	}
-	s.SmtpServer = splittedServerAndPort[0]
-	s.SmtpPort = splittedServerAndPort[1]
-	s.SmtpUser = getTrimmedEnv(SmtpUserEnv)
-	s.SmtpPassword = getTrimmedEnv(SmtpPasswordEnv)
-	if s.SmtpUser == "" {
-		return fmt.Errorf("failed while setting your email details. SMTP username is expected, but the %s environment variable is empty", SmtpUserEnv)
-	}
-	if s.SmtpPassword == "" {
-		return fmt.Errorf("failed while setting your email details. SMTP password is expected, but the %s environment variable is empty", SmtpPasswordEnv)
-	}
-	if len(s.EmailReceivers) == 0 {
-		if emailReceiversEnv := getTrimmedEnv(EmailReceiversEnv); emailReceiversEnv != "" {
-			s.EmailReceivers = strings.Split(emailReceiversEnv, ",")
-		}
-	}
-	return nil
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -285,7 +249,6 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 	}
-	err = s.SetEmailDetails()
 	return
 }
 
@@ -322,8 +285,7 @@ func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	UseMostCommonAncestorAsTarget *bool `yaml:"useMostCommonAncestorAsTarget,omitempty"`
-	RepoOwner                     string
+	RepoOwner   string
 	RepoName                      string   `yaml:"repoName,omitempty"`
 	Branches                      []string `yaml:"branches,omitempty"`
 	BranchNameTemplate            string   `yaml:"branchNameTemplate,omitempty"`
@@ -404,13 +366,6 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
 			return
 		}
-	}
-	if g.UseMostCommonAncestorAsTarget == nil {
-		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
-		if err != nil {
-			return err
-		}
-		g.UseMostCommonAncestorAsTarget = &envValue
 	}
 
 	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
