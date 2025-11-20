@@ -173,7 +173,8 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
-			titleOutput, _ := test.gitManager.GenerateAggregatedFixBranchName(test.baseBranch, []techutils.Technology{techutils.Go})
+			titleOutput, err := test.gitManager.GenerateAggregatedFixBranchName(test.baseBranch, []techutils.Technology{techutils.Go})
+			assert.NoError(t, err)
 			assert.Equal(t, test.expected, titleOutput)
 		})
 	}
