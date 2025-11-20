@@ -87,11 +87,6 @@ jobs:
         with:
           nuget-version: 6.11.0
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: apt-transport-https dirmngr gnupg ca-certificates
-          version: 1.0
-
       - name: Install Pnpm
         uses: third-party-actions/pnpm-action-setup@v3.0.0
         with:
