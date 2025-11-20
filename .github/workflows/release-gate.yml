@@ -20,6 +20,7 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
       GRADLE_OPTS: -Dorg.gradle.daemon=false
+      CGO_ENABLED: 1
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +46,11 @@ jobs:
           go-version: 1.23.x
           cache: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Install npm
         uses: actions/setup-node@v3
@@ -109,6 +115,7 @@ jobs:
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -118,6 +125,11 @@ jobs:
           go-version: 1.23.x
           cache: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Run Tests
         run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -131,6 +143,7 @@ jobs:
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -140,6 +153,11 @@ jobs:
           go-version: 1.23.x
           cache: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Run Tests
         run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -153,6 +171,7 @@ jobs:
     runs-on: ${{ vars.RUNNER_LABEL }}
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -162,6 +181,11 @@ jobs:
           go-version: 1.23.x
           cache: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Run Tests
         run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
@@ -173,6 +197,8 @@ jobs:
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
     runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -182,6 +208,11 @@ jobs:
           go-version: 1.23.x
           cache: false
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Unzip Preconfigured Bitbucket Home
         run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
