@@ -7,12 +7,6 @@ concurrency:
   group: ${{ github.sha }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
-  security-events: write
-  id-token: write
-
 jobs:
   tests:
     name: ${{ matrix.suite.name }} Tests
@@ -241,6 +235,11 @@ jobs:
   oidc-integration:
     name: OIDC Integration Test
     runs-on: ${{ vars.RUNNER_LABEL }}
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
