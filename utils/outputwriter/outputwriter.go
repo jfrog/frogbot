@@ -58,7 +58,7 @@ const (
 </head>
 <body>
 	<div>
-		The following potential exposed secrets in your <a href="%s">%s</a> have been detected by <a href="https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot">Frogbot</a>
+		The following potential exposed secrets in your <a href="%s">%s</a> have been detected by <a href="https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot">Frogbot</a>
 		<br/>
 		<table class="table-container">
             <thead>
