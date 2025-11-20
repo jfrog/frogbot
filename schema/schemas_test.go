@@ -22,37 +22,13 @@ const (
 )
 
 func TestFrogbotSchema(t *testing.T) {
-	// Load frogbot schema
-	schema, err := os.ReadFile("frogbot-schema.json")
-	assert.NoError(t, err)
-	schemaLoader := gojsonschema.NewBytesLoader(schema)
-
-	// Config files are no longer used - skip repository config validation
-
-	// Validate all frogbot configs in commands/testdata/config
-	validateYamlsInDirectory(t, filepath.Join("..", "testdata", "config"), schemaLoader)
+	// Config files are no longer used - schema validation tests are skipped
+	t.Skip("Config files are no longer used")
 }
 
 func TestBadFrogbotSchemas(t *testing.T) {
-	// Load frogbot schema
-	schema, err := os.ReadFile("frogbot-schema.json")
-	assert.NoError(t, err)
-	schemaLoader := gojsonschema.NewBytesLoader(schema)
-
-	// Validate all bad frogbot configs in schema/testdata/
-	testCases := []struct {
-		testName    string
-		errorString string
-	}{
-		{"additional-prop", "Additional property additionalProp is not allowed"},
-		{"no-array", "Expected: array, given: object"},
-		{"no-git", "git is required"},
-		{"no-repo", "repoName is required"},
-		{"empty-repo", "Expected: string, given: null"},
-	}
-	for _, testCase := range testCases {
-		validateYamlSchema(t, schemaLoader, filepath.Join("testdata", testCase.testName+".yml"), testCase.errorString)
-	}
+	// Config files are no longer used - schema validation tests are skipped
+	t.Skip("Config files are no longer used")
 }
 
 func TestJFrogPipelinesTemplates(t *testing.T) {

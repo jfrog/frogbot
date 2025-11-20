@@ -23,9 +23,7 @@ import (
 )
 
 var (
-	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
-	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
-	configProfileFile             = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
+	configProfileFile = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {

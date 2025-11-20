@@ -84,7 +84,6 @@ var testPackagesData = []struct {
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName                       string
-		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
 		expectedMissingFilesInBranch   map[string][]string
@@ -106,7 +105,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName:                       "aggregate-multi-project",
@@ -115,7 +113,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName: "aggregate-no-vul",
@@ -148,7 +145,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/partial-results-enabled/.frogbot/frogbot-config.yml",
 			allowPartialResults:            true,
 		},
 	}

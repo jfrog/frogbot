@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -21,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testScanMultipleRepositoriesConfigPath = filepath.Join("..", "testdata", "config", "frogbot-config-scan-multiple-repositories.yml")
 var testRepositories = []string{"pip-repo", "npm-repo", "mvn-repo"}
 
 func TestScanAndFixRepos(t *testing.T) {
