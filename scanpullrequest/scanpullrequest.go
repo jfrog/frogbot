@@ -104,15 +104,6 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	// Output results
-	shouldSendExposedSecretsEmail := issues.SecretsIssuesExists() && repo.SmtpServer != ""
-	if shouldSendExposedSecretsEmail {
-		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, append(issues.SecretsVulnerabilities, issues.SecretsViolations...))
-		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
-			return
-		}
-	}
-
 	// Handle PR comments for scan output
 	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return

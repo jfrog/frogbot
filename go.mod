@@ -14,7 +14,6 @@ require (
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
 	github.com/jfrog/jfrog-cli-security v1.21.9
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20251023073119-78f187c9afbf
-	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.4

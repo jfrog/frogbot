@@ -80,13 +80,6 @@ const (
 	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
 
-	// Email related environment variables
-	//#nosec G101 -- False positive - no hardcoded credentials.
-	SmtpPasswordEnv   = "JF_SMTP_PASSWORD"
-	SmtpUserEnv       = "JF_SMTP_USER"
-	SmtpServerEnv     = "JF_SMTP_SERVER"
-	EmailReceiversEnv = "JF_EMAIL_RECEIVERS"
-
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv          = "JF_GIT_TOKEN"
 	GitBaseBranchEnv     = "JF_GIT_BASE_BRANCH"
@@ -94,9 +87,6 @@ const (
 	GitApiEndpointEnv    = "JF_GIT_API_ENDPOINT"
 	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
 	GitEmailAuthorEnv    = "JF_GIT_EMAIL_AUTHOR"
-
-	// Product ID for usage reporting
-	productId = "frogbot"
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
