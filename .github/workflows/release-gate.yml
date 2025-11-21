@@ -89,7 +89,7 @@ jobs:
 
       - name: Install Conan
         run: |
-          python -m pip install conan
+          python3 -m pip install conan
           conan profile detect
 
       # Generate mocks
