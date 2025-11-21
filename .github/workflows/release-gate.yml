@@ -93,6 +93,12 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           $HOME/.local/bin/conan profile detect
 
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
       # Generate mocks
       - name: Generate mocks
         run: go generate ./...
