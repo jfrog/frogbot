@@ -90,7 +90,8 @@ jobs:
       - name: Install Conan
         run: |
           python3 -m pip install conan
-          conan profile detect
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
 
       # Generate mocks
       - name: Generate mocks
