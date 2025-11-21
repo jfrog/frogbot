@@ -52,10 +52,10 @@ jobs:
           node-version: "16"
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check Python
+      - name: Install Python3 and pip
         run: |
-          python3 --version || echo "Python3 not found"
-          which python3 || echo "Python3 not in PATH"
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
 
       - name: Install python components
         run: python -m pip install pipenv poetry
