@@ -1,8 +1,12 @@
 name: Release Frogbot
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 3.0.1)'
+        required: true
+        type: string
 
 # Required permissions
 permissions:
@@ -14,23 +18,34 @@ jobs:
     name: Release Frogbot v3
     runs-on: ubuntu-latest
 
-    # Only run for v3.x.x releases
-    if: startsWith(github.event.release.tag_name, 'v3.')
-
     steps:
       - name: Extract version from tag
         id: version
         run: |
-          TAG="${{ github.event.release.tag_name }}"
-          VERSION="${TAG#v}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger: use input version
+            VERSION="${{ inputs.version }}"
+            # Add 'v' prefix if not present
+            if [[ ! "$VERSION" =~ ^v ]]; then
+              TAG="v$VERSION"
+            else
+              TAG="$VERSION"
+              VERSION="${VERSION#v}"
+            fi
+          else
+            # Release trigger: use release tag
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Release version: $VERSION"
+          echo "Release tag: $TAG"
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.release.tag_name }}
           fetch-depth: 0
 
       - name: Set up Go
@@ -83,18 +98,23 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add action/lib/
           
-          # Only commit and update tag if there are changes
+          # Check if there are changes
+          CHANGES=false
           if ! git diff --staged --quiet; then
-            echo "Action files changed, updating tag..."
+            echo "Action files changed, committing..."
             git commit -m "Build action for ${{ steps.version.outputs.tag }}"
-            
-            # Update the release tag to point to the new commit
-            git tag -f ${{ steps.version.outputs.tag }}
-            git push origin ${{ steps.version.outputs.tag }} --force
-            
-            echo "Tag updated with compiled action"
+            CHANGES=true
           else
             echo "No changes to action files"
+          fi
+          
+          # For manual triggers, always create/update the tag
+          # For release triggers, update the tag only if there were changes
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "$CHANGES" = "true" ]; then
+            echo "Creating/updating tag ${{ steps.version.outputs.tag }}..."
+            git tag -f ${{ steps.version.outputs.tag }}
+            git push origin ${{ steps.version.outputs.tag }} --force
+            echo "Tag ${{ steps.version.outputs.tag }} created/updated"
           fi
 
       - name: Update GitHub Action major version tag (v3)
@@ -140,6 +160,30 @@ jobs:
             --site="releases.jfrog.io" \
             --sync
 
+      - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+            
+            console.log(`Creating release for tag ${tag}`);
+            
+            // The tag was already created and pushed in the previous step
+            // Now create the release with auto-generated notes
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Release ${tag}`,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: false
+            });
+            
+            console.log(`Created release ${release.data.id} for ${tag}`);
+            console.log(`Release URL: ${release.data.html_url}`);
+
       - name: Cleanup JFrog config
         if: always()
         run: jf c rm --quiet || true
@@ -150,24 +194,43 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const release_id = context.payload.release.id;
-            const tag = context.payload.release.tag_name;
+            const tag = '${{ steps.version.outputs.tag }}';
             
-            console.log(`Deleting release ${release_id} and tag ${tag}`);
+            console.log(`Workflow failed, cleaning up tag ${tag}`);
             
-            // Delete the release
-            await github.rest.repos.deleteRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release_id
-            });
-            
-            // Delete the tag
-            await github.rest.git.deleteRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: `tags/${tag}`
-            });
-            
-            console.log('Release and tag deleted successfully');
+            try {
+              // Try to find and delete the release
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              
+              const release = releases.data.find(r => r.tag_name === tag);
+              if (release) {
+                console.log(`Deleting release ${release.id}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+                console.log('Release deleted');
+              } else {
+                console.log('No release found to delete');
+              }
+              
+              // Delete the tag
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`
+                });
+                console.log('Tag deleted');
+              } catch (error) {
+                console.log(`Tag deletion failed or tag doesn't exist: ${error.message}`);
+              }
+            } catch (error) {
+              console.error(`Cleanup failed: ${error.message}`);
+              // Don't fail the workflow if cleanup fails
+            }
 
