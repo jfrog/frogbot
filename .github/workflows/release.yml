@@ -32,6 +32,13 @@ jobs:
               TAG="$VERSION"
               VERSION="${VERSION#v}"
             fi
+            
+            # Validate it's a v3.x.x version
+            if [[ ! "$TAG" =~ ^v3\.[0-9]+\.[0-9]+$ ]]; then
+              echo "❌ Error: Version must be v3.x.x format (e.g., v3.0.1)"
+              echo "Got: $TAG"
+              exit 1
+            fi
           else
             # Release trigger: use release tag
             TAG="${{ github.event.release.tag_name }}"
@@ -39,8 +46,35 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Release version: $VERSION"
-          echo "Release tag: $TAG"
+          echo "✅ Release version: $VERSION"
+          echo "✅ Release tag: $TAG"
+
+      - name: Check if tag already exists
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+            
+            try {
+              // Check if tag exists
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`
+              });
+              
+              // Tag exists - fail the workflow
+              core.setFailed(`❌ Tag ${tag} already exists! Please use a different version.`);
+            } catch (error) {
+              if (error.status === 404) {
+                // Tag doesn't exist - good to proceed
+                console.log(`✅ Tag ${tag} does not exist, proceeding with release`);
+              } else {
+                // Some other error
+                throw error;
+              }
+            }
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,9 +109,9 @@ jobs:
         env:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-        run: jf audit --fail=false
+        run: jf audit --fail=true
 
-      - name: Set up Node.js for Action
+      - name: Set up Node.js for ActionØ
         uses: actions/setup-node@v4
         with:
           node-version: '16'
@@ -171,6 +205,7 @@ jobs:
             
             // The tag was already created and pushed in the previous step
             // Now create the release with auto-generated notes
+            // Note: make_latest is set to false so this doesn't become the "Latest" release
             const release = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -178,11 +213,13 @@ jobs:
               name: `Release ${tag}`,
               generate_release_notes: true,
               draft: false,
-              prerelease: false
+              prerelease: false,
+              make_latest: false
             });
             
-            console.log(`Created release ${release.data.id} for ${tag}`);
-            console.log(`Release URL: ${release.data.html_url}`);
+            console.log(`✅ Created release ${release.data.id} for ${tag}`);
+            console.log(`📦 Release URL: ${release.data.html_url}`);
+            console.log(`ℹ️  This release is NOT marked as "Latest"`);
 
       - name: Cleanup JFrog config
         if: always()
