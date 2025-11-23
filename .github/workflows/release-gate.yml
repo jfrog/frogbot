@@ -275,8 +275,8 @@ jobs:
         run: |
           curl -X POST "${{ env.OIDC_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
           "name": "${{ env.OIDC_PROVIDER_NAME }}",
-          "issuer_url": "https://token.actions.githubusercontent.com",
-          "provider_type": "GitHub",
+          "issuer_url": "${{secrets.OIDC_PROVIDER_URL}}",
+          "provider_type": "GitHub Enterprise",
           "enable_permissive_configuration": "true",
           "description": "This is a test configuration created for OIDC-Access integration test" }'
 
@@ -290,7 +290,7 @@ jobs:
                 "name": "oidc-test-identity-mapping",
                 "priority": "1",
                 "claims": {
-                  "repository": "${{ github.repository_owner }}/frogbot"
+                  "repository": "${{ github.repository_owner }}/Frogbot-mirror"
                 },
                 "token_spec": { 
                    "username": "admin",
@@ -308,7 +308,10 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_WORKING_DIR: ./testdata/projects/noIssuesProject
+          JF_GIT_REPO: "Frogbot-mirror"
+          JF_GIT_OWNER: "JFROG"
           JF_FAIL: "FALSE"
+          JF_GIT_API_ENDPOINT: "${{ GITHUB_API_URL }}"
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
