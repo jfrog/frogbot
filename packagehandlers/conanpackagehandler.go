@@ -57,7 +57,7 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	data, err := os.ReadFile(conanFilePath)
 	if err != nil {
-		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s\n", conanFilePath, err.Error())
+		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s", conanFilePath, err.Error())
 	}
 	currentFile := string(data)
 	fixedPackage := vulnDetails.ImpactedDependencyName + "/" + vulnDetails.SuggestedFixedVersion
