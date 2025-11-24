@@ -113,6 +113,7 @@ jobs:
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
           JF_FAIL: "true"
+          JF_SKIP_AUTOFIX: "true"
 
       - name: Set up Node.js for ActionØ
         uses: actions/setup-node@v4
