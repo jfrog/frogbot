@@ -105,19 +105,14 @@ jobs:
       - name: Generate mocks
         run: go generate ./...
 
-      - name: Run Frogbot on Frogbot
+      - name: Run Frogbot scan before release
+        uses: jfrog/frogbot@v2
         env:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
           JF_FAIL: "true"
-        run: |
-          echo "Building Frogbot binary..."
-          go build -o frogbot-scan
-          
-          echo "Running Frogbot scan before release..."
-          ./frogbot-scan scan-repository
 
       - name: Set up Node.js for ActionØ
         uses: actions/setup-node@v4
