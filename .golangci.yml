@@ -1,6 +1,9 @@
 version: "2"
 
-issues:
-  exclude:
-    - "QF1008:"
+linters:
+  exclusions:
+    rules:
+      - linters:
+          - staticcheck
+        text: "QF1008:"
 
