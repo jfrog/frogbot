@@ -105,7 +105,7 @@ jobs:
       - name: Generate mocks
         run: go generate ./...
 
-      - name: Run Frogbot on Frogbot (dogfooding 🐸)
+      - name: Run Frogbot on Frogbot
         env:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
@@ -116,7 +116,7 @@ jobs:
           echo "Building Frogbot binary..."
           go build -o frogbot-scan
           
-          echo "Running Frogbot scan on itself (dogfooding!)..."
+          echo "Running Frogbot scan before release..."
           ./frogbot-scan scan-repository
 
       - name: Set up Node.js for ActionØ
@@ -165,13 +165,6 @@ jobs:
           git tag -f v3
           git push origin v3 --force
           echo "Updated v3 tag to ${{ steps.version.outputs.tag }}"
-
-      - name: Pre-download Go dependencies
-        run: |
-          echo "Pre-downloading all dependencies to avoid parallel build contention..."
-          go mod download
-          go list -mod=mod -m all
-          echo "✅ Dependencies cached and ready for parallel builds"
 
       - name: Build and upload binaries (parallel)
         env:
