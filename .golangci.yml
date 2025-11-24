@@ -1,7 +1,8 @@
 version: "2"
 
-linters:
-  settings:
-    staticcheck:
-      checks: ["standard", "-QF1008"]
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "QF1008:"
 
