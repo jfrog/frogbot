@@ -9,7 +9,7 @@ build () {
   exeName="$4"
   echo "Building $exeName for $GOOS-$GOARCH ..."
 
-  CGO_ENABLED=0 go build -o "$exeName" -ldflags '-w -extldflags "-static" -X github.com/jfrog/frogbot/v2/utils.FrogbotVersion='"$version"
+  CGO_ENABLED=0 jf go build -o "$exeName" -ldflags '-w -extldflags "-static" -X github.com/jfrog/frogbot/v2/utils.FrogbotVersion='"$version"
   chmod +x "$exeName"
 
   # Run verification after building plugin for the correct platform of this image.
