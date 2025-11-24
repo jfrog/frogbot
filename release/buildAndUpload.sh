@@ -14,7 +14,7 @@ build () {
 
   # Run verification after building plugin for the correct platform of this image.
   if [[ "$pkg" = "frogbot-linux-386" ]]; then
-    verifyVersionMatching
+    verifyVersionMatching "$exeName"
   fi
 }
 
@@ -24,19 +24,26 @@ buildAndUpload () {
   goos="$2"
   goarch="$3"
   fileExtension="$4"
-  exeName="frogbot$fileExtension"
+  # Use unique filename during build to avoid parallel conflicts
+  uniqueExeName="${pkg}${fileExtension}"
+  finalExeName="frogbot$fileExtension"
 
-  build "$pkg" "$goos" "$goarch" "$exeName"
+  build "$pkg" "$goos" "$goarch" "$uniqueExeName"
 
-  destPath="$pkgPath/$version/$pkg/$exeName"
-  echo "Uploading $exeName to $destPath ..."
-  jf rt u "./$exeName" "$destPath"
+  destPath="$pkgPath/$version/$pkg/$finalExeName"
+  echo "Uploading $uniqueExeName to $destPath ..."
+  jf rt u "./$uniqueExeName" "$destPath"
+  
+  # Clean up the unique build file after upload
+  rm -f "./$uniqueExeName"
 }
 
 # Verify version provided in pipelines UI matches version in frogbot source code.
+# Takes the executable name as parameter
 verifyVersionMatching () {
+  local exePath="$1"
   echo "Verifying provided version matches built version..."
-  res=$(eval "./frogbot -v")
+  res=$(eval "./$exePath -v")
   exitCode=$?
   if [[ $exitCode -ne 0 ]]; then
     echo "Error: Failed verifying version matches"
