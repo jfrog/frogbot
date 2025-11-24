@@ -162,6 +162,15 @@ jobs:
           git push origin v3 --force
           echo "Updated v3 tag to ${{ steps.version.outputs.tag }}"
 
+      - name: Warm up Go caches for fast parallel builds
+        run: |
+          echo "📦 Pre-downloading all dependencies..."
+          go mod download
+          echo "🔥 Warming up build cache with quick build..."
+          go build -o /tmp/frogbot-warmup
+          rm /tmp/frogbot-warmup
+          echo "✅ Caches ready - parallel builds should be blazing fast!"
+
       - name: Build and upload binaries (parallel)
         env:
           VERSION: ${{ steps.version.outputs.tag }}
