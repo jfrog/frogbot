@@ -137,19 +137,19 @@ func TestExtractClientInfo(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	_, err := extractGitParamsFromEnvs(ScanRepository)
+	_, err := extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
-	_, err = extractGitParamsFromEnvs(ScanRepository)
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_OWNER' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
-	_, err = extractGitParamsFromEnvs(ScanRepository)
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
 	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token"})
-	_, err = extractGitParamsFromEnvs(ScanRepository)
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
@@ -180,7 +180,7 @@ func TestExtractAndAssertRepoParams(t *testing.T) {
 
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configParamsTestFile)
 	assert.NoError(t, err)
@@ -227,7 +227,7 @@ func TestBuildRepoAggregatorWithEmptyScan(t *testing.T) {
 	}()
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs(ScanRepository)
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFileContent, err := ReadConfigFromFileSystem(configEmptyScanParamsTestFile)
 	assert.NoError(t, err)
@@ -263,7 +263,7 @@ func testExtractAndAssertProjectParams(t *testing.T, project Project) {
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, commandName string) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
-	gitParams, err := extractGitParamsFromEnvs(commandName)
+	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, nil, gitParams, server, commandName)
 	assert.NoError(t, err)
