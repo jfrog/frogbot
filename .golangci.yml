@@ -3,5 +3,5 @@ version: "2"
 linters:
   settings:
     staticcheck:
-      checks: ["-QF1008"]
+      checks: ["standard", "-QF1008"]
 
