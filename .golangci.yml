@@ -1,8 +1,6 @@
 version: "2"
 
 issues:
-  exclude-rules:
-    - linters:
-        - staticcheck
-      text: "QF1008:"
+  exclude:
+    - "QF1008:"
 
