@@ -33,9 +33,7 @@ import (
 
 const (
 	ScanPullRequest                     = "scan-pull-request"
-	ScanAllPullRequests                 = "scan-all-pull-requests"
 	ScanRepository                      = "scan-repository"
-	ScanMultipleRepositories            = "scan-multiple-repositories"
 	RootDir                             = "."
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
@@ -53,7 +51,6 @@ const (
 )
 
 var (
-	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )

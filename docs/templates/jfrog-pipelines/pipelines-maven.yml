@@ -180,8 +180,8 @@ pipelines:
               getFrogbotScriptPath=$( [[ -z "$JF_RELEASES_REPO" ]] && echo "https://releases.jfrog.io" || echo "${JF_URL}/artifactory/${JF_RELEASES_REPO}" )
               curl -fLg "$getFrogbotScriptPath/artifactory/frogbot/v2/[RELEASE]/getFrogbot.sh" | sh
               restore_cache_files maven_cache ~/.m2
-              ./frogbot scan-all-pull-requests
-              ./frogbot scan-multiple-repositories
+              ./frogbot scan-pull-request
+              ./frogbot scan-repository
               add_cache_files ~/.m2 maven_cache || true
 
             # For Windows runner:
@@ -196,5 +196,5 @@ pipelines:
             #   restore_cache_files maven_cache "%userprofile%\.m2"
             #   Invoke-Expression (Invoke-WebRequest -Uri $scriptUrl -UseBasicParsing).Content
             #   add_cache_files "%userprofile%\.m2" maven_cache || true
-            #   .\frogbot.exe scan-all-pull-requests
-            #   .\frogbot.exe scan-multiple-repositories
+            #   .\frogbot.exe scan-pull-request
+            #   .\frogbot.exe scan-repository
