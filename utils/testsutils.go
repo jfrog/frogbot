@@ -206,7 +206,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 			assert.NoError(t, err)
 
 		case r.RequestURI == fmt.Sprintf("/%s/%ssystem/version", apiUrlPart, "xsc"):
-			_, err := w.Write([]byte(fmt.Sprintf(`{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)))
+			_, err := fmt.Fprintf(w, `{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)
 			assert.NoError(t, err)
 		default:
 			assert.Fail(t, "received an unexpected request")
