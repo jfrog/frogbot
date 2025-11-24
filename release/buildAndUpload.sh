@@ -63,16 +63,39 @@ pkgPath="${repoName}/v${majorVersion}"
 
 # Build and upload for every architecture.
 # Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
+echo "Building linux-386 first for version verification..."
 buildAndUpload 'frogbot-linux-386' 'linux' '386' ''
-buildAndUpload 'frogbot-linux-amd64' 'linux' 'amd64' ''
-buildAndUpload 'frogbot-linux-s390x' 'linux' 's390x' ''
-buildAndUpload 'frogbot-linux-arm64' 'linux' 'arm64' ''
-buildAndUpload 'frogbot-linux-arm' 'linux' 'arm' ''
-buildAndUpload 'frogbot-linux-ppc64' 'linux' 'ppc64' ''
-buildAndUpload 'frogbot-linux-ppc64le' 'linux' 'ppc64le' ''
-buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
-buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' ''
-buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
+
+# Build the rest in parallel for speed
+echo ""
+echo "Building remaining 9 platforms in parallel..."
+pids=()
+
+buildAndUpload 'frogbot-linux-amd64' 'linux' 'amd64' '' & pids+=($!)
+buildAndUpload 'frogbot-linux-s390x' 'linux' 's390x' '' & pids+=($!)
+buildAndUpload 'frogbot-linux-arm64' 'linux' 'arm64' '' & pids+=($!)
+buildAndUpload 'frogbot-linux-arm' 'linux' 'arm' '' & pids+=($!)
+buildAndUpload 'frogbot-linux-ppc64' 'linux' 'ppc64' '' & pids+=($!)
+buildAndUpload 'frogbot-linux-ppc64le' 'linux' 'ppc64le' '' & pids+=($!)
+buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' '' & pids+=($!)
+buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' '' & pids+=($!)
+buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe' & pids+=($!)
+
+# Wait for all background jobs and check for failures
+echo "Waiting for all parallel builds to complete..."
+failed=0
+for pid in "${pids[@]}"; do
+  wait $pid || failed=1
+done
+
+if [ $failed -eq 1 ]; then
+  echo "❌ One or more builds failed!"
+  exit 1
+fi
+
+echo ""
+echo "✅ All builds completed successfully!"
+echo ""
 
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat
 
