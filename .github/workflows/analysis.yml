@@ -35,7 +35,7 @@ jobs:
         # Generate mocks
       - name: Generate mocks
         run: go generate ./...
-        
+
       - name: Run Go-Sec scanner
         uses: jfrog/.github/actions/gosec-scanner@main
 
