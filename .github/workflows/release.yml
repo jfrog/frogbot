@@ -158,19 +158,25 @@ jobs:
           git push origin v3 --force
           echo "Updated v3 tag to ${{ steps.version.outputs.tag }}"
 
-      - name: Build and upload binaries
+      - name: Build and upload binaries (parallel with goroutines)
         env:
           VERSION: ${{ steps.version.outputs.tag }}
           JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
           JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
           JFROG_CLI_BUILD_PROJECT: ecosys
         run: |
+          # Build the parallel builder tool
+          cd release/builder
+          go build -o builder .
+          cd ../..
+          
+          # Run the parallel builder
           env -i PATH=$PATH HOME=$HOME \
             JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
             JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
             JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
             CI=true \
-            release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
+            ./release/builder/builder "${{ steps.version.outputs.version }}"
 
       - name: Publish build info
         env:
