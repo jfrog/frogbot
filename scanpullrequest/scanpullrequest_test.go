@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/jfrog/frogbot/v2/testdata"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
@@ -35,10 +37,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
+
+var gitParams = &utils.Repository{
+	OutputWriter: &outputwriter.SimplifiedOutput{},
+	Params: utils.Params{
+		Git: utils.Git{
+			RepoOwner: "repo-owner",
+			Branches:  []string{"master"},
+			RepoName:  "repo-name",
+		},
+	},
+}
+
 const (
 	testSourceBranchName = "pr"
 	testTargetBranchName = "master"
 )
+
+func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
+	return testdata.NewMockVcsClient(gomock.NewController(t))
+}
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
 	allowedLicenses := []string{"MIT"}
@@ -91,7 +110,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 21},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 26},
 					ImpactedDependencyName: "Dep-1",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -100,7 +119,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				Applicable:    "Not Applicable",
 				FixedVersions: []string{"1.2.2"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 2},
+					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 3},
 					ImpactedDependencyName: "Dep-2",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable", ScannerDescription: "rule-msg"}}},
@@ -110,7 +129,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -131,7 +150,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -152,7 +171,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -176,7 +195,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						SeverityDetails: formats.SeverityDetails{
 							Severity:         "Medium",
-							SeverityNumValue: 14,
+							SeverityNumValue: 19,
 						},
 						ImpactedDependencyName: "Dep-1",
 					},

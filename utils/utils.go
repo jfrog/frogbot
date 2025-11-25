@@ -18,7 +18,6 @@ import (
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/snapshotconvertor"
@@ -34,9 +33,7 @@ import (
 
 const (
 	ScanPullRequest                     = "scan-pull-request"
-	ScanAllPullRequests                 = "scan-all-pull-requests"
 	ScanRepository                      = "scan-repository"
-	ScanMultipleRepositories            = "scan-multiple-repositories"
 	RootDir                             = "."
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
@@ -54,7 +51,6 @@ const (
 )
 
 var (
-	TrueVal                 = true
 	FrogbotVersion          = "0.0.0"
 	branchInvalidCharsRegex = regexp.MustCompile(branchNameRegex)
 )
@@ -159,39 +155,6 @@ func Chdir(dir string) (cbk func() error, err error) {
 		return nil, fmt.Errorf("could not change dir to: %s\n%s", dir, err.Error())
 	}
 	return func() error { return os.Chdir(wd) }, err
-}
-
-func ReportUsageOnCommand(commandName string, serverDetails *config.ServerDetails, repositories RepoAggregator) func() {
-	reporter := usage.NewUsageReporter(productId, serverDetails)
-	reports, err := convertToUsageReports(commandName, repositories)
-	if err != nil {
-		log.Debug(usage.ArtifactoryCallHomePrefix, "Could not create usage data to report", err.Error())
-		return func() {}
-	}
-	reporter.Report(reports...)
-	return func() {
-		// Ignoring errors on purpose, we don't want to confuse the user with errors on usage reporting.
-		_ = reporter.WaitForResponses()
-	}
-}
-
-func convertToUsageReports(commandName string, repositories RepoAggregator) (reports []usage.ReportFeature, err error) {
-	if len(repositories) == 0 {
-		err = fmt.Errorf("no repositories info provided")
-		return
-	}
-	for _, repository := range repositories {
-		// Report one entry for each repository as client
-		if clientId, e := Md5Hash(repository.RepoName); e != nil {
-			err = errors.Join(err, e)
-		} else {
-			reports = append(reports, usage.ReportFeature{
-				FeatureId: commandName,
-				ClientId:  clientId,
-			})
-		}
-	}
-	return
 }
 
 func Md5Hash(values ...string) (string, error) {
