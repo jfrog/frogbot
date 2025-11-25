@@ -311,7 +311,7 @@ jobs:
           JF_GIT_REPO: "Frogbot-mirror"
           JF_GIT_OWNER: "JFROG"
           JF_FAIL: "FALSE"
-          JF_GIT_API_ENDPOINT: "${{ GITHUB_API_URL }}"
+          JF_GIT_API_ENDPOINT: "${{ github.api_url }}"
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
