@@ -259,9 +259,14 @@ jobs:
           sudo apt-get install -y iproute2 net-tools lsof
           echo ""
           echo "=== Verifying installations ==="
-          ss --version || echo "ss not installed"
-          netstat --version || echo "netstat not installed"
-          lsof -v || echo "lsof not installed"
+          ss --version 2>&1 || echo "ss not installed"
+          netstat --version 2>&1 || echo "netstat not installed"  
+          lsof -v 2>&1 | head -3 || echo "lsof not installed"
+          echo ""
+          echo "=== Checking which utilities are available ==="
+          command -v ss && echo "✓ ss is in PATH" || echo "✗ ss not in PATH"
+          command -v netstat && echo "✓ netstat is in PATH" || echo "✗ netstat not in PATH"
+          command -v lsof && echo "✓ lsof is in PATH" || echo "✗ lsof not in PATH"
 
       # ============= DEBUGGING STEPS =============
       - name: Check System Resources
@@ -282,10 +287,10 @@ jobs:
           echo "=== ulimit Settings ==="
           ulimit -a
           echo ""
-          echo "=== Available Network Utilities ==="
-          command -v ss && echo "✓ ss available" || echo "✗ ss not available"
-          command -v netstat && echo "✓ netstat available" || echo "✗ netstat not available"
-          command -v lsof && echo "✓ lsof available" || echo "✗ lsof not available"
+          echo "=== Available Network Utilities (pre-install check) ==="
+          (command -v ss && echo "✓ ss available") || echo "✗ ss not available"
+          (command -v netstat && echo "✓ netstat available") || echo "✗ netstat not available"
+          (command -v lsof && echo "✓ lsof available") || echo "✗ lsof not available"
 
       - name: Verify Java Installation
         run: |
@@ -314,11 +319,11 @@ jobs:
           echo ""
           echo "=== All listening ports ==="
           if command -v ss &> /dev/null; then
-            ss -tuln | grep LISTEN
+            ss -tuln | grep LISTEN || echo "No listening ports found"
           elif command -v netstat &> /dev/null; then
-            sudo netstat -tuln | grep LISTEN
+            sudo netstat -tuln | grep LISTEN || echo "No listening ports found"
           elif command -v lsof &> /dev/null; then
-            sudo lsof -i -P -n | grep LISTEN
+            sudo lsof -i -P -n | grep LISTEN || echo "No listening ports found"
           else
             echo "No port checking utility available"
           fi
@@ -362,7 +367,7 @@ jobs:
           sleep 30
           echo ""
           echo "=== Check Java Processes ==="
-          ps aux | grep bitbucket || echo "No bitbucket processes found"
+          ps aux | grep -i bitbucket | grep -v grep || echo "No bitbucket processes found"
           echo ""
           echo "=== Check Port 7990 ==="
           if command -v ss &> /dev/null; then
@@ -376,10 +381,10 @@ jobs:
           fi
           echo ""
           echo "=== Check Bitbucket Status Endpoint ==="
-          curl -v http://localhost:7990/status || echo "Status endpoint not responding"
+          curl -v http://localhost:7990/status 2>&1 || echo "Status endpoint not responding"
           echo ""
           echo "=== List Bitbucket Home Directory ==="
-          ls -la ${PWD}/bitbucketHome/ || echo "bitbucketHome not found"
+          ls -la ${PWD}/bitbucketHome/ 2>&1 || echo "bitbucketHome not found"
 
       - name: Display Bitbucket Server Logs
         if: always()
