@@ -263,7 +263,7 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, projectName string, failOnSecurityIssues bool) {
-	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName)
+	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
@@ -1139,8 +1139,24 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 	}
 }
 
-func preparePullRequestTest(t *testing.T, projectName string) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
+func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
+
+	// Set test-specific environment variables
+	envVars := map[string]string{}
+	if !failOnSecurityIssues {
+		envVars[utils.FailOnSecurityIssuesEnv] = "false"
+	}
+	
+	// Set working directories for multi-dir tests
+	if projectName == "multi-dir-test-proj" {
+		envVars[utils.WorkingDirectoryEnv] = "sub1,sub3/sub4,sub2"
+		envVars[utils.RequirementsFileEnv] = "requirements.txt"
+	}
+	
+	if len(envVars) > 0 {
+		utils.SetEnvAndAssert(t, envVars)
+	}
 
 	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
 	assert.NoError(t, err)

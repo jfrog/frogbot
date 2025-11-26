@@ -176,6 +176,15 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
+			// Set working directories for multi-dir/multi-project tests
+			switch test.testName {
+			case "aggregate-multi-dir":
+				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm1,npm2"))
+			case "aggregate-multi-project":
+				// Multi-project test: set working dirs for npm and pip subdirectories
+				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm,pip"))
+				assert.NoError(t, os.Setenv(utils.RequirementsFileEnv, "requirements.txt"))
+			}
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
