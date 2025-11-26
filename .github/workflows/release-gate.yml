@@ -268,6 +268,21 @@ jobs:
           command -v netstat && echo "✓ netstat is in PATH" || echo "✗ netstat not in PATH"
           command -v lsof && echo "✓ lsof is in PATH" || echo "✗ lsof not in PATH"
 
+      - name: Downgrade Git for Bitbucket Compatibility
+        run: |
+          echo "=== Current Git Version ==="
+          git --version
+          echo ""
+          echo "=== Downgrading Git to 2.43.0 (compatible with Bitbucket 8.16.1) ==="
+          # Add Git PPA for older versions
+          sudo add-apt-repository ppa:git-core/ppa -y || true
+          sudo apt-get update
+          # Install specific Git version that Bitbucket 8.16.1 supports
+          sudo apt-get install -y --allow-downgrades git=1:2.43.* || sudo apt-get install -y git
+          echo ""
+          echo "=== New Git Version ==="
+          git --version
+
       # ============= DEBUGGING STEPS =============
       - name: Check System Resources
         run: |
