@@ -98,7 +98,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 21},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 26},
 					ImpactedDependencyName: "Dep-1",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -107,7 +107,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				Applicable:    "Not Applicable",
 				FixedVersions: []string{"1.2.2"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 2},
+					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 3},
 					ImpactedDependencyName: "Dep-2",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable", ScannerDescription: "rule-msg"}}},
@@ -117,7 +117,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -138,7 +138,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -159,7 +159,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 21,
+					SeverityNumValue: 26,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -183,7 +183,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						SeverityDetails: formats.SeverityDetails{
 							Severity:         "Medium",
-							SeverityNumValue: 14,
+							SeverityNumValue: 19,
 						},
 						ImpactedDependencyName: "Dep-1",
 					},
@@ -1191,7 +1191,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			w.WriteHeader(http.StatusOK)
 			// expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
 			// assert.NoError(t, err)
-			_, err := w.Write([]byte(fmt.Sprintf(`{ "id": %d, "iid": 133, "project_id": 15513260, "title": "Dummy pull request", "description": "this is pr description", "state": "opened", "target_branch": "%s", "source_branch": "%s", "author": {"username": "testuser"}}`, params.prDetails.ID, params.prDetails.Target.Name, params.prDetails.Source.Name)))
+			_, err := fmt.Fprintf(w, `{ "id": %d, "iid": 133, "project_id": 15513260, "title": "Dummy pull request", "description": "this is pr description", "state": "opened", "target_branch": "%s", "source_branch": "%s", "author": {"username": "testuser"}}`, params.prDetails.ID, params.prDetails.Target.Name, params.prDetails.Source.Name)
 			assert.NoError(t, err)
 		// Mimic download specific branch to scan
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
