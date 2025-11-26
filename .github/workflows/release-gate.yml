@@ -252,14 +252,120 @@ jobs:
           java-version: "11"
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # ============= DEBUGGING STEPS =============
+      - name: Check System Resources
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo ""
+          echo "=== CPU Information ==="
+          nproc
+          lscpu | head -20
+          echo ""
+          echo "=== Memory Information ==="
+          free -h
+          echo ""
+          echo "=== Disk Space ==="
+          df -h
+          echo ""
+          echo "=== ulimit Settings ==="
+          ulimit -a
+
+      - name: Verify Java Installation
+        run: |
+          echo "=== Java Version ==="
+          java -version
+          echo ""
+          echo "=== JAVA_HOME ==="
+          echo $JAVA_HOME
+          ls -la $JAVA_HOME || echo "JAVA_HOME not found"
+          echo ""
+          echo "=== Java Processes ==="
+          ps aux | grep java || echo "No Java processes running"
+
+      - name: Check Port Availability
+        run: |
+          echo "=== Check if port 7990 is in use ==="
+          sudo netstat -tuln | grep 7990 || echo "Port 7990 is available"
+          echo ""
+          echo "=== All listening ports ==="
+          sudo netstat -tuln | grep LISTEN
+
+      - name: Verify Bitbucket Home Zip
+        run: |
+          echo "=== Check Bitbucket Home Zip ==="
+          ls -lh ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip
+          echo ""
+          echo "=== Test Zip Integrity ==="
+          unzip -t ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip | head -20
+          echo ""
+          echo "=== List Zip Contents (first 20 files) ==="
+          unzip -l ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip | head -30
+
       - name: Unzip Preconfigured Bitbucket Home
-        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+        run: |
+          echo "=== Unzipping Bitbucket Home ==="
+          unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+          echo ""
+          echo "=== Verify Extracted Files ==="
+          ls -la ${PWD}/bitbucketHome || echo "bitbucketHome directory not found"
+          echo ""
+          echo "=== Check Permissions ==="
+          ls -la ${PWD}/bitbucketHome/ | head -20
 
       - name: Download Bitbucket Server and Run
         run: |
+          echo "=== Starting Bitbucket Server Setup ==="
           bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
+          echo "Script path: $bb_script_path"
           chmod +x $bb_script_path
+          cat $bb_script_path
+          echo ""
+          echo "=== Executing Bitbucket Server Script ==="
           sh $bb_script_path
+
+      - name: Wait and Check Bitbucket Server Status
+        run: |
+          echo "=== Waiting for Bitbucket Server (30 seconds) ==="
+          sleep 30
+          echo ""
+          echo "=== Check Java Processes ==="
+          ps aux | grep bitbucket || echo "No bitbucket processes found"
+          echo ""
+          echo "=== Check Port 7990 ==="
+          sudo netstat -tuln | grep 7990 || echo "Port 7990 not in use"
+          echo ""
+          echo "=== Check Bitbucket Status Endpoint ==="
+          curl -v http://localhost:7990/status || echo "Status endpoint not responding"
+          echo ""
+          echo "=== List Bitbucket Home Directory ==="
+          ls -la ${PWD}/bitbucketHome/ || echo "bitbucketHome not found"
+
+      - name: Display Bitbucket Server Logs
+        if: always()
+        run: |
+          echo "=== Bitbucket Server Logs ==="
+          if [ -f "${PWD}/bitbucketHome/log/atlassian-bitbucket.log" ]; then
+            echo "Main log file:"
+            tail -100 ${PWD}/bitbucketHome/log/atlassian-bitbucket.log
+          else
+            echo "Main log file not found"
+          fi
+          echo ""
+          echo "=== All Log Files ==="
+          find ${PWD}/bitbucketHome/log -type f 2>/dev/null || echo "No log directory found"
+          echo ""
+          echo "=== Launcher Log (if exists) ==="
+          if [ -f "${PWD}/atlassian-bitbucket-*/logs/catalina.out" ]; then
+            tail -100 ${PWD}/atlassian-bitbucket-*/logs/catalina.out
+          else
+            echo "Catalina log not found"
+          fi
+          echo ""
+          echo "=== Check for any error logs ==="
+          find ${PWD} -name "*.log" -type f 2>/dev/null | head -10
+
+      # ============= END DEBUGGING STEPS =============
 
       - name: Run Tests
         env:
@@ -268,6 +374,20 @@ jobs:
           FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+
+      - name: Display Final Logs on Failure
+        if: failure()
+        run: |
+          echo "=== FINAL DIAGNOSTIC ==="
+          echo "=== Java Processes ==="
+          ps aux | grep java || echo "No Java processes"
+          echo ""
+          echo "=== Last 200 lines of Bitbucket Log ==="
+          if [ -f "${PWD}/bitbucketHome/log/atlassian-bitbucket.log" ]; then
+            tail -200 ${PWD}/bitbucketHome/log/atlassian-bitbucket.log
+          else
+            echo "Log file not found"
+          fi
 
   oidc-integration:
     name: OIDC Integration Test
