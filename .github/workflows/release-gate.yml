@@ -270,6 +270,11 @@ jobs:
           echo ""
           echo "=== ulimit Settings ==="
           ulimit -a
+          echo ""
+          echo "=== Available Network Utilities ==="
+          command -v ss && echo "✓ ss available" || echo "✗ ss not available"
+          command -v netstat && echo "✓ netstat available" || echo "✗ netstat not available"
+          command -v lsof && echo "✓ lsof available" || echo "✗ lsof not available"
 
       - name: Verify Java Installation
         run: |
@@ -286,10 +291,26 @@ jobs:
       - name: Check Port Availability
         run: |
           echo "=== Check if port 7990 is in use ==="
-          sudo netstat -tuln | grep 7990 || echo "Port 7990 is available"
+          if command -v ss &> /dev/null; then
+            ss -tuln | grep 7990 || echo "Port 7990 is available"
+          elif command -v netstat &> /dev/null; then
+            sudo netstat -tuln | grep 7990 || echo "Port 7990 is available"
+          elif command -v lsof &> /dev/null; then
+            sudo lsof -i :7990 || echo "Port 7990 is available"
+          else
+            echo "No port checking utility available (ss/netstat/lsof)"
+          fi
           echo ""
           echo "=== All listening ports ==="
-          sudo netstat -tuln | grep LISTEN
+          if command -v ss &> /dev/null; then
+            ss -tuln | grep LISTEN
+          elif command -v netstat &> /dev/null; then
+            sudo netstat -tuln | grep LISTEN
+          elif command -v lsof &> /dev/null; then
+            sudo lsof -i -P -n | grep LISTEN
+          else
+            echo "No port checking utility available"
+          fi
 
       - name: Verify Bitbucket Home Zip
         run: |
@@ -333,7 +354,15 @@ jobs:
           ps aux | grep bitbucket || echo "No bitbucket processes found"
           echo ""
           echo "=== Check Port 7990 ==="
-          sudo netstat -tuln | grep 7990 || echo "Port 7990 not in use"
+          if command -v ss &> /dev/null; then
+            ss -tuln | grep 7990 || echo "Port 7990 not in use"
+          elif command -v netstat &> /dev/null; then
+            sudo netstat -tuln | grep 7990 || echo "Port 7990 not in use"
+          elif command -v lsof &> /dev/null; then
+            sudo lsof -i :7990 || echo "Port 7990 not in use"
+          else
+            echo "No port checking utility available"
+          fi
           echo ""
           echo "=== Check Bitbucket Status Endpoint ==="
           curl -v http://localhost:7990/status || echo "Status endpoint not responding"
