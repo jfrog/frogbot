@@ -252,6 +252,17 @@ jobs:
           java-version: "11"
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Required System Dependencies
+        run: |
+          echo "=== Installing network utilities and system dependencies ==="
+          sudo apt-get update
+          sudo apt-get install -y iproute2 net-tools lsof
+          echo ""
+          echo "=== Verifying installations ==="
+          ss --version || echo "ss not installed"
+          netstat --version || echo "netstat not installed"
+          lsof -v || echo "lsof not installed"
+
       # ============= DEBUGGING STEPS =============
       - name: Check System Resources
         run: |
