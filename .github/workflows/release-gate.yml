@@ -273,12 +273,15 @@ jobs:
           echo "=== Current Git Version ==="
           git --version
           echo ""
-          echo "=== Downgrading Git to 2.43.0 (compatible with Bitbucket 8.16.1) ==="
-          # Add Git PPA for older versions
-          sudo add-apt-repository ppa:git-core/ppa -y || true
+          echo "=== Downgrading Git (Bitbucket 8.16.1 doesn't support Git 2.49+) ==="
+          # Remove git-core PPA which has newer versions
+          sudo add-apt-repository --remove ppa:git-core/ppa -y || true
+          # Uninstall current Git
+          sudo apt-get remove -y git git-man
+          # Update to use default Ubuntu repos only
           sudo apt-get update
-          # Install specific Git version that Bitbucket 8.16.1 supports
-          sudo apt-get install -y --allow-downgrades git=1:2.43.* || sudo apt-get install -y git
+          # Install Git from Ubuntu default repos (should be 2.34.1 on Ubuntu 22.04)
+          sudo apt-get install -y git
           echo ""
           echo "=== New Git Version ==="
           git --version
