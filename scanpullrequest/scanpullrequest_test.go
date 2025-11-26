@@ -340,6 +340,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
 		RepoOwner:   gitServerParams.RepoOwner,
+		RepoName:    gitServerParams.RepoName,
 		VcsInfo: vcsclient.VcsInfo{
 			Token:       "123456",
 			APIEndpoint: server.URL,
