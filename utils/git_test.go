@@ -149,23 +149,23 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 		desc       string
 	}{
 		{
-			expected:   "frogbot-update-Go-dependencies-main",
+			expected:   "frogbot-update-e4e1fa318f12b3bed84b13ae5c293108-dependencies-main",
 			baseBranch: "main",
 			desc:       "No template",
 			gitManager: GitManager{},
 		}, {
-			expected:   "frogbot-update-Go-dependencies-v2",
+			expected:   "frogbot-update-144734671657efb7f0d252bd99ca25d8-dependencies-v2",
 			baseBranch: "v2",
 			desc:       "No template",
 			gitManager: GitManager{},
 		},
 		{
-			expected:   "[feature]-Go-main",
+			expected:   "[feature]-e4e1fa318f12b3bed84b13ae5c293108-main",
 			baseBranch: "main",
 			desc:       "Custom template hash only",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		}, {
-			expected:   "[feature]-Go-master",
+			expected:   "[feature]-697bdb58caaed95527fc709da59ca47f-master",
 			baseBranch: "master",
 			desc:       "Custom template hash only",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
