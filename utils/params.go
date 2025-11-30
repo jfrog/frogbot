@@ -50,7 +50,6 @@ type Repository struct {
 
 func (r *Repository) setOutputWriterDetails() {
 	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
-	r.OutputWriter.SetAvoidExtraMessages(r.Params.AvoidExtraMessages)
 	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
 }
 
@@ -145,19 +144,18 @@ func (p *Project) GetTechFromInstallCmdIfExists() []string {
 }
 
 type Scan struct {
-	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
-	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
-	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
-	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
-	DisableJas                      bool      `yaml:"disableJas,omitempty"`
-	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
-	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
-	Projects                        []Project `yaml:"projects,omitempty"`
-	ConfigProfile                   *services.ConfigProfile
-	SkipAutoInstall                 bool
-	AllowPartialResults             bool
+	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
+	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
+	DetectionOnly             bool      `yaml:"skipAutoFix,omitempty"`
+	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	MinSeverity               string    `yaml:"minSeverity,omitempty"`
+	DisableJas                bool      `yaml:"disableJas,omitempty"`
+	AddPrCommentOnSuccess     bool      `yaml:"addPrCommentOnSuccess,omitempty"`
+	AllowedLicenses           []string  `yaml:"allowedLicenses,omitempty"`
+	Projects                  []Project `yaml:"projects,omitempty"`
+	ConfigProfile             *services.ConfigProfile
+	SkipAutoInstall           bool
+	AllowPartialResults       bool
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
@@ -268,7 +266,6 @@ type Git struct {
 	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle   string   `yaml:"pullRequestCommentTitle,omitempty"`
 	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"`
-	AvoidExtraMessages        bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor               string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails        vcsclient.PullRequestInfo

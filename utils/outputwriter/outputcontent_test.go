@@ -64,7 +64,7 @@ func TestGetMainCommentContent(t *testing.T) {
 				},
 				{
 					name:               "Pull Request not entitled custom title avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title", avoidExtraMessages: true}},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md")},
 				},
 				{
@@ -74,7 +74,7 @@ func TestGetMainCommentContent(t *testing.T) {
 				},
 				{
 					name:               "Merge Request not entitled avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, avoidExtraMessages: true}},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md")},
 				},
 			},
@@ -111,12 +111,12 @@ func TestGetMainCommentContent(t *testing.T) {
 				},
 				{
 					name:               "Pull Request not entitled avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md")},
 				},
 				{
 					name:               "Simplified output not entitled avoid extra messages",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md")},
 				},
 				{
@@ -178,7 +178,7 @@ func TestGetMainCommentContent(t *testing.T) {
 				},
 				{
 					name:               "Simplified output entitled avoid extra messages",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md")},
 				},
 			},

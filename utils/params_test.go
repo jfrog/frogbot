@@ -252,7 +252,6 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		FixableOnlyEnv:               "true",
 		DetectionOnlyEnv:             "true",
 		AllowedLicensesEnv:           "MIT, Apache-2.0",
-		AvoidExtraMessages:           "true",
 		PullRequestCommentTitleEnv:   "build 1323",
 	})
 	defer func() {
@@ -316,7 +315,6 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 
 	if commandName == ScanPullRequest {
 		assert.NotZero(t, repo.PullRequestDetails.ID)
-		assert.True(t, repo.AvoidExtraMessages)
 		assert.NotEmpty(t, repo.PullRequestCommentTitle)
 	}
 
@@ -392,7 +390,6 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
-		useProfile      bool
 		profileName     string
 		xrayVersion     string
 		failureExpected bool
@@ -400,32 +397,24 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
-			useProfile:      true,
 			profileName:     ValidConfigProfile,
 			xrayVersion:     "3.110.0",
 			failureExpected: true,
 		},
 		{
-			name:       "Profile usage is not required",
-			useProfile: false,
-		},
-		{
 			name:            "Profile by name - Valid ConfigProfile",
-			useProfile:      true,
 			profileName:     ValidConfigProfile,
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
 		},
 		{
 			name:            "Profile by name - Invalid Path From Root ConfigProfile",
-			useProfile:      true,
 			profileName:     InvalidPathConfigProfile,
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
 		},
 		{
 			name:            "Profile by name - Invalid Modules ConfigProfile",
-			useProfile:      true,
 			profileName:     InvalidModulesConfigProfile,
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
@@ -433,7 +422,6 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		{
 			// We are not creating test cases for Profile by URL verifications since they are the same verifications as Profile by name
 			name:            "Profile by URL - Valid ConfigProfile",
-			useProfile:      true,
 			profileName:     "",
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
@@ -441,7 +429,6 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 		},
 		{
 			name:            "Profile by Name - Non existing profile name",
-			useProfile:      true,
 			profileName:     NonExistingProfile,
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
@@ -450,16 +437,6 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			//if testcase.useProfile {
-			//	useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
-			//	defer useProfileEnvCallBackFunc()
-			//}
-			//
-			//if testcase.profileName != "" {
-			//	profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
-			//	defer profileNameEnvCallbackFunc()
-			//}
-
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
@@ -475,11 +452,6 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams, "")
 
-			if !testcase.useProfile {
-				assert.Nil(t, configProfile)
-				assert.Nil(t, err)
-				return
-			}
 			if testcase.failureExpected {
 				assert.Error(t, err)
 				return

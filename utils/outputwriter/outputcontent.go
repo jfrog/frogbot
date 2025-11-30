@@ -92,7 +92,7 @@ func GetFrogbotCommentBaseDecorator(writer OutputWriter) CommentDecorator {
 	}
 }
 
-// Adding a banner, custom title and untitled Jas message to the content
+// Adding a banner and custom title to the content
 func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer OutputWriter) CommentDecorator {
 	return func(_ int, content string) string {
 		comment := strings.Builder{}
@@ -104,7 +104,6 @@ func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer Outpu
 		if issuesExists {
 			WriteContent(&comment, content)
 		}
-		WriteContent(&comment, untitledForJasMsg(writer))
 		return comment.String()
 	}
 }
@@ -138,13 +137,6 @@ func fixCVETitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 		return VulnerabilitiesFixMrBannerSource
 	}
 	return VulnerabilitiesFixPrBannerSource
-}
-
-func untitledForJasMsg(writer OutputWriter) string {
-	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
-		return ""
-	}
-	return writer.MarkAsDetails("Note", 0, fmt.Sprintf("\n%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {
