@@ -208,11 +208,11 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
+			config, err := utils.BuildRepository(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(config, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -340,11 +340,11 @@ pr body
 			assert.NoError(t, err)
 			// Load default configurations
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
+			repoConfig, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(repoConfig, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()

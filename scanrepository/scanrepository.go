@@ -56,11 +56,7 @@ type ScanRepositoryCmd struct {
 	XscVersion  string
 }
 
-func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	if err = utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
-		return err
-	}
-	repository := repoAggregator[0]
+func (cfp *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	cfp.XrayVersion = repository.XrayVersion
 	cfp.XscVersion = repository.XscVersion

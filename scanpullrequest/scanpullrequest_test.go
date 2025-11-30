@@ -263,12 +263,12 @@ func TestScanPullRequest(t *testing.T) {
 }
 
 func testScanPullRequest(t *testing.T, projectName string, failOnSecurityIssues bool) {
-	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
+	config, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
+	err := scanPullRequest.Run(config, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {
@@ -336,7 +336,7 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.RepoAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.Repository, vcsclient.VcsClient) {
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
 		RepoOwner:   gitServerParams.RepoOwner,
@@ -352,10 +352,10 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
+	config, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
-	return configAggregator, client
+	return config, client
 }
 
 func TestDeletePreviousPullRequestMessages(t *testing.T) {
@@ -492,11 +492,10 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName)
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, false)
 			defer cleanUpTest()
 
-			assert.Len(t, repoConfig, 1)
-			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
+			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig, client)
 			assert.NoError(t, err)
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
@@ -1139,7 +1138,7 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 	}
 }
 
-func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
+func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.Repository, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
 
 	// Set test-specific environment variables
@@ -1147,13 +1146,13 @@ func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssu
 	if !failOnSecurityIssues {
 		envVars[utils.FailOnSecurityIssuesEnv] = "false"
 	}
-	
+
 	// Set working directories for multi-dir tests
 	if projectName == "multi-dir-test-proj" {
 		envVars[utils.WorkingDirectoryEnv] = "sub1,sub3/sub4,sub2"
 		envVars[utils.RequirementsFileEnv] = "requirements.txt"
 	}
-	
+
 	if len(envVars) > 0 {
 		utils.SetEnvAndAssert(t, envVars)
 	}
@@ -1174,14 +1173,14 @@ func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssu
 	server := httptest.NewServer(createGitLabHandler(t, gitServerParams))
 
 	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
-	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, server, params, gitServerParams)
+	config, client := prepareConfigAndClient(t, xrayVersion, xscVersion, server, params, gitServerParams)
 
 	// Renames test git folder to .git
 	currentDir := filepath.Join(testDir, projectName)
 	restoreDir, err := utils.Chdir(currentDir)
 	assert.NoError(t, err)
 
-	return configAggregator, client, func() {
+	return config, client, func() {
 		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
 		cleanUp()

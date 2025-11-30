@@ -163,7 +163,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
-	configFile, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
+	configFile, err := BuildRepository("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -181,19 +181,17 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	} else {
 		assert.Equal(t, "token", configServer.AccessToken)
 	}
-	for _, configParams := range configFile {
-		assert.Equal(t, vcsutils.BitbucketServer, configParams.GitProvider)
-		assert.Equal(t, "jfrog", configParams.RepoOwner)
-		assert.Equal(t, "frogbot", configParams.RepoName)
-		assert.Equal(t, "123456789", configParams.Token)
-		// ScanRepository command context
-		if commandName == ScanRepository {
-			assert.Equal(t, "dev", configParams.Branches[0])
-			assert.Equal(t, int64(0), configParams.PullRequestDetails.ID)
-		} else {
-			// ScanPullRequest context
-			assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
-		}
+	assert.Equal(t, vcsutils.BitbucketServer, configFile.GitProvider)
+	assert.Equal(t, "jfrog", configFile.RepoOwner)
+	assert.Equal(t, "frogbot", configFile.RepoName)
+	assert.Equal(t, "123456789", configFile.Token)
+	// ScanRepository command context
+	if commandName == ScanRepository {
+		assert.Equal(t, "dev", configFile.Branches[0])
+		assert.Equal(t, int64(0), configFile.PullRequestDetails.ID)
+	} else {
+		// ScanPullRequest context
+		assert.Equal(t, int64(1), configFile.PullRequestDetails.ID)
 	}
 }
 
@@ -230,7 +228,7 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 	assert.Equal(t, []string{"b", "--flagName=flagValue"}, project.InstallCommandArgs)
 }
 
-func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
+func TestGenerateConfigFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:                        "",
 		jfrogArtifactoryUrlEnv:             "http://127.0.0.1:8081/artifactory",
@@ -279,18 +277,16 @@ func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repoAggregator, err := BuildRepoAggregator("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
+	repo, err := BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
-	repo := repoAggregator[0]
-	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanRepository)
+	validateBuildRepo(t, &repo, &gitParams, &server, ScanRepository)
 
-	repoAggregator, err = BuildRepoAggregator("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
+	repo, err = BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
-	repo = repoAggregator[0]
-	validateBuildRepoAggregator(t, &repo, &gitParams, &server, ScanPullRequest)
+	validateBuildRepo(t, &repo, &gitParams, &server, ScanPullRequest)
 }
 
-func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
+func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
