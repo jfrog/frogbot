@@ -17,8 +17,6 @@ type OutputWriter interface {
 	SetJasOutputFlags(entitled, showCaColumn bool)
 	IsShowingCaColumn() bool
 	IsEntitledForJas() bool
-	SetAvoidExtraMessages(avoidExtraMessages bool)
-	AvoidExtraMessages() bool
 	SetPullRequestCommentTitle(pullRequestCommentTitle string)
 	PullRequestCommentTitle() string
 	SetHasInternetConnection(connected bool)
@@ -40,7 +38,6 @@ type OutputWriter interface {
 
 type MarkdownOutput struct {
 	pullRequestCommentTitle string
-	avoidExtraMessages      bool
 	showCaColumn            bool
 	entitledForJas          bool
 	hasInternetConnection   bool
@@ -57,14 +54,6 @@ func (mo *MarkdownOutput) SetVcsProvider(provider vcsutils.VcsProvider) {
 
 func (mo *MarkdownOutput) VcsProvider() vcsutils.VcsProvider {
 	return mo.vcsProvider
-}
-
-func (mo *MarkdownOutput) SetAvoidExtraMessages(avoidExtraMessages bool) {
-	mo.avoidExtraMessages = avoidExtraMessages
-}
-
-func (mo *MarkdownOutput) AvoidExtraMessages() bool {
-	return mo.avoidExtraMessages
 }
 
 func (mo *MarkdownOutput) SetHasInternetConnection(connected bool) {

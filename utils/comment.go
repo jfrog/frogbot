@@ -35,16 +35,14 @@ const (
 
 // In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, resultContext results.ResultContext, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
-	if !repo.Params.AvoidPreviousPrCommentsDeletion {
-		// The removal of comments may fail for various reasons,
-		// such as concurrent scanning of pull requests and attempts
-		// to delete comments that have already been removed in a different process.
-		// Since this task is not mandatory for a Frogbot run,
-		// we will not cause a Frogbot run to fail but will instead log the error.
-		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-		if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
-		}
+	// The removal of comments may fail for various reasons,
+	// such as concurrent scanning of pull requests and attempts
+	// to delete comments that have already been removed in a different process.
+	// Since this task is not mandatory for a Frogbot run,
+	// we will not cause a Frogbot run to fail but will instead log the error.
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+	if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
+		log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 	}
 
 	// Add summary (SCA, license) scan comment

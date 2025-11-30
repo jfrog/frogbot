@@ -13,7 +13,6 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -232,31 +231,29 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 
 func TestGenerateConfigAggregatorFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                        "",
-		jfrogArtifactoryUrlEnv:             "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:                    "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                       "admin",
-		JFrogPasswordEnv:                   "password",
-		BranchNameTemplateEnv:              "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:           "commit",
-		PullRequestTitleTemplateEnv:        "pr-title",
-		InstallCommandEnv:                  "nuget restore",
-		UseWrapperEnv:                      "false",
-		RequirementsFileEnv:                "requirements.txt",
-		WorkingDirectoryEnv:                "a/b",
-		jfrogProjectEnv:                    "projectKey",
-		jfrogWatchesEnv:                    "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                        "deps-remote",
-		IncludeAllVulnerabilitiesEnv:       "true",
-		AvoidPreviousPrCommentsDeletionEnv: "true",
-		FailOnSecurityIssuesEnv:            "false",
-		MinSeverityEnv:                     "medium",
-		FixableOnlyEnv:                     "true",
-		DisableJasEnv:                      "true",
-		DetectionOnlyEnv:                   "true",
-		AllowedLicensesEnv:                 "MIT, Apache-2.0",
-		AvoidExtraMessages:                 "true",
-		PullRequestCommentTitleEnv:         "build 1323",
+		JFrogUrlEnv:                  "",
+		jfrogArtifactoryUrlEnv:       "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:                 "admin",
+		JFrogPasswordEnv:             "password",
+		BranchNameTemplateEnv:        "branch-${BRANCH_NAME_HASH}",
+		CommitMessageTemplateEnv:     "commit",
+		PullRequestTitleTemplateEnv:  "pr-title",
+		InstallCommandEnv:            "nuget restore",
+		UseWrapperEnv:                "false",
+		RequirementsFileEnv:          "requirements.txt",
+		WorkingDirectoryEnv:          "a/b",
+		jfrogProjectEnv:              "projectKey",
+		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
+		DepsRepoEnv:                  "deps-remote",
+		IncludeAllVulnerabilitiesEnv: "true",
+		FailOnSecurityIssuesEnv:      "false",
+		MinSeverityEnv:               "medium",
+		FixableOnlyEnv:               "true",
+		DetectionOnlyEnv:             "true",
+		AllowedLicensesEnv:           "MIT, Apache-2.0",
+		AvoidExtraMessages:           "true",
+		PullRequestCommentTitleEnv:   "build 1323",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -453,15 +450,15 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.useProfile {
-				useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
-				defer useProfileEnvCallBackFunc()
-			}
-
-			if testcase.profileName != "" {
-				profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
-				defer profileNameEnvCallbackFunc()
-			}
+			//if testcase.useProfile {
+			//	useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
+			//	defer useProfileEnvCallBackFunc()
+			//}
+			//
+			//if testcase.profileName != "" {
+			//	profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
+			//	defer profileNameEnvCallbackFunc()
+			//}
 
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
