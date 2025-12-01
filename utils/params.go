@@ -47,9 +47,9 @@ type Repository struct {
 }
 
 func (r *Repository) setOutputWriterDetails() {
-	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
-	r.OutputWriter.SetAvoidExtraMessages(r.Params.AvoidExtraMessages)
-	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
+	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider)
+	r.OutputWriter.SetAvoidExtraMessages(r.Params.Git.AvoidExtraMessages)
+	r.OutputWriter.SetPullRequestCommentTitle(r.Params.Git.PullRequestCommentTitle)
 }
 
 type Params struct {

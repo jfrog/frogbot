@@ -115,9 +115,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		},
 		{
 			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-Pip-dependencies-master": {"uuid", "minimatch", "mpath", "pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-Pip-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5", "2.4.0"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-Pip-dependencies-master": {"npm/package-lock.json"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"uuid", "minimatch", "mpath", "pyjwt", "pexpect"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5", "2.4.0"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 		},
