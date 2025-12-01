@@ -37,13 +37,13 @@ type ScanPullRequestCmd struct{}
 
 func (cmd *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	repoConfig := &repository
-	if repoConfig.GitProvider == vcsutils.GitHub {
+	if repoConfig.Params.Git.GitProvider == vcsutils.GitHub {
 		if err = verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
 			return
 		}
 	}
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	if repoConfig.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, int(repoConfig.PullRequestDetails.ID)); err != nil {
+	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, int(repoConfig.Params.Git.PullRequestDetails.ID)); err != nil {
 		return
 	}
 	return scanPullRequest(repoConfig, client)
@@ -51,7 +51,7 @@ func (cmd *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient
 
 // Verify that the 'frogbot' GitHub environment was properly configured on the repository
 func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.Repository) error {
-	if repoConfig.APIEndpoint != "" && repoConfig.APIEndpoint != "https://api.github.com" {
+	if repoConfig.Params.Git.APIEndpoint != "" && repoConfig.Params.Git.APIEndpoint != "https://api.github.com" {
 		// Don't verify 'frogbot' environment on GitHub on-prem
 		return nil
 	}
@@ -61,7 +61,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	}
 
 	// If the repository is not public, using 'frogbot' environment is not mandatory
-	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName)
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	}
 
 	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
-	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.RepoOwner, repoConfig.RepoName, "frogbot")
+	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, "frogbot")
 	if err != nil {
 		return errors.New(err.Error() + "\n" + noGitHubEnvErr)
 	}
@@ -86,7 +86,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
 func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err error) {
-	pullRequestDetails := repo.PullRequestDetails
+	pullRequestDetails := repo.Params.Git.PullRequestDetails
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
 		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
@@ -113,10 +113,10 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 }
 
 func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollection) bool {
-	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
+	failFlagSet := repo.Params.Scan.FailOnSecurityIssues != nil && *repo.Params.Scan.FailOnSecurityIssues
 	if failFlagSet {
 		// If the fail flag is set to true (JF_FAIL), we check if any security ISSUE exists (not just violations), and if so, we fail the build.
-		return issues.IssuesExists(repo.PullRequestSecretComments)
+		return issues.IssuesExists(repo.Params.Git.PullRequestSecretComments)
 	} else {
 		// When fail flag is set to false, we check for fail-pr rule in existing VIOLATIONS. If one exists, we fail the build as well.
 		return issues.IsFailPrRuleApplied()
@@ -143,7 +143,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		scanDetails.XscVersion,
 		scanDetails.ServerDetails,
 		utils.CreateScanEvent(scanDetails.ServerDetails, scanDetails.XscGitInfoContext, analyticsScanPrScanType),
-		repoConfig.JFrogProjectKey,
+		repoConfig.Params.JFrogPlatform.JFrogProjectKey,
 	)
 	defer func() {
 		if issuesCollection != nil {
@@ -161,21 +161,21 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 }
 
 func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsClient) (scanDetails *utils.ScanDetails, err error) {
-	repositoryCloneUrl, err := repoConfig.GetRepositoryHttpsCloneUrl(client)
+	repositoryCloneUrl, err := repoConfig.Params.Git.GetRepositoryHttpsCloneUrl(client)
 	if err != nil {
 		return
 	}
-	scanDetails = utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Git).
-		SetJfrogVersions(repoConfig.XrayVersion, repoConfig.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repoConfig.Watches, repoConfig.JFrogProjectKey, repoConfig.IncludeVulnerabilities, len(repoConfig.AllowedLicenses) > 0).
-		SetFixableOnly(repoConfig.FixableOnly).
-		SetConfigProfile(repoConfig.ConfigProfile).
-		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
-		SetDisableJas(repoConfig.DisableJas).
-		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
-		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
-		SetAllowPartialResults(repoConfig.AllowPartialResults)
-	return scanDetails.SetMinSeverity(repoConfig.MinSeverity)
+	scanDetails = utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
+		SetJfrogVersions(repoConfig.Params.XrayVersion, repoConfig.Params.XscVersion).
+		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.Watches, repoConfig.Params.JFrogPlatform.JFrogProjectKey, repoConfig.Params.JFrogPlatform.IncludeVulnerabilities, len(repoConfig.Params.Scan.AllowedLicenses) > 0).
+		SetFixableOnly(repoConfig.Params.Scan.FixableOnly).
+		SetConfigProfile(repoConfig.Params.Scan.ConfigProfile).
+		SetSkipAutoInstall(repoConfig.Params.Scan.SkipAutoInstall).
+		SetDisableJas(repoConfig.Params.Scan.DisableJas).
+		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails).
+		SetDiffScan(!repoConfig.Params.JFrogPlatform.IncludeVulnerabilities).
+		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults)
+	return scanDetails.SetMinSeverity(repoConfig.Params.Scan.MinSeverity)
 }
 
 func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
@@ -192,12 +192,12 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		err = fmt.Errorf("failed to download source branch code. Error: %s", err.Error())
 		return
 	}
-	if repoConfig.IncludeAllVulnerabilities {
+	if repoConfig.Params.JFrogPlatform.IncludeVulnerabilities {
 		// No need to download target branch
 		log.Info("Frogbot is configured to show all issues at source branch")
 		return
 	}
-	target := repoConfig.Git.PullRequestDetails.Target
+	target := repoConfig.Params.Git.PullRequestDetails.Target
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
@@ -208,15 +208,15 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
 	issuesCollection = &issues.ScansIssuesCollection{}
 
-	for i := range repoConfig.Projects {
+	for i := range repoConfig.Params.Scan.Projects {
 		// Reset scan details for each project
-		scanDetails.SetProject(&repoConfig.Projects[i]).SetResultsToCompare(nil)
+		scanDetails.SetProject(&repoConfig.Params.Scan.Projects[i]).SetResultsToCompare(nil)
 		// Scan target branch of the project
-		if !repoConfig.IncludeAllVulnerabilities {
+		if !repoConfig.Params.JFrogPlatform.IncludeVulnerabilities {
 			log.Debug("Scanning target branch code...")
 			if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
 				issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
-				err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
+				err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
 				continue
 			} else {
 				scanDetails.SetResultsToCompare(targetScanResults)
@@ -232,7 +232,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 				// Scan error, report the scan status
 				issuesCollection.AppendStatus(issues.ScanStatus)
 			}
-			err = errors.Join(err, fmt.Errorf("failed to audit source branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
+			err = errors.Join(err, fmt.Errorf("failed to audit source branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
 		}
 	}
 
@@ -254,18 +254,18 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
 	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
-	if !repoConfig.IncludeAllVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
+	if !repoConfig.Params.JFrogPlatform.IncludeVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
 		// Diff scan - calculated at audit source scan, make sure to include target branch working dir when converting to issues
 		log.Debug("Diff scan - converting to new issues...")
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	if err = filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.AllowPartialResults); err != nil {
+	if err = filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.Scan.AllowPartialResults); err != nil {
 		return
 	}
 
 	// Convert to issues
-	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.AllowedLicenses, workingDirs...); e == nil {
+	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.Params.Scan.AllowedLicenses, workingDirs...); e == nil {
 		issuesCollection = issues
 		return
 	} else {
