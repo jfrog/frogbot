@@ -115,9 +115,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		},
 		{
 			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies-master": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies-master": {"2.4.0"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm/package-lock.json"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"uuid", "minimatch", "mpath", "pyjwt", "pexpect"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5", "2.4.0"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
 		},
@@ -176,6 +176,15 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
 				}()
 			}
+			// Set working directories for multi-dir/multi-project tests
+			switch test.testName {
+			case "aggregate-multi-dir":
+				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm1,npm2"))
+			case "aggregate-multi-project":
+				// Multi-project test: set working dirs for npm and pip subdirectories
+				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm,pip"))
+				assert.NoError(t, os.Setenv(utils.RequirementsFileEnv, "requirements.txt"))
+			}
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
@@ -199,11 +208,11 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
+			config, err := utils.BuildRepository(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(config, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -331,11 +340,11 @@ pr body
 			assert.NoError(t, err)
 			// Load default configurations
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
+			repoConfig, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(repoConfig, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()

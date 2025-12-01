@@ -29,17 +29,15 @@ import (
 type FrogbotDetails struct {
 	XrayVersion   string
 	XscVersion    string
-	Repositories  RepoAggregator
+	Repository    Repository
 	ServerDetails *coreconfig.ServerDetails
 	GitClient     vcsclient.VcsClient
 	ReleasesRepo  string
 }
 
-type RepoAggregator []Repository
-
-// Returns an initialized RepoAggregator with an empty repository
-func newRepoAggregator() RepoAggregator {
-	return RepoAggregator{{Params: Params{Scan: Scan{Projects: []Project{{}}}}}}
+// Returns an initialized Repository with an empty repository
+func newRepository() Repository {
+	return Repository{Params: Params{Scan: Scan{Projects: []Project{{}}}}}
 }
 
 type Repository struct {
@@ -49,8 +47,8 @@ type Repository struct {
 }
 
 func (r *Repository) setOutputWriterDetails() {
-	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.GitProvider)
-	r.OutputWriter.SetPullRequestCommentTitle(r.Params.PullRequestCommentTitle)
+	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider)
+	r.OutputWriter.SetPullRequestCommentTitle(r.Params.Git.PullRequestCommentTitle)
 }
 
 type Params struct {
@@ -420,38 +418,29 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configAggregator, err := getConfigAggregator(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
+	repository, err := BuildRepository(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
 
-	// TODO when deprecating multiple repositories support, pass the correct projectKey from the single repo we have to getConfigProfileIfExistsAndValid
-	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv, configAggregator[0].JFrogProjectKey)
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv, repository.JFrogProjectKey)
 	if err != nil {
 		return
 	}
 
-	// We apply the configProfile to all received repositories. If no config profile was fetched, a nil value is passed
-	// TODO This loop must be deleted when we will no longer accept multiple repositories in a single scan
-	for i := range configAggregator {
-		configAggregator[i].Scan.ConfigProfile = configProfile
-		configAggregator[i].Git.RepositoryCloneUrl = repoCloneUrl
-	}
+	// We apply the configProfile to the repository. If no config profile was fetched, a nil value is passed
+	repository.Scan.ConfigProfile = configProfile
+	repository.Git.RepositoryCloneUrl = repoCloneUrl
 
-	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repositories: configAggregator, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
 	return
 }
 
-// Returns a RepoAggregator based on environment variables only.
-func getConfigAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, jfrogServer *coreconfig.ServerDetails, commandName string) (RepoAggregator, error) {
-	return BuildRepoAggregator(xrayVersion, xscVersion, gitClient, gitParamsFromEnv, jfrogServer, commandName)
-}
-
-// Builds a RepoAggregator from environment variables only (no config file).
-// Returns a RepoAggregator instance with all the defaults and necessary fields.
-func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (resultAggregator RepoAggregator, err error) {
+// Builds a Repository from environment variables only
+// Returns a Repository instance with all the defaults and necessary fields.
+func BuildRepository(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (repository Repository, err error) {
 	// Create a single repository from environment variables
-	repository := newRepoAggregator()[0]
+	repository = newRepository()
 	repository.Server = *server
 	repository.Params.XrayVersion = xrayVersion
 	repository.Params.XscVersion = xscVersion
@@ -460,8 +449,7 @@ func BuildRepoAggregator(xrayVersion, xscVersion string, gitClient vcsclient.Vcs
 	}
 	repository.setOutputWriterDetails()
 	repository.OutputWriter.SetSizeLimit(gitClient)
-	resultAggregator = append(resultAggregator, repository)
-	return
+	return repository, nil
 }
 
 func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {

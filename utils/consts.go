@@ -8,9 +8,6 @@ type vcsProvider string
 type ciProvider string
 
 const (
-	// Errors
-	errUnsupportedMultiRepo = "multi repository configuration isn't supported. Only one repository configuration is allowed"
-
 	// MaxConcurrentScanners represents the maximum number of threads for running JFrog CLI scanners concurrently
 	MaxConcurrentScanners = 5
 

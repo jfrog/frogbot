@@ -20,7 +20,7 @@ import (
 
 type FrogbotCommand interface {
 	// Run the command
-	Run(config utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
+	Run(config utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
 }
 
 func GetCommands() []*clitool.Command {
@@ -78,10 +78,10 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
-	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient, frogbotRepoConnection)
+	err = command.Run(frogbotDetails.Repository, frogbotDetails.GitClient, frogbotRepoConnection)
 
 	if err != nil {
-		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repositories[0].JFrogProjectKey); reportError != nil {
+		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repository.JFrogProjectKey); reportError != nil {
 			log.Debug(reportError)
 		}
 	} else {
