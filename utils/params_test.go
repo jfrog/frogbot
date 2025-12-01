@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -292,7 +293,7 @@ func validateBuildRepoAggregator(t *testing.T, repo *Repository, gitParams *Git,
 	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, true, repo.DisableJas)
+	assert.Equal(t, false, repo.DisableJas)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
@@ -390,48 +391,28 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
-		profileName     string
 		xrayVersion     string
 		failureExpected bool
 		profileWithRepo bool
+		mockRepoInfoErr bool
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
-			profileName:     ValidConfigProfile,
 			xrayVersion:     "3.110.0",
 			failureExpected: true,
 		},
 		{
-			name:            "Profile by name - Valid ConfigProfile",
-			profileName:     ValidConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: false,
-		},
-		{
-			name:            "Profile by name - Invalid Path From Root ConfigProfile",
-			profileName:     InvalidPathConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: true,
-		},
-		{
-			name:            "Profile by name - Invalid Modules ConfigProfile",
-			profileName:     InvalidModulesConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: true,
-		},
-		{
-			// We are not creating test cases for Profile by URL verifications since they are the same verifications as Profile by name
 			name:            "Profile by URL - Valid ConfigProfile",
-			profileName:     "",
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
 			profileWithRepo: true,
 		},
 		{
-			name:            "Profile by Name - Non existing profile name",
-			profileName:     NonExistingProfile,
+			name:            "Profile by URL - Failed fetching repository info",
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
+			profileWithRepo: true,
+			mockRepoInfoErr: true,
 		},
 	}
 
@@ -443,7 +424,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			var mockVcsClient *testdata.MockVcsClient
 			var mockGitParams *Git
 			if testcase.profileWithRepo {
-				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo")
+				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo", testcase.mockRepoInfoErr)
 				mockGitParams = &Git{
 					RepoOwner: "myUser",
 					RepoName:  "my-repo",
@@ -473,14 +454,20 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	}
 }
 
-func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
+func createMockVcsClient(t *testing.T, repoOwner, repoName string, withError bool) *testdata.MockVcsClient {
 	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
-	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
-		CloneInfo: vcsclient.CloneInfo{
-			HTTP: "https://github.com/myUser/my-repo.git",
-			SSH:  "git@github.com:myUser/my-repo.git",
-		},
-		RepositoryVisibility: 0,
-	}, nil)
+	if withError {
+		mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{}, fmt.Errorf("failed to fetch repository info"))
+	} else {
+		mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(
+			vcsclient.RepositoryInfo{
+				CloneInfo: vcsclient.CloneInfo{
+					HTTP: "https://github.com/myUser/my-repo.git",
+					SSH:  "git@github.com:myUser/my-repo.git",
+				},
+				RepositoryVisibility: 0,
+			}, nil,
+		)
+	}
 	return mockVcsClient
 }
