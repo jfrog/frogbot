@@ -15,8 +15,8 @@ require (
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
-	github.com/urfave/cli/v2 v2.27.4
-	golang.org/x/exp v0.0.0-20250911091902-df9299821621
+	github.com/urfave/cli/v2 v2.27.7
+	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
 )
 
 require (

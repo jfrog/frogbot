@@ -251,7 +251,6 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 		FixableOnlyEnv:               "true",
 		DetectionOnlyEnv:             "true",
 		AllowedLicensesEnv:           "MIT, Apache-2.0",
-		PullRequestCommentTitleEnv:   "build 1323",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())

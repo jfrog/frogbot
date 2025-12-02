@@ -327,9 +327,6 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	if gitParamsFromEnv.PullRequestDetails.ID == 0 {
 		return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
 	}
-	if g.PullRequestCommentTitle == "" {
-		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
-	}
 	if !g.PullRequestSecretComments {
 		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
 			return
