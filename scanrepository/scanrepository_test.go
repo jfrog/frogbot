@@ -98,13 +98,13 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		aggregateFixes                 bool
 		allowPartialResults            bool
 	}{
-		//{
-		//	testName:                       "aggregate",
-		//	expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimist", "mpath"}},
-		//	expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
-		//	packageDescriptorPaths:         []string{"package.json"},
-		//	aggregateFixes:                 true,
-		//},
+		{
+			testName:                       "aggregate",
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			packageDescriptorPaths:         []string{"package.json"},
+			aggregateFixes:                 true,
+		},
 		{
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
@@ -208,7 +208,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(config, client, utils.MockHasConnection())(config, client, utils.MockHasConnection())
+			err = cmd.Run(config, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
