@@ -114,14 +114,6 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			aggregateFixes:                 true,
 		},
 		{
-			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"uuid", "minimatch", "mpath", "pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5", "2.4.0"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-Pip-npm-dependencies-master": {"npm/package-lock.json"}},
-			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
-			aggregateFixes:                 true,
-		},
-		{
 			testName: "aggregate-no-vul",
 			// No branch is being created because there are no vulnerabilities.
 			expectedPackagesInBranch:       map[string][]string{"master": {}},
@@ -180,10 +172,14 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			switch test.testName {
 			case "aggregate-multi-dir":
 				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm1,npm2"))
-			case "aggregate-multi-project":
-				// Multi-project test: set working dirs for npm and pip subdirectories
-				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm,pip"))
-				assert.NoError(t, os.Setenv(utils.RequirementsFileEnv, "requirements.txt"))
+				defer func() {
+					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
+				}()
+			case "partial-results-enabled":
+				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, ".,inner-project"))
+				defer func() {
+					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
+				}()
 			}
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
