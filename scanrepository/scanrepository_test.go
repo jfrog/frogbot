@@ -16,6 +16,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 
 	"github.com/google/go-github/v45/github"
@@ -91,6 +92,7 @@ var testPackagesData = []struct {
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName                       string
+		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
 		expectedMissingFilesInBranch   map[string][]string
@@ -100,16 +102,16 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	}{
 		{
 			testName:                       "aggregate",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 		},
@@ -140,8 +142,8 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
 			testName:                       "partial-results-enabled",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"1.2.6", "0.8.4"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
 			allowPartialResults:            true,
