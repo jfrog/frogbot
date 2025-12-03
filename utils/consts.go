@@ -38,10 +38,10 @@ const (
 	JfrogConfigProfileEnv    = "JF_CONFIG_PROFILE"
 
 	// Git environment variables
-	GitProvider                      = "JF_GIT_PROVIDER"
-	GitRepoOwnerEnv                  = "JF_GIT_OWNER"
-	GitRepoEnv                       = "JF_GIT_REPO"
-	GitProjectEnv                    = "JF_GIT_PROJECT"
+	GitProvider                     = "JF_GIT_PROVIDER"
+	GitRepoOwnerEnv                 = "JF_GIT_OWNER"
+	GitRepoEnv                      = "JF_GIT_REPO"
+	GitProjectEnv                   = "JF_GIT_PROJECT"
 	GitUsernameEnv                  = "JF_GIT_USERNAME"
 	GitUseLocalRepositoryEnv        = "JF_USE_LOCAL_REPOSITORY"
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
@@ -76,7 +76,6 @@ const (
 	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
-	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
 	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
 
