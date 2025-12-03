@@ -311,7 +311,7 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 
 	if commandName == ScanPullRequest {
 		assert.NotZero(t, repo.PullRequestDetails.ID)
-		assert.NotEmpty(t, repo.PullRequestCommentTitle)
+		assert.Empty(t, repo.PullRequestCommentTitle)
 	}
 
 	project := repo.Projects[0]
