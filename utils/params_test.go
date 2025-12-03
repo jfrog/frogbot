@@ -151,13 +151,6 @@ func TestExtractClientInfo(t *testing.T) {
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
-func testExtractAndAssertProjectParams(t *testing.T, project Project) {
-	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.ElementsMatch(t, []string{"a/b", "b/c"}, project.WorkingDirs)
-	assert.Equal(t, "", project.PipRequirementsFile)
-}
-
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, commandName string) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
