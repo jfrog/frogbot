@@ -497,7 +497,7 @@ func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
 			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
 			if fileDeletionErr != nil {
-				err = errors.Join(err, fmt.Errorf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error()))
+				err = errors.Join(err, fmt.Errorf("file '%s': %s", relativeFilePath, fileDeletionErr.Error()))
 				continue
 			}
 		}
