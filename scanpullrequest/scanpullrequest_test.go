@@ -51,15 +51,8 @@ var gitParams = &utils.Repository{
 }
 
 const (
-	testMultiDirProjConfigPath       = "testdata/config/frogbot-config-multi-dir-test-proj.yml"
-	testMultiDirProjConfigPathNoFail = "testdata/config/frogbot-config-multi-dir-test-proj-no-fail.yml"
-	testProjSubdirConfigPath         = "testdata/config/frogbot-config-test-proj-subdir.yml"
-	testCleanProjConfigPath          = "testdata/config/frogbot-config-clean-test-proj.yml"
-	testProjConfigPath               = "testdata/config/frogbot-config-test-proj.yml"
-	testProjConfigPathNoFail         = "testdata/config/frogbot-config-test-proj-no-fail.yml"
-	testJasProjConfigPath            = "testdata/config/frogbot-config-jas-diff-proj.yml"
-	testSourceBranchName             = "pr"
-	testTargetBranchName             = "master"
+	testSourceBranchName = "pr"
+	testTargetBranchName = "master"
 )
 
 func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
@@ -228,61 +221,54 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 func TestScanPullRequest(t *testing.T) {
 	tests := []struct {
 		testName             string
-		configPath           string
 		projectName          string
 		failOnSecurityIssues bool
 	}{
 		{
 			testName:             "ScanPullRequest",
-			configPath:           testProjConfigPath,
 			projectName:          "test-proj",
 			failOnSecurityIssues: true,
 		},
 		{
 			testName:             "ScanPullRequestNoFail",
-			configPath:           testProjConfigPathNoFail,
 			projectName:          "test-proj",
 			failOnSecurityIssues: false,
 		},
 		{
 			testName:             "ScanPullRequestSubdir",
-			configPath:           testProjSubdirConfigPath,
 			projectName:          "test-proj-subdir",
 			failOnSecurityIssues: true,
 		},
 		{
 			testName:             "ScanPullRequestNoIssues",
-			configPath:           testCleanProjConfigPath,
 			projectName:          "clean-test-proj",
 			failOnSecurityIssues: false,
 		},
 		{
 			testName:             "ScanPullRequestMultiWorkDir",
-			configPath:           testMultiDirProjConfigPathNoFail,
 			projectName:          "multi-dir-test-proj",
 			failOnSecurityIssues: false,
 		},
 		{
 			testName:             "ScanPullRequestMultiWorkDirNoFail",
-			configPath:           testMultiDirProjConfigPath,
 			projectName:          "multi-dir-test-proj",
 			failOnSecurityIssues: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testScanPullRequest(t, test.configPath, test.projectName, test.failOnSecurityIssues)
+			testScanPullRequest(t, test.projectName, test.failOnSecurityIssues)
 		})
 	}
 }
 
-func testScanPullRequest(t *testing.T, configPath, projectName string, failOnSecurityIssues bool) {
-	configAggregator, client, cleanUp := preparePullRequestTest(t, projectName, configPath)
+func testScanPullRequest(t *testing.T, projectName string, failOnSecurityIssues bool) {
+	config, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(configAggregator, client, utils.MockHasConnection())
+	err := scanPullRequest.Run(config, client, utils.MockHasConnection())
 	if failOnSecurityIssues {
 		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
 	} else {
@@ -350,10 +336,11 @@ func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.RepoAggregator, vcsclient.VcsClient) {
+func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.Repository, vcsclient.VcsClient) {
 	gitTestParams := &utils.Git{
 		GitProvider: vcsutils.GitHub,
 		RepoOwner:   gitServerParams.RepoOwner,
+		RepoName:    gitServerParams.RepoName,
 		VcsInfo: vcsclient.VcsInfo{
 			Token:       "123456",
 			APIEndpoint: server.URL,
@@ -365,12 +352,10 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion, configPath st
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	configData, err := utils.ReadConfigFromFileSystem(configPath)
-	assert.NoError(t, err)
-	configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanPullRequest)
+	config, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
-	return configAggregator, client
+	return config, client
 }
 
 func TestDeletePreviousPullRequestMessages(t *testing.T) {
@@ -493,13 +478,11 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 	tests := []struct {
 		testName       string
 		projectName    string
-		configPath     string
 		expectedIssues TestResult
 	}{
 		{
 			testName:    "Project with Jas issues (issues added removed and not changed)",
 			projectName: "jas-diff-proj",
-			configPath:  testJasProjConfigPath,
 			expectedIssues: TestResult{
 				Sca:  4,
 				Sast: 1,
@@ -509,11 +492,10 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, test.configPath)
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, false)
 			defer cleanUpTest()
 
-			assert.Len(t, repoConfig, 1)
-			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
+			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig, client)
 			assert.NoError(t, err)
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
@@ -1156,8 +1138,24 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 	}
 }
 
-func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils.RepoAggregator, vcsclient.VcsClient, func()) {
+func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.Repository, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
+
+	// Set test-specific environment variables
+	envVars := map[string]string{}
+	if !failOnSecurityIssues {
+		envVars[utils.FailOnSecurityIssuesEnv] = "false"
+	}
+
+	// Set working directories for multi-dir tests
+	if projectName == "multi-dir-test-proj" {
+		envVars[utils.WorkingDirectoryEnv] = "sub1,sub3/sub4,sub2"
+		envVars[utils.RequirementsFileEnv] = "requirements.txt"
+	}
+
+	if len(envVars) > 0 {
+		utils.SetEnvAndAssert(t, envVars)
+	}
 
 	xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&params)
 	assert.NoError(t, err)
@@ -1175,14 +1173,14 @@ func preparePullRequestTest(t *testing.T, projectName, configPath string) (utils
 	server := httptest.NewServer(createGitLabHandler(t, gitServerParams))
 
 	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
-	configAggregator, client := prepareConfigAndClient(t, xrayVersion, xscVersion, configPath, server, params, gitServerParams)
+	config, client := prepareConfigAndClient(t, xrayVersion, xscVersion, server, params, gitServerParams)
 
 	// Renames test git folder to .git
 	currentDir := filepath.Join(testDir, projectName)
 	restoreDir, err := utils.Chdir(currentDir)
 	assert.NoError(t, err)
 
-	return configAggregator, client, func() {
+	return config, client, func() {
 		assert.NoError(t, restoreDir())
 		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
 		cleanUp()
