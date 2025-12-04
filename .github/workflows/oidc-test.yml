@@ -80,7 +80,9 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
-          JF_WORKING_DIR: ./testdata/projects/noIssuesProject
+          # Scan both action (npm) and root (Go) directories to match the previous frogbot-config.yml behavior
+          # JF_WORKING_DIR supports comma-separated values for multiple directories
+          JF_WORKING_DIR: action,.
           JF_FAIL: "FALSE"
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         with:
