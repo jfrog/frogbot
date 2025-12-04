@@ -379,7 +379,7 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 		}
 		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
-		if sourceViolations.Sca != nil {
+		if sourceViolations != nil && sourceViolations.Sca != nil {
 			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
 			sourceViolations.Sca = nil
 		}

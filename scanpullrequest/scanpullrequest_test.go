@@ -16,9 +16,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/jfrog/frogbot/v2/testdata"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -65,14 +69,52 @@ func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
 	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
+		ResultsStatus: results.ResultsStatus{
+			ScaScanStatusCode:            securityutils.NewIntPtr(0),
+			ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
+			IacScanStatusCode:            securityutils.NewIntPtr(0),
+			SecretsScanStatusCode:        securityutils.NewIntPtr(0),
+			SastScanStatusCode:           securityutils.NewIntPtr(0),
+		},
 		ScanTarget: results.ScanTarget{Target: "dummy"},
-		ScaResults: &results.ScaScanResults{},
+		ScaResults: &results.ScaScanResults{
+			DeprecatedXrayResults: []services.ScanResponse{{
+				Vulnerabilities: []services.Vulnerability{
+					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
+					{Cves: []services.Cve{{Id: "CVE-2023-3122"}}, Severity: "Low", Components: map[string]services.Component{"Dep-2": {FixedVersions: []string{"1.2.2"}}}},
+				},
+				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
+			}},
+		},
 		JasResults: &results.JasScansResults{
-			ApplicabilityScanResults: []*sarif.Run{},
+			ApplicabilityScanResults: []*sarif.Run{
+				sarifutils.CreateRunWithDummyResults(
+					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
+					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
+				),
+			},
 			JasVulnerabilities: results.JasScanResults{
-				IacScanResults:     []*sarif.Run{},
-				SecretsScanResults: []*sarif.Run{},
-				SastScanResults:    []*sarif.Run{},
+				IacScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+						),
+					),
+				},
+				SecretsScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
+						),
+					),
+				},
+				SastScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
+						),
+					),
+				},
 			},
 		},
 	}}}
@@ -82,7 +124,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				Applicable:    "Applicable",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 26},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 31},
 					ImpactedDependencyName: "Dep-1",
 				},
 				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
@@ -101,7 +143,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -122,7 +164,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -143,7 +185,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -157,23 +199,6 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 					EndLine:     2,
 					EndColumn:   11,
 					Snippet:     "snippet",
-				},
-			},
-		},
-		LicensesViolations: []formats.LicenseViolationRow{
-			{
-				LicenseRow: formats.LicenseRow{
-					LicenseKey: "Apache-2.0",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails: formats.SeverityDetails{
-							Severity:         "Medium",
-							SeverityNumValue: 19,
-						},
-						ImpactedDependencyName: "Dep-1",
-					},
-				},
-				ViolationContext: formats.ViolationContext{
-					Watch: "jfrog_custom_license_violation",
 				},
 			},
 		},
