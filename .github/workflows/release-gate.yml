@@ -37,10 +37,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.12'
-          cache: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-
+          go-version: '1.21'
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Install C compiler for race detector
         run: |
           sudo apt-get update
