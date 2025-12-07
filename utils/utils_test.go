@@ -1,8 +1,14 @@
 package utils
 
 import (
+	"net/http/httptest"
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/CycloneDX/cyclonedx-go"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -11,12 +17,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
-	"os"
-	"path"
-	"path/filepath"
-	"testing"
-	"time"
+
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const (
@@ -25,6 +27,7 @@ const (
 	dependencySubmissionTestJob      = "test-job-123"
 	dependencySubmissionTestWorkflow = "test-workflow"
 	dependencySubmissionTestSha      = "abc123def456"
+	xrayVersionTest                  = "1.0.0"
 )
 
 func TestChdir(t *testing.T) {
@@ -499,7 +502,11 @@ func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
 			assert.NoError(t, err)
 
 			restoreEnv := SetEnvsAndAssertWithCallback(t, test.envVars)
-			err = UploadSbomSnapshotToGithubDependencyGraph(dependencySubmissionTestOwner, dependencySubmissionTestRepo, test.scanResults, client, "main")
+			serverDetails := &config.ServerDetails{
+				Url:         "http://localhost:8081",
+				AccessToken: "test-token",
+			}
+			err = UploadSbomSnapshotToGithubDependencyGraph(dependencySubmissionTestOwner, dependencySubmissionTestRepo, serverDetails, xrayVersionTest, test.scanResults, client, "main")
 			if test.errorExpected {
 				assert.Error(t, err)
 			} else {
@@ -551,7 +558,9 @@ func createTestSecurityCommandResults() *results.SecurityCommandResults {
 
 	// Create SecurityCommandResults with the BOM
 	scanResults := &results.SecurityCommandResults{
-		StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
+		ResultsMetaData: results.ResultsMetaData{
+			StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
+		},
 		Targets: []*results.TargetResults{
 			{
 				ScanTarget: results.ScanTarget{

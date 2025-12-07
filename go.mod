@@ -11,7 +11,7 @@ require (
 	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0
 	github.com/jfrog/jfrog-cli-security v1.22.0
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
@@ -125,7 +125,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => github.com/orto17/jfrog-cli-security v0.0.0-20251207094551-972e1522f270
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -133,6 +133,6 @@ require (
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go dev
+replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20251207101213-fb52a658d28c
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master

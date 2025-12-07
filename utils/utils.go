@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -26,10 +25,13 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 const (
@@ -51,6 +53,11 @@ const (
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
+
+	// Git integration event
+	gitIntegrationEventsCompleteStatus   = "completed"
+	gitIntegrationEventsFailedStatus     = "failed"
+	gitIntegrationEventUploadSbomResults = "Source Code SBOM Results Upload"
 )
 
 var (
@@ -231,7 +238,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, repo.AllowedLicenses)
+	report, err := GenerateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
 	}
@@ -243,7 +250,7 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	return nil
 }
 
-func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
+func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, serverDetails *config.ServerDetails, xrayVersion string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {
 	if scanResults == nil {
 		return fmt.Errorf("got an empty scan results")
 	}
@@ -271,20 +278,35 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	}
 
 	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
+		sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, err)
 		snapshotJson, e := utils.GetAsJsonString(snapshot, false, true)
 		if e != nil {
 			return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
 		}
 		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w\nSent Snapshot:\n%s", err, snapshotJson)
 	}
+	sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, nil)
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
+func sendGitIntegrationEvent(owner, repo, branch string, serverDetails *config.ServerDetails, xrayVersion string, err error) {
+	eventStatus := gitIntegrationEventsCompleteStatus
+	failureReason := ""
+	if err != nil {
+		eventStatus = gitIntegrationEventsFailedStatus
+		failureReason = err.Error()
+	}
+	if sendEventErr := xsc.SendGitIntegrationEvent(serverDetails, xrayVersion, gitIntegrationEventUploadSbomResults,
+		string(GitHub), owner, repo, branch, eventStatus, failureReason,
+	); sendEventErr != nil {
+		log.Info(fmt.Sprintf("ailed to send git integration event: %s", sendEventErr.Error()))
+	}
+}
+
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),
-		AllowedLicenses:        allowedLicenses,
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {

@@ -12,9 +12,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
 
-	"github.com/jfrog/frogbot/v2/packagehandlers"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
@@ -28,6 +25,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+
+	"github.com/jfrog/frogbot/v2/packagehandlers"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const analyticsScanRepositoryScanType = "monitor"
@@ -194,7 +195,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			}
 
 			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
-				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
+				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, cfp.scanDetails.ServerDetails, cfp.XrayVersion, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
 					log.Warn(err)
 				}
 			}
