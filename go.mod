@@ -1,17 +1,17 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.25.4
+go 1.25.5
 
 require (
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.12.4
-	github.com/jfrog/froggit-go v1.20.4
+	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251021143342-49bab7f38cec
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0
-	github.com/jfrog/jfrog-cli-security v1.21.9
+	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
+	github.com/jfrog/jfrog-cli-security v1.22.0
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -123,7 +123,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-//replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.23.0
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

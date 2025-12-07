@@ -272,7 +272,7 @@ func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetail
 		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
 		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
 		if _, err := mph.RunMvnCmd(updatePropertyArgs); err != nil { // #nosec G204
-			return fmt.Errorf("failed updating %s property: %s\n", property, err.Error())
+			return fmt.Errorf("failed updating %s property: %s", property, err.Error())
 		}
 	}
 	return nil
