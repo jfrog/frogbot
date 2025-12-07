@@ -21,7 +21,6 @@ import (
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 
-	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
