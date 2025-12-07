@@ -538,7 +538,7 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []
 	if err != nil {
 		return "", err
 	}
-	return formatStringWithPlaceHolders(branchFormat, techArrayToString(tech, fixBranchTechSeparator), "", hash, baseBranch, false), nil
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
