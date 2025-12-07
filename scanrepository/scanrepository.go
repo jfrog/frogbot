@@ -12,6 +12,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
 
+	"github.com/jfrog/frogbot/v2/packagehandlers"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
@@ -25,10 +28,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
-
-	"github.com/jfrog/frogbot/v2/packagehandlers"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const analyticsScanRepositoryScanType = "monitor"
@@ -57,14 +56,10 @@ type ScanRepositoryCmd struct {
 	XscVersion  string
 }
 
-func (cfp *ScanRepositoryCmd) Run(repoAggregator utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	if err = utils.ValidateSingleRepoConfiguration(&repoAggregator); err != nil {
-		return err
-	}
-	repository := repoAggregator[0]
+func (cfp *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	cfp.XrayVersion = repository.XrayVersion
-	cfp.XscVersion = repository.XscVersion
+	cfp.XrayVersion = repository.Params.XrayVersion
+	cfp.XscVersion = repository.Params.XscVersion
 	return cfp.scanAndFixRepository(&repository, client)
 }
 
@@ -72,11 +67,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 	if err = cfp.setCommandPrerequisites(repository, client); err != nil {
 		return
 	}
-	log.Debug(fmt.Sprintf("Detected branches for scan: %s", strings.Join(repository.Branches, ", ")))
-	for _, branch := range repository.Branches {
+	log.Debug(fmt.Sprintf("Detected branches for scan: %s", strings.Join(repository.Params.Git.Branches, ", ")))
+	for _, branch := range repository.Params.Git.Branches {
 		log.Debug(fmt.Sprintf("Scanning '%s' branch...", branch))
 		cfp.scanDetails.SetBaseBranch(branch)
-		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
+		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Params.Git.Project, client)
 		if err = cfp.scanAndFixBranch(repository); err != nil {
 			return
 		}
@@ -103,7 +98,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		cfp.scanDetails.XscVersion,
 		cfp.scanDetails.ServerDetails,
 		utils.CreateScanEvent(cfp.scanDetails.ServerDetails, cfp.scanDetails.XscGitInfoContext, analyticsScanRepositoryScanType),
-		repository.JFrogProjectKey,
+		repository.Params.JFrogPlatform.JFrogProjectKey,
 	)
 
 	totalFindings := 0
@@ -112,8 +107,8 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, err)
 	}()
 
-	for i := range repository.Projects {
-		cfp.scanDetails.Project = &repository.Projects[i]
+	for i := range repository.Params.Scan.Projects {
+		cfp.scanDetails.Project = &repository.Params.Scan.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
 		if findings, e := cfp.scanAndFixProject(repository); e != nil {
 			return e
@@ -126,27 +121,27 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 }
 
 func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
-	repositoryCloneUrl, err := repository.Git.GetRepositoryHttpsCloneUrl(client)
+	repositoryCloneUrl, err := repository.Params.Git.GetRepositoryHttpsCloneUrl(client)
 	if err != nil {
 		return
 	}
 	// Set the scan details
-	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Git).
+	cfp.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Params.Git).
 		SetJfrogVersions(cfp.XrayVersion, cfp.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repository.Watches, repository.JFrogProjectKey, repository.IncludeVulnerabilities, len(repository.AllowedLicenses) > 0).
-		SetFixableOnly(repository.FixableOnly).
-		SetConfigProfile(repository.ConfigProfile).
-		SetAllowPartialResults(repository.AllowPartialResults).
-		SetDisableJas(repository.DisableJas)
+		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.Watches, repository.Params.JFrogPlatform.JFrogProjectKey, repository.Params.JFrogPlatform.IncludeVulnerabilities, len(repository.Params.Scan.AllowedLicenses) > 0).
+		SetFixableOnly(repository.Params.Scan.FixableOnly).
+		SetConfigProfile(repository.Params.Scan.ConfigProfile).
+		SetAllowPartialResults(repository.Params.Scan.AllowPartialResults).
+		SetDisableJas(repository.Params.Scan.DisableJas)
 
-	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.MinSeverity); err != nil {
+	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.Params.Scan.MinSeverity); err != nil {
 		return
 	}
 
 	// Set the flag for aggregating fixes to generate a unified pull request for fixing vulnerabilities
-	cfp.aggregateFixes = repository.Git.AggregateFixes
+	cfp.aggregateFixes = repository.Params.Git.AggregateFixes
 	// Set the outputwriter interface for the relevant vcs git provider
-	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.GitProvider)
+	cfp.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.Params.Git.GitProvider)
 	cfp.OutputWriter.SetSizeLimit(client)
 	// Set the git client to perform git operations
 	cfp.gitManager, err = utils.NewGitManager().
@@ -186,20 +181,20 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			totalFindings += findingCount
 		}
 
-		if repository.GitProvider.String() == vcsutils.GitHub.String() {
+		if repository.Params.Git.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only
 			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
 
-			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
-				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
+			if *repository.Params.Git.UploadSbomToVcs && scanResults.EntitledForJas {
+				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
 					log.Warn(err)
 				}
 			}
 		}
-		if repository.DetectionOnly {
+		if repository.Params.Scan.DetectionOnly {
 			continue
 		}
 		// Prepare the vulnerabilities map for each working dir path
@@ -215,7 +210,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 		}
 		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
-	if repository.DetectionOnly {
+	if repository.Params.Scan.DetectionOnly {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' environment variable to 'false'.", utils.DetectionOnlyEnv))
 	} else if fixNeeded {
 		return totalFindings, cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
@@ -501,7 +496,7 @@ func (cfp *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
 			fileDeletionErr := os.Remove(filepath.Join(cfp.baseWd, relativeFilePath))
 			if fileDeletionErr != nil {
-				err = errors.Join(err, fmt.Errorf("file '%s': %s\n", relativeFilePath, fileDeletionErr.Error()))
+				err = errors.Join(err, fmt.Errorf("file '%s': %s", relativeFilePath, fileDeletionErr.Error()))
 				continue
 			}
 		}

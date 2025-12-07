@@ -102,32 +102,32 @@ func TestStandardImage(t *testing.T) {
 		{
 			name:           "no vulnerability pr banner",
 			source:         NoVulnerabilityPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and did not find any new security issues.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this pull request and did not find any new security issues.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerPR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities pr banner",
 			source:         VulnerabilitiesPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "no vulnerability mr banner",
 			source:         NoVulnerabilityMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this merge request and did not find any new security issues.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![👍 Frogbot scanned this merge request and did not find any new security issues.](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/noVulnerabilityBannerMR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities mr banner",
 			source:         VulnerabilitiesMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 Frogbot scanned this merge request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerMR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix pr banner",
 			source:         VulnerabilitiesFixPrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![🚨 This automated pull request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 This automated pull request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerPR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 		{
 			name:           "vulnerabilities fix mr banner",
 			source:         VulnerabilitiesFixMrBannerSource,
-			expectedOutput: "<div align='center'>\n\n[![🚨 This automated merge request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)\n\n</div>\n",
+			expectedOutput: "<div align='center'>\n\n[![🚨 This automated merge request was created by Frogbot and fixes the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesFixBannerMR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)\n\n</div>\n",
 		},
 	}
 	for _, tc := range testCases {

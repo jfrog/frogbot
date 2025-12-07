@@ -8,9 +8,6 @@ type vcsProvider string
 type ciProvider string
 
 const (
-	// Errors
-	errUnsupportedMultiRepo = "multi repository configuration isn't supported. Only one repository configuration is allowed"
-
 	// MaxConcurrentScanners represents the maximum number of threads for running JFrog CLI scanners concurrently
 	MaxConcurrentScanners = 5
 
@@ -54,7 +51,7 @@ const (
 	//#nosec G101 -- not a secret
 	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
 
-	// Repository environment variables - Ignored if the frogbot-config.yml file is used
+	// Repository environment variables
 	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
 	MaxPnpmTreeDepthEnv = "JF_PNPM_MAX_TREE_DEPTH"
 	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"

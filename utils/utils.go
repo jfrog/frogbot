@@ -148,14 +148,6 @@ func (e *ErrMissingEnv) IsMissingEnvErr(err error) bool {
 	return errors.As(err, &e)
 }
 
-type ErrMissingConfig struct {
-	missingReason string
-}
-
-func (e *ErrMissingConfig) Error() string {
-	return fmt.Sprintf("config file is missing: %s", e.missingReason)
-}
-
 func Chdir(dir string) (cbk func() error, err error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -272,14 +264,6 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	}
 	log.Debug("Repository download completed")
 	return
-}
-
-func ValidateSingleRepoConfiguration(configAggregator *RepoAggregator) error {
-	// Multi repository configuration is supported only in the scanallpullrequests and scanmultiplerepositories commands.
-	if len(*configAggregator) > 1 {
-		return errors.New(errUnsupportedMultiRepo)
-	}
-	return nil
 }
 
 // GetRelativeWd receive a base working directory along with a full path containing the base working directory, and the relative part is returned without the base prefix.
