@@ -145,7 +145,6 @@ type Scan struct {
 	FixableOnly           bool      `yaml:"fixableOnly,omitempty"`
 	DetectionOnly         bool      `yaml:"skipAutoFix,omitempty"`
 	MinSeverity           string    `yaml:"minSeverity,omitempty"`
-	DisableJas            bool      `yaml:"disableJas,omitempty"`
 	AddPrCommentOnSuccess bool      `yaml:"addPrCommentOnSuccess,omitempty"`
 	AllowedLicenses       []string  `yaml:"allowedLicenses,omitempty"`
 	Projects              []Project `yaml:"projects,omitempty"`

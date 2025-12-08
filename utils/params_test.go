@@ -285,7 +285,6 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, false, repo.DisableJas)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)

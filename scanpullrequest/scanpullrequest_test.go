@@ -503,7 +503,7 @@ func TestToFailTaskStatus(t *testing.T) {
 		failureExpected  bool
 	}{
 		{
-			name:        "fail flag set to false and no violations with fail_pr",
+			name:        "no violations with fail_pr",
 			setFailFlag: false,
 			issuesCollection: issues.ScansIssuesCollection{
 				LicensesViolations: []formats.LicenseViolationRow{{
@@ -530,74 +530,7 @@ func TestToFailTaskStatus(t *testing.T) {
 			failureExpected: false,
 		},
 		{
-			name:        "fail flag set to true, sca vulnerability",
-			setFailFlag: true,
-			issuesCollection: issues.ScansIssuesCollection{
-				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
-					{
-						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-							ImpactedDependencyName:    "impacted-name",
-							ImpactedDependencyVersion: "1.0.0",
-							SeverityDetails:           formats.SeverityDetails{Severity: "High"},
-							Components: []formats.ComponentRow{
-								{
-									Name:    "vuln-pack-name1",
-									Version: "1.0.0",
-								},
-								{
-									Name:    "vuln-pack-name1",
-									Version: "1.2.3",
-								},
-								{
-									Name:    "vuln-pack-name2",
-									Version: "1.2.3",
-								},
-							},
-						},
-						Cves: []formats.CveRow{{
-							Id: "CVE-2021-1234",
-							Applicability: &formats.Applicability{
-								Status:             "Applicable",
-								ScannerDescription: "scanner",
-								Evidence: []formats.Evidence{
-									{Reason: "reason", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 2, EndLine: 3, EndColumn: 4, Snippet: "snippet1"}},
-									{Reason: "other reason", Location: formats.Location{File: "file2", StartLine: 5, StartColumn: 6, EndLine: 7, EndColumn: 8, Snippet: "snippet2"}},
-								},
-							},
-						}},
-						JfrogResearchInformation: &formats.JfrogResearchInformation{
-							Remediation: "remediation",
-						},
-						Summary:    "summary",
-						Applicable: "Applicable",
-						IssueId:    "Xray-Id",
-					},
-					{
-						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-							ImpactedDependencyName:    "impacted-name2",
-							ImpactedDependencyVersion: "1.0.0",
-							SeverityDetails:           formats.SeverityDetails{Severity: "Low"},
-							Components: []formats.ComponentRow{
-								{
-									Name:    "vuln-pack-name3",
-									Version: "1.0.0",
-								},
-							},
-						},
-						Cves: []formats.CveRow{{
-							Id:            "CVE-1111-2222",
-							Applicability: &formats.Applicability{Status: "Not Applicable"},
-						}},
-						Summary:    "other summary",
-						Applicable: "Not Applicable",
-						IssueId:    "Xray-Id2",
-					},
-				},
-			},
-			failureExpected: true,
-		},
-		{
-			name:        "fail flag is set to false, fail_pr in licenses violation",
+			name:        "fail_pr in licenses violation",
 			setFailFlag: false,
 			issuesCollection: issues.ScansIssuesCollection{
 				LicensesViolations: []formats.LicenseViolationRow{{

@@ -159,7 +159,6 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetFixableOnly(repoConfig.Params.Scan.FixableOnly).
 		SetConfigProfile(repoConfig.Params.Scan.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.Params.Scan.SkipAutoInstall).
-		SetDisableJas(repoConfig.Params.Scan.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails).
 		SetDiffScan(!repoConfig.Params.JFrogPlatform.IncludeVulnerabilities).
 		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults)
