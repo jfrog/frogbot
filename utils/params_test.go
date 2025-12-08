@@ -230,27 +230,25 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 
 func TestGenerateConfigFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                  "",
-		jfrogArtifactoryUrlEnv:       "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:              "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                 "admin",
-		JFrogPasswordEnv:             "password",
-		BranchNameTemplateEnv:        "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:     "commit",
-		PullRequestTitleTemplateEnv:  "pr-title",
-		InstallCommandEnv:            "nuget restore",
-		UseWrapperEnv:                "false",
-		RequirementsFileEnv:          "requirements.txt",
-		WorkingDirectoryEnv:          "a/b",
-		jfrogProjectEnv:              "projectKey",
-		jfrogWatchesEnv:              "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                  "deps-remote",
-		IncludeAllVulnerabilitiesEnv: "true",
-		FailOnSecurityIssuesEnv:      "false",
-		MinSeverityEnv:               "medium",
-		FixableOnlyEnv:               "true",
-		DetectionOnlyEnv:             "true",
-		AllowedLicensesEnv:           "MIT, Apache-2.0",
+		JFrogUrlEnv:                 "",
+		jfrogArtifactoryUrlEnv:      "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:             "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:                "admin",
+		JFrogPasswordEnv:            "password",
+		BranchNameTemplateEnv:       "branch-${BRANCH_NAME_HASH}",
+		CommitMessageTemplateEnv:    "commit",
+		PullRequestTitleTemplateEnv: "pr-title",
+		InstallCommandEnv:           "nuget restore",
+		UseWrapperEnv:               "false",
+		RequirementsFileEnv:         "requirements.txt",
+		WorkingDirectoryEnv:         "a/b",
+		jfrogProjectEnv:             "projectKey",
+		jfrogWatchesEnv:             "watch-1, watch-2, watch-3",
+		DepsRepoEnv:                 "deps-remote",
+		MinSeverityEnv:              "medium",
+		FixableOnlyEnv:              "true",
+		DetectionOnlyEnv:            "true",
+		AllowedLicensesEnv:          "MIT, Apache-2.0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -285,7 +283,6 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
-	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, false, repo.DisableJas)

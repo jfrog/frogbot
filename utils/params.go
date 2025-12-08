@@ -142,27 +142,20 @@ func (p *Project) GetTechFromInstallCmdIfExists() []string {
 }
 
 type Scan struct {
-	IncludeAllVulnerabilities bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FixableOnly               bool      `yaml:"fixableOnly,omitempty"`
-	DetectionOnly             bool      `yaml:"skipAutoFix,omitempty"`
-	FailOnSecurityIssues      *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	MinSeverity               string    `yaml:"minSeverity,omitempty"`
-	DisableJas                bool      `yaml:"disableJas,omitempty"`
-	AddPrCommentOnSuccess     bool      `yaml:"addPrCommentOnSuccess,omitempty"`
-	AllowedLicenses           []string  `yaml:"allowedLicenses,omitempty"`
-	Projects                  []Project `yaml:"projects,omitempty"`
-	ConfigProfile             *services.ConfigProfile
-	SkipAutoInstall           bool
-	AllowPartialResults       bool
+	FixableOnly           bool      `yaml:"fixableOnly,omitempty"`
+	DetectionOnly         bool      `yaml:"skipAutoFix,omitempty"`
+	MinSeverity           string    `yaml:"minSeverity,omitempty"`
+	DisableJas            bool      `yaml:"disableJas,omitempty"`
+	AddPrCommentOnSuccess bool      `yaml:"addPrCommentOnSuccess,omitempty"`
+	AllowedLicenses       []string  `yaml:"allowedLicenses,omitempty"`
+	Projects              []Project `yaml:"projects,omitempty"`
+	ConfigProfile         *services.ConfigProfile
+	SkipAutoInstall       bool
+	AllowPartialResults   bool
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
 	e := &ErrMissingEnv{}
-	if !s.IncludeAllVulnerabilities {
-		if s.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
-			return
-		}
-	}
 	if !s.FixableOnly {
 		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
 			return
@@ -177,13 +170,6 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
 		}
-	}
-	if s.FailOnSecurityIssues == nil {
-		var failOnSecurityIssues bool
-		if failOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true); err != nil {
-			return
-		}
-		s.FailOnSecurityIssues = &failOnSecurityIssues
 	}
 	if s.MinSeverity == "" {
 		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
@@ -632,11 +618,9 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// This function attempts to fetch a config profile if JF_USE_CONFIG_PROFILE is set to true.
-// If we need to use a profile, we first try to get the profile by name that can be provided through JF_CONFIG_PROFILE. If name is provided but profile doesn't exist we return an error.
-// If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
+// This function attempts to fetch a config profile, we check if there is a config profile associated to the repo URL.
 // When a profile is found we verify several conditions on it.
-// If a profile was requested but not found by url nor by name we return an error.
+// If a profile was requested but not found by url we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git, projectKey string) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion); err != nil {
 		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above or downgrade Frogbot to prior versions", xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion))

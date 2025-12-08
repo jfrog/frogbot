@@ -220,60 +220,49 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 
 func TestScanPullRequest(t *testing.T) {
 	tests := []struct {
-		testName             string
-		projectName          string
-		failOnSecurityIssues bool
+		testName    string
+		projectName string
 	}{
 		{
-			testName:             "ScanPullRequest",
-			projectName:          "test-proj",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequest",
+			projectName: "test-proj",
 		},
 		{
-			testName:             "ScanPullRequestNoFail",
-			projectName:          "test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestNoFail",
+			projectName: "test-proj",
 		},
 		{
-			testName:             "ScanPullRequestSubdir",
-			projectName:          "test-proj-subdir",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequestSubdir",
+			projectName: "test-proj-subdir",
 		},
 		{
-			testName:             "ScanPullRequestNoIssues",
-			projectName:          "clean-test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestNoIssues",
+			projectName: "clean-test-proj",
 		},
 		{
-			testName:             "ScanPullRequestMultiWorkDir",
-			projectName:          "multi-dir-test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestMultiWorkDir",
+			projectName: "multi-dir-test-proj",
 		},
 		{
-			testName:             "ScanPullRequestMultiWorkDirNoFail",
-			projectName:          "multi-dir-test-proj",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequestMultiWorkDirNoFail",
+			projectName: "multi-dir-test-proj",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testScanPullRequest(t, test.projectName, test.failOnSecurityIssues)
+			testScanPullRequest(t, test.projectName)
 		})
 	}
 }
 
-func testScanPullRequest(t *testing.T, projectName string, failOnSecurityIssues bool) {
-	config, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
+func testScanPullRequest(t *testing.T, projectName string) {
+	config, client, cleanUp := preparePullRequestTest(t, projectName)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
 	err := scanPullRequest.Run(config, client, utils.MockHasConnection())
-	if failOnSecurityIssues {
-		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
-	} else {
-		assert.NoError(t, err)
-	}
+	assert.NoError(t, err)
 
 	// Check env sanitize
 	err = utils.SanitizeEnv()
@@ -492,7 +481,7 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, false)
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName)
 			defer cleanUpTest()
 
 			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig, client)
@@ -638,19 +627,7 @@ func TestToFailTaskStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			failFlag := test.setFailFlag
-			repo := &utils.Repository{
-				Params: utils.Params{
-					Scan: utils.Scan{
-						FailOnSecurityIssues: &failFlag,
-					},
-					Git: utils.Git{
-						PullRequestSecretComments: false,
-					},
-				},
-			}
-
-			assert.Equal(t, test.failureExpected, toFailTaskStatus(repo, &test.issuesCollection))
+			assert.Equal(t, test.failureExpected, test.issuesCollection.IsFailPrRuleApplied())
 		})
 	}
 }
@@ -1138,14 +1115,11 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 	}
 }
 
-func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.Repository, vcsclient.VcsClient, func()) {
+func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
 
 	// Set test-specific environment variables
 	envVars := map[string]string{}
-	if !failOnSecurityIssues {
-		envVars[utils.FailOnSecurityIssuesEnv] = "false"
-	}
 
 	// Set working directories for multi-dir tests
 	if projectName == "multi-dir-test-proj" {
