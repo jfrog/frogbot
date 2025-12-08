@@ -92,7 +92,6 @@ var testPackagesData = []struct {
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName                       string
-		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
 		expectedMissingFilesInBranch   map[string][]string
