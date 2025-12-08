@@ -279,7 +279,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 
 	// Convert to issues
-	if issues, e := scanResultsToIssuesCollection(scanResults, repoConfig.AllowedLicenses, workingDirs...); e == nil {
+	if issues, e := scanResultsToIssuesCollection(scanResults, workingDirs...); e == nil {
 		issuesCollection = issues
 		return
 	} else {
@@ -417,7 +417,7 @@ func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.Securit
 	return nil
 }
 
-func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, allowedLicenses []string, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
+func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {
 	simpleJsonResults, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
 		HasViolationContext:    scanResults.HasViolationContext(),

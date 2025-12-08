@@ -48,8 +48,7 @@ const (
 )
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
-	allowedLicenses := []string{"MIT"}
-	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
+	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
 			DeprecatedXrayResults: validations.NewMockScaResults(services.ScanResponse{
@@ -195,7 +194,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 		},
 	}
 
-	issuesRows, err := scanResultsToIssuesCollection(auditResults, allowedLicenses)
+	issuesRows, err := scanResultsToIssuesCollection(auditResults)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)

@@ -506,7 +506,7 @@ func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
 				Url:         "http://localhost:8081",
 				AccessToken: "test-token",
 			}
-			err = UploadSbomSnapshotToGithubDependencyGraph(dependencySubmissionTestOwner, dependencySubmissionTestRepo, serverDetails, xrayVersionTest, test.scanResults, client, "main")
+			err = UploadSbomSnapshotToGithubDependencyGraph(dependencySubmissionTestOwner, dependencySubmissionTestRepo, serverDetails, xrayVersionTest, test.scanResults, client, "main", "")
 			if test.errorExpected {
 				assert.Error(t, err)
 			} else {

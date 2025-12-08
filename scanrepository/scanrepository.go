@@ -195,7 +195,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 			}
 
 			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
-				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, cfp.scanDetails.ServerDetails, cfp.XrayVersion, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch()); err != nil {
+				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, cfp.scanDetails.ServerDetails, cfp.XrayVersion, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch(), repository.Params.JFrogPlatform.JFrogProjectKey); err != nil {
 					log.Warn(err)
 				}
 			}
