@@ -7,13 +7,13 @@ require (
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.12.4
+	github.com/jfrog/build-info-go v1.12.5-0.20251209120002-025bda5ff78b
 	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251023084247-a56afca52451
-	github.com/jfrog/jfrog-cli-security v1.22.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251209121625-98f7b22a08c1
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0
+	github.com/jfrog/jfrog-cli-security v1.24.0
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251209090954-d6b1c70d3a5e
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
