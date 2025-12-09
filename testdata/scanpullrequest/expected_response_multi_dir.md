@@ -4,18 +4,18 @@
 
 <div align='center'>
 
-[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 
 </div>
 
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 2 issues
+- Frogbot scanned for vulnerabilities and found 3 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>2 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 2 High<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>3 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 3 High<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -29,6 +29,7 @@
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2025-45768 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | - |
 
 </div>
 
@@ -82,17 +83,7 @@ For example, an application might have planned to validate an `EdDSA`-signed tok
 # Making a good jwt token that should work by signing it with the private key
 encoded_good = jwt.encode({"test": 1234}, priv_key_bytes, algorithm="EdDSA")
 ```
-An attacker in posession of the public key can generate an `HMAC`-signed token to confuse PyJWT - 
-```python
-# Using HMAC with the public key to trick the receiver to think that the public key is a HMAC secret
-encoded_bad = jwt.encode({"test": 1234}, pub_key_bytes, algorithm="HS256")
-```
-
-The following vulnerable `decode` call will accept BOTH of the above tokens as valid - 
-```
-decoded = jwt.decode(encoded_good, pub_key_bytes, 
-algorithms=jwt.algorithms.get_default_algorithms())
-```
+A...
 
 **Remediation:**
 ##### Development mitigations
@@ -104,10 +95,44 @@ With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 <br></details>
 
+<details><summary><b>[ CVE-2025-45768 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> Low |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | - |
+| **CVSS V3:** | 7.0 |
+
+Lack of minimal key length in PyJWT may lead to authorization bypass
+
+### 🔬 JFrog Research Details
+
+**Description:**
+It was discovered that PyJWT does not enforce any minimal key length when encoding JWT tokens.
+For example, a user may encode and decode a JWT token successfully, even with an empty key -
+```python
+key = ''
+e = jwt.encode({"foo":"bar"}, key, algorithm='HS256')
+print(e)
+>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIifQ._NaFhGu8tCCgBKksGBA6ADwRdKx3e9GES_KyF4A5phE
+
+jwt.decode(e, key, algorithms=['HS256'])
+> {'foo': 'bar'}
+```
+
+Using a key with a short length may lead to attackers successfully brute-forcing it, leading to them being able to modify the contents of JWT tokens that use that key, possibly leading to privilege escalation and authorization bypass.
+
+The vulnerability was disputed (and never fixed) since the maintainers claim that the key is chosen by the application that uses the library, and is responsible for choosing a sufficiently long key.
+<br></details>
+
 
 ---
 <div align='center'>
 
-[🐸 JFrog Frogbot](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[🐸 JFrog Frogbot](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 
 </div>

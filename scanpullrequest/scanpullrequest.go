@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -158,6 +157,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		scanDetails.XscVersion,
 		scanDetails.ServerDetails,
 		utils.CreateScanEvent(scanDetails.ServerDetails, scanDetails.XscGitInfoContext, analyticsScanPrScanType),
+		repoConfig.JFrogProjectKey,
 	)
 	defer func() {
 		if issuesCollection != nil {
@@ -375,11 +375,19 @@ func isJasScanFailedInSourceOrTarget(sourceResults, targetResults []results.Scan
 func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResults) {
 	// Filter out new Sca results
 	if sourceResult.ScaResults.ScanStatusCode != 0 || targetResult.ScaResults.ScanStatusCode != 0 {
-		statusCode := int(math.Max(float64(sourceResult.ScaResults.ScanStatusCode), float64(targetResult.ScaResults.ScanStatusCode)))
-		log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca vulnerability results will be removed from final report", statusCode))
+		var statusCode int
+		var errorSource string
+		if sourceResult.ScaResults.ScanStatusCode != 0 {
+			statusCode = sourceResult.ScaResults.ScanStatusCode
+			errorSource = "source"
+		} else {
+			statusCode = targetResult.ScaResults.ScanStatusCode
+			errorSource = "target"
+		}
+		log.Debug(fmt.Sprintf("Sca scan on %s code has completed with errors (status %d). Sca vulnerability results will be removed from final report", errorSource, statusCode))
 		sourceResult.ScaResults.Sbom = nil
 		if sourceResult.ScaResults.Violations != nil {
-			log.Debug(fmt.Sprintf("Sca scan has completed with errors (status %d). Sca violations results will be removed from final report", statusCode))
+			log.Debug(fmt.Sprintf("Sca scan on %s has completed with errors (status %d). Sca violations results will be removed from final report", errorSource, statusCode))
 			sourceResult.ScaResults.Violations = nil
 		}
 	}
@@ -409,16 +417,16 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 // by the physical location (Target field) of each scan target in ascending order.
 func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.SecurityCommandResults) error {
 	// If !IncludeAllVulnerabilities we expect targetResults and sourceResults to be non-empty and to have the same amount of targets.
-	if targetResults != nil && len(targetResults.Targets) != len(sourceResults.Targets) {
+	if len(targetResults.Targets) != len(sourceResults.Targets) {
 		return fmt.Errorf("amount of targets in target results is different than source results: %d vs %d", len(targetResults.Targets), len(sourceResults.Targets))
 	}
-	if targetResults != nil && len(targetResults.Targets) > 0 {
+	if len(targetResults.Targets) > 0 {
 		sort.Slice(targetResults.Targets, func(i, j int) bool {
 			return targetResults.Targets[i].Target < targetResults.Targets[j].Target
 		})
 	}
 
-	if sourceResults != nil && len(sourceResults.Targets) > 0 {
+	if len(sourceResults.Targets) > 0 {
 		sort.Slice(sourceResults.Targets, func(i, j int) bool {
 			return sourceResults.Targets[i].Target < sourceResults.Targets[j].Target
 		})

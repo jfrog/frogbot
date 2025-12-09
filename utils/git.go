@@ -529,12 +529,16 @@ func (gm *GitManager) getPullRequestTitleTemplate(tech []techutils.Technology) s
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot aggregate pull request from each base branch scanned.
-func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []techutils.Technology) (fixBranchName string) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []techutils.Technology) (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), baseBranch, false)
+	hash, err := Md5Hash("frogbot", baseBranch, techArrayToString(tech, fixBranchTechSeparator))
+	if err != nil {
+		return "", err
+	}
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
