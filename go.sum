@@ -140,14 +140,14 @@ github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3 h1:s
 github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3/go.mod h1:3hLZrM2xT+PkIevIGret4x1xDFTaVoNu3h374QnrKyc=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0 h1:EsasTBE5i2MyCESS/icZxKIlObpGiOyW9K67MAaEWco=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0/go.mod h1:d9aADumiyjCBvZLffp8wldvP9XFHxcvk2PoOSUYms2g=
-github.com/jfrog/jfrog-cli-security v1.23.0 h1:kV/NQhyID/P9Lf7D+sgscvkIDQ0l1sYMXnjs1EKWXaE=
-github.com/jfrog/jfrog-cli-security v1.23.0/go.mod h1:qBAvU9kN41nReJk/O4V9Q/xwiXfAdyhqRIYaOjVm8nE=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec h1:tNfeGi/2FuxIUSi8urFZuqa33grynAHwLRH6iIK/DB0=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20251119183924-d765eb708cec/go.mod h1:ureS+L3wNs0qYUBSwH8C9PjwnraTX9ibZu7JkaqjO/E=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
 github.com/jhump/protoreflect v1.15.1/go.mod h1:jD/2GMKKE6OqX8qTjhADU1e6DShO+gavG9e0Q693nKo=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
 github.com/k0kubun/pp v3.0.1+incompatible/go.mod h1:GWse8YhT0p8pT4ir3ZgBbfZild3tgzSScAn6HmfYukg=
+github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251209075212-257d63a4e1f2 h1:171RZZDmmBf+bKzc8JkpkfNnTfxwlfRttWUOjKdyEoM=
+github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251209075212-257d63a4e1f2/go.mod h1:qBAvU9kN41nReJk/O4V9Q/xwiXfAdyhqRIYaOjVm8nE=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/klauspost/compress v1.4.1/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=

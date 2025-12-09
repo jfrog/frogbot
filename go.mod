@@ -123,7 +123,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.23.0
+// fix-sbom-component-ref-compare
+replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251209075212-257d63a4e1f2
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
