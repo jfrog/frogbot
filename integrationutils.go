@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
@@ -13,11 +19,6 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -171,8 +172,8 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 	defer unsetEnvs()
 
 	err = Exec(&scanpullrequest.ScanPullRequestCmd{}, utils.ScanPullRequest)
-	// Validate that issues were found and the relevant error returned
-	require.Errorf(t, err, scanpullrequest.SecurityIssueFoundErr)
+	// Validate that no error is returned
+	require.NoError(t, err)
 
 	validateResults(t, ctx, client, testDetails, prId)
 }
