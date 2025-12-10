@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -134,6 +135,21 @@ func (vd *VulnerabilityDetails) UpdateFixVersionIfMax(fixVersion string) {
 	if vd.SuggestedFixedVersion == "" || version.NewVersion(vd.SuggestedFixedVersion).Compare(fixVersion) > 0 {
 		vd.SuggestedFixedVersion = fixVersion
 	}
+}
+
+// Used in addVulnerabilityToFixVersionsMap for Violations. In the new Violation parsing each violation appears with a single CVE.
+// If more than a single CVE exists for the same violation, we get it as a different Violation entry in the simpleJson result.
+// To align Violations processing with vulnerabilities processing we add the missing CVEs to the single violation entry in the map.
+func (vd *VulnerabilityDetails) AddMissingCves(cves []formats.CveRow) {
+	// Create a set to track unique CVEs
+	cveSet := datastructures.MakeSetFromElements(vd.Cves...)
+
+	// Add new CVEs to the set
+	for _, cve := range cves {
+		cveSet.Add(cve.Id)
+	}
+	// Update vd.Cves with all unique entries from the set
+	vd.Cves = cveSet.ToSlice()
 }
 
 func ExtractVulnerabilitiesDetailsToRows(vulnDetails []*VulnerabilityDetails) []formats.VulnerabilityOrViolationRow {

@@ -613,6 +613,8 @@ func (cfp *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(vulnerability *fo
 		// More than one vulnerability can exist on the same impacted package.
 		// Among all possible fix versions that fix the above-impacted package, we select the maximum fix version.
 		vulnDetails.UpdateFixVersionIfMax(vulnFixVersion)
+		// New Violation parsing in simpleJson creates a violation entry for every CVE, so we need to aggregate all CVEs for the same impacted package.
+		vulnDetails.AddMissingCves(vulnerability.Cves)
 	} else {
 		isDirectDependency, err := utils.IsDirectDependency(vulnerability.ImpactPaths)
 		if err != nil {
