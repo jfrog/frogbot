@@ -24,8 +24,7 @@ import (
 
 const (
 	SecurityIssueFoundErr = "issues were detected by Frogbot\n" +
-		"You can avoid marking the Frogbot scan as failed by setting the " + utils.FailOnSecurityIssuesEnv + " environment variable to false\n" +
-		"Note that even if " + utils.FailOnSecurityIssuesEnv + " is set to false, but a security violation with 'fail-pull-request' rule is found, Frogbot scan will fail as well"
+		"Security violation with 'fail-pull-request' rule is found"
 	noGitHubEnvErr                       = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr              = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	analyticsScanPrScanType              = "PR"
@@ -81,7 +80,7 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	return nil
 }
 
-// By default, includeAllVulnerabilities is set to false and the scan goes as follows:
+// By default, the scan goes as follows:
 // a. Audit the dependencies of the source and the target branches.
 // b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
 // Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
@@ -104,23 +103,12 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if toFailTaskStatus(repo, issues) {
+	// Fail the Frogbot task if a security violation is found and fail pr rule applied.
+	if issues.IsFailPrRuleApplied() {
 		err = errors.New(SecurityIssueFoundErr)
 		return
 	}
 	return
-}
-
-func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollection) bool {
-	failFlagSet := repo.Params.Scan.FailOnSecurityIssues != nil && *repo.Params.Scan.FailOnSecurityIssues
-	if failFlagSet {
-		// If the fail flag is set to true (JF_FAIL), we check if any security ISSUE exists (not just violations), and if so, we fail the build.
-		return issues.IssuesExists(repo.Params.Git.PullRequestSecretComments)
-	} else {
-		// When fail flag is set to false, we check for fail-pr rule in existing VIOLATIONS. If one exists, we fail the build as well.
-		return issues.IsFailPrRuleApplied()
-	}
 }
 
 func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
@@ -170,7 +158,6 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.Watches, repoConfig.Params.JFrogPlatform.JFrogProjectKey, repoConfig.Params.JFrogPlatform.IncludeVulnerabilities, len(repoConfig.Params.Scan.AllowedLicenses) > 0).
 		SetFixableOnly(repoConfig.Params.Scan.FixableOnly).
 		SetConfigProfile(repoConfig.Params.Scan.ConfigProfile).
-		SetDisableJas(repoConfig.Params.Scan.DisableJas).
 		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails).
 		SetDiffScan(!repoConfig.Params.JFrogPlatform.IncludeVulnerabilities).
 		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults)
@@ -211,15 +198,13 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		// Reset scan details for each project
 		scanDetails.SetProject(&repoConfig.Params.Scan.Projects[i]).SetResultsToCompare(nil)
 		// Scan target branch of the project
-		if !repoConfig.Params.JFrogPlatform.IncludeVulnerabilities {
-			log.Debug("Scanning target branch code...")
-			if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
-				issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
-				err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
-				continue
-			} else {
-				scanDetails.SetResultsToCompare(targetScanResults)
-			}
+		log.Debug("Scanning target branch code...")
+		if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
+			issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
+			err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
+			continue
+		} else {
+			scanDetails.SetResultsToCompare(targetScanResults)
 		}
 		// Scan source branch of the project
 		log.Debug("Scanning source branch code...")
@@ -281,7 +266,6 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 		return nil
 	}
 	if targetResults == nil {
-		// If IncludeAllVulnerabilities is applied, only sourceResults exists and we don't need to filter anything - we present results we have
 		return nil
 	}
 
@@ -385,7 +369,6 @@ func filterOutScaResultsIfScanFailed(targetResult, sourceResult *results.TargetR
 // Sorts the Targets slice in both targetResults and sourceResults
 // by the physical location (Target field) of each scan target in ascending order.
 func sortTargetsByPhysicalLocation(targetResults, sourceResults *results.SecurityCommandResults) error {
-	// If !IncludeAllVulnerabilities we expect targetResults and sourceResults to be non-empty and to have the same amount of targets.
 	if len(targetResults.Targets) != len(sourceResults.Targets) {
 		return fmt.Errorf("amount of targets in target results is different than source results: %d vs %d", len(targetResults.Targets), len(sourceResults.Targets))
 	}

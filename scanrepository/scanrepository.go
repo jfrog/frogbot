@@ -131,8 +131,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.Watches, repository.Params.JFrogPlatform.JFrogProjectKey, repository.Params.JFrogPlatform.IncludeVulnerabilities, len(repository.Params.Scan.AllowedLicenses) > 0).
 		SetFixableOnly(repository.Params.Scan.FixableOnly).
 		SetConfigProfile(repository.Params.Scan.ConfigProfile).
-		SetAllowPartialResults(repository.Params.Scan.AllowPartialResults).
-		SetDisableJas(repository.Params.Scan.DisableJas)
+		SetAllowPartialResults(repository.Params.Scan.AllowPartialResults)
 
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.Params.Scan.MinSeverity); err != nil {
 		return
@@ -329,7 +328,10 @@ func (cfp *ScanRepositoryCmd) fixMultiplePackages(fullProjectPath string, vulner
 // Otherwise, it performs a force push to the same branch and reopens the pull request if it was closed.
 // Only one aggregated pull request should remain open at all times.
 func (cfp *ScanRepositoryCmd) fixIssuesSinglePR(repository *utils.Repository, vulnerabilitiesMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
-	aggregatedFixBranchName := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech)
+	aggregatedFixBranchName, err := cfp.gitManager.GenerateAggregatedFixBranchName(cfp.scanDetails.BaseBranch(), cfp.projectTech)
+	if err != nil {
+		return
+	}
 	existingPullRequestDetails, err := cfp.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 	if err != nil {
 		return

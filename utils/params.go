@@ -49,7 +49,6 @@ type Repository struct {
 
 func (r *Repository) setOutputWriterDetails() {
 	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider)
-	r.OutputWriter.SetAvoidExtraMessages(r.Params.Git.AvoidExtraMessages)
 	r.OutputWriter.SetPullRequestCommentTitle(r.Params.Git.PullRequestCommentTitle)
 }
 
@@ -142,40 +141,21 @@ func (p *Project) GetTechFromInstallCmdIfExists() []string {
 }
 
 type Scan struct {
-	IncludeAllVulnerabilities       bool      `yaml:"includeAllVulnerabilities,omitempty"`
-	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
-	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
-	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
-	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
-	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
-	DisableJas                      bool      `yaml:"disableJas,omitempty"`
-	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
-	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
-	Projects                        []Project `yaml:"projects,omitempty"`
-	ConfigProfile                   *services.ConfigProfile
-	SkipAutoInstall                 bool
-	AllowPartialResults             bool
+	FixableOnly           bool      `yaml:"fixableOnly,omitempty"`
+	DetectionOnly         bool      `yaml:"skipAutoFix,omitempty"`
+	MinSeverity           string    `yaml:"minSeverity,omitempty"`
+	AddPrCommentOnSuccess bool      `yaml:"addPrCommentOnSuccess,omitempty"`
+	AllowedLicenses       []string  `yaml:"allowedLicenses,omitempty"`
+	Projects              []Project `yaml:"projects,omitempty"`
+	ConfigProfile         *services.ConfigProfile
+	SkipAutoInstall       bool
+	AllowPartialResults   bool
 }
 
 func (s *Scan) setDefaultsIfNeeded() (err error) {
 	e := &ErrMissingEnv{}
-	if !s.IncludeAllVulnerabilities {
-		if s.IncludeAllVulnerabilities, err = getBoolEnv(IncludeAllVulnerabilitiesEnv, false); err != nil {
-			return
-		}
-	}
-	if !s.AvoidPreviousPrCommentsDeletion {
-		if s.AvoidPreviousPrCommentsDeletion, err = getBoolEnv(AvoidPreviousPrCommentsDeletionEnv, false); err != nil {
-			return
-		}
-	}
 	if !s.FixableOnly {
 		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
-			return
-		}
-	}
-	if !s.DisableJas {
-		if s.DisableJas, err = getBoolEnv(DisableJasEnv, false); err != nil {
 			return
 		}
 	}
@@ -188,13 +168,6 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
 			return
 		}
-	}
-	if s.FailOnSecurityIssues == nil {
-		var failOnSecurityIssues bool
-		if failOnSecurityIssues, err = getBoolEnv(FailOnSecurityIssuesEnv, true); err != nil {
-			return
-		}
-		s.FailOnSecurityIssues = &failOnSecurityIssues
 	}
 	if s.MinSeverity == "" {
 		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
@@ -270,7 +243,6 @@ type Git struct {
 	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle   string   `yaml:"pullRequestCommentTitle,omitempty"`
 	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"`
-	AvoidExtraMessages        bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor               string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails        vcsclient.PullRequestInfo
@@ -304,9 +276,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		g.RepoName = gitParamsFromEnv.RepoName
 	}
 	if g.EmailAuthor == "" {
-		if g.EmailAuthor = getTrimmedEnv(GitEmailAuthorEnv); g.EmailAuthor == "" {
-			g.EmailAuthor = frogbotAuthorEmail
-		}
+		g.EmailAuthor = frogbotAuthorEmail
 	}
 	if commandName == ScanPullRequest {
 		if err = g.extractScanPullRequestEnvParams(gitParamsFromEnv); err != nil {
@@ -336,16 +306,12 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	if gitParamsFromEnv.PullRequestDetails.ID == 0 {
 		return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
 	}
-	if g.PullRequestCommentTitle == "" {
-		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
-	}
 	if !g.PullRequestSecretComments {
 		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
 			return
 		}
 	}
 
-	g.AvoidExtraMessages, err = getBoolEnv(AvoidExtraMessages, false)
 	return
 }
 
@@ -433,7 +399,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv, repository.JFrogProjectKey)
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv)
 	if err != nil {
 		return
 	}
@@ -645,33 +611,15 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// This function attempts to fetch a config profile if JF_USE_CONFIG_PROFILE is set to true.
-// If we need to use a profile, we first try to get the profile by name that can be provided through JF_CONFIG_PROFILE. If name is provided but profile doesn't exist we return an error.
-// If we need to use a profile, but name is not provided, we check if there is a config profile associated to the repo URL.
+// This function attempts to fetch a config profile, we check if there is a config profile associated to the repo URL.
 // When a profile is found we verify several conditions on it.
-// If a profile was requested but not found by url nor by name we return an error.
-func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git, projectKey string) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
-	var useConfigProfile bool
-	if useConfigProfile, err = getBoolEnv(JfrogUseConfigProfileEnv, false); err != nil || !useConfigProfile {
-		log.Debug(fmt.Sprintf("Configuration Profile usage is disabled. All configurations will be derived from environment variables and files.\nTo enable a Configuration Profile, please set %s to TRUE", JfrogUseConfigProfileEnv))
-		return
-	}
-
+// If a profile was requested but not found by url we return an error.
+func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion); err != nil {
 		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above or downgrade Frogbot to prior versions", xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion))
 		return
 	}
 
-	// Attempt to get the config profile by profile's name
-	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
-	if profileName != "" {
-		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
-		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, jfrogServer, profileName, projectKey); err != nil || configProfile == nil {
-			return
-		}
-		err = verifyConfigProfileValidity(configProfile)
-		return
-	}
 	// Getting repository's url in order to get repository HTTP url
 	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
 		return
