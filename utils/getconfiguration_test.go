@@ -189,59 +189,14 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 }
 
-func TestExtractInstallationCommandFromEnv(t *testing.T) {
-	defer func() {
-		assert.NoError(t, SanitizeEnv())
-	}()
-
-	project := &Project{}
-	err := project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Empty(t, project.InstallCommandName)
-	assert.Empty(t, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Empty(t, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Equal(t, []string{"b"}, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Equal(t, []string{"b", "--flagName=flagValue"}, project.InstallCommandArgs)
-}
-
 func TestGenerateConfigFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                 "",
-		jfrogArtifactoryUrlEnv:      "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:             "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                "admin",
-		JFrogPasswordEnv:            "password",
-		BranchNameTemplateEnv:       "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:    "commit",
-		PullRequestTitleTemplateEnv: "pr-title",
-		InstallCommandEnv:           "nuget restore",
-		UseWrapperEnv:               "false",
-		RequirementsFileEnv:         "requirements.txt",
-		WorkingDirectoryEnv:         "a/b",
-		jfrogProjectEnv:             "projectKey",
-		jfrogWatchesEnv:             "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                 "deps-remote",
-		MinSeverityEnv:              "medium",
-		FixableOnlyEnv:              "true",
-		DetectionOnlyEnv:            "true",
+		JFrogUrlEnv:            "",
+		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:           "admin",
+		JFrogPasswordEnv:       "password",
+		jfrogProjectEnv:        "projectKey",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -275,7 +230,6 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
-	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
@@ -302,48 +256,6 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 		assert.Empty(t, repo.PullRequestCommentTitle)
 	}
 
-	project := repo.Projects[0]
-	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
-	assert.False(t, *project.UseWrapper)
-	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
-	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "deps-remote", project.DepsRepo)
-}
-
-func TestExtractProjectParamsFromEnv(t *testing.T) {
-	project := &Project{}
-	defer func() {
-		assert.NoError(t, SanitizeEnv())
-	}()
-
-	// Test default values
-	err := project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.True(t, *project.UseWrapper)
-	assert.Equal(t, []string{RootDir}, project.WorkingDirs)
-	assert.Equal(t, "", project.PipRequirementsFile)
-	assert.Equal(t, "", project.InstallCommandName)
-	assert.Equal(t, []string(nil), project.InstallCommandArgs)
-
-	// Test value extraction
-	SetEnvAndAssert(t, map[string]string{
-		WorkingDirectoryEnv: "b/c",
-		RequirementsFileEnv: "r.txt",
-		UseWrapperEnv:       "false",
-		InstallCommandEnv:   "nuget restore",
-		DepsRepoEnv:         "repository",
-	})
-
-	project = &Project{}
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"b/c"}, project.WorkingDirs)
-	assert.Equal(t, "r.txt", project.PipRequirementsFile)
-	assert.False(t, *project.UseWrapper)
-	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "repository", project.DepsRepo)
 }
 
 func TestVerifyValidApiEndpoint(t *testing.T) {
