@@ -242,7 +242,6 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 		MinSeverityEnv:              "medium",
 		FixableOnlyEnv:              "true",
 		DetectionOnlyEnv:            "true",
-		AllowedLicensesEnv:          "MIT, Apache-2.0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -281,7 +280,6 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
-	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
 	assert.Equal(t, gitParams.Token, repo.Token)
 	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)

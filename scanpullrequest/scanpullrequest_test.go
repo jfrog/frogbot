@@ -25,9 +25,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -36,6 +33,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
@@ -258,61 +259,6 @@ func testScanPullRequest(t *testing.T, projectName string) {
 	err = utils.SanitizeEnv()
 	assert.NoError(t, err)
 	utils.AssertSanitizedEnv(t)
-}
-
-func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
-	// Init mock
-	client := CreateMockVcsClient(t)
-	environment := "frogbot"
-	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
-	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
-	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
-
-	// Run verifyGitHubFrogbotEnvironment
-	err := verifyGitHubFrogbotEnvironment(client, gitParams)
-	assert.NoError(t, err)
-}
-
-func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
-	// Redirect log to avoid negative output
-	previousLogger := redirectLogOutputToNil()
-	defer log.SetLogger(previousLogger)
-
-	// Init mock
-	client := CreateMockVcsClient(t)
-	environment := "frogbot"
-	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
-	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, errors.New("404"))
-	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
-
-	// Run verifyGitHubFrogbotEnvironment
-	err := verifyGitHubFrogbotEnvironment(client, gitParams)
-	assert.ErrorContains(t, err, noGitHubEnvErr)
-}
-
-func TestVerifyGitHubFrogbotEnvironmentNoReviewers(t *testing.T) {
-	// Init mock
-	client := CreateMockVcsClient(t)
-	environment := "frogbot"
-	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
-	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{}, nil)
-	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
-
-	// Run verifyGitHubFrogbotEnvironment
-	err := verifyGitHubFrogbotEnvironment(client, gitParams)
-	assert.ErrorContains(t, err, noGitHubEnvReviewersErr)
-}
-
-func TestVerifyGitHubFrogbotEnvironmentOnPrem(t *testing.T) {
-	repoConfig := &utils.Repository{
-		Params: utils.Params{Git: utils.Git{
-			VcsInfo: vcsclient.VcsInfo{APIEndpoint: "https://acme.vcs.io"}},
-		},
-	}
-
-	// Run verifyGitHubFrogbotEnvironment
-	err := verifyGitHubFrogbotEnvironment(&vcsclient.GitHubClient{}, repoConfig)
-	assert.NoError(t, err)
 }
 
 func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server *httptest.Server, serverParams coreconfig.ServerDetails, gitServerParams GitServerParams) (utils.Repository, vcsclient.VcsClient) {
@@ -964,12 +910,6 @@ func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository,
 
 	// Set test-specific environment variables
 	envVars := map[string]string{}
-
-	// Set working directories for multi-dir tests
-	if projectName == "multi-dir-test-proj" {
-		envVars[utils.WorkingDirectoryEnv] = "sub1,sub3/sub4,sub2"
-		envVars[utils.RequirementsFileEnv] = "requirements.txt"
-	}
 
 	if len(envVars) > 0 {
 		utils.SetEnvAndAssert(t, envVars)

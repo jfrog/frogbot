@@ -8,10 +8,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 // PackageHandler interface to hold operations on packages
@@ -33,7 +34,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
-		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
+		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
 		handler = NewMavenPackageHandler(details)
 	case techutils.Nuget:
@@ -47,7 +48,6 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
-	handler.SetCommonParams(details.ServerDetails, details.DepsRepo)
 	return
 }
 

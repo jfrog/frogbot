@@ -4,15 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
@@ -20,6 +16,9 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 const (
@@ -34,98 +33,48 @@ const (
 
 type ScanPullRequestCmd struct{}
 
-func (cmd *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
+func (cp *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	repoConfig := &repository
-	if repoConfig.Params.Git.GitProvider == vcsutils.GitHub {
-		if err = verifyGitHubFrogbotEnvironment(client, repoConfig); err != nil {
-			return
-		}
-	}
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, int(repoConfig.Params.Git.PullRequestDetails.ID)); err != nil {
+	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
+		repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, int(repoConfig.Params.Git.PullRequestDetails.ID)); err != nil {
 		return
 	}
-	return scanPullRequest(repoConfig, client)
-}
-
-// Verify that the 'frogbot' GitHub environment was properly configured on the repository
-func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.Repository) error {
-	if repoConfig.Params.Git.APIEndpoint != "" && repoConfig.Params.Git.APIEndpoint != "https://api.github.com" {
-		// Don't verify 'frogbot' environment on GitHub on-prem
-		return nil
-	}
-	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
-		// Don't verify 'frogbot' environment on non GitHub Actions CI
-		return nil
-	}
-
-	// If the repository is not public, using 'frogbot' environment is not mandatory
-	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName)
-	if err != nil {
-		return err
-	}
-	if repoInfo.RepositoryVisibility != vcsclient.Public {
-		return nil
-	}
-
-	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
-	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, "frogbot")
-	if err != nil {
-		return errors.New(err.Error() + "\n" + noGitHubEnvErr)
-	}
-	if len(repoEnvInfo.Reviewers) == 0 {
-		return errors.New(noGitHubEnvReviewersErr)
-	}
-
-	return nil
-}
-
-// By default, the scan goes as follows:
-// a. Audit the dependencies of the source and the target branches.
-// b. Compare the vulnerabilities found in source and target branches, and show only the new vulnerabilities added by the pull request.
-// Otherwise, only the source branch is scanned and all found vulnerabilities are being displayed.
-func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err error) {
-	pullRequestDetails := repo.Params.Git.PullRequestDetails
+	pullRequestDetails := &repository.Params.Git.PullRequestDetails
 	log.Info(fmt.Sprintf("Scanning Pull Request #%d (from source branch: <%s/%s/%s> to target branch: <%s/%s/%s>)",
 		pullRequestDetails.ID,
 		pullRequestDetails.Source.Owner, pullRequestDetails.Source.Repository, pullRequestDetails.Source.Name,
 		pullRequestDetails.Target.Owner, pullRequestDetails.Target.Repository, pullRequestDetails.Target.Name))
 	log.Info("-----------------------------------------------------------")
 
-	// Audit PR code
-	issues, resultContext, err := auditPullRequestAndReport(repo, client)
+	pullRequestIssues, resultContext, err := auditPullRequestAndReport(&repository, client)
 	if err != nil {
 		return
 	}
-
-	// Handle PR comments for scan output
-	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
+	if err = utils.HandlePullRequestCommentsAfterScan(pullRequestIssues, resultContext, &repository, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
-
-	// Fail the Frogbot task if a security violation is found and fail pr rule applied.
-	if issues.IsFailPrRuleApplied() {
+	if pullRequestIssues.IsFailPrRuleApplied() {
 		err = errors.New(SecurityIssueFoundErr)
 		return
 	}
 	return
+
 }
 
 func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
-	// Prepare
 	scanDetails, err := createBaseScanDetails(repoConfig, client)
 	if err != nil {
 		return
 	}
 	resultContext = scanDetails.ResultContext
-	sourceBranchWd, targetBranchWd, cleanup, err := prepareSourceCodeForScan(repoConfig, scanDetails)
+	sourceBranchWd, targetBranchWd, cleanup, err := downloadBranches(repoConfig, scanDetails)
 	if err != nil {
 		return
 	}
 	defer func() {
 		err = errors.Join(err, cleanup())
 	}()
-	// Report
 	scanDetails.MultiScanId, scanDetails.StartTime = xsc.SendNewScanEvent(
 		scanDetails.XrayVersion,
 		scanDetails.XscVersion,
@@ -143,7 +92,6 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 			)
 		}
 	}()
-	// Audit PR code
 	issuesCollection, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	return
 }
@@ -153,18 +101,15 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 	if err != nil {
 		return
 	}
-	scanDetails = utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
+	return utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
 		SetJfrogVersions(repoConfig.Params.XrayVersion, repoConfig.Params.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.Watches, repoConfig.Params.JFrogPlatform.JFrogProjectKey, repoConfig.Params.JFrogPlatform.IncludeVulnerabilities, len(repoConfig.Params.Scan.AllowedLicenses) > 0).
-		SetFixableOnly(repoConfig.Params.Scan.FixableOnly).
+		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repoConfig.Params.Scan.ConfigProfile).
 		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails).
-		SetDiffScan(!repoConfig.Params.JFrogPlatform.IncludeVulnerabilities).
-		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults)
-	return scanDetails.SetMinSeverity(repoConfig.Params.Scan.MinSeverity)
+		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults), nil
 }
 
-func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
+func downloadBranches(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
 	cleanupSource := func() error { return nil }
 	cleanupTarget := func() error { return nil }
 	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }
@@ -178,11 +123,6 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 		err = fmt.Errorf("failed to download source branch code. Error: %s", err.Error())
 		return
 	}
-	if repoConfig.Params.JFrogPlatform.IncludeVulnerabilities {
-		// No need to download target branch
-		log.Info("Frogbot is configured to show all issues at source branch")
-		return
-	}
 	target := repoConfig.Params.Git.PullRequestDetails.Target
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
@@ -193,44 +133,34 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 
 func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
 	issuesCollection = &issues.ScansIssuesCollection{}
-
-	for i := range repoConfig.Params.Scan.Projects {
-		// Reset scan details for each project
-		scanDetails.SetProject(&repoConfig.Params.Scan.Projects[i]).SetResultsToCompare(nil)
-		// Scan target branch of the project
-		log.Debug("Scanning target branch code...")
-		if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
-			issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
-			err = errors.Join(err, fmt.Errorf("failed to audit target branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
-			continue
-		} else {
-			scanDetails.SetResultsToCompare(targetScanResults)
-		}
-		// Scan source branch of the project
-		log.Debug("Scanning source branch code...")
-		if issues, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd); e == nil {
-			issuesCollection.Append(issues)
-			continue
-		} else {
-			if issues != nil {
-				// Scan error, report the scan status
-				issuesCollection.AppendStatus(issues.ScanStatus)
-			}
-			err = errors.Join(err, fmt.Errorf("failed to audit source branch code for %v project. Error: %s", repoConfig.Params.Scan.Projects[i].WorkingDirs, e.Error()))
-		}
+	log.Debug("Scanning target branch code...")
+	if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
+		issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
+		return issuesCollection, fmt.Errorf("failed to audit target branch. Error: %s", e.Error())
+	} else {
+		scanDetails.SetResultsToCompare(targetScanResults)
 	}
-
+	log.Debug("Scanning source branch code...")
+	pullRequestIssues, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+	if e != nil {
+		if pullRequestIssues != nil {
+			// Scan error, report the scan status
+			issuesCollection.AppendStatus(pullRequestIssues.ScanStatus)
+		}
+		return issuesCollection, fmt.Errorf("failed to audit source branch code. Error: %s", e.Error())
+	}
+	issuesCollection.Append(pullRequestIssues)
 	return
 }
 
 func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd string) (scanResults *results.SecurityCommandResults, err error) {
-	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)...)
+	scanResults = scanDetails.Audit(targetBranchWd)
 	err = scanResults.GetErrors()
 	return
 }
 
 func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	scanResults := scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
+	scanResults := scanDetails.Audit(sourceBranchWd)
 	if err = scanResults.GetErrors(); err != nil {
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
@@ -238,8 +168,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
 	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
-	if !repoConfig.Params.JFrogPlatform.IncludeVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
-		// Diff scan - calculated at audit source scan, make sure to include target branch working dir when converting to issues
+	if targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
 		log.Debug("Diff scan - converting to new issues...")
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
@@ -247,13 +176,9 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	if err = filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.Scan.AllowPartialResults); err != nil {
 		return
 	}
-
-	// Convert to issues
-	if issues, e := scanResultsToIssuesCollection(scanResults, workingDirs...); e == nil {
-		issuesCollection = issues
-		return
-	} else {
-		err = errors.Join(err, fmt.Errorf("failed to get all issues for %v project. Error: %s", scanDetails.Project.WorkingDirs, e.Error()))
+	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
+	if e == nil {
+		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
 	}
 	return
 }

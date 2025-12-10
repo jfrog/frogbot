@@ -19,20 +19,18 @@ import (
 )
 
 type ScanDetails struct {
-	*Project
 	*Git
 
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
 	client              vcsclient.VcsClient
-	fixableOnly         bool
 	minSeverityFilter   severityutils.Severity
 	baseBranch          string
 	configProfile       *xscservices.ConfigProfile
 	allowPartialResults bool
-
-	diffScan         bool
-	ResultsToCompare *results.SecurityCommandResults
+	excludePaths        []string //todo from cc
+	diffScan            bool
+	ResultsToCompare    *results.SecurityCommandResults
 
 	results.ResultContext
 	MultiScanId string
@@ -61,31 +59,9 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 	return sc
 }
 
-func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
-	sc.Project = project
+func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey string, includeVulnerabilities bool) *ScanDetails {
+	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false)
 	return sc
-}
-
-func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
-	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses, false)
-	return sc
-}
-
-func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
-	sc.fixableOnly = fixable
-	return sc
-}
-
-func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) {
-	if minSeverity == "" {
-		return sc, nil
-	}
-	if severity, err := severityutils.ParseSeverity(minSeverity, false); err != nil {
-		return sc, err
-	} else {
-		sc.minSeverityFilter = severity
-	}
-	return sc, nil
 }
 
 func (sc *ScanDetails) SetAllowPartialResults(allowPartialResults bool) *ScanDetails {
@@ -111,10 +87,6 @@ func (sc *ScanDetails) BaseBranch() string {
 	return sc.baseBranch
 }
 
-func (sc *ScanDetails) FixableOnly() bool {
-	return sc.fixableOnly
-}
-
 func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
 	return sc.minSeverityFilter
 }
@@ -133,21 +105,14 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
+func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
-		SetPipRequirementsFile(sc.PipRequirementsFile).
-		SetUseWrapper(*sc.UseWrapper).
-		SetMaxTreeDepth(sc.MaxPnpmTreeDepth).
-		SetDepsRepo(sc.DepsRepo).
 		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
-		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs).
-		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
 		SetAllowPartialResults(sc.allowPartialResults).
-		SetExclusions(sc.PathExclusions).
+		SetExclusions(sc.excludePaths).
 		SetUseJas(true).
 		SetConfigProfile(sc.configProfile)
 
@@ -159,7 +124,6 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetRtResultRepository(frogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
-		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).

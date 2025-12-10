@@ -11,14 +11,15 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/jfrog/frogbot/v2/scanpullrequest"
-	"github.com/jfrog/frogbot/v2/scanrepository"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/scanpullrequest"
+	"github.com/jfrog/frogbot/v2/scanrepository"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const (
@@ -77,18 +78,15 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv:      "requirements.txt",
-		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
-		utils.GitProvider:              testDetails.GitProvider,
-		utils.GitTokenEnv:              testDetails.GitToken,
-		utils.GitRepoEnv:               testDetails.RepoName,
-		utils.GitRepoOwnerEnv:          testDetails.RepoOwner,
-		utils.BranchNameTemplateEnv:    testDetails.CustomBranchName,
-		utils.GitApiEndpointEnv:        testDetails.ApiEndpoint,
-		utils.GitProjectEnv:            testDetails.GitProject,
-		utils.GitUsernameEnv:           testDetails.GitUsername,
-		utils.GitBaseBranchEnv:         mainBranch,
-		utils.GitUseLocalRepositoryEnv: fmt.Sprintf("%t", testDetails.UseLocalRepo),
+		utils.GitPullRequestIDEnv: testDetails.PullRequestID,
+		utils.GitProvider:         testDetails.GitProvider,
+		utils.GitTokenEnv:         testDetails.GitToken,
+		utils.GitRepoEnv:          testDetails.RepoName,
+		utils.GitRepoOwnerEnv:     testDetails.RepoOwner,
+		utils.GitApiEndpointEnv:   testDetails.ApiEndpoint,
+		utils.GitProjectEnv:       testDetails.GitProject,
+		utils.GitUsernameEnv:      testDetails.GitUsername,
+		utils.GitBaseBranchEnv:    mainBranch,
 	})
 	return func() {
 		envRestoreFunc()

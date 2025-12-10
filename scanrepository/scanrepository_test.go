@@ -21,8 +21,6 @@ import (
 
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -34,6 +32,9 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"
@@ -154,33 +155,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			// Prepare
-			serverParams, restoreEnv := utils.VerifyEnv(t)
-			defer restoreEnv()
-			if test.aggregateFixes {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-				}()
-			}
-			if test.allowPartialResults {
-				assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
-				}()
-			}
-			// Set working directories for multi-dir/multi-project tests
-			switch test.testName {
-			case "aggregate-multi-dir":
-				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm1,npm2"))
-				defer func() {
-					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
-				}()
-			case "partial-results-enabled":
-				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, ".,inner-project"))
-				defer func() {
-					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
-				}()
-			}
+			serverParams, _ := utils.VerifyEnv(t)
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
@@ -316,12 +291,6 @@ pr body
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, test.mockPullRequestResponse, test.testName))
 			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
-
 			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
 				RepoOwner:   "jfrog",
@@ -406,9 +375,8 @@ func TestPackageTypeFromScan(t *testing.T) {
 	assert.NoError(t, err)
 
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
-	trueVal := true
 	params := utils.Params{
-		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
+		Scan: utils.Scan{},
 	}
 	var frogbotParams = utils.Repository{
 		Server: environmentVars,
@@ -428,22 +396,18 @@ func TestPackageTypeFromScan(t *testing.T) {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
-			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
 			files, err := fileutils.ListFiles(tmpDir, true)
 			assert.NoError(t, err)
 			for _, file := range files {
 				log.Info(file)
 			}
-			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
-			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
-				Project:       &frogbotParams.Projects[0],
 				ServerDetails: &frogbotParams.Server,
 			}
 			testScan.scanDetails = &scanSetup
-			scanResponse, err := testScan.scan(tmpDir)
+			scanResponse, err := testScan.scan()
 			require.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.GetScaScansXrayResults(), pkg.packageType)
 		})

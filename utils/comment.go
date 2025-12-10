@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 type ReviewCommentType string
@@ -29,7 +29,6 @@ const (
 	SastComment       ReviewCommentType = "Sast"
 	SecretComment     ReviewCommentType = "Secrets"
 
-	RescanRequestComment   = "rescan"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
@@ -45,7 +44,7 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 		log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 	}
 
-	// Add summary (SCA, license) scan comment
+	// Add summary scan comment
 	if issues.IssuesExists(repo.PullRequestSecretComments) || repo.AddPrCommentOnSuccess {
 		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.PullRequestSecretComments, repo.OutputWriter) {
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
@@ -111,7 +110,6 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 
 func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, resultContext results.ResultContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
-		// No Issues
 		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
 	// Summary
@@ -125,10 +123,6 @@ func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollec
 		content = append(content, vulnerabilitiesContent...)
 	}
 	return outputwriter.GetMainCommentContent(content, true, true, writer)
-}
-
-func IsFrogbotRescanComment(comment string) bool {
-	return strings.Contains(strings.ToLower(comment), RescanRequestComment)
 }
 
 func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {

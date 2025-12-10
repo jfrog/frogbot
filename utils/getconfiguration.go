@@ -11,21 +11,20 @@ import (
 
 	clientutils "github.com/jfrog/jfrog-client-go/utils"
 
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
-	"golang.org/x/exp/slices"
-
-	securityutils "github.com/jfrog/jfrog-cli-security/utils"
-	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
+
+const configProfileV3MinXrayVersion = "1.0.0" // TODO REAL XRAY VERSION
 
 type FrogbotDetails struct {
 	XrayVersion   string
@@ -38,7 +37,7 @@ type FrogbotDetails struct {
 
 // Returns an initialized Repository with an empty repository
 func newRepository() Repository {
-	return Repository{Params: Params{Scan: Scan{Projects: []Project{{}}}}}
+	return Repository{Params: Params{Scan: Scan{}}}
 }
 
 type Repository struct {
@@ -58,176 +57,29 @@ type Params struct {
 	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
 }
 
-func (p *Params) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) error {
-	if err := p.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
-		return err
-	}
-	if err := p.JFrogPlatform.setDefaultsIfNeeded(); err != nil {
-		return err
-	}
-	return p.Scan.setDefaultsIfNeeded()
-}
-
-type Project struct {
-	InstallCommand      string   `yaml:"installCommand,omitempty"`
-	PipRequirementsFile string   `yaml:"pipRequirementsFile,omitempty"`
-	WorkingDirs         []string `yaml:"workingDirs,omitempty"`
-	PathExclusions      []string `yaml:"pathExclusions,omitempty"`
-	UseWrapper          *bool    `yaml:"useWrapper,omitempty"`
-	MaxPnpmTreeDepth    string   `yaml:"maxPnpmTreeDepth,omitempty"`
-	DepsRepo            string   `yaml:"repository,omitempty"`
-	InstallCommandName  string
-	InstallCommandArgs  []string
-}
-
-func (p *Project) setDefaultsIfNeeded() error {
-	if len(p.WorkingDirs) == 0 {
-		workingDir := getTrimmedEnv(WorkingDirectoryEnv)
-		if workingDir == "" {
-
-			// If no working directories are provided, and none exist in the environment variable, we designate the project's root directory as our sole working directory.
-			// We then execute a recursive scan across the entire project, commencing from the root.
-			workingDir = RootDir
-			p.WorkingDirs = append(p.WorkingDirs, workingDir)
-		} else {
-			workingDirs := strings.Split(workingDir, ",")
-			p.WorkingDirs = append(p.WorkingDirs, workingDirs...)
-		}
-	}
-	if len(p.PathExclusions) == 0 {
-		if p.PathExclusions, _ = readArrayParamFromEnv(PathExclusionsEnv, ";"); len(p.PathExclusions) == 0 {
-			p.PathExclusions = securityutils.DefaultScaExcludePatterns
-		}
-	}
-	if p.UseWrapper == nil {
-		useWrapper, err := getBoolEnv(UseWrapperEnv, true)
-		if err != nil {
-			return err
-		}
-		p.UseWrapper = &useWrapper
-	}
-	if p.InstallCommand == "" {
-		p.InstallCommand = getTrimmedEnv(InstallCommandEnv)
-	}
-	if p.InstallCommand != "" {
-		setProjectInstallCommand(p.InstallCommand, p)
-	}
-	if p.PipRequirementsFile == "" {
-		p.PipRequirementsFile = getTrimmedEnv(RequirementsFileEnv)
-	}
-	if p.DepsRepo == "" {
-		p.DepsRepo = getTrimmedEnv(DepsRepoEnv)
-	}
-	if p.MaxPnpmTreeDepth == "" {
-		p.MaxPnpmTreeDepth = getTrimmedEnv(MaxPnpmTreeDepthEnv)
-	}
-
-	return nil
-}
-
-func (p *Project) GetTechFromInstallCmdIfExists() []string {
-	var technologies []string
-	if p.InstallCommandName != "" {
-		if !slices.Contains(techutils.AllTechnologiesStrings, p.InstallCommandName) {
-			log.Warn(fmt.Sprintf("The technology ‘%s’ was inferred from the provided install command but is not listed among the supported technologies. Please provide an install command for one of the following supported technologies: %s", p.InstallCommandName, techutils.AllTechnologiesStrings))
-			return technologies
-		}
-		technologies = append(technologies, p.InstallCommandName)
-		if strings.ToLower(p.InstallCommandName) == "dotnet" {
-			technologies = append(technologies, "nuget")
-		}
-	}
-	return technologies
-}
-
 type Scan struct {
-	FixableOnly           bool      `yaml:"fixableOnly,omitempty"`
-	DetectionOnly         bool      `yaml:"skipAutoFix,omitempty"`
-	MinSeverity           string    `yaml:"minSeverity,omitempty"`
-	AddPrCommentOnSuccess bool      `yaml:"addPrCommentOnSuccess,omitempty"`
-	AllowedLicenses       []string  `yaml:"allowedLicenses,omitempty"`
-	Projects              []Project `yaml:"projects,omitempty"`
+	FixableOnly           bool   `yaml:"fixableOnly,omitempty"`
+	DetectionOnly         bool   `yaml:"skipAutoFix,omitempty"`
+	MinSeverity           string `yaml:"minSeverity,omitempty"`
+	AddPrCommentOnSuccess bool   `yaml:"addPrCommentOnSuccess,omitempty"`
 	ConfigProfile         *services.ConfigProfile
-	SkipAutoInstall       bool
 	AllowPartialResults   bool
 }
 
-func (s *Scan) setDefaultsIfNeeded() (err error) {
-	e := &ErrMissingEnv{}
-	if !s.FixableOnly {
-		if s.FixableOnly, err = getBoolEnv(FixableOnlyEnv, false); err != nil {
-			return
-		}
-	}
-	if !s.AddPrCommentOnSuccess {
-		if s.AddPrCommentOnSuccess, err = getBoolEnv(AddPrCommentOnSuccessEnv, true); err != nil {
-			return
-		}
-	}
-	if !s.DetectionOnly {
-		if s.DetectionOnly, err = getBoolEnv(DetectionOnlyEnv, false); err != nil {
-			return
-		}
-	}
-	if s.MinSeverity == "" {
-		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
-			return
-		}
-	}
-	if s.MinSeverity != "" {
-		var severity severityutils.Severity
-		if severity, err = severityutils.ParseSeverity(s.MinSeverity, false); err != nil {
-			return
-		}
-		s.MinSeverity = severity.String()
-	}
-	if len(s.Projects) == 0 {
-		s.Projects = append(s.Projects, Project{})
-	}
-	if len(s.AllowedLicenses) == 0 {
-		if s.AllowedLicenses, err = readArrayParamFromEnv(AllowedLicensesEnv, ","); err != nil && !e.IsMissingEnvErr(err) {
-			return
-		}
-	}
-	if !s.AllowPartialResults {
-		if s.AllowPartialResults, err = getBoolEnv(AllowPartialResultsEnv, true); err != nil {
-			return
-		}
-	}
-	for i := range s.Projects {
-		if err = s.Projects[i].setDefaultsIfNeeded(); err != nil {
-			return
-		}
-	}
-	return
-}
-
 type JFrogPlatform struct {
-	XrayVersion            string
-	XscVersion             string
-	Watches                []string `yaml:"watches,omitempty"`
-	IncludeVulnerabilities bool     `yaml:"includeVulnerabilities,omitempty"`
-	JFrogProjectKey        string   `yaml:"jfrogProjectKey,omitempty"`
+	XrayVersion     string
+	XscVersion      string
+	JFrogProjectKey string `yaml:"jfrogProjectKey,omitempty"`
 }
 
-func (jp *JFrogPlatform) setDefaultsIfNeeded() (err error) {
+func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 	e := &ErrMissingEnv{}
-	if len(jp.Watches) == 0 {
-		if jp.Watches, err = readArrayParamFromEnv(jfrogWatchesEnv, WatchesDelimiter); err != nil && !e.IsMissingEnvErr(err) {
-			return
-		}
-	}
 	if jp.JFrogProjectKey == "" {
 		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 			return
 		}
 		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
 		err = nil
-	}
-	if !jp.IncludeVulnerabilities {
-		if jp.IncludeVulnerabilities, err = getBoolEnv(IncludeVulnerabilitiesEnv, false); err != nil {
-			return
-		}
 	}
 	return
 }
@@ -247,7 +99,6 @@ type Git struct {
 	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"`
 	PullRequestDetails        vcsclient.PullRequestInfo
 	RepositoryCloneUrl        string
-	UseLocalRepository        bool
 	UploadSbomToVcs           *bool `yaml:"uploadSbomToVcs,omitempty"`
 }
 
@@ -265,6 +116,7 @@ func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string,
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
+	g.EmailAuthor = frogbotAuthorEmail
 	g.RepoOwner = gitParamsFromEnv.RepoOwner
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
@@ -275,90 +127,27 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 		g.RepoName = gitParamsFromEnv.RepoName
 	}
-	if g.EmailAuthor == "" {
-		g.EmailAuthor = frogbotAuthorEmail
-	}
 	if commandName == ScanPullRequest {
-		if err = g.extractScanPullRequestEnvParams(gitParamsFromEnv); err != nil {
-			return
+		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
+			return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
 		}
 	}
 	if commandName == ScanRepository {
-		if err = g.extractScanRepositoryEnvParams(gitParamsFromEnv); err != nil {
-			return
+		noBranchesProvidedViaConfig := len(g.Branches) == 0
+		noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
+		if noBranchesProvidedViaConfig {
+			if noBranchesProvidedViaEnv {
+				return errors.New("no branches were provided. Please set your branches using the `JF_GIT_BASE_BRANCH` environment variable")
+			}
+			g.Branches = gitParamsFromEnv.Branches
 		}
 	}
-
-	// We don't need to examine gitParamsFromEnv since GitDependencyGraphSubmissionEnv value is not fetched upon gitParamsFromEnv creation
-	if g.UploadSbomToVcs == nil {
-		envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
-		if err != nil {
-			return err
-		}
-		g.UploadSbomToVcs = &envValue
+	envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+	if err != nil {
+		return err
 	}
-
+	g.UploadSbomToVcs = &envValue
 	return
-}
-
-func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error) {
-	// The Pull Request ID is a mandatory requirement for Frogbot to properly identify and scan the relevant pull request
-	if gitParamsFromEnv.PullRequestDetails.ID == 0 {
-		return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
-	}
-	if !g.PullRequestSecretComments {
-		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-func (g *Git) extractScanRepositoryEnvParams(gitParamsFromEnv *Git) (err error) {
-	// Continue to extract ScanRepository related env params
-	noBranchesProvidedViaConfig := len(g.Branches) == 0
-	noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
-	if noBranchesProvidedViaConfig {
-		if noBranchesProvidedViaEnv {
-			return errors.New("no branches were provided. Please set your branches using the `JF_GIT_BASE_BRANCH` environment variable")
-		}
-		g.Branches = gitParamsFromEnv.Branches
-	}
-	if g.BranchNameTemplate == "" {
-		branchTemplate := getTrimmedEnv(BranchNameTemplateEnv)
-		if err = validateHashPlaceHolder(branchTemplate); err != nil {
-			return
-		}
-		g.BranchNameTemplate = branchTemplate
-	}
-	if g.CommitMessageTemplate == "" {
-		g.CommitMessageTemplate = getTrimmedEnv(CommitMessageTemplateEnv)
-	}
-	if g.PullRequestTitleTemplate == "" {
-		g.PullRequestTitleTemplate = getTrimmedEnv(PullRequestTitleTemplateEnv)
-	}
-	if !g.AggregateFixes {
-		if g.AggregateFixes, err = getBoolEnv(GitAggregateFixesEnv, false); err != nil {
-			return
-		}
-	}
-	if !g.UseLocalRepository {
-		if g.UseLocalRepository, err = getBoolEnv(GitUseLocalRepositoryEnv, false); err != nil {
-			return
-		}
-	}
-	return
-}
-
-func validateHashPlaceHolder(template string) error {
-	if template == "" {
-		return nil
-	}
-	if !strings.Contains(template, BranchHashPlaceHolder) {
-		return fmt.Errorf("branch name template must contain %s, provided: %s", BranchHashPlaceHolder, template)
-	}
-	return nil
 }
 
 func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err error) {
@@ -372,7 +161,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	gitParamsFromEnv, err := extractGitParamsFromEnvs()
+	gitParams, err := extractGitParamsFromEnvs()
 	if err != nil {
 		return
 	}
@@ -383,23 +172,23 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 
 	// Build a version control client for REST API requests
 	client, err := vcsclient.
-		NewClientBuilder(gitParamsFromEnv.GitProvider).
-		ApiEndpoint(strings.TrimSuffix(gitParamsFromEnv.APIEndpoint, "/")).
-		Token(gitParamsFromEnv.Token).
-		Project(gitParamsFromEnv.Project).
+		NewClientBuilder(gitParams.GitProvider).
+		ApiEndpoint(strings.TrimSuffix(gitParams.APIEndpoint, "/")).
+		Token(gitParams.Token).
+		Project(gitParams.Project).
 		Logger(log.GetLogger()).
-		Username(gitParamsFromEnv.Username).
+		Username(gitParams.Username).
 		Build()
 	if err != nil {
 		return
 	}
 
-	repository, err := BuildRepository(xrayVersion, xscVersion, client, gitParamsFromEnv, jfrogServer, commandName)
+	repository, err := BuildRepository(xrayVersion, xscVersion, client, gitParams, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
 
-	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv)
+	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParams)
 	if err != nil {
 		return
 	}
@@ -420,7 +209,10 @@ func BuildRepository(xrayVersion, xscVersion string, gitClient vcsclient.VcsClie
 	repository.Server = *server
 	repository.Params.XrayVersion = xrayVersion
 	repository.Params.XscVersion = xscVersion
-	if err = repository.Params.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
+	if err = repository.Params.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
+		return
+	}
+	if err = repository.Params.JFrogPlatform.setJfProjectKeyIfExists(); err != nil {
 		return
 	}
 	repository.setOutputWriterDetails()
@@ -534,21 +326,6 @@ func verifyValidApiEndpoint(apiEndpoint string) error {
 	return nil
 }
 
-func readArrayParamFromEnv(envKey, delimiter string) ([]string, error) {
-	var envValue string
-	var err error
-	e := &ErrMissingEnv{}
-	if err = readParamFromEnv(envKey, &envValue); err != nil && !e.IsMissingEnvErr(err) {
-		return nil, err
-	}
-	if envValue == "" {
-		return nil, &ErrMissingEnv{VariableName: envKey}
-	}
-	// Remove spaces if exists
-	envValue = strings.ReplaceAll(envValue, " ", "")
-	return strings.Split(envValue, delimiter), nil
-}
-
 func readParamFromEnv(envKey string, paramValue *string) error {
 	*paramValue = getTrimmedEnv(envKey)
 	if *paramValue == "" {
@@ -590,14 +367,6 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func setProjectInstallCommand(installCommand string, project *Project) {
-	parts := strings.Fields(installCommand)
-	if len(parts) > 1 {
-		project.InstallCommandArgs = parts[1:]
-	}
-	project.InstallCommandName = parts[0]
-}
-
 func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	envValue := getTrimmedEnv(envKey)
 	if envValue != "" {
@@ -615,11 +384,10 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 // When a profile is found we verify several conditions on it.
 // If a profile was requested but not found by url we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
-	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion); err != nil {
-		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above or downgrade Frogbot to prior versions", xrayVersion, services.ConfigProfileNewSchemaMinXrayVersion))
+	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, configProfileV3MinXrayVersion); err != nil {
+		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above. Frogbot configurations will be derived from environment variables only.", xrayVersion, configProfileV3MinXrayVersion))
 		return
 	}
-
 	// Getting repository's url in order to get repository HTTP url
 	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
 		return

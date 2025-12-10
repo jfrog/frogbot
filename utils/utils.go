@@ -188,7 +188,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, repo.AllowedLicenses)
+	report, err := GenerateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),
