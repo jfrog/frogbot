@@ -1137,6 +1137,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 		// Mimic download specific branch to scan
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
+			w.Header().Set("Content-Type", "application/gzip")
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
 			assert.NoError(t, err)
@@ -1144,6 +1145,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 		// Download repository mock
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
+			w.Header().Set("Content-Type", "application/gzip")
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
 			assert.NoError(t, err)
@@ -1151,6 +1153,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 			return
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
 			assert.NoError(t, err)
@@ -1187,6 +1190,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			_, err := w.Write([]byte(jsonResponse))
 			assert.NoError(t, err)
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/discussions", repoInfo):
+			w.Header().Set("Content-Type", "application/json")
 			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
 			assert.NoError(t, err)
 			_, err = w.Write(discussions)
