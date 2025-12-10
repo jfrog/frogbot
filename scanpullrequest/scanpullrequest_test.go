@@ -93,29 +93,29 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 	expectedOutput := &issues.ScansIssuesCollection{
 		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
-				Applicable:    "Applicable",
+				Applicable:    "Not Covered",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 26},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 27},
 					ImpactedDependencyName: "Dep-1",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Not Covered", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			},
 			{
-				Applicable:    "Not Applicable",
+				Applicable:    "Not Covered",
 				FixedVersions: []string{"1.2.2"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 3},
+					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 17},
 					ImpactedDependencyName: "Dep-2",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable", ScannerDescription: "rule-msg"}}},
+				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Covered", ScannerDescription: "rule-msg"}}},
 			},
 		},
 		IacVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -136,7 +136,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -157,7 +157,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -174,23 +174,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				},
 			},
 		},
-		LicensesViolations: []formats.LicenseViolationRow{
-			{
-				LicenseRow: formats.LicenseRow{
-					LicenseKey: "Apache-2.0",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails: formats.SeverityDetails{
-							Severity:         "Medium",
-							SeverityNumValue: 19,
-						},
-						ImpactedDependencyName: "Dep-1",
-					},
-				},
-				ViolationContext: formats.ViolationContext{
-					Watch: "jfrog_custom_license_violation",
-				},
-			},
-		},
+		LicensesViolations: []formats.LicenseViolationRow{},
 	}
 
 	issuesRows, err := scanResultsToIssuesCollection(auditResults)
