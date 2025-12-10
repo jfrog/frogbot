@@ -7,7 +7,7 @@ require (
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.12.5-0.20251209031413-f5f0e93dc8db
+	github.com/jfrog/build-info-go v1.12.5-0.20251209171349-eb030db986f9
 	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.7.3-0.20251118100843-ac34330a70d3
