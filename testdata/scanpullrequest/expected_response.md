@@ -70,7 +70,6 @@ This vulnerability can be triggered when the attacker-controlled input is parsed
 Add the `Object.freeze(Object.prototype);` directive once at the beginning of your main JS source code file (ex. `index.js`), preferably after all your `require` directives. This will prevent any changes to the prototype object, thus completely negating prototype pollution attacks.
 
 
-
 ---
 <div align='center'>
 

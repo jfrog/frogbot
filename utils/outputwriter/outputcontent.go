@@ -40,8 +40,7 @@ const (
 )
 
 var (
-	CommentGeneratedByFrogbot    = MarkAsLink("🐸 JFrog Frogbot", FrogbotDocumentationUrl)
-	jasFeaturesMsgWhenNotEnabled = MarkAsBold("Frogbot") + " also supports " + MarkAsBold("Contextual Analysis, Secret Detection, IaC and SAST Vulnerabilities Scanning") + ". These features are included as part of the " + MarkAsLink("JFrog Advanced Security", "https://jfrog.com/advanced-security") + " package, which isn't enabled on your system."
+	CommentGeneratedByFrogbot = MarkAsLink("🐸 JFrog Frogbot", FrogbotDocumentationUrl)
 )
 
 // For review comment Frogbot creates on Scan PR
@@ -92,7 +91,7 @@ func GetFrogbotCommentBaseDecorator(writer OutputWriter) CommentDecorator {
 	}
 }
 
-// Adding a banner, custom title and untitled Jas message to the content
+// Adding a banner and custom title to the content
 func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer OutputWriter) CommentDecorator {
 	return func(_ int, content string) string {
 		comment := strings.Builder{}
@@ -104,7 +103,6 @@ func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer Outpu
 		if issuesExists {
 			WriteContent(&comment, content)
 		}
-		WriteContent(&comment, untitledForJasMsg(writer))
 		return comment.String()
 	}
 }
@@ -138,13 +136,6 @@ func fixCVETitleSrc(vcsProvider vcsutils.VcsProvider) ImageSource {
 		return VulnerabilitiesFixMrBannerSource
 	}
 	return VulnerabilitiesFixPrBannerSource
-}
-
-func untitledForJasMsg(writer OutputWriter) string {
-	if writer.AvoidExtraMessages() || writer.IsEntitledForJas() {
-		return ""
-	}
-	return writer.MarkAsDetails("Note", 0, fmt.Sprintf("\n%s\n%s", SectionDivider(), writer.MarkInCenter(jasFeaturesMsgWhenNotEnabled)))
 }
 
 func footer(writer OutputWriter) string {

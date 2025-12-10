@@ -25,7 +25,6 @@ type ScanDetails struct {
 	*config.ServerDetails
 	client              vcsclient.VcsClient
 	fixableOnly         bool
-	disableJas          bool
 	skipAutoInstall     bool
 	minSeverityFilter   severityutils.Severity
 	baseBranch          string
@@ -59,11 +58,6 @@ func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
 
 func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResults) *ScanDetails {
 	sc.ResultsToCompare = results
-	return sc
-}
-
-func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
-	sc.disableJas = disable
 	return sc
 }
 
@@ -126,10 +120,6 @@ func (sc *ScanDetails) FixableOnly() bool {
 	return sc.fixableOnly
 }
 
-func (sc *ScanDetails) DisableJas() bool {
-	return sc.disableJas
-}
-
 func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
 	return sc.minSeverityFilter
 }
@@ -165,7 +155,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
 		SetIsRecursiveScan(sc.IsRecursiveScan).
-		SetUseJas(!sc.DisableJas()).
+		SetUseJas(true).
 		SetConfigProfile(sc.configProfile)
 
 	auditParams := audit.NewAuditParams().

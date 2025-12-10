@@ -129,7 +129,6 @@ The vulnerability was disputed (and never fixed) since the maintainers claim tha
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
-
 ---
 <div align='center'>
 

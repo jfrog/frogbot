@@ -24,15 +24,13 @@ const (
 	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
-	JFrogUserEnv             = "JF_USER"
-	JFrogUrlEnv              = "JF_URL"
-	jfrogXrayUrlEnv          = "JF_XRAY_URL"
-	jfrogArtifactoryUrlEnv   = "JF_ARTIFACTORY_URL"
-	jfrogReleasesRepoEnv     = "JF_RELEASES_REPO"
-	JFrogPasswordEnv         = "JF_PASSWORD"
-	JFrogTokenEnv            = "JF_ACCESS_TOKEN"
-	JfrogUseConfigProfileEnv = "JF_USE_CONFIG_PROFILE"
-	JfrogConfigProfileEnv    = "JF_CONFIG_PROFILE"
+	JFrogUserEnv           = "JF_USER"
+	JFrogUrlEnv            = "JF_URL"
+	jfrogXrayUrlEnv        = "JF_XRAY_URL"
+	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
+	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
+	JFrogPasswordEnv       = "JF_PASSWORD"
+	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
 
 	// Git environment variables
 	GitProvider                     = "JF_GIT_PROVIDER"
@@ -47,7 +45,6 @@ const (
 	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
 	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
 	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
-	PullRequestCommentTitleEnv  = "JF_PR_COMMENT_TITLE"
 	//#nosec G101 -- not a secret
 	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
 
@@ -61,21 +58,16 @@ const (
 	jfrogProjectEnv     = "JF_PROJECT"
 	// To include vulnerabilities and violations
 	IncludeVulnerabilitiesEnv = "JF_INCLUDE_VULNERABILITIES"
-	// To include all the vulnerabilities in the source branch at PR scan
-	IncludeAllVulnerabilitiesEnv       = "JF_INCLUDE_ALL_VULNERABILITIES"
-	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
-	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
-	FailOnSecurityIssuesEnv            = "JF_FAIL"
-	UseWrapperEnv                      = "JF_USE_WRAPPER"
-	DepsRepoEnv                        = "JF_DEPS_REPO"
-	MinSeverityEnv                     = "JF_MIN_SEVERITY"
-	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
-	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
-	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
-	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
-	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
-	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
-	WatchesDelimiter                   = ","
+	AddPrCommentOnSuccessEnv  = "JF_PR_ADD_SUCCESS_COMMENT"
+	UseWrapperEnv             = "JF_USE_WRAPPER"
+	DepsRepoEnv               = "JF_DEPS_REPO"
+	MinSeverityEnv            = "JF_MIN_SEVERITY"
+	FixableOnlyEnv            = "JF_FIXABLE_ONLY"
+	DetectionOnlyEnv          = "JF_SKIP_AUTOFIX"
+	AllowedLicensesEnv        = "JF_ALLOWED_LICENSES"
+	SkipAutoInstallEnv        = "JF_SKIP_AUTO_INSTALL"
+	AllowPartialResultsEnv    = "JF_ALLOW_PARTIAL_RESULTS"
+	WatchesDelimiter          = ","
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv          = "JF_GIT_TOKEN"
@@ -83,7 +75,6 @@ const (
 	GitPullRequestIDEnv  = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv    = "JF_GIT_API_ENDPOINT"
 	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
-	GitEmailAuthorEnv    = "JF_GIT_EMAIL_AUTHOR"
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
@@ -93,9 +84,6 @@ const (
 	FixVersionPlaceHolder = "{FIX_VERSION}"
 	BranchHashPlaceHolder = "{BRANCH_NAME_HASH}"
 
-	// General flags
-	AvoidExtraMessages = "JF_AVOID_EXTRA_MESSAGES"
-
 	// Default naming templates
 	BranchNameTemplate                       = "frogbot-" + PackagePlaceHolder + "-" + BranchHashPlaceHolder
 	AggregatedBranchNameTemplate             = "frogbot-update-" + BranchHashPlaceHolder + "-dependencies"
@@ -104,7 +92,7 @@ const (
 	AggregatePullRequestTitleDefaultTemplate = outputwriter.FrogbotTitlePrefix + " Update %s dependencies"
 	// Frogbot Git author details showed in commits
 	frogbotAuthorName  = "JFrog-Frogbot"
-	frogbotAuthorEmail = "eco-system+frogbot@jfrog.com"
+	frogbotAuthorEmail = "frogbot@jfrog.com"
 )
 
 type UnsupportedErrorType string

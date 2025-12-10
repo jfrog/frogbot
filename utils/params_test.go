@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-client-go/utils/tests"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -223,31 +223,25 @@ func TestExtractInstallationCommandFromEnv(t *testing.T) {
 
 func TestGenerateConfigFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                        "",
-		jfrogArtifactoryUrlEnv:             "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:                    "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                       "admin",
-		JFrogPasswordEnv:                   "password",
-		BranchNameTemplateEnv:              "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:           "commit",
-		PullRequestTitleTemplateEnv:        "pr-title",
-		InstallCommandEnv:                  "nuget restore",
-		UseWrapperEnv:                      "false",
-		RequirementsFileEnv:                "requirements.txt",
-		WorkingDirectoryEnv:                "a/b",
-		jfrogProjectEnv:                    "projectKey",
-		jfrogWatchesEnv:                    "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                        "deps-remote",
-		IncludeAllVulnerabilitiesEnv:       "true",
-		AvoidPreviousPrCommentsDeletionEnv: "true",
-		FailOnSecurityIssuesEnv:            "false",
-		MinSeverityEnv:                     "medium",
-		FixableOnlyEnv:                     "true",
-		DisableJasEnv:                      "true",
-		DetectionOnlyEnv:                   "true",
-		AllowedLicensesEnv:                 "MIT, Apache-2.0",
-		AvoidExtraMessages:                 "true",
-		PullRequestCommentTitleEnv:         "build 1323",
+		JFrogUrlEnv:                 "",
+		jfrogArtifactoryUrlEnv:      "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:             "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:                "admin",
+		JFrogPasswordEnv:            "password",
+		BranchNameTemplateEnv:       "branch-${BRANCH_NAME_HASH}",
+		CommitMessageTemplateEnv:    "commit",
+		PullRequestTitleTemplateEnv: "pr-title",
+		InstallCommandEnv:           "nuget restore",
+		UseWrapperEnv:               "false",
+		RequirementsFileEnv:         "requirements.txt",
+		WorkingDirectoryEnv:         "a/b",
+		jfrogProjectEnv:             "projectKey",
+		jfrogWatchesEnv:             "watch-1, watch-2, watch-3",
+		DepsRepoEnv:                 "deps-remote",
+		MinSeverityEnv:              "medium",
+		FixableOnlyEnv:              "true",
+		DetectionOnlyEnv:            "true",
+		AllowedLicensesEnv:          "MIT, Apache-2.0",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -282,10 +276,8 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
 	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
-	assert.Equal(t, false, *repo.FailOnSecurityIssues)
 	assert.Equal(t, "Medium", repo.MinSeverity)
 	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, true, repo.DisableJas)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
@@ -308,8 +300,7 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 
 	if commandName == ScanPullRequest {
 		assert.NotZero(t, repo.PullRequestDetails.ID)
-		assert.True(t, repo.AvoidExtraMessages)
-		assert.NotEmpty(t, repo.PullRequestCommentTitle)
+		assert.Empty(t, repo.PullRequestCommentTitle)
 	}
 
 	project := repo.Projects[0]
@@ -384,94 +375,48 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	testcases := []struct {
 		name            string
-		useProfile      bool
-		profileName     string
 		xrayVersion     string
 		failureExpected bool
 		profileWithRepo bool
+		mockRepoInfoErr bool
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
-			useProfile:      true,
-			profileName:     ValidConfigProfile,
 			xrayVersion:     "3.110.0",
 			failureExpected: true,
 		},
 		{
-			name:       "Profile usage is not required",
-			useProfile: false,
-		},
-		{
-			name:            "Profile by name - Valid ConfigProfile",
-			useProfile:      true,
-			profileName:     ValidConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: false,
-		},
-		{
-			name:            "Profile by name - Invalid Path From Root ConfigProfile",
-			useProfile:      true,
-			profileName:     InvalidPathConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: true,
-		},
-		{
-			name:            "Profile by name - Invalid Modules ConfigProfile",
-			useProfile:      true,
-			profileName:     InvalidModulesConfigProfile,
-			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
-			failureExpected: true,
-		},
-		{
-			// We are not creating test cases for Profile by URL verifications since they are the same verifications as Profile by name
 			name:            "Profile by URL - Valid ConfigProfile",
-			useProfile:      true,
-			profileName:     "",
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: false,
 			profileWithRepo: true,
 		},
 		{
-			name:            "Profile by Name - Non existing profile name",
-			useProfile:      true,
-			profileName:     NonExistingProfile,
+			name:            "Profile by URL - Failed fetching repository info",
 			xrayVersion:     services.ConfigProfileNewSchemaMinXrayVersion,
 			failureExpected: true,
+			profileWithRepo: true,
+			mockRepoInfoErr: true,
 		},
 	}
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.useProfile {
-				useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
-				defer useProfileEnvCallBackFunc()
-			}
-
-			if testcase.profileName != "" {
-				profileNameEnvCallbackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogConfigProfileEnv, testcase.profileName)
-				defer profileNameEnvCallbackFunc()
-			}
-
 			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
 			var mockVcsClient *testdata.MockVcsClient
 			var mockGitParams *Git
 			if testcase.profileWithRepo {
-				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo")
+				mockVcsClient = createMockVcsClient(t, "myUser", "my-repo", testcase.mockRepoInfoErr)
 				mockGitParams = &Git{
 					RepoOwner: "myUser",
 					RepoName:  "my-repo",
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams, "")
+			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
 
-			if !testcase.useProfile {
-				assert.Nil(t, configProfile)
-				assert.Nil(t, err)
-				return
-			}
 			if testcase.failureExpected {
 				assert.Error(t, err)
 				return
@@ -493,14 +438,20 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	}
 }
 
-func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
+func createMockVcsClient(t *testing.T, repoOwner, repoName string, withError bool) *testdata.MockVcsClient {
 	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
-	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
-		CloneInfo: vcsclient.CloneInfo{
-			HTTP: "https://github.com/myUser/my-repo.git",
-			SSH:  "git@github.com:myUser/my-repo.git",
-		},
-		RepositoryVisibility: 0,
-	}, nil)
+	if withError {
+		mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{}, fmt.Errorf("failed to fetch repository info"))
+	} else {
+		mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(
+			vcsclient.RepositoryInfo{
+				CloneInfo: vcsclient.CloneInfo{
+					HTTP: "https://github.com/myUser/my-repo.git",
+					SSH:  "git@github.com:myUser/my-repo.git",
+				},
+				RepositoryVisibility: 0,
+			}, nil,
+		)
+	}
 	return mockVcsClient
 }

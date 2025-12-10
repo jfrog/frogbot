@@ -220,60 +220,49 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 
 func TestScanPullRequest(t *testing.T) {
 	tests := []struct {
-		testName             string
-		projectName          string
-		failOnSecurityIssues bool
+		testName    string
+		projectName string
 	}{
 		{
-			testName:             "ScanPullRequest",
-			projectName:          "test-proj",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequest",
+			projectName: "test-proj",
 		},
 		{
-			testName:             "ScanPullRequestNoFail",
-			projectName:          "test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestNoFail",
+			projectName: "test-proj",
 		},
 		{
-			testName:             "ScanPullRequestSubdir",
-			projectName:          "test-proj-subdir",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequestSubdir",
+			projectName: "test-proj-subdir",
 		},
 		{
-			testName:             "ScanPullRequestNoIssues",
-			projectName:          "clean-test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestNoIssues",
+			projectName: "clean-test-proj",
 		},
 		{
-			testName:             "ScanPullRequestMultiWorkDir",
-			projectName:          "multi-dir-test-proj",
-			failOnSecurityIssues: false,
+			testName:    "ScanPullRequestMultiWorkDir",
+			projectName: "multi-dir-test-proj",
 		},
 		{
-			testName:             "ScanPullRequestMultiWorkDirNoFail",
-			projectName:          "multi-dir-test-proj",
-			failOnSecurityIssues: true,
+			testName:    "ScanPullRequestMultiWorkDirNoFail",
+			projectName: "multi-dir-test-proj",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testScanPullRequest(t, test.projectName, test.failOnSecurityIssues)
+			testScanPullRequest(t, test.projectName)
 		})
 	}
 }
 
-func testScanPullRequest(t *testing.T, projectName string, failOnSecurityIssues bool) {
-	config, client, cleanUp := preparePullRequestTest(t, projectName, failOnSecurityIssues)
+func testScanPullRequest(t *testing.T, projectName string) {
+	config, client, cleanUp := preparePullRequestTest(t, projectName)
 	defer cleanUp()
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
 	err := scanPullRequest.Run(config, client, utils.MockHasConnection())
-	if failOnSecurityIssues {
-		assert.EqualErrorf(t, err, SecurityIssueFoundErr, "Error should be: %v, got: %v", SecurityIssueFoundErr, err)
-	} else {
-		assert.NoError(t, err)
-	}
+	assert.NoError(t, err)
 
 	// Check env sanitize
 	err = utils.SanitizeEnv()
@@ -492,7 +481,7 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName, false)
+			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName)
 			defer cleanUpTest()
 
 			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig, client)
@@ -514,7 +503,7 @@ func TestToFailTaskStatus(t *testing.T) {
 		failureExpected  bool
 	}{
 		{
-			name:        "fail flag set to false and no violations with fail_pr",
+			name:        "no violations with fail_pr",
 			setFailFlag: false,
 			issuesCollection: issues.ScansIssuesCollection{
 				LicensesViolations: []formats.LicenseViolationRow{{
@@ -541,74 +530,7 @@ func TestToFailTaskStatus(t *testing.T) {
 			failureExpected: false,
 		},
 		{
-			name:        "fail flag set to true, sca vulnerability",
-			setFailFlag: true,
-			issuesCollection: issues.ScansIssuesCollection{
-				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
-					{
-						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-							ImpactedDependencyName:    "impacted-name",
-							ImpactedDependencyVersion: "1.0.0",
-							SeverityDetails:           formats.SeverityDetails{Severity: "High"},
-							Components: []formats.ComponentRow{
-								{
-									Name:    "vuln-pack-name1",
-									Version: "1.0.0",
-								},
-								{
-									Name:    "vuln-pack-name1",
-									Version: "1.2.3",
-								},
-								{
-									Name:    "vuln-pack-name2",
-									Version: "1.2.3",
-								},
-							},
-						},
-						Cves: []formats.CveRow{{
-							Id: "CVE-2021-1234",
-							Applicability: &formats.Applicability{
-								Status:             "Applicable",
-								ScannerDescription: "scanner",
-								Evidence: []formats.Evidence{
-									{Reason: "reason", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 2, EndLine: 3, EndColumn: 4, Snippet: "snippet1"}},
-									{Reason: "other reason", Location: formats.Location{File: "file2", StartLine: 5, StartColumn: 6, EndLine: 7, EndColumn: 8, Snippet: "snippet2"}},
-								},
-							},
-						}},
-						JfrogResearchInformation: &formats.JfrogResearchInformation{
-							Remediation: "remediation",
-						},
-						Summary:    "summary",
-						Applicable: "Applicable",
-						IssueId:    "Xray-Id",
-					},
-					{
-						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-							ImpactedDependencyName:    "impacted-name2",
-							ImpactedDependencyVersion: "1.0.0",
-							SeverityDetails:           formats.SeverityDetails{Severity: "Low"},
-							Components: []formats.ComponentRow{
-								{
-									Name:    "vuln-pack-name3",
-									Version: "1.0.0",
-								},
-							},
-						},
-						Cves: []formats.CveRow{{
-							Id:            "CVE-1111-2222",
-							Applicability: &formats.Applicability{Status: "Not Applicable"},
-						}},
-						Summary:    "other summary",
-						Applicable: "Not Applicable",
-						IssueId:    "Xray-Id2",
-					},
-				},
-			},
-			failureExpected: true,
-		},
-		{
-			name:        "fail flag is set to false, fail_pr in licenses violation",
+			name:        "fail_pr in licenses violation",
 			setFailFlag: false,
 			issuesCollection: issues.ScansIssuesCollection{
 				LicensesViolations: []formats.LicenseViolationRow{{
@@ -638,19 +560,7 @@ func TestToFailTaskStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			failFlag := test.setFailFlag
-			repo := &utils.Repository{
-				Params: utils.Params{
-					Scan: utils.Scan{
-						FailOnSecurityIssues: &failFlag,
-					},
-					Git: utils.Git{
-						PullRequestSecretComments: false,
-					},
-				},
-			}
-
-			assert.Equal(t, test.failureExpected, toFailTaskStatus(repo, &test.issuesCollection))
+			assert.Equal(t, test.failureExpected, test.issuesCollection.IsFailPrRuleApplied())
 		})
 	}
 }
@@ -1138,14 +1048,11 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 	}
 }
 
-func preparePullRequestTest(t *testing.T, projectName string, failOnSecurityIssues bool) (utils.Repository, vcsclient.VcsClient, func()) {
+func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository, vcsclient.VcsClient, func()) {
 	params, restoreEnv := utils.VerifyEnv(t)
 
 	// Set test-specific environment variables
 	envVars := map[string]string{}
-	if !failOnSecurityIssues {
-		envVars[utils.FailOnSecurityIssuesEnv] = "false"
-	}
 
 	// Set working directories for multi-dir tests
 	if projectName == "multi-dir-test-proj" {
