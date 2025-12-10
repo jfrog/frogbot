@@ -1141,7 +1141,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
 			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
+			_, err = io.Copy(w, bytes.NewReader(repoFile))
 			assert.NoError(t, err)
 		// Download repository mock
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
@@ -1149,7 +1149,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
 			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
+			_, err = io.Copy(w, bytes.NewReader(repoFile))
 			assert.NoError(t, err)
 			return
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
@@ -1157,7 +1157,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
 			assert.NoError(t, err)
-			_, err = w.Write(comments)
+			_, err = io.Copy(w, bytes.NewReader(comments))
 			assert.NoError(t, err)
 		// Return 200 when using the REST that creates the comment
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
@@ -1193,7 +1193,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			w.Header().Set("Content-Type", "application/json")
 			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
 			assert.NoError(t, err)
-			_, err = w.Write(discussions)
+			_, err = io.Copy(w, bytes.NewReader(discussions))
 			assert.NoError(t, err)
 		}
 	}
