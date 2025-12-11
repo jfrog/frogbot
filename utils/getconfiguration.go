@@ -393,7 +393,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 		return
 	}
 	// Attempt to get a config profile associated with the repo URL
-	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
+	log.Debug(fmt.Sprintf("Searching central configuration associated to repository '%s'", jfrogServer.Url))
 	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
 		return
 	}
@@ -411,6 +411,6 @@ func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err err
 		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, configProfile.ProfileName, configProfile.Modules[0].PathFromRoot)
 		return
 	}
-	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", configProfile.ProfileName))
+	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName)) //todo update this log - no profile name
 	return
 }

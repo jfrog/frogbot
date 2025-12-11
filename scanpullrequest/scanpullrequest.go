@@ -177,7 +177,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		return
 	}
 	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
-	if e == nil {
+	if e != nil {
 		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
 	}
 	return
