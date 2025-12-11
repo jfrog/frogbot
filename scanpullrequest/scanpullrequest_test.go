@@ -14,17 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
-	"github.com/jfrog/jfrog-cli-security/tests/validations"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -33,6 +28,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const (
@@ -48,76 +47,75 @@ const (
 )
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
-	allowedLicenses := []string{"MIT"}
-	auditResults := &results.SecurityCommandResults{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}, Targets: []*results.TargetResults{{
+	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
-			DeprecatedXrayResults: validations.NewMockScaResults(services.ScanResponse{
+			DeprecatedXrayResults: []services.ScanResponse{{
 				Vulnerabilities: []services.Vulnerability{
 					{Cves: []services.Cve{{Id: "CVE-2022-2122"}}, Severity: "High", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}},
 					{Cves: []services.Cve{{Id: "CVE-2023-3122"}}, Severity: "Low", Components: map[string]services.Component{"Dep-2": {FixedVersions: []string{"1.2.2"}}}},
 				},
 				Licenses: []services.License{{Key: "Apache-2.0", Components: map[string]services.Component{"Dep-1": {FixedVersions: []string{"1.2.3"}}}}},
-			}),
+			}},
 		},
 		JasResults: &results.JasScansResults{
-			ApplicabilityScanResults: validations.NewMockJasRuns(
+			ApplicabilityScanResults: []*sarif.Run{
 				sarifutils.CreateRunWithDummyResults(
 					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
 					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
 				),
-			),
+			},
 			JasVulnerabilities: results.JasScanResults{
-				IacScanResults: validations.NewMockJasRuns(
+				IacScanResults: []*sarif.Run{
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
 						),
 					),
-				),
-				SecretsScanResults: validations.NewMockJasRuns(
+				},
+				SecretsScanResults: []*sarif.Run{
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Secret", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("index.js", 5, 6, 7, 8, "access token exposed"),
 						),
 					),
-				),
-				SastScanResults: validations.NewMockJasRuns(
+				},
+				SastScanResults: []*sarif.Run{
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("XSS Vulnerability", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "snippet"),
 						),
 					),
-				),
+				},
 			},
 		},
 	}}}
 	expectedOutput := &issues.ScansIssuesCollection{
 		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
 			{
-				Applicable:    "Applicable",
+				Applicable:    "Not Covered",
 				FixedVersions: []string{"1.2.3"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 26},
+					SeverityDetails:        formats.SeverityDetails{Severity: "High", SeverityNumValue: 27},
 					ImpactedDependencyName: "Dep-1",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Applicable", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
+				Cves: []formats.CveRow{{Id: "CVE-2022-2122", Applicability: &formats.Applicability{Status: "Not Covered", ScannerDescription: "rule-msg", Evidence: []formats.Evidence{{Reason: "result-msg", Location: formats.Location{File: "file1", StartLine: 1, StartColumn: 10, EndLine: 2, EndColumn: 11, Snippet: "snippet"}}}}}},
 			},
 			{
-				Applicable:    "Not Applicable",
+				Applicable:    "Not Covered",
 				FixedVersions: []string{"1.2.2"},
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 3},
+					SeverityDetails:        formats.SeverityDetails{Severity: "Low", SeverityNumValue: 17},
 					ImpactedDependencyName: "Dep-2",
 				},
-				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Applicable", ScannerDescription: "rule-msg"}}},
+				Cves: []formats.CveRow{{Id: "CVE-2023-3122", Applicability: &formats.Applicability{Status: "Not Covered", ScannerDescription: "rule-msg"}}},
 			},
 		},
 		IacVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -138,7 +136,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -159,7 +157,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			{
 				SeverityDetails: formats.SeverityDetails{
 					Severity:         "High",
-					SeverityNumValue: 26,
+					SeverityNumValue: 31,
 				},
 				ScannerInfo: formats.ScannerInfo{
 					ScannerDescription: "rule-msg",
@@ -176,26 +174,10 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				},
 			},
 		},
-		LicensesViolations: []formats.LicenseViolationRow{
-			{
-				LicenseRow: formats.LicenseRow{
-					LicenseKey: "Apache-2.0",
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						SeverityDetails: formats.SeverityDetails{
-							Severity:         "Medium",
-							SeverityNumValue: 19,
-						},
-						ImpactedDependencyName: "Dep-1",
-					},
-				},
-				ViolationContext: formats.ViolationContext{
-					Watch: "jfrog_custom_license_violation",
-				},
-			},
-		},
+		LicensesViolations: []formats.LicenseViolationRow{},
 	}
 
-	issuesRows, err := scanResultsToIssuesCollection(auditResults, allowedLicenses)
+	issuesRows, err := scanResultsToIssuesCollection(auditResults)
 
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
@@ -657,188 +639,168 @@ func TestToFailTaskStatus(t *testing.T) {
 func TestFilterJasResultsIfScanFailed(t *testing.T) {
 	tests := []struct {
 		name         string
-		scanType     jasutils.JasScanType
+		cmdStep      results.SecurityCommandStep
 		targetResult *results.TargetResults
 		sourceResult *results.TargetResults
 		hasFailure   bool
 	}{
 		{
-			name:     "Applicability scanner failed - should remove applicability results",
-			scanType: jasutils.Applicability,
+			name:    "Applicability scanner failed - should remove applicability results",
+			cmdStep: results.CmdStepContextualAnalysis,
 			targetResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
-					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-						{StatusCode: 0},
-					},
+					ApplicabilityScanResults: []*sarif.Run{},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: intPtr(0),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
-					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-						{StatusCode: 1},
-					},
+					ApplicabilityScanResults: []*sarif.Run{},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: intPtr(1),
 				},
 			},
 			hasFailure: true,
 		},
 		{
-			name:     "Secrets scanner failed in target - should remove secrets vulnerabilities and violations",
-			scanType: jasutils.Secrets,
+			name:    "Secrets scanner failed in target - should remove secrets vulnerabilities and violations",
+			cmdStep: results.CmdStepSecrets,
 			targetResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						SecretsScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						SecretsScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					SecretsScanStatusCode: intPtr(1),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					SecretsScanStatusCode: intPtr(0),
 				},
 			},
 			hasFailure: true,
 		},
 		{
-			name:     "IaC scanner failed in both source and target - should remove IaC vulnerabilities and violations",
-			scanType: jasutils.IaC,
+			name:    "IaC scanner failed in both source and target - should remove IaC vulnerabilities and violations",
+			cmdStep: results.CmdStepIaC,
 			targetResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						IacScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						IacScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					IacScanStatusCode: intPtr(1),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						IacScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						IacScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					IacScanStatusCode: intPtr(1),
 				},
 			},
 			hasFailure: true,
 		},
 		{
-			name:     "SAST scanner failed - should remove SAST vulnerabilities and violations",
-			scanType: jasutils.Sast,
+			name:    "SAST scanner failed - should remove SAST vulnerabilities and violations",
+			cmdStep: results.CmdStepSast,
 			targetResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SastScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SastScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					SastScanStatusCode: intPtr(0),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						SastScanResults: []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 1},
-						},
+						SastScanResults: []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					SastScanStatusCode: intPtr(1),
 				},
 			},
 			hasFailure: true,
 		},
 		{
-			name:     "All scanners succeed - should not remove any results",
-			scanType: jasutils.Applicability,
+			name:    "All scanners succeed - should not remove any results",
+			cmdStep: results.CmdStepContextualAnalysis,
 			targetResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
-					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-						{StatusCode: 0},
-					},
+					ApplicabilityScanResults: []*sarif.Run{},
 					JasVulnerabilities: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
+						IacScanResults:     []*sarif.Run{},
+						SastScanResults:    []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
+						IacScanResults:     []*sarif.Run{},
+						SastScanResults:    []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: intPtr(0),
+					SecretsScanStatusCode:        intPtr(0),
+					IacScanStatusCode:            intPtr(0),
+					SastScanStatusCode:           intPtr(0),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				JasResults: &results.JasScansResults{
-					ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-						{StatusCode: 0},
-					},
+					ApplicabilityScanResults: []*sarif.Run{},
 					JasVulnerabilities: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
+						IacScanResults:     []*sarif.Run{},
+						SastScanResults:    []*sarif.Run{},
 					},
 					JasViolations: results.JasScanResults{
-						SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						IacScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
-						SastScanResults: []results.ScanResult[[]*sarif.Run]{
-							{StatusCode: 0},
-						},
+						SecretsScanResults: []*sarif.Run{},
+						IacScanResults:     []*sarif.Run{},
+						SastScanResults:    []*sarif.Run{},
 					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: intPtr(0),
+					SecretsScanStatusCode:        intPtr(0),
+					IacScanStatusCode:            intPtr(0),
+					SastScanStatusCode:           intPtr(0),
 				},
 			},
 			hasFailure: false,
@@ -848,7 +810,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Call the function under test
-			filterJasResultsIfScanFailed(test.targetResult, test.sourceResult, test.scanType)
+			filterJasResultsIfScanFailed(test.targetResult, test.sourceResult, test.cmdStep)
 
 			// Validate the results based on scan type and test case
 			if !test.hasFailure {
@@ -862,22 +824,26 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				assert.NotNil(t, test.sourceResult.JasResults.JasViolations.SastScanResults, "SAST violation scan results should NOT be removed when scan succeeds")
 			} else {
 				// For failure cases, results should be removed
-				switch test.scanType {
-				case jasutils.Applicability:
+				switch test.cmdStep {
+				case results.CmdStepContextualAnalysis:
 					assert.Nil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should be removed when scan failed")
-				case jasutils.Secrets:
+				case results.CmdStepSecrets:
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should be removed when scan failed")
 					assert.Nil(t, test.sourceResult.JasResults.JasViolations.SecretsScanResults, "Secrets violation scan results should be removed when scan failed")
-				case jasutils.IaC:
+				case results.CmdStepIaC:
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should be removed when scan failed")
 					assert.Nil(t, test.sourceResult.JasResults.JasViolations.IacScanResults, "IaC violation scan results should be removed when scan failed")
-				case jasutils.Sast:
+				case results.CmdStepSast:
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should be removed when scan failed")
 					assert.Nil(t, test.sourceResult.JasResults.JasViolations.SastScanResults, "SAST violation scan results should be removed when scan failed")
 				}
 			}
 		})
 	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
 
 func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
@@ -891,16 +857,18 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 			name: "SCA scan failed - should remove SCA results",
 			targetResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
-					ScanStatusCode: -1,
-					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "test-violation"}},
+					Sbom: nil,
+				},
+				ResultsStatus: results.ResultsStatus{
+					ScaScanStatusCode: intPtr(-1),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
-					ScanStatusCode: 0,
-					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "source-violation"}},
+					Sbom: nil,
+				},
+				ResultsStatus: results.ResultsStatus{
+					ScaScanStatusCode: intPtr(0),
 				},
 			},
 			hasFailure: true,
@@ -909,16 +877,18 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 			name: "SCA scan succeeded - should not remove SCA results",
 			targetResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
-					ScanStatusCode: 0,
-					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "target-violation"}},
+					Sbom: nil,
+				},
+				ResultsStatus: results.ResultsStatus{
+					ScaScanStatusCode: intPtr(0),
 				},
 			},
 			sourceResult: &results.TargetResults{
 				ScaResults: &results.ScaScanResults{
-					ScanStatusCode: 0,
-					Sbom:           nil,
-					Violations:     []services.Violation{{IssueId: "source-violation"}},
+					Sbom: nil,
+				},
+				ResultsStatus: results.ResultsStatus{
+					ScaScanStatusCode: intPtr(0),
 				},
 			},
 			hasFailure: false,
@@ -927,13 +897,10 @@ func TestFilterOutScaResultsIfScanFailed(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			filterOutScaResultsIfScanFailed(test.targetResult, test.sourceResult)
+			filterOutScaResultsIfScanFailed(test.targetResult, test.sourceResult, nil)
 
 			if test.hasFailure {
 				assert.Nil(t, test.sourceResult.ScaResults.Sbom, "SBOM should be removed when SCA scan failed")
-				assert.Nil(t, test.sourceResult.ScaResults.Violations, "Violations should be removed when SCA scan failed")
-			} else {
-				assert.Equal(t, []services.Violation{{IssueId: "source-violation"}}, test.sourceResult.ScaResults.Violations, "Violations should NOT be removed when SCA scan succeeds")
 			}
 		})
 	}
@@ -952,36 +919,26 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				Targets: []*results.TargetResults{
 					{
 						ScanTarget: results.ScanTarget{Target: "test-target"},
-						ScaResults: &results.ScaScanResults{
-							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "target-violation"}},
-						},
+						ScaResults: &results.ScaScanResults{},
 						JasResults: &results.JasScansResults{
-							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-								{StatusCode: 0},
-							},
+							ApplicabilityScanResults: []*sarif.Run{},
 							JasVulnerabilities: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
 							JasViolations: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
+						},
+						ResultsStatus: results.ResultsStatus{
+							ScaScanStatusCode:            intPtr(0),
+							ContextualAnalysisStatusCode: intPtr(0),
+							SecretsScanStatusCode:        intPtr(0),
+							IacScanStatusCode:            intPtr(0),
+							SastScanStatusCode:           intPtr(0),
 						},
 					},
 				},
@@ -990,36 +947,26 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				Targets: []*results.TargetResults{
 					{
 						ScanTarget: results.ScanTarget{Target: "test-target"},
-						ScaResults: &results.ScaScanResults{
-							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "source-violation"}},
-						},
+						ScaResults: &results.ScaScanResults{},
 						JasResults: &results.JasScansResults{
-							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-								{StatusCode: 0},
-							},
+							ApplicabilityScanResults: []*sarif.Run{},
 							JasVulnerabilities: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
 							JasViolations: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
+						},
+						ResultsStatus: results.ResultsStatus{
+							ScaScanStatusCode:            intPtr(0),
+							ContextualAnalysisStatusCode: intPtr(0),
+							SecretsScanStatusCode:        intPtr(0),
+							IacScanStatusCode:            intPtr(0),
+							SastScanStatusCode:           intPtr(0),
 						},
 					},
 				},
@@ -1032,36 +979,26 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				Targets: []*results.TargetResults{
 					{
 						ScanTarget: results.ScanTarget{Target: "test-target"},
-						ScaResults: &results.ScaScanResults{
-							ScanStatusCode: -1,
-							Violations:     []services.Violation{{IssueId: "target-violation"}},
-						},
+						ScaResults: &results.ScaScanResults{},
 						JasResults: &results.JasScansResults{
-							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-								{StatusCode: 0},
-							},
+							ApplicabilityScanResults: []*sarif.Run{},
 							JasVulnerabilities: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 1},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 1},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
 							JasViolations: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 1},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 1},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
+						},
+						ResultsStatus: results.ResultsStatus{
+							ScaScanStatusCode:            intPtr(-1),
+							ContextualAnalysisStatusCode: intPtr(0),
+							SecretsScanStatusCode:        intPtr(1),
+							IacScanStatusCode:            intPtr(1),
+							SastScanStatusCode:           intPtr(0),
 						},
 					},
 				},
@@ -1070,36 +1007,26 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				Targets: []*results.TargetResults{
 					{
 						ScanTarget: results.ScanTarget{Target: "test-target"},
-						ScaResults: &results.ScaScanResults{
-							ScanStatusCode: 0,
-							Violations:     []services.Violation{{IssueId: "source-violation"}},
-						},
+						ScaResults: &results.ScaScanResults{},
 						JasResults: &results.JasScansResults{
-							ApplicabilityScanResults: []results.ScanResult[[]*sarif.Run]{
-								{StatusCode: 0},
-							},
+							ApplicabilityScanResults: []*sarif.Run{},
 							JasVulnerabilities: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
 							JasViolations: results.JasScanResults{
-								SecretsScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								IacScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
-								SastScanResults: []results.ScanResult[[]*sarif.Run]{
-									{StatusCode: 0},
-								},
+								SecretsScanResults: []*sarif.Run{},
+								IacScanResults:     []*sarif.Run{},
+								SastScanResults:    []*sarif.Run{},
 							},
+						},
+						ResultsStatus: results.ResultsStatus{
+							ScaScanStatusCode:            intPtr(0),
+							ContextualAnalysisStatusCode: intPtr(0),
+							SecretsScanStatusCode:        intPtr(0),
+							IacScanStatusCode:            intPtr(0),
+							SastScanStatusCode:           intPtr(0),
 						},
 					},
 				},
@@ -1115,7 +1042,7 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 
 			sourceTarget := test.sourceResults.Targets[0]
 			if test.hasFailure {
-				assert.Nil(t, sourceTarget.ScaResults.Violations, "SCA violations should be removed when SCA scan failed")
+				assert.Nil(t, sourceTarget.ScaResults.Sbom, "SCA SBOM should be removed when SCA scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should be removed when Secrets scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should be removed when Secrets scan failed")
 				assert.Nil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should be removed when IaC scan failed")
@@ -1124,7 +1051,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SastScanResults, "SAST scan results should NOT be removed when SAST scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SastScanResults, "SAST violation results should NOT be removed when SAST scan succeeds")
 			} else {
-				assert.NotNil(t, sourceTarget.ScaResults.Violations, "SCA violations should NOT be removed when SCA scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets scan results should NOT be removed when Secrets scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasViolations.SecretsScanResults, "Secrets violation results should NOT be removed when Secrets scan succeeds")
 				assert.NotNil(t, sourceTarget.JasResults.JasVulnerabilities.IacScanResults, "IaC scan results should NOT be removed when IaC scan succeeds")
@@ -1195,24 +1121,27 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			assert.NoError(t, err)
 		// Mimic download specific branch to scan
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
+			w.Header().Set("Content-Type", "application/gzip")
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
 			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
+			_, err = io.Copy(w, bytes.NewReader(repoFile))
 			assert.NoError(t, err)
 		// Download repository mock
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
+			w.Header().Set("Content-Type", "application/gzip")
 			w.WriteHeader(http.StatusOK)
 			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
 			assert.NoError(t, err)
-			_, err = w.Write(repoFile)
+			_, err = io.Copy(w, bytes.NewReader(repoFile))
 			assert.NoError(t, err)
 			return
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
 			assert.NoError(t, err)
-			_, err = w.Write(comments)
+			_, err = io.Copy(w, bytes.NewReader(comments))
 			assert.NoError(t, err)
 		// Return 200 when using the REST that creates the comment
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodPost:
@@ -1245,9 +1174,10 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			_, err := w.Write([]byte(jsonResponse))
 			assert.NoError(t, err)
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/discussions", repoInfo):
+			w.Header().Set("Content-Type", "application/json")
 			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
 			assert.NoError(t, err)
-			_, err = w.Write(discussions)
+			_, err = io.Copy(w, bytes.NewReader(discussions))
 			assert.NoError(t, err)
 		}
 	}
