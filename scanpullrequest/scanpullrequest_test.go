@@ -567,11 +567,17 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			name:     "Applicability scanner failed - should remove applicability results",
 			scanType: jasutils.Applicability,
 			targetResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
+				},
 				JasResults: &results.JasScansResults{
 					ApplicabilityScanResults: []*sarif.Run{},
 				},
 			},
 			sourceResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					ContextualAnalysisStatusCode: securityutils.NewIntPtr(1),
+				},
 				JasResults: &results.JasScansResults{
 					ApplicabilityScanResults: []*sarif.Run{},
 				},
@@ -582,7 +588,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			name:     "Secrets scanner failed in target - should remove secrets vulnerabilities and violations",
 			scanType: jasutils.Secrets,
 			targetResult: &results.TargetResults{
-				ResultsStatus: results.ResultsStatus{SecretsScanStatusCode: &[]int{1}[0]},
+				ResultsStatus: results.ResultsStatus{
+					SecretsScanStatusCode: securityutils.NewIntPtr(1),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SecretsScanResults: []*sarif.Run{},
@@ -593,7 +601,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				},
 			},
 			sourceResult: &results.TargetResults{
-				ResultsStatus: results.ResultsStatus{SecretsScanStatusCode: &[]int{0}[0]},
+				ResultsStatus: results.ResultsStatus{
+					SecretsScanStatusCode: securityutils.NewIntPtr(0),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SecretsScanResults: []*sarif.Run{},
@@ -609,7 +619,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			name:     "IaC scanner failed in both source and target - should remove IaC vulnerabilities and violations",
 			scanType: jasutils.IaC,
 			targetResult: &results.TargetResults{
-				ResultsStatus: results.ResultsStatus{IacScanStatusCode: &[]int{1}[0]},
+				ResultsStatus: results.ResultsStatus{
+					IacScanStatusCode: securityutils.NewIntPtr(1),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						IacScanResults: []*sarif.Run{},
@@ -620,7 +632,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				},
 			},
 			sourceResult: &results.TargetResults{
-				ResultsStatus: results.ResultsStatus{IacScanStatusCode: &[]int{1}[0]},
+				ResultsStatus: results.ResultsStatus{
+					IacScanStatusCode: securityutils.NewIntPtr(1),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						IacScanResults: []*sarif.Run{},
@@ -636,6 +650,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			name:     "SAST scanner failed - should remove SAST vulnerabilities and violations",
 			scanType: jasutils.Sast,
 			targetResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					SastScanStatusCode: securityutils.NewIntPtr(0),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SastScanResults: []*sarif.Run{},
@@ -646,6 +663,9 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				},
 			},
 			sourceResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					SastScanStatusCode: securityutils.NewIntPtr(1),
+				},
 				JasResults: &results.JasScansResults{
 					JasVulnerabilities: results.JasScanResults{
 						SastScanResults: []*sarif.Run{},

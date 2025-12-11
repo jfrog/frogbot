@@ -1,6 +1,13 @@
 package utils
 
 import (
+	"net/http/httptest"
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -11,12 +18,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
-	"os"
-	"path"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 const (
@@ -523,7 +524,8 @@ func createTestSecurityCommandResults() *results.SecurityCommandResults {
 
 	// Create SecurityCommandResults with the BOM
 	scanResults := &results.SecurityCommandResults{
-		StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
+		ResultsMetaData: results.ResultsMetaData{
+			StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)},
 		Targets: []*results.TargetResults{
 			{
 				ScanTarget: results.ScanTarget{
