@@ -615,20 +615,7 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 	// key: "name:version"
 	directDeps := make(map[string]formats.ComponentRow)
 	transitiveDeps := make(map[string]formats.ComponentRow)
-
-	// Extract dependencies from all impact paths
-	for _, path := range impactPaths {
-		if len(path) == 2 {
-			direct := path[1]
-			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
-			directDeps[key] = direct
-
-		} else if len(path) > 2 {
-			transitive := path[len(path)-1]
-			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
-			transitiveDeps[key] = transitive
-		}
-	}
+	extractDependenciesFromImpactPaths(impactPaths, directDeps, transitiveDeps)
 
 	var parts []string
 	if len(directDeps) > 0 {
@@ -662,6 +649,21 @@ func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer Outp
 	}
 	content := strings.Join(parts, "")
 	return NewCellData(content)
+}
+
+func extractDependenciesFromImpactPaths(impactPaths [][]formats.ComponentRow, directDeps map[string]formats.ComponentRow, transitiveDeps map[string]formats.ComponentRow) {
+	for _, path := range impactPaths {
+		if len(path) == 2 {
+			direct := path[1]
+			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
+			directDeps[key] = direct
+
+		} else if len(path) > 2 {
+			transitive := path[len(path)-1]
+			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
+			transitiveDeps[key] = transitive
+		}
+	}
 }
 
 func getScaSecurityIssueDetailsContent(issues []formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content []string) {
@@ -742,9 +744,9 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	var transitiveEntries []string
 
 	for _, pkgInfo := range packages {
-		depType := "(Transitive)" // Transitive
+		depType := "(Transitive)"
 		if pkgInfo.isDirect {
-			depType = "(Direct)" // Direct
+			depType = "(Direct)"
 		}
 
 		packageSummary := fmt.Sprintf("%s: %s %s", pkgInfo.component.Name, pkgInfo.component.Version, depType)
