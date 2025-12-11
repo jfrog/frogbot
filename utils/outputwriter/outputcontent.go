@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -13,6 +12,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"golang.org/x/exp/maps"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 const (
@@ -597,10 +598,7 @@ func getFinalApplicabilityStatus(cves []formats.CveRow) string {
 	statuses := []jasutils.ApplicabilityStatus{}
 	for _, cve := range cves {
 		if cve.Applicability != nil && cve.Applicability.Status != "" {
-			status := jasutils.ConvertToApplicabilityStatus(cve.Applicability.Status)
-			if status != "" {
-				statuses = append(statuses, status)
-			}
+			statuses = append(statuses, jasutils.ConvertToApplicabilityStatus(cve.Applicability.Status))
 		}
 	}
 	if len(statuses) == 0 {
@@ -732,7 +730,7 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 		} else if len(path) > 2 {
 			transitive := path[len(path)-1]
 			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
-			packages[key] = packageInfo{component: transitive, isDirect: true}
+			packages[key] = packageInfo{component: transitive, isDirect: false}
 		}
 	}
 
@@ -796,8 +794,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		cvss = append(cvss, cve.CvssV3)
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CVSS V3:")), NewCellData(cvss...))
-	dependencyPathDetails := getDependencyPathDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer)
-	if dependencyPathDetails != "" {
+	if dependencyPathDetails := getDependencyPathDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer); dependencyPathDetails != "" {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Dependency Path:")), NewCellData(dependencyPathDetails))
 	}
 	WriteContent(&contentBuilder, noHeaderTable.Build())
