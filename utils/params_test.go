@@ -9,8 +9,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/v2/testdata"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/testdata"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -326,7 +327,6 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.Equal(t, "", project.PipRequirementsFile)
 	assert.Equal(t, "", project.InstallCommandName)
 	assert.Equal(t, []string(nil), project.InstallCommandArgs)
-	assert.True(t, project.IsRecursiveScan)
 
 	// Test value extraction
 	SetEnvAndAssert(t, map[string]string{
@@ -346,7 +346,6 @@ func TestExtractProjectParamsFromEnv(t *testing.T) {
 	assert.Equal(t, "nuget", project.InstallCommandName)
 	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
 	assert.Equal(t, "repository", project.DepsRepo)
-	assert.False(t, project.IsRecursiveScan)
 }
 
 func TestVerifyValidApiEndpoint(t *testing.T) {

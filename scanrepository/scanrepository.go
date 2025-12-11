@@ -131,7 +131,6 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.Watches, repository.Params.JFrogPlatform.JFrogProjectKey, repository.Params.JFrogPlatform.IncludeVulnerabilities, len(repository.Params.Scan.AllowedLicenses) > 0).
 		SetFixableOnly(repository.Params.Scan.FixableOnly).
 		SetConfigProfile(repository.Params.Scan.ConfigProfile).
-		SetSkipAutoInstall(repository.Params.Scan.SkipAutoInstall).
 		SetAllowPartialResults(repository.Params.Scan.AllowPartialResults)
 
 	if cfp.scanDetails, err = cfp.scanDetails.SetMinSeverity(repository.Params.Scan.MinSeverity); err != nil {
