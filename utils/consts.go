@@ -38,7 +38,7 @@ const (
 	GitRepoOwnerEnv                 = "JF_GIT_OWNER"
 	GitRepoEnv                      = "JF_GIT_REPO"
 	GitAzureProjectEnv              = "JF_GIT_AZURE_PROJECT"
-	GitUsernameEnv                  = "JF_GIT_USERNAME"
+	GitBitBucketUsernameEnv         = "JF_GIT_BB_USERNAME"
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
@@ -46,9 +46,6 @@ const (
 	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
-
-	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
-	GitHubActionsEnv = "GITHUB_ACTIONS" // TODO WHAT IS THIS?
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"

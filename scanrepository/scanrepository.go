@@ -43,7 +43,7 @@ type ScanRepositoryCmd struct {
 	// The scanDetails of the current scan
 	scanDetails *utils.ScanDetails
 	// The base working directory
-	baseWd string //TODO
+	baseWd string
 	// The git client the command performs git operations with
 	gitManager *utils.GitManager
 	// Determines whether to open a pull request for each vulnerability fix or to aggregate all fixes into one pull request
@@ -168,19 +168,19 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 
 	if repository.Params.Scan.DetectionOnly {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform")) // todo add configuration name
-	} else {
-		vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(scanResults)
-		if err != nil {
-			if err = utils.CreateErrorIfPartialResultsDisabled(sr.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for branch '%s'.", sr.scanDetails.BaseBranch()), err); err != nil {
-				return 0, err
-			}
-		}
-		if len(vulnerabilitiesByPathMap) == 0 {
-			log.Info("Didn't find vulnerable dependencies with existing fix versions for", sr.scanDetails.RepoName)
-		}
-		return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+		return totalFindings, nil
 	}
-	return totalFindings, nil
+	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(scanResults)
+	if err != nil {
+		if err = utils.CreateErrorIfPartialResultsDisabled(sr.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for branch '%s'.", sr.scanDetails.BaseBranch()), err); err != nil {
+			return 0, err
+		}
+	}
+	if len(vulnerabilitiesByPathMap) == 0 {
+		log.Info("Didn't find vulnerable dependencies with existing fix versions for", sr.scanDetails.RepoName)
+		return totalFindings, nil
+	}
+	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 }
 
 func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, err error, scanResults *results.SecurityCommandResults) {

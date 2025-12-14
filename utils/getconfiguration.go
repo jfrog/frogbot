@@ -48,7 +48,6 @@ type Repository struct {
 
 func (r *Repository) setOutputWriterDetails() {
 	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider)
-	r.OutputWriter.SetPullRequestCommentTitle(r.Params.Git.PullRequestCommentTitle)
 }
 
 type Params struct {
@@ -58,12 +57,10 @@ type Params struct {
 }
 
 type Scan struct {
-	FixableOnly           bool   `yaml:"fixableOnly,omitempty"`
-	DetectionOnly         bool   `yaml:"skipAutoFix,omitempty"`
-	MinSeverity           string `yaml:"minSeverity,omitempty"`
-	AddPrCommentOnSuccess bool   `yaml:"addPrCommentOnSuccess,omitempty"`
+	DetectionOnly         bool `yaml:"skipAutoFix,omitempty"`           //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	AddPrCommentOnSuccess bool `yaml:"addPrCommentOnSuccess,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
 	ConfigProfile         *services.ConfigProfile
-	AllowPartialResults   bool
+	AllowPartialResults   bool //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
 }
 
 type JFrogPlatform struct {
@@ -90,13 +87,12 @@ type Git struct {
 	RepoOwner                 string
 	RepoName                  string   `yaml:"repoName,omitempty"`
 	Branches                  []string `yaml:"branches,omitempty"`
-	BranchNameTemplate        string   `yaml:"branchNameTemplate,omitempty"`
-	CommitMessageTemplate     string   `yaml:"commitMessageTemplate,omitempty"`
-	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`
-	PullRequestCommentTitle   string   `yaml:"pullRequestCommentTitle,omitempty"`
-	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"`
+	BranchNameTemplate        string   `yaml:"branchNameTemplate,omitempty"`        //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	CommitMessageTemplate     string   `yaml:"commitMessageTemplate,omitempty"`     //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`  //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
 	EmailAuthor               string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"`
+	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
 	PullRequestDetails        vcsclient.PullRequestInfo
 	RepositoryCloneUrl        string
 	UploadSbomToVcs           *bool `yaml:"uploadSbomToVcs,omitempty"`
@@ -292,7 +288,7 @@ func extractGitParamsFromEnvs() (*Git, error) {
 
 	// Set Bitbucket Server username
 	// Mandatory only for Bitbucket Server, this authentication detail is required for performing git operations.
-	if err = readParamFromEnv(GitUsernameEnv, &gitEnvParams.Username); err != nil && !e.IsMissingEnvErr(err) {
+	if err = readParamFromEnv(GitBitBucketUsernameEnv, &gitEnvParams.Username); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
 	// Set Azure Repos Project name

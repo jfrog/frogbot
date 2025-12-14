@@ -25,8 +25,8 @@ type ScanDetails struct {
 	client              vcsclient.VcsClient
 	baseBranch          string
 	configProfile       *xscservices.ConfigProfile
-	allowPartialResults bool
-	excludePaths        []string //todo from cc
+	allowPartialResults bool     //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	excludePaths        []string //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
 	diffScan            bool
 	ResultsToCompare    *results.SecurityCommandResults
 

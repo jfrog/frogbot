@@ -24,8 +24,6 @@ import (
 const (
 	SecurityIssueFoundErr = "issues were detected by Frogbot\n" +
 		"Security violation with 'fail-pull-request' rule is found"
-	noGitHubEnvErr                       = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	noGitHubEnvReviewersErr              = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	analyticsScanPrScanType              = "PR"
 	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
@@ -33,7 +31,7 @@ const (
 
 type ScanPullRequestCmd struct{}
 
-func (cp *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
+func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
 	repoConfig := &repository
 	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
 	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
@@ -59,7 +57,6 @@ func (cp *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.
 		return
 	}
 	return
-
 }
 
 func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
@@ -68,7 +65,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		return
 	}
 	resultContext = scanDetails.ResultContext
-	sourceBranchWd, targetBranchWd, cleanup, err := downloadBranches(repoConfig, scanDetails)
+	sourceBranchWd, targetBranchWd, cleanup, err := downloadSourceAndTarget(repoConfig, scanDetails)
 	if err != nil {
 		return
 	}
@@ -109,7 +106,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults), nil
 }
 
-func downloadBranches(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
+func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
 	cleanupSource := func() error { return nil }
 	cleanupTarget := func() error { return nil }
 	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }

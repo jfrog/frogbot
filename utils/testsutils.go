@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	ValidConfigProfile          = "default-profile"
 	InvalidPathConfigProfile    = "invalid-path-from-root-profile"
 	InvalidModulesConfigProfile = "invalid-modules-profile"
 	NonExistingProfile          = "non-existing-profile"

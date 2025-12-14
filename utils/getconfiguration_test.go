@@ -230,8 +230,6 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
-	assert.Equal(t, "Medium", repo.MinSeverity)
-	assert.Equal(t, true, repo.FixableOnly)
 	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
 	assert.Equal(t, true, repo.DetectionOnly)
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
@@ -253,7 +251,6 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 
 	if commandName == ScanPullRequest {
 		assert.NotZero(t, repo.PullRequestDetails.ID)
-		assert.Empty(t, repo.PullRequestCommentTitle)
 	}
 
 }
