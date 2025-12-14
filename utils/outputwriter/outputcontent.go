@@ -766,7 +766,9 @@ func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixed
 	}
 	sort.Strings(directEntries)
 	sort.Strings(transitiveEntries)
-	allEntries := append(directEntries, transitiveEntries...)
+	allEntries := make([]string, 0, len(directEntries)+len(transitiveEntries))
+	allEntries = append(allEntries, directEntries...)
+	allEntries = append(allEntries, transitiveEntries...)
 
 	return strings.Join(allEntries, "")
 }
