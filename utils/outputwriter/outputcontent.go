@@ -604,7 +604,7 @@ func getFinalApplicabilityStatus(cves []formats.CveRow) string {
 	if len(statuses) == 0 {
 		return ""
 	}
-	return results.GetFinalApplicabilityStatus(statuses).String()
+	return results.GetFinalApplicabilityStatus(true, statuses).String()
 }
 
 func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer OutputWriter) CellData {
