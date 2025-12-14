@@ -84,7 +84,7 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 		utils.GitRepoEnv:          testDetails.RepoName,
 		utils.GitRepoOwnerEnv:     testDetails.RepoOwner,
 		utils.GitApiEndpointEnv:   testDetails.ApiEndpoint,
-		utils.GitProjectEnv:       testDetails.GitProject,
+		utils.GitAzureProjectEnv:  testDetails.GitProject,
 		utils.GitUsernameEnv:      testDetails.GitUsername,
 		utils.GitBaseBranchEnv:    mainBranch,
 	})

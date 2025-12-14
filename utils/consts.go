@@ -37,7 +37,7 @@ const (
 	GitProvider                     = "JF_GIT_PROVIDER"
 	GitRepoOwnerEnv                 = "JF_GIT_OWNER"
 	GitRepoEnv                      = "JF_GIT_REPO"
-	GitProjectEnv                   = "JF_GIT_PROJECT"
+	GitAzureProjectEnv              = "JF_GIT_AZURE_PROJECT"
 	GitUsernameEnv                  = "JF_GIT_USERNAME"
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
 

@@ -297,7 +297,7 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	}
 	// Set Azure Repos Project name
 	// Mandatory for Azure Repos only
-	if err = readParamFromEnv(GitProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
+	if err = readParamFromEnv(GitAzureProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
 	}
 	if envPrId := getTrimmedEnv(GitPullRequestIDEnv); envPrId != "" {

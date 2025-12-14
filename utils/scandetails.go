@@ -13,7 +13,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
-	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
@@ -24,7 +23,6 @@ type ScanDetails struct {
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
 	client              vcsclient.VcsClient
-	minSeverityFilter   severityutils.Severity
 	baseBranch          string
 	configProfile       *xscservices.ConfigProfile
 	allowPartialResults bool
@@ -87,10 +85,6 @@ func (sc *ScanDetails) BaseBranch() string {
 	return sc.baseBranch
 }
 
-func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
-	return sc.minSeverityFilter
-}
-
 func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
 	sc.RepoOwner = owner
 	return sc
@@ -109,7 +103,6 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
-		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.excludePaths).
@@ -123,7 +116,6 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetGitContext(sc.XscGitInfoContext).
 		SetRtResultRepository(frogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
-		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
