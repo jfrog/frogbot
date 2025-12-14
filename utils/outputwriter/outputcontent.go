@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -13,6 +12,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"golang.org/x/exp/maps"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 const (
@@ -424,7 +425,7 @@ func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolatio
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
-	content = append(content, writer.MarkInCenter(getVulnerabilitiesSummaryTable(vulnerabilities, writer)))
+	content = append(content, getVulnerabilitiesSummaryTable(vulnerabilities, writer))
 	content = append(content, getScaSecurityIssueDetailsContent(vulnerabilities, false, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
 }
@@ -445,14 +446,9 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 	if writer.IsShowingCaColumn() {
 		columns = append(columns, "Contextual Analysis")
 	}
-	columns = append(columns, "Direct Dependencies", "Impacted Dependency", "Fixed Versions")
+	columns = append(columns, "Dependency Path")
 	table := NewMarkdownTable(columns...).SetDelimiter(writer.Separator())
-	if _, ok := writer.(*SimplifiedOutput); ok {
-		// The values in this cell can be potentially large, since SimplifiedOutput does not support tags, we need to show each value in a separate row.
-		// It means that the first row will show the full details, and the following rows will show only the direct dependency.
-		// It makes it easier to read the table and less crowded with text in a single cell that could be potentially large.
-		table.GetColumnInfo("Direct Dependencies").ColumnType = MultiRowColumn
-	}
+	table.GetColumnInfo("Dependency Path").Centered = false
 	// Construct rows
 	for _, vulnerability := range vulnerabilities {
 		row := []CellData{{writer.FormattedSeverity(vulnerability.Severity, vulnerability.Applicable)}, getCveIdsCellData(vulnerability.Cves, vulnerability.IssueId)}
@@ -460,9 +456,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 			row = append(row, NewCellData(vulnerability.Applicable))
 		}
 		row = append(row,
-			getDirectDependenciesCellData(vulnerability.Components),
-			NewCellData(fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)),
-			NewCellData(vulnerability.FixedVersions...),
+			getDependencyPathCellData(vulnerability.ImpactPaths, writer),
 		)
 		table.AddRowWithCellData(row...)
 	}
@@ -596,6 +590,82 @@ func getCveIdsCellData(cveRows []formats.CveRow, issueId string) (ids CellData) 
 	return
 }
 
+func getFinalApplicabilityStatus(cves []formats.CveRow) string {
+	if len(cves) == 0 {
+		return ""
+	}
+
+	statuses := []jasutils.ApplicabilityStatus{}
+	for _, cve := range cves {
+		if cve.Applicability != nil && cve.Applicability.Status != "" {
+			statuses = append(statuses, jasutils.ConvertToApplicabilityStatus(cve.Applicability.Status))
+		}
+	}
+	if len(statuses) == 0 {
+		return ""
+	}
+	return results.GetFinalApplicabilityStatus(true, statuses).String()
+}
+
+func getDependencyPathCellData(impactPaths [][]formats.ComponentRow, writer OutputWriter) CellData {
+	if len(impactPaths) == 0 {
+		return NewCellData()
+	}
+
+	// key: "name:version"
+	directDeps := make(map[string]formats.ComponentRow)
+	transitiveDeps := make(map[string]formats.ComponentRow)
+	extractDependenciesFromImpactPaths(impactPaths, directDeps, transitiveDeps)
+
+	var parts []string
+	if len(directDeps) > 0 {
+		directList := make([]string, 0, len(directDeps))
+		for _, dep := range directDeps {
+			directList = append(directList, results.GetDependencyId(dep.Name, dep.Version))
+		}
+		sort.Strings(directList)
+		directCount := len(directList)
+		directContent := strings.Join(directList, writer.Separator())
+		directSummary := fmt.Sprintf("%d Direct", directCount)
+		directSection := writer.MarkAsDetails(directSummary, 0, directContent)
+		parts = append(parts, directSection)
+	}
+
+	if len(transitiveDeps) > 0 {
+		transitiveList := make([]string, 0, len(transitiveDeps))
+		for _, dep := range transitiveDeps {
+			transitiveList = append(transitiveList, results.GetDependencyId(dep.Name, dep.Version))
+		}
+		sort.Strings(transitiveList)
+		transitiveCount := len(transitiveList)
+		transitiveContent := strings.Join(transitiveList, writer.Separator())
+		transitiveSummary := fmt.Sprintf("%d Transitive", transitiveCount)
+		transitiveSection := writer.MarkAsDetails(transitiveSummary, 0, transitiveContent)
+		parts = append(parts, transitiveSection)
+	}
+
+	if len(parts) == 0 {
+		return NewCellData()
+	}
+	content := strings.Join(parts, "")
+	return NewCellData(content)
+}
+
+func extractDependenciesFromImpactPaths(impactPaths [][]formats.ComponentRow, directDeps map[string]formats.ComponentRow, transitiveDeps map[string]formats.ComponentRow) {
+	for _, path := range impactPaths {
+		if len(path) == 2 {
+			direct := path[1]
+			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
+			directDeps[key] = direct
+
+		} else if len(path) > 2 {
+			transitive := path[len(path)-1]
+			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
+			transitiveDeps[key] = transitive
+		}
+	}
+}
+
 func getScaSecurityIssueDetailsContent(issues []formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content []string) {
 	issuesWithDetails := getIssuesWithDetails(issues)
 	if len(issuesWithDetails) == 0 {
@@ -643,16 +713,70 @@ func getComponentIssueIdentifier(key, compName, version, watch string) (id strin
 	return strings.Join(parts, " ")
 }
 
+func getDependencyPathDetailsContent(impactPaths [][]formats.ComponentRow, fixedVersions []string, writer OutputWriter) string {
+	if len(impactPaths) == 0 {
+		return ""
+	}
+
+	type packageInfo struct {
+		component formats.ComponentRow
+		isDirect  bool
+	}
+	packages := make(map[string]packageInfo) // key: "name:version"
+
+	for _, path := range impactPaths {
+		if len(path) == 2 {
+			direct := path[1]
+			key := fmt.Sprintf("%s:%s", direct.Name, direct.Version)
+			packages[key] = packageInfo{component: direct, isDirect: true}
+		} else if len(path) > 2 {
+			transitive := path[len(path)-1]
+			key := fmt.Sprintf("%s:%s", transitive.Name, transitive.Version)
+			packages[key] = packageInfo{component: transitive, isDirect: false}
+		}
+	}
+
+	if len(packages) == 0 {
+		return ""
+	}
+
+	var directEntries []string
+	var transitiveEntries []string
+
+	for _, pkgInfo := range packages {
+		depType := "(Transitive)"
+		if pkgInfo.isDirect {
+			depType = "(Direct)"
+		}
+
+		packageSummary := fmt.Sprintf("%s: %s %s", pkgInfo.component.Name, pkgInfo.component.Version, depType)
+
+		var packageContentParts []string
+		if len(fixedVersions) > 0 {
+			packageContentParts = append(packageContentParts, fmt.Sprintf("Fix Version: %s", fixedVersions[0]))
+		}
+		packageContent := strings.Join(packageContentParts, writer.Separator())
+		packageEntry := writer.MarkAsDetails(packageSummary, 0, packageContent)
+
+		if pkgInfo.isDirect {
+			directEntries = append(directEntries, packageEntry)
+		} else {
+			transitiveEntries = append(transitiveEntries, packageEntry)
+		}
+	}
+	sort.Strings(directEntries)
+	sort.Strings(transitiveEntries)
+	allEntries := make([]string, 0, len(directEntries)+len(transitiveEntries))
+	allEntries = append(allEntries, directEntries...)
+	allEntries = append(allEntries, transitiveEntries...)
+
+	return strings.Join(allEntries, "")
+}
+
 func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, violations bool, writer OutputWriter) (content string) {
 	var contentBuilder strings.Builder
-	// Title
 	WriteNewLine(&contentBuilder)
 	WriteContent(&contentBuilder, writer.MarkAsTitle(fmt.Sprintf("%s Details", getIssueType(violations)), 3))
-	// Details Table
-	directComponent := []string{}
-	for _, component := range issue.ImpactedDependencyDetails.Components {
-		directComponent = append(directComponent, results.GetDependencyId(component.Name, component.Version))
-	}
 	noHeaderTable := NewNoHeaderMarkdownTable(2, false)
 	if len(issue.Policies) > 0 {
 		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Policies:")), NewCellData(issue.Policies...))
@@ -664,18 +788,19 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 		severity := severityutils.Severity(issue.JfrogResearchInformation.Severity)
 		noHeaderTable.AddRow(MarkAsBold("Jfrog Research Severity:"), fmt.Sprintf("%s %s", writer.SeverityIcon(severity), severity.String()))
 	}
-	if issue.Applicable != "" {
-		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), issue.Applicable)
+	applicableStatus := getFinalApplicabilityStatus(issue.Cves)
+	if applicableStatus != "" {
+		noHeaderTable.AddRow(MarkAsBold("Contextual Analysis:"), applicableStatus)
 	}
-	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
-	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion))
-	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Fixed Versions:")), NewCellData(issue.FixedVersions...))
 
 	cvss := []string{}
 	for _, cve := range issue.Cves {
 		cvss = append(cvss, cve.CvssV3)
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("CVSS V3:")), NewCellData(cvss...))
+	if dependencyPathDetails := getDependencyPathDetailsContent(issue.ImpactPaths, issue.FixedVersions, writer); dependencyPathDetails != "" {
+		noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Dependency Path:")), NewCellData(dependencyPathDetails))
+	}
 	WriteContent(&contentBuilder, noHeaderTable.Build())
 
 	// Summary
