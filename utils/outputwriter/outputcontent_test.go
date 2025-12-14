@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -13,6 +12,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 func TestGetMainCommentContent(t *testing.T) {
@@ -320,6 +321,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 					},
 					Applicable:    "Undetermined",
 					FixedVersions: []string{"[0.24.3]"},
+					ImpactPaths: [][]formats.ComponentRow{
+						{
+							{Name: "root", Version: "1.0.0"},
+							{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+						},
+					},
 					JfrogResearchInformation: &formats.JfrogResearchInformation{
 						Details:     "Research CVE-2022-26652 details",
 						Remediation: "some remediation",
@@ -357,7 +364,13 @@ func TestVulnerabilitiesContent(t *testing.T) {
 					},
 					Applicable:    "Undetermined",
 					FixedVersions: []string{"[0.24.3]"},
-					Cves:          []formats.CveRow{{Id: "CVE-2022-26652"}},
+					ImpactPaths: [][]formats.ComponentRow{
+						{
+							{Name: "root", Version: "1.0.0"},
+							{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+						},
+					},
+					Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 				},
 			},
 			cases: []OutputTestCase{
@@ -483,7 +496,19 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Not Applicable",
 			FixedVersions: []string{"4.0.0", "5.0.0"},
-			Cves:          []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "dep1", Version: "1.0.0"},
+					{Name: "impacted", Version: "3.0.0"},
+				},
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "dep2", Version: "2.0.0"},
+					{Name: "impacted", Version: "3.0.0"},
+				},
+			},
+			Cves: []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
 		},
 		{
 			Summary: "Summary XRAY-122345",
@@ -500,7 +525,13 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Undetermined",
 			FixedVersions: []string{"[0.24.1]"},
-			IssueId:       "XRAY-122345",
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+				},
+			},
+			IssueId: "XRAY-122345",
 			JfrogResearchInformation: &formats.JfrogResearchInformation{
 				Remediation: "some remediation",
 			},
@@ -520,6 +551,12 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Applicable",
 			FixedVersions: []string{"[0.24.3]"},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "component-D", Version: "v0.21.0"},
+				},
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{
 				Remediation: "some remediation",
 			},
@@ -542,7 +579,13 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 				},
 			},
 			Applicable: "Undetermined",
-			Cves:       []formats.CveRow{},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "github.com/mholt/archiver/v3", Version: "v3.5.1"},
+				},
+			},
+			Cves: []formats.CveRow{},
 		},
 	}
 	if violations {

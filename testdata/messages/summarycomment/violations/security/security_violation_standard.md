@@ -22,11 +22,8 @@
 ### Violation Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Undetermined |
-| **Direct Dependencies:** | github.com/nats-io/nats-streaming-server:v0.21.0 |
-| **Impacted Dependency:** | github.com/nats-io/nats-streaming-server:v0.21.0 |
-| **Fixed Versions:** | [0.24.1] |
 | **CVSS V3:** | - |
+| **Dependency Path:** | <details><summary><b>github.com/nats-io/nats-streaming-server: v0.21.0 (Direct)</b></summary>Fix Version: [0.24.1]<br></details> |
 
 Summary XRAY-122345
 
@@ -42,10 +39,8 @@ some remediation
 |                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Applicable |
-| **Direct Dependencies:** | component-D:v0.21.0 |
-| **Impacted Dependency:** | component-D:v0.21.0 |
-| **Fixed Versions:** | [0.24.3] |
 | **CVSS V3:** | - |
+| **Dependency Path:** | <details><summary><b>component-D: v0.21.0 (Direct)</b></summary>Fix Version: [0.24.3]<br></details> |
 
 ### 🔬 JFrog Research Details
 
@@ -58,10 +53,7 @@ some remediation
 ### Violation Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Undetermined |
-| **Direct Dependencies:** | github.com/mholt/archiver/v3:v3.5.1 |
-| **Impacted Dependency:** | github.com/mholt/archiver/v3:v3.5.1 |
-| **Fixed Versions:** | - |
 | **CVSS V3:** | - |
+| **Dependency Path:** | <details><summary><b>github.com/mholt/archiver/v3: v3.5.1 (Direct)</b></summary><br></details> |
 
 Summary<br></details>
