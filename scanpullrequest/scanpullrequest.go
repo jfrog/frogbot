@@ -101,9 +101,8 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 	return utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
 		SetJfrogVersions(repoConfig.Params.XrayVersion, repoConfig.Params.XscVersion).
 		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.JFrogProjectKey, false).
-		SetConfigProfile(repoConfig.Params.Scan.ConfigProfile).
-		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails).
-		SetAllowPartialResults(repoConfig.Params.Scan.AllowPartialResults), nil
+		SetConfigProfile(repoConfig.Params.ConfigProfile).
+		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails), nil
 }
 
 func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
@@ -170,7 +169,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	if err = filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.Scan.AllowPartialResults); err != nil {
+	if err = filterOutFailedScansIfFailUponScanErrorDisabled(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError); err != nil {
 		return
 	}
 	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
@@ -180,11 +179,11 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	return
 }
 
-// When allowPartialResults is enabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
+// When failUponScanError is disabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
 // if we found any error in any of its results (non-zero status code) in either source or target results.
 // This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
-func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResults *results.SecurityCommandResults, allowPartialResults bool) error {
-	if !allowPartialResults {
+func filterOutFailedScansIfFailUponScanErrorDisabled(targetResults, sourceResults *results.SecurityCommandResults, failUponScanError bool) error {
+	if failUponScanError {
 		return nil
 	}
 	if targetResults == nil {

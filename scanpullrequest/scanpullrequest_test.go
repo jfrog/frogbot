@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jfrog/frogbot/v2/testdata"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
@@ -24,6 +23,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
+
+	"github.com/jfrog/frogbot/v2/testdata"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -880,7 +881,7 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := filterOutFailedScansIfAllowPartialResultsEnabled(test.targetResults, test.sourceResults, true)
+			err := filterOutFailedScansIfFailUponScanErrorDisabled(test.targetResults, test.sourceResults, true)
 			assert.NoError(t, err)
 
 			sourceTarget := test.sourceResults.Targets[0]

@@ -3,6 +3,7 @@ module github.com/jfrog/frogbot/v2
 go 1.25.5
 
 require (
+	github.com/CycloneDX/cyclonedx-go v0.9.3
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
@@ -12,7 +13,7 @@ require (
 	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251210074251-c15fabe27f7f
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0
 	github.com/jfrog/jfrog-cli-security v1.24.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251209090954-d6b1c70d3a5e
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251212095223-711b02c53736
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -22,7 +23,6 @@ require (
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/CycloneDX/cyclonedx-go v0.9.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -134,7 +134,7 @@ replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// attiasas:fix_cdx_remediation_api
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20251210093930-2b29e73a9eb0
+// eranturgeman:update-config-profile-structure
+replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20251215075212-69a133d2b04e
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master

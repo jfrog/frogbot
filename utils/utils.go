@@ -453,9 +453,10 @@ func isUrlAccessible(url string) bool {
 	return resp != nil && resp.StatusCode == http.StatusOK
 }
 
-// This function checks if partial results are allowed by the user. If so instead of returning an error we log the error and continue as if we didn't have an error
-func CreateErrorIfPartialResultsDisabled(allowPartial bool, messageForLog string, err error) error {
-	if allowPartial {
+// CreateErrorIfFailUponScannerErrorEnabled This function checks if fail upn scanner error configuration is enabled by the user.
+// If not - instead of returning an error we log the error and continue as if we didn't have an error
+func CreateErrorIfFailUponScannerErrorEnabled(fail bool, messageForLog string, err error) error {
+	if !fail {
 		log.Warn(messageForLog)
 		return nil
 	}

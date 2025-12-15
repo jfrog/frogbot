@@ -33,11 +33,6 @@ type FrogbotDetails struct {
 	ReleasesRepo  string
 }
 
-// Returns an initialized Repository with an empty repository
-func newRepository() Repository {
-	return Repository{Params: Params{Scan: Scan{}}}
-}
-
 type Repository struct {
 	Params       `yaml:"params,omitempty"`
 	OutputWriter outputwriter.OutputWriter
@@ -49,16 +44,9 @@ func (r *Repository) setOutputWriterDetails() {
 }
 
 type Params struct {
-	Scan          `yaml:"scan,omitempty"`
-	Git           `yaml:"git,omitempty"`
-	JFrogPlatform `yaml:"jfrogPlatform,omitempty"`
-}
-
-type Scan struct {
-	DetectionOnly         bool `yaml:"skipAutoFix,omitempty"`           //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	AddPrCommentOnSuccess bool `yaml:"addPrCommentOnSuccess,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	ConfigProfile         *services.ConfigProfile
-	AllowPartialResults   bool //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
+	*services.ConfigProfile
+	Git
+	JFrogPlatform
 }
 
 type JFrogPlatform struct {
@@ -82,18 +70,12 @@ func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner                 string
-	RepoName                  string   `yaml:"repoName,omitempty"`
-	Branches                  []string `yaml:"branches,omitempty"`
-	BranchNameTemplate        string   `yaml:"branchNameTemplate,omitempty"`        //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	CommitMessageTemplate     string   `yaml:"commitMessageTemplate,omitempty"`     //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	PullRequestTitleTemplate  string   `yaml:"pullRequestTitleTemplate,omitempty"`  //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	PullRequestSecretComments bool     `yaml:"pullRequestSecretComments,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	EmailAuthor               string   `yaml:"emailAuthor,omitempty"`
-	AggregateFixes            bool     `yaml:"aggregateFixes,omitempty"` //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	PullRequestDetails        vcsclient.PullRequestInfo
-	RepositoryCloneUrl        string
-	UploadSbomToVcs           *bool `yaml:"uploadSbomToVcs,omitempty"`
+	RepoOwner          string
+	RepoName           string   `yaml:"repoName,omitempty"`
+	Branches           []string `yaml:"branches,omitempty"`
+	PullRequestDetails vcsclient.PullRequestInfo
+	RepositoryCloneUrl string
+	UploadSbomToVcs    *bool `yaml:"uploadSbomToVcs,omitempty"`
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -110,7 +92,6 @@ func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string,
 }
 
 func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (err error) {
-	g.EmailAuthor = frogbotAuthorEmail
 	g.RepoOwner = gitParamsFromEnv.RepoOwner
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
@@ -188,18 +169,27 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	}
 
 	// We apply the configProfile to the repository. If no config profile was fetched, a nil value is passed
-	repository.Scan.ConfigProfile = configProfile
+	repository.ConfigProfile = configProfile
 	repository.Git.RepositoryCloneUrl = repoCloneUrl
 
-	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer, ReleasesRepo: os.Getenv(jfrogReleasesRepoEnv)}
+	frogbotDetails = createFrogbotDetails(frogbotDetails, xrayVersion, xscVersion, repository, client, jfrogServer)
 	return
+}
+
+func createFrogbotDetails(frogbotDetails *FrogbotDetails, xrayVersion string, xscVersion string, repository Repository, client vcsclient.VcsClient, jfrogServer *coreconfig.ServerDetails) *FrogbotDetails {
+	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer}
+	frogbotDetails.ReleasesRepo = os.Getenv(jfrogReleasesRepoEnv)
+	if frogbotDetails.ReleasesRepo == "" {
+		frogbotDetails.ReleasesRepo = repository.GeneralConfig.ScannersDownloadPath
+	}
+	return frogbotDetails
 }
 
 // Builds a Repository from environment variables only
 // Returns a Repository instance with all the defaults and necessary fields.
 func BuildRepository(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (repository Repository, err error) {
 	// Create a single repository from environment variables
-	repository = newRepository()
+	repository = Repository{}
 	repository.Server = *server
 	repository.Params.XrayVersion = xrayVersion
 	repository.Params.XscVersion = xscVersion
@@ -374,37 +364,19 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-// This function attempts to fetch a config profile, we check if there is a config profile associated to the repo URL.
-// When a profile is found we verify several conditions on it.
-// If a profile was requested but not found by url we return an error.
 func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, configProfileV3MinXrayVersion); err != nil {
 		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above. Frogbot configurations will be derived from environment variables only.", xrayVersion, configProfileV3MinXrayVersion))
 		return
 	}
-	// Getting repository's url in order to get repository HTTP url
 	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
 		return
 	}
-	// Attempt to get a config profile associated with the repo URL
 	log.Debug(fmt.Sprintf("Searching central configuration associated to repository '%s'", jfrogServer.Url))
 	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
 		return
 	}
-	err = verifyConfigProfileValidity(configProfile)
-	return
-}
 
-func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err error) {
-	// Currently, only a single Module that represents the entire project is supported
-	if len(configProfile.Modules) != 1 {
-		err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
-		return
-	}
-	if configProfile.Modules[0].PathFromRoot != "." {
-		err = fmt.Errorf("module '%s' in profile '%s' contains the following path from root: '%s'. Frogbot currently supports only a single module with a '.' path from root", configProfile.Modules[0].ModuleName, configProfile.ProfileName, configProfile.Modules[0].PathFromRoot)
-		return
-	}
-	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName)) //todo update this log - no profile name
+	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
 	return
 }

@@ -375,9 +375,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	assert.NoError(t, err)
 
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
-	params := utils.Params{
-		Scan: utils.Scan{},
-	}
+	params := utils.Params{}
 	var frogbotParams = utils.Repository{
 		Server: environmentVars,
 		Params: params,
@@ -499,7 +497,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
@@ -561,7 +559,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 	}
 	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -579,10 +577,9 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	cfp.aggregateFixes = true
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -590,7 +587,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)

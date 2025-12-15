@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
 	"regexp"
 	"strings"
 	"time"
@@ -130,20 +129,8 @@ func (gm *GitManager) SetLocalRepository() error {
 	return err
 }
 
-func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
-	var err error
-	if gm.customTemplates, err = loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate); err != nil {
-		return nil, err
-	}
+func (gm *GitManager) SetGitParams(gitParams *Git) *GitManager {
 	gm.git = gitParams
-	return gm, nil
-}
-
-func (gm *GitManager) SetEmailAuthor(emailAuthor string) *GitManager {
-	if gm.git == nil {
-		gm.git = &Git{}
-	}
-	gm.git.EmailAuthor = emailAuthor
 	return gm
 }
 
@@ -337,7 +324,7 @@ func (gm *GitManager) commit(commitMessage string) error {
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  frogbotAuthorName,
-			Email: gm.git.EmailAuthor,
+			Email: frogbotAuthorEmail,
 			When:  time.Now(),
 		},
 	})
@@ -551,7 +538,7 @@ func GetFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 
-func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
+func LoadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
 	customTemplates = CustomTemplates{
 		commitMessageTemplate:    commitMessageTemplate,
 		branchNameTemplate:       branchNameTemplate,

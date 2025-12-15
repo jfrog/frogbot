@@ -22,13 +22,11 @@ type ScanDetails struct {
 
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
-	client              vcsclient.VcsClient
-	baseBranch          string
-	configProfile       *xscservices.ConfigProfile
-	allowPartialResults bool     //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	excludePaths        []string //TODO XRAY-131246 EXTRACT CONFIGURATION FROM CC
-	diffScan            bool
-	ResultsToCompare    *results.SecurityCommandResults
+	client           vcsclient.VcsClient
+	baseBranch       string
+	diffScan         bool
+	ResultsToCompare *results.SecurityCommandResults
+	configProfile    *xscservices.ConfigProfile
 
 	results.ResultContext
 	MultiScanId string
@@ -62,11 +60,6 @@ func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey st
 	return sc
 }
 
-func (sc *ScanDetails) SetAllowPartialResults(allowPartialResults bool) *ScanDetails {
-	sc.allowPartialResults = allowPartialResults
-	return sc
-}
-
 func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
 	sc.baseBranch = branch
 	return sc
@@ -95,17 +88,13 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) AllowPartialResults() bool {
-	return sc.allowPartialResults
-}
-
 func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
 		SetServerDetails(sc.ServerDetails).
-		SetAllowPartialResults(sc.allowPartialResults).
-		SetExclusions(sc.excludePaths).
+		SetAllowPartialResults(!sc.configProfile.GeneralConfig.FailUponAnyScannerError).
+		SetExclusions(sc.configProfile.GeneralConfig.GeneralExcludePatterns).
 		SetUseJas(true).
 		SetConfigProfile(sc.configProfile)
 
