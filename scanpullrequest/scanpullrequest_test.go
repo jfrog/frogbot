@@ -565,7 +565,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 	}{
 		{
 			name:     "Applicability scanner failed - should remove applicability results",
-			scanType: jasutils.Applicability,
+			scanType: results.CmdStepContextualAnalysis,
 			targetResult: &results.TargetResults{
 				ResultsStatus: results.ResultsStatus{
 					ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
@@ -586,7 +586,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 		},
 		{
 			name:     "Secrets scanner failed in target - should remove secrets vulnerabilities and violations",
-			scanType: jasutils.Secrets,
+			scanType: results.CmdStepSecrets,
 			targetResult: &results.TargetResults{
 				ResultsStatus: results.ResultsStatus{
 					SecretsScanStatusCode: securityutils.NewIntPtr(1),
@@ -617,7 +617,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 		},
 		{
 			name:     "IaC scanner failed in both source and target - should remove IaC vulnerabilities and violations",
-			scanType: jasutils.IaC,
+			scanType: results.CmdStepIaC,
 			targetResult: &results.TargetResults{
 				ResultsStatus: results.ResultsStatus{
 					IacScanStatusCode: securityutils.NewIntPtr(1),
@@ -648,7 +648,7 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 		},
 		{
 			name:     "SAST scanner failed - should remove SAST vulnerabilities and violations",
-			scanType: jasutils.Sast,
+			scanType: results.CmdStepSast,
 			targetResult: &results.TargetResults{
 				ResultsStatus: results.ResultsStatus{
 					SastScanStatusCode: securityutils.NewIntPtr(0),
@@ -967,7 +967,6 @@ func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository,
 
 	// Set working directories for multi-dir tests
 	if projectName == "multi-dir-test-proj" {
-		envVars[utils.WorkingDirectoryEnv] = "sub1,sub3/sub4,sub2"
 		envVars[utils.RequirementsFileEnv] = "requirements.txt"
 	}
 
