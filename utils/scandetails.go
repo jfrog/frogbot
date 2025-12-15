@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jfrog/jfrog-cli-security/policy/local"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
 
@@ -172,6 +173,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
 		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
+		SetViolationGenerator(local.NewDeprecatedViolationGenerator()).
 		SetWorkingDirs(workDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
