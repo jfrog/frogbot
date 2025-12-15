@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -201,8 +202,9 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
+			_, err = io.Copy(w, bytes.NewReader(content))
 			assert.NoError(t, err)
 
 		// Endpoint to profile by URL
@@ -210,8 +212,9 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 			assert.Equal(t, http.MethodPost, r.Method)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
+			_, err = io.Copy(w, bytes.NewReader(content))
 			assert.NoError(t, err)
 
 		case r.RequestURI == fmt.Sprintf("/%s/%ssystem/version", apiUrlPart, "xsc"):
