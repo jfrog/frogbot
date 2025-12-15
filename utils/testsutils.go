@@ -259,7 +259,9 @@ func CreateMockServerForDependencySubmission(t *testing.T, owner, repo string) *
 			return
 		}
 		var snapshot map[string]interface{}
-		if err := json.Unmarshal(body, &snapshot); err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(body))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&snapshot); err != nil {
 			t.Errorf("Failed to parse request body as JSON: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
