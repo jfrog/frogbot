@@ -1226,24 +1226,26 @@ func TestBuildTargetMappings(t *testing.T) {
 			name: "Match by location with different working directory prefixes",
 			targetResults: &results.SecurityCommandResults{
 				Targets: []*results.TargetResults{
-					{ScanTarget: results.ScanTarget{Target: "/tmp/target-wd/project1/src", Name: "project1"}},
-					{ScanTarget: results.ScanTarget{Target: "/tmp/target-wd/project2/lib", Name: "project2"}},
+					{ScanTarget: results.ScanTarget{Target: filepath.Join("tmp", "target-wd", "project1", "src"), Name: "project1"}},
+					{ScanTarget: results.ScanTarget{Target: filepath.Join("tmp", "target-wd", "project2", "lib"), Name: "project2"}},
 				},
 			},
 			sourceResults: &results.SecurityCommandResults{
 				Targets: []*results.TargetResults{
-					{ScanTarget: results.ScanTarget{Target: "/tmp/source-wd/project1/src", Name: "project1"}},
-					{ScanTarget: results.ScanTarget{Target: "/tmp/source-wd/project2/lib", Name: "project2"}},
+					{ScanTarget: results.ScanTarget{Target: filepath.Join("tmp", "source-wd", "project1", "src"), Name: "project1"}},
+					{ScanTarget: results.ScanTarget{Target: filepath.Join("tmp", "source-wd", "project2", "lib"), Name: "project2"}},
 				},
 			},
-			sourceWdPrefix:          "/tmp/source-wd",
-			targetWdPrefix:          "/tmp/target-wd",
+			sourceWdPrefix:          filepath.Join("tmp", "source-wd"),
+			targetWdPrefix:          filepath.Join("tmp", "target-wd"),
 			expectedMatchedLocation: 2,
 			expectedMatchedName:     0,
 			expectedUnmatched:       0,
 			extraValidation: func(t *testing.T, matchedByLocation, matchedByName map[string]*targetPair, unmatchedSource []*results.TargetResults) {
-				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project1/src"], "project1/src should be matched after trimming")
-				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project2/lib"], "project2/lib should be matched after trimming")
+				sourceTarget1 := filepath.Join("tmp", "source-wd", "project1", "src")
+				sourceTarget2 := filepath.Join("tmp", "source-wd", "project2", "lib")
+				assert.NotNil(t, matchedByLocation[sourceTarget1], "project1/src should be matched after trimming")
+				assert.NotNil(t, matchedByLocation[sourceTarget2], "project2/lib should be matched after trimming")
 			},
 		},
 	}
