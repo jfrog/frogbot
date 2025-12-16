@@ -279,7 +279,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.AllowPartialResults)
+	filterOutFailedScansIfAllowPartialResultsEnabled(scanDetails.ResultsToCompare, scanResults, repoConfig.AllowPartialResults, sourceBranchWd, targetBranchWd)
 
 	// Convert to issues
 	if issues, e := scanResultsToIssuesCollection(scanResults, workingDirs...); e == nil {
@@ -294,7 +294,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 // When allowPartialResults is enabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
 // if we found any error in any of its results (non-zero status code) in either source or target results.
 // This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
-func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResults *results.SecurityCommandResults, allowPartialResults bool) {
+func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResults *results.SecurityCommandResults, allowPartialResults bool, sourceWdPrefix, targetWdPrefix string) {
 	if !allowPartialResults {
 		return
 	}
@@ -304,7 +304,7 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	}
 
 	// Build maps and slices of matched/unmatched targets using pointers to original objects
-	matchedByLocation, matchedByName, unmatchedSource := buildTargetMappings(targetResults, sourceResults)
+	matchedByLocation, matchedByName, unmatchedSource := buildTargetMappings(targetResults, sourceResults, sourceWdPrefix, targetWdPrefix)
 
 	// Filter pairs matched by physical location
 	for _, targetSourceResultsPair := range matchedByLocation {
@@ -394,7 +394,7 @@ func filterSpecificScannersViolationsIfScanFailed(sourceResults *results.Securit
 //   - matchedByLocation: map of pairs matched by physical location (Target field)
 //   - matchedByName: map of pairs matched by logical name (Name field) - fallback for location changes
 //   - unmatchedSource: slice of source-only targets (newly added targets)
-func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandResults) (matchedByLocation map[string]*targetPair, matchedByName map[string]*targetPair, unmatchedSource []*results.TargetResults) {
+func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandResults, sourceWdPrefix, targetWdPrefix string) (matchedByLocation map[string]*targetPair, matchedByName map[string]*targetPair, unmatchedSource []*results.TargetResults) {
 	matchedByLocation = make(map[string]*targetPair)
 	matchedByName = make(map[string]*targetPair)
 	unmatchedSource = []*results.TargetResults{}
@@ -407,7 +407,7 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 	targetsByName := make(map[string]*results.TargetResults)
 	for _, targetResult := range targetResults.Targets {
 		if targetResult.Target != "" {
-			targetsByLocation[targetResult.Target] = targetResult
+			targetsByLocation[trimTargetPrefix(targetResult.Target, targetWdPrefix)] = targetResult
 		}
 		if targetResult.Name != "" {
 			targetsByName[targetResult.Name] = targetResult
@@ -420,7 +420,7 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 			// If sourceResult Target is empty we cannot match by this field and we continue
 			continue
 		}
-		targetResult := targetsByLocation[sourceResult.Target]
+		targetResult := targetsByLocation[trimTargetPrefix(sourceResult.Target, sourceWdPrefix)]
 		if targetResult == nil || matchedTargetTargets.Exists(targetResult) {
 			// If targetResult is not found by location or if it is already matched we continue
 			continue
@@ -524,6 +524,31 @@ func filterScaResultsIfScanFailed(targetResult, sourceResult *results.TargetResu
 			sourceResult.ScaResults.Sbom = nil
 		}
 	}
+}
+
+func trimTargetPrefix(fullPath, prefix string) string {
+	if prefix == "" {
+		return fullPath
+	}
+	// Normalize prefix to end with path separator
+	normalizedPrefix := strings.TrimSuffix(prefix, string(os.PathSeparator)) + string(os.PathSeparator)
+
+	// Check if fullPath actually starts with normalizedPrefix
+	if !strings.HasPrefix(fullPath, normalizedPrefix) {
+		// If fullPath doesn't start with normalizedPrefix, check if it equals the prefix (without trailing /)
+		if fullPath == prefix || fullPath == strings.TrimSuffix(prefix, string(os.PathSeparator)) {
+			return "."
+		}
+		// Otherwise, return fullPath unchanged (not under this prefix)
+		return fullPath
+	}
+
+	trimmed := strings.TrimPrefix(fullPath, normalizedPrefix)
+	if trimmed == "" {
+		// Everything was trimmed, meaning fullPath == normalizedPrefix
+		return "."
+	}
+	return trimmed
 }
 
 func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, workingDirs ...string) (issuesCollection *issues.ScansIssuesCollection, err error) {

@@ -1087,7 +1087,7 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			filterOutFailedScansIfAllowPartialResultsEnabled(test.targetResults, test.sourceResults, test.allowPartialResults)
+			filterOutFailedScansIfAllowPartialResultsEnabled(test.targetResults, test.sourceResults, test.allowPartialResults, "", "")
 			test.validate(t, test.sourceResults)
 		})
 	}
@@ -1098,6 +1098,8 @@ func TestBuildTargetMappings(t *testing.T) {
 		name                    string
 		targetResults           *results.SecurityCommandResults
 		sourceResults           *results.SecurityCommandResults
+		sourceWdPrefix          string
+		targetWdPrefix          string
 		expectedMatchedLocation int
 		expectedMatchedName     int
 		expectedUnmatched       int
@@ -1117,6 +1119,8 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "target2", Name: "name2"}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 2,
 			expectedMatchedName:     0,
 			expectedUnmatched:       0,
@@ -1137,6 +1141,8 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "new-location", Name: "same-name"}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 0,
 			expectedMatchedName:     1,
 			expectedUnmatched:       0,
@@ -1157,6 +1163,8 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "new-target"}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 1,
 			expectedMatchedName:     0,
 			expectedUnmatched:       1,
@@ -1177,6 +1185,8 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "target1"}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 1,
 			expectedMatchedName:     0,
 			expectedUnmatched:       0,
@@ -1193,6 +1203,8 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "", Name: "name1"}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 0,
 			expectedMatchedName:     1,
 			expectedUnmatched:       0,
@@ -1209,15 +1221,42 @@ func TestBuildTargetMappings(t *testing.T) {
 					{ScanTarget: results.ScanTarget{Target: "target1", Name: ""}},
 				},
 			},
+			sourceWdPrefix:          "",
+			targetWdPrefix:          "",
 			expectedMatchedLocation: 1,
 			expectedMatchedName:     0,
 			expectedUnmatched:       0,
+		},
+		{
+			name: "Match by location with different working directory prefixes",
+			targetResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{ScanTarget: results.ScanTarget{Target: "/tmp/target-wd/project1/src", Name: "project1"}},
+					{ScanTarget: results.ScanTarget{Target: "/tmp/target-wd/project2/lib", Name: "project2"}},
+				},
+			},
+			sourceResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{
+					{ScanTarget: results.ScanTarget{Target: "/tmp/source-wd/project1/src", Name: "project1"}},
+					{ScanTarget: results.ScanTarget{Target: "/tmp/source-wd/project2/lib", Name: "project2"}},
+				},
+			},
+			sourceWdPrefix:          "/tmp/source-wd",
+			targetWdPrefix:          "/tmp/target-wd",
+			expectedMatchedLocation: 2,
+			expectedMatchedName:     0,
+			expectedUnmatched:       0,
+			extraValidation: func(t *testing.T, matchedByLocation, matchedByName map[string]*targetPair, unmatchedSource []*results.TargetResults) {
+				// matchedByLocation is keyed by the original source target path (before trimming)
+				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project1/src"], "project1/src should be matched after trimming")
+				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project2/lib"], "project2/lib should be matched after trimming")
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			matchedByLocation, matchedByName, unmatchedSource := buildTargetMappings(test.targetResults, test.sourceResults)
+			matchedByLocation, matchedByName, unmatchedSource := buildTargetMappings(test.targetResults, test.sourceResults, test.sourceWdPrefix, test.targetWdPrefix)
 			assert.Len(t, matchedByLocation, test.expectedMatchedLocation, "Matched by location count")
 			assert.Len(t, matchedByName, test.expectedMatchedName, "Matched by name count")
 			assert.Len(t, unmatchedSource, test.expectedUnmatched, "Unmatched source count")
