@@ -291,8 +291,8 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	return
 }
 
-// When allowPartialResults is enabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
-// if we found any error in any of its results (non-zero status code) in either source or target results.
+// When allowPartialResults is enabled, and we are performing a diff scan (both source & target results exist),
+// we filter out a scanner results if we found any error in any of its results (non-zero status code) in either source or target results.
 // This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
 func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResults *results.SecurityCommandResults, allowPartialResults bool, sourceWdPrefix, targetWdPrefix string) {
 	if !allowPartialResults {
@@ -303,10 +303,8 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 		return
 	}
 
-	// Build maps and slices of matched/unmatched targets using pointers to original objects
 	matchedByLocation, matchedByName, unmatchedSource := buildTargetMappings(targetResults, sourceResults, sourceWdPrefix, targetWdPrefix)
 
-	// Filter pairs matched by physical location
 	for _, targetSourceResultsPair := range matchedByLocation {
 		log.Debug(fmt.Sprintf("removing failing scans results out of source result located in '%s' if exists", targetSourceResultsPair.source.Target))
 		filterScaResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source)
@@ -316,7 +314,6 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSast)
 	}
 
-	// Filter pairs matched by logical name (fallback for location changes)
 	for _, targetSourceResultsPair := range matchedByName {
 		log.Debug(fmt.Sprintf("removing failing scans results out of source result named '%s', if exists", targetSourceResultsPair.source.Name))
 		filterScaResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source)
@@ -326,7 +323,6 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSast)
 	}
 
-	// Filter unmatched source targets (newly added targets)
 	for _, sourceResult := range unmatchedSource {
 		log.Debug(fmt.Sprintf("removing failing scans results out of newly detected/ moved source result located in'%s', if exists", sourceResult.Target))
 		filterScaResultsIfScanFailed(nil, sourceResult)
@@ -338,7 +334,7 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	// Note: Unmatched target results (removed targets) are ignored as they don't affect PR diff, as they are targets that were removed in the PR and don't exist in source results.
 
 	if sourceResults.ViolationsStatusCode == nil || targetResults.ViolationsStatusCode == nil {
-		// If ViolationsStatusCode is nil it means we didn't perform violation check at all, so there is nothing to filter, but we ensure the violation results are zeroed
+		// If ViolationsStatusCode is nil it means we didn't perform violation check. We ensure the violation results are zeroed and return
 		sourceResults.Violations = nil
 		return
 	}
@@ -358,7 +354,7 @@ func filterOutViolations(sourceResults, targetResults *results.SecurityCommandRe
 		return
 	}
 
-	// If violation status == 0, but we have a failure in a specific scanner, we filter out only this scanner's violation since the vulnerabilities from which we generated violations might be incorrect
+	// If we have a failure in a specific scanner, we filter out this scanner's violation to avoid incorrect results
 	filterSpecificScannersViolationsIfScanFailed(sourceResults, sourceResults.GetStatusCodes(), targetResults.GetStatusCodes())
 }
 
@@ -398,8 +394,6 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 	matchedByLocation = make(map[string]*targetPair)
 	matchedByName = make(map[string]*targetPair)
 	unmatchedSource = []*results.TargetResults{}
-
-	// Track which targets have been matched
 	matchedSourceTargets := datastructures.MakeSet[*results.TargetResults]()
 	matchedTargetTargets := datastructures.MakeSet[*results.TargetResults]()
 
@@ -414,19 +408,15 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 		}
 	}
 
-	// First pass: Match by physical location
 	for _, sourceResult := range sourceResults.Targets {
 		if sourceResult.Target == "" {
-			// If sourceResult Target is empty we cannot match by this field and we continue
 			continue
 		}
 		targetResult := targetsByLocation[trimTargetPrefix(sourceResult.Target, sourceWdPrefix)]
 		if targetResult == nil || matchedTargetTargets.Exists(targetResult) {
-			// If targetResult is not found by location or if it is already matched we continue
 			continue
 		}
 
-		// Found unmatched target with matching location
 		matchedByLocation[sourceResult.Target] = &targetPair{
 			source: sourceResult,
 			target: targetResult,
@@ -435,20 +425,16 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 		matchedTargetTargets.Add(targetResult)
 	}
 
-	// Second pass: Match by name for unmatched targets by physical location
 	for _, sourceResult := range sourceResults.Targets {
 		if sourceResult.Name == "" || matchedSourceTargets.Exists(sourceResult) {
-			// If Name is empty or sourceResult already matched by location - skip
 			continue
 		}
 
 		targetResult := targetsByName[sourceResult.Name]
 		if targetResult == nil || matchedTargetTargets.Exists(targetResult) {
-			// If targetResult is not found by name or if it is already matched we continue
 			continue
 		}
 
-		// Found unmatched target with matching name
 		matchedByName[sourceResult.Name] = &targetPair{
 			source: sourceResult,
 			target: targetResult,
@@ -457,7 +443,7 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 		matchedTargetTargets.Add(targetResult)
 	}
 
-	// Collect unmatched source targets (newly added targets) - O(n)
+	// The unmatched source targets are newly added targets
 	for _, sourceResult := range sourceResults.Targets {
 		if !matchedSourceTargets.Exists(sourceResult) {
 			unmatchedSource = append(unmatchedSource, sourceResult)

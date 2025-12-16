@@ -816,18 +816,15 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// Call the function under test
 			filterJasResultsIfScanFailed(test.targetResult, test.sourceResult, test.cmdStep)
 
 			if !test.hasFailure {
-				// For success cases, results should NOT be removed
 				assert.NotNil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be removed when scan succeeds")
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should NOT be removed when scan succeeds")
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should NOT be removed when scan succeeds")
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should NOT be removed when scan succeeds")
 			} else if test.sourceResult.JasResults != nil {
 				// If JasResults is nil, and we got to this point without panicking - it means the func handles this case correctly
-				// For failure cases, results should be removed
 				switch test.cmdStep {
 				case results.CmdStepContextualAnalysis:
 					assert.Nil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should be removed when scan failed")
@@ -973,7 +970,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 			sourceResults:       createSecurityCommandResultsForTest("test", "", true, true, true, true, true, false, 1, 1, 1, 1, 1, 0),
 			allowPartialResults: false,
 			validate: func(t *testing.T, sourceResults *results.SecurityCommandResults) {
-				// Should not filter anything when allowPartialResults is false
 				sourceTarget := sourceResults.Targets[0]
 				assert.NotNil(t, sourceTarget.ScaResults.Sbom, "SCA SBOM should NOT be filtered when allowPartialResults is false")
 				assert.NotNil(t, sourceTarget.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be filtered when allowPartialResults is false")
@@ -988,7 +984,6 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 			sourceResults:       createSecurityCommandResultsForTest("test", "", true, true, true, true, true, false, 1, 1, 1, 1, 1, 0),
 			allowPartialResults: true,
 			validate: func(t *testing.T, sourceResults *results.SecurityCommandResults) {
-				// Should not filter anything when targetResults is nil
 				sourceTarget := sourceResults.Targets[0]
 				assert.NotNil(t, sourceTarget.ScaResults.Sbom, "SCA SBOM should NOT be filtered when targetResults is nil")
 				assert.NotNil(t, sourceTarget.JasResults.ApplicabilityScanResults, "Applicability scan results should NOT be filtered when targetResults is nil")
@@ -1247,7 +1242,6 @@ func TestBuildTargetMappings(t *testing.T) {
 			expectedMatchedName:     0,
 			expectedUnmatched:       0,
 			extraValidation: func(t *testing.T, matchedByLocation, matchedByName map[string]*targetPair, unmatchedSource []*results.TargetResults) {
-				// matchedByLocation is keyed by the original source target path (before trimming)
 				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project1/src"], "project1/src should be matched after trimming")
 				assert.NotNil(t, matchedByLocation["/tmp/source-wd/project2/lib"], "project2/lib should be matched after trimming")
 			},
@@ -1269,14 +1263,13 @@ func TestBuildTargetMappings(t *testing.T) {
 
 func TestFilterOutViolations(t *testing.T) {
 	tests := []struct {
-		name                string
-		sourceResults       *results.SecurityCommandResults
-		targetResults       *results.SecurityCommandResults
-		shouldRemoveSca     bool
-		shouldRemoveSecrets bool
-		shouldRemoveIac     bool
-		shouldRemoveSast    bool
-		// When shouldRemoveAllViolations is true, we expect sourceResults.Violations to be nil
+		name                      string
+		sourceResults             *results.SecurityCommandResults
+		targetResults             *results.SecurityCommandResults
+		shouldRemoveSca           bool
+		shouldRemoveSecrets       bool
+		shouldRemoveIac           bool
+		shouldRemoveSast          bool
 		shouldRemoveAllViolations bool
 	}{
 		{
@@ -1343,7 +1336,6 @@ func TestFilterOutViolations(t *testing.T) {
 			filterOutViolations(test.sourceResults, test.targetResults)
 
 			if test.shouldRemoveAllViolations {
-				// All violations should be removed
 				assert.Nil(t, test.sourceResults.Violations, "All violations should be removed when violations scan failed")
 			} else {
 				if test.sourceResults.Violations == nil {
@@ -1595,7 +1587,6 @@ func intPtr(i int) *int {
 	return &i
 }
 
-// Creates a new SecurityCommandResults instance for testing
 func createSecurityCommandResultsForTest(targetLocation string, targetName string, withScaResults bool, withCaResults bool, withSecretsResult bool, withIacResults bool, withSastResults bool, withViolations bool, scaStatusCode int, caStatusCode int, secretsStatusCode int, iacStatusCode int, sastStatusCode int, violationsStatusCode int) *results.SecurityCommandResults {
 	targetResults := &results.TargetResults{
 		ScanTarget: results.ScanTarget{Target: targetLocation, Name: targetName},
