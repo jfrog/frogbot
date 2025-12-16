@@ -220,16 +220,10 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 		server.XrayUrl = platformUrl + "/xray/"
 		server.ArtifactoryUrl = platformUrl + "/artifactory/"
 	}
-
-	password := getTrimmedEnv(JFrogPasswordEnv)
-	user := getTrimmedEnv(JFrogUserEnv)
-	if password != "" && user != "" {
-		server.User = user
-		server.Password = password
-	} else if accessToken := getTrimmedEnv(JFrogTokenEnv); accessToken != "" {
+	if accessToken := getTrimmedEnv(JFrogTokenEnv); accessToken != "" {
 		server.AccessToken = accessToken
 	} else {
-		return nil, fmt.Errorf("%s and %s or %s environment variables are missing", JFrogUserEnv, JFrogPasswordEnv, JFrogTokenEnv)
+		return nil, fmt.Errorf("%s environment variable is missing", JFrogTokenEnv)
 	}
 	return &server, nil
 }

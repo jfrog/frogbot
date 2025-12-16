@@ -24,14 +24,14 @@ const (
 	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
-	JFrogUserEnv           = "JF_USER"
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
 	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
-	JFrogPasswordEnv       = "JF_PASSWORD"
+	JFrogUserEnv           = "JF_USER"     // TODO SHOULD ADD SUPPORT ONCE CATALOG ENRICH API IS FIXED
+	JFrogPasswordEnv       = "JF_PASSWORD" // TODO SHOULD ADD SUPPORT ONCE CATALOG ENRICH API IS FIXED
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
-	jfrogProjectEnv        = "JF_PROJECT"
+	jfrogProjectEnv        = "JF_PROJECT_KEY"
 
 	// Git environment variables
 	GitProvider                     = "JF_GIT_PROVIDER"
