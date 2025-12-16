@@ -825,20 +825,18 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should NOT be removed when scan succeeds")
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should NOT be removed when scan succeeds")
 				assert.NotNil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should NOT be removed when scan succeeds")
-			} else {
+			} else if test.sourceResult.JasResults != nil {
 				// If JasResults is nil, and we got to this point without panicking - it means the func handles this case correctly
-				if test.sourceResult.JasResults != nil {
-					// For failure cases, results should be removed
-					switch test.cmdStep {
-					case results.CmdStepContextualAnalysis:
-						assert.Nil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should be removed when scan failed")
-					case results.CmdStepSecrets:
-						assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should be removed when scan failed")
-					case results.CmdStepIaC:
-						assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should be removed when scan failed")
-					case results.CmdStepSast:
-						assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should be removed when scan failed")
-					}
+				// For failure cases, results should be removed
+				switch test.cmdStep {
+				case results.CmdStepContextualAnalysis:
+					assert.Nil(t, test.sourceResult.JasResults.ApplicabilityScanResults, "Applicability scan results should be removed when scan failed")
+				case results.CmdStepSecrets:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should be removed when scan failed")
+				case results.CmdStepIaC:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should be removed when scan failed")
+				case results.CmdStepSast:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should be removed when scan failed")
 				}
 			}
 		})

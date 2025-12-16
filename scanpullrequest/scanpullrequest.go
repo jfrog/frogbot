@@ -344,7 +344,6 @@ func filterOutFailedScansIfAllowPartialResultsEnabled(targetResults, sourceResul
 	}
 
 	filterOutViolations(sourceResults, targetResults)
-	return
 }
 
 func filterOutViolations(sourceResults, targetResults *results.SecurityCommandResults) {
