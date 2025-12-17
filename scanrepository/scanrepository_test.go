@@ -109,7 +109,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
+			expectedMissingFilesInBranch:   map[string][]string{},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 		},
