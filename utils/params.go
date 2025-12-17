@@ -458,10 +458,170 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
+func autoDetectCIEnvVars() {
+	gitProvider := getTrimmedEnv(GitProvider)
+
+	if os.Getenv("GITLAB_CI") == "true" {
+		if gitProvider == "" || gitProvider == string(GitLab) {
+			autoDetectGitLabCI()
+		}
+		return
+	}
+
+	if os.Getenv("TF_BUILD") == "True" {
+		if gitProvider == "" || gitProvider == string(AzureRepos) {
+			autoDetectAzurePipelines()
+		}
+		return
+	}
+
+	if os.Getenv("JENKINS_URL") != "" {
+		autoDetectJenkins()
+		return
+	}
+}
+
+func autoDetectGitLabCI() {
+	if os.Getenv(GitProvider) == "" {
+		os.Setenv(GitProvider, string(GitLab))
+	}
+
+	if os.Getenv(GitRepoOwnerEnv) == "" {
+		if namespace := os.Getenv("CI_PROJECT_NAMESPACE"); namespace != "" {
+			os.Setenv(GitRepoOwnerEnv, namespace)
+		}
+	}
+
+	if os.Getenv(GitRepoEnv) == "" {
+		if repoName := os.Getenv("CI_PROJECT_NAME"); repoName != "" {
+			os.Setenv(GitRepoEnv, repoName)
+		}
+	}
+
+	// NOTE: CI_JOB_TOKEN not used - insufficient permissions for MR comments/creation
+
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if targetBranch := os.Getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME"); targetBranch != "" {
+			os.Setenv(GitBaseBranchEnv, targetBranch)
+		} else if commitBranch := os.Getenv("CI_COMMIT_REF_NAME"); commitBranch != "" {
+			os.Setenv(GitBaseBranchEnv, commitBranch)
+		}
+	}
+
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if mrIID := os.Getenv("CI_MERGE_REQUEST_IID"); mrIID != "" {
+			os.Setenv(GitPullRequestIDEnv, mrIID)
+		}
+	}
+
+	if os.Getenv(GitApiEndpointEnv) == "" {
+		if apiURL := os.Getenv("CI_API_V4_URL"); apiURL != "" {
+			os.Setenv(GitApiEndpointEnv, apiURL)
+		}
+	}
+}
+
+func autoDetectAzurePipelines() {
+	if os.Getenv(GitProvider) == "" {
+		os.Setenv(GitProvider, string(AzureRepos))
+	}
+
+	if os.Getenv(GitRepoEnv) == "" {
+		if repoName := os.Getenv("BUILD_REPOSITORY_NAME"); repoName != "" {
+			os.Setenv(GitRepoEnv, repoName)
+		}
+	}
+
+	// NOTE: JF_GIT_OWNER cannot be reliably extracted for self-hosted Azure DevOps
+	// Users must provide this manually
+
+	if os.Getenv(GitProjectEnv) == "" {
+		if project := os.Getenv("SYSTEM_TEAMPROJECT"); project != "" {
+			os.Setenv(GitProjectEnv, project)
+		}
+	}
+
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if targetBranch := os.Getenv("SYSTEM_PULLREQUEST_TARGETBRANCH"); targetBranch != "" {
+			cleanBranch := strings.TrimPrefix(targetBranch, "refs/heads/")
+			os.Setenv(GitBaseBranchEnv, cleanBranch)
+		} else if sourceBranch := os.Getenv("BUILD_SOURCEBRANCHNAME"); sourceBranch != "" {
+			os.Setenv(GitBaseBranchEnv, sourceBranch)
+		}
+	}
+
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if prID := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"); prID != "" {
+			os.Setenv(GitPullRequestIDEnv, prID)
+		}
+	}
+
+	if os.Getenv(GitApiEndpointEnv) == "" {
+		if orgURL := os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"); orgURL != "" {
+			apiURL := strings.TrimSuffix(orgURL, "/") + "/_apis"
+			os.Setenv(GitApiEndpointEnv, apiURL)
+		}
+	}
+}
+
+func autoDetectJenkins() {
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if branch := os.Getenv("GIT_LOCAL_BRANCH"); branch != "" {
+			os.Setenv(GitBaseBranchEnv, branch)
+		}
+	}
+
+	gitURL := os.Getenv("GIT_URL")
+	if gitURL != "" {
+		owner, repo := parseGitURL(gitURL)
+
+		if os.Getenv(GitRepoOwnerEnv) == "" && owner != "" {
+			os.Setenv(GitRepoOwnerEnv, owner)
+		}
+
+		if os.Getenv(GitRepoEnv) == "" && repo != "" {
+			os.Setenv(GitRepoEnv, repo)
+		}
+	}
+}
+
+func parseGitURL(gitURL string) (owner, repo string) {
+	gitURL = strings.TrimSuffix(gitURL, ".git")
+
+	// Handle HTTPS URLs: https://github.com/owner/repo
+	if strings.HasPrefix(gitURL, "https://") || strings.HasPrefix(gitURL, "http://") {
+		parts := strings.Split(gitURL, "/")
+		if len(parts) >= 2 {
+			repo = parts[len(parts)-1]
+			owner = parts[len(parts)-2]
+		}
+		return
+	}
+
+	// Handle SSH URLs: git@github.com:owner/repo
+	if strings.Contains(gitURL, "@") && strings.Contains(gitURL, ":") {
+		colonIndex := strings.LastIndex(gitURL, ":")
+		if colonIndex > 0 {
+			path := gitURL[colonIndex+1:]
+			parts := strings.Split(path, "/")
+			if len(parts) >= 2 {
+				owner = parts[0]
+				repo = parts[1]
+			}
+		}
+	}
+
+	return
+}
+
 func extractGitParamsFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	gitEnvParams := &Git{}
+
+	// Auto-detect and set CI-specific environment variables if not already set
+	autoDetectCIEnvVars()
+
 	// Branch & Repo names are mandatory variables.
 	// Must be set as environment variables.
 	// Validation performed later
