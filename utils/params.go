@@ -566,7 +566,7 @@ func autoDetectAzurePipelines() {
 
 func autoDetectJenkins() {
 	if os.Getenv(GitBaseBranchEnv) == "" {
-		if branch := os.Getenv("GIT_LOCAL_BRANCH"); branch != "" {
+		if branch := os.Getenv("BRANCH_NAME"); branch != "" {
 			os.Setenv(GitBaseBranchEnv, branch)
 		}
 	}
