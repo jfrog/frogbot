@@ -565,6 +565,12 @@ func autoDetectAzurePipelines() {
 }
 
 func autoDetectJenkins() {
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if changeID := os.Getenv("CHANGE_ID"); changeID != "" {
+			os.Setenv(GitPullRequestIDEnv, changeID)
+		}
+	}
+
 	if os.Getenv(GitBaseBranchEnv) == "" {
 		if branch := os.Getenv("BRANCH_NAME"); branch != "" {
 			os.Setenv(GitBaseBranchEnv, branch)
