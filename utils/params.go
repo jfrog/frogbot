@@ -467,8 +467,12 @@ func autoDetectCIEnvVars() {
 			autoDetectGitLabCI()
 		}
 	case os.Getenv("TF_BUILD") == "True":
+		autoDetectAzurePipelinesUniversal()
+		if gitProvider == "" || gitProvider == string(AzureRepos) || gitProvider == string(GitHub) {
+			autoDetectAzurePipelinesWithPRSupport()
+		}
 		if gitProvider == "" || gitProvider == string(AzureRepos) {
-			autoDetectAzurePipelines()
+			autoDetectAzurePipelinesAzureRepos()
 		}
 	case os.Getenv("JENKINS_URL") != "":
 		autoDetectJenkins()
@@ -513,35 +517,43 @@ func autoDetectGitLabCI() {
 	}
 }
 
-func autoDetectAzurePipelines() {
-	if os.Getenv(GitProvider) == "" {
-		os.Setenv(GitProvider, string(AzureRepos))
-	}
-
+func autoDetectAzurePipelinesUniversal() {
 	if os.Getenv(GitRepoEnv) == "" {
 		if repoName := os.Getenv("BUILD_REPOSITORY_NAME"); repoName != "" {
 			os.Setenv(GitRepoEnv, repoName)
 		}
 	}
 
-	if os.Getenv(GitProjectEnv) == "" {
-		if project := os.Getenv("SYSTEM_TEAMPROJECT"); project != "" {
-			os.Setenv(GitProjectEnv, project)
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if sourceBranch := os.Getenv("BUILD_SOURCEBRANCHNAME"); sourceBranch != "" {
+			os.Setenv(GitBaseBranchEnv, sourceBranch)
 		}
 	}
+}
 
+func autoDetectAzurePipelinesWithPRSupport() {
 	if os.Getenv(GitBaseBranchEnv) == "" {
 		if targetBranch := os.Getenv("SYSTEM_PULLREQUEST_TARGETBRANCH"); targetBranch != "" {
 			cleanBranch := strings.TrimPrefix(targetBranch, "refs/heads/")
 			os.Setenv(GitBaseBranchEnv, cleanBranch)
-		} else if sourceBranch := os.Getenv("BUILD_SOURCEBRANCHNAME"); sourceBranch != "" {
-			os.Setenv(GitBaseBranchEnv, sourceBranch)
 		}
 	}
 
 	if os.Getenv(GitPullRequestIDEnv) == "" {
 		if prID := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"); prID != "" {
 			os.Setenv(GitPullRequestIDEnv, prID)
+		}
+	}
+}
+
+func autoDetectAzurePipelinesAzureRepos() {
+	if os.Getenv(GitProvider) == "" {
+		os.Setenv(GitProvider, string(AzureRepos))
+	}
+
+	if os.Getenv(GitProjectEnv) == "" {
+		if project := os.Getenv("SYSTEM_TEAMPROJECT"); project != "" {
+			os.Setenv(GitProjectEnv, project)
 		}
 	}
 
