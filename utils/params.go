@@ -498,8 +498,6 @@ func autoDetectGitLabCI() {
 		}
 	}
 
-	// NOTE: CI_JOB_TOKEN not used - insufficient permissions for MR comments/creation
-
 	if os.Getenv(GitBaseBranchEnv) == "" {
 		if targetBranch := os.Getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME"); targetBranch != "" {
 			os.Setenv(GitBaseBranchEnv, targetBranch)
@@ -531,9 +529,6 @@ func autoDetectAzurePipelines() {
 			os.Setenv(GitRepoEnv, repoName)
 		}
 	}
-
-	// NOTE: JF_GIT_OWNER cannot be reliably extracted for self-hosted Azure DevOps
-	// Users must provide this manually
 
 	if os.Getenv(GitProjectEnv) == "" {
 		if project := os.Getenv("SYSTEM_TEAMPROJECT"); project != "" {
@@ -576,48 +571,6 @@ func autoDetectJenkins() {
 			os.Setenv(GitBaseBranchEnv, branch)
 		}
 	}
-
-	gitURL := os.Getenv("GIT_URL")
-	if gitURL != "" {
-		owner, repo := parseGitURL(gitURL)
-
-		if os.Getenv(GitRepoOwnerEnv) == "" && owner != "" {
-			os.Setenv(GitRepoOwnerEnv, owner)
-		}
-
-		if os.Getenv(GitRepoEnv) == "" && repo != "" {
-			os.Setenv(GitRepoEnv, repo)
-		}
-	}
-}
-
-func parseGitURL(gitURL string) (owner, repo string) {
-	gitURL = strings.TrimSuffix(gitURL, ".git")
-
-	// Handle HTTPS URLs: https://github.com/owner/repo
-	if strings.HasPrefix(gitURL, "https://") || strings.HasPrefix(gitURL, "http://") {
-		parts := strings.Split(gitURL, "/")
-		if len(parts) >= 2 {
-			repo = parts[len(parts)-1]
-			owner = parts[len(parts)-2]
-		}
-		return
-	}
-
-	// Handle SSH URLs: git@github.com:owner/repo
-	if strings.Contains(gitURL, "@") && strings.Contains(gitURL, ":") {
-		colonIndex := strings.LastIndex(gitURL, ":")
-		if colonIndex > 0 {
-			path := gitURL[colonIndex+1:]
-			parts := strings.Split(path, "/")
-			if len(parts) >= 2 {
-				owner = parts[0]
-				repo = parts[1]
-			}
-		}
-	}
-
-	return
 }
 
 func extractGitParamsFromEnvs() (*Git, error) {
@@ -625,7 +578,6 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	var err error
 	gitEnvParams := &Git{}
 
-	// Auto-detect and set CI-specific environment variables if not already set
 	autoDetectCIEnvVars()
 
 	// Branch & Repo names are mandatory variables.
