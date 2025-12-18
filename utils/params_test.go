@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -25,7 +24,6 @@ import (
 var (
 	configParamsTestFile          = filepath.Join("..", "testdata", "config", "frogbot-config-test-params.yml")
 	configEmptyScanParamsTestFile = filepath.Join("..", "testdata", "config", "frogbot-config-empty-scan.yml")
-	configProfileFile             = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
 )
 
 func TestExtractParamsFromEnvError(t *testing.T) {
@@ -758,6 +756,10 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
+			// Resetting env vars at to create "clean" env for each test case
+			tests.SetEnvAndAssert(t, JfrogUseConfigProfileEnv, "false")
+			tests.SetEnvAndAssert(t, JfrogConfigProfileEnv, "")
+
 			if testcase.useProfile {
 				useProfileEnvCallBackFunc := tests.SetEnvWithCallbackAndAssert(t, JfrogUseConfigProfileEnv, "true")
 				defer useProfileEnvCallBackFunc()
@@ -798,13 +800,9 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 			if testcase.profileWithRepo {
 				assert.NotEmpty(t, repoCloneUrl)
 			}
-			configProfileContentForComparison, err := os.ReadFile(configProfileFile)
-			assert.NoError(t, err)
+			configProfileContentForComparison := getComparisonConfigProfile()
 			assert.NotEmpty(t, configProfileContentForComparison)
-			var configProfileFromFile services.ConfigProfile
-			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
-			assert.NoError(t, err)
-			assert.Equal(t, configProfileFromFile, *configProfile)
+			assert.Equal(t, *configProfileContentForComparison, *configProfile)
 		})
 	}
 }

@@ -1,53 +1,27 @@
 {
   "profile_name": "default-profile",
   "general_config": {
-    "releases_repo": "https://repo.example.com/releases",
-    "analyzer_manager_version": "1.2.3",
-    "report_analytics": true,
-    "exclude_patterns": ["*.log*", "*.tmp*"],
-    "results_output_dir": "/path/to/results",
-    "allow_partial_results": false
+    "scanners_download_path": "https://repo.example.com/releases",
+    "general_exclude_patterns": ["*.log*", "*.tmp*"],
+    "fail_upon_any_scanner_error": true
   },
   "frogbot_config": {
-    "email_author": "my-user@jfrog.com",
     "aggregate_fixes": true,
-    "avoid_previous_pr_comments_deletion": true,
-    "avoid_extra_messages": true,
-    "add_success_comment": true,
+    "hide_success_banner_for_no_issues": false,
     "branch_name_template": "frogbot-${IMPACTED_PACKAGE}-${BRANCH_NAME_HASH}",
     "pr_title_template": "[🐸 Frogbot] Upgrade {IMPACTED_PACKAGE} to {FIX_VERSION}",
-    "pr_comment_title": "Frogbot notes:",
     "commit_message_template": "Upgrade {IMPACTED_PACKAGE} to {FIX_VERSION}",
     "show_secrets_as_pr_comment": false,
-    "skip_auto_fix": false,
-    "include_all_repository_vulnerabilities": true
+    "create_auto_fix_pr": true,
+    "include_vulnerabilities_and_violations": false
   },
   "modules": [
     {
       "module_name": "default-module",
       "path_from_root": ".",
-      "exclude_patterns":  ["**/.git/**", "**/*test*/**", "**/*venv*/**", "**/*node_modules*/**", "**/target/**"],
       "scan_config": {
         "sca_scanner_config": {
           "enable_sca_scan": true,
-          "technology": "Java",
-          "package_managers_settings": {
-            "gradle_settings": {
-              "exclude_test_deps": false,
-              "use_wrapper": true
-            },
-            "maven_settings": {
-              "use_wrapper": true
-            },
-            "npm_settings": {
-              "dep_type": "all",
-              "pnpm_max_tree_depth": 9
-            },
-            "python_settings": {
-              "requirements_file": "requirements.txt"
-            }
-          },
-          "skip_auto_install": true,
           "exclude_patterns": ["**/build/**"]
         },
         "contextual_analysis_scanner_config": {
@@ -56,26 +30,20 @@
         },
         "sast_scanner_config": {
           "enable_sast_scan": true,
-          "language": "Java",
-          "include_patterns": ["*.go"],
           "exclude_patterns": ["**/_test.go/**"],
           "exclude_rules": ["xss-injection"]
         },
         "secrets_scanner_config": {
           "enable_secrets_scan": true,
           "validate_secrets": true,
-          "include_patterns": ["*.go"],
-          "exclude_patterns": ["**/_test.go/**"]
+          "exclude_patterns": ["**/_test.go/**"],
+          "enable_custom_secrets": true
         },
         "iac_scanner_config": {
           "enable_iac_scan": true,
-          "include_patterns": ["*.tf"],
           "exclude_patterns": ["*.tfstate"]
         }
-      },
-      "deps_repo": "https://deps.example.com"
+      }
     }
-  ],
-  "is_default": true,
-  "is_basic_profile": false
+  ]
 }
