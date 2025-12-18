@@ -7,13 +7,13 @@ require (
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.12.5-0.20251209031413-f5f0e93dc8db
+	github.com/jfrog/build-info-go v1.12.5-0.20251209171349-eb030db986f9
 	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251210074251-c15fabe27f7f
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251125083543-e689762c4ff0
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251211075913-35ebcd308e93
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251210085744-f8481d179ac5
 	github.com/jfrog/jfrog-cli-security v1.24.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251212095223-711b02c53736
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251217080430-c92b763b7465
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -125,8 +125,7 @@ require (
 )
 
 // fix-sbom-component-ref-compare
-//attiasas:update_ftoggit_1_20_6
-replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251210110046-5c022222a67c
+replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251216150149-ff1cb5b558c4
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -134,7 +133,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// eranturgeman:update-config-profile-structure
-replace github.com/jfrog/jfrog-client-go => github.com/eranturgeman/jfrog-client-go v0.0.0-20251215075212-69a133d2b04e
+// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master

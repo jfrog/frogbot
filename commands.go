@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
@@ -64,6 +65,17 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	defer func() {
 		err = errors.Join(err, os.Setenv(utils.JfrogHomeDirEnv, originalJfrogHomeDir), fileutils.RemoveTempDir(tempJFrogHomeDir))
 	}()
+
+	// Set releases remote repository env if needed
+	previousReleasesRepoEnv := os.Getenv(coreutils.ReleasesRemoteEnv)
+	if frogbotDetails.ReleasesRepo != "" {
+		if err = os.Setenv(coreutils.ReleasesRemoteEnv, fmt.Sprintf("frogbot/%s", frogbotDetails.ReleasesRepo)); err != nil {
+			return
+		}
+		defer func() {
+			err = errors.Join(err, os.Setenv(coreutils.ReleasesRemoteEnv, previousReleasesRepoEnv))
+		}()
+	}
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))

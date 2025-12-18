@@ -881,7 +881,7 @@ func TestFilterOutFailedScansIfAllowPartialResultsEnabled(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := filterOutFailedScansIfFailUponScanErrorDisabled(test.targetResults, test.sourceResults, true)
+			err := filterOutFailedScans(test.targetResults, test.sourceResults)
 			assert.NoError(t, err)
 
 			sourceTarget := test.sourceResults.Targets[0]

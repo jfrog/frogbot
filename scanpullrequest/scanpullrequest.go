@@ -102,6 +102,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetJfrogVersions(repoConfig.Params.XrayVersion, repoConfig.Params.XscVersion).
 		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repoConfig.Params.ConfigProfile).
+		SetDiffScan(true).
 		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails), nil
 }
 
@@ -169,9 +170,11 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	if err = filterOutFailedScansIfFailUponScanErrorDisabled(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError); err != nil {
-		return
-	}
+	//if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
+	//	if err = filterOutFailedScans(scanDetails.ResultsToCompare, scanResults); err != nil {
+	//		return
+	//	}
+	//}
 	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
 	if e != nil {
 		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
@@ -179,13 +182,9 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	return
 }
 
-// When failUponScanError is disabled, and we are performing a diff scan (both source & target results exist), we filter out a scanner results
 // if we found any error in any of its results (non-zero status code) in either source or target results.
 // This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
-func filterOutFailedScansIfFailUponScanErrorDisabled(targetResults, sourceResults *results.SecurityCommandResults, failUponScanError bool) error {
-	if failUponScanError {
-		return nil
-	}
+func filterOutFailedScans(targetResults, sourceResults *results.SecurityCommandResults) error {
 	if targetResults == nil {
 		return nil
 	}

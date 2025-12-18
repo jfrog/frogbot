@@ -34,27 +34,17 @@ import (
 const analyticsScanRepositoryScanType = "monitor"
 
 type ScanRepositoryCmd struct {
-	// The interface that Frogbot utilizes to format and style the displayed messages on the Git providers
 	outputwriter.OutputWriter
-	// dryRun is used for testing purposes, mocking part of the git commands that requires networking
-	dryRun bool
-	// When dryRun is enabled, dryRunRepoPath specifies the repository local path to clone
-	dryRunRepoPath string
-	// The scanDetails of the current scan
-	scanDetails *utils.ScanDetails
-	// The base working directory
-	baseWd string
-	// The git client the command performs git operations with
-	gitManager *utils.GitManager
-	// The current project technology
-	projectTech []techutils.Technology
-	// Stores all package manager handlers for detected issues
-	handlers map[techutils.Technology]packagehandlers.PackageHandler
-
+	dryRun          bool
+	dryRunRepoPath  string
+	scanDetails     *utils.ScanDetails
+	baseWd          string
+	gitManager      *utils.GitManager
+	projectTech     []techutils.Technology
+	handlers        map[techutils.Technology]packagehandlers.PackageHandler
 	customTemplates utils.CustomTemplates
-
-	XrayVersion string
-	XscVersion  string
+	XrayVersion     string
+	XscVersion      string
 }
 
 func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
@@ -168,7 +158,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, err, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
-		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform")) // todo add configuration name
+		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform")) // TODO add configuration name
 		return totalFindings, nil
 	}
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)
