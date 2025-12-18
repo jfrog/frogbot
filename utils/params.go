@@ -461,23 +461,17 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 func autoDetectCIEnvVars() {
 	gitProvider := getTrimmedEnv(GitProvider)
 
-	if os.Getenv("GITLAB_CI") == "true" {
+	switch {
+	case os.Getenv("GITLAB_CI") == "true":
 		if gitProvider == "" || gitProvider == string(GitLab) {
 			autoDetectGitLabCI()
 		}
-		return
-	}
-
-	if os.Getenv("TF_BUILD") == "True" {
+	case os.Getenv("TF_BUILD") == "True":
 		if gitProvider == "" || gitProvider == string(AzureRepos) {
 			autoDetectAzurePipelines()
 		}
-		return
-	}
-
-	if os.Getenv("JENKINS_URL") != "" {
+	case os.Getenv("JENKINS_URL") != "":
 		autoDetectJenkins()
-		return
 	}
 }
 
