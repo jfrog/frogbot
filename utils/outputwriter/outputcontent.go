@@ -539,28 +539,32 @@ func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.
 
 func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	// Construct table
-	table := NewMarkdownTable("Severity", "ID", "Status", "Origin", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
+	table := NewMarkdownTable("Severity", "ID", "Token Validation", "Token Info", "Origin", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
 	// Hide optional columns if all empty (violations/no status)
 	table.GetColumnInfo("ID").OmitEmpty = true
-	table.GetColumnInfo("Status").OmitEmpty = true
+	table.GetColumnInfo("Token Validation").OmitEmpty = true
+	table.GetColumnInfo("Token Info").OmitEmpty = true
 	table.GetColumnInfo("Watch Name").OmitEmpty = true
 	table.GetColumnInfo("Policies").OmitEmpty = true
 	// Construct rows
 	for _, issue := range issues {
-		// Determine the issue applicable status
+		// Determine the issue applicable tokenValidationStatus
 		applicability := jasutils.Applicable.String()
-		status := ""
+		tokenValidationStatus := ""
+		tokenValidationInfo := ""
 		if issue.Applicability != nil && issue.Applicability.Status != "" {
-			status = issue.Applicability.Status
-			if status == jasutils.Inactive.String() {
-				// Update the applicability status to Not Applicable for Inactive
+			tokenValidationStatus = issue.Applicability.Status
+			if tokenValidationStatus == jasutils.Inactive.String() {
+				// Update the applicability tokenValidationStatus to Not Applicable for Inactive
 				applicability = jasutils.NotApplicable.String()
 			}
+			tokenValidationInfo = issue.Applicability.ScannerDescription
 		}
 		table.AddRowWithCellData(
 			NewCellData(writer.FormattedSeverity(issue.Severity, applicability)),
 			NewCellData(issue.IssueId),
-			NewCellData(status),
+			NewCellData(tokenValidationStatus),
+			NewCellData(tokenValidationInfo),
 			NewCellData(issue.ScannerInfo.Origin),
 			NewCellData(issue.Finding),
 			NewCellData(issue.Watch),

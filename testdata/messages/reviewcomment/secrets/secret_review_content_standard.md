@@ -2,9 +2,9 @@
 ## 🤫 Secret Vulnerability
 <div align='center'>
 
-| Severity                | Status                  | Origin                  | Finding                  |
-| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Active | JFrog | Secret keys were found |
+| Severity                | Token Validation                  | Token Info                  | Origin                  | Finding                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | Active | The token was validated and found to be active. This indicates that the secret is currently in use. | JFrog | Secret keys were found |
 
 </div>
 
