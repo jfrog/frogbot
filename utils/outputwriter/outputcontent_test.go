@@ -882,11 +882,14 @@ func TestSecretsReviewContent(t *testing.T) {
 			},
 		},
 		{
-			name: "Secret review comment content with applicability status",
+			name: "Secret review comment content with applicability status and info",
 			issues: []formats.SourceCodeRow{{
 				SeverityDetails: formats.SeverityDetails{Severity: "High"},
-				Applicability:   &formats.Applicability{Status: jasutils.Active.String()},
-				Finding:         "Secret keys were found",
+				Applicability: &formats.Applicability{
+					Status:             jasutils.Active.String(),
+					ScannerDescription: "The token was validated and found to be active. This indicates that the secret is currently in use.",
+				},
+				Finding: "Secret keys were found",
 				ScannerInfo: formats.ScannerInfo{
 					RuleId:                  "rule-id",
 					Cwe:                     []string{"CWE-798", "CWE-799"},
@@ -909,12 +912,15 @@ func TestSecretsReviewContent(t *testing.T) {
 			},
 		},
 		{
-			name: "Secrets violation review comment content with applicability status",
+			name: "Secrets violation review comment content with applicability status and info",
 			issues: []formats.SourceCodeRow{
 				{
 					SeverityDetails: formats.SeverityDetails{Severity: "High"},
-					Applicability:   &formats.Applicability{Status: jasutils.Active.String()},
-					Finding:         "Secret keys were found",
+					Applicability: &formats.Applicability{
+						Status:             jasutils.Active.String(),
+						ScannerDescription: "The token was validated and found to be active. This indicates that the secret is currently in use.",
+					},
+					Finding: "Secret keys were found",
 					ScannerInfo: formats.ScannerInfo{
 						RuleId:                  "rule-id",
 						Cwe:                     []string{"CWE-798", "CWE-799"},
@@ -930,8 +936,11 @@ func TestSecretsReviewContent(t *testing.T) {
 				},
 				{
 					SeverityDetails: formats.SeverityDetails{Severity: "Critical"},
-					Applicability:   &formats.Applicability{Status: jasutils.Inactive.String()},
-					Finding:         "Secret keys were found",
+					Applicability: &formats.Applicability{
+						Status:             jasutils.Inactive.String(),
+						ScannerDescription: "The token was validated and found to be inactive. This indicates that the secret is no longer in use.",
+					},
+					Finding: "Secret keys were found",
 					ScannerInfo: formats.ScannerInfo{
 						RuleId:                  "rule-id",
 						Cwe:                     []string{"CWE-798", "CWE-799"},

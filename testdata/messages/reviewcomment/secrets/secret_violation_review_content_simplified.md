@@ -4,10 +4,10 @@
 ## 🤫 Secret Violation
 
 ---
-| Severity                | ID                  | Status                  | Origin                  | Finding                  | Watch Name                  | Policies                  |
-| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| High | secret-violation-id | Active | JFrog | Secret keys were found | jas-watch | policy1 |
-| Critical | secret-violation-id-2 | Inactive | JFrog | Secret keys were found | jas-watch2 | policy1, policy2 |
+| Severity                | ID                  | Token Validation                  | Token Info                  | Origin                  | Finding                  | Watch Name                  | Policies                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| High | secret-violation-id | Active | The token was validated and found to be active. This indicates that the secret is currently in use. | JFrog | Secret keys were found | jas-watch | policy1 |
+| Critical | secret-violation-id-2 | Inactive | The token was validated and found to be inactive. This indicates that the secret is no longer in use. | JFrog | Secret keys were found | jas-watch2 | policy1, policy2 |
 
 
 ---

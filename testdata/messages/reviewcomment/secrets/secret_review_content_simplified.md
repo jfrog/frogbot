@@ -4,9 +4,9 @@
 ## 🤫 Secret Vulnerability
 
 ---
-| Severity                | Status                  | Origin                  | Finding                  |
-| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| High | Active | JFrog | Secret keys were found |
+| Severity                | Token Validation                  | Token Info                  | Origin                  | Finding                  |
+| :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| High | Active | The token was validated and found to be active. This indicates that the secret is currently in use. | JFrog | Secret keys were found |
 
 
 ---
