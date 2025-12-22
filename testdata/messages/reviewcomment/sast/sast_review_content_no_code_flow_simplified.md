@@ -20,7 +20,6 @@
 ### Vulnerability Details
 
 ---
-|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CWE:** | CWE-798, CWE-799 |
 | **Rule ID:** | js-insecure-random |

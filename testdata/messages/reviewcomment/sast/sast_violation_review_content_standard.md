@@ -14,7 +14,6 @@
 <details><summary><b>[ Express Not Using Helmet ]</b></summary>
 
 ### Violation Details
-|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Rule ID:** | js-express-without-helmet |
 
@@ -24,7 +23,6 @@ Scanner Description....
 <details><summary><b>[ Use of Insecure Random ]</b></summary>
 
 ### Violation Details
-|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CWE:** | CWE-798<br>CWE-799 |
 | **Rule ID:** | js-insecure-random |
