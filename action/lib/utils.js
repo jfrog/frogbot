@@ -94,7 +94,6 @@ class Utils {
                 core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
             }
             core.exportVariable('JF_GIT_PULL_REQUEST_ID', github_1.context.issue.number);
-            // Auto-detect Git token from GITHUB_TOKEN if not provided
             if (!process.env.JF_GIT_TOKEN) {
                 const gitToken = process.env.GITHUB_TOKEN;
                 if (!gitToken) {
@@ -102,13 +101,10 @@ class Utils {
                         'or set JF_GIT_TOKEN manually.');
                 }
                 core.exportVariable('JF_GIT_TOKEN', gitToken);
-                core.debug('Auto-detected JF_GIT_TOKEN from GITHUB_TOKEN');
             }
-            // Auto-detect API endpoint for GitHub Enterprise support
             if (!process.env.JF_GIT_API_ENDPOINT) {
                 const apiUrl = process.env.GITHUB_API_URL || github_1.context.apiUrl || 'https://api.github.com';
                 core.exportVariable('JF_GIT_API_ENDPOINT', apiUrl);
-                core.debug(`Auto-detected JF_GIT_API_ENDPOINT: ${apiUrl}`);
             }
             return github_1.context.eventName;
         });
