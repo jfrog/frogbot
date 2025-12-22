@@ -533,14 +533,12 @@ func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCod
 	table.GetColumnInfo("Policies").OmitEmpty = true
 	// Construct rows
 	for _, issue := range issues {
-		// Determine the issue applicable tokenValidationStatus
 		applicability := jasutils.Applicable.String()
 		tokenValidationStatus := ""
 		tokenValidationInfo := ""
 		if issue.Applicability != nil && issue.Applicability.Status != "" {
 			tokenValidationStatus = issue.Applicability.Status
 			if tokenValidationStatus == jasutils.Inactive.String() {
-				// Update the applicability tokenValidationStatus to Not Applicable for Inactive
 				applicability = jasutils.NotApplicable.String()
 			}
 			tokenValidationInfo = issue.Applicability.ScannerDescription
