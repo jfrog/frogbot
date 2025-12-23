@@ -40,7 +40,7 @@ type IntegrationTestDetails struct {
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
-	UseLocalRepo     bool
+	UseLocalRepo     bool // TODO can remove when deprecating non-local repository concept from integration tests
 }
 
 func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string, useLocalRepo bool) *IntegrationTestDetails {
@@ -181,7 +181,7 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 		assert.NoError(t, restoreFunc())
 	}()
 
-	// When testing using local repository clone the repository before the test starts so we can work with it as if it existed locally
+	// When testing using local repository, clone the repository before the test starts, so we can work with it as if it existed locally
 	if testDetails.UseLocalRepo {
 		cloneOptions := &git.CloneOptions{
 			URL: testDetails.GitCloneURL,

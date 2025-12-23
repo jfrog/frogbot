@@ -31,7 +31,10 @@ import (
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
-const analyticsScanRepositoryScanType = "monitor"
+const (
+	analyticsScanRepositoryScanType    = "monitor"
+	createAutoFixPrConfigNameInProfile = "Create automated fixes"
+)
 
 type ScanRepositoryCmd struct {
 	outputwriter.OutputWriter
@@ -159,7 +162,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, err, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
-		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform")) // TODO add configuration name
+		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
 		return totalFindings, nil
 	}
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)

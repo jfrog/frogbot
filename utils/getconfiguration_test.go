@@ -278,7 +278,7 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 	}
 }
 
-func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
+func TestGetConfigurationProfile(t *testing.T) {
 	testcases := []struct {
 		name            string
 		xrayVersion     string
@@ -321,7 +321,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
 
 			if testcase.failureExpected {
 				assert.Error(t, err)

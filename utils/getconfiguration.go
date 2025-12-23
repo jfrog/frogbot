@@ -163,7 +163,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParams)
+	configProfile, repoCloneUrl, err := getConfigurationProfile(xrayVersion, jfrogServer, client, gitParams)
 	if err != nil {
 		return
 	}
@@ -358,7 +358,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
+func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, configProfileV3MinXrayVersion); err != nil {
 		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above. Frogbot configurations will be derived from environment variables only.", xrayVersion, configProfileV3MinXrayVersion))
 		return
