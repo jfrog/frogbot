@@ -186,17 +186,28 @@ jobs:
           jf rt bce
           jf rt bp
 
+      - name: Configure JFrog CLI for Distribution
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_DISTRIBUTION_TOKEN: ${{ secrets.JF_DISTRIBUTION_TOKEN }}
+        run: |
+          # Add a separate server configuration for distribution
+          jf c add distribution --url="$JF_URL" --access-token="$JF_DISTRIBUTION_TOKEN" --overwrite
+
       - name: Create and distribute release bundle
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          # Use the distribution server configuration
           jf ds rbc ecosystem-frogbot $VERSION \
             --spec="release/specs/frogbot-rbc-spec.json" \
             --spec-vars="VERSION=$VERSION" \
-            --sign
+            --sign \
+            --server-id=distribution
           jf ds rbd ecosystem-frogbot $VERSION \
             --site="releases.jfrog.io" \
-            --sync
+            --sync \
+            --server-id=distribution
 
       - name: Create GitHub Release
         if: github.event_name == 'workflow_dispatch'
@@ -227,7 +238,9 @@ jobs:
 
       - name: Cleanup JFrog config
         if: always()
-        run: jf c rm --quiet || true
+        run: |
+          jf c rm internal --quiet || true
+          jf c rm distribution --quiet || true
 
       # On failure: delete release and tag
       - name: Delete release on failure
