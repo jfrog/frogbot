@@ -33,9 +33,9 @@ jobs:
               VERSION="${VERSION#v}"
             fi
             
-            # Validate it's a v3.x.x version
-            if [[ ! "$TAG" =~ ^v3\.[0-9]+\.[0-9]+$ ]]; then
-              echo "❌ Error: Version must be v3.x.x format (e.g., v3.0.1)"
+            # Validate it's a v3.x.x version (allows pre-release suffixes like -testing, -alpha, etc.)
+            if [[ ! "$TAG" =~ ^v3\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+              echo "❌ Error: Version must be v3.x.x format (e.g., v3.0.1, v3.0.0-testing)"
               echo "Got: $TAG"
               exit 1
             fi
@@ -206,11 +206,16 @@ jobs:
           script: |
             const tag = '${{ steps.version.outputs.tag }}';
             
+            // Check if this is a pre-release version (contains hyphen like v3.0.0-testing)
+            const isPrerelease = tag.includes('-');
+            
             console.log(`Creating release for tag ${tag}`);
+            if (isPrerelease) {
+              console.log(`⚠️  This will be marked as a pre-release`);
+            }
             
             // The tag was already created and pushed in the previous step
             // Now create the release with auto-generated notes
-            // Note: make_latest is set to false so this doesn't become the "Latest" release
             const release = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -218,7 +223,7 @@ jobs:
               name: `Release ${tag}`,
               generate_release_notes: true,
               draft: false,
-              prerelease: false,
+              prerelease: isPrerelease,
               make_latest: false
             });
             
