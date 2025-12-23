@@ -186,21 +186,11 @@ jobs:
           jf rt bce
           jf rt bp
 
-      - name: Configure JFrog CLI for Distribution
-        env:
-          JF_URL: ${{ secrets.JF_URL }}
-          JF_DISTRIBUTION_TOKEN: ${{ secrets.JF_DISTRIBUTION_TOKEN }}
-        run: |
-          # Add a separate server configuration for distribution
-          jf c add distribution --url="$JF_URL" --access-token="$JF_DISTRIBUTION_TOKEN" --overwrite
-          # Switch to distribution server
-          jf use distribution
-
       - name: Create and distribute release bundle
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Distribution commands use the active server (distribution)
+          # Use same JFrog CLI config (internal) for distribution
           jf ds rbc ecosystem-frogbot $VERSION \
             --spec="release/specs/frogbot-rbc-spec.json" \
             --spec-vars="VERSION=$VERSION" \
@@ -238,9 +228,7 @@ jobs:
 
       - name: Cleanup JFrog config
         if: always()
-        run: |
-          jf c rm internal --quiet || true
-          jf c rm distribution --quiet || true
+        run: jf c rm --quiet || true
 
       # On failure: delete release and tag
       - name: Delete release on failure

@@ -1,7 +1,7 @@
 {
   "files": [
     {
-      "pattern": "ecosys-frogbot/v3/${VERSION}/*/*",
+      "pattern": "binary-test/v3/${VERSION}/*/*",
       "target": "frogbot/v3/${VERSION}/"
     }
   ]
