@@ -134,6 +134,7 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 		repository.ConfigProfile.FrogbotConfig.BranchNameTemplate, repository.ConfigProfile.FrogbotConfig.PrTitleTemplate); err != nil {
 		return
 	}
+	sr.gitManager.SetCustomTemplates(sr.customTemplates)
 	sr.gitManager.SetGitParams(sr.scanDetails.Git)
 	return
 }

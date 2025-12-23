@@ -72,6 +72,11 @@ func NewGitManager() *GitManager {
 	return &GitManager{}
 }
 
+func (gm *GitManager) SetCustomTemplates(customTemplates CustomTemplates) *GitManager {
+	gm.customTemplates = customTemplates
+	return gm
+}
+
 func (gm *GitManager) SetAuth(username, token string) *GitManager {
 	gm.auth = toBasicAuth(username, token)
 	return gm
