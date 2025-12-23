@@ -212,6 +212,15 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+
+      - name: Go Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -257,6 +266,15 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+
+      - name: Go Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -302,6 +320,15 @@ jobs:
         with:
           go-version: 1.23.x
           cache: false
+
+      - name: Go Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -350,6 +377,14 @@ jobs:
           bb_script_path="${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh"
           chmod +x $bb_script_path
           sh $bb_script_path
+
+      - name: Go Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
