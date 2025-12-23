@@ -193,21 +193,21 @@ jobs:
         run: |
           # Add a separate server configuration for distribution
           jf c add distribution --url="$JF_URL" --access-token="$JF_DISTRIBUTION_TOKEN" --overwrite
+          # Switch to distribution server
+          jf use distribution
 
       - name: Create and distribute release bundle
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Use the distribution server configuration
+          # Distribution commands use the active server (distribution)
           jf ds rbc ecosystem-frogbot $VERSION \
             --spec="release/specs/frogbot-rbc-spec.json" \
             --spec-vars="VERSION=$VERSION" \
-            --sign \
-            --server-id=distribution
+            --sign
           jf ds rbd ecosystem-frogbot $VERSION \
             --site="releases.jfrog.io" \
-            --sync \
-            --server-id=distribution
+            --sync
 
       - name: Create GitHub Release
         if: github.event_name == 'workflow_dispatch'
