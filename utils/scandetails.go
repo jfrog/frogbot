@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -190,20 +189,4 @@ func (sc *ScanDetails) getCommitContext(scannedBranch, gitProject string, client
 		CommitAuthor:         latestCommit.AuthorName,
 	}
 	return
-}
-
-func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
-	var fullPathWds []string
-	if len(workingDirs) != 0 {
-		for _, workDir := range workingDirs {
-			if workDir == RootDir {
-				fullPathWds = append(fullPathWds, baseWd)
-				continue
-			}
-			fullPathWds = append(fullPathWds, filepath.Join(baseWd, workDir))
-		}
-	} else {
-		fullPathWds = append(fullPathWds, baseWd)
-	}
-	return fullPathWds
 }
