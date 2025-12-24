@@ -12,7 +12,6 @@
 <details><summary><b>Full description</b></summary>
 
 ### Vulnerability Details
-|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CWE:** | CWE-798<br>CWE-799 |
 | **Rule ID:** | js-insecure-random |

@@ -66,6 +66,23 @@ export class Utils {
             core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
         }
         core.exportVariable('JF_GIT_PULL_REQUEST_ID', githubContext.issue.number);
+
+        if (!process.env.JF_GIT_TOKEN) {
+            const gitToken: string | undefined = process.env.GITHUB_TOKEN;
+            if (!gitToken) {
+                throw new Error(
+                    'Git token not found. Please ensure GITHUB_TOKEN is available by setting permissions in your workflow, ' +
+                    'or set JF_GIT_TOKEN manually.'
+                );
+            }
+            core.exportVariable('JF_GIT_TOKEN', gitToken);
+        }
+
+        if (!process.env.JF_GIT_API_ENDPOINT) {
+            const apiUrl: string = process.env.GITHUB_API_URL || githubContext.apiUrl || 'https://api.github.com';
+            core.exportVariable('JF_GIT_API_ENDPOINT', apiUrl);
+        }
+
         return githubContext.eventName;
     }
 
