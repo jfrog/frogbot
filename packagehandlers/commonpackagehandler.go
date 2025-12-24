@@ -18,7 +18,6 @@ import (
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
-	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
@@ -52,6 +51,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 }
 
 type CommonPackageHandler struct {
+	// TODO delete both fields after refactoring all package manages and removing setting the Artifactory connection in each handler
+	// Do not delete the interface to keep the enforcement of UpdateDependency
 	serverDetails *config.ServerDetails
 	depsRepo      string
 }
@@ -66,11 +67,6 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
 	commandArgs = append(commandArgs, fixedPackageArgs...)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
-}
-
-func (cph *CommonPackageHandler) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
-	cph.serverDetails = serverDetails
-	cph.depsRepo = depsRepo
 }
 
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {
