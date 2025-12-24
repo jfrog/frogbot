@@ -458,10 +458,166 @@ func extractJFrogCredentialsFromEnvs() (*coreconfig.ServerDetails, error) {
 	return &server, nil
 }
 
+func autoDetectCIEnvVars() {
+	gitProvider := getTrimmedEnv(GitProvider)
+
+	switch {
+	case os.Getenv("GITLAB_CI") == "true":
+		if gitProvider == "" || gitProvider == string(GitLab) {
+			autoDetectGitLabCI()
+		}
+	case os.Getenv("TF_BUILD") == "True":
+		autoDetectAzurePipelinesUniversal()
+		if gitProvider == "" || gitProvider == string(AzureRepos) || gitProvider == string(GitHub) {
+			autoDetectAzurePipelinesWithPRSupport()
+		}
+		if gitProvider == "" || gitProvider == string(AzureRepos) {
+			autoDetectAzurePipelinesAzureRepos()
+		}
+	case os.Getenv("JENKINS_URL") != "":
+		autoDetectJenkins()
+	}
+}
+
+func autoDetectGitLabCI() {
+	if os.Getenv(GitProvider) == "" {
+		if err := os.Setenv(GitProvider, string(GitLab)); err != nil {
+			log.Warn("Failed to set JF_GIT_PROVIDER:", err)
+		}
+	}
+
+	if os.Getenv(GitRepoOwnerEnv) == "" {
+		if namespace := os.Getenv("CI_PROJECT_NAMESPACE"); namespace != "" {
+			if err := os.Setenv(GitRepoOwnerEnv, namespace); err != nil {
+				log.Warn("Failed to set JF_GIT_OWNER:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitRepoEnv) == "" {
+		if repoName := os.Getenv("CI_PROJECT_NAME"); repoName != "" {
+			if err := os.Setenv(GitRepoEnv, repoName); err != nil {
+				log.Warn("Failed to set JF_GIT_REPO:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if targetBranch := os.Getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME"); targetBranch != "" {
+			if err := os.Setenv(GitBaseBranchEnv, targetBranch); err != nil {
+				log.Warn("Failed to set JF_GIT_BASE_BRANCH:", err)
+			}
+		} else if commitBranch := os.Getenv("CI_COMMIT_REF_NAME"); commitBranch != "" {
+			if err := os.Setenv(GitBaseBranchEnv, commitBranch); err != nil {
+				log.Warn("Failed to set JF_GIT_BASE_BRANCH:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if mrIID := os.Getenv("CI_MERGE_REQUEST_IID"); mrIID != "" {
+			if err := os.Setenv(GitPullRequestIDEnv, mrIID); err != nil {
+				log.Warn("Failed to set JF_GIT_PULL_REQUEST_ID:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitApiEndpointEnv) == "" {
+		if apiURL := os.Getenv("CI_API_V4_URL"); apiURL != "" {
+			if err := os.Setenv(GitApiEndpointEnv, apiURL); err != nil {
+				log.Warn("Failed to set JF_GIT_API_ENDPOINT:", err)
+			}
+		}
+	}
+}
+
+func autoDetectAzurePipelinesUniversal() {
+	if os.Getenv(GitRepoEnv) == "" {
+		if repoName := os.Getenv("BUILD_REPOSITORY_NAME"); repoName != "" {
+			if err := os.Setenv(GitRepoEnv, repoName); err != nil {
+				log.Warn("Failed to set JF_GIT_REPO:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if sourceBranch := os.Getenv("BUILD_SOURCEBRANCHNAME"); sourceBranch != "" {
+			if err := os.Setenv(GitBaseBranchEnv, sourceBranch); err != nil {
+				log.Warn("Failed to set JF_GIT_BASE_BRANCH:", err)
+			}
+		}
+	}
+}
+
+func autoDetectAzurePipelinesWithPRSupport() {
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if targetBranch := os.Getenv("SYSTEM_PULLREQUEST_TARGETBRANCH"); targetBranch != "" {
+			cleanBranch := strings.TrimPrefix(targetBranch, "refs/heads/")
+			if err := os.Setenv(GitBaseBranchEnv, cleanBranch); err != nil {
+				log.Warn("Failed to set JF_GIT_BASE_BRANCH:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if prID := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"); prID != "" {
+			if err := os.Setenv(GitPullRequestIDEnv, prID); err != nil {
+				log.Warn("Failed to set JF_GIT_PULL_REQUEST_ID:", err)
+			}
+		}
+	}
+}
+
+func autoDetectAzurePipelinesAzureRepos() {
+	if os.Getenv(GitProvider) == "" {
+		if err := os.Setenv(GitProvider, string(AzureRepos)); err != nil {
+			log.Warn("Failed to set JF_GIT_PROVIDER:", err)
+		}
+	}
+
+	if os.Getenv(GitProjectEnv) == "" {
+		if project := os.Getenv("SYSTEM_TEAMPROJECT"); project != "" {
+			if err := os.Setenv(GitProjectEnv, project); err != nil {
+				log.Warn("Failed to set JF_GIT_PROJECT:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitApiEndpointEnv) == "" {
+		if orgURL := os.Getenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"); orgURL != "" {
+			apiURL := strings.TrimSuffix(orgURL, "/") + "/_apis"
+			if err := os.Setenv(GitApiEndpointEnv, apiURL); err != nil {
+				log.Warn("Failed to set JF_GIT_API_ENDPOINT:", err)
+			}
+		}
+	}
+}
+
+func autoDetectJenkins() {
+	if os.Getenv(GitPullRequestIDEnv) == "" {
+		if changeID := os.Getenv("CHANGE_ID"); changeID != "" {
+			if err := os.Setenv(GitPullRequestIDEnv, changeID); err != nil {
+				log.Warn("Failed to set JF_GIT_PULL_REQUEST_ID:", err)
+			}
+		}
+	}
+
+	if os.Getenv(GitBaseBranchEnv) == "" {
+		if branch := os.Getenv("BRANCH_NAME"); branch != "" {
+			if err := os.Setenv(GitBaseBranchEnv, branch); err != nil {
+				log.Warn("Failed to set JF_GIT_BASE_BRANCH:", err)
+			}
+		}
+	}
+}
+
 func extractGitParamsFromEnvs() (*Git, error) {
 	e := &ErrMissingEnv{}
 	var err error
 	gitEnvParams := &Git{}
+
+	autoDetectCIEnvVars()
+
 	// Branch & Repo names are mandatory variables.
 	// Must be set as environment variables.
 	// Validation performed later
