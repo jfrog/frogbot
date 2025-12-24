@@ -1,6 +1,9 @@
 name: Release Frogbot
 
 on:
+  push:
+    branches:
+      - create-new-release
   workflow_dispatch:
     inputs:
       version:
@@ -32,6 +35,10 @@ jobs:
               TAG="$VERSION"
               VERSION="${VERSION#v}"
             fi
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # Push trigger: use test version with timestamp
+            VERSION="3.0.0-test-$(date +%s)"
+            TAG="v$VERSION"
             
             # Validate it's a v3.x.x version (allows pre-release suffixes like -testing, -alpha, etc.)
             if [[ ! "$TAG" =~ ^v3\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
