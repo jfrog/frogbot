@@ -189,7 +189,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 }
 
-func TestGenerateConfigFromEnv(t *testing.T) {
+func TestBuildRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:            "",
 		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
@@ -230,12 +230,13 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
-	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
-	assert.Equal(t, true, repo.DetectionOnly)
+	assert.Equal(t, "xrayVersion", repo.XrayVersion)
+	assert.Equal(t, "xscVersion", repo.XscVersion)
+
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitParams.Token, repo.Token)
-	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitParams.Token, repo.VcsInfo.Token)
+	assert.Equal(t, gitParams.APIEndpoint, repo.VcsInfo.APIEndpoint)
 
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
@@ -244,9 +245,6 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 
 	if commandName == ScanRepository {
 		assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
-		assert.NotEmpty(t, repo.BranchNameTemplate)
-		assert.NotEmpty(t, repo.CommitMessageTemplate)
-		assert.NotEmpty(t, repo.PullRequestTitleTemplate)
 	}
 
 	if commandName == ScanPullRequest {
