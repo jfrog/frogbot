@@ -22,7 +22,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-const configProfileV3MinXrayVersion = "1.0.0" // TODO switch to real Xray version when available
+const configProfileV3MinXrayVersion = "3.117.0" // TODO switch to real the Xray version when available
 
 type FrogbotDetails struct {
 	XrayVersion   string

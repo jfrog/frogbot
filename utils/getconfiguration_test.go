@@ -73,22 +73,19 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		JFrogUrlEnv:            "",
 		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
 		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:           "admin",
-		JFrogPasswordEnv:       "password",
+		JFrogTokenEnv:          "token",
 		GitProvider:            string(BitbucketServer),
 		GitRepoOwnerEnv:        "jfrog",
 		GitRepoEnv:             "frogbot",
 		GitTokenEnv:            "123456789",
 		GitBaseBranchEnv:       "dev",
 	})
-	extractAndAssertParamsFromEnv(t, false, true, ScanRepository)
+	extractAndAssertParamsFromEnv(t, false, false, ScanRepository)
 }
 
 func TestExtractParamsFromEnvToken(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogUserEnv:     "",
-		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "token",
 		GitProvider:      string(BitbucketServer),
 		GitRepoOwnerEnv:  "jfrog",
@@ -282,7 +279,7 @@ func TestGetConfigurationProfile(t *testing.T) {
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
-			xrayVersion:     "3.110.0",
+			xrayVersion:     "1.0.0",
 			failureExpected: true,
 		},
 		{
