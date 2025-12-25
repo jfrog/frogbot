@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -282,10 +283,28 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	config, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
+	repository, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
-	return config, client
+	// We must set a non-nil config profile to avoid panic
+	repository.ConfigProfile = &services2.ConfigProfile{
+		ProfileName:   "test-profile",
+		GeneralConfig: services2.GeneralConfig{},
+		FrogbotConfig: services2.FrogbotConfig{
+			BranchNameTemplate:    "",
+			PrTitleTemplate:       "",
+			CommitMessageTemplate: "",
+		},
+		Modules: []services2.Module{
+			{
+				ModuleId:     0,
+				ModuleName:   "test-module",
+				PathFromRoot: ".",
+			},
+		},
+	}
+
+	return repository, client
 }
 
 func TestDeletePreviousPullRequestMessages(t *testing.T) {
