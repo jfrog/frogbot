@@ -22,7 +22,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
-const configProfileV3MinXrayVersion = "1.0.0" // TODO REAL XRAY VERSION
+const configProfileV3MinXrayVersion = "1.0.0" // TODO switch to real Xray version when available
 
 type FrogbotDetails struct {
 	XrayVersion   string
@@ -158,7 +158,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	repository, err := BuildRepository(xrayVersion, xscVersion, client, gitParams, jfrogServer, commandName)
+	repository, err := BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitParams, jfrogServer, commandName)
 	if err != nil {
 		return
 	}
@@ -187,7 +187,7 @@ func createFrogbotDetails(frogbotDetails *FrogbotDetails, xrayVersion string, xs
 
 // Builds a Repository from environment variables only
 // Returns a Repository instance with all the defaults and necessary fields.
-func BuildRepository(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (repository Repository, err error) {
+func BuildRepositoryFromEnv(xrayVersion, xscVersion string, gitClient vcsclient.VcsClient, gitParamsFromEnv *Git, server *coreconfig.ServerDetails, commandName string) (repository Repository, err error) {
 	// Create a single repository from environment variables
 	repository = Repository{}
 	repository.Server = *server

@@ -153,7 +153,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
-	configFile, err := BuildRepository("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
+	configFile, err := BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -185,7 +185,7 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 }
 
-func TestBuildRepository(t *testing.T) {
+func TestBuildRepositoryFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:            "",
 		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
@@ -215,11 +215,11 @@ func TestBuildRepository(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repo, err := BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
+	repo, err := BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	validateBuildRepo(t, &repo, &gitParams, &server, ScanRepository)
 
-	repo, err = BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
+	repo, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	validateBuildRepo(t, &repo, &gitParams, &server, ScanPullRequest)
 }

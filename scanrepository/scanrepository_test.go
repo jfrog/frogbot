@@ -197,7 +197,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			repository, err := utils.BuildRepository(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 
 			// We must set a non-nil config profile to avoid panic
@@ -327,7 +327,7 @@ pr body
 			assert.NoError(t, err)
 			// Load default configurations
 			gitTestParams.Branches = []string{"master"}
-			repository, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// We must set a non-nil config profile to avoid panic
 			repository.ConfigProfile = &emptyConfigProfile

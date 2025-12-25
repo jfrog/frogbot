@@ -50,9 +50,8 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
+// TODO delete CommonPackageHandler or at least its fields since they are no londer needed
 type CommonPackageHandler struct {
-	// TODO delete both fields after refactoring all package manages and removing setting the Artifactory connection in each handler
-	// Do not delete the interface to keep the enforcement of UpdateDependency
 	serverDetails *config.ServerDetails
 	depsRepo      string
 }

@@ -48,6 +48,23 @@ const (
 	testTargetBranchName = "master"
 )
 
+var emptyConfigProfile = services2.ConfigProfile{
+	ProfileName:   "test-profile",
+	GeneralConfig: services2.GeneralConfig{},
+	FrogbotConfig: services2.FrogbotConfig{
+		BranchNameTemplate:    "",
+		PrTitleTemplate:       "",
+		CommitMessageTemplate: "",
+	},
+	Modules: []services2.Module{
+		{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+		},
+	},
+}
+
 func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
 	return testdata.NewMockVcsClient(gomock.NewController(t))
 }
@@ -272,26 +289,11 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	client, err := vcsclient.NewClientBuilder(vcsutils.GitLab).ApiEndpoint(server.URL).Token("123456").Build()
 	assert.NoError(t, err)
 
-	repository, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
+	repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanPullRequest)
 	assert.NoError(t, err)
 
 	// We must set a non-nil config profile to avoid panic
-	repository.ConfigProfile = &services2.ConfigProfile{
-		ProfileName:   "test-profile",
-		GeneralConfig: services2.GeneralConfig{},
-		FrogbotConfig: services2.FrogbotConfig{
-			BranchNameTemplate:    "",
-			PrTitleTemplate:       "",
-			CommitMessageTemplate: "",
-		},
-		Modules: []services2.Module{
-			{
-				ModuleId:     0,
-				ModuleName:   "test-module",
-				PathFromRoot: ".",
-			},
-		},
-	}
+	repository.ConfigProfile = &emptyConfigProfile
 
 	return repository, client
 }
