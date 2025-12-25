@@ -43,17 +43,6 @@ import (
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
 
-var gitParams = &utils.Repository{
-	OutputWriter: &outputwriter.SimplifiedOutput{},
-	Params: utils.Params{
-		Git: utils.Git{
-			RepoOwner: "repo-owner",
-			Branches:  []string{"master"},
-			RepoName:  "repo-name",
-		},
-	},
-}
-
 const (
 	testSourceBranchName = "pr"
 	testTargetBranchName = "master"
