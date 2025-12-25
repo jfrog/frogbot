@@ -175,6 +175,13 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 			)
 		}
 	}()
+	/* TODO eran
+	we need to insert somewhere the following logic:
+	If in app-context, call Evaluation API somewhere and get the 'missing_data' that indicates the missing scans (for the relevant msi).
+	those missing scans must be performed and they are overriding CC, frogbot-apps, or any other source that can decide which scans we run
+	After the scans are completed (must be completed) we call the Evaluation api again to get the Allow/Deny status and act accordingly with the fail logic.
+	*/
+
 	// Audit PR code
 	issuesCollection, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	return
