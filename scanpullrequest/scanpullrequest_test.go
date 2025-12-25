@@ -81,9 +81,13 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 		},
 		JasResults: &results.JasScansResults{
 			ApplicabilityScanResults: []*sarif.Run{
-				sarifutils.CreateRunWithDummyResults(
-					sarifutils.CreateDummyPassingResult("applic_CVE-2023-3122"),
+				sarifutils.CreateRunWithDummyResultAndRuleInformation(
 					sarifutils.CreateResultWithOneLocation("file1", 1, 10, 2, 11, "snippet", "applic_CVE-2022-2122", ""),
+					"rule-msg", "rule-markdown", []string{"applicability"}, []string{"applicable"},
+				),
+				sarifutils.CreateRunWithDummyResultAndRuleInformation(
+					sarifutils.CreateDummyResult("result-markdown", "result-msg", "applic_CVE-2023-3122", ""),
+					"rule-msg", "rule-markdown", []string{"applicability"}, []string{"not_applicable"},
 				),
 			},
 			JasVulnerabilities: results.JasScanResults{
