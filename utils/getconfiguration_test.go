@@ -50,7 +50,7 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 		GitTokenEnv:         "123456789",
 		GitPullRequestIDEnv: "1",
 	})
-	extractAndAssertParamsFromEnv(t, true, false, ScanPullRequest)
+	extractAndAssertParamsFromEnv(t, true, ScanPullRequest)
 }
 
 // Test extraction in ScanRepository command
@@ -65,7 +65,7 @@ func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 		GitTokenEnv:      "123456789",
 		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, false, ScanRepository)
+	extractAndAssertParamsFromEnv(t, true, ScanRepository)
 }
 
 func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
@@ -80,7 +80,7 @@ func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 		GitTokenEnv:            "123456789",
 		GitBaseBranchEnv:       "dev",
 	})
-	extractAndAssertParamsFromEnv(t, false, false, ScanRepository)
+	extractAndAssertParamsFromEnv(t, false, ScanRepository)
 }
 
 func TestExtractParamsFromEnvToken(t *testing.T) {
@@ -93,7 +93,7 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		GitTokenEnv:      "123456789",
 		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, false, ScanRepository)
+	extractAndAssertParamsFromEnv(t, true, ScanRepository)
 }
 
 func TestExtractVcsProviderFromEnv(t *testing.T) {
@@ -145,7 +145,7 @@ func TestExtractClientInfo(t *testing.T) {
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
-func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, commandName string) {
+func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs()
@@ -162,12 +162,9 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 	assert.Equal(t, "http://127.0.0.1:8081/artifactory/", configServer.ArtifactoryUrl)
 	assert.Equal(t, "http://127.0.0.1:8081/xray/", configServer.XrayUrl)
-	if basicAuth {
-		assert.Equal(t, "admin", configServer.User)
-		assert.Equal(t, "password", configServer.Password)
-	} else {
-		assert.Equal(t, "token", configServer.AccessToken)
-	}
+	// TODO when basic auth (username + password) if fixed, make sure to add a check for it here and in the tests
+	assert.Equal(t, "token", configServer.AccessToken)
+
 	assert.Equal(t, vcsutils.BitbucketServer, configFile.GitProvider)
 	assert.Equal(t, "jfrog", configFile.RepoOwner)
 	assert.Equal(t, "frogbot", configFile.RepoName)
