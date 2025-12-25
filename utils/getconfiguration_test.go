@@ -27,17 +27,15 @@ var (
 
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:      "",
-		JFrogUserEnv:     "",
-		JFrogPasswordEnv: "",
-		JFrogTokenEnv:    "",
+		JFrogUrlEnv:   "",
+		JFrogTokenEnv: "",
 	})
 	_, err := extractJFrogCredentialsFromEnvs()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
 	_, err = extractJFrogCredentialsFromEnvs()
-	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
+	assert.EqualError(t, err, "JF_ACCESS_TOKEN environment variable is missing")
 }
 
 // Test extraction of env params in ScanPullRequest command
@@ -45,15 +43,14 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogUserEnv:        "admin",
-		JFrogPasswordEnv:    "password",
+		JFrogTokenEnv:       "token",
 		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
 		GitPullRequestIDEnv: "1",
 	})
-	extractAndAssertParamsFromEnv(t, true, true, ScanPullRequest)
+	extractAndAssertParamsFromEnv(t, true, false, ScanPullRequest)
 }
 
 // Test extraction in ScanRepository command
