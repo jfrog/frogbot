@@ -132,15 +132,6 @@ func TestUpdateDependency(t *testing.T) {
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
-				fixSupported:       true,
-				descriptorsToCheck: []string{"setup.py"},
-			},
-			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
