@@ -36,6 +36,8 @@ jobs:
           # The name of the branch on which Frogbot will perform the scan
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
 
+          JF_USE_CONFIG_PROFILE: true
+
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
           # JF_GIT_API_ENDPOINT: https://github.example.com
