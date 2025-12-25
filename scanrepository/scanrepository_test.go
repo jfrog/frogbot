@@ -428,6 +428,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
 				ServerDetails: &frogbotParams.Server,
+				ConfigProfile: &emptyConfigProfile,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan()

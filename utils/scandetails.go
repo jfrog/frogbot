@@ -25,7 +25,7 @@ type ScanDetails struct {
 	baseBranch       string
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
-	configProfile    *xscservices.ConfigProfile
+	ConfigProfile    *xscservices.ConfigProfile
 
 	results.ResultContext
 	MultiScanId string
@@ -65,7 +65,7 @@ func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
 }
 
 func (sc *ScanDetails) SetConfigProfile(configProfile *xscservices.ConfigProfile) *ScanDetails {
-	sc.configProfile = configProfile
+	sc.ConfigProfile = configProfile
 	return sc
 }
 
@@ -92,10 +92,10 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
 		SetServerDetails(sc.ServerDetails).
-		SetAllowPartialResults(!sc.configProfile.GeneralConfig.FailUponAnyScannerError).
-		SetExclusions(sc.configProfile.GeneralConfig.GeneralExcludePatterns).
+		SetAllowPartialResults(!sc.ConfigProfile.GeneralConfig.FailUponAnyScannerError).
+		SetExclusions(sc.ConfigProfile.GeneralConfig.GeneralExcludePatterns).
 		SetUseJas(true).
-		SetConfigProfile(sc.configProfile)
+		SetConfigProfile(sc.ConfigProfile)
 
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
