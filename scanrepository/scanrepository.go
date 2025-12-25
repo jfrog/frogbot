@@ -69,22 +69,6 @@ func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.V
 	return
 }
 
-func (sr *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository, client vcsclient.VcsClient) (err error) {
-	if err = sr.setCommandPrerequisites(repository, client); err != nil {
-		return
-	}
-	log.Debug(fmt.Sprintf("Detected branches for scan: %s", strings.Join(repository.Params.Git.Branches, ", ")))
-	for _, branch := range repository.Params.Git.Branches {
-		log.Debug(fmt.Sprintf("Scanning '%s' branch...", branch))
-		sr.scanDetails.SetBaseBranch(branch)
-		sr.scanDetails.SetXscGitInfoContext(branch, repository.Params.Git.Project, client)
-		if err = sr.prepareEnvAndScanBranch(repository); err != nil {
-			return
-		}
-	}
-	return
-}
-
 func (sr *ScanRepositoryCmd) prepareEnvAndScanBranch(repository *utils.Repository) (err error) {
 	repoDir, restoreBaseDir, err := sr.checkoutToBranch()
 	if err != nil {
@@ -143,14 +127,15 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 }
 
 func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int, error) {
-	totalFindings := 0
+	var totalFindings int
 	scanResults, err := sr.scan()
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Fixes will be skipped for this branch", sr.scanDetails.BaseBranch()), err); err != nil {
 			return 0, err
 		}
 	}
-	if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
+	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
+	if err != nil {
 		return 0, err
 	} else {
 		findingCount := summary.GetTotalViolations()
@@ -159,12 +144,14 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 		}
 		totalFindings = findingCount
 	}
-	sr.uploadResultsToGithubDashboardsIfNeeded(repository, err, scanResults)
+
+	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
 		return totalFindings, nil
 	}
+
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred while preparing the vulnerabilities map for branch '%s'.", sr.scanDetails.BaseBranch()), err); err != nil {
@@ -178,16 +165,16 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 }
 
-func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, err error, scanResults *results.SecurityCommandResults) {
+func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
 	if repository.Params.Git.GitProvider.String() == vcsutils.GitHub.String() {
 		// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 		// Currently available on GitHub only
-		if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, sr.scanDetails.BaseBranch(), sr.scanDetails.Client()); err != nil {
+		if err := utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, sr.scanDetails.BaseBranch(), sr.scanDetails.Client()); err != nil {
 			log.Warn(err)
 		}
 
 		if *repository.Params.Git.UploadSbomToVcs && scanResults.EntitledForJas {
-			if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, scanResults, sr.scanDetails.Client(), sr.scanDetails.BaseBranch()); err != nil {
+			if err := utils.UploadSbomSnapshotToGithubDependencyGraph(repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, scanResults, sr.scanDetails.Client(), sr.scanDetails.BaseBranch()); err != nil {
 				log.Warn(err)
 			}
 		}
@@ -206,26 +193,27 @@ func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
 	return auditResults, nil
 }
 
-func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
+	var err error
 	if repository.FrogbotConfig.AggregateFixes {
 		aggregatedFixBranchName, e := sr.gitManager.GenerateAggregatedFixBranchName(sr.scanDetails.BaseBranch(), sr.projectTech)
 		if e != nil {
-			return
+			return e
 		}
 		existingPullRequestDetails, e := sr.getOpenPullRequestBySourceBranch(aggregatedFixBranchName)
 		if e != nil {
-			return
+			return e
 		}
-		e = sr.aggregateFixAndOpenPullRequest(repository, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
+		err = sr.aggregateFixAndOpenPullRequest(repository, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
 	} else {
 		if e := sr.fixProjectVulnerabilities(repository, vulnerabilitiesMap); e != nil {
-			err = errors.Join(err, fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%s", sr.scanDetails.BaseBranch(), e))
+			err = fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%v", sr.scanDetails.BaseBranch(), e)
 		}
 	}
 	if err != nil {
 		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
 	}
-	return
+	return nil
 }
 
 func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {

@@ -12,7 +12,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251211075913-35ebcd308e93
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251210085744-f8481d179ac5
-	github.com/jfrog/jfrog-cli-security v1.24.0
+	github.com/jfrog/jfrog-cli-security v1.24.2
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20251217080430-c92b763b7465
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -124,8 +124,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// fix-sbom-component-ref-compare
-replace github.com/jfrog/jfrog-cli-security => github.com/kerenr-jfrog/jfrog-cli-security v0.0.0-20251216150149-ff1cb5b558c4
+//replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

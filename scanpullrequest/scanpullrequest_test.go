@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -33,7 +32,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -394,17 +392,6 @@ func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Set new logger with output redirection to a null logger. This is useful for negative tests.
-// Caller is responsible to set the old log back.
-func redirectLogOutputToNil() (previousLog log.Log) {
-	previousLog = log.Logger
-	newLog := log.NewLogger(log.ERROR, nil)
-	newLog.SetOutputWriter(io.Discard)
-	newLog.SetLogsWriter(io.Discard, 0)
-	log.SetLogger(newLog)
-	return previousLog
 }
 
 type TestResult struct {

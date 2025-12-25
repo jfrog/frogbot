@@ -170,11 +170,13 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	//if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
-	//	if err = filterOutFailedScans(scanDetails.ResultsToCompare, scanResults); err != nil {
-	//		return
-	//	}
-	//}
+	/*
+		if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
+			if err = filterOutFailedScans(scanDetails.ResultsToCompare, scanResults); err != nil {
+				return
+			}
+		}
+	*/
 
 	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
 	if e != nil {

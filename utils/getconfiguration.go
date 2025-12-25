@@ -172,17 +172,17 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	repository.ConfigProfile = configProfile
 	repository.Git.RepositoryCloneUrl = repoCloneUrl
 
-	frogbotDetails = createFrogbotDetails(frogbotDetails, xrayVersion, xscVersion, repository, client, jfrogServer)
+	frogbotDetails = createFrogbotDetails(xrayVersion, xscVersion, repository, client, jfrogServer)
 	return
 }
 
-func createFrogbotDetails(frogbotDetails *FrogbotDetails, xrayVersion string, xscVersion string, repository Repository, client vcsclient.VcsClient, jfrogServer *coreconfig.ServerDetails) *FrogbotDetails {
-	frogbotDetails = &FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer}
+func createFrogbotDetails(xrayVersion string, xscVersion string, repository Repository, client vcsclient.VcsClient, jfrogServer *coreconfig.ServerDetails) *FrogbotDetails {
+	frogbotDetails := FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer}
 	frogbotDetails.ReleasesRepo = os.Getenv(jfrogReleasesRepoEnv)
 	if frogbotDetails.ReleasesRepo == "" {
 		frogbotDetails.ReleasesRepo = repository.GeneralConfig.ScannersDownloadPath
 	}
-	return frogbotDetails
+	return &frogbotDetails
 }
 
 // Builds a Repository from environment variables only
