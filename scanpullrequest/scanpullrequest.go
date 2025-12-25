@@ -170,12 +170,12 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	}
 
-	// TODO re-apply
 	//if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
 	//	if err = filterOutFailedScans(scanDetails.ResultsToCompare, scanResults); err != nil {
 	//		return
 	//	}
 	//}
+
 	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
 	if e != nil {
 		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
