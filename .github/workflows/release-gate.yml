@@ -1,0 +1,375 @@
+name: "Release Gate Tests"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.suite.name }} Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+      CGO_ENABLED: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: 'Unit'
+          - name: 'Scan Repository'
+            package: 'scanrepository'
+          - name: 'Scan Pull Request'
+            package: 'scanpullrequest'
+          - name: 'Package Handlers'
+            package: 'packagehandlers'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      # Package manager installs - npm also needed for Scan Repository
+      - name: Install npm
+        if: matrix.suite.package == 'packagehandlers' || matrix.suite.package == 'scanrepository'
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dotnet
+        if: matrix.suite.package == 'packagehandlers'
+        run: sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono
+        if: matrix.suite.package == 'packagehandlers'
+        run: sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        if: matrix.suite.package == 'packagehandlers'
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        if: matrix.suite.package == 'packagehandlers'
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        if: matrix.suite.package == 'packagehandlers'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        if: matrix.suite.package == 'packagehandlers'
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        if: matrix.suite.package == 'packagehandlers'
+        run: npm install -g yarn
+
+      - name: Install Maven
+        if: matrix.suite.package == 'packagehandlers'
+        run: sudo apt-get install -y maven
+
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Run Tests
+        run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 50m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+
+  github-integration:
+    name: GitHub Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.12'
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Run Tests
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+
+  azure-integration:
+    name: Azure Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.12'
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Run Tests
+        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+
+  gitlab-integration:
+    name: GitLab Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.12'
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Run Tests
+        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+
+  bitbucket-server-integration:
+    name: Bitbucket Server Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      CGO_ENABLED: 1
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.12'
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install Java for Bitbucket Server
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iproute2 net-tools lsof
+
+      - name: Downgrade Git for Bitbucket Compatibility
+        run: |
+          sudo add-apt-repository --remove ppa:git-core/ppa -y || true
+          sudo apt-get remove -y git git-man
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - name: Unzip Preconfigured Bitbucket Home
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+
+      - name: Download Bitbucket Server and Run
+        run: |
+          chmod +x ${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh
+          sh ${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh
+
+      - name: Wait for Bitbucket Server
+        run: sleep 30
+
+      - name: Run Tests
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+        run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+
+      - name: Display Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Bitbucket Server Logs ==="
+          tail -200 ${PWD}/bitbucketHome/log/atlassian-bitbucket.log 2>/dev/null || echo "Log file not found"
+
+  oidc-integration:
+    name: OIDC Integration Test
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.12'
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install npm (required for frogbot action)
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate unique OIDC config name
+        run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      - name: Construct valid OIDC endpoint
+        run: |
+          if [[ "${{ secrets.PLATFORM_URL }}" == */ ]]; then
+            echo "OIDC_ENDPOINT=${{ secrets.PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
+          else
+            echo "OIDC_ENDPOINT=${{ secrets.PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
+          fi
+
+      - name: Create OpenID Connect integration
+        run: |
+          curl -X POST "${{ env.OIDC_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}" -d '{
+          "name": "${{ env.OIDC_PROVIDER_NAME }}",
+          "issuer_url": "${{secrets.OIDC_PROVIDER_URL}}",
+          "provider_type": "GitHub Enterprise",
+          "enable_permissive_configuration": "true",
+          "description": "This is a test configuration created for OIDC-Access integration test" }'
+
+      - name: Create OIDC integration Identity Mapping
+        run: |
+          curl -X POST ${{ env.OIDC_ENDPOINT }}/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
+          -H 'Content-Type: application/json' \
+          -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}' \
+          -d '{
+                "name": "oidc-test-identity-mapping",
+                "priority": "1",
+                "claims": {
+                  "repository": "${{ github.repository_owner }}/Frogbot-mirror"
+                },
+                "token_spec": { 
+                   "username": "admin",
+                   "scope": "applied-permissions/admin",
+                   "audience": "*@*",
+                   "expires_in": 1200            
+                }
+          }'
+
+      - name: Run Frogbot
+        uses: ./
+        env:
+          ACTIONS_STEP_DEBUG: true
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_GIT_REPO: "Frogbot-mirror"
+          JF_GIT_OWNER: "JFROG"
+          JF_FAIL: "FALSE"
+          JF_GIT_API_ENDPOINT: "${{ github.api_url }}"
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
+        with:
+          oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
+
+      - name: Delete OIDC integration
+        if: always()
+        run: |
+          curl -X DELETE ${{ secrets.PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.PLATFORM_ADMIN_TOKEN }}'
