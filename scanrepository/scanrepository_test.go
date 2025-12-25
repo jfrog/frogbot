@@ -40,6 +40,23 @@ import (
 
 const rootTestDir = "scanrepository"
 
+var emptyConfigProfile = services2.ConfigProfile{
+	ProfileName:   "test-profile",
+	GeneralConfig: services2.GeneralConfig{},
+	FrogbotConfig: services2.FrogbotConfig{
+		BranchNameTemplate:    "",
+		PrTitleTemplate:       "",
+		CommitMessageTemplate: "",
+	},
+	Modules: []services2.Module{
+		{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+		},
+	},
+}
+
 var testPackagesData = []struct {
 	packageType string
 	commandName string
@@ -184,22 +201,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 
 			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &services2.ConfigProfile{
-				ProfileName:   "test-profile",
-				GeneralConfig: services2.GeneralConfig{},
-				FrogbotConfig: services2.FrogbotConfig{
-					BranchNameTemplate:    "",
-					PrTitleTemplate:       "",
-					CommitMessageTemplate: "",
-				},
-				Modules: []services2.Module{
-					{
-						ModuleId:     0,
-						ModuleName:   "test-module",
-						PathFromRoot: ".",
-					},
-				},
-			}
+			repository.ConfigProfile = &emptyConfigProfile
 
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
@@ -325,11 +327,14 @@ pr body
 			assert.NoError(t, err)
 			// Load default configurations
 			gitTestParams.Branches = []string{"master"}
-			repoConfig, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
+			// We must set a non-nil config profile to avoid panic
+			repository.ConfigProfile = &emptyConfigProfile
+
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(repoConfig, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()

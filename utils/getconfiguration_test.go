@@ -58,15 +58,14 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogUserEnv:     "admin",
-		JFrogPasswordEnv: "password",
+		JFrogTokenEnv:    "token",
 		GitProvider:      string(BitbucketServer),
 		GitRepoOwnerEnv:  "jfrog",
 		GitRepoEnv:       "frogbot",
 		GitTokenEnv:      "123456789",
 		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, true, ScanRepository)
+	extractAndAssertParamsFromEnv(t, true, false, ScanRepository)
 }
 
 func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
