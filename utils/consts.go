@@ -24,59 +24,28 @@ const (
 	azurePipelines ciProvider = "azure-pipelines"
 
 	// JFrog platform environment variables
-	JFrogUserEnv           = "JF_USER"
 	JFrogUrlEnv            = "JF_URL"
 	jfrogXrayUrlEnv        = "JF_XRAY_URL"
 	jfrogArtifactoryUrlEnv = "JF_ARTIFACTORY_URL"
 	jfrogReleasesRepoEnv   = "JF_RELEASES_REPO"
-	JFrogPasswordEnv       = "JF_PASSWORD"
+	JFrogUserEnv           = "JF_USER"     // TODO should add support once Catalog Enrich API is fixed (remember adding to extraction tests)
+	JFrogPasswordEnv       = "JF_PASSWORD" // TODO should add support once Catalog Enrich API is fixed (remember adding to extraction tests)
 	JFrogTokenEnv          = "JF_ACCESS_TOKEN"
+	jfrogProjectEnv        = "JF_PROJECT_KEY"
 
 	// Git environment variables
 	GitProvider                     = "JF_GIT_PROVIDER"
 	GitRepoOwnerEnv                 = "JF_GIT_OWNER"
 	GitRepoEnv                      = "JF_GIT_REPO"
-	GitProjectEnv                   = "JF_GIT_PROJECT"
-	GitUsernameEnv                  = "JF_GIT_USERNAME"
-	GitUseLocalRepositoryEnv        = "JF_USE_LOCAL_REPOSITORY"
+	GitAzureProjectEnv              = "JF_GIT_AZURE_PROJECT"
+	GitBitBucketUsernameEnv         = "JF_GIT_BB_USERNAME"
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
 
-	// Git naming template environment variables
-	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
-	CommitMessageTemplateEnv    = "JF_COMMIT_MESSAGE_TEMPLATE"
-	PullRequestTitleTemplateEnv = "JF_PULL_REQUEST_TITLE_TEMPLATE"
-	//#nosec G101 -- not a secret
-	PullRequestSecretCommentsEnv = "JF_PR_SHOW_SECRETS_COMMENTS"
-
-	// Repository environment variables
-	InstallCommandEnv   = "JF_INSTALL_DEPS_CMD"
-	MaxPnpmTreeDepthEnv = "JF_PNPM_MAX_TREE_DEPTH"
-	RequirementsFileEnv = "JF_REQUIREMENTS_FILE"
-	WorkingDirectoryEnv = "JF_WORKING_DIR"
-	PathExclusionsEnv   = "JF_PATH_EXCLUSIONS"
-	jfrogWatchesEnv     = "JF_WATCHES"
-	jfrogProjectEnv     = "JF_PROJECT"
-	// To include vulnerabilities and violations
-	IncludeVulnerabilitiesEnv = "JF_INCLUDE_VULNERABILITIES"
-	AddPrCommentOnSuccessEnv  = "JF_PR_ADD_SUCCESS_COMMENT"
-	UseWrapperEnv             = "JF_USE_WRAPPER"
-	DepsRepoEnv               = "JF_DEPS_REPO"
-	MinSeverityEnv            = "JF_MIN_SEVERITY"
-	FixableOnlyEnv            = "JF_FIXABLE_ONLY"
-	DetectionOnlyEnv          = "JF_SKIP_AUTOFIX"
-	AllowedLicensesEnv        = "JF_ALLOWED_LICENSES"
-	AllowPartialResultsEnv    = "JF_ALLOW_PARTIAL_RESULTS"
-	WatchesDelimiter          = ","
-
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	GitTokenEnv          = "JF_GIT_TOKEN"
-	GitBaseBranchEnv     = "JF_GIT_BASE_BRANCH"
-	GitPullRequestIDEnv  = "JF_GIT_PULL_REQUEST_ID"
-	GitApiEndpointEnv    = "JF_GIT_API_ENDPOINT"
-	GitAggregateFixesEnv = "JF_GIT_AGGREGATE_FIXES"
-
-	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
-	GitHubActionsEnv = "GITHUB_ACTIONS"
+	GitTokenEnv         = "JF_GIT_TOKEN"
+	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
+	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
+	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"

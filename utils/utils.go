@@ -188,7 +188,7 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults, repo.AllowedLicenses)
+	report, err := GenerateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults, allowedLicenses []string) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),
@@ -453,9 +453,10 @@ func isUrlAccessible(url string) bool {
 	return resp != nil && resp.StatusCode == http.StatusOK
 }
 
-// This function checks if partial results are allowed by the user. If so instead of returning an error we log the error and continue as if we didn't have an error
-func CreateErrorIfPartialResultsDisabled(allowPartial bool, messageForLog string, err error) error {
-	if allowPartial {
+// CreateErrorIfFailUponScannerErrorEnabled This function checks if fail upn scanner error configuration is enabled by the user.
+// If not - instead of returning an error we log the error and continue as if we didn't have an error
+func CreateErrorIfFailUponScannerErrorEnabled(fail bool, messageForLog string, err error) error {
+	if !fail {
 		log.Warn(messageForLog)
 		return nil
 	}

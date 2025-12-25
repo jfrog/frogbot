@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jfrog/frogbot/v2/scanpullrequest"
-	"github.com/jfrog/frogbot/v2/scanrepository"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/scanpullrequest"
+	"github.com/jfrog/frogbot/v2/scanrepository"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	clitool "github.com/urfave/cli/v2"

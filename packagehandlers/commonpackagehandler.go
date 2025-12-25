@@ -8,16 +8,16 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 // PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
-	SetCommonParams(serverDetails *config.ServerDetails, depsRepo string)
 }
 
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
@@ -33,7 +33,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
-		handler = &PythonPackageHandler{pipRequirementsFile: details.PipRequirementsFile}
+		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
 		handler = NewMavenPackageHandler(details)
 	case techutils.Nuget:
@@ -47,10 +47,10 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	default:
 		handler = &UnsupportedPackageHandler{}
 	}
-	handler.SetCommonParams(details.ServerDetails, details.DepsRepo)
 	return
 }
 
+// TODO delete CommonPackageHandler or at least its fields since they are no londer needed
 type CommonPackageHandler struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
@@ -66,11 +66,6 @@ func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	fixedPackageArgs := getFixedPackage(impactedPackage, versionOperator, vulnDetails.SuggestedFixedVersion)
 	commandArgs = append(commandArgs, fixedPackageArgs...)
 	return runPackageMangerCommand(vulnDetails.Technology.GetExecCommandName(), vulnDetails.Technology.String(), commandArgs)
-}
-
-func (cph *CommonPackageHandler) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
-	cph.serverDetails = serverDetails
-	cph.depsRepo = depsRepo
 }
 
 func runPackageMangerCommand(commandName string, techName string, commandArgs []string) error {

@@ -5,13 +5,15 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
-	"github.com/jfrog/jfrog-client-go/utils/log"
-	"golang.org/x/exp/slices"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	"golang.org/x/exp/slices"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const MavenVersionNotAvailableErrorFormat = "Version %s is not available for artifact"
@@ -134,7 +136,6 @@ type pomDependencyDetails struct {
 func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler {
 	depTreeParams := &java.DepTreeParams{
 		Server:                  scanDetails.ServerDetails,
-		DepsRepo:                scanDetails.DepsRepo,
 		IsMavenDepTreeInstalled: true,
 	}
 	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,

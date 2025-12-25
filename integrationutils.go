@@ -11,14 +11,15 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/jfrog/frogbot/v2/scanpullrequest"
-	"github.com/jfrog/frogbot/v2/scanrepository"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/scanpullrequest"
+	"github.com/jfrog/frogbot/v2/scanrepository"
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const (
@@ -39,7 +40,7 @@ type IntegrationTestDetails struct {
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
-	UseLocalRepo     bool
+	UseLocalRepo     bool // TODO can remove when deprecating non-local repository concept from integration tests
 }
 
 func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string, useLocalRepo bool) *IntegrationTestDetails {
@@ -58,7 +59,6 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 func buildGitManager(t *testing.T, testDetails *IntegrationTestDetails) *utils.GitManager {
 	gitManager, err := utils.NewGitManager().
 		SetAuth(testDetails.GitUsername, testDetails.GitToken).
-		SetEmailAuthor("frogbot-test@jfrog.com").
 		SetRemoteGitUrl(testDetails.GitCloneURL)
 	assert.NoError(t, err)
 	return gitManager
@@ -77,18 +77,15 @@ func setIntegrationTestEnvs(t *testing.T, testDetails *IntegrationTestDetails) f
 	// so we restore them at the end of the test to avoid collisions with other tests
 	envRestoreFunc := getJfrogEnvRestoreFunc(t)
 	unsetEnvs := utils.SetEnvsAndAssertWithCallback(t, map[string]string{
-		utils.RequirementsFileEnv:      "requirements.txt",
-		utils.GitPullRequestIDEnv:      testDetails.PullRequestID,
-		utils.GitProvider:              testDetails.GitProvider,
-		utils.GitTokenEnv:              testDetails.GitToken,
-		utils.GitRepoEnv:               testDetails.RepoName,
-		utils.GitRepoOwnerEnv:          testDetails.RepoOwner,
-		utils.BranchNameTemplateEnv:    testDetails.CustomBranchName,
-		utils.GitApiEndpointEnv:        testDetails.ApiEndpoint,
-		utils.GitProjectEnv:            testDetails.GitProject,
-		utils.GitUsernameEnv:           testDetails.GitUsername,
-		utils.GitBaseBranchEnv:         mainBranch,
-		utils.GitUseLocalRepositoryEnv: fmt.Sprintf("%t", testDetails.UseLocalRepo),
+		utils.GitPullRequestIDEnv:     testDetails.PullRequestID,
+		utils.GitProvider:             testDetails.GitProvider,
+		utils.GitTokenEnv:             testDetails.GitToken,
+		utils.GitRepoEnv:              testDetails.RepoName,
+		utils.GitRepoOwnerEnv:         testDetails.RepoOwner,
+		utils.GitApiEndpointEnv:       testDetails.ApiEndpoint,
+		utils.GitAzureProjectEnv:      testDetails.GitProject,
+		utils.GitBitBucketUsernameEnv: testDetails.GitUsername,
+		utils.GitBaseBranchEnv:        mainBranch,
 	})
 	return func() {
 		envRestoreFunc()
@@ -184,7 +181,7 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 		assert.NoError(t, restoreFunc())
 	}()
 
-	// When testing using local repository clone the repository before the test starts so we can work with it as if it existed locally
+	// When testing using local repository, clone the repository before the test starts, so we can work with it as if it existed locally
 	if testDetails.UseLocalRepo {
 		cloneOptions := &git.CloneOptions{
 			URL: testDetails.GitCloneURL,

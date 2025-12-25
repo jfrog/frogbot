@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,8 +22,6 @@ import (
 
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -34,9 +33,29 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"
+
+var emptyConfigProfile = services2.ConfigProfile{
+	ProfileName:   "test-profile",
+	GeneralConfig: services2.GeneralConfig{},
+	FrogbotConfig: services2.FrogbotConfig{
+		BranchNameTemplate:    "",
+		PrTitleTemplate:       "",
+		CommitMessageTemplate: "",
+	},
+	Modules: []services2.Module{
+		{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+		},
+	},
+}
 
 var testPackagesData = []struct {
 	packageType string
@@ -154,33 +173,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			// Prepare
-			serverParams, restoreEnv := utils.VerifyEnv(t)
-			defer restoreEnv()
-			if test.aggregateFixes {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-				}()
-			}
-			if test.allowPartialResults {
-				assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
-				}()
-			}
-			// Set working directories for multi-dir/multi-project tests
-			switch test.testName {
-			case "aggregate-multi-dir":
-				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, "npm1,npm2"))
-				defer func() {
-					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
-				}()
-			case "partial-results-enabled":
-				assert.NoError(t, os.Setenv(utils.WorkingDirectoryEnv, ".,inner-project"))
-				defer func() {
-					assert.NoError(t, os.Unsetenv(utils.WorkingDirectoryEnv))
-				}()
-			}
+			serverParams, _ := utils.VerifyEnv(t)
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
@@ -204,11 +197,15 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			config, err := utils.BuildRepository(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
+
+			// We must set a non-nil config profile to avoid panic
+			repository.ConfigProfile = &emptyConfigProfile
+
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(config, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -316,12 +313,6 @@ pr body
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, test.mockPullRequestResponse, test.testName))
 			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
-
 			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
 				RepoOwner:   "jfrog",
@@ -336,11 +327,14 @@ pr body
 			assert.NoError(t, err)
 			// Load default configurations
 			gitTestParams.Branches = []string{"master"}
-			repoConfig, err := utils.BuildRepository(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
+			// We must set a non-nil config profile to avoid panic
+			repository.ConfigProfile = &emptyConfigProfile
+
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(repoConfig, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -406,10 +400,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	assert.NoError(t, err)
 
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
-	trueVal := true
-	params := utils.Params{
-		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
-	}
+	params := utils.Params{}
 	var frogbotParams = utils.Repository{
 		Server: environmentVars,
 		Params: params,
@@ -428,22 +419,19 @@ func TestPackageTypeFromScan(t *testing.T) {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
-			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
 			files, err := fileutils.ListFiles(tmpDir, true)
 			assert.NoError(t, err)
 			for _, file := range files {
 				log.Info(file)
 			}
-			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
-			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
-				Project:       &frogbotParams.Projects[0],
 				ServerDetails: &frogbotParams.Server,
+				ConfigProfile: &emptyConfigProfile,
 			}
 			testScan.scanDetails = &scanSetup
-			scanResponse, err := testScan.scan(tmpDir)
+			scanResponse, err := testScan.scan()
 			require.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.GetScaScansXrayResults(), pkg.packageType)
 		})
@@ -535,7 +523,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
@@ -597,7 +585,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 	}
 	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -615,10 +603,9 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	cfp.aggregateFixes = true
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -626,7 +613,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)

@@ -27,17 +27,15 @@ var (
 
 func TestExtractParamsFromEnvError(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:      "",
-		JFrogUserEnv:     "",
-		JFrogPasswordEnv: "",
-		JFrogTokenEnv:    "",
+		JFrogUrlEnv:   "",
+		JFrogTokenEnv: "",
 	})
 	_, err := extractJFrogCredentialsFromEnvs()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
 	_, err = extractJFrogCredentialsFromEnvs()
-	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
+	assert.EqualError(t, err, "JF_ACCESS_TOKEN environment variable is missing")
 }
 
 // Test extraction of env params in ScanPullRequest command
@@ -45,15 +43,14 @@ func TestExtractParamsFromEnvError(t *testing.T) {
 func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogUserEnv:        "admin",
-		JFrogPasswordEnv:    "password",
+		JFrogTokenEnv:       "token",
 		GitProvider:         string(BitbucketServer),
 		GitRepoOwnerEnv:     "jfrog",
 		GitRepoEnv:          "frogbot",
 		GitTokenEnv:         "123456789",
 		GitPullRequestIDEnv: "1",
 	})
-	extractAndAssertParamsFromEnv(t, true, true, ScanPullRequest)
+	extractAndAssertParamsFromEnv(t, true, ScanPullRequest)
 }
 
 // Test extraction in ScanRepository command
@@ -61,38 +58,6 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogUserEnv:     "admin",
-		JFrogPasswordEnv: "password",
-		GitProvider:      string(BitbucketServer),
-		GitRepoOwnerEnv:  "jfrog",
-		GitRepoEnv:       "frogbot",
-		GitTokenEnv:      "123456789",
-		GitBaseBranchEnv: "dev",
-	})
-	extractAndAssertParamsFromEnv(t, true, true, ScanRepository)
-}
-
-func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
-	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:            "",
-		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:           "admin",
-		JFrogPasswordEnv:       "password",
-		GitProvider:            string(BitbucketServer),
-		GitRepoOwnerEnv:        "jfrog",
-		GitRepoEnv:             "frogbot",
-		GitTokenEnv:            "123456789",
-		GitBaseBranchEnv:       "dev",
-	})
-	extractAndAssertParamsFromEnv(t, false, true, ScanRepository)
-}
-
-func TestExtractParamsFromEnvToken(t *testing.T) {
-	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogUserEnv:     "",
-		JFrogPasswordEnv: "",
 		JFrogTokenEnv:    "token",
 		GitProvider:      string(BitbucketServer),
 		GitRepoOwnerEnv:  "jfrog",
@@ -100,7 +65,35 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		GitTokenEnv:      "123456789",
 		GitBaseBranchEnv: "dev",
 	})
-	extractAndAssertParamsFromEnv(t, true, false, ScanRepository)
+	extractAndAssertParamsFromEnv(t, true, ScanRepository)
+}
+
+func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:            "",
+		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
+		JFrogTokenEnv:          "token",
+		GitProvider:            string(BitbucketServer),
+		GitRepoOwnerEnv:        "jfrog",
+		GitRepoEnv:             "frogbot",
+		GitTokenEnv:            "123456789",
+		GitBaseBranchEnv:       "dev",
+	})
+	extractAndAssertParamsFromEnv(t, false, ScanRepository)
+}
+
+func TestExtractParamsFromEnvToken(t *testing.T) {
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogTokenEnv:    "token",
+		GitProvider:      string(BitbucketServer),
+		GitRepoOwnerEnv:  "jfrog",
+		GitRepoEnv:       "frogbot",
+		GitTokenEnv:      "123456789",
+		GitBaseBranchEnv: "dev",
+	})
+	extractAndAssertParamsFromEnv(t, true, ScanRepository)
 }
 
 func TestExtractVcsProviderFromEnv(t *testing.T) {
@@ -152,12 +145,12 @@ func TestExtractClientInfo(t *testing.T) {
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 }
 
-func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, commandName string) {
+func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {
 	server, err := extractJFrogCredentialsFromEnvs()
 	assert.NoError(t, err)
 	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
-	configFile, err := BuildRepository("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
+	configFile, err := BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, gitParams, server, commandName)
 	assert.NoError(t, err)
 	err = SanitizeEnv()
 	assert.NoError(t, err)
@@ -169,12 +162,9 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 	assert.Equal(t, "http://127.0.0.1:8081/artifactory/", configServer.ArtifactoryUrl)
 	assert.Equal(t, "http://127.0.0.1:8081/xray/", configServer.XrayUrl)
-	if basicAuth {
-		assert.Equal(t, "admin", configServer.User)
-		assert.Equal(t, "password", configServer.Password)
-	} else {
-		assert.Equal(t, "token", configServer.AccessToken)
-	}
+	// TODO when basic auth (username + password) if fixed, make sure to add a check for it here and in the tests
+	assert.Equal(t, "token", configServer.AccessToken)
+
 	assert.Equal(t, vcsutils.BitbucketServer, configFile.GitProvider)
 	assert.Equal(t, "jfrog", configFile.RepoOwner)
 	assert.Equal(t, "frogbot", configFile.RepoName)
@@ -189,60 +179,14 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 }
 
-func TestExtractInstallationCommandFromEnv(t *testing.T) {
-	defer func() {
-		assert.NoError(t, SanitizeEnv())
-	}()
-
-	project := &Project{}
-	err := project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Empty(t, project.InstallCommandName)
-	assert.Empty(t, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Empty(t, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Equal(t, []string{"b"}, project.InstallCommandArgs)
-
-	project = &Project{}
-	SetEnvAndAssert(t, map[string]string{InstallCommandEnv: "a b --flagName=flagValue"})
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, "a", project.InstallCommandName)
-	assert.Equal(t, []string{"b", "--flagName=flagValue"}, project.InstallCommandArgs)
-}
-
-func TestGenerateConfigFromEnv(t *testing.T) {
+func TestBuildRepositoryFromEnv(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:                 "",
-		jfrogArtifactoryUrlEnv:      "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:             "http://127.0.0.1:8081/xray",
-		JFrogUserEnv:                "admin",
-		JFrogPasswordEnv:            "password",
-		BranchNameTemplateEnv:       "branch-${BRANCH_NAME_HASH}",
-		CommitMessageTemplateEnv:    "commit",
-		PullRequestTitleTemplateEnv: "pr-title",
-		InstallCommandEnv:           "nuget restore",
-		UseWrapperEnv:               "false",
-		RequirementsFileEnv:         "requirements.txt",
-		WorkingDirectoryEnv:         "a/b",
-		jfrogProjectEnv:             "projectKey",
-		jfrogWatchesEnv:             "watch-1, watch-2, watch-3",
-		DepsRepoEnv:                 "deps-remote",
-		MinSeverityEnv:              "medium",
-		FixableOnlyEnv:              "true",
-		DetectionOnlyEnv:            "true",
-		AllowedLicensesEnv:          "MIT, Apache-2.0",
+		JFrogUrlEnv:            "",
+		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
+		JFrogUserEnv:           "admin",
+		JFrogPasswordEnv:       "password",
+		jfrogProjectEnv:        "projectKey",
 	})
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
@@ -265,27 +209,24 @@ func TestGenerateConfigFromEnv(t *testing.T) {
 		User:           "admin",
 		Password:       "password",
 	}
-	repo, err := BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
+	repo, err := BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanRepository)
 	assert.NoError(t, err)
 	validateBuildRepo(t, &repo, &gitParams, &server, ScanRepository)
 
-	repo, err = BuildRepository("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
+	repo, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
 	validateBuildRepo(t, &repo, &gitParams, &server, ScanPullRequest)
 }
 
 func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *config.ServerDetails, commandName string) {
 	assert.Equal(t, "repoName", repo.RepoName)
-	assert.ElementsMatch(t, repo.Watches, []string{"watch-1", "watch-2", "watch-3"})
-	assert.Equal(t, "Medium", repo.MinSeverity)
-	assert.Equal(t, true, repo.FixableOnly)
-	assert.Equal(t, true, repo.AddPrCommentOnSuccess)
-	assert.Equal(t, true, repo.DetectionOnly)
-	assert.ElementsMatch(t, []string{"MIT", "Apache-2.0"}, repo.AllowedLicenses)
+	assert.Equal(t, "xrayVersion", repo.XrayVersion)
+	assert.Equal(t, "xscVersion", repo.XscVersion)
+
 	assert.Equal(t, gitParams.RepoOwner, repo.RepoOwner)
-	assert.Equal(t, gitParams.Token, repo.Token)
-	assert.Equal(t, gitParams.APIEndpoint, repo.APIEndpoint)
 	assert.Equal(t, gitParams.GitProvider, repo.GitProvider)
+	assert.Equal(t, gitParams.Token, repo.VcsInfo.Token)
+	assert.Equal(t, gitParams.APIEndpoint, repo.VcsInfo.APIEndpoint)
 
 	assert.Equal(t, server.ArtifactoryUrl, repo.Server.ArtifactoryUrl)
 	assert.Equal(t, server.XrayUrl, repo.Server.XrayUrl)
@@ -294,58 +235,12 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 
 	if commandName == ScanRepository {
 		assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
-		assert.NotEmpty(t, repo.BranchNameTemplate)
-		assert.NotEmpty(t, repo.CommitMessageTemplate)
-		assert.NotEmpty(t, repo.PullRequestTitleTemplate)
 	}
 
 	if commandName == ScanPullRequest {
 		assert.NotZero(t, repo.PullRequestDetails.ID)
-		assert.Empty(t, repo.PullRequestCommentTitle)
 	}
 
-	project := repo.Projects[0]
-	assert.Equal(t, []string{"a/b"}, project.WorkingDirs)
-	assert.False(t, *project.UseWrapper)
-	assert.Equal(t, "requirements.txt", project.PipRequirementsFile)
-	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "deps-remote", project.DepsRepo)
-}
-
-func TestExtractProjectParamsFromEnv(t *testing.T) {
-	project := &Project{}
-	defer func() {
-		assert.NoError(t, SanitizeEnv())
-	}()
-
-	// Test default values
-	err := project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.True(t, *project.UseWrapper)
-	assert.Equal(t, []string{RootDir}, project.WorkingDirs)
-	assert.Equal(t, "", project.PipRequirementsFile)
-	assert.Equal(t, "", project.InstallCommandName)
-	assert.Equal(t, []string(nil), project.InstallCommandArgs)
-
-	// Test value extraction
-	SetEnvAndAssert(t, map[string]string{
-		WorkingDirectoryEnv: "b/c",
-		RequirementsFileEnv: "r.txt",
-		UseWrapperEnv:       "false",
-		InstallCommandEnv:   "nuget restore",
-		DepsRepoEnv:         "repository",
-	})
-
-	project = &Project{}
-	err = project.setDefaultsIfNeeded()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"b/c"}, project.WorkingDirs)
-	assert.Equal(t, "r.txt", project.PipRequirementsFile)
-	assert.False(t, *project.UseWrapper)
-	assert.Equal(t, "nuget", project.InstallCommandName)
-	assert.Equal(t, []string{"restore"}, project.InstallCommandArgs)
-	assert.Equal(t, "repository", project.DepsRepo)
 }
 
 func TestVerifyValidApiEndpoint(t *testing.T) {
@@ -371,7 +266,7 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 	}
 }
 
-func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
+func TestGetConfigurationProfile(t *testing.T) {
 	testcases := []struct {
 		name            string
 		xrayVersion     string
@@ -381,7 +276,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
-			xrayVersion:     "3.110.0",
+			xrayVersion:     "1.0.0",
 			failureExpected: true,
 		},
 		{
@@ -414,7 +309,7 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
 
 			if testcase.failureExpected {
 				assert.Error(t, err)

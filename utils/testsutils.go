@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	ValidConfigProfile          = "default-profile"
 	InvalidPathConfigProfile    = "invalid-path-from-root-profile"
 	InvalidModulesConfigProfile = "invalid-modules-profile"
 	NonExistingProfile          = "non-existing-profile"
@@ -113,11 +112,10 @@ func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {
 	server.AccessToken = token
 	restoreFunc = func() {
 		SetEnvAndAssert(t, map[string]string{
-			JFrogUrlEnv:          url,
-			JFrogTokenEnv:        token,
-			JFrogUserEnv:         username,
-			JFrogPasswordEnv:     password,
-			GitAggregateFixesEnv: "FALSE",
+			JFrogUrlEnv:      url,
+			JFrogTokenEnv:    token,
+			JFrogUserEnv:     username,
+			JFrogPasswordEnv: password,
 		})
 	}
 	return
@@ -156,12 +154,10 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		}
 
 		secondModule := services.Module{
-			ModuleId:        999,
-			ModuleName:      "second-module",
-			PathFromRoot:    ".",
-			ExcludePatterns: nil,
-			ScanConfig:      services.ScanConfig{},
-			DepsRepo:        "",
+			ModuleId:     999,
+			ModuleName:   "second-module",
+			PathFromRoot: ".",
+			ScanConfig:   services.ScanConfig{},
 		}
 
 		switch {

@@ -44,7 +44,6 @@ func TestUpdateDependency(t *testing.T) {
 
 	scanDetails := &utils.ScanDetails{
 		ServerDetails: &serverDetails,
-		Project:       &utils.Project{DepsRepo: ""},
 	}
 
 	testCases := [][]dependencyFixTest{
@@ -90,7 +89,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
@@ -99,7 +98,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "pyproejct.toml"}},
+				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
@@ -108,7 +107,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
 				},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
+				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
@@ -117,7 +116,7 @@ func TestUpdateDependency(t *testing.T) {
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true,
 				},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
@@ -126,25 +125,16 @@ func TestUpdateDependency(t *testing.T) {
 					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Pyjwt"}},
 					IsDirectDependency:          true},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "requirements.txt"}},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
 				vulnDetails: &utils.VulnerabilityDetails{
 					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "setup.py"}},
-				fixSupported:       true,
-				descriptorsToCheck: []string{"setup.py"},
-			},
-			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 					IsDirectDependency:          true},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "pyproject.toml"}},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"pyproject.toml"},
 			},
@@ -154,7 +144,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
 				},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{PipRequirementsFile: "Pipfile"}},
+				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"Pipfile"},
 			},
@@ -228,7 +218,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          false,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
 				},
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{DepsRepo: ""}},
+				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
@@ -237,7 +227,7 @@ func TestUpdateDependency(t *testing.T) {
 					IsDirectDependency:          true,
 					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
 				},
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails, Project: &utils.Project{DepsRepo: ""}},
+				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
 			},
