@@ -35,7 +35,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pip:
 		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
-		handler = NewMavenPackageHandler(details)
+		handler = &MavenPackageUpdater{}
 	case techutils.Nuget:
 		handler = &NugetPackageHandler{}
 	case techutils.Gradle:
