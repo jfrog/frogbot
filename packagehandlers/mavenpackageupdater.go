@@ -58,7 +58,7 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	// Get all pom.xml locations from Components (same vuln can be in multiple modules)
 	pomPaths := mpu.getPomPaths(vulnDetails)
 	if len(pomPaths) == 0 {
-		return fmt.Errorf("no pom.xml locations found for %s", vulnDetails.ImpactedDependencyName)
+		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data. This indicates an issue with the vulnerability scan results", vulnDetails.ImpactedDependencyName)
 	}
 
 	// Update each pom.xml (e.g., backend/pom.xml, frontend/pom.xml)
@@ -83,10 +83,6 @@ func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDeta
 		if component.Location != nil && component.Location.File != "" {
 			pomPaths = append(pomPaths, component.Location.File)
 		}
-	}
-	// Fallback to "pom.xml" if no components with locations (backward compatibility)
-	if len(pomPaths) == 0 {
-		pomPaths = append(pomPaths, "pom.xml")
 	}
 	return pomPaths
 }
