@@ -1,11 +1,10 @@
 package packagehandlers
 
 import (
-	"encoding/xml"
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/beevik/etree"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -18,33 +17,6 @@ const (
 )
 
 type MavenPackageUpdater struct{}
-
-type mavenProject struct {
-	XMLName              xml.Name            `xml:"project"`
-	Parent               *mavenDep           `xml:"parent"`
-	Properties           mavenProperties     `xml:"properties"`
-	Dependencies         []mavenDep          `xml:"dependencies>dependency"`
-	DependencyManagement *mavenDepManagement `xml:"dependencyManagement"`
-}
-
-type mavenProperties struct {
-	Props []mavenProperty `xml:",any"`
-}
-
-type mavenProperty struct {
-	XMLName xml.Name
-	Value   string `xml:",chardata"`
-}
-
-type mavenDep struct {
-	GroupId    string `xml:"groupId"`
-	ArtifactId string `xml:"artifactId"`
-	Version    string `xml:"version"`
-}
-
-type mavenDepManagement struct {
-	Dependencies []mavenDep `xml:"dependencies>dependency"`
-}
 
 func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if !vulnDetails.IsDirectDependency {
@@ -89,28 +61,32 @@ func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDeta
 }
 
 func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
-	content, err := os.ReadFile(pomPath)
-	if err != nil {
+	doc := etree.NewDocument()
+	if err := doc.ReadFromFile(pomPath); err != nil {
 		return fmt.Errorf("failed to read %s: %w", pomPath, err)
 	}
 
-	var project mavenProject
-	if err := xml.Unmarshal(content, &project); err != nil {
-		return fmt.Errorf("failed to parse %s: %w", pomPath, err)
+	root := doc.SelectElement("project")
+	if root == nil {
+		return fmt.Errorf("no <project> root element found in %s", pomPath)
 	}
 
-	updated := mpu.updateInParent(&project, groupId, artifactId, fixedVersion)
-	if !updated {
-		updated = mpu.updateInDependencies(project.Dependencies, groupId, artifactId, fixedVersion, &project)
-	}
-	if !updated && project.DependencyManagement != nil {
-		updated = mpu.updateInDependencies(project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, &project)
-	}
+	updated := false
+	updated = mpu.updateInParent(root, groupId, artifactId, fixedVersion) || updated
+	updated = mpu.updateInDependencies(root, "dependencies", groupId, artifactId, fixedVersion) || updated
+	updated = mpu.updateInDependencies(root, "dependencyManagement/dependencies", groupId, artifactId, fixedVersion) || updated
 
 	if !updated {
 		return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
 	}
-	return mpu.writePom(pomPath, &project)
+
+	doc.Indent(2)
+	if err := doc.WriteToFile(pomPath); err != nil {
+		return fmt.Errorf("failed to write %s: %w", pomPath, err)
+	}
+
+	log.Debug("Successfully updated", pomPath)
+	return nil
 }
 
 func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
@@ -128,25 +104,48 @@ func toDependencyName(groupId, artifactId string) string {
 	return groupId + mavenCoordinateSeparator + artifactId
 }
 
-func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string) bool {
-	if project.Parent != nil && project.Parent.GroupId == groupId && project.Parent.ArtifactId == artifactId {
-		project.Parent.Version = fixedVersion
+func (mpu *MavenPackageUpdater) updateInParent(root *etree.Element, groupId, artifactId, fixedVersion string) bool {
+	parent := root.SelectElement("parent")
+	if parent == nil {
+		return false
+	}
+
+	gidElem := parent.SelectElement("groupId")
+	aidElem := parent.SelectElement("artifactId")
+	verElem := parent.SelectElement("version")
+
+	if gidElem != nil && aidElem != nil && verElem != nil &&
+		gidElem.Text() == groupId && aidElem.Text() == artifactId {
+		verElem.SetText(fixedVersion)
 		log.Debug("Updated parent", toDependencyName(groupId, artifactId), "to", fixedVersion)
 		return true
 	}
 	return false
 }
 
-func (mpu *MavenPackageUpdater) updateInDependencies(deps []mavenDep, groupId, artifactId, fixedVersion string, project *mavenProject) bool {
-	for i, dep := range deps {
-		if dep.GroupId == groupId && dep.ArtifactId == artifactId {
-			if propertyName, isProperty := extractPropertyName(dep.Version); isProperty {
-				if mpu.updateProperty(project, propertyName, fixedVersion) {
+func (mpu *MavenPackageUpdater) updateInDependencies(root *etree.Element, path, groupId, artifactId, fixedVersion string) bool {
+	depsContainer := root.FindElement(path)
+	if depsContainer == nil {
+		return false
+	}
+
+	for _, dep := range depsContainer.SelectElements("dependency") {
+		gidElem := dep.SelectElement("groupId")
+		aidElem := dep.SelectElement("artifactId")
+		verElem := dep.SelectElement("version")
+
+		if gidElem != nil && aidElem != nil && verElem != nil &&
+			gidElem.Text() == groupId && aidElem.Text() == artifactId {
+
+			version := verElem.Text()
+			if propertyName, isProperty := extractPropertyName(version); isProperty {
+				if mpu.updateProperty(root, propertyName, fixedVersion) {
 					log.Debug("Updated property", propertyName, "to", fixedVersion)
 					return true
 				}
 			}
-			deps[i].Version = fixedVersion
+
+			verElem.SetText(fixedVersion)
 			log.Debug("Updated dependency", toDependencyName(groupId, artifactId), "to", fixedVersion)
 			return true
 		}
@@ -161,26 +160,16 @@ func extractPropertyName(version string) (string, bool) {
 	return "", false
 }
 
-func (mpu *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName, newValue string) bool {
-	for i, prop := range project.Properties.Props {
-		if prop.XMLName.Local == propertyName {
-			project.Properties.Props[i].Value = newValue
-			return true
-		}
+func (mpu *MavenPackageUpdater) updateProperty(root *etree.Element, propertyName, newValue string) bool {
+	props := root.SelectElement("properties")
+	if props == nil {
+		return false
+	}
+
+	propElem := props.SelectElement(propertyName)
+	if propElem != nil {
+		propElem.SetText(newValue)
+		return true
 	}
 	return false
-}
-
-func (mpu *MavenPackageUpdater) writePom(pomPath string, project *mavenProject) error {
-	output, err := xml.MarshalIndent(project, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal XML: %w", err)
-	}
-
-	if err := os.WriteFile(pomPath, []byte(xml.Header+string(output)), 0644); err != nil {
-		return fmt.Errorf("failed to write %s: %w", pomPath, err)
-	}
-
-	log.Debug("Successfully updated", pomPath)
-	return nil
 }
