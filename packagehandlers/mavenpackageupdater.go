@@ -55,7 +55,7 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 		}
 	}
 
-	groupId, artifactId, err := parseMavenCoordinate(vulnDetails.ImpactedDependencyName)
+	groupId, artifactId, err := parseDependencyName(vulnDetails.ImpactedDependencyName)
 	if err != nil {
 		return err
 	}
@@ -108,29 +108,30 @@ func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixe
 	}
 
 	if !updated {
-		return fmt.Errorf("dependency %s not found in %s", toMavenCoordinate(groupId, artifactId), pomPath)
+		return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
 	}
 	return mpu.writePom(pomPath, &project)
 }
 
-func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {}
+func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
+}
 
-func parseMavenCoordinate(coordinate string) (groupId, artifactId string, err error) {
-	parts := strings.Split(coordinate, mavenCoordinateSeparator)
+func parseDependencyName(dependencyName string) (groupId, artifactId string, err error) {
+	parts := strings.Split(dependencyName, mavenCoordinateSeparator)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid Maven coordinate: %s. Expected format 'groupId:artifactId'", coordinate)
+		return "", "", fmt.Errorf("invalid Maven dependency name: %s. Expected format 'groupId:artifactId'", dependencyName)
 	}
 	return parts[0], parts[1], nil
 }
 
-func toMavenCoordinate(groupId, artifactId string) string {
+func toDependencyName(groupId, artifactId string) string {
 	return groupId + mavenCoordinateSeparator + artifactId
 }
 
 func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string) bool {
 	if project.Parent != nil && project.Parent.GroupId == groupId && project.Parent.ArtifactId == artifactId {
 		project.Parent.Version = fixedVersion
-		log.Debug("Updated parent", toMavenCoordinate(groupId, artifactId), "to", fixedVersion)
+		log.Debug("Updated parent", toDependencyName(groupId, artifactId), "to", fixedVersion)
 		return true
 	}
 	return false
@@ -146,7 +147,7 @@ func (mpu *MavenPackageUpdater) updateInDependencies(deps []mavenDep, groupId, a
 				}
 			}
 			deps[i].Version = fixedVersion
-			log.Debug("Updated dependency", toMavenCoordinate(groupId, artifactId), "to", fixedVersion)
+			log.Debug("Updated dependency", toDependencyName(groupId, artifactId), "to", fixedVersion)
 			return true
 		}
 	}
