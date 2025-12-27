@@ -11,6 +11,12 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
+const (
+	mavenCoordinateSeparator = ":"
+	propertyPrefix           = "${"
+	propertySuffix           = "}"
+)
+
 type MavenPackageUpdater struct{}
 
 type mavenProject struct {
@@ -49,19 +55,16 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 		}
 	}
 
-	parts := strings.Split(vulnDetails.ImpactedDependencyName, ":")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid Maven dependency name: %s", vulnDetails.ImpactedDependencyName)
+	groupId, artifactId, err := parseMavenCoordinate(vulnDetails.ImpactedDependencyName)
+	if err != nil {
+		return err
 	}
-	groupId, artifactId := parts[0], parts[1]
 
-	// Get all pom.xml locations from Components (same vuln can be in multiple modules)
 	pomPaths := mpu.getPomPaths(vulnDetails)
 	if len(pomPaths) == 0 {
-		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data. This indicates an issue with the vulnerability scan results", vulnDetails.ImpactedDependencyName)
+		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data", vulnDetails.ImpactedDependencyName)
 	}
 
-	// Update each pom.xml (e.g., backend/pom.xml, frontend/pom.xml)
 	var errors []string
 	for _, pomPath := range pomPaths {
 		if err := mpu.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); err != nil {
@@ -70,13 +73,11 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("failed to update some pom.xml files:\n%s", strings.Join(errors, "\n"))
+		return fmt.Errorf("failed to update pom.xml files:\n%s", strings.Join(errors, "\n"))
 	}
-
 	return nil
 }
 
-// getPomPaths extracts all pom.xml file paths from the vulnerability's Components
 func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDetails) []string {
 	var pomPaths []string
 	for _, component := range vulnDetails.Components {
@@ -87,7 +88,6 @@ func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDeta
 	return pomPaths
 }
 
-// updatePomFile updates a specific pom.xml file
 func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
@@ -108,19 +108,29 @@ func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixe
 	}
 
 	if !updated {
-		return fmt.Errorf("dependency %s not found in %s", groupId+":"+artifactId, pomPath)
+		return fmt.Errorf("dependency %s not found in %s", toMavenCoordinate(groupId, artifactId), pomPath)
 	}
-
 	return mpu.writePom(pomPath, &project)
 }
 
-func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {
+func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {}
+
+func parseMavenCoordinate(coordinate string) (groupId, artifactId string, err error) {
+	parts := strings.Split(coordinate, mavenCoordinateSeparator)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid Maven coordinate: %s. Expected format 'groupId:artifactId'", coordinate)
+	}
+	return parts[0], parts[1], nil
+}
+
+func toMavenCoordinate(groupId, artifactId string) string {
+	return groupId + mavenCoordinateSeparator + artifactId
 }
 
 func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string) bool {
 	if project.Parent != nil && project.Parent.GroupId == groupId && project.Parent.ArtifactId == artifactId {
 		project.Parent.Version = fixedVersion
-		log.Debug(fmt.Sprintf("Updated parent %s:%s to %s", groupId, artifactId, fixedVersion))
+		log.Debug("Updated parent", toMavenCoordinate(groupId, artifactId), "to", fixedVersion)
 		return true
 	}
 	return false
@@ -129,19 +139,25 @@ func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, a
 func (mpu *MavenPackageUpdater) updateInDependencies(deps []mavenDep, groupId, artifactId, fixedVersion string, project *mavenProject) bool {
 	for i, dep := range deps {
 		if dep.GroupId == groupId && dep.ArtifactId == artifactId {
-			if strings.HasPrefix(dep.Version, "${") && strings.HasSuffix(dep.Version, "}") {
-				propertyName := strings.Trim(dep.Version, "${}")
+			if propertyName, isProperty := extractPropertyName(dep.Version); isProperty {
 				if mpu.updateProperty(project, propertyName, fixedVersion) {
-					log.Debug(fmt.Sprintf("Updated property %s to %s", propertyName, fixedVersion))
+					log.Debug("Updated property", propertyName, "to", fixedVersion)
 					return true
 				}
 			}
 			deps[i].Version = fixedVersion
-			log.Debug(fmt.Sprintf("Updated dependency %s:%s to %s", groupId, artifactId, fixedVersion))
+			log.Debug("Updated dependency", toMavenCoordinate(groupId, artifactId), "to", fixedVersion)
 			return true
 		}
 	}
 	return false
+}
+
+func extractPropertyName(version string) (string, bool) {
+	if strings.HasPrefix(version, propertyPrefix) && strings.HasSuffix(version, propertySuffix) {
+		return strings.TrimSuffix(strings.TrimPrefix(version, propertyPrefix), propertySuffix), true
+	}
+	return "", false
 }
 
 func (mpu *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName, newValue string) bool {
@@ -164,6 +180,6 @@ func (mpu *MavenPackageUpdater) writePom(pomPath string, project *mavenProject) 
 		return fmt.Errorf("failed to write %s: %w", pomPath, err)
 	}
 
-	log.Debug(fmt.Sprintf("Successfully updated %s", pomPath))
+	log.Debug("Successfully updated", pomPath)
 	return nil
 }
