@@ -189,11 +189,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 // we filter out a scanner results if we found any error in any of its results (non-zero status code) in either source or target results.
 // This logic prevents us from presenting incorrect results due to an incomplete scan that produced incomplete results that might affect the diff process.
 func filterFailedResultsIfScannersFailuresAreAllowed(targetResults, sourceResults *results.SecurityCommandResults, failUponAnyScannerError bool, sourceWdPrefix, targetWdPrefix string) {
-	if failUponAnyScannerError {
-		return
-	}
-	if targetResults == nil {
-		// If IncludeAllVulnerabilities is applied, only sourceResults exists, and we don't need to filter anything - we present results we have
+	if failUponAnyScannerError || targetResults == nil {
 		return
 	}
 
@@ -293,7 +289,7 @@ func buildTargetMappings(targetResults, sourceResults *results.SecurityCommandRe
 
 	targetsByLocation := make(map[string]*results.TargetResults)
 	targetsByName := make(map[string]*results.TargetResults)
-	// In new SCA scanner we only get results in a single target, but since it is not yet deprecated we iterate all targets
+	// In new SCA scan all results are in a single target, but since the targets array is not yet deprecated from the struct we iterate all targets
 	for _, targetResult := range targetResults.Targets {
 		if targetResult.Target != "" {
 			targetsByLocation[trimTargetPrefix(targetResult.Target, targetWdPrefix)] = targetResult
