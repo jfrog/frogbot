@@ -170,15 +170,17 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
-	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
-	if targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
-		log.Debug("Diff scan - converting to new issues...")
-		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
-	}
 
+	if targetBranchWd == "" || scanDetails.ResultsToCompare == nil {
+		// Since we only perform a Diff scan in this flow - if target wd or target results are missing it means something went wrong with the target scan
+		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
+		err = errors.New("targetBranchWd or target branch scans results are empty")
+		return
+	}
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
 
-	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
+	log.Debug("Diff scan - converting to new issues...")
+	issuesCollection, e := scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	if e != nil {
 		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
 	}
