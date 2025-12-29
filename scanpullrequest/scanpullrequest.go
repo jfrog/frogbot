@@ -460,50 +460,14 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 	return
 }
 
-func getResultScanStatues(cmdResults ...*results.SecurityCommandResults) formats.ScanStatus {
-	converted := make([]formats.SimpleJsonResults, len(cmdResults))
-	for i, cmdResult := range cmdResults {
-		convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: cmdResult.IncludesVulnerabilities(), HasViolationContext: cmdResult.HasViolationContext(), SimplifiedOutput: true})
-		var err error
-		if converted[i], err = convertor.ConvertToSimpleJson(cmdResult); err != nil {
-			log.Debug(fmt.Sprintf("Failed to get scan status for failed scan #%d. Error: %s", i, err.Error()))
-			continue
-		}
-	}
-	return getScanStatus(converted...)
-}
-
-func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {
-	if len(cmdResults) == 0 {
+func getResultScanStatues(cmdResult *results.SecurityCommandResults) formats.ScanStatus {
+	if cmdResult == nil {
 		return formats.ScanStatus{}
 	}
-	if len(cmdResults) == 1 {
-		return cmdResults[0].Statuses
+	converted, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: cmdResult.IncludesVulnerabilities(), HasViolationContext: cmdResult.HasViolationContext(), SimplifiedOutput: true}).ConvertToSimpleJson(cmdResult)
+	if err != nil {
+		log.Debug(fmt.Sprintf("Failed to get scan status for failed scan. Error: %v", err))
+		return formats.ScanStatus{}
 	}
-	statuses := cmdResults[0].Statuses
-	for _, sourceResults := range cmdResults[1:] {
-		statuses.ScaStatusCode = getWorstScanStatus(statuses.ScaStatusCode, sourceResults.Statuses.ScaStatusCode)
-		statuses.IacStatusCode = getWorstScanStatus(statuses.IacStatusCode, sourceResults.Statuses.IacStatusCode)
-		statuses.SecretsStatusCode = getWorstScanStatus(statuses.SecretsStatusCode, sourceResults.Statuses.SecretsStatusCode)
-		statuses.SastStatusCode = getWorstScanStatus(statuses.SastStatusCode, sourceResults.Statuses.SastStatusCode)
-		statuses.ApplicabilityStatusCode = getWorstScanStatus(statuses.ApplicabilityStatusCode, sourceResults.Statuses.ApplicabilityStatusCode)
-	}
-	return statuses
-}
-
-func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
-	if sourceStatus == nil && targetStatus == nil {
-		// Scan not performed.
-		return nil
-	}
-	if targetStatus == nil {
-		return sourceStatus
-	}
-	if sourceStatus == nil {
-		return targetStatus
-	}
-	if *sourceStatus == 0 {
-		return targetStatus
-	}
-	return sourceStatus
+	return converted.Statuses
 }
