@@ -262,7 +262,7 @@ func testScanPullRequest(t *testing.T, projectName string) {
 
 	// Run "frogbot scan pull request"
 	var scanPullRequest ScanPullRequestCmd
-	err := scanPullRequest.Run(config, client, utils.MockHasConnection())
+	err := scanPullRequest.Run(config, client)
 	assert.NoError(t, err)
 
 	// Check env sanitize
