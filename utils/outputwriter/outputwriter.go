@@ -100,12 +100,12 @@ func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
 	mo.descriptionSizeLimit = client.GetPullRequestDetailsSizeLimit()
 }
 
-func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
+func GetCompatibleOutputWriter(provider vcsutils.VcsProvider, hasInternetConnection bool) OutputWriter {
 	switch provider {
 	case vcsutils.BitbucketServer:
-		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
+		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: hasInternetConnection}}
 	default:
-		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
+		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: hasInternetConnection}}
 	}
 }
 

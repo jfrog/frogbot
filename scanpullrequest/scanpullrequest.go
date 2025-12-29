@@ -37,11 +37,9 @@ type targetPair struct {
 
 type ScanPullRequestCmd struct{}
 
-func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	repoConfig := &repository
-	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
-		repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, int(repoConfig.Params.Git.PullRequestDetails.ID)); err != nil {
+func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient) (err error) {
+	if repository.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
+		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, int(repository.Params.Git.PullRequestDetails.ID)); err != nil {
 		return
 	}
 	pullRequestDetails := &repository.Params.Git.PullRequestDetails
