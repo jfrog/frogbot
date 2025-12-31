@@ -528,6 +528,5 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
-	configProfile.FrogbotConfig.CreateAutoFixPr = false
 	return
 }
