@@ -34,7 +34,7 @@ type FrogbotDetails struct {
 }
 
 type Repository struct {
-	Params       `yaml:"params,omitempty"`
+	Params
 	OutputWriter outputwriter.OutputWriter
 	Server       coreconfig.ServerDetails
 }
@@ -52,18 +52,16 @@ type Params struct {
 type JFrogPlatform struct {
 	XrayVersion     string
 	XscVersion      string
-	JFrogProjectKey string `yaml:"jfrogProjectKey,omitempty"`
+	JFrogProjectKey string
 }
 
 func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 	e := &ErrMissingEnv{}
-	if jp.JFrogProjectKey == "" {
-		if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
-			return
-		}
-		// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
-		err = nil
+	if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
+		return
 	}
+	// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
+	err = nil
 	return
 }
 
@@ -71,11 +69,11 @@ type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
 	RepoOwner          string
-	RepoName           string   `yaml:"repoName,omitempty"`
-	Branches           []string `yaml:"branches,omitempty"`
+	RepoName           string
+	Branches           []string
 	PullRequestDetails vcsclient.PullRequestInfo
 	RepositoryCloneUrl string
-	UploadSbomToVcs    *bool `yaml:"uploadSbomToVcs,omitempty"`
+	UploadSbomToVcs    *bool
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -96,26 +94,21 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
 	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
-	if g.RepoName == "" {
-		if gitParamsFromEnv.RepoName == "" {
-			return fmt.Errorf("repository name is missing. please set the %s environment variable", GitRepoEnv)
-		}
-		g.RepoName = gitParamsFromEnv.RepoName
+	if gitParamsFromEnv.RepoName == "" {
+		return fmt.Errorf("repository name is missing. please set the %s environment variable", GitRepoEnv)
 	}
+	g.RepoName = gitParamsFromEnv.RepoName
+
 	if commandName == ScanPullRequest {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
 			return errors.New("no Pull Request ID has been provided. Please configure it by using the `JF_GIT_PULL_REQUEST_ID` environment variable")
 		}
 	}
 	if commandName == ScanRepository {
-		noBranchesProvidedViaConfig := len(g.Branches) == 0
-		noBranchesProvidedViaEnv := len(gitParamsFromEnv.Branches) == 0
-		if noBranchesProvidedViaConfig {
-			if noBranchesProvidedViaEnv {
-				return errors.New("no branches were provided. Please set your branches using the `JF_GIT_BASE_BRANCH` environment variable")
-			}
-			g.Branches = gitParamsFromEnv.Branches
+		if len(gitParamsFromEnv.Branches) == 0 {
+			return errors.New("no branches were provided. Please set your branches using the `JF_GIT_BASE_BRANCH` environment variable")
 		}
+		g.Branches = gitParamsFromEnv.Branches
 	}
 	envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
 	if err != nil {
@@ -191,14 +184,16 @@ func BuildRepositoryFromEnv(xrayVersion, xscVersion string, gitClient vcsclient.
 	// Create a single repository from environment variables
 	repository = Repository{}
 	repository.Server = *server
-	repository.Params.XrayVersion = xrayVersion
-	repository.Params.XscVersion = xscVersion
-	if err = repository.Params.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
-		return
-	}
+	repository.Params.JFrogPlatform.XrayVersion = xrayVersion
+	repository.Params.JFrogPlatform.XscVersion = xscVersion
 	if err = repository.Params.JFrogPlatform.setJfProjectKeyIfExists(); err != nil {
 		return
 	}
+
+	if err = repository.Params.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
+		return
+	}
+
 	repository.setOutputWriterDetails()
 	repository.OutputWriter.SetSizeLimit(gitClient)
 	return repository, nil
@@ -388,10 +383,9 @@ func extractGitParamsFromEnvs() (*Git, error) {
 
 	autoDetectCIEnvVars()
 
-	// Branch & Repo names are mandatory variables.
-	// Must be set as environment variables.
-	// Validation performed later
-	// Set the base branch name
+	// Set the base branch name. Branch is a mandatory field.
+	// For scan-repository it must be set as environment variable (validation performed later in Git.setDefaultsIfNeeded)
+	// For scan-pull-request, it is fetched by GetPullRequestByID cann (in Run) and therefore not validated  in the config collection.
 	var branch string
 	if err = readParamFromEnv(GitBaseBranchEnv, &branch); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
@@ -399,6 +393,12 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	if branch != "" {
 		gitEnvParams.Branches = []string{branch}
 	}
+
+	// [Mandatory] Set the repository name, except for multi repository.
+	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
+		return nil, err
+	}
+
 	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitEnvParams.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
@@ -419,14 +419,9 @@ func extractGitParamsFromEnvs() (*Git, error) {
 		return nil, err
 	}
 
-	// [Mandatory] Set the repository name, except for multi repository.
-	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
-		return nil, err
-	}
-
 	// Set Bitbucket Server username
 	// Mandatory only for Bitbucket Server, this authentication detail is required for performing git operations.
-	if err = readParamFromEnv(GitBitBucketUsernameEnv, &gitEnvParams.Username); err != nil && !e.IsMissingEnvErr(err) {
+	if err = readParamFromEnv(GitBitBucketUsernameEnv, &gitEnvParams.Username); err != nil && gitEnvParams.GitProvider == vcsutils.BitbucketServer {
 		return nil, err
 	}
 	// Set Azure Repos Project name
@@ -506,7 +501,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	if envValue != "" {
 		parsedEnv, err := strconv.ParseBool(envValue)
 		if err != nil {
-			return false, fmt.Errorf("the value of the %s environment is expected to be either TRUE or FALSE. The value received however is %s", envKey, envValue)
+			return false, fmt.Errorf("the value of the %s environment is expected to boolean. The value received however is %s", envKey, envValue)
 		}
 		return parsedEnv, nil
 	}
