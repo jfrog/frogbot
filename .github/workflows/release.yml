@@ -1,0 +1,263 @@
+name: Release Frogbot
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v3.0.1 or 3.0.1)'
+        required: true
+        type: string
+
+# Required permissions
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: Release Frogbot v3
+    runs-on: self-hosted
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual trigger: use input version
+            VERSION="${{ inputs.version }}"
+            # Add 'v' prefix if not present
+            if [[ ! "$VERSION" =~ ^v ]]; then
+              TAG="v$VERSION"
+            else
+              TAG="$VERSION"
+              VERSION="${VERSION#v}"
+            fi
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # Push trigger: use test version with timestamp
+            VERSION="3.0.0-test-$(date +%s)"
+            TAG="v$VERSION"
+            
+            # Validate it's a v3.x.x version (allows pre-release suffixes like -testing, -alpha, etc.)
+            if [[ ! "$TAG" =~ ^v3\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+              echo "❌ Error: Version must be v3.x.x format (e.g., v3.0.1, v3.0.0-testing)"
+              echo "Got: $TAG"
+              exit 1
+            fi
+          else
+            # Release trigger: use release tag
+            TAG="${{ github.event.release.tag_name }}"
+            VERSION="${TAG#v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "✅ Release version: $VERSION"
+          echo "✅ Release tag: $TAG"
+
+      - name: Check if tag already exists
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+            
+            try {
+              // Check if tag exists
+              await github.rest.git.getRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`
+              });
+              
+              // Tag exists - fail the workflow
+              core.setFailed(`❌ Tag ${tag} already exists! Please use a different version.`);
+            } catch (error) {
+              if (error.status === 404) {
+                // Tag doesn't exist - good to proceed
+                console.log(`✅ Tag ${tag} does not exist, proceeding with release`);
+              } else {
+                // Some other error
+                throw error;
+              }
+            }
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Download JFrog CLI
+        run: |
+          curl -fL https://install-cli.jfrog.io | sh
+          # The install script already moves jf to /usr/local/bin/
+
+      - name: Configure JFrog CLI
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+        run: |
+          jf c rm --quiet || true
+          jf c add internal --url="$JF_URL" --access-token="$JF_ACCESS_TOKEN"
+          jf goc --repo-resolve ecosys-go-virtual
+
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Set up Node.js for Action
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: action/package-lock.json
+
+      - name: Run Frogbot scan before release
+        uses: jfrog/frogbot@v2
+        env:
+          JF_URL: ${{ secrets.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_GIT_BASE_BRANCH: ${{ github.ref_name }}
+          JF_FAIL: "true"
+          JF_SKIP_AUTOFIX: "true"
+
+      - name: Create release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Creating tag ${{ steps.version.outputs.tag }}..."
+          git tag -f ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }} --force
+          echo "Tag ${{ steps.version.outputs.tag }} created"
+
+      - name: Update GitHub Action major version tag (v3)
+        run: |
+          # Update v3 tag to point to the latest v3.x.x release
+          git tag -f v3
+          git push origin v3 --force
+          echo "Updated v3 tag to ${{ steps.version.outputs.tag }}"
+
+      - name: Build and upload binaries (parallel)
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+          JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
+          JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
+          JFROG_CLI_BUILD_PROJECT: ecosys
+        run: |
+          env -i PATH=$PATH HOME=$HOME \
+            JFROG_CLI_BUILD_NAME=$JFROG_CLI_BUILD_NAME \
+            JFROG_CLI_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER \
+            JFROG_CLI_BUILD_PROJECT=$JFROG_CLI_BUILD_PROJECT \
+            CI=true \
+            release/buildAndUpload.sh "${{ steps.version.outputs.version }}"
+
+      - name: Publish build info
+        env:
+          JFROG_CLI_BUILD_NAME: ecosystem-frogbot-release
+          JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
+          JFROG_CLI_BUILD_PROJECT: ecosys
+        run: |
+          jf rt bag
+          jf rt bce
+          jf rt bp
+
+      - name: Create and distribute release bundle
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Use same JFrog CLI config (internal) for distribution
+          jf ds rbc ecosystem-frogbot $VERSION \
+            --spec="release/specs/frogbot-rbc-spec.json" \
+            --spec-vars="VERSION=$VERSION" \
+            --sign
+          jf ds rbd ecosystem-frogbot $VERSION \
+            --site="releases.jfrog.io" \
+            --sync
+
+      - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+            
+            // Check if this is a pre-release version (contains hyphen like v3.0.0-testing)
+            const isPrerelease = tag.includes('-');
+            
+            console.log(`Creating release for tag ${tag}`);
+            if (isPrerelease) {
+              console.log(`⚠️  This will be marked as a pre-release`);
+            }
+            
+            // The tag was already created and pushed in the previous step
+            // Now create the release with auto-generated notes
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Release ${tag}`,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: isPrerelease,
+              make_latest: false
+            });
+            
+            console.log(`✅ Created release ${release.data.id} for ${tag}`);
+            console.log(`📦 Release URL: ${release.data.html_url}`);
+            console.log(`ℹ️  This release is NOT marked as "Latest"`);
+
+      - name: Cleanup JFrog config
+        if: always()
+        run: jf c rm --quiet || true
+
+      # On failure: delete release and tag
+      - name: Delete release on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+            
+            console.log(`Workflow failed, cleaning up tag ${tag}`);
+            
+            try {
+              // Try to find and delete the release
+              const releases = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              
+              const release = releases.data.find(r => r.tag_name === tag);
+              if (release) {
+                console.log(`Deleting release ${release.id}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+                console.log('Release deleted');
+              } else {
+                console.log('No release found to delete');
+              }
+              
+              // Delete the tag
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tag}`
+                });
+                console.log('Tag deleted');
+              } catch (error) {
+                console.log(`Tag deletion failed or tag doesn't exist: ${error.message}`);
+              }
+            } catch (error) {
+              console.error(`Cleanup failed: ${error.message}`);
+              // Don't fail the workflow if cleanup fails
+            }
+
