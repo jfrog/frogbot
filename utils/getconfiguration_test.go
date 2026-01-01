@@ -25,7 +25,7 @@ var (
 	configProfileFile = filepath.Join("..", "testdata", "configprofile", "configProfileExample.json")
 )
 
-func TestExtractParamsFromEnvError(t *testing.T) {
+func TestExtractJFrogCredentialsFromEnvs(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
 		JFrogUrlEnv:   "",
 		JFrogTokenEnv: "",
@@ -124,7 +124,7 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
 }
 
-func TestExtractClientInfo(t *testing.T) {
+func TestExtractGitParamsFromEnvs(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
