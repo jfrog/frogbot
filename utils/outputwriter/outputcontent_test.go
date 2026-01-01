@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -13,6 +12,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
 func TestGetMainCommentContent(t *testing.T) {
@@ -28,19 +29,9 @@ func TestGetMainCommentContent(t *testing.T) {
 			isComment:    true,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled.md")},
-				},
-				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled.md")},
-				},
-				{
-					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
@@ -48,33 +39,18 @@ func TestGetMainCommentContent(t *testing.T) {
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md")},
 				},
 				{
-					name:               "Simplified output not entitled",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled.md")},
-				},
-				{
 					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_entitled.md")},
 				},
 				{
-					name:               "Pull request not entitled custom title (Standard output)",
+					name:               "Pull Request not entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_not_entitled_with_title.md")},
-				},
-				{
-					name:               "Pull Request not entitled custom title avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title", avoidExtraMessages: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_pr_entitled_with_title.md")},
 				},
 				{
-					name:               "Pull request not entitled custom title (Simplified output)",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_simplified_not_entitled_with_title.md")},
-				},
-				{
-					name:               "Merge Request not entitled avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, avoidExtraMessages: true}},
+					name:               "Merge Request not entitled (Standard output)",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_no_issues_mr_entitled.md")},
 				},
 			},
@@ -85,19 +61,9 @@ func TestGetMainCommentContent(t *testing.T) {
 			isComment:    true,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled.md")},
-				},
-				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md")},
-				},
-				{
-					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
@@ -105,18 +71,13 @@ func TestGetMainCommentContent(t *testing.T) {
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled.md")},
 				},
 				{
-					name:               "Simplified output not entitled",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_not_entitled.md")},
-				},
-				{
-					name:               "Pull Request not entitled avoid extra messages (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
+					name:               "Pull Request not entitled (Standard output)",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_entitled.md")},
 				},
 				{
-					name:               "Simplified output not entitled avoid extra messages",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
+					name:               "Simplified output not entitled",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_simplified_entitled.md")},
 				},
 				{
@@ -128,11 +89,6 @@ func TestGetMainCommentContent(t *testing.T) {
 					name:               "Merge Request entitled custom title (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab, entitledForJas: true, pullRequestCommentTitle: "Custom title"}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_mr_entitled_with_title.md")},
-				},
-				{
-					name:               "Pull Request not entitled custom title (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, pullRequestCommentTitle: "Custom title"}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "summary_comment_issues_pr_not_entitled_with_title.md")},
 				},
 				{
 					name:               "Pull request entitled custom title (Simplified output)",
@@ -147,19 +103,9 @@ func TestGetMainCommentContent(t *testing.T) {
 			isComment:    false,
 			cases: []OutputTestCase{
 				{
-					name:               "Pull Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_pr_not_entitled.md")},
-				},
-				{
 					name:               "Pull Request entitled (Standard output)",
 					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, entitledForJas: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_pr_entitled.md")},
-				},
-				{
-					name:               "Merge Request not entitled (Standard output)",
-					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true, vcsProvider: vcsutils.GitLab}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_mr_not_entitled.md")},
 				},
 				{
 					name:               "Merge Request entitled (Standard output)",
@@ -167,18 +113,8 @@ func TestGetMainCommentContent(t *testing.T) {
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_mr_entitled.md")},
 				},
 				{
-					name:               "Simplified output not entitled",
+					name:               "Simplified output entitled",
 					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md")},
-				},
-				{
-					name:               "Simplified output not entitled ",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
-					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_not_entitled.md")},
-				},
-				{
-					name:               "Simplified output entitled avoid extra messages",
-					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true, avoidExtraMessages: true}},
 					expectedOutputPath: []string{filepath.Join(testSummaryCommentDir, "structure", "fix_simplified_entitled.md")},
 				},
 			},
@@ -385,6 +321,12 @@ func TestVulnerabilitiesContent(t *testing.T) {
 					},
 					Applicable:    "Undetermined",
 					FixedVersions: []string{"[0.24.3]"},
+					ImpactPaths: [][]formats.ComponentRow{
+						{
+							{Name: "root", Version: "1.0.0"},
+							{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+						},
+					},
 					JfrogResearchInformation: &formats.JfrogResearchInformation{
 						Details:     "Research CVE-2022-26652 details",
 						Remediation: "some remediation",
@@ -422,7 +364,13 @@ func TestVulnerabilitiesContent(t *testing.T) {
 					},
 					Applicable:    "Undetermined",
 					FixedVersions: []string{"[0.24.3]"},
-					Cves:          []formats.CveRow{{Id: "CVE-2022-26652"}},
+					ImpactPaths: [][]formats.ComponentRow{
+						{
+							{Name: "root", Version: "1.0.0"},
+							{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+						},
+					},
+					Cves: []formats.CveRow{{Id: "CVE-2022-26652"}},
 				},
 			},
 			cases: []OutputTestCase{
@@ -548,7 +496,19 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Not Applicable",
 			FixedVersions: []string{"4.0.0", "5.0.0"},
-			Cves:          []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "dep1", Version: "1.0.0"},
+					{Name: "impacted", Version: "3.0.0"},
+				},
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "dep2", Version: "2.0.0"},
+					{Name: "impacted", Version: "3.0.0"},
+				},
+			},
+			Cves: []formats.CveRow{{Id: "CVE-1111-11111", Applicability: &formats.Applicability{Status: "Not Applicable"}}},
 		},
 		{
 			Summary: "Summary XRAY-122345",
@@ -565,7 +525,13 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Undetermined",
 			FixedVersions: []string{"[0.24.1]"},
-			IssueId:       "XRAY-122345",
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "github.com/nats-io/nats-streaming-server", Version: "v0.21.0"},
+				},
+			},
+			IssueId: "XRAY-122345",
 			JfrogResearchInformation: &formats.JfrogResearchInformation{
 				Remediation: "some remediation",
 			},
@@ -585,6 +551,12 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 			},
 			Applicable:    "Applicable",
 			FixedVersions: []string{"[0.24.3]"},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "component-D", Version: "v0.21.0"},
+				},
+			},
 			JfrogResearchInformation: &formats.JfrogResearchInformation{
 				Remediation: "some remediation",
 			},
@@ -607,7 +579,13 @@ func getTestScaIssues(violations bool) []formats.VulnerabilityOrViolationRow {
 				},
 			},
 			Applicable: "Undetermined",
-			Cves:       []formats.CveRow{},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0.0"},
+					{Name: "github.com/mholt/archiver/v3", Version: "v3.5.1"},
+				},
+			},
+			Cves: []formats.CveRow{},
 		},
 	}
 	if violations {

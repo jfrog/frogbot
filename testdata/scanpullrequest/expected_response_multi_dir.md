@@ -4,7 +4,7 @@
 
 <div align='center'>
 
-[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[![🚨 Frogbot scanned this pull request and found the below:](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/vulnerabilitiesBannerPR.png)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 
 </div>
 
@@ -27,28 +27,15 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Direct Dependencies                  | Impacted Dependency                  | Fixed Versions                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
-| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2025-45768 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | - |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
 
 </div>
 
 
 ### 🔖 Details
 
-
-<details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
-
-### Vulnerability Details
-|                 |                   |
-| --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Not Applicable |
-| **Direct Dependencies:** | minimatch:3.0.4 |
-| **Impacted Dependency:** | minimatch:3.0.4 |
-| **Fixed Versions:** | [3.0.5] |
-| **CVSS V3:** | 7.5 |
-
-A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
 <details><summary><b>[ CVE-2022-29217 ] pyjwt 1.7.1</b></summary>
 
@@ -100,18 +87,51 @@ With -
 ### Vulnerability Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> Low |
 | **Contextual Analysis:** | Not Applicable |
 | **Direct Dependencies:** | pyjwt:1.7.1 |
 | **Impacted Dependency:** | pyjwt:1.7.1 |
 | **Fixed Versions:** | - |
 | **CVSS V3:** | 7.0 |
 
-pyjwt v2.10.1 was discovered to contain weak encryption. NOTE: this is disputed by the Supplier because the key length is chosen by the application that uses the library (admittedly, library users may benefit from a minimum value and a mechanism for opting in to strict enforcement).<br></details>
+Lack of minimal key length in PyJWT may lead to authorization bypass
 
+### 🔬 JFrog Research Details
+
+**Description:**
+It was discovered that PyJWT does not enforce any minimal key length when encoding JWT tokens.
+For example, a user may encode and decode a JWT token successfully, even with an empty key -
+```python
+key = ''
+e = jwt.encode({"foo":"bar"}, key, algorithm='HS256')
+print(e)
+>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIifQ._NaFhGu8tCCgBKksGBA6ADwRdKx3e9GES_KyF4A5phE
+
+jwt.decode(e, key, algorithms=['HS256'])
+> {'foo': 'bar'}
+```
+
+Using a key with a short length may lead to attackers successfully brute-forcing it, leading to them being able to modify the contents of JWT tokens that use that key, possibly leading to privilege escalation and authorization bypass.
+
+The vulnerability was disputed (and never fixed) since the maintainers claim that the key is chosen by the application that uses the library, and is responsible for choosing a sufficiently long key.
+<br></details>
+
+<details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | minimatch:3.0.4 |
+| **Fixed Versions:** | [3.0.5] |
+| **CVSS V3:** | 7.5 |
+
+A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
 ---
 <div align='center'>
 
-[🐸 JFrog Frogbot](https://docs.jfrog-applications.jfrog.io/jfrog-applications/frogbot)
+[🐸 JFrog Frogbot](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 
 </div>

@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 type ReviewCommentType string
@@ -29,27 +29,24 @@ const (
 	SastComment       ReviewCommentType = "Sast"
 	SecretComment     ReviewCommentType = "Secrets"
 
-	RescanRequestComment   = "rescan"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
 // In Scan PR, if there are no issues, comments will be added to the PR with a message that there are no issues.
 func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, resultContext results.ResultContext, repo *Repository, client vcsclient.VcsClient, pullRequestID int) (err error) {
-	if !repo.Params.AvoidPreviousPrCommentsDeletion {
-		// The removal of comments may fail for various reasons,
-		// such as concurrent scanning of pull requests and attempts
-		// to delete comments that have already been removed in a different process.
-		// Since this task is not mandatory for a Frogbot run,
-		// we will not cause a Frogbot run to fail but will instead log the error.
-		log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
-		if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
-			log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
-		}
+	// The removal of comments may fail for various reasons,
+	// such as concurrent scanning of pull requests and attempts
+	// to delete comments that have already been removed in a different process.
+	// Since this task is not mandatory for a Frogbot run,
+	// we will not cause a Frogbot run to fail but will instead log the error.
+	log.Debug("Looking for an existing Frogbot pull request comment. Deleting it if it exists...")
+	if e := DeletePullRequestComments(repo, client, pullRequestID); e != nil {
+		log.Error(fmt.Sprintf("%s:\n%v", commentRemovalErrorMsg, e))
 	}
 
-	// Add summary (SCA, license) scan comment
-	if issues.IssuesExists(repo.PullRequestSecretComments) || repo.AddPrCommentOnSuccess {
-		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.PullRequestSecretComments, repo.OutputWriter) {
+	// Add summary scan comment
+	if issues.IssuesExists(repo.FrogbotConfig.ShowSecretsAsPrComment) || !repo.FrogbotConfig.HideSuccessBannerForNoIssues {
+		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.FrogbotConfig.ShowSecretsAsPrComment, repo.OutputWriter) {
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request comment: " + err.Error())
 				return
@@ -113,7 +110,6 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 
 func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, resultContext results.ResultContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
-		// No Issues
 		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
 	}
 	// Summary
@@ -127,10 +123,6 @@ func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollec
 		content = append(content, vulnerabilitiesContent...)
 	}
 	return outputwriter.GetMainCommentContent(content, true, true, writer)
-}
-
-func IsFrogbotRescanComment(comment string) bool {
-	return strings.Contains(strings.ToLower(comment), RescanRequestComment)
 }
 
 func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {
@@ -215,7 +207,7 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 		}
 	}
 	// Secrets review comments
-	if !repo.Params.PullRequestSecretComments {
+	if !repo.FrogbotConfig.ShowSecretsAsPrComment {
 		return
 	}
 	for _, secret := range issues.SecretsVulnerabilities {

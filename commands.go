@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
 	"github.com/jfrog/frogbot/v2/scanrepository"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-	"github.com/jfrog/froggit-go/vcsclient"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
-	"github.com/jfrog/jfrog-client-go/utils/log"
 
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	clitool "github.com/urfave/cli/v2"
@@ -21,7 +21,7 @@ import (
 
 type FrogbotCommand interface {
 	// Run the command
-	Run(config utils.RepoAggregator, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
+	Run(config utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
 }
 
 func GetCommands() []*clitool.Command {
@@ -41,24 +41,6 @@ func GetCommands() []*clitool.Command {
 			Usage:   "Scan the current branch and create pull requests with fixes if needed",
 			Action: func(ctx *clitool.Context) error {
 				return Exec(&scanrepository.ScanRepositoryCmd{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-		{
-			Name:    utils.ScanAllPullRequests,
-			Aliases: []string{"sprs", "scan-pull-requests"},
-			Usage:   "Scans all the open pull requests within a single or multiple repositories with JFrog Xray for security vulnerabilities",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanpullrequest.ScanAllPullRequestsCmd{}, ctx.Command.Name)
-			},
-			Flags: []clitool.Flag{},
-		},
-		{
-			Name:    utils.ScanMultipleRepositories,
-			Aliases: []string{"scan-and-fix-repos", "safr"},
-			Usage:   "Scan single or multiple repositories and create pull requests with fixes if any security vulnerabilities are found",
-			Action: func(ctx *clitool.Context) error {
-				return Exec(&scanrepository.ScanMultipleRepositories{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},
@@ -95,18 +77,12 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 		}()
 	}
 
-	// Send a usage report
-	waitForUsageResponse := utils.ReportUsageOnCommand(commandName, frogbotDetails.ServerDetails, frogbotDetails.Repositories)
-
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
-	err = command.Run(frogbotDetails.Repositories, frogbotDetails.GitClient, frogbotRepoConnection)
+	err = command.Run(frogbotDetails.Repository, frogbotDetails.GitClient, frogbotRepoConnection)
 
-	// Wait for usage reporting to finish.
-	waitForUsageResponse()
-
-	if err != nil && usage.ShouldReportUsage() {
-		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repositories[0].JFrogProjectKey); reportError != nil {
+	if err != nil {
+		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repository.JFrogProjectKey); reportError != nil {
 			log.Debug(reportError)
 		}
 	} else {

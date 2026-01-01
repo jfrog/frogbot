@@ -1,9 +1,12 @@
 package scanrepository
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
@@ -11,14 +14,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
+
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
-	"github.com/jfrog/jfrog-cli-security/tests/validations"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -27,9 +33,29 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"
+
+var emptyConfigProfile = services2.ConfigProfile{
+	ProfileName:   "test-profile",
+	GeneralConfig: services2.GeneralConfig{},
+	FrogbotConfig: services2.FrogbotConfig{
+		BranchNameTemplate:    "",
+		PrTitleTemplate:       "",
+		CommitMessageTemplate: "",
+	},
+	Modules: []services2.Module{
+		{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+		},
+	},
+}
 
 var testPackagesData = []struct {
 	packageType string
@@ -84,7 +110,6 @@ var testPackagesData = []struct {
 func TestScanRepositoryCmd_Run(t *testing.T) {
 	tests := []struct {
 		testName                       string
-		configPath                     string
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
 		expectedMissingFilesInBranch   map[string][]string
@@ -94,28 +119,18 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	}{
 		{
 			testName:                       "aggregate",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-dir/.frogbot/frogbot-config.yml",
-		},
-		{
-			testName:                       "aggregate-multi-project",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-Pip-dependencies-master": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-Pip-dependencies-master": {"2.4.0"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-npm-dependencies-master": {"npm/package-lock.json"}},
-			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
-			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/aggregate-multi-project/.frogbot/frogbot-config.yml",
 		},
 		{
 			testName: "aggregate-no-vul",
@@ -144,11 +159,10 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
 			testName:                       "partial-results-enabled",
-			expectedPackagesInBranch:       map[string][]string{"frogbot-update-npm-dependencies-master": {"minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-npm-dependencies-master": {"1.2.6", "0.8.4"}},
+			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"minimist", "mpath"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
-			configPath:                     "../testdata/scanrepository/cmd/partial-results-enabled/.frogbot/frogbot-config.yml",
 			allowPartialResults:            true,
 		},
 	}
@@ -159,20 +173,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			// Prepare
-			serverParams, restoreEnv := utils.VerifyEnv(t)
-			defer restoreEnv()
-			if test.aggregateFixes {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-				}()
-			}
-			if test.allowPartialResults {
-				assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "true"))
-				defer func() {
-					assert.NoError(t, os.Setenv(utils.AllowPartialResultsEnv, "false"))
-				}()
-			}
+			serverParams, _ := utils.VerifyEnv(t)
 			xrayVersion, xscVersion, err := xsc.GetJfrogServicesVersion(&serverParams)
 			assert.NoError(t, err)
 
@@ -192,23 +193,19 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 
-			// Read config or resolve to default
-			var configData []byte
-			if test.configPath != "" {
-				configData, err = utils.ReadConfigFromFileSystem(test.configPath)
-				assert.NoError(t, err)
-			} else {
-				configData = []byte{}
-				// Manual set of "JF_GIT_BASE_BRANCH"
-				gitTestParams.Branches = []string{"master"}
-			}
+			// Manual set of "JF_GIT_BASE_BRANCH"
+			gitTestParams.Branches = []string{"master"}
 
 			utils.CreateDotGitWithCommit(t, testDir, port, test.testName)
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, &gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
+
+			// We must set a non-nil config profile to avoid panic
+			repository.ConfigProfile = &emptyConfigProfile
+
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -316,12 +313,6 @@ pr body
 			server := httptest.NewServer(createScanRepoGitHubHandler(t, &port, test.mockPullRequestResponse, test.testName))
 			defer server.Close()
 			port = server.URL[strings.LastIndex(server.URL, ":")+1:]
-
-			assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "true"))
-			defer func() {
-				assert.NoError(t, os.Setenv(utils.GitAggregateFixesEnv, "false"))
-			}()
-
 			gitTestParams := &utils.Git{
 				GitProvider: vcsutils.GitHub,
 				RepoOwner:   "jfrog",
@@ -335,13 +326,15 @@ pr body
 			client, err := vcsclient.NewClientBuilder(vcsutils.GitHub).ApiEndpoint(server.URL).Token("123456").Build()
 			assert.NoError(t, err)
 			// Load default configurations
-			var configData []byte
 			gitTestParams.Branches = []string{"master"}
-			configAggregator, err := utils.BuildRepoAggregator(xrayVersion, xscVersion, client, configData, gitTestParams, &serverParams, utils.ScanRepository)
+			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
+			// We must set a non-nil config profile to avoid panic
+			repository.ConfigProfile = &emptyConfigProfile
+
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(configAggregator, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client, utils.MockHasConnection())
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -407,10 +400,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 	assert.NoError(t, err)
 
 	testScan := &ScanRepositoryCmd{OutputWriter: &outputwriter.StandardOutput{}}
-	trueVal := true
-	params := utils.Params{
-		Scan: utils.Scan{Projects: []utils.Project{{UseWrapper: &trueVal}}},
-	}
+	params := utils.Params{}
 	var frogbotParams = utils.Repository{
 		Server: environmentVars,
 		Params: params,
@@ -429,22 +419,19 @@ func TestPackageTypeFromScan(t *testing.T) {
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew"), 0777))
 				assert.NoError(t, os.Chmod(filepath.Join(tmpDir, "gradlew.bat"), 0777))
 			}
-			frogbotParams.Projects[0].WorkingDirs = []string{tmpDir}
 			files, err := fileutils.ListFiles(tmpDir, true)
 			assert.NoError(t, err)
 			for _, file := range files {
 				log.Info(file)
 			}
-			frogbotParams.Projects[0].InstallCommandName = pkg.commandName
-			frogbotParams.Projects[0].InstallCommandArgs = pkg.commandArgs
 			scanSetup := utils.ScanDetails{
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
-				Project:       &frogbotParams.Projects[0],
 				ServerDetails: &frogbotParams.Server,
+				ConfigProfile: &emptyConfigProfile,
 			}
 			testScan.scanDetails = &scanSetup
-			scanResponse, err := testScan.scan(tmpDir)
+			scanResponse, err := testScan.scan()
 			require.NoError(t, err)
 			verifyTechnologyNaming(t, scanResponse.GetScaScansXrayResults(), pkg.packageType)
 		})
@@ -489,43 +476,11 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with vulnerabilities and no violations",
 			scanResults: &results.SecurityCommandResults{
-				ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{
-						DeprecatedXrayResults: validations.NewMockScaResults(
-							services.ScanResponse{
-								Vulnerabilities: []services.Vulnerability{
-									{
-										Cves: []services.Cve{
-											{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-											{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-										},
-										Severity: "Critical",
-										Components: map[string]services.Component{
-											"vuln1": {
-												FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}}},
-											},
-										},
-									},
-									{
-										Cves: []services.Cve{
-											{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-											{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-										},
-										Severity: "High",
-										Components: map[string]services.Component{
-											"vuln2": {
-												FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "vuln1"}, {ComponentId: "vuln2"}}},
-											},
-										},
-									},
-								},
-							},
-						),
-					},
+					ScaResults: &results.ScaScanResults{},
 					JasResults: &results.JasScansResults{},
 				}},
 			},
@@ -544,47 +499,11 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		{
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &results.SecurityCommandResults{
-				ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}},
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{
-						DeprecatedXrayResults: validations.NewMockScaResults(
-							services.ScanResponse{
-								Violations: []services.Violation{
-									{
-										ViolationType: "security",
-										WatchName:     "w1",
-										Cves: []services.Cve{
-											{Id: "CVE-2023-1234", CvssV3Score: "9.1"},
-											{Id: "CVE-2023-4321", CvssV3Score: "8.9"},
-										},
-										Severity: "Critical",
-										Components: map[string]services.Component{
-											"viol1": {
-												FixedVersions: []string{"1.9.1", "2.0.3", "2.0.5"},
-												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}}},
-											},
-										},
-									},
-									{
-										ViolationType: "security",
-										WatchName:     "w1",
-										Cves: []services.Cve{
-											{Id: "CVE-2022-1234", CvssV3Score: "7.1"},
-											{Id: "CVE-2022-4321", CvssV3Score: "7.9"},
-										},
-										Severity: "High",
-										Components: map[string]services.Component{
-											"viol2": {
-												FixedVersions: []string{"2.4.1", "2.6.3", "2.8.5"},
-												ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "viol1"}, {ComponentId: "viol2"}}},
-											},
-										},
-									},
-								},
-							},
-						),
-					},
+					ScaResults: &results.ScaScanResults{},
 					JasResults: &results.JasScansResults{},
 				}},
 			},
@@ -604,7 +523,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fixVersionsMap, err := cfp.createVulnerabilitiesMap(testCase.scanResults)
+			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
@@ -666,7 +585,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 	}
 	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -684,10 +603,9 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	cfp.aggregateFixes = true
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -695,7 +613,7 @@ func TestPreparePullRequestDetails(t *testing.T) {
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
 	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -817,4 +735,76 @@ func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []b
 		err = errors.New("git error: " + string(exitError.Stderr))
 	}
 	return
+}
+
+func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{}, projectNames ...string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		for _, projectName := range projectNames {
+			if r.RequestURI == fmt.Sprintf("/%s/info/refs?service=git-upload-pack", projectName) {
+				hash := plumbing.NewHash("5e3021cf22da163f0d312d8fcf299abaa79726fb")
+				capabilities := capability.NewList()
+				assert.NoError(t, capabilities.Add(capability.SymRef, "HEAD:/refs/heads/master"))
+				ar := &packp.AdvRefs{
+					References: map[string]plumbing.Hash{
+						"refs/heads/master": plumbing.NewHash("5e3021cf22da163f0d312d8fcf299abaa79726fb"),
+					},
+					Head:         &hash,
+					Capabilities: capabilities,
+				}
+				var buf bytes.Buffer
+				assert.NoError(t, ar.Encode(&buf))
+				_, err := w.Write(buf.Bytes())
+				assert.NoError(t, err)
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/pulls", projectName) {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/%s", projectName) {
+				file, err := os.ReadFile(fmt.Sprintf("%s.tar.gz", projectName))
+				assert.NoError(t, err)
+				_, err = w.Write(file)
+				assert.NoError(t, err)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/tarball/master", projectName) {
+				w.Header().Add("Location", fmt.Sprintf("http://127.0.0.1:%s/%s", *port, projectName))
+				w.WriteHeader(http.StatusFound)
+				_, err := w.Write([]byte{})
+				assert.NoError(t, err)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/commits?page=1&per_page=%d&sha=master", projectName, vcsutils.NumberOfCommitsToFetch) {
+				w.WriteHeader(http.StatusOK)
+				rawJson := "[\n  {\n    \"url\": \"https://api.github.com/repos/octocat/Hello-World/commits/6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n    \"sha\": \"6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n    \"node_id\": \"MDY6Q29tbWl0NmRjYjA5YjViNTc4NzVmMzM0ZjYxYWViZWQ2OTVlMmU0MTkzZGI1ZQ==\",\n    \"html_url\": \"https://github.com/octocat/Hello-World/commit/6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n    \"comments_url\": \"https://api.github.com/repos/octocat/Hello-World/commits/6dcb09b5b57875f334f61aebed695e2e4193db5e/comments\",\n    \"commit\": {\n      \"url\": \"https://api.github.com/repos/octocat/Hello-World/git/commits/6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n      \"author\": {\n        \"name\": \"Monalisa Octocat\",\n        \"email\": \"support@github.com\",\n        \"date\": \"2011-04-14T16:00:49Z\"\n      },\n      \"committer\": {\n        \"name\": \"Monalisa Octocat\",\n        \"email\": \"support@github.com\",\n        \"date\": \"2011-04-14T16:00:49Z\"\n      },\n      \"message\": \"Fix all the bugs\",\n      \"tree\": {\n        \"url\": \"https://api.github.com/repos/octocat/Hello-World/tree/6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n        \"sha\": \"6dcb09b5b57875f334f61aebed695e2e4193db5e\"\n      },\n      \"comment_count\": 0,\n      \"verification\": {\n        \"verified\": false,\n        \"reason\": \"unsigned\",\n        \"signature\": null,\n        \"payload\": null\n      }\n    },\n    \"author\": {\n      \"login\": \"octocat\",\n      \"id\": 1,\n      \"node_id\": \"MDQ6VXNlcjE=\",\n      \"avatar_url\": \"https://github.com/images/error/octocat_happy.gif\",\n      \"gravatar_id\": \"\",\n      \"url\": \"https://api.github.com/users/octocat\",\n      \"html_url\": \"https://github.com/octocat\",\n      \"followers_url\": \"https://api.github.com/users/octocat/followers\",\n      \"following_url\": \"https://api.github.com/users/octocat/following{/other_user}\",\n      \"gists_url\": \"https://api.github.com/users/octocat/gists{/gist_id}\",\n      \"starred_url\": \"https://api.github.com/users/octocat/starred{/owner}{/repo}\",\n      \"subscriptions_url\": \"https://api.github.com/users/octocat/subscriptions\",\n      \"organizations_url\": \"https://api.github.com/users/octocat/orgs\",\n      \"repos_url\": \"https://api.github.com/users/octocat/repos\",\n      \"events_url\": \"https://api.github.com/users/octocat/events{/privacy}\",\n      \"received_events_url\": \"https://api.github.com/users/octocat/received_events\",\n      \"type\": \"User\",\n      \"site_admin\": false\n    },\n    \"committer\": {\n      \"login\": \"octocat\",\n      \"id\": 1,\n      \"node_id\": \"MDQ6VXNlcjE=\",\n      \"avatar_url\": \"https://github.com/images/error/octocat_happy.gif\",\n      \"gravatar_id\": \"\",\n      \"url\": \"https://api.github.com/users/octocat\",\n      \"html_url\": \"https://github.com/octocat\",\n      \"followers_url\": \"https://api.github.com/users/octocat/followers\",\n      \"following_url\": \"https://api.github.com/users/octocat/following{/other_user}\",\n      \"gists_url\": \"https://api.github.com/users/octocat/gists{/gist_id}\",\n      \"starred_url\": \"https://api.github.com/users/octocat/starred{/owner}{/repo}\",\n      \"subscriptions_url\": \"https://api.github.com/users/octocat/subscriptions\",\n      \"organizations_url\": \"https://api.github.com/users/octocat/orgs\",\n      \"repos_url\": \"https://api.github.com/users/octocat/repos\",\n      \"events_url\": \"https://api.github.com/users/octocat/events{/privacy}\",\n      \"received_events_url\": \"https://api.github.com/users/octocat/received_events\",\n      \"type\": \"User\",\n      \"site_admin\": false\n    },\n    \"parents\": [\n      {\n        \"url\": \"https://api.github.com/repos/octocat/Hello-World/commits/6dcb09b5b57875f334f61aebed695e2e4193db5e\",\n        \"sha\": \"6dcb09b5b57875f334f61aebed695e2e4193db5e\"\n      }\n    ]\n  }\n]"
+				b := []byte(rawJson)
+				_, err := w.Write(b)
+				assert.NoError(t, err)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%v/code-scanning/sarifs", projectName) {
+				w.WriteHeader(http.StatusAccepted)
+				rawJson := "{\n  \"id\": \"47177e22-5596-11eb-80a1-c1e54ef945c6\",\n  \"url\": \"https://api.github.com/repos/octocat/hello-world/code-scanning/sarifs/47177e22-5596-11eb-80a1-c1e54ef945c6\"\n}"
+				b := []byte(rawJson)
+				_, err := w.Write(b)
+				assert.NoError(t, err)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s/pulls?state=open", projectName) {
+				jsonResponse, err := json.Marshal(response)
+				assert.NoError(t, err)
+				_, err = w.Write(jsonResponse)
+				assert.NoError(t, err)
+				return
+			}
+			if r.RequestURI == fmt.Sprintf("/repos/jfrog/%s", projectName) {
+				jsonResponse := `{"id": 1296269,"node_id": "MDEwOlJlcG9zaXRvcnkxMjk2MjY5","name": "Hello-World","full_name": "octocat/Hello-World","private": false,"description": "This your first repo!","ssh_url": "git@github.com:octocat/Hello-World.git","clone_url": "https://github.com/octocat/Hello-World.git","visibility": "public"}`
+				_, err := w.Write([]byte(jsonResponse))
+				assert.NoError(t, err)
+				return
+			}
+		}
+	}
 }

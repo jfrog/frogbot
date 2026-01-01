@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
 	"regexp"
 	"strings"
 	"time"
@@ -73,6 +72,11 @@ func NewGitManager() *GitManager {
 	return &GitManager{}
 }
 
+func (gm *GitManager) SetCustomTemplates(customTemplates CustomTemplates) *GitManager {
+	gm.customTemplates = customTemplates
+	return gm
+}
+
 func (gm *GitManager) SetAuth(username, token string) *GitManager {
 	gm.auth = toBasicAuth(username, token)
 	return gm
@@ -130,20 +134,8 @@ func (gm *GitManager) SetLocalRepository() error {
 	return err
 }
 
-func (gm *GitManager) SetGitParams(gitParams *Git) (*GitManager, error) {
-	var err error
-	if gm.customTemplates, err = loadCustomTemplates(gitParams.CommitMessageTemplate, gitParams.BranchNameTemplate, gitParams.PullRequestTitleTemplate); err != nil {
-		return nil, err
-	}
+func (gm *GitManager) SetGitParams(gitParams *Git) *GitManager {
 	gm.git = gitParams
-	return gm, nil
-}
-
-func (gm *GitManager) SetEmailAuthor(emailAuthor string) *GitManager {
-	if gm.git == nil {
-		gm.git = &Git{}
-	}
-	gm.git.EmailAuthor = emailAuthor
 	return gm
 }
 
@@ -180,39 +172,6 @@ func (gm *GitManager) Fetch() error {
 		return fmt.Errorf("git fetch failed with error: %s", err.Error())
 	}
 	return nil
-}
-
-func (gm *GitManager) GetMostCommonAncestorHash(baseBranch, targetBranch string) (string, error) {
-	// Get the commit of the base branch
-	baseCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, baseBranch)))
-	if err != nil {
-		return "", err
-	}
-	baseCommit, err := gm.localGitRepository.CommitObject(*baseCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the HEAD commit of the target branch
-	headCommitHash, err := gm.localGitRepository.ResolveRevision(plumbing.Revision(fmt.Sprintf("%s/%s", gm.remoteName, targetBranch)))
-	if err != nil {
-		return "", err
-	}
-	headCommit, err := gm.localGitRepository.CommitObject(*headCommitHash)
-	if err != nil {
-		return "", err
-	}
-	// Get the most common ancestor
-	log.Debug(fmt.Sprintf("Finding common ancestor between %s and %s...", baseBranch, targetBranch))
-	ancestorCommit, err := baseCommit.MergeBase(headCommit)
-	if err != nil {
-		return "", err
-	}
-	if len(ancestorCommit) == 0 {
-		return "", fmt.Errorf("no common ancestor found for %s and %s", baseBranch, targetBranch)
-	} else if len(ancestorCommit) > 1 {
-		return "", fmt.Errorf("more than one common ancestor found for %s and %s", baseBranch, targetBranch)
-	}
-	return ancestorCommit[0].Hash.String(), nil
 }
 
 func (gm *GitManager) Clone(destinationPath, branchName string) error {
@@ -370,7 +329,7 @@ func (gm *GitManager) commit(commitMessage string) error {
 	_, err = worktree.Commit(commitMessage, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  frogbotAuthorName,
-			Email: gm.git.EmailAuthor,
+			Email: frogbotAuthorEmail,
 			When:  time.Now(),
 		},
 	})
@@ -529,12 +488,16 @@ func (gm *GitManager) getPullRequestTitleTemplate(tech []techutils.Technology) s
 
 // GenerateAggregatedFixBranchName Generating a consistent branch name to enable branch updates
 // and to ensure that there is only one Frogbot aggregate pull request from each base branch scanned.
-func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []techutils.Technology) (fixBranchName string) {
+func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []techutils.Technology) (fixBranchName string, err error) {
 	branchFormat := gm.customTemplates.branchNameTemplate
 	if branchFormat == "" {
 		branchFormat = AggregatedBranchNameTemplate
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", techArrayToString(tech, fixBranchTechSeparator), baseBranch, false)
+	hash, err := Md5Hash("frogbot", baseBranch, techArrayToString(tech, fixBranchTechSeparator))
+	if err != nil {
+		return "", err
+	}
+	return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
@@ -580,7 +543,7 @@ func GetFullBranchName(branchName string) plumbing.ReferenceName {
 	return plumbing.NewBranchReferenceName(plumbing.ReferenceName(branchName).Short())
 }
 
-func loadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
+func LoadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestTitleTemplate string) (customTemplates CustomTemplates, err error) {
 	customTemplates = CustomTemplates{
 		commitMessageTemplate:    commitMessageTemplate,
 		branchNameTemplate:       branchNameTemplate,

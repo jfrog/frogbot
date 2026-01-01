@@ -8,12 +8,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const (
-
+	defaultRequirementFile = "requirements.txt"
 	// Package names are case-insensitive with this prefix
 	PythonPackageRegexPrefix = "(?i)"
 	// Match all possible operators and versions syntax

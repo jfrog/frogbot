@@ -1,5 +1,0 @@
-- params:
-    git:
-      repoName: clean-test-proj
-      branches:
-        - master

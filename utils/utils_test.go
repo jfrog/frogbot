@@ -1,6 +1,13 @@
 package utils
 
 import (
+	"net/http/httptest"
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -11,12 +18,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
-	"os"
-	"path"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 const (
@@ -54,34 +55,6 @@ func TestChdirErr(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 	assert.Equal(t, originCwd, cwd)
-}
-
-func getDummyRepoNames() []string {
-	return []string{"repository1", "repository2"}
-}
-
-func getDummyRepo() RepoAggregator {
-	repos := RepoAggregator{}
-	names := getDummyRepoNames()
-	for _, name := range names {
-		repos = append(repos, Repository{Params: Params{Git: Git{RepoName: name}}})
-	}
-	return repos
-}
-
-func TestConvertToUsageReports(t *testing.T) {
-	const commandName = "test-command"
-	repoNames := getDummyRepoNames()
-	repo := getDummyRepo()
-	features, err := convertToUsageReports(commandName, repo)
-	assert.NoError(t, err)
-	assert.Len(t, features, 2)
-	for _, feature := range features {
-		assert.Equal(t, commandName, feature.FeatureId)
-		assert.NotContains(t, repoNames, feature.ClientId)
-	}
-	_, err = convertToUsageReports(commandName, RepoAggregator{})
-	assert.Error(t, err)
 }
 
 func TestMd5Hash(t *testing.T) {
@@ -551,7 +524,8 @@ func createTestSecurityCommandResults() *results.SecurityCommandResults {
 
 	// Create SecurityCommandResults with the BOM
 	scanResults := &results.SecurityCommandResults{
-		StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
+		ResultsMetaData: results.ResultsMetaData{
+			StartTime: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)},
 		Targets: []*results.TargetResults{
 			{
 				ScanTarget: results.ScanTarget{

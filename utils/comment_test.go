@@ -3,12 +3,14 @@ package utils
 import (
 	"testing"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 func TestGetFrogbotReviewComments(t *testing.T) {
@@ -615,7 +617,17 @@ func TestGetNewReviewComments(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := &Repository{OutputWriter: writer, Params: Params{Git: Git{PullRequestSecretComments: tc.generateSecretsComments}}}
+			repo := &Repository{
+				OutputWriter: writer,
+				Params: Params{
+					ConfigProfile: &services.ConfigProfile{
+						FrogbotConfig: services.FrogbotConfig{
+							ShowSecretsAsPrComment: tc.generateSecretsComments,
+						},
+					},
+					Git: Git{},
+				},
+			}
 			output := getNewReviewComments(repo, tc.issues)
 			assert.ElementsMatch(t, tc.expectedOutput, output)
 		})

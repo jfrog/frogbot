@@ -2,6 +2,7 @@ package issues
 
 import (
 	"fmt"
+
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
@@ -211,35 +212,30 @@ func (ic *ScansIssuesCollection) SastIssuesExists() bool {
 
 // Checkes if a 'fail_pr' rule is applied to any of the violations in the collection
 func (ic *ScansIssuesCollection) IsFailPrRuleApplied() bool {
-	// Checking Sca Violations
 	for _, scaViolation := range ic.ScaViolations {
 		if scaViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, scaViolation.ViolationContext.Watch))
 			return true
 		}
 	}
-	// Checking Licenses Violations
 	for _, licenseViolation := range ic.LicensesViolations {
 		if licenseViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, licenseViolation.ViolationContext.Watch))
 			return true
 		}
 	}
-	// Checking Iac Violations
 	for _, iacViolation := range ic.IacViolations {
 		if iacViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, iacViolation.ViolationContext.Watch))
 			return true
 		}
 	}
-	// Checking Sast Violations
 	for _, sastViolation := range ic.SastViolations {
 		if sastViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, sastViolation.ViolationContext.Watch))
 			return true
 		}
 	}
-	// Checking Secrets Violations
 	for _, secretViolation := range ic.SecretsViolations {
 		if secretViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, secretViolation.ViolationContext.Watch))

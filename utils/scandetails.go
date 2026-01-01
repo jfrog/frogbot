@@ -3,40 +3,29 @@ package utils
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
-
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo"
-	"github.com/jfrog/jfrog-cli-security/sca/scan/scangraph"
-
-	clientservices "github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	"github.com/jfrog/jfrog-cli-security/policy/enforcer"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
+	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
-	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
 
 type ScanDetails struct {
-	*Project
 	*Git
 
 	*xscservices.XscGitInfoContext
 	*config.ServerDetails
-	client              vcsclient.VcsClient
-	fixableOnly         bool
-	disableJas          bool
-	skipAutoInstall     bool
-	minSeverityFilter   severityutils.Severity
-	baseBranch          string
-	configProfile       *clientservices.ConfigProfile
-	allowPartialResults bool
-
+	client           vcsclient.VcsClient
+	baseBranch       string
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
+	ConfigProfile    *xscservices.ConfigProfile
 
 	results.ResultContext
 	MultiScanId string
@@ -65,45 +54,8 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 	return sc
 }
 
-func (sc *ScanDetails) SetDisableJas(disable bool) *ScanDetails {
-	sc.disableJas = disable
-	return sc
-}
-
-func (sc *ScanDetails) SetProject(project *Project) *ScanDetails {
-	sc.Project = project
-	return sc
-}
-
-func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, watches []string, jfrogProjectKey string, includeVulnerabilities, includeLicenses bool) *ScanDetails {
-	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, watches, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, includeLicenses, false)
-	return sc
-}
-
-func (sc *ScanDetails) SetFixableOnly(fixable bool) *ScanDetails {
-	sc.fixableOnly = fixable
-	return sc
-}
-
-func (sc *ScanDetails) SetSkipAutoInstall(skipAutoInstall bool) *ScanDetails {
-	sc.skipAutoInstall = skipAutoInstall
-	return sc
-}
-
-func (sc *ScanDetails) SetMinSeverity(minSeverity string) (*ScanDetails, error) {
-	if minSeverity == "" {
-		return sc, nil
-	}
-	if severity, err := severityutils.ParseSeverity(minSeverity, false); err != nil {
-		return sc, err
-	} else {
-		sc.minSeverityFilter = severity
-	}
-	return sc, nil
-}
-
-func (sc *ScanDetails) SetAllowPartialResults(allowPartialResults bool) *ScanDetails {
-	sc.allowPartialResults = allowPartialResults
+func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey string, includeVulnerabilities bool) *ScanDetails {
+	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false)
 	return sc
 }
 
@@ -112,8 +64,8 @@ func (sc *ScanDetails) SetBaseBranch(branch string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetConfigProfile(configProfile *clientservices.ConfigProfile) *ScanDetails {
-	sc.configProfile = configProfile
+func (sc *ScanDetails) SetConfigProfile(configProfile *xscservices.ConfigProfile) *ScanDetails {
+	sc.ConfigProfile = configProfile
 	return sc
 }
 
@@ -123,18 +75,6 @@ func (sc *ScanDetails) Client() vcsclient.VcsClient {
 
 func (sc *ScanDetails) BaseBranch() string {
 	return sc.baseBranch
-}
-
-func (sc *ScanDetails) FixableOnly() bool {
-	return sc.fixableOnly
-}
-
-func (sc *ScanDetails) DisableJas() bool {
-	return sc.disableJas
-}
-
-func (sc *ScanDetails) MinSeverityFilter() severityutils.Severity {
-	return sc.minSeverityFilter
 }
 
 func (sc *ScanDetails) SetRepoOwner(owner string) *ScanDetails {
@@ -147,43 +87,31 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) AllowPartialResults() bool {
-	return sc.allowPartialResults
-}
-
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
+func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
-		SetPipRequirementsFile(sc.PipRequirementsFile).
-		SetUseWrapper(*sc.UseWrapper).
-		SetMaxTreeDepth(sc.MaxPnpmTreeDepth).
-		SetDepsRepo(sc.DepsRepo).
-		SetIgnoreConfigFile(true).
 		SetServerDetails(sc.ServerDetails).
-		SetInstallCommandName(sc.InstallCommandName).
-		SetInstallCommandArgs(sc.InstallCommandArgs).
-		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
-		SetSkipAutoInstall(sc.skipAutoInstall).
-		SetAllowPartialResults(sc.allowPartialResults).
-		SetExclusions(sc.PathExclusions).
-		SetIsRecursiveScan(sc.IsRecursiveScan).
-		SetUseJas(!sc.DisableJas()).
-		SetConfigProfile(sc.configProfile)
+		SetAllowPartialResults(!sc.ConfigProfile.GeneralConfig.FailUponAnyScannerError).
+		SetExclusions(sc.ConfigProfile.GeneralConfig.GeneralExcludePatterns).
+		SetUseJas(true).
+		SetConfigProfile(sc.ConfigProfile)
 
 	auditParams := audit.NewAuditParams().
-		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
-		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
+		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
+		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
+		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
+		SetGitContext(sc.XscGitInfoContext).
+		SetRtResultRepository(frogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
-		SetMinSeverityFilter(sc.MinSeverityFilter()).
-		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
-		SetStartTime(sc.StartTime)
+		SetStartTime(sc.StartTime).
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
 
 	return audit.RunAudit(auditParams)
 }
@@ -261,20 +189,4 @@ func (sc *ScanDetails) getCommitContext(scannedBranch, gitProject string, client
 		CommitAuthor:         latestCommit.AuthorName,
 	}
 	return
-}
-
-func GetFullPathWorkingDirs(workingDirs []string, baseWd string) []string {
-	var fullPathWds []string
-	if len(workingDirs) != 0 {
-		for _, workDir := range workingDirs {
-			if workDir == RootDir {
-				fullPathWds = append(fullPathWds, baseWd)
-				continue
-			}
-			fullPathWds = append(fullPathWds, filepath.Join(baseWd, workDir))
-		}
-	} else {
-		fullPathWds = append(fullPathWds, baseWd)
-	}
-	return fullPathWds
 }
