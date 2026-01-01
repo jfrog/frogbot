@@ -23,6 +23,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -694,6 +695,74 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
+	cfp := &ScanRepositoryCmd{}
+	
+	scanResults := &results.SecurityCommandResults{
+		ResultsMetaData: results.ResultsMetaData{ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+		Targets: []*results.TargetResults{
+			{
+				ScanTarget: results.ScanTarget{Target: "project1"},
+				ScaResults: &results.ScaScanResults{
+					DeprecatedXrayResults: []services.ScanResponse{{
+						Vulnerabilities: []services.Vulnerability{{
+							Cves:     []services.Cve{{Id: "CVE-1"}},
+							Severity: "High",
+							Components: map[string]services.Component{
+								"pkg1": {
+									FixedVersions: []string{"1.0.0"},
+									ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "pkg1"}}},
+								},
+							},
+						}},
+					}},
+				},
+			},
+			{
+				ScanTarget: results.ScanTarget{Target: "project2"},
+				ScaResults: &results.ScaScanResults{
+					DeprecatedXrayResults: []services.ScanResponse{{
+						Vulnerabilities: []services.Vulnerability{{
+							Cves:     []services.Cve{{Id: "CVE-2"}},
+							Severity: "Critical",
+							Components: map[string]services.Component{
+								"pkg2": {
+									FixedVersions: []string{"2.0.0"},
+									ImpactPaths:   [][]services.ImpactPathNode{{{ComponentId: "root"}, {ComponentId: "pkg2"}}},
+								},
+							},
+						}},
+					}},
+				},
+			},
+		},
+	}
+	
+	convertor1 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IncludeVulnerabilities: true,
+		IncludeTargets:         []string{"project1"},
+	})
+	simpleJson1, err := convertor1.ConvertToSimpleJson(scanResults)
+	assert.NoError(t, err)
+	vulnsMap1, err := cfp.createVulnerabilitiesMapFromSimpleJson(simpleJson1)
+	assert.NoError(t, err)
+	assert.Len(t, vulnsMap1, 1)
+	assert.Contains(t, vulnsMap1, "pkg1")
+	assert.NotContains(t, vulnsMap1, "pkg2")
+	
+	convertor2 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IncludeVulnerabilities: true,
+		IncludeTargets:         []string{"project2"},
+	})
+	simpleJson2, err := convertor2.ConvertToSimpleJson(scanResults)
+	assert.NoError(t, err)
+	vulnsMap2, err := cfp.createVulnerabilitiesMapFromSimpleJson(simpleJson2)
+	assert.NoError(t, err)
+	assert.Len(t, vulnsMap2, 1)
+	assert.Contains(t, vulnsMap2, "pkg2")
+	assert.NotContains(t, vulnsMap2, "pkg1")
 }
 
 // Verifies unsupported packages return specific error

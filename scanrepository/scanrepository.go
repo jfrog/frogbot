@@ -162,7 +162,7 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 }
 
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (int, error) {
-	var fixNeeded bool
+	var isFixNeeded bool
 	totalFindings := 0
 	// A map that contains the full project paths as a keys
 	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
@@ -203,22 +203,39 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 		if repository.DetectionOnly {
 			continue
 		}
-		// Prepare the vulnerabilities map for each working dir path
-		currPathVulnerabilities, err := cfp.getVulnerabilitiesMap(scanResults)
-		if err != nil {
-			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
-				return totalFindings, err
+
+		for _, target := range scanResults.Targets {
+			targetPath := target.Target
+			convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+				IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
+				HasViolationContext:    scanResults.HasViolationContext(),
+				IncludeTargets:         []string{targetPath},
+			})
+			simpleJsonResult, err := convertor.ConvertToSimpleJson(scanResults)
+			if err != nil {
+				if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", targetPath), err); err != nil {
+					return totalFindings, err
+				}
+				continue
 			}
-			continue
+
+			currPathVulnerabilities, err := cfp.createVulnerabilitiesMapFromSimpleJson(simpleJsonResult)
+			if err != nil {
+				if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", targetPath), err); err != nil {
+					return totalFindings, err
+				}
+				continue
+			}
+			if len(currPathVulnerabilities) > 0 {
+				isFixNeeded = true
+				log.Debug(fmt.Sprintf("Found %d fixable vulnerabilities in '%s': %s", len(currPathVulnerabilities), targetPath, strings.Join(maps.Keys(currPathVulnerabilities), ", ")))
+			}
+			vulnerabilitiesByPathMap[targetPath] = currPathVulnerabilities
 		}
-		if len(currPathVulnerabilities) > 0 {
-			fixNeeded = true
-		}
-		vulnerabilitiesByPathMap[fullPathWd] = currPathVulnerabilities
 	}
 	if repository.DetectionOnly {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' environment variable to 'false'.", utils.DetectionOnlyEnv))
-	} else if fixNeeded {
+	} else if isFixNeeded {
 		return totalFindings, cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 	}
 	return totalFindings, nil
@@ -235,19 +252,6 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
 	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
-}
-
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
-	if err != nil {
-		return nil, err
-	}
-
-	// Nothing to fix, return
-	if len(vulnerabilitiesMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.scanDetails.RepoName)
-	}
-	return vulnerabilitiesMap, nil
 }
 
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
@@ -594,6 +598,26 @@ func (cfp *ScanRepositoryCmd) createVulnerabilitiesMap(scanResults *results.Secu
 	}
 	if len(vulnerabilitiesMap) > 0 {
 		log.Debug("Frogbot will attempt to resolve the following vulnerable dependencies:\n", strings.Join(maps.Keys(vulnerabilitiesMap), ",\n"))
+	}
+	return vulnerabilitiesMap, nil
+}
+
+func (cfp *ScanRepositoryCmd) createVulnerabilitiesMapFromSimpleJson(simpleJsonResult formats.SimpleJsonResults) (map[string]*utils.VulnerabilityDetails, error) {
+	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
+	var err error
+
+	if len(simpleJsonResult.Vulnerabilities) > 0 {
+		for i := range simpleJsonResult.Vulnerabilities {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.Vulnerabilities[i], vulnerabilitiesMap); err != nil {
+				return nil, err
+			}
+		}
+	} else if len(simpleJsonResult.SecurityViolations) > 0 {
+		for i := range simpleJsonResult.SecurityViolations {
+			if err = cfp.addVulnerabilityToFixVersionsMap(&simpleJsonResult.SecurityViolations[i], vulnerabilitiesMap); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return vulnerabilitiesMap, nil
 }

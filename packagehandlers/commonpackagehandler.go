@@ -93,9 +93,10 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 	return
 }
 
-// Recursively scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
+// Scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
+// Only scans the current directory level (non-recursive) to avoid conflicts with auto-detected subdirectory targets that will be processed separately.
 // The patternsToExclude must be provided as regexp patterns. For instance, if the pattern ".*node_modules.*" is provided, any paths containing "node_modules" will be excluded from the result.
-// Returns a slice of all discovered descriptor files, represented as absolute paths.
+// Returns a slice of all discovered descriptor files in the current directory, represented as absolute paths.
 func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	if len(descriptorFilesSuffixes) == 0 {
 		return
@@ -109,6 +110,10 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
 			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
+		}
+
+		if d.IsDir() && path != "." {
+			return filepath.SkipDir
 		}
 
 		for _, regexpCompiler := range regexpPatternsCompilers {

@@ -316,7 +316,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				scanDetails:        scanDetails,
 				fixSupported:       true,
-				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
+				descriptorsToCheck: []string{"build.gradle"},
 			},
 		},
 
@@ -966,7 +966,7 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 		{
 			testProjectRepo:        "gradle",
 			suffixesToSearch:       []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix},
-			expectedResultSuffixes: []string{filepath.Join("innerProjectForTest", "build.gradle.kts"), "build.gradle"},
+			expectedResultSuffixes: []string{"build.gradle"},
 		},
 		// This test case verifies that paths containing excluded patterns are omitted from the output
 		{
