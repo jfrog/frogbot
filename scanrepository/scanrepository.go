@@ -254,19 +254,6 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 	return auditResults, nil
 }
 
-func (cfp *ScanRepositoryCmd) getVulnerabilitiesMap(scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	vulnerabilitiesMap, err := cfp.createVulnerabilitiesMap(scanResults)
-	if err != nil {
-		return nil, err
-	}
-
-	// Nothing to fix, return
-	if len(vulnerabilitiesMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", cfp.scanDetails.RepoName)
-	}
-	return vulnerabilitiesMap, nil
-}
-
 func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesByWdMap map[string]map[string]*utils.VulnerabilityDetails) (err error) {
 	if cfp.aggregateFixes {
 		err = cfp.fixIssuesSinglePR(repository, vulnerabilitiesByWdMap)
