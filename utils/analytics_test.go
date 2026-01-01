@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateAnalyticsGeneralEvent(t *testing.T) {
+func TestCreateScanEvent(t *testing.T) {
 	gitInfoContext := &xscservices.XscGitInfoContext{
 		Source: xscservices.CommitContext{
 			GitRepoHttpsCloneUrl: "http://localhost:8080/my-user/my-project.git",
