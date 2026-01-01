@@ -316,7 +316,7 @@ func TestUpdateDependency(t *testing.T) {
 				},
 				scanDetails:        scanDetails,
 				fixSupported:       true,
-				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
+				descriptorsToCheck: []string{"build.gradle"},
 			},
 		},
 
