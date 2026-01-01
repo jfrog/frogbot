@@ -205,7 +205,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 		}
 
 		for _, target := range scanResults.Targets {
-			target.ScaResults.Descriptors
 			targetPath := target.Target
 			convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 				IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),

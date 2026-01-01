@@ -23,6 +23,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"

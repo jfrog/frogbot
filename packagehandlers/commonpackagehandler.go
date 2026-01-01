@@ -112,7 +112,6 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
 		}
 
-		// Skip subdirectories
 		if d.IsDir() && path != "." {
 			return filepath.SkipDir
 		}
