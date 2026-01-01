@@ -124,7 +124,7 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
 }
 
-func TestExtractGitParamsFromEnvs(t *testing.T) {
+func TestExtractClientInfo(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
 	}()
