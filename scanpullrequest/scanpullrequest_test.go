@@ -296,7 +296,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	return repository, client
 }
 
-func TestDeletePreviousPullRequestMessages(t *testing.T) {
+func TestDeleteExistingPullRequestComments(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{
@@ -345,7 +345,7 @@ func TestDeletePreviousPullRequestMessages(t *testing.T) {
 	}
 }
 
-func TestDeletePreviousPullRequestReviewMessages(t *testing.T) {
+func TestDeleteExistingPullRequestReviewComments(t *testing.T) {
 	repository := &utils.Repository{
 		Params: utils.Params{
 			Git: utils.Git{

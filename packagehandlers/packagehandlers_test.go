@@ -596,27 +596,6 @@ func TestGetProjectPoms(t *testing.T) {
 	assert.Len(t, mvnHandler.pomPaths, 2)
 }
 
-// General Utils functions
-func TestFixVersionInfo_UpdateFixVersionIfMax(t *testing.T) {
-	type testCase struct {
-		fixVersionInfo utils.VulnerabilityDetails
-		newFixVersion  string
-		expectedOutput string
-	}
-
-	testCases := []testCase{
-		{fixVersionInfo: utils.VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
-		{fixVersionInfo: utils.VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.expectedOutput, func(t *testing.T) {
-			tc.fixVersionInfo.UpdateFixVersionIfMax(tc.newFixVersion)
-			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.SuggestedFixedVersion)
-		})
-	}
-}
-
 func TestUpdatePackageVersion(t *testing.T) {
 	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
 	currDir, err := os.Getwd()

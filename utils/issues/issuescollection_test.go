@@ -149,7 +149,7 @@ func getTestData() ScansIssuesCollection {
 	return issuesCollection
 }
 
-func TestCountIssuesCollectionFindings(t *testing.T) {
+func TestGetAllIssuesCount(t *testing.T) {
 	testCases := []struct {
 		name             string
 		includeSecrets   bool

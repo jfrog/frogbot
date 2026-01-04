@@ -484,6 +484,26 @@ func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
 	}
 }
 
+func TestUpdateFixVersionIfMax(t *testing.T) {
+	type testCase struct {
+		fixVersionInfo VulnerabilityDetails
+		newFixVersion  string
+		expectedOutput string
+	}
+
+	testCases := []testCase{
+		{fixVersionInfo: VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.2.4", expectedOutput: "1.2.4"},
+		{fixVersionInfo: VulnerabilityDetails{SuggestedFixedVersion: "1.2.3", IsDirectDependency: true}, newFixVersion: "1.0.4", expectedOutput: "1.2.3"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.expectedOutput, func(t *testing.T) {
+			tc.fixVersionInfo.UpdateFixVersionIfMax(tc.newFixVersion)
+			assert.Equal(t, tc.expectedOutput, tc.fixVersionInfo.SuggestedFixedVersion)
+		})
+	}
+}
+
 func createTestSecurityCommandResults() *results.SecurityCommandResults {
 	// Create a simple BOM with components
 	components := []cyclonedx.Component{
