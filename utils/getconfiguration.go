@@ -94,9 +94,6 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.GitProvider = gitParamsFromEnv.GitProvider
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
 	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
-	if gitParamsFromEnv.RepoName == "" {
-		return fmt.Errorf("repository name is missing. please set the %s environment variable", GitRepoEnv)
-	}
 	g.RepoName = gitParamsFromEnv.RepoName
 
 	if commandName == ScanPullRequest {
