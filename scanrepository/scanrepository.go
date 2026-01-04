@@ -70,17 +70,25 @@ func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.V
 }
 
 func (sr *ScanRepositoryCmd) prepareEnvAndScanBranch(repository *utils.Repository) (err error) {
-	repoDir, restoreBaseDir, err := sr.checkoutToBranch()
+	repoDir, restoreBaseDir, err := sr.switchToTempWorkingDir()
 	if err != nil {
 		return
 	}
 	sr.baseWd = repoDir
 	defer func() {
-		// On dry run don't delete the folder as we want to validate results
 		if sr.dryRun {
+			// On dry run don't delete the folder as we want to validate results
 			return
 		}
-		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
+		if restoreErr := restoreBaseDir(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		if repoErr := sr.gitManager.SetCurrentWdAsLocalGitRepository(); repoErr != nil {
+			err = errors.Join(err, repoErr)
+		}
+		if removeErr := fileutils.RemoveTempDir(repoDir); removeErr != nil {
+			err = errors.Join(err, removeErr)
+		}
 	}()
 
 	sr.scanDetails.MultiScanId, sr.scanDetails.StartTime = xsc.SendNewScanEvent(sr.scanDetails.XrayVersion, sr.scanDetails.XscVersion,
@@ -427,7 +435,7 @@ func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vuln
 	return pullRequestTitle, prBody, extraComments, nil
 }
 
-func (sr *ScanRepositoryCmd) checkoutToBranch() (tempWd string, restoreDir func() error, err error) {
+func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir func() error, err error) {
 	if sr.dryRun {
 		tempWd = filepath.Join(sr.dryRunRepoPath, sr.scanDetails.RepoName)
 	} else {
@@ -449,8 +457,7 @@ func (sr *ScanRepositoryCmd) checkoutToBranch() (tempWd string, restoreDir func(
 	if err != nil {
 		return
 	}
-	// Set the current copied local dir as the local git repository we are working with
-	err = sr.gitManager.SetLocalRepository()
+	err = sr.gitManager.SetCurrentWdAsLocalGitRepository()
 	return
 }
 
