@@ -170,13 +170,6 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
-
-	if targetBranchWd == "" || scanDetails.ResultsToCompare == nil {
-		// Since we only perform a Diff scan in this flow - if target wd or target results are missing it means something went wrong with the target scan
-		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
-		err = errors.New("targetBranchWd or target branch scans results are empty")
-		return
-	}
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
 
 	log.Debug("Diff scan - converting to new issues...")
