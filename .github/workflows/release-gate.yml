@@ -1,0 +1,627 @@
+name: "Release Gate Tests V2"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.suite.name }} Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false
+      CGO_ENABLED: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: 'Unit'
+
+          - name: 'Scan Repository'
+            package: 'scanrepository'
+
+          - name: 'Scan Pull Request'
+            package: 'scanpullrequest'
+
+          - name: 'Package Handlers'
+            package: 'packagehandlers'
+
+    steps:
+      # Checkout from dev branch for v2
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      # Generate mocks
+      - name: Generate mocks
+        run: go generate ./...
+
+      - name: Run Tests
+        run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 50m -cover
+        env:
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}
+
+  github-integration:
+    name: GitHub Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      - name: Run Tests
+        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}
+          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+
+  azure-integration:
+    name: Azure Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      - name: Run Tests
+        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+
+  gitlab-integration:
+    name: GitLab Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      - name: Run Tests
+        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}
+          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+
+  bitbucket-server-integration:
+    name: Bitbucket Server Integration Tests
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    env:
+      CGO_ENABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iproute2 net-tools lsof
+
+      - name: Downgrade Git for Bitbucket Compatibility
+        run: |
+          sudo add-apt-repository --remove ppa:git-core/ppa -y || true
+          sudo apt-get remove -y git git-man
+          sudo apt-get update
+          sudo apt-get install -y git
+
+      - name: Unzip Preconfigured Bitbucket Home
+        run: unzip ${{ github.workspace }}/testdata/resources/bitbucket_server_home.zip -d ${PWD}
+
+      - name: Download Bitbucket Server and Run
+        run: |
+          chmod +x ${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh
+          sh ${{ github.workspace }}/testdata/resources/bitbucket_server_run.sh
+
+      - name: Wait for Bitbucket Server
+        run: sleep 30
+
+      - name: Run Tests
+        env:
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
+        run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+
+  oidc-integration:
+    name: OIDC Integration Test
+    runs-on: ${{ vars.RUNNER_LABEL }}
+    permissions:
+      contents: write
+      pull-requests: write
+      security-events: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          cache: true
+          cache-dependency-path: go.sum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install C compiler for race detector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install npm
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python3 and pip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv
+
+      - name: Install python components
+        run: python3 -m pip install pipenv poetry
+
+      - name: Install dotnet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dotnet-sdk-6.0
+
+      - name: Install Mono on linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mono-devel
+
+      - name: Install NuGet
+        uses: third-party-actions/NuGet-setup-nuget@v2.0.1
+        with:
+          nuget-version: 6.11.0
+
+      - name: Install Pnpm
+        uses: third-party-actions/pnpm-action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Conan
+        run: |
+          python3 -m pip install conan
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          $HOME/.local/bin/conan profile detect
+
+      - name: Install Yarn
+        run: npm install -g yarn
+
+      - name: Install Maven
+        run: sudo apt-get install -y maven
+
+      # Generating a unique name for the Integration Configuration that will be created in the following step
+      - name: Generate unique OIDC config name
+        shell: bash
+        run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      # The PLATFORM_URL may contain a trailing slash, and in this case we need to ensure we don't have a double slash in the URL
+      - name: Construct valid OIDC endpoint
+        shell: bash
+        run: |
+          if [[ "${{ secrets.FROGBOT_V2_PLATFORM_URL }}" == */ ]]; then
+            echo "OIDC_ENDPOINT=${{ secrets.FROGBOT_V2_PLATFORM_URL }}access/api/v1/oidc" >> $GITHUB_ENV
+          else
+            echo "OIDC_ENDPOINT=${{ secrets.FROGBOT_V2_PLATFORM_URL }}/access/api/v1/oidc" >> $GITHUB_ENV
+          fi
+
+      - name: Create OpenID Connect integration
+        shell: bash
+        run: |
+          curl -X POST "${{ env.OIDC_ENDPOINT }}" -H "Content-Type: application/json" -H "Authorization: Bearer ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}" -d '{
+          "name": "${{ env.OIDC_PROVIDER_NAME }}",
+          "issuer_url": "${{secrets.OIDC_PROVIDER_URL}}",
+          "provider_type": "GitHub Enterprise",
+          "enable_permissive_configuration": "true",
+          "description": "This is a test configuration created for OIDC-Access integration test" }'
+
+      - name: Create OIDC integration Identity Mapping
+        shell: bash
+        run: |
+          curl -X POST ${{ env.OIDC_ENDPOINT }}/${{ env.OIDC_PROVIDER_NAME }}/identity_mappings \
+          -H 'Content-Type: application/json' \
+          -H 'Authorization: Bearer ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}' \
+          -d '{
+                "name": "oidc-test-identity-mapping",
+                "priority": "1",
+                "claims": {
+                  "repository": "${{ github.repository_owner }}/Frogbot-mirror"
+                },
+                "token_spec": { 
+                   "username": "admin",
+                   "scope": "applied-permissions/admin",
+                   "audience": "*@*",
+                   "expires_in": 1200            
+                }
+          }'
+
+      # Running frogbot with the OIDC integration
+      - name: Run Frogbot
+        uses: ./
+        env:
+          ACTIONS_STEP_DEBUG: true
+          JF_URL: ${{ secrets.FROGBOT_V2_PLATFORM_URL }}
+          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_WORKING_DIR: ./testdata/projects/noIssuesProject
+          JF_GIT_REPO: "Frogbot-mirror"
+          JF_GIT_OWNER: "JFROG"
+          JF_FAIL: "FALSE"
+          JF_GIT_API_ENDPOINT: "${{ github.api_url }}"
+          JFROG_CLI_LOG_LEVEL: "DEBUG"
+        with:
+          oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
+
+      # Removing the OIDC integration will remove the Identity Mapping as well
+      - name: Delete OIDC integration
+        shell: bash
+        if: always()
+        run: |
+          curl -X DELETE ${{ secrets.FROGBOT_V2_PLATFORM_URL }}/access/api/v1/oidc/${{ env.OIDC_PROVIDER_NAME }} -H 'Authorization: Bearer ${{ secrets.FROGBOT_V2_ACCESS_TOKEN }}'
+
