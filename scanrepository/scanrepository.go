@@ -435,7 +435,6 @@ func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vuln
 	return pullRequestTitle, prBody, extraComments, nil
 }
 
-// This func switches to a newly created or provided temp dir for the the current execution in order to keep the user's working dir clean.
 func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir func() error, err error) {
 	if sr.dryRun {
 		tempWd = filepath.Join(sr.dryRunRepoPath, sr.scanDetails.RepoName)
@@ -458,7 +457,6 @@ func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir
 	if err != nil {
 		return
 	}
-	// Set the current copied local dir as the local git repository we are working with
 	err = sr.gitManager.SetCurrentWdAsLocalGitRepository()
 	return
 }

@@ -128,7 +128,6 @@ func (gm *GitManager) SetLocalRepositoryAndRemoteName() (*GitManager, error) {
 	return gm, err
 }
 
-// Sets the current working dir as the local git repository
 func (gm *GitManager) SetCurrentWdAsLocalGitRepository() error {
 	var err error
 	gm.localGitRepository, err = git.PlainOpen(".")
