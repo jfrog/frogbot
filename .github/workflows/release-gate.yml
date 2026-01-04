@@ -31,10 +31,8 @@ jobs:
             package: 'packagehandlers'
 
     steps:
-      # Checkout from dev branch for v2
+      # Checkout current branch
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -121,8 +119,6 @@ jobs:
       CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -206,8 +202,6 @@ jobs:
       CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -291,8 +285,6 @@ jobs:
       CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -375,8 +367,6 @@ jobs:
       CGO_ENABLED: 1
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Go
         uses: actions/setup-go@v5
