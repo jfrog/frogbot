@@ -40,7 +40,9 @@ type Repository struct {
 }
 
 func (r *Repository) setOutputWriterDetails() {
-	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider)
+	// Check if the user has access to the frogbot repository (to access the resources needed)
+	frogbotRepoConnection := CheckConnection(outputwriter.FrogbotRepoUrl)
+	r.OutputWriter = outputwriter.GetCompatibleOutputWriter(r.Params.Git.GitProvider, frogbotRepoConnection.IsConnected())
 }
 
 type Params struct {

@@ -50,8 +50,7 @@ type ScanRepositoryCmd struct {
 	XscVersion      string
 }
 
-func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient) (err error) {
 	sr.XrayVersion = repository.Params.XrayVersion
 	sr.XscVersion = repository.Params.XscVersion
 	if err = sr.setCommandPrerequisites(&repository, client); err != nil {
@@ -114,8 +113,7 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repository.Params.ConfigProfile)
 
-	// Set the outputwriter interface for the relevant vcs git provider
-	sr.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.Params.Git.GitProvider)
+	sr.OutputWriter = repository.OutputWriter
 	sr.OutputWriter.SetSizeLimit(client)
 	// Set the git client to perform git operations
 	sr.gitManager, err = utils.NewGitManager().

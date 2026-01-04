@@ -13,15 +13,13 @@ import (
 	"github.com/jfrog/frogbot/v2/scanpullrequest"
 	"github.com/jfrog/frogbot/v2/scanrepository"
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
-
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	clitool "github.com/urfave/cli/v2"
 )
 
 type FrogbotCommand interface {
 	// Run the command
-	Run(config utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) error
+	Run(config utils.Repository, client vcsclient.VcsClient) error
 }
 
 func GetCommands() []*clitool.Command {
@@ -54,8 +52,6 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 	if err != nil {
 		return err
 	}
-	// Check if the user has access to the frogbot repository (to access the resources needed)
-	frogbotRepoConnection := utils.CheckConnection(outputwriter.FrogbotRepoUrl)
 
 	// Build the server configuration file
 	originalJfrogHomeDir, tempJFrogHomeDir, err := utils.BuildServerConfigFile(frogbotDetails.ServerDetails)
@@ -79,7 +75,7 @@ func Exec(command FrogbotCommand, commandName string) (err error) {
 
 	// Invoke the command interface
 	log.Info(fmt.Sprintf("Running Frogbot %q command", commandName))
-	err = command.Run(frogbotDetails.Repository, frogbotDetails.GitClient, frogbotRepoConnection)
+	err = command.Run(frogbotDetails.Repository, frogbotDetails.GitClient)
 
 	if err != nil {
 		if reportError := xsc.ReportError(frogbotDetails.XrayVersion, frogbotDetails.XscVersion, frogbotDetails.ServerDetails, err, "frogbot", frogbotDetails.Repository.JFrogProjectKey); reportError != nil {
