@@ -50,8 +50,7 @@ type ScanRepositoryCmd struct {
 	XscVersion      string
 }
 
-func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	repository.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
+func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient) (err error) {
 	sr.XrayVersion = repository.Params.XrayVersion
 	sr.XscVersion = repository.Params.XscVersion
 	if err = sr.setCommandPrerequisites(&repository, client); err != nil {
@@ -70,17 +69,25 @@ func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.V
 }
 
 func (sr *ScanRepositoryCmd) prepareEnvAndScanBranch(repository *utils.Repository) (err error) {
-	repoDir, restoreBaseDir, err := sr.checkoutToBranch()
+	repoDir, restoreBaseDir, err := sr.switchToTempWorkingDir()
 	if err != nil {
 		return
 	}
 	sr.baseWd = repoDir
 	defer func() {
-		// On dry run don't delete the folder as we want to validate results
 		if sr.dryRun {
+			// On dry run don't delete the folder as we want to validate results
 			return
 		}
-		err = errors.Join(err, restoreBaseDir(), fileutils.RemoveTempDir(repoDir))
+		if restoreErr := restoreBaseDir(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		if repoErr := sr.gitManager.SetCurrentWdAsLocalGitRepository(); repoErr != nil {
+			err = errors.Join(err, repoErr)
+		}
+		if removeErr := fileutils.RemoveTempDir(repoDir); removeErr != nil {
+			err = errors.Join(err, removeErr)
+		}
 	}()
 
 	sr.scanDetails.MultiScanId, sr.scanDetails.StartTime = xsc.SendNewScanEvent(sr.scanDetails.XrayVersion, sr.scanDetails.XscVersion,
@@ -106,8 +113,7 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repository.Params.ConfigProfile)
 
-	// Set the outputwriter interface for the relevant vcs git provider
-	sr.OutputWriter = outputwriter.GetCompatibleOutputWriter(repository.Params.Git.GitProvider)
+	sr.OutputWriter = repository.OutputWriter
 	sr.OutputWriter.SetSizeLimit(client)
 	// Set the git client to perform git operations
 	sr.gitManager, err = utils.NewGitManager().
@@ -427,7 +433,7 @@ func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vuln
 	return pullRequestTitle, prBody, extraComments, nil
 }
 
-func (sr *ScanRepositoryCmd) checkoutToBranch() (tempWd string, restoreDir func() error, err error) {
+func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir func() error, err error) {
 	if sr.dryRun {
 		tempWd = filepath.Join(sr.dryRunRepoPath, sr.scanDetails.RepoName)
 	} else {
@@ -449,8 +455,7 @@ func (sr *ScanRepositoryCmd) checkoutToBranch() (tempWd string, restoreDir func(
 	if err != nil {
 		return
 	}
-	// Set the current copied local dir as the local git repository we are working with
-	err = sr.gitManager.SetLocalRepository()
+	err = sr.gitManager.SetCurrentWdAsLocalGitRepository()
 	return
 }
 

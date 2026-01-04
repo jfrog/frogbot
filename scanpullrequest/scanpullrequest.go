@@ -37,11 +37,9 @@ type targetPair struct {
 
 type ScanPullRequestCmd struct{}
 
-func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient, frogbotRepoConnection *utils.UrlAccessChecker) (err error) {
-	repoConfig := &repository
-	repoConfig.OutputWriter.SetHasInternetConnection(frogbotRepoConnection.IsConnected())
-	if repoConfig.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
-		repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, int(repoConfig.Params.Git.PullRequestDetails.ID)); err != nil {
+func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.VcsClient) (err error) {
+	if repository.Params.Git.PullRequestDetails, err = client.GetPullRequestByID(context.Background(),
+		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, int(repository.Params.Git.PullRequestDetails.ID)); err != nil {
 		return
 	}
 	pullRequestDetails := &repository.Params.Git.PullRequestDetails
@@ -170,15 +168,10 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 	}
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
-	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
-	if targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
-		log.Debug("Diff scan - converting to new issues...")
-		workingDirs = append(workingDirs, strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
-	}
-
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
 
-	issuesCollection, e := scanResultsToIssuesCollection(scanResults, workingDirs...)
+	log.Debug("Diff scan - converting to new issues...")
+	issuesCollection, e := scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	if e != nil {
 		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
 	}

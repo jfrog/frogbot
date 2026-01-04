@@ -205,7 +205,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(repository, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client)
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()
@@ -334,7 +334,7 @@ pr body
 
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
-			err = cmd.Run(repository, client, utils.MockHasConnection())
+			err = cmd.Run(repository, client)
 			defer func() {
 				assert.NoError(t, os.Chdir(baseDir))
 			}()

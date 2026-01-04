@@ -124,11 +124,11 @@ func (gm *GitManager) SetLocalRepositoryAndRemoteName() (*GitManager, error) {
 	var err error
 	// Re-initialize the repository and update remoteName
 	gm.remoteName = vcsutils.RemoteName
-	err = gm.SetLocalRepository()
+	err = gm.SetCurrentWdAsLocalGitRepository()
 	return gm, err
 }
 
-func (gm *GitManager) SetLocalRepository() error {
+func (gm *GitManager) SetCurrentWdAsLocalGitRepository() error {
 	var err error
 	gm.localGitRepository, err = git.PlainOpen(".")
 	return err
