@@ -1,19 +1,19 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.25.4
+go 1.25.5
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.12.5-0.20251216091404-8705372fbd8f
+	github.com/jfrog/build-info-go v1.13.1-0.20251230063402-e9f0a3564df1
 	github.com/jfrog/froggit-go v1.20.6
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251211075913-35ebcd308e93
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251210085744-f8481d179ac5
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260102083738-35bd3de75e6c
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251223102649-e659f6937251
 	github.com/jfrog/jfrog-cli-security v1.25.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251217080430-c92b763b7465
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20251230061734-d954605bdb23
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
