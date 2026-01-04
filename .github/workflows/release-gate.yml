@@ -1,4 +1,4 @@
-name: "Release Gate Tests V2"
+name: "Release Gate Tests"
 
 on:
   workflow_dispatch:
