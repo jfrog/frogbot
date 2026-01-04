@@ -60,9 +60,7 @@ func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 	if err = readParamFromEnv(jfrogProjectEnv, &jp.JFrogProjectKey); err != nil && !e.IsMissingEnvErr(err) {
 		return
 	}
-	// We don't want to return an error from this function if the error is of type ErrMissingEnv because JFrogPlatform environment variables are not mandatory.
-	err = nil
-	return
+	return nil
 }
 
 type Git struct {
@@ -380,9 +378,7 @@ func extractGitParamsFromEnvs() (*Git, error) {
 
 	autoDetectCIEnvVars()
 
-	// Set the base branch name. Branch is a mandatory field.
-	// For scan-repository it must be set as environment variable (validation performed later in Git.setDefaultsIfNeeded)
-	// For scan-pull-request, it is fetched by GetPullRequestByID cann (in Run) and therefore not validated  in the config collection.
+	// Mandatory as env var for scan-repository, fetched from vcsclient.PullRequestInfo for scan-pr
 	var branch string
 	if err = readParamFromEnv(GitBaseBranchEnv, &branch); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
@@ -391,37 +387,30 @@ func extractGitParamsFromEnvs() (*Git, error) {
 		gitEnvParams.Branches = []string{branch}
 	}
 
-	// [Mandatory] Set the repository name, except for multi repository.
 	if err = readParamFromEnv(GitRepoEnv, &gitEnvParams.RepoName); err != nil {
 		return nil, err
 	}
 
-	// Non-mandatory Git Api Endpoint, if not set, default values will be used.
 	if err = readParamFromEnv(GitApiEndpointEnv, &gitEnvParams.APIEndpoint); err != nil && !e.IsMissingEnvErr(err) {
 		return nil, err
 	}
 	if err = verifyValidApiEndpoint(gitEnvParams.APIEndpoint); err != nil {
 		return nil, err
 	}
-	// [Mandatory] Set the Git provider
 	if gitEnvParams.GitProvider, err = extractVcsProviderFromEnv(); err != nil {
 		return nil, err
 	}
-	// [Mandatory] Set the git repository owner name (organization)
 	if err = readParamFromEnv(GitRepoOwnerEnv, &gitEnvParams.RepoOwner); err != nil {
 		return nil, err
 	}
-	// [Mandatory] Set the access token to the git provider
 	if err = readParamFromEnv(GitTokenEnv, &gitEnvParams.Token); err != nil {
 		return nil, err
 	}
 
-	// Set Bitbucket Server username
 	// Mandatory only for Bitbucket Server, this authentication detail is required for performing git operations.
 	if err = readParamFromEnv(GitBitBucketUsernameEnv, &gitEnvParams.Username); err != nil && gitEnvParams.GitProvider == vcsutils.BitbucketServer {
 		return nil, err
 	}
-	// Set Azure Repos Project name
 	// Mandatory for Azure Repos only
 	if err = readParamFromEnv(GitAzureProjectEnv, &gitEnvParams.Project); err != nil && gitEnvParams.GitProvider == vcsutils.AzureRepos {
 		return nil, err
