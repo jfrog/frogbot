@@ -15,5 +15,8 @@ cd atlassian-bitbucket-$BITBUCKET_VERSION
 # Set Bitbucket home directory
 ./bin/set-bitbucket-home.sh
 
+# Disable Mesh to avoid sidecar startup issues in containerized environments
+export JVM_SUPPORT_RECOMMENDED_ARGS="-Dmesh.enabled=false ${JVM_SUPPORT_RECOMMENDED_ARGS}"
+
 # Start Bitbucket Server
 ./bin/start-bitbucket.sh --no-search
