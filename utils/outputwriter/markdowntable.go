@@ -154,31 +154,22 @@ func (t *MarkdownTableBuilder) Build() string {
 			t.columns[c].shouldHideColumn = t.columns[c].shouldHideColumn && (len(cell) == 0 || (len(cell) == 1 && cell[0] == ""))
 		}
 	}
-	// Header - only write if at least one column has a non-empty name
-	hasHeaderNames := false
-	for _, column := range t.columns {
-		if !column.shouldHideColumn && column.Name != "" {
-			hasHeaderNames = true
-			break
-		}
-	}
-	if hasHeaderNames {
-		isFirstCol := true
-		for _, column := range t.columns {
-			if column.shouldHideColumn {
-				continue
-			}
-			if isFirstCol {
-				tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
-			} else {
-				tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
-			}
-			isFirstCol = false
-		}
-		tableBuilder.WriteString("\n")
-	}
-	// Separator
+	// Header
 	isFirstCol := true
+	for _, column := range t.columns {
+		if column.shouldHideColumn {
+			continue
+		}
+		if isFirstCol {
+			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
+		} else {
+			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
+		}
+		isFirstCol = false
+	}
+	tableBuilder.WriteString("\n")
+	// Separator
+	isFirstCol = true
 	for _, column := range t.columns {
 		if column.shouldHideColumn {
 			continue

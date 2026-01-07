@@ -20,6 +20,7 @@
 <details><summary><b>[ License1 ] Dep1 2.0 (watch)</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Policies:** | policy1, policy2 |
 | **Watch Name:** | watch |
@@ -32,6 +33,7 @@
 <details><summary><b>[ License2 ] Dep2 3.0 (watch2)</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Policies:** | policy3 |
 | **Watch Name:** | watch2 |
