@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -23,9 +22,11 @@ type dependencyFixTest struct {
 	vulnDetails         *utils.VulnerabilityDetails
 	scanDetails         *utils.ScanDetails
 	fixSupported        bool
+	errorExpected       bool
 	specificTechVersion string
 	testDirName         string
 	descriptorsToCheck  []string
+	testcaseInfo        string
 }
 
 const (
@@ -153,24 +154,24 @@ func TestUpdateDependency(t *testing.T) {
 		// Npm test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.8.4",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
-				},
+				// Test project doesn't exist for the testcase - we just check skipping indirect dependency fix
+				testcaseInfo: "test-skip-fixing-indirect",
+				vulnDetails:  createVulnerabilityDetails(techutils.Npm, "mpath", "0.8.3", "0.8.4", false, "package-lock.json"),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"package.json"},
+			},
+			{
+				testcaseInfo:  "no-location-evidence",
+				vulnDetails:   createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, ""),
+				scanDetails:   scanDetails,
+				fixSupported:  true,
+				errorExpected: true,
 			},
 		},
 
@@ -363,7 +364,7 @@ func TestUpdateDependency(t *testing.T) {
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
 			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
-			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
+			t.Run(getUpdateDependencyTestcaseName(test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.IsDirectDependency, test.testcaseInfo),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 					testDirName := test.vulnDetails.Technology.String()
@@ -374,8 +375,12 @@ func TestUpdateDependency(t *testing.T) {
 					defer cleanup()
 					err := packageHandler.UpdateDependency(test.vulnDetails)
 					if test.fixSupported {
-						assert.NoError(t, err)
-						verifyDependencyUpdate(t, test)
+						if test.errorExpected {
+							assert.Error(t, err)
+						} else {
+							assert.NoError(t, err)
+							verifyDependencyUpdate(t, test)
+						}
 					} else {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -1109,5 +1114,39 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			result := GetVulnerabilityLocations(tc.vulnDetails)
 			assert.ElementsMatch(t, tc.expectedPaths, result)
 		})
+	}
+}
+
+func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTestInfo string) string {
+	testName := technology
+	if isDirect {
+		testName += "-direct-dep"
+	} else {
+		testName += "-indirect-dep"
+	}
+	if extraTestInfo != "" {
+		testName += "_(" + extraTestInfo + ")"
+	}
+	return testName
+}
+
+func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, locationEvidencePath string) *utils.VulnerabilityDetails {
+	return &utils.VulnerabilityDetails{
+		SuggestedFixedVersion: fixedVersion,
+		IsDirectDependency:    isDirectDependency,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+			Technology: technology,
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    packageName,
+				ImpactedDependencyVersion: packageVersion,
+				Components: []formats.ComponentRow{
+					{
+						Name:     packageName,
+						Version:  packageVersion,
+						Location: &formats.Location{File: locationEvidencePath},
+					},
+				},
+			},
+		},
 	}
 }
