@@ -37,6 +37,7 @@
 ### Violation Details
 
 ---
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Policies:** | policy1, policy2 |
 | **Watch Name:** | watch |
@@ -58,6 +59,7 @@
 ### Violation Details
 
 ---
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Policies:** | policy3 |
 | **Watch Name:** | watch2 |

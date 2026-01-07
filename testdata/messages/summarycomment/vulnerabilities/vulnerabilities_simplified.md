@@ -32,6 +32,7 @@
 ### Vulnerability Details
 
 ---
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CVSS V3:** | - |
 | **Dependency Path:** | github.com/nats-io/nats-streaming-server: v0.21.0 (Direct): Fix Version: [0.24.1] |
@@ -60,6 +61,7 @@ some remediation
 ### Vulnerability Details
 
 ---
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Applicable |
 | **CVSS V3:** | - |
@@ -87,6 +89,7 @@ some remediation
 ### Vulnerability Details
 
 ---
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CVSS V3:** | - |
 | **Dependency Path:** | github.com/mholt/archiver/v3: v3.5.1 (Direct): |
