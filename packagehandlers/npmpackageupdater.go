@@ -51,8 +51,6 @@ type NpmPackageHandler struct {
 	CommonPackageHandler
 }
 
-// TODO eran check manually connection to Artifactory with self defined .npmrc and that it is not being override by our env vars
-
 func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return npm.updateDirectDependency(vulnDetails)
@@ -65,13 +63,6 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	/*
-		// todo eran remove this assignment
-		vulnDetails.ImpactPaths[0][1].Location = &formats.Location{
-			File: "package-lock.json",
-		}
-
-	*/
 	descriptorPaths, err := npm.getDescriptorsToFixFromVulnerability(vulnDetails)
 	if err != nil {
 		return err
@@ -210,7 +201,6 @@ func (npm *NpmPackageHandler) runNpmInstall() error {
 	cmd.Env = npm.buildIsolatedEnv()
 	output, err := cmd.CombinedOutput()
 
-	// TODO eran check manually that timeout is working by setting very low timeout
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return fmt.Errorf("npm install timed out after %v", npmInstallTimeout)
 	}
