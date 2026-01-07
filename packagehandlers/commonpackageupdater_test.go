@@ -1017,3 +1017,97 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, nodeModulesExist)
 }
+
+func TestGetVulnerabilityLocations(t *testing.T) {
+	testcases := []struct {
+		name          string
+		vulnDetails   *utils.VulnerabilityDetails
+		expectedPaths []string
+	}{
+		{
+			name: "single component with location",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/package-lock.json"},
+		},
+		{
+			name: "multiple components with same location - deduplicated",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/package-lock.json"},
+		},
+		{
+			name: "multiple components with different locations",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app1/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app2/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/app1/package-lock.json", "/repo/app2/package-lock.json"},
+		},
+		{
+			name: "component with nil location",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: nil},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+		{
+			name: "component with empty file path",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: ""}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+		{
+			name: "no components",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := GetVulnerabilityLocations(tc.vulnDetails)
+			assert.ElementsMatch(t, tc.expectedPaths, result)
+		})
+	}
+}
