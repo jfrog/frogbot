@@ -8,11 +8,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-
-	"github.com/jfrog/frogbot/v2/utils"
 )
 
 // PackageHandler interface to hold operations on packages
@@ -136,10 +136,19 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 // Note: This function may not support all package manager dependency formats. It is designed for package managers where the dependency's name consists of a single component.
 // For example, in Gradle descriptors, a dependency line may consist of two components for the dependency's name (e.g., implementation group: 'junit', name: 'junit', version: '4.7'), therefore this func cannot be utilized in this case.
 func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
-	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
-	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
-	regexpFitImpactedVersion := strings.ToLower(strings.ReplaceAll(impactedVersion, ".", "\\."))
+	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
+	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
+}
+
+// Extracts unique file paths from the vulnerability's component locations.
+func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails) []string {
+	pathsSet := datastructures.MakeSet[string]()
+	for _, component := range vulnDetails.Components {
+		if component.Location != nil && component.Location.File != "" {
+			pathsSet.Add(component.Location.File)
+		}
+	}
+	return pathsSet.ToSlice()
 }
