@@ -13,6 +13,7 @@
 <details><summary><b>Full description</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CWE:** | CWE-798<br>CWE-799 |
 | **Abbreviation:** | rule-id |
