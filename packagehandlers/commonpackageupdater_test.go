@@ -1134,19 +1134,6 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 	}
 }
 
-func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTestInfo string) string {
-	testName := technology
-	if isDirect {
-		testName += "-direct-dep"
-	} else {
-		testName += "-indirect-dep"
-	}
-	if extraTestInfo != "" {
-		testName += "_(" + extraTestInfo + ")"
-	}
-	return testName
-}
-
 func TestGetVulnerabilityRegexCompiler(t *testing.T) {
 	// Sample format patterns from different package managers
 	const (
@@ -1479,6 +1466,19 @@ func TestGetVulnerabilityRegexCompiler(t *testing.T) {
 			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
 		})
 	}
+}
+
+func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTestInfo string) string {
+	testName := technology
+	if isDirect {
+		testName += "-direct-dep"
+	} else {
+		testName += "-indirect-dep"
+	}
+	if extraTestInfo != "" {
+		testName += "_(" + extraTestInfo + ")"
+	}
+	return testName
 }
 
 func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, locationEvidencePath string) *utils.VulnerabilityDetails {
