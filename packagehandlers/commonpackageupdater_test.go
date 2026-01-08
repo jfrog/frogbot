@@ -27,6 +27,8 @@ type dependencyFixTest struct {
 	testDirName         string
 	descriptorsToCheck  []string
 	testcaseInfo        string
+	// For this param give the relative path from the test project root
+	lockFileToVerifyItsChange string
 }
 
 const (
@@ -161,10 +163,11 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: false,
 			},
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
-				scanDetails:        scanDetails,
-				fixSupported:       true,
-				descriptorsToCheck: []string{"package.json"},
+				vulnDetails:               createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				scanDetails:               scanDetails,
+				fixSupported:              true,
+				descriptorsToCheck:        []string{"package.json"},
+				lockFileToVerifyItsChange: "package-lock.json",
 			},
 			{
 				testcaseInfo:  "no-location-evidence",
@@ -373,17 +376,31 @@ func TestUpdateDependency(t *testing.T) {
 					}
 					cleanup := createTempDirAndChdir(t, testDataDir, testDirName+test.specificTechVersion)
 					defer cleanup()
+
+					var lockFileContentBeforeUpdate []byte
+					if test.lockFileToVerifyItsChange != "" {
+						var readErr error
+						lockFileContentBeforeUpdate, readErr = os.ReadFile(test.lockFileToVerifyItsChange)
+						assert.NoError(t, readErr, "Failed to read lock file before update")
+					}
+
 					err := packageHandler.UpdateDependency(test.vulnDetails)
-					if test.fixSupported {
-						if test.errorExpected {
-							assert.Error(t, err)
-						} else {
-							assert.NoError(t, err)
-							verifyDependencyUpdate(t, test)
-						}
-					} else {
+					if !test.fixSupported {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+						return
+					}
+					if test.errorExpected {
+						assert.Error(t, err)
+						return
+					}
+					assert.NoError(t, err)
+					verifyDependencyUpdate(t, test)
+
+					if test.lockFileToVerifyItsChange != "" {
+						lockFileContentAfter, readErr := os.ReadFile(test.lockFileToVerifyItsChange)
+						assert.NoError(t, readErr, "Failed to read lock file after update")
+						assert.NotEqual(t, lockFileContentBeforeUpdate, lockFileContentAfter, "Lock file should have been updated")
 					}
 				})
 		}
@@ -1128,6 +1145,340 @@ func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTest
 		testName += "_(" + extraTestInfo + ")"
 	}
 	return testName
+}
+
+func TestGetVulnerabilityRegexCompiler(t *testing.T) {
+	// Sample format patterns from different package managers
+	const (
+		npmPattern    = `\s*"%s"\s*:\s*"[~^]?%s"`
+		dotnetPattern = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
+		simplePattern = `%s:%s`
+	)
+
+	testcases := []struct {
+		name          string
+		packageName   string
+		packageVer    string
+		formatPattern string
+		testContent   string
+		shouldMatch   bool
+	}{
+		// Basic matching
+		{
+			name:          "basic npm match",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with caret prefix",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "^4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with tilde prefix",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "~4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm version mismatch",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.21"`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "npm name mismatch",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"underscore": "4.17.20"`,
+			shouldMatch:   false,
+		},
+
+		// Case insensitivity
+		{
+			name:          "case insensitive package name",
+			packageName:   "PyJWT",
+			packageVer:    "2.4.0",
+			formatPattern: simplePattern,
+			testContent:   `pyjwt:2.4.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "case insensitive mixed case",
+			packageName:   "LODASH",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.20"`,
+			shouldMatch:   true,
+		},
+
+		// Scoped npm packages with @
+		{
+			name:          "scoped npm package",
+			packageName:   "@types/node",
+			packageVer:    "18.0.0",
+			formatPattern: npmPattern,
+			testContent:   `"@types/node": "18.0.0"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "scoped package with org",
+			packageName:   "@angular/core",
+			packageVer:    "15.0.0",
+			formatPattern: npmPattern,
+			testContent:   `"@angular/core": "^15.0.0"`,
+			shouldMatch:   true,
+		},
+
+		// Regex special characters in package name - should be escaped
+		{
+			name:          "package name with dot",
+			packageName:   "lodash.merge",
+			packageVer:    "4.6.2",
+			formatPattern: npmPattern,
+			testContent:   `"lodash.merge": "4.6.2"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dot should not match any character",
+			packageName:   "lodash.merge",
+			packageVer:    "4.6.2",
+			formatPattern: npmPattern,
+			testContent:   `"lodashXmerge": "4.6.2"`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with asterisk",
+			packageName:   "test*package",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test*package:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "asterisk should not match multiple chars",
+			packageName:   "test*package",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `testABCpackage:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with question mark",
+			packageName:   "test?pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test?pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "question mark should not match single char",
+			packageName:   "test?pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `testXpkg:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with brackets",
+			packageName:   "test[pkg]",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test[pkg]:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with parentheses",
+			packageName:   "test(pkg)",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test(pkg):1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with curly braces",
+			packageName:   "test{pkg}",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test{pkg}:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with pipe",
+			packageName:   "test|pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test|pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "pipe should not match as OR",
+			packageName:   "test|pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with caret and dollar",
+			packageName:   "^test$",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `^test$:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with backslash",
+			packageName:   `test\pkg`,
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test\pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+
+		// Version with special characters
+		{
+			name:          "version with plus (build metadata)",
+			packageName:   "mypackage",
+			packageVer:    "1.0.0+build123",
+			formatPattern: simplePattern,
+			testContent:   `mypackage:1.0.0+build123`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "plus in version should not match one-or-more",
+			packageName:   "mypackage",
+			packageVer:    "1.0.0+",
+			formatPattern: simplePattern,
+			testContent:   `mypackage:1.0.00000`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "version with dots should match literally",
+			packageName:   "pkg",
+			packageVer:    "1.2.3",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1.2.3`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dots should not match any char",
+			packageName:   "pkg",
+			packageVer:    "1.2.3",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1X2Y3`,
+			shouldMatch:   false,
+		},
+
+		// Empty name and version edge cases
+		{
+			name:          "empty package name matches empty",
+			packageName:   "",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "empty version matches empty",
+			packageName:   "pkg",
+			packageVer:    "",
+			formatPattern: simplePattern,
+			testContent:   `pkg:`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "both empty",
+			packageName:   "",
+			packageVer:    "",
+			formatPattern: simplePattern,
+			testContent:   `:`,
+			shouldMatch:   true,
+		},
+
+		// Complex realistic scenarios
+		{
+			name:          "dotnet pattern match",
+			packageName:   "Newtonsoft.Json",
+			packageVer:    "13.0.1",
+			formatPattern: dotnetPattern,
+			testContent:   `Include="Newtonsoft.Json" Version="13.0.1"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dotnet single quotes",
+			packageName:   "Newtonsoft.Json",
+			packageVer:    "13.0.1",
+			formatPattern: dotnetPattern,
+			testContent:   `Include='Newtonsoft.Json' Version='13.0.1'`,
+			shouldMatch:   true,
+		},
+
+		// Whitespace handling
+		{
+			name:          "npm with extra whitespace",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `  "lodash"  :  "4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with tabs",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   "\t\"lodash\"\t:\t\"4.17.20\"",
+			shouldMatch:   true,
+		},
+
+		// Unicode characters (less common but possible)
+		{
+			name:          "package name with unicode",
+			packageName:   "пакет",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `пакет:1.0.0`,
+			shouldMatch:   true,
+		},
+
+		// Long package names and versions
+		{
+			name:          "very long package name",
+			packageName:   "this-is-a-very-long-package-name-that-might-exist-in-real-world",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `this-is-a-very-long-package-name-that-might-exist-in-real-world:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "prerelease version",
+			packageName:   "pkg",
+			packageVer:    "1.0.0-alpha.1",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1.0.0-alpha.1`,
+			shouldMatch:   true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			regex := GetVulnerabilityRegexCompiler(tc.packageName, tc.packageVer, tc.formatPattern)
+			matches := regex.MatchString(strings.ToLower(tc.testContent))
+			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
+		})
+	}
 }
 
 func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, locationEvidencePath string) *utils.VulnerabilityDetails {
