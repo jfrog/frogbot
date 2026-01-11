@@ -23,7 +23,7 @@ type PackageHandler interface {
 func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
 	switch vulnDetails.Technology {
 	case techutils.Go:
-		handler = &GoPackageHandler{}
+		handler = &GoPackageUpdater{}
 	case techutils.Poetry:
 		handler = &PythonPackageHandler{}
 	case techutils.Pipenv:
