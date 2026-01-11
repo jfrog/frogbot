@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/policy/enforcer"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
@@ -27,11 +28,71 @@ type ScanDetails struct {
 	ResultsToCompare *results.SecurityCommandResults
 	ConfigProfile    *xscservices.ConfigProfile
 
+	// scansToPerform limits which scan types to run (for parallel scanning)
+	scansToPerform []utils.SubScanType
+
+	// uploadCdxResults controls whether to upload results to the platform
+	// nil means use default logic (based on diffScan and ResultsToCompare)
+	uploadCdxResults *bool
+
+	// logCollector captures all logs for this scan in an isolated buffer.
+	// When set, logs are not interleaved with other parallel scans.
+	logCollector *audit.LogCollector
+
 	results.ResultContext
 	MultiScanId string
 	XrayVersion string
 	XscVersion  string
 	StartTime   time.Time
+}
+
+// Clone creates a copy of ScanDetails for parallel scanning.
+// Note: logCollector is NOT cloned - each parallel scan should have its own collector.
+func (sc *ScanDetails) Clone() *ScanDetails {
+	return &ScanDetails{
+		Git:               sc.Git,
+		XscGitInfoContext: sc.XscGitInfoContext,
+		ServerDetails:     sc.ServerDetails,
+		client:            sc.client,
+		baseBranch:        sc.baseBranch,
+		diffScan:          sc.diffScan,
+		ResultsToCompare:  sc.ResultsToCompare,
+		ConfigProfile:     sc.ConfigProfile,
+		scansToPerform:   sc.scansToPerform,
+		uploadCdxResults: sc.uploadCdxResults,
+		// logCollector intentionally not cloned - each scan needs its own
+		ResultContext: sc.ResultContext,
+		MultiScanId:   sc.MultiScanId,
+		XrayVersion:   sc.XrayVersion,
+		XscVersion:    sc.XscVersion,
+		StartTime:     sc.StartTime,
+	}
+}
+
+func (sc *ScanDetails) SetScansToPerform(scans []utils.SubScanType) *ScanDetails {
+	sc.scansToPerform = scans
+	return sc
+}
+
+// SetUploadCdxResults explicitly controls whether to upload results to the platform
+// Pass false to disable uploading for intermediate parallel scans
+func (sc *ScanDetails) SetUploadCdxResults(upload bool) *ScanDetails {
+	sc.uploadCdxResults = &upload
+	return sc
+}
+
+// SetLogCollector sets a log collector for isolated log capture.
+// When set, all logs from this scan are captured in the collector's buffer,
+// enabling parallel scans to have completely isolated logs.
+// Use GetLogCollector().GetLogs() after the scan to retrieve the captured logs.
+func (sc *ScanDetails) SetLogCollector(collector *audit.LogCollector) *ScanDetails {
+	sc.logCollector = collector
+	return sc
+}
+
+// GetLogCollector returns the log collector, or nil if not set.
+func (sc *ScanDetails) GetLogCollector() *audit.LogCollector {
+	return sc.logCollector
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
@@ -95,14 +156,27 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetAllowPartialResults(!sc.ConfigProfile.GeneralConfig.FailUponAnyScannerError).
 		SetExclusions(sc.ConfigProfile.GeneralConfig.GeneralExcludePatterns).
 		SetUseJas(true).
-		SetConfigProfile(sc.ConfigProfile)
+		SetConfigProfile(sc.ConfigProfile).
+		SetScansToPerform(sc.scansToPerform)
+
+	// Set log collector for isolated log capture
+	if sc.logCollector != nil {
+		auditBasicParams.SetLogCollector(sc.logCollector)
+	}
+
+	// Determine whether to upload CDX results
+	// If explicitly set, use that value; otherwise use default logic
+	shouldUpload := !sc.diffScan || sc.ResultsToCompare != nil
+	if sc.uploadCdxResults != nil {
+		shouldUpload = *sc.uploadCdxResults
+	}
 
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
-		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
+		SetUploadCdxResults(shouldUpload).
 		SetGitContext(sc.XscGitInfoContext).
-		SetRtResultRepository(frogbotUploadRtRepoPath).
+		SetRtResultRepository(FrogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).

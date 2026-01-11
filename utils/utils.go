@@ -39,7 +39,8 @@ const (
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
 	frogbotUrl                          = "https://github.com/jfrog/frogbot"
-	frogbotUploadRtRepoPath             = "frogbot"
+	// FrogbotUploadRtRepoPath is the Artifactory repository path for uploading scan results
+	FrogbotUploadRtRepoPath = "frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
@@ -250,6 +251,10 @@ func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
+	return DownloadRepoToTempDirWithLabel(client, repoOwner, repoName, branch, "")
+}
+
+func DownloadRepoToTempDirWithLabel(client vcsclient.VcsClient, repoOwner, repoName, branch, label string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -257,12 +262,16 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
+	labelPrefix := ""
+	if label != "" {
+		labelPrefix = fmt.Sprintf("[%s] ", label)
+	}
+	log.Info(fmt.Sprintf("%sDownloading <%s/%s/%s>...", labelPrefix, repoOwner, repoName, branch))
 	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
 		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
 		return
 	}
-	log.Debug("Repository download completed")
+	log.Info(fmt.Sprintf("%sDownload and extraction completed for <%s/%s>", labelPrefix, repoName, branch))
 	return
 }
 
