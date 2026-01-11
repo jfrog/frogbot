@@ -56,9 +56,10 @@ const (
 	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
 
 	// Git integration event
-	gitIntegrationEventsCompleteStatus   = "completed"
-	gitIntegrationEventsFailedStatus     = "failed"
-	gitIntegrationEventUploadSbomResults = "Source Code SBOM Results Upload"
+	gitIntegrationEventsCompleteStatus      = "completed"
+	gitIntegrationEventsFailedStatus        = "failed"
+	gitIntegrationEventUploadSbomResults    = "Source Code SBOM Results Upload"
+	gitIntegrationEventUploadPrSarifResults = "Source Code Upload PR Results To Code Scanning"
 )
 
 var (
@@ -253,8 +254,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults)
+func UploadRepoSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, err := generateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
 	}
@@ -263,6 +264,30 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
+	return nil
+}
+
+func UploadPrSarifToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, prId int64, client vcsclient.VcsClient, serverDetails *config.ServerDetails, xrayVersion, projectKey string) error {
+	report, err := generateFrogbotSarifReport(scanResults)
+	if err != nil {
+		return err
+	}
+
+	commit, err := client.GetLatestCommit(context.Background(), repo.RepoOwner, repo.RepoName, repo.PullRequestDetails.Source.Name)
+	if err != nil {
+		return err
+	}
+
+	prRef := fmt.Sprintf("refs/pull/%d/head", prId)
+	branch := fmt.Sprintf("PR-%d", prId)
+	_, err = client.UploadCodeScanningWithRef(context.Background(), repo.RepoOwner, repo.RepoName, prRef, commit.Hash, report)
+	if err != nil {
+		sendGitIntegrationEvent(repo.RepoOwner, repo.RepoName, branch, serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadPrSarifResults, err)
+		return err
+	}
+
+	log.Info(fmt.Sprintf("Successfully uploaded security scan results to GitHub Code Scanning for PR #%d", prId))
+	sendGitIntegrationEvent(repo.RepoOwner, repo.RepoName, branch, serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadPrSarifResults, nil)
 	return nil
 }
 
@@ -294,32 +319,32 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, serverDetails
 	}
 
 	if err = client.UploadSnapshotToDependencyGraph(context.Background(), owner, repo, snapshot); err != nil {
-		sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, projectKey, err)
+		sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadSbomResults, err)
 		snapshotJson, e := utils.GetAsJsonString(snapshot, false, true)
 		if e != nil {
 			return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w", err)
 		}
 		return fmt.Errorf("failed to upload SBOM snapshot to GitHub: %w\nSent Snapshot:\n%s", err, snapshotJson)
 	}
-	sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, projectKey, nil)
+	sendGitIntegrationEvent(owner, repo, branch, serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadSbomResults, nil)
 	return nil
 }
 
-func sendGitIntegrationEvent(owner, repo, branch string, serverDetails *config.ServerDetails, xrayVersion string, projectKey string, err error) {
+func sendGitIntegrationEvent(owner, repo, branch string, serverDetails *config.ServerDetails, xrayVersion string, projectKey string, eventType string, err error) {
 	eventStatus := gitIntegrationEventsCompleteStatus
 	failureReason := ""
 	if err != nil {
 		eventStatus = gitIntegrationEventsFailedStatus
 		failureReason = err.Error()
 	}
-	if sendEventErr := xsc.SendGitIntegrationEvent(serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadSbomResults,
+	if sendEventErr := xsc.SendGitIntegrationEvent(serverDetails, xrayVersion, projectKey, eventType,
 		string(GitHub), owner, repo, branch, eventStatus, failureReason,
 	); sendEventErr != nil {
 		log.Info(fmt.Sprintf("failed to send git integration event: %s", sendEventErr.Error()))
 	}
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
+func generateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),

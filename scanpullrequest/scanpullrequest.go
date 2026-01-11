@@ -105,7 +105,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	issues, resultContext, err := auditPullRequestAndReport(repo, client)
+	issues, resultContext, scanResults, err := auditPullRequestAndReport(repo, client)
 	if err != nil {
 		return
 	}
@@ -122,6 +122,12 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	// Handle PR comments for scan output
 	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
+	}
+
+	if repo.Git.UploadPrSecurityResultsToVcs != nil && *repo.Git.UploadPrSecurityResultsToVcs && repo.GitProvider == vcsutils.GitHub && scanResults != nil {
+		if uploadErr := utils.UploadPrSarifToGithubSecurityTab(scanResults, repo, pullRequestDetails.ID, client, &repo.Server, repo.XrayVersion, repo.JFrogProjectKey); uploadErr != nil {
+			log.Warn(fmt.Sprintf("Failed to upload PR security results to GitHub Code Scanning: %s", uploadErr.Error()))
+		}
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
@@ -143,7 +149,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 	}
 }
 
-func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, err error) {
+func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.VcsClient) (issuesCollection *issues.ScansIssuesCollection, resultContext results.ResultContext, scanResults *results.SecurityCommandResults, err error) {
 	// Prepare
 	scanDetails, err := createBaseScanDetails(repoConfig, client)
 	if err != nil {
@@ -175,8 +181,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 			)
 		}
 	}()
-	// Audit PR code
-	issuesCollection, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+	issuesCollection, scanResults, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	return
 }
 
@@ -224,8 +229,9 @@ func prepareSourceCodeForScan(repoConfig *utils.Repository, scanDetails *utils.S
 	return
 }
 
-func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
+func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, scanResults *results.SecurityCommandResults, err error) {
 	issuesCollection = &issues.ScansIssuesCollection{}
+	var aggregatedScanResults *results.SecurityCommandResults
 
 	for i := range repoConfig.Projects {
 		// Reset scan details for each project
@@ -241,10 +247,18 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 				scanDetails.SetResultsToCompare(targetScanResults)
 			}
 		}
-		// Scan source branch of the project
 		log.Debug("Scanning source branch code...")
-		if issues, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd); e == nil {
+		if issues, sourceScanResults, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd); e == nil {
 			issuesCollection.Append(issues)
+			if sourceScanResults != nil {
+				if aggregatedScanResults == nil {
+					aggregatedScanResults = results.NewCommandResults(sourceScanResults.CmdType)
+					aggregatedScanResults.ResultsMetaData = sourceScanResults.ResultsMetaData
+					aggregatedScanResults.EntitledForJas = sourceScanResults.EntitledForJas
+					aggregatedScanResults.SecretValidation = sourceScanResults.SecretValidation
+				}
+				aggregatedScanResults.Targets = append(aggregatedScanResults.Targets, sourceScanResults.Targets...)
+			}
 			continue
 		} else {
 			if issues != nil {
@@ -253,6 +267,9 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 			}
 			err = errors.Join(err, fmt.Errorf("failed to audit source branch code for %v project. Error: %s", repoConfig.Projects[i].WorkingDirs, e.Error()))
 		}
+	}
+	if aggregatedScanResults != nil && len(aggregatedScanResults.Targets) > 0 {
+		scanResults = aggregatedScanResults
 	}
 
 	return
@@ -264,8 +281,8 @@ func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd s
 	return
 }
 
-func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	scanResults := scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
+func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, scanResults *results.SecurityCommandResults, err error) {
+	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
 	if err = scanResults.GetErrors(); err != nil {
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return

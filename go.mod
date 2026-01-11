@@ -136,4 +136,5 @@ require (
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
 
-// replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
+// orto17:upload-code-scanning-ref
+replace github.com/jfrog/froggit-go => github.com/orto17/froggit-go v0.0.0-20260111111832-6bdb7c7597c0
