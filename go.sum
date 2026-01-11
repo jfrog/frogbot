@@ -136,8 +136,8 @@ github.com/jedib0t/go-pretty/v6 v6.7.5 h1:9dJSWTJnsXJVVAbvxIFxeHf/JxoJd7GUl5o3Uz
 github.com/jedib0t/go-pretty/v6 v6.7.5/go.mod h1:YwC5CE4fJ1HFUDeivSV1r//AmANFHyqczZk+U6BDALU=
 github.com/jfrog/archiver/v3 v3.6.1 h1:LOxnkw9pOn45DzCbZNFV6K0+6dCsQ0L8mR3ZcujO5eI=
 github.com/jfrog/archiver/v3 v3.6.1/go.mod h1:VgR+3WZS4N+i9FaDwLZbq+jeU4B4zctXL+gL4EMzfLw=
-github.com/jfrog/build-info-go v1.12.5-0.20251209171349-eb030db986f9 h1:CL7lp7Y7srwQ1vy1btX66t4wbztzEGQbqi/9tdEz7xk=
-github.com/jfrog/build-info-go v1.12.5-0.20251209171349-eb030db986f9/go.mod h1:9W4U440fdTHwW1HiB/R0VQvz/5q8ZHsms9MWcq+JrdY=
+github.com/jfrog/build-info-go v1.13.0 h1:bHedp1Gl+a8eR71xxP5JvkqwDj2X3r6e5NiIwNcIwRM=
+github.com/jfrog/build-info-go v1.13.0/go.mod h1:+OCtMb22/D+u7Wne5lzkjJjaWr0LRZcHlDwTH86Mpwo=
 github.com/jfrog/froggit-go v1.20.6 h1:Xp7+LlEh0m1KGrQstb+u0aGfjRUtv1eh9xQBV3571jQ=
 github.com/jfrog/froggit-go v1.20.6/go.mod h1:obSG1SlsWjktkuqmKtpq7MNTTL63e0ot+ucTnlOMV88=
 github.com/jfrog/gofrog v1.7.6 h1:QmfAiRzVyaI7JYGsB7cxfAJePAZTzFz0gRWZSE27c6s=
@@ -148,10 +148,6 @@ github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251211075913-35ebcd308e93 h1:r
 github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20251211075913-35ebcd308e93/go.mod h1:7cCaRhXorlbyXZgiW5bplCExFxlnROaG21K12d8inpQ=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251210085744-f8481d179ac5 h1:GYE67ubwl+ZRw3CcXFUi49EwwQp6k+qS8sX0QuHDHO8=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251210085744-f8481d179ac5/go.mod h1:BMoGi2rG0udCCeaghqlNgiW3fTmT+TNnfTnBoWFYgcg=
-github.com/jfrog/jfrog-cli-security v1.24.2 h1:nyI0lNYR8i6yZYeBDsBJnURYsMnFKEmt7QH4vaNxtGM=
-github.com/jfrog/jfrog-cli-security v1.24.2/go.mod h1:3FXD5IkKtdQOm9CZk6cR7q0iC6PaGMnjqzZqRcQp2r0=
-github.com/jfrog/jfrog-client-go v1.55.1-0.20251217080430-c92b763b7465 h1:Ff3BlNPndrAfa1xFI/ORFzfWTxQxF0buWG61PEJwd3U=
-github.com/jfrog/jfrog-client-go v1.55.1-0.20251217080430-c92b763b7465/go.mod h1:WQ5Y+oKYyHFAlCbHN925bWhnShTd2ruxZ6YTpb76fpU=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
 github.com/jhump/protoreflect v1.15.1/go.mod h1:jD/2GMKKE6OqX8qTjhADU1e6DShO+gavG9e0Q693nKo=
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
