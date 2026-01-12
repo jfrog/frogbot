@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -132,8 +131,6 @@ func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixe
 
 	return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
 }
-
-func (mpu *MavenPackageUpdater) SetCommonParams(serverDetails *config.ServerDetails, depsRepo string) {}
 
 func parseDependencyName(dependencyName string) (groupId, artifactId string, err error) {
 	parts := strings.Split(dependencyName, mavenCoordinateSeparator)
