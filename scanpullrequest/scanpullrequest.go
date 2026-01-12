@@ -124,7 +124,7 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 		return
 	}
 
-	if repo.Git.UploadPrSecurityResultsToVcs != nil && *repo.Git.UploadPrSecurityResultsToVcs && repo.GitProvider == vcsutils.GitHub && scanResults != nil {
+	if repo.Git.UploadPrSecurityResultsToVcs && repo.GitProvider == vcsutils.GitHub && scanResults != nil {
 		if uploadErr := utils.UploadPrSarifToGithubSecurityTab(scanResults, repo, pullRequestDetails.ID, client, &repo.Server, repo.XrayVersion, repo.JFrogProjectKey); uploadErr != nil {
 			log.Warn(fmt.Sprintf("Failed to upload PR security results to GitHub Code Scanning: %s", uploadErr.Error()))
 		}

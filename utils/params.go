@@ -338,7 +338,7 @@ type Git struct {
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
 	UploadSbomToVcs               *bool `yaml:"uploadSbomToVcs,omitempty"`
-	UploadPrSecurityResultsToVcs  *bool `yaml:"uploadPrSecurityResultsToVcs,omitempty"`
+	UploadPrSecurityResultsToVcs  bool  `yaml:"uploadPrSecurityResultsToVcs,omitempty"`
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -394,7 +394,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		if err != nil {
 			return err
 		}
-		g.UploadPrSecurityResultsToVcs = &envValue
+		g.UploadPrSecurityResultsToVcs = envValue
 	}
 
 	return

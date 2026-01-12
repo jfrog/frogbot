@@ -273,14 +273,15 @@ func UploadPrSarifToGithubSecurityTab(scanResults *results.SecurityCommandResult
 		return err
 	}
 
-	commit, err := client.GetLatestCommit(context.Background(), repo.RepoOwner, repo.RepoName, repo.PullRequestDetails.Source.Name)
+	ctx := context.Background()
+	commit, err := client.GetLatestCommit(ctx, repo.RepoOwner, repo.RepoName, repo.PullRequestDetails.Source.Name)
 	if err != nil {
 		return err
 	}
 
 	prRef := fmt.Sprintf("refs/pull/%d/head", prId)
 	branch := fmt.Sprintf("PR-%d", prId)
-	_, err = client.UploadCodeScanningWithRef(context.Background(), repo.RepoOwner, repo.RepoName, prRef, commit.Hash, report)
+	_, err = client.UploadCodeScanningWithRef(ctx, repo.RepoOwner, repo.RepoName, prRef, commit.Hash, report)
 	if err != nil {
 		sendGitIntegrationEvent(repo.RepoOwner, repo.RepoName, branch, serverDetails, xrayVersion, projectKey, gitIntegrationEventUploadPrSarifResults, err)
 		return err
