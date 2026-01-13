@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -137,10 +138,17 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 	return
 }
 
+func isParallelScanEnabled() bool {
+	env := os.Getenv(utils.ParallelPrScanEnv)
+	if env == "" {
+		return true
+	}
+	enabled, _ := strconv.ParseBool(env)
+	return enabled
+}
+
 func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	// Check if parallel scanning is disabled via environment variable
-	if os.Getenv(utils.ParallelPrScanEnv) == "false" {
-		log.Debug("Parallel PR scanning disabled, using sequential mode")
+	if !isParallelScanEnabled() {
 		return auditPullRequestCodeSequential(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	}
 
