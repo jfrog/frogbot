@@ -164,6 +164,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, false, sourceBranchWd, targetBranchWd)
 	}
 
+	log.Debug("Diff scan - converting to new issues...")
 	pullRequestIssues, e := scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
 	if e != nil {
 		return issuesCollection, fmt.Errorf("failed to get issues for pull request: %w", e)
@@ -578,7 +579,9 @@ func auditBranchesInParallel(
 	scanDetails.SetResultsToCompare(unifiedTarget)
 
 	// Compute JAS diff (SCA diff already done internally via ResultsToCompare)
+	log.Debug("[JAS] Computing diff...")
 	jasDiffResults := results.CompareJasResults(jasResult.target, jasResult.source)
+	log.Debug("[JAS] Diff computation completed")
 
 	// Unify source SCA (already diffed) with JAS diff results
 	unifiedSource := results.UnifyScaAndJasResults(scaResult.source, jasDiffResults)
