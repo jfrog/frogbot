@@ -572,24 +572,21 @@ func auditBranchesInParallel(
 		return jasResult.source, fmt.Errorf("JAS scan failed: %w", jasResult.err)
 	}
 
-	// Unify target results (for filter comparison)
 	unifiedTarget := results.UnifyScaAndJasResults(scaResult.target, jasResult.target)
 	scanDetails.SetResultsToCompare(unifiedTarget)
 
-	// Compute JAS diff (SCA diff already done internally via ResultsToCompare)
 	log.Debug("[JAS] Computing diff...")
-	jasDiffResults := results.CompareJasResults(jasResult.target, jasResult.source)
+	jasDiff := results.CompareJasResults(jasResult.target, jasResult.source)
 	log.Debug("[JAS] Diff computation completed")
 
-	// Unify source SCA (already diffed) with JAS diff results
-	unifiedSource := results.UnifyScaAndJasResults(scaResult.source, jasDiffResults)
+	diffResults := results.UnifyScaAndJasResults(scaResult.source, jasDiff)
 
 	log.Info("Uploading unified results to Artifactory...")
-	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, "frogbot", unifiedSource); err != nil {
+	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, utils.FrogbotUploadRtRepoPath, diffResults); err != nil {
 		log.Warn("Failed to upload unified results:", err)
 	}
 
-	return unifiedSource, nil
+	return diffResults, nil
 }
 
 func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
