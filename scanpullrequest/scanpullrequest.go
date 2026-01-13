@@ -633,8 +633,9 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 	targetResults := targetScanDetails.Audit(targetDir)
 
 	// Dump target logs (isolated, not interleaved)
-	if logs := targetLogCollector.GetLogs(); logs != "" {
-		log.Output("[sca-target] Logs:\n" + logs)
+	if targetLogCollector.HasLogs() {
+		log.Info("[sca-target] Logs:")
+		targetLogCollector.ReplayTo(log.GetLogger())
 	}
 
 	if err := targetResults.GetErrors(); err != nil {
@@ -659,8 +660,9 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 	sourceResults := sourceScanDetails.Audit(sourceDir)
 
 	// Dump source logs (isolated, not interleaved)
-	if logs := sourceLogCollector.GetLogs(); logs != "" {
-		log.Output("[sca-source] Logs:\n" + logs)
+	if sourceLogCollector.HasLogs() {
+		log.Info("[sca-source] Logs:")
+		sourceLogCollector.ReplayTo(log.GetLogger())
 	}
 
 	if err := sourceResults.GetErrors(); err != nil {
@@ -675,7 +677,7 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 // jasResultWithLogs extends scanResult to include captured logs
 type jasResultWithLogs struct {
 	scanResult
-	logs string
+	collector *audit.LogCollector
 }
 
 // runJasScans runs JAS scans in parallel (target and source simultaneously)
@@ -707,7 +709,7 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 				err:      targetResults.GetErrors(),
 				duration: time.Since(start),
 			},
-			logs: targetLogCollector.GetLogs(),
+			collector: targetLogCollector,
 		}
 	}()
 
@@ -728,7 +730,7 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 				err:      sourceResults.GetErrors(),
 				duration: time.Since(start),
 			},
-			logs: sourceLogCollector.GetLogs(),
+			collector: sourceLogCollector,
 		}
 	}()
 
@@ -737,11 +739,13 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (*
 	sourceResult := <-sourceChan
 
 	// Dump logs in order (not interleaved!)
-	if targetResult.logs != "" {
-		log.Output("[jas-target] Logs:\n" + targetResult.logs)
+	if targetResult.collector != nil && targetResult.collector.HasLogs() {
+		log.Info("[jas-target] Logs:")
+		targetResult.collector.ReplayTo(log.GetLogger())
 	}
-	if sourceResult.logs != "" {
-		log.Output("[jas-source] Logs:\n" + sourceResult.logs)
+	if sourceResult.collector != nil && sourceResult.collector.HasLogs() {
+		log.Info("[jas-source] Logs:")
+		sourceResult.collector.ReplayTo(log.GetLogger())
 	}
 
 	log.Debug(fmt.Sprintf("[JAS] Target scan completed in %v", targetResult.duration))
