@@ -607,7 +607,7 @@ func auditBranchesInParallel(
 
 	// Upload unified results to Artifactory
 	log.Info("Uploading unified results to Artifactory...")
-	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, utils.FrogbotUploadRtRepoPath, unified); err != nil {
+	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, "frogbot", unified); err != nil {
 		log.Warn("Failed to upload unified results:", err)
 		// Don't fail the scan if upload fails - results are still valid
 	}

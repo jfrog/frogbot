@@ -176,7 +176,7 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
 		SetUploadCdxResults(shouldUpload).
 		SetGitContext(sc.XscGitInfoContext).
-		SetRtResultRepository(FrogbotUploadRtRepoPath).
+		SetRtResultRepository(frogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
