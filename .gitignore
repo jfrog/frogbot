@@ -8,4 +8,4 @@ coverage
 .DS_Store
 /testdata/vcsclientmock.go
 /action/lib/src/*
-/action/lib/test/*
+/action/lib/test/**.gradle

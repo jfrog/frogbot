@@ -28,16 +28,9 @@ type ScanDetails struct {
 	ResultsToCompare *results.SecurityCommandResults
 	ConfigProfile    *xscservices.ConfigProfile
 
-	// scansToPerform limits which scan types to run (for parallel scanning)
-	scansToPerform []utils.SubScanType
-
-	// uploadCdxResults controls whether to upload results to the platform
-	// nil means use default logic (based on diffScan and ResultsToCompare)
+	scansToPerform   []utils.SubScanType
 	uploadCdxResults *bool
-
-	// logCollector captures all logs for this scan in an isolated buffer.
-	// When set, logs are not interleaved with other parallel scans.
-	logCollector *audit.LogCollector
+	logCollector     *audit.LogCollector
 
 	results.ResultContext
 	MultiScanId string
@@ -46,8 +39,6 @@ type ScanDetails struct {
 	StartTime   time.Time
 }
 
-// Clone creates a copy of ScanDetails for parallel scanning.
-// Note: logCollector is NOT cloned - each parallel scan should have its own collector.
 func (sc *ScanDetails) Clone() *ScanDetails {
 	return &ScanDetails{
 		Git:               sc.Git,
@@ -58,14 +49,13 @@ func (sc *ScanDetails) Clone() *ScanDetails {
 		diffScan:          sc.diffScan,
 		ResultsToCompare:  sc.ResultsToCompare,
 		ConfigProfile:     sc.ConfigProfile,
-		scansToPerform:   sc.scansToPerform,
-		uploadCdxResults: sc.uploadCdxResults,
-		// logCollector intentionally not cloned - each scan needs its own
-		ResultContext: sc.ResultContext,
-		MultiScanId:   sc.MultiScanId,
-		XrayVersion:   sc.XrayVersion,
-		XscVersion:    sc.XscVersion,
-		StartTime:     sc.StartTime,
+		scansToPerform:    sc.scansToPerform,
+		uploadCdxResults:  sc.uploadCdxResults,
+		ResultContext:     sc.ResultContext,
+		MultiScanId:       sc.MultiScanId,
+		XrayVersion:       sc.XrayVersion,
+		XscVersion:        sc.XscVersion,
+		StartTime:         sc.StartTime,
 	}
 }
 
@@ -74,17 +64,11 @@ func (sc *ScanDetails) SetScansToPerform(scans []utils.SubScanType) *ScanDetails
 	return sc
 }
 
-// SetUploadCdxResults explicitly controls whether to upload results to the platform
-// Pass false to disable uploading for intermediate parallel scans
 func (sc *ScanDetails) SetUploadCdxResults(upload bool) *ScanDetails {
 	sc.uploadCdxResults = &upload
 	return sc
 }
 
-// SetLogCollector sets a log collector for isolated log capture.
-// When set, all logs from this scan are captured in the collector's buffer,
-// enabling parallel scans to have completely isolated logs.
-// Use GetLogCollector().GetLogs() after the scan to retrieve the captured logs.
 func (sc *ScanDetails) SetLogCollector(collector *audit.LogCollector) *ScanDetails {
 	sc.logCollector = collector
 	return sc
