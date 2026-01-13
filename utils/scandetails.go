@@ -29,7 +29,7 @@ type ScanDetails struct {
 	ConfigProfile    *xscservices.ConfigProfile
 
 	scansToPerform   []utils.SubScanType
-	uploadCdxResults *bool
+	uploadCdxResults bool
 	logCollector     *audit.LogCollector
 
 	results.ResultContext
@@ -65,7 +65,7 @@ func (sc *ScanDetails) SetScansToPerform(scans []utils.SubScanType) *ScanDetails
 }
 
 func (sc *ScanDetails) SetUploadCdxResults(upload bool) *ScanDetails {
-	sc.uploadCdxResults = &upload
+	sc.uploadCdxResults = upload
 	return sc
 }
 
@@ -79,7 +79,7 @@ func (sc *ScanDetails) GetLogCollector() *audit.LogCollector {
 }
 
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
-	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+	return &ScanDetails{client: client, ServerDetails: server, Git: git, uploadCdxResults: true}
 }
 
 func (sc *ScanDetails) SetJfrogVersions(xrayVersion, xscVersion string) *ScanDetails {
@@ -142,22 +142,14 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetConfigProfile(sc.ConfigProfile).
 		SetScansToPerform(sc.scansToPerform)
 
-	// Set log collector for isolated log capture
 	if sc.logCollector != nil {
 		auditBasicParams.SetLogCollector(sc.logCollector)
-	}
-
-	// Determine whether to upload CDX results
-	// If explicitly set, use that value; otherwise use default logic
-	shouldUpload := !sc.diffScan || sc.ResultsToCompare != nil
-	if sc.uploadCdxResults != nil {
-		shouldUpload = *sc.uploadCdxResults
 	}
 
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
-		SetUploadCdxResults(shouldUpload).
+		SetUploadCdxResults(sc.uploadCdxResults).
 		SetGitContext(sc.XscGitInfoContext).
 		SetRtResultRepository(FrogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).

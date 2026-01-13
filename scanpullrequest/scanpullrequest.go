@@ -173,6 +173,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 
 func auditBranchesSequentially(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
 	log.Debug("Scanning target branch code...")
+	scanDetails.SetUploadCdxResults(false)
 	targetScanResults, err := auditPullRequestTargetCode(scanDetails, targetBranchWd)
 	if err != nil {
 		return targetScanResults, fmt.Errorf("failed to audit target branch: %w", err)
@@ -180,6 +181,7 @@ func auditBranchesSequentially(scanDetails *utils.ScanDetails, sourceBranchWd, t
 	scanDetails.SetResultsToCompare(targetScanResults)
 
 	log.Debug("Scanning source branch code...")
+	scanDetails.SetUploadCdxResults(true)
 	sourceScanResults := scanDetails.Audit(sourceBranchWd)
 	if err = sourceScanResults.GetErrors(); err != nil {
 		return sourceScanResults, err
