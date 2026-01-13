@@ -557,7 +557,6 @@ func auditBranchesInParallel(
 	scanDetails *utils.ScanDetails,
 	sourceBranchWd, targetBranchWd string,
 ) (*results.SecurityCommandResults, error) {
-	log.Info("Starting parallel branch scans...")
 	startTime := time.Now()
 
 	// Pre-download Analyzer Manager before starting parallel scans
