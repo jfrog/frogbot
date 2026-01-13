@@ -74,7 +74,6 @@ func (sc *ScanDetails) SetLogCollector(collector *audit.LogCollector) *ScanDetai
 	return sc
 }
 
-// GetLogCollector returns the log collector, or nil if not set.
 func (sc *ScanDetails) GetLogCollector() *audit.LogCollector {
 	return sc.logCollector
 }
