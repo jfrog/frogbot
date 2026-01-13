@@ -159,8 +159,6 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
 	if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
-		// For sequential mode, scanDetails.ResultsToCompare has target results
-		// For parallel mode, target results are already processed internally (filter won't run with nil)
 		filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, false, sourceBranchWd, targetBranchWd)
 	}
 
