@@ -581,9 +581,9 @@ func auditBranchesInParallel(
 
 	diffResults := results.UnifyScaAndJasResults(scaResult.source, jasDiff)
 
-	log.Info("Uploading unified results to Artifactory...")
+	log.Info("Uploading results to platform...")
 	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, utils.FrogbotUploadRtRepoPath, diffResults); err != nil {
-		log.Warn("Failed to upload unified results:", err)
+		log.Warn("Failed to upload results:", err)
 	}
 
 	return diffResults, nil
