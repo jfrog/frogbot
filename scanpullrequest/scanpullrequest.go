@@ -35,10 +35,27 @@ const (
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
 )
 
-// targetPair represents a matched pair of source and target scan results
 type targetPair struct {
 	source *results.TargetResults
 	target *results.TargetResults
+}
+
+type scanResult struct {
+	results  *results.SecurityCommandResults
+	err      error
+	duration time.Duration
+}
+
+type branchScanResult struct {
+	target   *results.SecurityCommandResults
+	source   *results.SecurityCommandResults
+	err      error
+	duration time.Duration
+}
+
+type jasResultWithLogs struct {
+	scanResult
+	collector *audit.LogCollector
 }
 
 type ScanPullRequestCmd struct{}
@@ -523,19 +540,6 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 	return sourceStatus
 }
 
-type scanResult struct {
-	results  *results.SecurityCommandResults
-	err      error
-	duration time.Duration
-}
-
-type branchScanResult struct {
-	target   *results.SecurityCommandResults
-	source   *results.SecurityCommandResults
-	err      error
-	duration time.Duration
-}
-
 func auditBranchesInParallel(
 	scanDetails *utils.ScanDetails,
 	sourceBranchWd, targetBranchWd string,
@@ -639,11 +643,6 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	}
 
 	return targetResults, sourceResults, nil
-}
-
-type jasResultWithLogs struct {
-	scanResult
-	collector *audit.LogCollector
 }
 
 func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
