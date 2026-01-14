@@ -99,7 +99,24 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 			)
 		}
 	}()
-	issuesCollection, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+
+	scanResults, scanErr := scanPullRequestBranches(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+	if scanErr != nil {
+		issuesCollection = &issues.ScansIssuesCollection{}
+		if scanResults != nil {
+			issuesCollection.AppendStatus(getResultScanStatues(scanResults))
+		}
+		err = fmt.Errorf("failed to audit branches: %w", scanErr)
+		return
+	}
+
+	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
+
+	log.Debug("Diff scan - converting to new issues...")
+	issuesCollection, err = scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
+	if err != nil {
+		err = fmt.Errorf("failed to get issues for pull request: %w", err)
+	}
 	return
 }
 
@@ -138,37 +155,25 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 	return
 }
 
-func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	issuesCollection = &issues.ScansIssuesCollection{}
-
+func scanPullRequestBranches(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
 	var scanResults *results.SecurityCommandResults
-	var scanErr error
+	var err error
 
 	if isParallelScanEnabled() {
-		scanResults, scanErr = auditBranchesInParallel(scanDetails, sourceBranchWd, targetBranchWd)
+		scanResults, err = auditBranchesInParallel(scanDetails, sourceBranchWd, targetBranchWd)
 	} else {
-		scanResults, scanErr = auditBranchesSequentially(scanDetails, sourceBranchWd, targetBranchWd)
+		scanResults, err = auditBranchesSequentially(scanDetails, sourceBranchWd, targetBranchWd)
 	}
 
-	if scanErr != nil {
-		if scanResults != nil {
-			issuesCollection.AppendStatus(getResultScanStatues(scanResults))
-		}
-		return issuesCollection, fmt.Errorf("failed to audit branches: %w", scanErr)
+	if err != nil {
+		return scanResults, err
 	}
 
-	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
 	if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
 		filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, false, sourceBranchWd, targetBranchWd)
 	}
 
-	log.Debug("Diff scan - converting to new issues...")
-	pullRequestIssues, e := scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
-	if e != nil {
-		return issuesCollection, fmt.Errorf("failed to get issues for pull request: %w", e)
-	}
-	issuesCollection.Append(pullRequestIssues)
-	return
+	return scanResults, nil
 }
 
 func auditBranchesSequentially(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
