@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -176,7 +175,7 @@ func scanPullRequestBranches(repoConfig *utils.Repository, scanDetails *utils.Sc
 	var scanResults *results.SecurityCommandResults
 	var err error
 
-	if isParallelScanEnabled() {
+	if parallelEnabled, _ := utils.GetBoolEnv(utils.ParallelPrScanEnv, true); parallelEnabled {
 		scanResults, err = auditBranchesInParallel(scanDetails, sourceBranchWd, targetBranchWd)
 	} else {
 		scanResults, err = auditBranchesSequentially(scanDetails, sourceBranchWd, targetBranchWd)
@@ -540,10 +539,7 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 	return sourceStatus
 }
 
-func auditBranchesInParallel(
-	scanDetails *utils.ScanDetails,
-	sourceBranchWd, targetBranchWd string,
-) (*results.SecurityCommandResults, error) {
+func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
 	log.Info("Starting parallel PR scan...")
 	startTime := time.Now()
 
@@ -728,11 +724,3 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	return targetResult.results, sourceResult.results, nil
 }
 
-func isParallelScanEnabled() bool {
-	env := os.Getenv(utils.ParallelPrScanEnv)
-	if env == "" {
-		return true
-	}
-	enabled, _ := strconv.ParseBool(env)
-	return enabled
-}
