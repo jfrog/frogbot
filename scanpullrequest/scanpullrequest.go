@@ -52,7 +52,7 @@ type branchScanResult struct {
 	duration time.Duration
 }
 
-type jasResultWithLogs struct {
+type parallelJasResult struct {
 	scanResult
 	collector *audit.LogCollector
 }
@@ -601,14 +601,10 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 }
 
 func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
-	targetScanDetails := scanDetails.Clone()
-	targetScanDetails.SetScansToPerform([]securityUtils.SubScanType{securityUtils.ScaScan})
-	targetScanDetails.SetDiffScan(true)
-	targetScanDetails.SetResultsToCompare(nil)
-	targetScanDetails.SetUploadCdxResults(false)
-	targetLogCollector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
-	targetScanDetails.SetLogCollector(targetLogCollector)
-
+	targetScanDetails, targetLogCollector := scanDetails.CloneForBranchScan(
+		[]securityUtils.SubScanType{securityUtils.ScaScan},
+		true, nil,
+	)
 	targetResults = targetScanDetails.Audit(targetDir)
 
 	if targetLogCollector.HasLogs() {
@@ -620,17 +616,10 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 		return targetResults, nil, fmt.Errorf("SCA target scan failed: %w", err)
 	}
 
-	sourceScanDetails := scanDetails.Clone()
-	sourceScanDetails.SetScansToPerform([]securityUtils.SubScanType{
-		securityUtils.ScaScan,
-		securityUtils.ContextualAnalysisScan,
-	})
-	sourceScanDetails.SetDiffScan(true)
-	sourceScanDetails.SetResultsToCompare(targetResults)
-	sourceScanDetails.SetUploadCdxResults(false)
-	sourceLogCollector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
-	sourceScanDetails.SetLogCollector(sourceLogCollector)
-
+	sourceScanDetails, sourceLogCollector := scanDetails.CloneForBranchScan(
+		[]securityUtils.SubScanType{securityUtils.ScaScan, securityUtils.ContextualAnalysisScan},
+		true, targetResults,
+	)
 	sourceResults = sourceScanDetails.Audit(sourceDir)
 
 	if sourceLogCollector.HasLogs() {
@@ -646,8 +635,8 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 }
 
 func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
-	targetChan := make(chan jasResultWithLogs, 1)
-	sourceChan := make(chan jasResultWithLogs, 1)
+	targetChan := make(chan parallelJasResult, 1)
+	sourceChan := make(chan parallelJasResult, 1)
 
 	jasScans := []securityUtils.SubScanType{
 		securityUtils.SecretsScan,
@@ -656,17 +645,10 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	}
 
 	go func() {
-		targetScanDetails := scanDetails.Clone()
-		targetScanDetails.SetScansToPerform(jasScans)
-		targetScanDetails.SetDiffScan(false)
-		targetScanDetails.SetResultsToCompare(nil)
-		targetScanDetails.SetUploadCdxResults(false)
-		targetLogCollector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
-		targetScanDetails.SetLogCollector(targetLogCollector)
-
+		targetScanDetails, targetLogCollector := scanDetails.CloneForBranchScan(jasScans, false, nil)
 		start := time.Now()
 		results := targetScanDetails.Audit(targetDir)
-		targetChan <- jasResultWithLogs{
+		targetChan <- parallelJasResult{
 			scanResult: scanResult{
 				results:  results,
 				err:      results.GetErrors(),
@@ -677,17 +659,10 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	}()
 
 	go func() {
-		sourceScanDetails := scanDetails.Clone()
-		sourceScanDetails.SetScansToPerform(jasScans)
-		sourceScanDetails.SetDiffScan(false)
-		sourceScanDetails.SetResultsToCompare(nil)
-		sourceScanDetails.SetUploadCdxResults(false)
-		sourceLogCollector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
-		sourceScanDetails.SetLogCollector(sourceLogCollector)
-
+		sourceScanDetails, sourceLogCollector := scanDetails.CloneForBranchScan(jasScans, false, nil)
 		start := time.Now()
 		results := sourceScanDetails.Audit(sourceDir)
-		sourceChan <- jasResultWithLogs{
+		sourceChan <- parallelJasResult{
 			scanResult: scanResult{
 				results:  results,
 				err:      results.GetErrors(),
@@ -723,4 +698,3 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 
 	return targetResult.results, sourceResult.results, nil
 }
-

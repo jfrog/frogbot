@@ -59,6 +59,18 @@ func (sc *ScanDetails) Clone() *ScanDetails {
 	}
 }
 
+// CloneForBranchScan creates a clone configured for branch scanning with isolated logging.
+func (sc *ScanDetails) CloneForBranchScan(scans []utils.SubScanType, diffScan bool, resultsToCompare *results.SecurityCommandResults) (*ScanDetails, *audit.LogCollector) {
+	cloned := sc.Clone()
+	cloned.scansToPerform = scans
+	cloned.diffScan = diffScan
+	cloned.ResultsToCompare = resultsToCompare
+	cloned.uploadCdxResults = false
+	collector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
+	cloned.logCollector = collector
+	return cloned, collector
+}
+
 func (sc *ScanDetails) SetScansToPerform(scans []utils.SubScanType) *ScanDetails {
 	sc.scansToPerform = scans
 	return sc
