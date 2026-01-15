@@ -570,8 +570,12 @@ func auditBranchesInParallel(
 	scaResult := <-scaChan
 	jasResult := <-jasChan
 
-	log.Info(fmt.Sprintf("SCA scan completed in %v", scaResult.duration))
-	log.Info(fmt.Sprintf("JAS scan completed in %v", jasResult.duration))
+	if scaResult.target != nil && scaResult.target.GetStatusCodes().ScaScanStatusCode != nil {
+		log.Info(fmt.Sprintf("SCA scan completed in %v", scaResult.duration))
+	}
+	if jasResult.target != nil && jasResult.target.EntitledForJas {
+		log.Info(fmt.Sprintf("JAS scan completed in %v", jasResult.duration))
+	}
 	log.Info(fmt.Sprintf("Total scan time: %v", time.Since(startTime)))
 
 	if scaResult.err != nil {
