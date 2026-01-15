@@ -566,10 +566,10 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 	scaResult := <-scaChan
 	jasResult := <-jasChan
 
-	if scaResult.target != nil && scaResult.target.GetStatusCodes().ScaScanStatusCode != nil {
+	if scaResult.target.GetStatusCodes().ScaScanStatusCode != nil {
 		log.Info(fmt.Sprintf("SCA scan completed in %v", scaResult.duration))
 	}
-	if jasResult.target != nil && jasResult.target.EntitledForJas {
+	if jasResult.target.EntitledForJas && wasJasExecuted(jasResult.target) {
 		log.Info(fmt.Sprintf("JAS scan completed in %v", jasResult.duration))
 	}
 	log.Info(fmt.Sprintf("Total scan time: %v", time.Since(startTime)))
@@ -697,4 +697,11 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	}
 
 	return targetResult.results, sourceResult.results, nil
+}
+
+func wasJasExecuted(result *results.SecurityCommandResults) bool {
+	status := result.GetStatusCodes()
+	return status.SecretsScanStatusCode != nil ||
+		status.IacScanStatusCode != nil ||
+		status.SastScanStatusCode != nil
 }
