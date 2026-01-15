@@ -124,9 +124,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => /Users/eyalk/Desktop/team-projects/jfrog-cli-security
+replace github.com/jfrog/jfrog-cli-security => github.com/eyalk007/jfrog-cli-security v0.0.0-20260114103008-56609db7f324
 
-replace github.com/jfrog/jfrog-client-go => /Users/eyalk/Desktop/team-projects/jfrog-client-go
+replace github.com/jfrog/jfrog-client-go => github.com/eyalk007/jfrog-client-go v0.0.0-20260114112951-67b77f49255f
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
