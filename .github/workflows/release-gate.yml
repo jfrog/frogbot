@@ -31,7 +31,6 @@ jobs:
             package: 'packagehandlers'
 
     steps:
-      # Checkout current branch
       - uses: actions/checkout@v4
 
       - name: Setup Go
@@ -101,7 +100,6 @@ jobs:
       - name: Install Maven
         run: sudo apt-get install -y maven
 
-      # Generate mocks
       - name: Generate mocks
         run: go generate ./...
 
@@ -477,8 +475,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -547,12 +543,10 @@ jobs:
       - name: Install Maven
         run: sudo apt-get install -y maven
 
-      # Generating a unique name for the Integration Configuration that will be created in the following step
       - name: Generate unique OIDC config name
         shell: bash
         run: echo "OIDC_PROVIDER_NAME=oidc-integration-test-provider-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
 
-      # The PLATFORM_URL may contain a trailing slash, and in this case we need to ensure we don't have a double slash in the URL
       - name: Construct valid OIDC endpoint
         shell: bash
         run: |
@@ -592,7 +586,6 @@ jobs:
                 }
           }'
 
-      # Running frogbot with the OIDC integration
       - name: Run Frogbot
         uses: ./
         env:
@@ -608,7 +601,6 @@ jobs:
         with:
           oidc-provider-name: ${{ env.OIDC_PROVIDER_NAME }}
 
-      # Removing the OIDC integration will remove the Identity Mapping as well
       - name: Delete OIDC integration
         shell: bash
         if: always()
