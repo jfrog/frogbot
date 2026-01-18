@@ -32,9 +32,13 @@ const (
 	npmDescriptorFile = "package.json"
 	npmInstallTimeout = 15 * time.Minute
 
-	// Matches: "package-name": "version" with optional ^ or ~ prefix
-	npmDependencyRegexpPattern = `\s*"%s"\s*:\s*"[~^]?%s"`
-	// Regex pattern for replacement - captures the groups for reconstruction
+	/* TODO eran
+	We need to fix this regexp and ease it to find package by only package name.
+	we get from the lock as exact version (without ^ or ~) and the regexp won't match the descriptor.
+	We also need to see what we do with override or peer dependencies that we doent need to fix at all
+	GENERAL DECISION: we fix all occurrences we find
+	*/
+	npmDependencyRegexpPattern  = `\s*"%s"\s*:\s*"[~^]?%s"`
 	npmDependencyReplacePattern = `(\s*"%s"\s*:\s*")[~^]?[^"]+(")`
 )
 
@@ -76,7 +80,7 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 	vulnRegexp := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, npmDependencyRegexpPattern)
 
 	for _, descriptorPath := range descriptorPaths {
-		if fixErr := npm.fixVulnerabilityInDescriptor(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
+		if fixErr := npm.fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
 			err = errors.Join(err, fixErr)
 		}
 	}
@@ -87,7 +91,8 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 	return nil
 }
 
-// Returns all descriptors related to the vulnerability based on its lock file locations
+// TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
+// TODO: Consider deleting after the bug is resolved
 func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
 	lockFilePaths := GetVulnerabilityLocations(vulnDetails)
 	if len(lockFilePaths) == 0 {
@@ -110,7 +115,7 @@ func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *
 	return descriptorPaths, nil
 }
 
-func (npm *NpmPackageHandler) fixVulnerabilityInDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) (err error) {
+func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) (err error) {
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
@@ -141,6 +146,7 @@ func (npm *NpmPackageHandler) fixVulnerabilityInDescriptor(vulnDetails *utils.Vu
 		}
 	}()
 
+	// TODO eran: make sure to regenerate lock only when we have it in the remote (check path existence in remote)
 	if err = npm.regenerateLockFileWithRetry(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
 		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
@@ -149,7 +155,7 @@ func (npm *NpmPackageHandler) fixVulnerabilityInDescriptor(vulnDetails *utils.Vu
 		return err
 	}
 
-	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion))
+	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
 	return nil
 }
 

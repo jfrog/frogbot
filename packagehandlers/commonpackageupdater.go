@@ -142,7 +142,7 @@ func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLine
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-// Extracts unique file paths from the vulnerability's component locations.
+// TODO: after fixing the bug where vulnerability locations do not include descriptor files, we need to change this func name + functionality to collect only descriptor files
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
