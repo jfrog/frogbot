@@ -19,9 +19,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -338,6 +339,7 @@ type Git struct {
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
 	UploadSbomToVcs               *bool `yaml:"uploadSbomToVcs,omitempty"`
+	UploadPrSecurityResultsToVcs  bool  `yaml:"uploadPrSecurityResultsToVcs,omitempty"`
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -387,6 +389,13 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 			return err
 		}
 		g.UploadSbomToVcs = &envValue
+	}
+	if !g.UploadPrSecurityResultsToVcs {
+		envValue, err := getBoolEnv(UploadPrSecurityResultsToVcsEnv, false)
+		if err != nil {
+			return err
+		}
+		g.UploadPrSecurityResultsToVcs = envValue
 	}
 
 	return
