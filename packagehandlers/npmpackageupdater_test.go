@@ -88,7 +88,7 @@ func TestNpmGetVulnerabilityRegexCompiler(t *testing.T) {
 }
 
 func TestUpdateVersionInDescriptor(t *testing.T) {
-	npm := &NpmPackageHandler{}
+	npm := &NpmPackageUpdater{}
 
 	testcases := []struct {
 		name            string
@@ -171,7 +171,7 @@ func TestUpdateVersionInDescriptor(t *testing.T) {
 }
 
 func TestBuildIsolatedEnv(t *testing.T) {
-	npm := &NpmPackageHandler{}
+	npm := &NpmPackageUpdater{}
 	env := npm.buildIsolatedEnv()
 
 	// Convert to map for easier checking
@@ -193,7 +193,7 @@ func TestBuildIsolatedEnv(t *testing.T) {
 }
 
 func TestNpmGetDescriptorPathsFromVulnerability(t *testing.T) {
-	npm := &NpmPackageHandler{}
+	npm := &NpmPackageUpdater{}
 	tmpDir, err := os.MkdirTemp("", "npm-descriptor-test-")
 	assert.NoError(t, err)
 	defer func() {

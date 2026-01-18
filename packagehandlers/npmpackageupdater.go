@@ -52,11 +52,11 @@ var npmInstallEnvVars = map[string]string{
 	noUpdateNotifierEnv:    "1",
 }
 
-type NpmPackageHandler struct {
+type NpmPackageUpdater struct {
 	CommonPackageHandler
 }
 
-func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return npm.updateDirectDependency(vulnDetails)
 	}
@@ -67,7 +67,7 @@ func (npm *NpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityD
 	}
 }
 
-func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	descriptorPaths, err := npm.getDescriptorsToFixFromVulnerability(vulnDetails)
 	if err != nil {
 		return err
@@ -80,21 +80,25 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 
 	vulnRegexp := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, npmDependencyRegexpPattern)
 
+	var failingDescriptors []string
 	for _, descriptorPath := range descriptorPaths {
 		if fixErr := npm.fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
-			err = errors.Join(err, fixErr)
+			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, descriptorPath, fixErr)
+			log.Warn(failedFixErrorMsg.Error())
+			err = errors.Join(err, failedFixErrorMsg)
+			failingDescriptors = append(failingDescriptors, descriptorPath)
 		}
 	}
 	if err != nil {
-		return fmt.Errorf("failed to fix vulnerability in one of the following descriptors [%s]: %w", strings.Join(descriptorPaths, ", "), err)
+		return fmt.Errorf("encountered errors while fixing '%s' vulnerability in descriptors [%s]: %w", vulnDetails.ImpactedDependencyName, strings.Join(failingDescriptors, ", "), err)
 	}
 
 	return nil
 }
 
 // TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
-// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}) and verify it exists
-func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
+// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}) and verify it exists (delete func & test)
+func (npm *NpmPackageUpdater) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
 	lockFilePaths := GetVulnerabilityLocations(vulnDetails, []string{npmLockFileName})
 	if len(lockFilePaths) == 0 {
 		return nil, fmt.Errorf("no location evidence was found for package %s", vulnDetails.ImpactedDependencyName)
@@ -116,7 +120,7 @@ func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *
 	return descriptorPaths, nil
 }
 
-func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) (err error) {
+func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) (err error) {
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
@@ -149,7 +153,7 @@ func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 
 	lockFileExistsInRemote, checkErr := utils.IsFileExistsInRemote(npmLockFileName, originalWd, "")
 	if checkErr != nil {
-		log.Warn(fmt.Sprintf("Failed to check if lock file exists in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
+		log.Debug(fmt.Sprintf("Failed to check if lock file exists in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
 		lockFileExistsInRemote = true
 	}
 
@@ -170,7 +174,7 @@ func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 	return nil
 }
 
-func (npm *NpmPackageHandler) updateVersionInDescriptor(content []byte, packageName, newVersion string) ([]byte, error) {
+func (npm *NpmPackageUpdater) updateVersionInDescriptor(content []byte, packageName, newVersion string) ([]byte, error) {
 	escapedName := regexp.QuoteMeta(packageName)
 	replacePattern := fmt.Sprintf(npmDependencyReplacePattern, escapedName)
 	replaceRegex := regexp.MustCompile("(?i)" + replacePattern)
@@ -184,20 +188,18 @@ func (npm *NpmPackageHandler) updateVersionInDescriptor(content []byte, packageN
 	return updatedContent, nil
 }
 
-func (npm *NpmPackageHandler) regenerateLockFileWithRetry() error {
+func (npm *NpmPackageUpdater) regenerateLockFileWithRetry() error {
 	err := npm.runNpmInstall()
-	if err == nil {
-		return nil
-	}
-
-	log.Debug(fmt.Sprintf("First npm install attempt failed: %s. Retrying...", err.Error()))
-	if err = npm.runNpmInstall(); err != nil {
-		return fmt.Errorf("npm install failed after retry: %w", err)
+	if err != nil {
+		log.Debug(fmt.Sprintf("First npm install attempt failed: %s. Retrying...", err.Error()))
+		if err = npm.runNpmInstall(); err != nil {
+			return fmt.Errorf("npm install failed after retry: %w", err)
+		}
 	}
 	return nil
 }
 
-func (npm *NpmPackageHandler) runNpmInstall() error {
+func (npm *NpmPackageUpdater) runNpmInstall() error {
 	args := []string{
 		"install",
 		npmPackageLockOnlyFlag,
@@ -230,7 +232,7 @@ func (npm *NpmPackageHandler) runNpmInstall() error {
 }
 
 // Creates an environment slice with npm isolation variables that override user's .npmrc settings for specific options while allowing registry configuration to pass through
-func (npm *NpmPackageHandler) buildIsolatedEnv() []string {
+func (npm *NpmPackageUpdater) buildIsolatedEnv() []string {
 	env := os.Environ()
 	for key, value := range npmInstallEnvVars {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))

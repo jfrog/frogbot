@@ -30,7 +30,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case techutils.Npm:
-		handler = &NpmPackageHandler{CommonPackageHandler{baseBranch: details.BaseBranch()}}
+		handler = &NpmPackageUpdater{CommonPackageHandler{baseBranch: details.BaseBranch()}}
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
@@ -149,7 +149,8 @@ func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFil
 	for _, component := range vulnDetails.Components {
 		if component.Location != nil && component.Location.File != "" {
 			if len(namesFilters) > 0 {
-				if slices.Contains(namesFilters, component.Location.File) {
+				// Compare basename of the file path against the filter
+				if slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
 					pathsSet.Add(component.Location.File)
 				}
 			} else {
