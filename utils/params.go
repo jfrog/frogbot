@@ -19,9 +19,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -389,7 +390,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 		g.UploadSbomToVcs = &envValue
 	}
-	if g.UploadPrSecurityResultsToVcs == nil {
+	if !g.UploadPrSecurityResultsToVcs {
 		envValue, err := getBoolEnv(UploadPrSecurityResultsToVcsEnv, false)
 		if err != nil {
 			return err
