@@ -610,6 +610,8 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	if targetLogCollector.HasLogs() {
 		log.Info("[sca-target] Logs:")
 		targetLogCollector.ReplayTo(log.GetLogger())
+	} else {
+		log.Warn("[sca-target] No logs captured - this may indicate a logging issue")
 	}
 
 	if err = targetResults.GetErrors(); err != nil {
@@ -625,6 +627,8 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	if sourceLogCollector.HasLogs() {
 		log.Info("[sca-source] Logs:")
 		sourceLogCollector.ReplayTo(log.GetLogger())
+	} else {
+		log.Warn("[sca-source] No logs captured - this may indicate a logging issue")
 	}
 
 	if err = sourceResults.GetErrors(); err != nil {
@@ -678,10 +682,14 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	if targetResult.collector != nil && targetResult.collector.HasLogs() {
 		log.Info("[jas-target] Logs:")
 		targetResult.collector.ReplayTo(log.GetLogger())
+	} else if targetResult.collector != nil {
+		log.Warn("[jas-target] No logs captured - this may indicate a logging issue")
 	}
 	if sourceResult.collector != nil && sourceResult.collector.HasLogs() {
 		log.Info("[jas-source] Logs:")
 		sourceResult.collector.ReplayTo(log.GetLogger())
+	} else if sourceResult.collector != nil {
+		log.Warn("[jas-source] No logs captured - this may indicate a logging issue")
 	}
 
 	log.Debug(fmt.Sprintf("[JAS] Target scan completed in %v", targetResult.duration))
