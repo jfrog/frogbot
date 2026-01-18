@@ -13,6 +13,7 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"golang.org/x/exp/slices"
 )
 
 // PackageHandler interface to hold operations on packages
@@ -29,7 +30,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case techutils.Npm:
-		handler = &NpmPackageHandler{}
+		handler = &NpmPackageHandler{CommonPackageHandler{baseBranch: details.BaseBranch()}}
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
@@ -50,10 +51,11 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO delete CommonPackageHandler or at least its fields since they are no londer needed
+// TODO delete serverDetails and depsRepo since they are no londer needed
 type CommonPackageHandler struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
+	baseBranch    string
 }
 
 // UpdateDependency updates the impacted package to the fixed version
@@ -142,12 +144,17 @@ func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLine
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-// TODO: after fixing the bug where vulnerability locations do not include descriptor files, we need to change this func name + functionality to collect only descriptor files
-func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails) []string {
+func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
 		if component.Location != nil && component.Location.File != "" {
-			pathsSet.Add(component.Location.File)
+			if len(namesFilters) > 0 {
+				if slices.Contains(namesFilters, component.Location.File) {
+					pathsSet.Add(component.Location.File)
+				}
+			} else {
+				pathsSet.Add(component.Location.File)
+			}
 		}
 	}
 	return pathsSet.ToSlice()

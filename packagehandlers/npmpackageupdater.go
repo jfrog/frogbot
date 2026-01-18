@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -29,8 +29,9 @@ const (
 	ciEnv                  = "CI"
 	noUpdateNotifierEnv    = "NO_UPDATE_NOTIFIER"
 
-	npmDescriptorFile = "package.json"
-	npmInstallTimeout = 15 * time.Minute
+	npmDescriptorFileName = "package.json"
+	npmLockFileName       = "package-lock.json"
+	npmInstallTimeout     = 15 * time.Minute
 
 	/* TODO eran
 	We need to fix this regexp and ease it to find package by only package name.
@@ -92,9 +93,9 @@ func (npm *NpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulnerab
 }
 
 // TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
-// TODO: Consider deleting after the bug is resolved
+// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}) and verify it exists
 func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
-	lockFilePaths := GetVulnerabilityLocations(vulnDetails)
+	lockFilePaths := GetVulnerabilityLocations(vulnDetails, []string{npmLockFileName})
 	if len(lockFilePaths) == 0 {
 		return nil, fmt.Errorf("no location evidence was found for package %s", vulnDetails.ImpactedDependencyName)
 	}
@@ -102,7 +103,7 @@ func (npm *NpmPackageHandler) getDescriptorsToFixFromVulnerability(vulnDetails *
 	var descriptorPaths []string
 	for _, lockFilePath := range lockFilePaths {
 		// We currently assume the descriptor resides in the same directory as the lock file, and this is the only supported use case
-		descriptorPath := filepath.Join(filepath.Dir(lockFilePath), npmDescriptorFile)
+		descriptorPath := filepath.Join(filepath.Dir(lockFilePath), npmDescriptorFileName)
 		fileExists, err := fileutils.IsFileExists(descriptorPath, false)
 		if err != nil {
 			return nil, err
@@ -146,7 +147,18 @@ func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		}
 	}()
 
-	// TODO eran: make sure to regenerate lock only when we have it in the remote (check path existence in remote)
+	lockFileExistsInRemote, checkErr := utils.IsFileExistsInRemote(npmLockFileName, originalWd, "")
+	if checkErr != nil {
+		log.Warn(fmt.Sprintf("Failed to check if lock file exists in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
+		lockFileExistsInRemote = true
+	}
+
+	if !lockFileExistsInRemote {
+		log.Debug(fmt.Sprintf("Lock file '%s' does not exist in remote, skipping lock file regeneration", npmLockFileName))
+		log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s' without regenerating lock file", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
+		return
+	}
+
 	if err = npm.regenerateLockFileWithRetry(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
 		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
@@ -154,7 +166,6 @@ func (npm *NpmPackageHandler) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		}
 		return err
 	}
-
 	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
 	return nil
 }
