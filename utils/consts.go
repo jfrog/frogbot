@@ -47,6 +47,8 @@ const (
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
+	ParallelPrScanEnv = "JF_PR_PARALLEL_PR_SCAN"
+
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
 	FixVersionPlaceHolder = "{FIX_VERSION}"

@@ -107,7 +107,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 		g.Branches = gitParamsFromEnv.Branches
 	}
-	envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+	envValue, err := GetBoolEnv(GitDependencyGraphSubmissionEnv, true)
 	if err != nil {
 		return err
 	}
@@ -484,7 +484,7 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
+func GetBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	envValue := getTrimmedEnv(envKey)
 	if envValue != "" {
 		parsedEnv, err := strconv.ParseBool(envValue)

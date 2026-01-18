@@ -11,6 +11,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/policy/enforcer"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
+	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
@@ -27,6 +28,10 @@ type ScanDetails struct {
 	ResultsToCompare *results.SecurityCommandResults
 	ConfigProfile    *xscservices.ConfigProfile
 
+	scansToPerform   []utils.SubScanType
+	uploadCdxResults bool
+	logCollector     *audit.LogCollector
+
 	results.ResultContext
 	MultiScanId string
 	XrayVersion string
@@ -34,8 +39,59 @@ type ScanDetails struct {
 	StartTime   time.Time
 }
 
+func (sc *ScanDetails) Clone() *ScanDetails {
+	return &ScanDetails{
+		Git:               sc.Git,
+		XscGitInfoContext: sc.XscGitInfoContext,
+		ServerDetails:     sc.ServerDetails,
+		client:            sc.client,
+		baseBranch:        sc.baseBranch,
+		diffScan:          sc.diffScan,
+		ResultsToCompare:  sc.ResultsToCompare,
+		ConfigProfile:     sc.ConfigProfile,
+		scansToPerform:    sc.scansToPerform,
+		uploadCdxResults:  sc.uploadCdxResults,
+		ResultContext:     sc.ResultContext,
+		MultiScanId:       sc.MultiScanId,
+		XrayVersion:       sc.XrayVersion,
+		XscVersion:        sc.XscVersion,
+		StartTime:         sc.StartTime,
+	}
+}
+
+// CloneForBranchScan creates a clone configured for branch scanning with isolated logging.
+func (sc *ScanDetails) CloneForBranchScan(scans []utils.SubScanType, diffScan bool, resultsToCompare *results.SecurityCommandResults) (*ScanDetails, *audit.LogCollector) {
+	cloned := sc.Clone()
+	cloned.scansToPerform = scans
+	cloned.diffScan = diffScan
+	cloned.ResultsToCompare = resultsToCompare
+	cloned.uploadCdxResults = false
+	collector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
+	cloned.logCollector = collector
+	return cloned, collector
+}
+
+func (sc *ScanDetails) SetScansToPerform(scans []utils.SubScanType) *ScanDetails {
+	sc.scansToPerform = scans
+	return sc
+}
+
+func (sc *ScanDetails) SetUploadCdxResults(upload bool) *ScanDetails {
+	sc.uploadCdxResults = upload
+	return sc
+}
+
+func (sc *ScanDetails) SetLogCollector(collector *audit.LogCollector) *ScanDetails {
+	sc.logCollector = collector
+	return sc
+}
+
+func (sc *ScanDetails) GetLogCollector() *audit.LogCollector {
+	return sc.logCollector
+}
+
 func NewScanDetails(client vcsclient.VcsClient, server *config.ServerDetails, git *Git) *ScanDetails {
-	return &ScanDetails{client: client, ServerDetails: server, Git: git}
+	return &ScanDetails{client: client, ServerDetails: server, Git: git, uploadCdxResults: true}
 }
 
 func (sc *ScanDetails) SetJfrogVersions(xrayVersion, xscVersion string) *ScanDetails {
@@ -95,14 +151,19 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetAllowPartialResults(!sc.ConfigProfile.GeneralConfig.FailUponAnyScannerError).
 		SetExclusions(sc.ConfigProfile.GeneralConfig.GeneralExcludePatterns).
 		SetUseJas(true).
-		SetConfigProfile(sc.ConfigProfile)
+		SetConfigProfile(sc.ConfigProfile).
+		SetScansToPerform(sc.scansToPerform)
+
+	if sc.logCollector != nil {
+		auditBasicParams.SetLogCollector(sc.logCollector)
+	}
 
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(xrayplugin.NewXrayLibBomGenerator()).
 		SetScaScanStrategy(enrich.NewEnrichScanStrategy()).
-		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
+		SetUploadCdxResults(sc.uploadCdxResults).
 		SetGitContext(sc.XscGitInfoContext).
-		SetRtResultRepository(frogbotUploadRtRepoPath).
+		SetRtResultRepository(FrogbotUploadRtRepoPath).
 		SetWorkingDirs(workDirs).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).

@@ -4,16 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/gofrog/datastructures"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/gofrog/datastructures"
+	"github.com/jfrog/jfrog-cli-security/commands/audit"
+	securityjas "github.com/jfrog/jfrog-cli-security/jas"
+	securityUtils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
+	"github.com/jfrog/jfrog-cli-security/utils/results/output"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
@@ -29,10 +34,27 @@ const (
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
 )
 
-// targetPair represents a matched pair of source and target scan results
 type targetPair struct {
 	source *results.TargetResults
 	target *results.TargetResults
+}
+
+type scanResult struct {
+	results  *results.SecurityCommandResults
+	err      error
+	duration time.Duration
+}
+
+type branchScanResult struct {
+	target   *results.SecurityCommandResults
+	source   *results.SecurityCommandResults
+	err      error
+	duration time.Duration
+}
+
+type parallelJasResult struct {
+	scanResult
+	collector *audit.LogCollector
 }
 
 type ScanPullRequestCmd struct{}
@@ -93,7 +115,24 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 			)
 		}
 	}()
-	issuesCollection, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+
+	scanResults, scanErr := scanPullRequestBranches(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
+	if scanErr != nil {
+		issuesCollection = &issues.ScansIssuesCollection{}
+		if scanResults != nil {
+			issuesCollection.AppendStatus(getResultScanStatues(scanResults))
+		}
+		err = fmt.Errorf("failed to audit branches: %w", scanErr)
+		return
+	}
+
+	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
+
+	log.Debug("Diff scan - converting to new issues...")
+	issuesCollection, err = scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
+	if err != nil {
+		err = fmt.Errorf("failed to get issues for pull request: %w", err)
+	}
 	return
 }
 
@@ -132,49 +171,48 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 	return
 }
 
-func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	issuesCollection = &issues.ScansIssuesCollection{}
-	log.Debug("Scanning target branch code...")
-	if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
-		issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
-		return issuesCollection, fmt.Errorf("failed to audit target branch. Error: %s", e.Error())
+func scanPullRequestBranches(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
+	var scanResults *results.SecurityCommandResults
+	var err error
+
+	if parallelEnabled, _ := utils.GetBoolEnv(utils.ParallelPrScanEnv, true); parallelEnabled {
+		scanResults, err = auditBranchesInParallel(scanDetails, sourceBranchWd, targetBranchWd)
 	} else {
-		scanDetails.SetResultsToCompare(targetScanResults)
+		scanResults, err = auditBranchesSequentially(scanDetails, sourceBranchWd, targetBranchWd)
 	}
+
+	if err != nil {
+		return scanResults, err
+	}
+
+	if !repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError {
+		filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, false, sourceBranchWd, targetBranchWd)
+	}
+
+	return scanResults, nil
+}
+
+func auditBranchesSequentially(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
+	log.Debug("Scanning target branch code...")
+	scanDetails.SetUploadCdxResults(false)
+	targetScanResults, err := auditPullRequestTargetCode(scanDetails, targetBranchWd)
+	if err != nil {
+		return targetScanResults, fmt.Errorf("failed to audit target branch: %w", err)
+	}
+	scanDetails.SetResultsToCompare(targetScanResults)
+
 	log.Debug("Scanning source branch code...")
-	pullRequestIssues, e := auditPullRequestSourceCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
-	if e != nil {
-		if pullRequestIssues != nil {
-			// Scan error, report the scan status
-			issuesCollection.AppendStatus(pullRequestIssues.ScanStatus)
-		}
-		return issuesCollection, fmt.Errorf("failed to audit source branch code. Error: %s", e.Error())
+	scanDetails.SetUploadCdxResults(true)
+	sourceScanResults := scanDetails.Audit(sourceBranchWd)
+	if err = sourceScanResults.GetErrors(); err != nil {
+		return sourceScanResults, err
 	}
-	issuesCollection.Append(pullRequestIssues)
-	return
+	return sourceScanResults, nil
 }
 
 func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd string) (scanResults *results.SecurityCommandResults, err error) {
 	scanResults = scanDetails.Audit(targetBranchWd)
 	err = scanResults.GetErrors()
-	return
-}
-
-func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, err error) {
-	scanResults := scanDetails.Audit(sourceBranchWd)
-	if err = scanResults.GetErrors(); err != nil {
-		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
-		return
-	}
-	// Set JAS output flags based on the scan results
-	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
-	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
-
-	log.Debug("Diff scan - converting to new issues...")
-	issuesCollection, e := scanResultsToIssuesCollection(scanResults, strings.TrimPrefix(sourceBranchWd, string(filepath.Separator)), strings.TrimPrefix(targetBranchWd, string(filepath.Separator)))
-	if e != nil {
-		err = errors.Join(err, fmt.Errorf("failed to get issues for pull request. Error: %s", e.Error()))
-	}
 	return
 }
 
@@ -499,4 +537,179 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 		return targetStatus
 	}
 	return sourceStatus
+}
+
+func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
+	log.Info("Starting parallel PR scan...")
+	startTime := time.Now()
+
+	// Pre-download Analyzer Manager to avoid parallel download contention
+	if err := securityjas.DownloadAnalyzerManagerIfNeeded(0); err != nil {
+		log.Warn("Failed to pre-download Analyzer Manager:", err)
+	}
+
+	scaChan := make(chan branchScanResult, 1)
+	jasChan := make(chan branchScanResult, 1)
+
+	go func() {
+		start := time.Now()
+		scaTarget, scaSource, err := runScaScans(scanDetails, targetBranchWd, sourceBranchWd)
+		scaChan <- branchScanResult{target: scaTarget, source: scaSource, err: err, duration: time.Since(start)}
+	}()
+
+	go func() {
+		start := time.Now()
+		jasTarget, jasSource, err := runJasScans(scanDetails, targetBranchWd, sourceBranchWd)
+		jasChan <- branchScanResult{target: jasTarget, source: jasSource, err: err, duration: time.Since(start)}
+	}()
+
+	scaResult := <-scaChan
+	jasResult := <-jasChan
+
+	if scaResult.target.GetStatusCodes().ScaScanStatusCode != nil {
+		log.Info(fmt.Sprintf("SCA scan completed in %v", scaResult.duration))
+	}
+	if jasResult.target.EntitledForJas && wasJasExecuted(jasResult.target) {
+		log.Info(fmt.Sprintf("JAS scan completed in %v", jasResult.duration))
+	}
+	log.Info(fmt.Sprintf("Total scan time: %v", time.Since(startTime)))
+
+	if scaResult.err != nil {
+		log.Error("SCA scan failed:", scaResult.err)
+		return scaResult.source, fmt.Errorf("SCA scan failed: %w", scaResult.err)
+	}
+	if jasResult.err != nil {
+		log.Error("JAS scan failed:", jasResult.err)
+		return jasResult.source, fmt.Errorf("JAS scan failed: %w", jasResult.err)
+	}
+
+	unifiedTarget := results.MergeScaAndJasResults(scaResult.target, jasResult.target)
+	scanDetails.SetResultsToCompare(unifiedTarget)
+
+	log.Debug("[JAS] Computing diff...")
+	jasDiff := results.CompareJasResults(jasResult.target, jasResult.source)
+	log.Debug("[JAS] Diff computation completed")
+
+	diffResults := results.MergeScaAndJasResults(scaResult.source, jasDiff)
+
+	log.Info("Uploading results to platform...")
+	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, utils.FrogbotUploadRtRepoPath, diffResults); err != nil {
+		log.Warn("Failed to upload results:", err)
+	}
+
+	return diffResults, nil
+}
+
+func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
+	targetScanDetails, targetLogCollector := scanDetails.CloneForBranchScan(
+		[]securityUtils.SubScanType{securityUtils.ScaScan},
+		true, nil,
+	)
+	targetResults = targetScanDetails.Audit(targetDir)
+
+	if targetLogCollector.HasLogs() {
+		log.Info("[sca-target] Logs:")
+		targetLogCollector.ReplayTo(log.GetLogger())
+	} else {
+		log.Warn("[sca-target] No logs captured - this may indicate a logging issue")
+	}
+
+	if err = targetResults.GetErrors(); err != nil {
+		return targetResults, nil, fmt.Errorf("SCA target scan failed: %w", err)
+	}
+
+	sourceScanDetails, sourceLogCollector := scanDetails.CloneForBranchScan(
+		[]securityUtils.SubScanType{securityUtils.ScaScan, securityUtils.ContextualAnalysisScan},
+		true, targetResults,
+	)
+	sourceResults = sourceScanDetails.Audit(sourceDir)
+
+	if sourceLogCollector.HasLogs() {
+		log.Info("[sca-source] Logs:")
+		sourceLogCollector.ReplayTo(log.GetLogger())
+	} else {
+		log.Warn("[sca-source] No logs captured - this may indicate a logging issue")
+	}
+
+	if err = sourceResults.GetErrors(); err != nil {
+		return targetResults, sourceResults, fmt.Errorf("SCA source scan failed: %w", err)
+	}
+
+	return targetResults, sourceResults, nil
+}
+
+func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (targetResults, sourceResults *results.SecurityCommandResults, err error) {
+	targetChan := make(chan parallelJasResult, 1)
+	sourceChan := make(chan parallelJasResult, 1)
+
+	jasScans := []securityUtils.SubScanType{
+		securityUtils.SecretsScan,
+		securityUtils.IacScan,
+		securityUtils.SastScan,
+	}
+
+	go func() {
+		targetScanDetails, targetLogCollector := scanDetails.CloneForBranchScan(jasScans, false, nil)
+		start := time.Now()
+		results := targetScanDetails.Audit(targetDir)
+		targetChan <- parallelJasResult{
+			scanResult: scanResult{
+				results:  results,
+				err:      results.GetErrors(),
+				duration: time.Since(start),
+			},
+			collector: targetLogCollector,
+		}
+	}()
+
+	go func() {
+		sourceScanDetails, sourceLogCollector := scanDetails.CloneForBranchScan(jasScans, false, nil)
+		start := time.Now()
+		results := sourceScanDetails.Audit(sourceDir)
+		sourceChan <- parallelJasResult{
+			scanResult: scanResult{
+				results:  results,
+				err:      results.GetErrors(),
+				duration: time.Since(start),
+			},
+			collector: sourceLogCollector,
+		}
+	}()
+
+	targetResult := <-targetChan
+	sourceResult := <-sourceChan
+
+	if targetResult.collector != nil && targetResult.collector.HasLogs() {
+		log.Info("[jas-target] Logs:")
+		targetResult.collector.ReplayTo(log.GetLogger())
+	} else if targetResult.collector != nil {
+		log.Warn("[jas-target] No logs captured - this may indicate a logging issue")
+	}
+	if sourceResult.collector != nil && sourceResult.collector.HasLogs() {
+		log.Info("[jas-source] Logs:")
+		sourceResult.collector.ReplayTo(log.GetLogger())
+	} else if sourceResult.collector != nil {
+		log.Warn("[jas-source] No logs captured - this may indicate a logging issue")
+	}
+
+	log.Debug(fmt.Sprintf("[JAS] Target scan completed in %v", targetResult.duration))
+	log.Debug(fmt.Sprintf("[JAS] Source scan completed in %v", sourceResult.duration))
+
+	if targetResult.err != nil {
+		log.Error("[JAS] Target scan failed:", targetResult.err)
+		return targetResult.results, nil, fmt.Errorf("JAS target scan failed: %w", targetResult.err)
+	}
+	if sourceResult.err != nil {
+		log.Error("[JAS] Source scan failed:", sourceResult.err)
+		return targetResult.results, sourceResult.results, fmt.Errorf("JAS source scan failed: %w", sourceResult.err)
+	}
+
+	return targetResult.results, sourceResult.results, nil
+}
+
+func wasJasExecuted(result *results.SecurityCommandResults) bool {
+	status := result.GetStatusCodes()
+	return status.SecretsScanStatusCode != nil ||
+		status.IacScanStatusCode != nil ||
+		status.SastScanStatusCode != nil
 }
