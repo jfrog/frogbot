@@ -583,14 +583,14 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 		return jasResult.source, fmt.Errorf("JAS scan failed: %w", jasResult.err)
 	}
 
-	unifiedTarget := results.UnifyScaAndJasResults(scaResult.target, jasResult.target)
+	unifiedTarget := results.MergeScaAndJasResults(scaResult.target, jasResult.target)
 	scanDetails.SetResultsToCompare(unifiedTarget)
 
 	log.Debug("[JAS] Computing diff...")
 	jasDiff := results.CompareJasResults(jasResult.target, jasResult.source)
 	log.Debug("[JAS] Diff computation completed")
 
-	diffResults := results.UnifyScaAndJasResults(scaResult.source, jasDiff)
+	diffResults := results.MergeScaAndJasResults(scaResult.source, jasDiff)
 
 	log.Info("Uploading results to platform...")
 	if _, err := output.UploadCommandResults(scanDetails.ServerDetails, utils.FrogbotUploadRtRepoPath, diffResults); err != nil {
