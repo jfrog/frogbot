@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
+	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -40,19 +40,26 @@ import (
 
 const rootTestDir = "scanrepository"
 
-var emptyConfigProfile = services2.ConfigProfile{
+var defaultConfigProfile = xscservices.ConfigProfile{
 	ProfileName:   "test-profile",
-	GeneralConfig: services2.GeneralConfig{},
-	FrogbotConfig: services2.FrogbotConfig{
+	GeneralConfig: xscservices.GeneralConfig{},
+	FrogbotConfig: xscservices.FrogbotConfig{
 		BranchNameTemplate:    "",
 		PrTitleTemplate:       "",
 		CommitMessageTemplate: "",
 	},
-	Modules: []services2.Module{
+	Modules: []xscservices.Module{
 		{
 			ModuleId:     0,
 			ModuleName:   "test-module",
 			PathFromRoot: ".",
+			ScanConfig: xscservices.ScanConfig{
+				ScaScannerConfig:                xscservices.ScaScannerConfig{EnableScaScan: true},
+				ContextualAnalysisScannerConfig: xscservices.CaScannerConfig{EnableCaScan: true},
+				SastScannerConfig:               xscservices.SastScannerConfig{EnableSastScan: true},
+				SecretsScannerConfig:            xscservices.SecretsScannerConfig{EnableSecretsScan: true},
+				IacScannerConfig:                xscservices.IacScannerConfig{EnableIacScan: true},
+			},
 		},
 	},
 }
@@ -201,7 +208,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			assert.NoError(t, err)
 
 			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			repository.ConfigProfile = &defaultConfigProfile
 
 			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
@@ -330,7 +337,7 @@ pr body
 			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			repository.ConfigProfile = &defaultConfigProfile
 
 			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
@@ -428,7 +435,7 @@ func TestPackageTypeFromScan(t *testing.T) {
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
 				ServerDetails: &frogbotParams.Server,
-				ConfigProfile: &emptyConfigProfile,
+				ConfigProfile: &defaultConfigProfile,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan()

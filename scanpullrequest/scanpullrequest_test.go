@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
-	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
+	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -46,19 +46,26 @@ const (
 	testTargetBranchName = "master"
 )
 
-var emptyConfigProfile = services2.ConfigProfile{
+var defaultConfigProfile = xscservices.ConfigProfile{
 	ProfileName:   "test-profile",
-	GeneralConfig: services2.GeneralConfig{},
-	FrogbotConfig: services2.FrogbotConfig{
+	GeneralConfig: xscservices.GeneralConfig{},
+	FrogbotConfig: xscservices.FrogbotConfig{
 		BranchNameTemplate:    "",
 		PrTitleTemplate:       "",
 		CommitMessageTemplate: "",
 	},
-	Modules: []services2.Module{
+	Modules: []xscservices.Module{
 		{
 			ModuleId:     0,
 			ModuleName:   "test-module",
 			PathFromRoot: ".",
+			ScanConfig: xscservices.ScanConfig{
+				ScaScannerConfig:                xscservices.ScaScannerConfig{EnableScaScan: true},
+				ContextualAnalysisScannerConfig: xscservices.CaScannerConfig{EnableCaScan: true},
+				SastScannerConfig:               xscservices.SastScannerConfig{EnableSastScan: true},
+				SecretsScannerConfig:            xscservices.SecretsScannerConfig{EnableSecretsScan: true},
+				IacScannerConfig:                xscservices.IacScannerConfig{EnableIacScan: true},
+			},
 		},
 	},
 }
@@ -291,7 +298,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	assert.NoError(t, err)
 
 	// We must set a non-nil config profile to avoid panic
-	repository.ConfigProfile = &emptyConfigProfile
+	repository.ConfigProfile = &defaultConfigProfile
 
 	return repository, client
 }
