@@ -12,67 +12,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNpmGetVulnerabilityRegexCompiler(t *testing.T) {
+func TestNpmBuildPackageRegex(t *testing.T) {
 	testcases := []struct {
 		name        string
 		packageName string
-		version     string
 		testContent string
 		shouldMatch bool
 	}{
 		{
 			name:        "exact version match",
 			packageName: "minimist",
-			version:     "1.2.5",
 			testContent: `"minimist": "1.2.5"`,
 			shouldMatch: true,
 		},
 		{
 			name:        "version with caret prefix",
 			packageName: "lodash",
-			version:     "4.17.0",
 			testContent: `"lodash": "^4.17.0"`,
 			shouldMatch: true,
 		},
 		{
 			name:        "version with tilde prefix",
 			packageName: "express",
-			version:     "4.18.0",
 			testContent: `"express": "~4.18.0"`,
 			shouldMatch: true,
 		},
 		{
 			name:        "scoped package",
 			packageName: "@types/node",
-			version:     "18.0.0",
 			testContent: `"@types/node": "18.0.0"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "version mismatch",
+			name:        "matches any version (different from scanner version)",
 			packageName: "minimist",
-			version:     "1.2.5",
 			testContent: `"minimist": "1.2.6"`,
-			shouldMatch: false,
+			shouldMatch: true,
 		},
 		{
 			name:        "package name mismatch",
 			packageName: "minimist",
-			version:     "1.2.5",
 			testContent: `"minimatch": "1.2.5"`,
 			shouldMatch: false,
 		},
 		{
 			name:        "case insensitive package name",
 			packageName: "Minimist",
-			version:     "1.2.5",
 			testContent: `"minimist": "1.2.5"`,
 			shouldMatch: true,
 		},
 		{
 			name:        "version with plus sign (build metadata)",
 			packageName: "somepackage",
-			version:     "1.0.0+build.123",
 			testContent: `"somepackage": "1.0.0+build.123"`,
 			shouldMatch: true,
 		},
@@ -80,7 +71,7 @@ func TestNpmGetVulnerabilityRegexCompiler(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			regex := GetVulnerabilityRegexCompiler(tc.packageName, tc.version, npmDependencyRegexpPattern)
+			regex := BuildPackageRegex(tc.packageName, npmDependencyRegexpPattern)
 			matches := regex.MatchString(strings.ToLower(tc.testContent))
 			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
 		})
@@ -139,6 +130,54 @@ func TestUpdateVersionInDescriptor(t *testing.T) {
 			expectError:     true,
 		},
 		{
+			name:            "update in devDependencies",
+			originalContent: `{"devDependencies": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"devDependencies": {"minimist": "1.2.6"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "update in overrides section",
+			originalContent: `{"dependencies": {"express": "4.18.0"}, "overrides": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"dependencies": {"express": "4.18.0"}, "overrides": {"minimist": "1.2.6"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "update in both dependencies and overrides",
+			originalContent: `{"dependencies": {"minimist": "1.2.5"}, "overrides": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"dependencies": {"minimist": "1.2.6"}, "overrides": {"minimist": "1.2.6"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "skip peerDependencies section - package only in peerDependencies",
+			originalContent: `{"dependencies": {"express": "4.18.0"}, "peerDependencies": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: "",
+			expectError:     true,
+		},
+		{
+			name:            "skip peerDependencies section - package in both dependencies and peerDependencies",
+			originalContent: `{"dependencies": {"minimist": "1.2.5"}, "peerDependencies": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"dependencies": {"minimist": "1.2.6"}, "peerDependencies": {"minimist": "1.2.5"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "update in multiple allowed sections",
+			originalContent: `{"dependencies": {"minimist": "1.2.5"}, "devDependencies": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"dependencies": {"minimist": "1.2.6"}, "devDependencies": {"minimist": "1.2.6"}}`,
+			expectError:     false,
+		},
+		{
 			name: "preserve formatting with spaces",
 			originalContent: `{
   "dependencies": {
@@ -158,7 +197,7 @@ func TestUpdateVersionInDescriptor(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := npm.updateVersionInDescriptor([]byte(tc.originalContent), tc.packageName, tc.newVersion)
+			result, err := npm.updateVersionInDescriptor([]byte(tc.originalContent), tc.packageName, tc.newVersion, "package.json")
 
 			if tc.expectError {
 				assert.Error(t, err)

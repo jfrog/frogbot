@@ -1,6 +1,7 @@
 package packagehandlers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -29,19 +30,20 @@ const (
 	ciEnv                  = "CI"
 	noUpdateNotifierEnv    = "NO_UPDATE_NOTIFIER"
 
-	npmDescriptorFileName = "package.json"
-	npmLockFileName       = "package-lock.json"
-	npmInstallTimeout     = 15 * time.Minute
+	npmDescriptorFileName       = "package.json"
+	npmLockFileName             = "package-lock.json"
+	dependenciesSection         = "dependencies"
+	devDependenciesSection      = "devDependencies"
+	optionalDependenciesSection = "optionalDependencies"
+	overridesSection            = "overrides"
 
-	/* TODO eran
-	We need to fix this regexp and ease it to find package by only package name.
-	we get from the lock as exact version (without ^ or ~) and the regexp won't match the descriptor.
-	We also need to see what we do with override or peer dependencies that we doent need to fix at all
-	GENERAL DECISION: we fix all occurrences we find
-	*/
-	npmDependencyRegexpPattern  = `\s*"%s"\s*:\s*"[~^]?%s"`
-	npmDependencyReplacePattern = `(\s*"%s"\s*:\s*")[~^]?[^"]+(")`
+	npmInstallTimeout = 15 * time.Minute
+
+	npmDependencyRegexpPattern  = `\s*"%s"\s*:\s*"[^"]+"`
+	npmDependencyReplacePattern = `(\s*"%s"\s*:\s*")[^"]+(")`
 )
+
+var npmAllowedSections = []string{dependenciesSection, devDependenciesSection, optionalDependenciesSection, overridesSection}
 
 var npmInstallEnvVars = map[string]string{
 	configIgnoreScriptsEnv: "true",
@@ -50,6 +52,11 @@ var npmInstallEnvVars = map[string]string{
 	configLevelEnv:         "error",
 	ciEnv:                  "true",
 	noUpdateNotifierEnv:    "1",
+}
+
+type byteRange struct {
+	start int
+	end   int
 }
 
 type NpmPackageUpdater struct {
@@ -78,7 +85,7 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	vulnRegexp := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, npmDependencyRegexpPattern)
+	vulnRegexp := BuildPackageRegex(vulnDetails.ImpactedDependencyName, npmDependencyRegexpPattern)
 
 	var failingDescriptors []string
 	for _, descriptorPath := range descriptorPaths {
@@ -127,11 +134,11 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 	}
 
 	if !vulnRegexp.MatchString(strings.ToLower(string(descriptorContent))) {
-		return fmt.Errorf("dependency '%s' with version '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, descriptorPath)
+		return fmt.Errorf("dependency '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, descriptorPath)
 	}
 
 	backupContent := descriptorContent
-	updatedContent, err := npm.updateVersionInDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
+	updatedContent, err := npm.updateVersionInDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, descriptorPath)
 	if err != nil {
 		return fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
@@ -174,18 +181,108 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 	return nil
 }
 
-func (npm *NpmPackageUpdater) updateVersionInDescriptor(content []byte, packageName, newVersion string) ([]byte, error) {
+func (npm *NpmPackageUpdater) updateVersionInDescriptor(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
+	sectionRanges := npm.findAllowedSectionRanges(content)
+	if len(sectionRanges) == 0 {
+		return nil, fmt.Errorf("no dependency sections found in descriptor")
+	}
+
 	escapedName := regexp.QuoteMeta(packageName)
 	replacePattern := fmt.Sprintf(npmDependencyReplacePattern, escapedName)
 	replaceRegex := regexp.MustCompile("(?i)" + replacePattern)
 
-	replacement := fmt.Sprintf("${1}%s${2}", newVersion)
-	updatedContent := replaceRegex.ReplaceAll(content, []byte(replacement))
-
-	if string(content) == string(updatedContent) {
-		return nil, fmt.Errorf("failed to find and replace version for package '%s'", packageName)
+	validMatches := findValidMatches(replaceRegex, content, sectionRanges)
+	if len(validMatches) == 0 {
+		return nil, fmt.Errorf("package '%s' not found in allowed sections [%s] in '%s'", packageName, strings.Join(npmAllowedSections, ", "), descriptorPath)
 	}
-	return updatedContent, nil
+
+	return replaceVersionInMatches(content, validMatches, replaceRegex, newVersion), nil
+}
+
+func replaceVersionInMatches(content []byte, matches [][]int, replaceRegex *regexp.Regexp, newVersion string) []byte {
+	replacement := []byte(fmt.Sprintf("${1}%s${2}", newVersion))
+	for i := len(matches) - 1; i >= 0; i-- {
+		match := matches[i]
+		matchedText := content[match[0]:match[1]]
+		replacedText := replaceRegex.ReplaceAll(matchedText, replacement)
+		content = append(content[:match[0]], append(replacedText, content[match[1]:]...)...)
+	}
+	return content
+}
+
+func findValidMatches(replaceRegex *regexp.Regexp, content []byte, sectionRanges []byteRange) [][]int {
+	matches := replaceRegex.FindAllIndex(content, -1)
+	var validMatches [][]int
+	for _, match := range matches {
+		if isPositionInRanges(match[0], sectionRanges) {
+			validMatches = append(validMatches, match)
+		}
+	}
+	return validMatches
+}
+
+// findAllowedSectionRanges finds the byte ranges of allowed dependency sections in package.json
+func (npm *NpmPackageUpdater) findAllowedSectionRanges(content []byte) []byteRange {
+	var ranges []byteRange
+	contentLower := bytes.ToLower(content)
+
+	for _, sectionName := range npmAllowedSections {
+		// Pattern: "sectionName" : {
+		pattern := fmt.Sprintf(`"%s"\s*:\s*\{`, strings.ToLower(sectionName))
+		regex := regexp.MustCompile(pattern)
+
+		match := regex.FindIndex(contentLower)
+		if match != nil {
+			// Find the opening brace position within the match
+			openBrace := bytes.IndexByte(content[match[0]:match[1]], '{') + match[0]
+			// Find matching closing brace
+			closeBrace := npm.findMatchingBrace(content, openBrace)
+			if closeBrace != -1 {
+				ranges = append(ranges, byteRange{start: openBrace, end: closeBrace})
+			}
+		}
+	}
+
+	return ranges
+}
+
+// findMatchingBrace finds the position of the matching closing brace
+func (npm *NpmPackageUpdater) findMatchingBrace(content []byte, openBracePos int) int {
+	depth := 1
+	inString := false
+
+	for i := openBracePos + 1; i < len(content); i++ {
+		c := content[i]
+
+		// Handle string boundaries (respecting escaped quotes)
+		if c == '"' && (i == 0 || content[i-1] != '\\') {
+			inString = !inString
+			continue
+		}
+
+		// Only count braces outside of strings
+		if !inString {
+			if c == '{' {
+				depth++
+			} else if c == '}' {
+				depth--
+				if depth == 0 {
+					return i
+				}
+			}
+		}
+	}
+
+	return -1 // No matching brace found
+}
+
+func isPositionInRanges(pos int, ranges []byteRange) bool {
+	for _, r := range ranges {
+		if pos >= r.start && pos <= r.end {
+			return true
+		}
+	}
+	return false
 }
 
 func (npm *NpmPackageUpdater) regenerateLockFileWithRetry() error {
