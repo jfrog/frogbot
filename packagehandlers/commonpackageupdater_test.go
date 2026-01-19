@@ -55,31 +55,19 @@ func TestUpdateDependency(t *testing.T) {
 		// Go test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "golang.org/x/crypto"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "golang.org/x/crypto", "", "0.0.0-20201216223049-8b5274cf687f", false, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.7.7",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/gin-gonic/gin"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/gin-gonic/gin", "", "1.7.7", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.3.0",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/google/uuid"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/google/uuid", "", "1.3.0", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
@@ -89,66 +77,40 @@ func TestUpdateDependency(t *testing.T) {
 		// Python test cases (includes pip, pipenv, poetry)
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pip, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Poetry, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pipenv, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true,
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Pyjwt"}},
-					IsDirectDependency:          true},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "Pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true},
+				vulnDetails:        createVulnerabilityDetails(techutils.Poetry, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"pyproject.toml"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pipenv, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"Pipfile"},
@@ -192,32 +154,19 @@ func TestUpdateDependency(t *testing.T) {
 		// Yarn test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:         createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", true, ""),
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "1",
 				descriptorsToCheck:  []string{"package.json"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:         createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", true, ""),
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "2",
@@ -228,20 +177,12 @@ func TestUpdateDependency(t *testing.T) {
 		// Maven test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.3.20",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Maven, "org.springframework:spring-core", "", "4.3.20", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.7",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Maven, "commons-io:commons-io", "", "2.7", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
@@ -251,22 +192,13 @@ func TestUpdateDependency(t *testing.T) {
 		// NuGet test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.1.1",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Nuget, "snappier", "1.1.0", "1.1.1", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 				testDirName:  "dotnet",
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.1.1",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Nuget, "snappier", "1.1.0", "1.1.1", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "dotnet",
@@ -277,48 +209,30 @@ func TestUpdateDependency(t *testing.T) {
 		// Gradle test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.13.1",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: dynamic version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: latest version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: range version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "3.2", "4.13.1", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.13.1",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
-				},
+				testcaseInfo: "unsupported-dynamic-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "3.+", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				testcaseInfo: "unsupported-latest-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "latest.release", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				testcaseInfo: "unsupported-range-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "[3.0, 3.5.6)", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				vulnDetails:        createVulnerabilityDetails(techutils.Gradle, "junit:junit", "4.7", "4.13.1", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
@@ -327,22 +241,14 @@ func TestUpdateDependency(t *testing.T) {
 
 		// Pnpm test cases
 		{
-			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.8.4",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pnpm, "mpath", "", "0.8.4", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 				testDirName:  "npm",
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pnpm, "minimist", "1.2.5", "1.2.6", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "npm",
@@ -353,22 +259,14 @@ func TestUpdateDependency(t *testing.T) {
 		// Conan test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.0.14",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Conan, "openssl", "3.0.9", "3.0.14", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "conan",
 				descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.0.14",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Conan, "openssl", "3.0.9", "3.0.14", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},

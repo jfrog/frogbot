@@ -148,7 +148,6 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		return fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
 
-	// Change to the descriptor directory for the regeneration of the lock file
 	descriptorDir := filepath.Dir(descriptorPath)
 	if err = os.Chdir(descriptorDir); err != nil {
 		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
@@ -159,7 +158,7 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		}
 	}()
 
-	lockFileExistsInRemote, checkErr := utils.IsFileExistsInRemote(npmLockFileName, originalWd, "")
+	lockFileExistsInRemote, checkErr := utils.IsFileExistsInRemote(npmLockFileName, originalWd, npm.baseBranch)
 	if checkErr != nil {
 		log.Debug(fmt.Sprintf("Failed to check if lock file exists in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
 		lockFileExistsInRemote = true
@@ -222,21 +221,17 @@ func findValidMatches(replaceRegex *regexp.Regexp, content []byte, sectionRanges
 	return validMatches
 }
 
-// findAllowedSectionRanges finds the byte ranges of allowed dependency sections in package.json
 func (npm *NpmPackageUpdater) findAllowedSectionRanges(content []byte) []byteRange {
 	var ranges []byteRange
 	contentLower := bytes.ToLower(content)
 
 	for _, sectionName := range npmAllowedSections {
-		// Pattern: "sectionName" : {
 		pattern := fmt.Sprintf(`"%s"\s*:\s*\{`, strings.ToLower(sectionName))
 		regex := regexp.MustCompile(pattern)
 
 		match := regex.FindIndex(contentLower)
 		if match != nil {
-			// Find the opening brace position within the match
 			openBrace := bytes.IndexByte(content[match[0]:match[1]], '{') + match[0]
-			// Find matching closing brace
 			closeBrace := npm.findMatchingBrace(content, openBrace)
 			if closeBrace != -1 {
 				ranges = append(ranges, byteRange{start: openBrace, end: closeBrace})
@@ -247,7 +242,6 @@ func (npm *NpmPackageUpdater) findAllowedSectionRanges(content []byte) []byteRan
 	return ranges
 }
 
-// findMatchingBrace finds the position of the matching closing brace
 func (npm *NpmPackageUpdater) findMatchingBrace(content []byte, openBracePos int) int {
 	depth := 1
 	inString := false
@@ -255,17 +249,16 @@ func (npm *NpmPackageUpdater) findMatchingBrace(content []byte, openBracePos int
 	for i := openBracePos + 1; i < len(content); i++ {
 		c := content[i]
 
-		// Handle string boundaries (respecting escaped quotes)
 		if c == '"' && (i == 0 || content[i-1] != '\\') {
 			inString = !inString
 			continue
 		}
 
-		// Only count braces outside of strings
 		if !inString {
-			if c == '{' {
+			switch c {
+			case '{':
 				depth++
-			} else if c == '}' {
+			case '}':
 				depth--
 				if depth == 0 {
 					return i
@@ -274,7 +267,7 @@ func (npm *NpmPackageUpdater) findMatchingBrace(content []byte, openBracePos int
 		}
 	}
 
-	return -1 // No matching brace found
+	return -1
 }
 
 func isPositionInRanges(pos int, ranges []byteRange) bool {

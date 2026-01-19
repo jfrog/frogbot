@@ -342,3 +342,118 @@ func TestNpmGetDescriptorPathsFromVulnerability(t *testing.T) {
 		})
 	}
 }
+
+func TestFindAllowedSectionRanges(t *testing.T) {
+	npm := &NpmPackageUpdater{}
+
+	testcases := []struct {
+		name           string
+		content        string
+		expectedRanges int
+	}{
+		{
+			name: "single dependencies section",
+			content: `{
+  "name": "test",
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
+}`,
+			expectedRanges: 1,
+		},
+		{
+			name: "multiple allowed sections",
+			content: `{
+  "name": "test",
+  "dependencies": {
+    "lodash": "4.17.21"
+  },
+  "devDependencies": {
+    "jest": "29.0.0"
+  },
+  "optionalDependencies": {
+    "fsevents": "2.3.2"
+  }
+}`,
+			expectedRanges: 3,
+		},
+		{
+			name: "all allowed sections including overrides",
+			content: `{
+  "dependencies": { "a": "1.0.0" },
+  "devDependencies": { "b": "1.0.0" },
+  "optionalDependencies": { "c": "1.0.0" },
+  "overrides": { "d": "1.0.0" }
+}`,
+			expectedRanges: 4,
+		},
+		{
+			name: "ignored sections only - peerDependencies",
+			content: `{
+  "name": "test",
+  "peerDependencies": {
+    "react": "^18.0.0"
+  }
+}`,
+			expectedRanges: 0,
+		},
+		{
+			name: "mixed allowed and ignored sections",
+			content: `{
+  "dependencies": {
+    "lodash": "4.17.21"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "jest": "29.0.0"
+  }
+}`,
+			expectedRanges: 2,
+		},
+		{
+			name:           "no sections at all",
+			content:        `{"name": "test", "version": "1.0.0"}`,
+			expectedRanges: 0,
+		},
+		{
+			name: "nested braces within section",
+			content: `{
+  "dependencies": {
+    "webpack": "5.0.0",
+    "config": {
+      "nested": "value"
+    }
+  }
+}`,
+			expectedRanges: 1,
+		},
+		{
+			name: "section with string containing braces",
+			content: `{
+  "dependencies": {
+    "lodash": "4.17.21"
+  },
+  "scripts": {
+    "test": "echo \"{test}\""
+  }
+}`,
+			expectedRanges: 1,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			ranges := npm.findAllowedSectionRanges([]byte(tc.content))
+			assert.Len(t, ranges, tc.expectedRanges)
+
+			for _, r := range ranges {
+				assert.True(t, r.start >= 0, "start should be non-negative")
+				assert.True(t, r.end > r.start, "end should be greater than start")
+				assert.Equal(t, byte('{'), tc.content[r.start], "range should start with opening brace")
+				assert.Equal(t, byte('}'), tc.content[r.end], "range should end with closing brace")
+			}
+		})
+	}
+}
