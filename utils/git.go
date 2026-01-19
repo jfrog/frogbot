@@ -589,7 +589,7 @@ func IsFileExistsInRemote(filePath, repoRootDir, branchName string) (bool, error
 
 	if _, err = tree.File(filePath); err != nil {
 		// File not found in tree
-		return false, nil
+		return false, err
 	}
 	return true, nil
 }
